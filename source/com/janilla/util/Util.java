@@ -24,27 +24,16 @@
  */
 package com.janilla.util;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public interface Util {
 
-//	static Stream<Class<?>> getClasses(Stream<Path> files) {
-//		return files.filter(p -> !Files.isDirectory(p)).map(Path::toString).filter(t -> t.endsWith(".class")).map(t -> {
-//			var n = t.substring(0, t.length() - ".class".length()).replace('/', '.');
-////			System.out.println("n=" + n);
-//			try {
-//				return Class.forName(n);
-//			} catch (ClassNotFoundException e) {
-//				return (Class<?>) null;
-//			}
-//		}).filter(Objects::nonNull);
-//	}
-
 	static Class<?> getClass(Path p) {
 		var t = !Files.isDirectory(p) ? p.toString() : null;
 		t = t != null && t.endsWith(".class") ? t : null;
-		t = t != null ? t.substring(0, t.length() - ".class".length()).replace('/', '.') : null;
+		t = t != null ? t.substring(0, t.length() - ".class".length()).replace(File.separatorChar, '.') : null;
 		Class<?> c;
 		try {
 			c = t != null ? Class.forName(t) : null;

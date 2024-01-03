@@ -25,6 +25,7 @@
 package com.janilla.web;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -97,7 +98,7 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 
 	protected String toName(Path path) {
 		var s = path.toString();
-		if (s.startsWith("/"))
+		if (s.startsWith(File.separator))
 			s = s.substring(1);
 		return s.endsWith(".css") || s.endsWith(".ico") || s.endsWith(".js") || s.endsWith(".png") || s.endsWith(".svg")
 				|| s.endsWith(".ttf") || s.endsWith(".woff") ? s : null;
@@ -107,15 +108,16 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 
 	public static class Simple extends ToResourceStream {
 
-		Supplier<Map<String, String>> m = Lazy.of(() -> Arrays.stream(paths)
-				.collect(Collectors.toMap(p -> p.getFileName().toString(), p -> p.getParent().toString())));
+		Supplier<Map<String, String>> m = Lazy
+				.of(() -> Arrays.stream(paths).collect(Collectors.toMap(p -> p.getFileName().toString(),
+						p -> p.getParent().toString().replace(File.separatorChar, '/'))));
 
 		@Override
 		protected String toName(Path path) {
 			var n = super.toName(path);
 			if (n == null)
 				return null;
-			var i = n.lastIndexOf('/');
+			var i = n.lastIndexOf(File.separatorChar);
 			return n.substring(i + 1);
 		}
 

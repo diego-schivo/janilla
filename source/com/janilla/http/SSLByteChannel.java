@@ -150,8 +150,14 @@ public class SSLByteChannel extends FilterByteChannel {
 					status = r.getStatus();
 					handshake = r.getHandshakeStatus();
 
-					if (status != Status.OK && status != Status.BUFFER_UNDERFLOW)
+					switch (status) {
+					case OK:
+					case BUFFER_UNDERFLOW:
+					case CLOSED:
+						break;
+					default:
 						throw new IOException(status.toString());
+					}
 				} finally {
 					packet1.compact();
 				}
@@ -205,7 +211,10 @@ public class SSLByteChannel extends FilterByteChannel {
 		var p = application1.position();
 		var r = dst.remaining();
 		var n = Math.min(p, r);
-		if (n > 0) {
+		if (n == 0) {
+			if (status == Status.CLOSED)
+				n = -1;
+		} else {
 			application1.flip();
 			if (n < p)
 				application1.limit(n);
