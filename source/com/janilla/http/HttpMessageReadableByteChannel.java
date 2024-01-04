@@ -179,7 +179,7 @@ public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChan
 				startLine = readLine();
 				if (startLine == null) {
 					state = 3;
-					throw new NullPointerException();
+					throw new NullPointerException("startLine");
 				}
 				state = 1;
 			}
