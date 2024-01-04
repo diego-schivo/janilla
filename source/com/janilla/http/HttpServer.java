@@ -323,7 +323,8 @@ public class HttpServer {
 //								System.out.println(Thread.currentThread().getName() + " " + q.getURI() + " ("
 //										+ (System.currentTimeMillis() - m) + ")");
 								handle(handler, q, s);
-								d = Objects.toString(q.getHeaders().get("Connection"), "close");
+								var h = q.getHeaders();
+								d = Objects.toString(h != null ? h.get("Connection") : null, "close");
 //								System.out.println(Thread.currentThread().getName() + " " + d + " ("
 //										+ (System.currentTimeMillis() - m) + ")");
 							} catch (Exception e) {
