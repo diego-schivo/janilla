@@ -40,7 +40,7 @@
 	</developers>
 	<scm>
 		<connection>scm:git:git://github.com/diego-schivo/janilla.git</connection>
-		<developerConnection>scm:git:git://github.com/diego-schivo/janilla.git</developerConnection>
+		<developerConnection>scm:git:ssh://github.com/diego-schivo/janilla.git</developerConnection>
 		<url>https://github.com/diego-schivo/janilla</url>
 	</scm>
 	<profiles>
