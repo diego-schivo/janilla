@@ -40,7 +40,8 @@
 	</developers>
 	<scm>
 		<connection>scm:git:git://github.com/diego-schivo/janilla.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla.git</developerConnection>
+		<developerConnection>
+			scm:git:ssh://git@github.com/diego-schivo/janilla.git</developerConnection>
 		<url>https://github.com/diego-schivo/janilla</url>
 	</scm>
 	<profiles>
@@ -79,6 +80,16 @@
 								</goals>
 							</execution>
 						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.1.6</version>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<tokenEnabled>true</tokenEnabled>
+						</configuration>
 					</plugin>
 				</plugins>
 			</build>
