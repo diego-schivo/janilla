@@ -146,7 +146,7 @@ public class ToEndpointInvocation implements Function<HttpRequest, Invocation> {
 		}).filter(Objects::nonNull).findFirst().orElse(null);
 	}
 
-	public Stream<ValueAndGroups> getValueAndGroupsStream(HttpRequest r) {
+	public Stream<ValueAndGroups> getValueAndGroupsStream(HttpRequest q) {
 		var i = invocations1.get();
 		var j = invocations2.get();
 //		System.out.println(
@@ -154,8 +154,9 @@ public class ToEndpointInvocation implements Function<HttpRequest, Invocation> {
 
 		var b = Stream.<ValueAndGroups>builder();
 
-		var p = r.getURI().getPath();
-		var v = i.get(p);
+		var u = q.getURI();
+		var p = u != null ? u.getPath() : null;
+		var v = p != null ? i.get(p) : null;
 		if (v != null)
 			b.add(new ValueAndGroups(v, null));
 

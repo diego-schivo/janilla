@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 
 import javax.net.ssl.SSLEngine;
@@ -135,11 +136,14 @@ public class SSLByteChannel extends FilterByteChannel {
 			case FINISHED:
 			case NOT_HANDSHAKING:
 			case NEED_UNWRAP:
-				if (packet1.position() == 0 || status == Status.BUFFER_UNDERFLOW) {
-					var n = super.read(packet1);
-					if (n <= 0)
-						return n;
-				}
+				if (packet1.position() == 0 || status == Status.BUFFER_UNDERFLOW)
+					try {
+						var n = super.read(packet1);
+						if (n <= 0)
+							return n;
+					} catch (ClosedChannelException e) {
+						return -1;
+					}
 				packet1.flip();
 				try {
 					var r = engine.unwrap(packet1, application1);
@@ -242,8 +246,14 @@ public class SSLByteChannel extends FilterByteChannel {
 				status = r.getStatus();
 				handshake = r.getHandshakeStatus();
 
-				if (status != Status.OK)
+				switch (status) {
+				case OK:
+					break;
+				case CLOSED:
+					throw new IOException("Stream closed");
+				default:
 					throw new IOException(status.toString());
+				}
 
 				n = r.bytesConsumed();
 			}

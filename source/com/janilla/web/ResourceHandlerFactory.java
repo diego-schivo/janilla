@@ -101,7 +101,8 @@ public class ResourceHandlerFactory implements HandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object) {
-		var i = object instanceof HttpRequest q ? toInputStream.apply(q.getURI()) : null;
+		var u = object instanceof HttpRequest q ? q.getURI() : null;
+		var i = u != null ? toInputStream.apply(u) : null;
 		return i != null ? c -> handle(i, (HttpRequest) object, c) : null;
 	}
 

@@ -341,12 +341,12 @@ Public License instead of this License.
 
                  "CLASSPATH" EXCEPTION TO THE GPL
 
-Certain source files distributed by Diego Schivo and/or its affiliates are
-subject to the following clarification and special exception to the GPL, but
-only where Diego Schivo has expressly included in the particular source
-file's header the words "Diego Schivo designates this particular file as
-subject to the "Classpath" exception as provided by Diego Schivo in the
-LICENSE file that accompanied this code."
+Certain source files distributed by Diego Schivo are subject to the following
+clarification and special exception to the GPL, but only where Diego Schivo
+has expressly included in the particular source file's header the words
+"Diego Schivo designates this particular file as subject to the "Classpath"
+exception as provided by Diego Schivo in the LICENSE file that accompanied
+this code."
 
     Linking this library statically or dynamically with other modules is
     making a combined work based on this library.  Thus, the terms and

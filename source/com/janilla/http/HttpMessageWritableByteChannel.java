@@ -251,7 +251,10 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 
 				if (body == this) {
 					flush();
-					HttpMessageWritableByteChannel.this.flush();
+					try {
+						HttpMessageWritableByteChannel.this.flush();
+					} catch (IOException e) {
+					}
 				} else {
 					transferBuffer();
 					body.close();
