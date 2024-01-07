@@ -256,6 +256,7 @@ public interface Json {
 							else {
 								i = d.newInstance();
 								for (var e : m.entrySet()) {
+//									System.out.println("e=" + e);
 									var s = Reflection.setter(c, e.getKey());
 									var v = s.getParameterTypes()[0];
 									var o = e.getValue();

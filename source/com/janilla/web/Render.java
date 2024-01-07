@@ -33,5 +33,5 @@ import java.lang.annotation.Target;
 @Target({ ElementType.TYPE })
 public @interface Render {
 
-	String value() default "";
+	String template();
 }

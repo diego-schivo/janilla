@@ -68,10 +68,16 @@ public interface IO {
 		});
 	}
 
-	static void packageFiles(String package1, ClassLoader loader, java.util.function.Consumer<Path> consumer) {
+	static Stream<Path> getPackageFiles(String package1) {
+		var b = Stream.<Path>builder();
+		IO.acceptPackageFiles(package1, b::add);
+		return b.build();
+	}
+
+	static void acceptPackageFiles(String package1, java.util.function.Consumer<Path> consumer) {
 		var c = IntStream.iterate(package1.indexOf('.'), i -> i >= 0, i -> package1.indexOf('.', i + 1)).count() + 1;
 
-		packagePaths(package1, loader, p -> {
+		acceptPackagePaths(package1, p -> {
 //			System.out.println("p=" + p);
 			var r = Stream.iterate(p, Path::getParent).limit(c + 1).reduce((a, b) -> b).orElse(null);
 			try {
@@ -90,7 +96,7 @@ public interface IO {
 		});
 	}
 
-	static void packagePaths(String package1, ClassLoader loader, java.util.function.Consumer<Path> consumer) {
+	static void acceptPackagePaths(String package1, java.util.function.Consumer<Path> consumer) {
 		var s = package1.replace('.', '/');
 		var s1 = IntStream.iterate(s.indexOf('/'), i -> i >= 0, i -> s.indexOf('/', i + 1));
 		var s2 = IntStream.concat(s1, IntStream.of(s.length())).mapToObj(i -> s.substring(0, i));
@@ -98,7 +104,7 @@ public interface IO {
 		var fs = new HashMap<String, FileSystem>();
 		try (var s3 = s2.flatMap(n -> {
 //			System.out.println("n=" + n);
-			return loader.resources(n).map(r -> {
+			return ClassLoader.getSystemClassLoader().resources(n).map(r -> {
 //				System.out.println("r=" + r);
 				URI u;
 				try {

@@ -27,6 +27,9 @@ package com.janilla.util;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
+
+import com.janilla.io.IO;
 
 public interface Util {
 
@@ -41,5 +44,15 @@ public interface Util {
 			c = null;
 		}
 		return c;
+	}
+
+	static Stream<Class<?>> getPackageClasses(String package1) {
+		var b = Stream.<Class<?>>builder();
+		IO.acceptPackageFiles(package1, f -> {
+			var c = Util.getClass(f);
+			if (c != null)
+				b.add(c);
+		});
+		return b.build();
 	}
 }

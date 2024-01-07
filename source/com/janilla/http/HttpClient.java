@@ -43,17 +43,20 @@ public class HttpClient implements Closeable {
 
 	public static void main(String[] args) throws IOException {
 		var s = new HttpServer();
-		s.setExecutor(Runnable::run);
 		new Thread(() -> {
 			try {
 				s.serve(c -> {
 					var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
-					if (t.equals("GET /foo")) {
+					switch (t) {
+					case "GET /foo":
 						c.getResponse().setStatus(new Status(200, "OK"));
-						Channels.newOutputStream((WritableByteChannel) c.getResponse().getBody())
-								.write("bar".getBytes());
-					} else
+						var b = (WritableByteChannel) c.getResponse().getBody();
+						Channels.newOutputStream(b).write("bar".getBytes());
+						break;
+					default:
 						c.getResponse().setStatus(new Status(404, "Not Found"));
+						break;
+					}
 				});
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);

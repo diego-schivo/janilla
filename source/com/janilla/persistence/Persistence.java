@@ -32,7 +32,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Supplier;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import com.janilla.database.Database;
@@ -40,40 +40,19 @@ import com.janilla.io.ElementHelper;
 import com.janilla.json.Json;
 import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.reflect.Reflection;
-import com.janilla.util.Lazy;
 
 public class Persistence {
 
-	protected Class<?>[] types;
+	Database database;
 
-	protected Database database;
-
-	protected Supplier<Configuration> configuration = Lazy.of(() -> {
-		var c = new Configuration();
-		for (var t : types) {
-			configure(t, c);
-		}
-		return c;
-	});
-
-	public Class<?>[] getTypes() {
-		return types;
-	}
-
-	public void setTypes(Class<?>[] types) {
-		this.types = types;
-	}
+	Configuration configuration;
 
 	public Database getDatabase() {
 		return database;
 	}
 
-	public void setDatabase(Database database) {
-		this.database = database;
-	}
-
 	public <K, V> boolean initialize(String name, com.janilla.database.Index<K, V> index) {
-		var i = configuration.get().indexInitializers.get(name);
+		var i = configuration.indexInitializers.get(name);
 		if (i == null)
 			return false;
 		@SuppressWarnings("unchecked")
@@ -84,7 +63,7 @@ public class Persistence {
 
 	public <E> Crud<E> getCrud(Class<E> class1) {
 		@SuppressWarnings("unchecked")
-		var c = (Crud<E>) configuration.get().cruds.get(class1);
+		var c = (Crud<E>) configuration.cruds.get(class1);
 		return c;
 	}
 
@@ -93,7 +72,7 @@ public class Persistence {
 				|| !type.isAnnotationPresent(Store.class) ? null : new Crud<>();
 	}
 
-	<E, K, V> void configure(Class<E> type, Configuration configuration) {
+	<E, K, V> void configure(Class<E> type) {
 		Crud<E> d = newCrud(type);
 		if (d == null)
 			return;
@@ -105,12 +84,16 @@ public class Persistence {
 			d.parser = t -> Json.parse((String) t, Json.parseCollector(type));
 		configuration.cruds.put(type, d);
 		for (var i = Stream.concat(Stream.of(type), Reflection.properties(type).map(n -> {
+			Field f;
 			try {
-				return type.getDeclaredField(n);
-			} catch (ReflectiveOperationException e) {
+				f = type.getDeclaredField(n);
+			} catch (NoSuchFieldException e) {
+				f = null;
+			} catch (SecurityException e) {
 				throw new RuntimeException(e);
 			}
-		})).iterator();i.hasNext();) {
+			return f;
+		}).filter(Objects::nonNull)).iterator();i.hasNext();) {
 			var o = i.next();
 			var j = o.getAnnotation(Index.class);
 			if (j == null)

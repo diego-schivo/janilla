@@ -26,6 +26,7 @@ package com.janilla.web;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -43,6 +44,7 @@ import com.janilla.http.HttpResponse;
 import com.janilla.json.Json;
 import com.janilla.net.Net;
 import com.janilla.reflect.Parameter;
+import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;
 
 public class MethodArgumentsResolver implements BiFunction<Invocation, ExchangeContext, Object[]> {
@@ -108,39 +110,78 @@ public class MethodArgumentsResolver implements BiFunction<Invocation, ExchangeC
 				return Json.parse(body, Json.parseCollector(c));
 			break;
 		default:
-			if (type instanceof Class c && c.isRecord()) {
-				var d = c.getConstructors()[0];
-				var t = d.getParameterTypes();
-				var u = d.getParameterAnnotations();
-
-				var n = Arrays.stream(u).map(a -> Arrays.stream(a).filter(e -> e.annotationType() == Parameter.class)
-						.findFirst().orElse(null)).toArray(Parameter[]::new);
-				var a = new Object[t.length];
-				for (var j = 0; j < a.length; j++) {
-					var k = n[j] != null ? n[j].value() : null;
-					var w = k != null ? entries : null;
-					a[j] = resolveArgument(t[j], n[j], context, () -> w != null
-							? w.stream().filter(f -> f.getKey().equals(k)).map(Entry::getValue).toArray(String[]::new)
-							: null, entries, body);
-				}
-
-				Object o;
+			if (type instanceof Class<?> c) {
 				try {
-					o = d.newInstance(a);
-				} catch (ReflectiveOperationException x) {
-					throw new RuntimeException(x);
+					if (c.isRecord()) {
+						var d = c.getConstructors()[0];
+						var t = d.getParameterTypes();
+						var u = d.getParameterAnnotations();
+
+						var n = Arrays.stream(u).map(a -> Arrays.stream(a)
+								.filter(e -> e.annotationType() == Parameter.class).findFirst().orElse(null))
+								.toArray(Parameter[]::new);
+						var a = new Object[t.length];
+						for (var j = 0; j < a.length; j++) {
+							var k = n[j] != null ? n[j].value() : null;
+							var w = k != null ? entries : null;
+							a[j] = resolveArgument(t[j], n[j], context,
+									() -> w != null ? w.stream().filter(f -> f.getKey().equals(k)).map(Entry::getValue)
+											.toArray(String[]::new) : null,
+									entries, body);
+						}
+
+						var o = d.newInstance(a);
+						return o;
+					} else if (c != String.class) {
+						Constructor<?> d;
+						try {
+							d = c.getConstructor();
+						} catch (NoSuchMethodException e) {
+							d = null;
+						}
+						if (d != null) {
+							var o = d.newInstance();
+							for (var i = Reflection.properties(c).iterator(); i.hasNext();) {
+								var n = i.next();
+								var s = Reflection.setter(c, n);
+								if (s == null)
+									continue;
+								var w = entries;
+								var v = resolveArgument((Type) s.getParameterTypes()[0], null, context,
+										() -> w != null
+												? w.stream().filter(f -> f.getKey().equals(n)).map(Entry::getValue)
+														.toArray(String[]::new)
+												: null,
+										entries, body);
+								s.invoke(o, v);
+							}
+							return o;
+						}
+					}
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
 				}
-				return o;
 			}
 			break;
 		}
 		var a = values.get();
-		return a != null && a.length > 0 ? parseParameter(a[0], type) : null;
+		return parseParameter(a != null && a.length > 0 ? a[0] : null, type);
 	}
 
 	protected Object parseParameter(String s, Type type) {
-		if (s == null || s.isEmpty())
-			return type == String.class ? s : null;
+		if (s == null || s.isEmpty()) {
+			if (type == Boolean.TYPE)
+				return false;
+			if (type == Integer.TYPE)
+				return 0;
+			if (type == Long.TYPE)
+				return 0l;
+			if (type == String.class)
+				return s;
+			return null;
+		}
+		if (type == Boolean.class || type == Boolean.TYPE)
+			return Boolean.parseBoolean(s);
 		if (type == Integer.class || type == Integer.TYPE)
 			return Integer.parseInt(s);
 		if (type == Long.class || type == Long.TYPE)

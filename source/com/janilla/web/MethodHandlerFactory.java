@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.janilla.http.ExchangeContext;
 import com.janilla.http.HttpHandler;
@@ -47,6 +48,7 @@ import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
+import com.janilla.util.Lazy;
 
 public class MethodHandlerFactory implements HandlerFactory {
 
@@ -74,7 +76,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 			}
 			return m != null ? new Invocation(m, c, null) : null;
 		});
-		f1.setArgumentsResolver((i, d) -> null);
+//		f1.setArgumentsResolver((i, d) -> null);
 		var f2 = new TemplateHandlerFactory();
 		f2.setToReader(o -> {
 			var r = new InputStreamReader(new ByteArrayInputStream(o.toString().getBytes()));
@@ -161,17 +163,20 @@ public class MethodHandlerFactory implements HandlerFactory {
 		return i != null ? c -> handle(i, c) : null;
 	}
 
+	Supplier<BiFunction<Invocation, ExchangeContext, Object[]>> argumentsResolver2 = Lazy
+			.of(() -> argumentsResolver != null ? argumentsResolver : new MethodArgumentsResolver());
+
 	protected void handle(Invocation i, ExchangeContext c) throws IOException {
 		Object[] a;
 		try {
-			a = argumentsResolver.apply(i, c);
+			a = argumentsResolver2.get().apply(i, c);
 		} catch (UncheckedIOException e) {
 			throw e.getCause();
 		}
 
 		Object o;
 		try {
-			o = i.method().invoke(i.object(), a);
+			o = a != null ? i.method().invoke(i.object(), a) : i.method().invoke(i.object());
 		} catch (InvocationTargetException x) {
 			throw new HandleException((Exception) x.getTargetException());
 		} catch (IllegalAccessException x) {

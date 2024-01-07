@@ -25,7 +25,6 @@
 package com.janilla.util;
 
 import java.lang.reflect.Method;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -77,24 +76,39 @@ public class Evaluator implements Function<String, Object> {
 
 	protected void next(String name, Object wrapper) {
 		var v1 = value(wrapper);
-		Object v2;
-		if (v1 instanceof Map m)
-			v2 = m.get(name);
-		else if (v1 instanceof Path p)
-			switch (name) {
-			case "fileName":
-				v2 = p.getFileName();
-				break;
-			default:
-				throw new IllegalArgumentException();
+//		Object v2;
+//		if (v1 instanceof Map m)
+//			v2 = m.get(name);
+//		else if (v1 instanceof Path p)
+//			switch (name) {
+//			case "fileName":
+//				v2 = p.getFileName();
+//				break;
+//			default:
+//				throw new IllegalArgumentException();
+//			}
+//		else if (v1 != null) {
+//			var g = Reflection.getter(v1.getClass(), name);
+//			if (g == null)
+//				throw new NullPointerException("name=" + name);
+//			v2 = invoke(g, v1, wrapper);
+//		} else
+//			v2 = null;
+		var v2 = v1 != null ? switch (v1) {
+		case Map<?, ?> m -> m.get(name);
+//		case Evaluatable e -> e.evaluate(name);
+		default -> {
+			if (v1 instanceof Renderable e) {
+				var o = e.render(name);
+				if (o != null)
+					yield o;
 			}
-		else if (v1 != null) {
-			var m = Reflection.getter(v1.getClass(), name);
-			if (m == null)
-				throw new NullPointerException("name=" + name);
-			v2 = invoke(m, v1, wrapper);
-		} else
-			v2 = null;
+			var g = Reflection.getter(v1.getClass(), name);
+//			if (g == null)
+//				throw new NullPointerException("name=" + name);
+			yield g != null ? invoke(g, v1, wrapper) : null;
+		}
+		} : null;
 		value(v2, wrapper);
 	}
 

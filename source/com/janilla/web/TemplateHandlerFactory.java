@@ -127,10 +127,6 @@ public class TemplateHandlerFactory implements HandlerFactory {
 
 //						System.out.println(">>> " + new String(src.array(), src.position(), src.remaining()));
 
-//						var n = 0;
-//						while (src.hasRemaining())
-//							n += super.write(src);
-//						return n;
 						return IO.repeat(x -> super.write(src), src.remaining());
 					}
 

@@ -33,13 +33,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.janilla.util.Lazy;
 
 public abstract class ToTemplateReader implements Function<Object, Template> {
 
 	public static void main(String[] args) throws IOException {
-		@Render("foo.html")
+		@Render(template = "foo.html")
 		class C {
 		}
 		var f = new ToTemplateReader() {
@@ -62,7 +63,7 @@ public abstract class ToTemplateReader implements Function<Object, Template> {
 				return t;
 			}
 		};
-		f.setClasses(C.class);
+		f.setTypes(() -> Stream.of(C.class));
 
 		var r = f.apply(new C());
 
@@ -82,27 +83,23 @@ public abstract class ToTemplateReader implements Function<Object, Template> {
 				</html>""") : s;
 	}
 
-	Class<?>[] classes;
+	private Supplier<Stream<Class<?>>> types;
 
 	Supplier<Map<Class<?>, String>> templates = Lazy.of(() -> {
 		var m = new HashMap<Class<?>, String>();
-		for (var c : classes) {
-			var t = c.getAnnotation(Render.class);
-			if (t != null)
-				m.put(c, t.value());
-		}
+		types.get().forEach(t -> {
+			var r = t.getAnnotation(Render.class);
+			if (r != null)
+				m.put(t, r.template());
+		});
 
 //		System.out.println(Thread.currentThread().getName() + " ToTemplateReader templates " + templates);
 
 		return m;
 	});
 
-	public Class<?>[] getClasses() {
-		return classes;
-	}
-
-	public void setClasses(Class<?>... classes) {
-		this.classes = classes;
+	public void setTypes(Supplier<Stream<Class<?>>> types) {
+		this.types = types;
 	}
 
 	@Override
@@ -115,19 +112,19 @@ public abstract class ToTemplateReader implements Function<Object, Template> {
 
 	public static class Simple extends ToTemplateReader {
 
-		Class<?> class1;
+		Class<?> resourceClass;
 
-		public Class<?> getClass1() {
-			return class1;
+		public Class<?> getResourceClass() {
+			return resourceClass;
 		}
 
-		public void setClass1(Class<?> class1) {
-			this.class1 = class1;
+		public void setResourceClass(Class<?> resourceClass) {
+			this.resourceClass = resourceClass;
 		}
 
 		@Override
 		protected Template newReader(String name) {
-			var s = class1.getResourceAsStream(name);
+			var s = resourceClass.getResourceAsStream(name);
 			if (s == null)
 				throw new NullPointerException(name);
 			var t = new Template();

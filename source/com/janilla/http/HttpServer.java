@@ -59,21 +59,25 @@ public class HttpServer {
 		var k = Path.of(System.getProperty("user.home")).resolve("Downloads/jssesamples/samples/sslengine/testkeys");
 		var p = "passphrase".toCharArray();
 		var x = Net.getSSLContext(k, p);
+
 		var s = new HttpServer();
 		s.setBufferCapacity(100);
-		s.setExecutor(Runnable::run);
 		s.setMaxMessageLength(1000);
 		s.setSSLContext(x);
 		new Thread(() -> {
 			try {
 				s.serve(c -> {
 					var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
-					if (t.equals("POST /foo")) {
+					switch (t) {
+					case "POST /foo":
 						c.getResponse().setStatus(new Status(200, "OK"));
-						Channels.newOutputStream((WritableByteChannel) c.getResponse().getBody())
-								.write("bar".getBytes());
-					} else
+						var b = (WritableByteChannel) c.getResponse().getBody();
+						Channels.newOutputStream(b).write("bar".getBytes());
+						break;
+					default:
 						c.getResponse().setStatus(new Status(404, "Not Found"));
+						break;
+					}
 				});
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
@@ -225,6 +229,9 @@ public class HttpServer {
 			selector = SelectorProvider.provider().openSelector();
 			c.register(selector, SelectionKey.OP_ACCEPT);
 		}
+
+		if (executor == null)
+			executor = Runnable::run;
 
 		var r = new HashMap<HttpConnection, Long>();
 		var t = new Timer(Thread.currentThread().getName() + "-IdleTimer", true);

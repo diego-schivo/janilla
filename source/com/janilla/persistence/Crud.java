@@ -63,7 +63,6 @@ public class Crud<E> {
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
-//			return Json.format(new ReflectionJsonIterator(entity));
 			return formatter.apply(entity);
 		}));
 		for (var e : getIndexMap(entity, i).entrySet()) {
@@ -76,7 +75,6 @@ public class Crud<E> {
 	public E read(Long id) throws IOException {
 		var n = type.getSimpleName();
 		var t = database.storeApply(n, s -> s.read(id));
-//		return Json.parse((String) t, Json.parseCollector(type));
 		return parser.apply(t);
 	}
 
@@ -90,11 +88,9 @@ public class Crud<E> {
 		var n = type.getSimpleName();
 		var a = new A();
 		database.storeAccept(n, s -> s.update(id, t -> {
-//			a.e = Json.parse((String) t, Json.parseCollector(type));
 			a.e = parser.apply(t);
 			a.m = getIndexMap(a.e, id);
 			consumer.accept(a.e);
-//			return Json.format(new ReflectionJsonIterator(a.e));
 			return formatter.apply(a.e);
 		}));
 		if (a.e != null)
@@ -113,7 +109,6 @@ public class Crud<E> {
 	public E delete(Long id) throws IOException {
 		var n = type.getSimpleName();
 		var t = database.storeApply(n, s -> s.delete(id));
-//		var e = Json.parse((String) t, Json.parseCollector(type));
 		var e = parser.apply(t);
 		for (var f : getIndexMap(e, id).entrySet()) {
 			var m = toMap(f.getValue(), null);

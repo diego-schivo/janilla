@@ -30,13 +30,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.janilla.util.Lazy;
 
@@ -53,7 +53,7 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 						}""".getBytes()) : null;
 			}
 		};
-		f.setPaths(Path.of("style.css"));
+		f.setPaths(() -> Stream.of(Path.of("style.css")));
 
 		String s;
 		try (var i = f.apply(URI.create("/style.css"))) {
@@ -66,26 +66,22 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 				}""") : s;
 	}
 
-	Path[] paths;
+	Supplier<Stream<Path>> paths;
 
 	Supplier<Set<String>> resources = Lazy.of(() -> {
 		var s = new HashSet<String>();
-		for (var p : paths) {
+		paths.get().forEach(p -> {
 			var n = toName(p);
 			if (n != null)
 				s.add(n);
-		}
+		});
 
 //		System.out.println(Thread.currentThread().getName() + " ToResourceStream resources " + resources);
 
 		return s;
 	});
 
-	public Path[] getPaths() {
-		return paths;
-	}
-
-	public void setPaths(Path... paths) {
+	public void setPaths(Supplier<Stream<Path>> paths) {
 		this.paths = paths;
 	}
 
@@ -109,7 +105,7 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 	public static class Simple extends ToResourceStream {
 
 		Supplier<Map<String, String>> m = Lazy
-				.of(() -> Arrays.stream(paths).collect(Collectors.toMap(p -> p.getFileName().toString(),
+				.of(() -> paths.get().collect(Collectors.toMap(p -> p.getFileName().toString(),
 						p -> p.getParent().toString().replace(File.separatorChar, '/'))));
 
 		@Override

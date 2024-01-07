@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -47,12 +48,12 @@ import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpRequest;
 import com.janilla.util.Lazy;
 
-public class ToEndpointInvocation implements Function<HttpRequest, Invocation> {
+public class AnnotationDrivenToInvocation implements Function<HttpRequest, Invocation> {
 
 	public static void main(String[] args) throws IOException {
 		class C {
 
-			@Handler(value = "/foo/(.*)", method = "GET")
+			@Handle(method = "GET", uri = "/foo/(.*)")
 			public void foo(Path path) {
 			}
 
@@ -66,14 +67,14 @@ public class ToEndpointInvocation implements Function<HttpRequest, Invocation> {
 				return obj != null && obj.getClass() == C.class;
 			}
 		}
-		var f = new ToEndpointInvocation() {
+		var f = new AnnotationDrivenToInvocation() {
 
 			@Override
 			protected Object getInstance(Class<?> c) {
 				return new C();
 			}
 		};
-		f.classes = new Class<?>[] { C.class };
+		f.setTypes(() -> Stream.of(C.class));
 
 		var is = new ByteArrayInputStream("""
 				GET /foo/bar HTTP/1.1\r
@@ -97,27 +98,27 @@ public class ToEndpointInvocation implements Function<HttpRequest, Invocation> {
 		assert i.equals(j) : i;
 	}
 
-	Class<?>[] classes;
+	Supplier<Stream<Class<?>>> types;
 
 	Supplier<Map<String, Value>> invocations1 = Lazy.of(() -> {
 		Map<String, Value> x = new HashMap<>();
-		for (var c : classes) {
-			if (Modifier.isInterface(c.getModifiers()) || Modifier.isAbstract(c.getModifiers()))
-				continue;
+		types.get().forEach(t -> {
+			if (Modifier.isInterface(t.getModifiers()) || Modifier.isAbstract(t.getModifiers()))
+				return;
 
 			Object o = null;
-			for (var m : c.getMethods()) {
-				if (!m.isAnnotationPresent(Handler.class))
+			for (var m : t.getMethods()) {
+				if (!m.isAnnotationPresent(Handle.class))
 					continue;
 
 				if (o == null)
-					o = getInstance(c);
+					o = getInstance(t);
 
 				var p = o;
-				var v = x.computeIfAbsent(m.getAnnotation(Handler.class).value(), k -> new Value(new HashSet<>(), p));
+				var v = x.computeIfAbsent(m.getAnnotation(Handle.class).uri(), k -> new Value(new HashSet<>(), p));
 				v.methods().add(m);
 			}
-		}
+		});
 		return x;
 	});
 
@@ -129,12 +130,8 @@ public class ToEndpointInvocation implements Function<HttpRequest, Invocation> {
 		return x;
 	});
 
-	public Class<?>[] getClasses() {
-		return classes;
-	}
-
-	public void setClasses(Class<?>[] classes) {
-		this.classes = classes;
+	public void setTypes(Supplier<Stream<Class<?>>> types) {
+		this.types = types;
 	}
 
 	@Override
@@ -154,7 +151,12 @@ public class ToEndpointInvocation implements Function<HttpRequest, Invocation> {
 
 		var b = Stream.<ValueAndGroups>builder();
 
-		var u = q.getURI();
+		URI u;
+		try {
+			u = q.getURI();
+		} catch (NullPointerException e) {
+			u = null;
+		}
 		var p = u != null ? u.getPath() : null;
 		var v = p != null ? i.get(p) : null;
 		if (v != null)
@@ -188,7 +190,7 @@ public class ToEndpointInvocation implements Function<HttpRequest, Invocation> {
 				s = "";
 			Method m = null;
 			for (var n : methods()) {
-				var t = n.getAnnotation(Handler.class).method();
+				var t = n.getAnnotation(Handle.class).method();
 				if (t == null)
 					t = "";
 				if (t.equalsIgnoreCase(s))
