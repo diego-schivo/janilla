@@ -47,10 +47,10 @@ import com.janilla.reflect.Parameter;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;
 
-public class MethodArgumentsResolver implements BiFunction<Invocation, ExchangeContext, Object[]> {
+public class MethodArgumentsResolver implements BiFunction<MethodInvocation, ExchangeContext, Object[]> {
 
 	@Override
-	public Object[] apply(Invocation i, ExchangeContext c) {
+	public Object[] apply(MethodInvocation i, ExchangeContext c) {
 		var q = Net.parseQueryString(c.getRequest().getURI().getQuery());
 		var b = switch (c.getRequest().getMethod().name()) {
 		case "POST", "PUT" -> {

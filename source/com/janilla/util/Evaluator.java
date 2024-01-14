@@ -39,13 +39,13 @@ public class Evaluator implements Function<String, Object> {
 		var e = new Evaluator();
 		e.setContext(Map.of("s", "foo", "r", new R("bar")));
 
-		var r = e.apply("s");
-		System.out.println(r);
-		assert Objects.equals(r, "foo") : r;
+		var o = e.apply("s");
+		System.out.println(o);
+		assert Objects.equals(o, "foo") : o;
 
-		r = e.apply("r.s");
-		System.out.println(r);
-		assert Objects.equals(r, "bar") : r;
+		o = e.apply("r.s");
+		System.out.println(o);
+		assert Objects.equals(o, "bar") : o;
 	}
 
 	protected Object context;
@@ -75,48 +75,27 @@ public class Evaluator implements Function<String, Object> {
 	}
 
 	protected void next(String name, Object wrapper) {
-		var v1 = value(wrapper);
-//		Object v2;
-//		if (v1 instanceof Map m)
-//			v2 = m.get(name);
-//		else if (v1 instanceof Path p)
-//			switch (name) {
-//			case "fileName":
-//				v2 = p.getFileName();
-//				break;
-//			default:
-//				throw new IllegalArgumentException();
-//			}
-//		else if (v1 != null) {
-//			var g = Reflection.getter(v1.getClass(), name);
-//			if (g == null)
-//				throw new NullPointerException("name=" + name);
-//			v2 = invoke(g, v1, wrapper);
-//		} else
-//			v2 = null;
-		var v2 = v1 != null ? switch (v1) {
+		var u = getValue(wrapper);
+		var v = u != null ? switch (u) {
 		case Map<?, ?> m -> m.get(name);
-//		case Evaluatable e -> e.evaluate(name);
 		default -> {
-			if (v1 instanceof Renderable e) {
-				var o = e.render(name);
-				if (o != null)
+			if (u instanceof RenderHelper e) {
+				var o = e.tryToRender(name);
+				if (o != RenderHelper.NOT_RENDERED)
 					yield o;
 			}
-			var g = Reflection.getter(v1.getClass(), name);
-//			if (g == null)
-//				throw new NullPointerException("name=" + name);
-			yield g != null ? invoke(g, v1, wrapper) : null;
+			var g = Reflection.getter(u.getClass(), name);
+			yield g != null ? invoke(g, u, wrapper) : null;
 		}
 		} : null;
-		value(v2, wrapper);
+		setValue(v, wrapper);
 	}
 
-	protected Object value(Object wrapper) {
+	protected Object getValue(Object wrapper) {
 		return ((Object[]) wrapper)[0];
 	}
 
-	protected void value(Object value, Object wrapper) {
+	protected void setValue(Object value, Object wrapper) {
 		((Object[]) wrapper)[0] = value;
 	}
 

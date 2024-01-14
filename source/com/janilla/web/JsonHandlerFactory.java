@@ -30,7 +30,6 @@ import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 
 import com.janilla.http.ExchangeContext;
-import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.io.IO;
 import com.janilla.json.Json;
@@ -40,7 +39,7 @@ import com.janilla.json.ReflectionJsonIterator;
 public class JsonHandlerFactory implements HandlerFactory {
 
 	@Override
-	public HttpHandler createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object) {
 		if (object instanceof HttpRequest || object instanceof Exception)
 			return null;
 		return c -> render(object, c);

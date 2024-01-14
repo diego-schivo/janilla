@@ -167,7 +167,7 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 
 		protected int state;
 
-		protected abstract String startLine();
+		protected abstract String getStartLine();
 
 		@Override
 		public EntryList<String, String> getHeaders() {
@@ -203,7 +203,7 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 
 			if (target >= 4 && state < 4) {
 				try {
-					writeLine(startLine());
+					writeLine(getStartLine());
 					for (var h : headers)
 						writeLine(h.getKey() + ": " + h.getValue());
 					writeLine("");
@@ -370,7 +370,7 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 		}
 
 		@Override
-		protected String startLine() {
+		protected String getStartLine() {
 			return method.name() + " " + uri + " HTTP/1.1";
 		}
 	}
@@ -391,7 +391,7 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 		}
 
 		@Override
-		protected String startLine() {
+		protected String getStartLine() {
 			return "HTTP/1.1 " + status.code() + " " + status.text();
 		}
 	}

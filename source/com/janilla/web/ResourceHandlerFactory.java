@@ -35,11 +35,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import com.janilla.http.ExchangeContext;
-import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse.Status;
+import com.janilla.io.IO;
 
 public class ResourceHandlerFactory implements HandlerFactory {
 
@@ -69,7 +69,7 @@ public class ResourceHandlerFactory implements HandlerFactory {
 			var c = new ExchangeContext();
 			c.setRequest(q);
 			c.setResponse(s);
-			h.handle(c);
+			h.accept(c);
 		}
 
 		var s = o.toString();
@@ -100,7 +100,7 @@ public class ResourceHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object) {
 		var u = object instanceof HttpRequest q ? q.getURI() : null;
 		var i = u != null ? toInputStream.apply(u) : null;
 		return i != null ? c -> handle(i, (HttpRequest) object, c) : null;

@@ -38,6 +38,7 @@ import java.nio.channels.spi.SelectorProvider;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -64,21 +65,22 @@ public class HttpServer {
 		s.setBufferCapacity(100);
 		s.setMaxMessageLength(1000);
 		s.setSSLContext(x);
+		s.setHandler(c -> {
+			var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
+			switch (t) {
+			case "POST /foo":
+				c.getResponse().setStatus(new Status(200, "OK"));
+				var b = (WritableByteChannel) c.getResponse().getBody();
+				Channels.newOutputStream(b).write("bar".getBytes());
+				break;
+			default:
+				c.getResponse().setStatus(new Status(404, "Not Found"));
+				break;
+			}
+		});
 		new Thread(() -> {
 			try {
-				s.serve(c -> {
-					var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
-					switch (t) {
-					case "POST /foo":
-						c.getResponse().setStatus(new Status(200, "OK"));
-						var b = (WritableByteChannel) c.getResponse().getBody();
-						Channels.newOutputStream(b).write("bar".getBytes());
-						break;
-					default:
-						c.getResponse().setStatus(new Status(404, "Not Found"));
-						break;
-					}
-				});
+				s.serve();
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -142,6 +144,8 @@ public class HttpServer {
 
 	private Executor executor;
 
+	private IO.Consumer<ExchangeContext> handler;
+
 	private long idleTimerPeriod;
 
 	private long maxIdleDuration;
@@ -172,6 +176,14 @@ public class HttpServer {
 
 	public void setExecutor(Executor executor) {
 		this.executor = executor;
+	}
+
+	public IO.Consumer<ExchangeContext> getHandler() {
+		return handler;
+	}
+
+	public void setHandler(IO.Consumer<ExchangeContext> handler) {
+		this.handler = handler;
 	}
 
 	public long getIdleTimerPeriod() {
@@ -218,7 +230,7 @@ public class HttpServer {
 		return address;
 	}
 
-	public void serve(HttpHandler handler) throws IOException {
+	public void serve() throws IOException {
 		{
 			var c = ServerSocketChannel.open();
 			c.configureBlocking(true);
@@ -229,9 +241,6 @@ public class HttpServer {
 			selector = SelectorProvider.provider().openSelector();
 			c.register(selector, SelectionKey.OP_ACCEPT);
 		}
-
-		if (executor == null)
-			executor = Runnable::run;
 
 		var r = new HashMap<HttpConnection, Long>();
 		var t = new Timer(Thread.currentThread().getName() + "-IdleTimer", true);
@@ -318,51 +327,10 @@ public class HttpServer {
 
 				for (var i = l.build().iterator(); i.hasNext();) {
 					var c = i.next();
-
-					executor.execute(() -> {
-//						System.out.println(
-//								Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m) + ")");
-
-						try {
-							String d;
-							try (var q = c.getInput().readRequest(); var s = c.getOutput().writeResponse()) {
-
-//								System.out.println(Thread.currentThread().getName() + " " + q.getURI() + " ("
-//										+ (System.currentTimeMillis() - m) + ")");
-								handle(handler, q, s);
-								var h = q.getHeaders();
-								d = Objects.toString(h != null ? h.get("Connection") : null, "close");
-//								System.out.println(Thread.currentThread().getName() + " " + d + " ("
-//										+ (System.currentTimeMillis() - m) + ")");
-							} catch (Exception e) {
-								e.printStackTrace();
-								d = "close";
-							}
-
-//							d = "close";
-
-							switch (d) {
-							case "keep-alive":
-								synchronized (r) {
-									r.put(c, System.currentTimeMillis());
-								}
-								c.getChannel().register(selector, SelectionKey.OP_READ).attach(c);
-								selector.wakeup();
-								break;
-							case "close":
-								synchronized (r) {
-									r.remove(c);
-								}
-								c.close();
-								break;
-							}
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-
-//						System.out.println(Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m)
-//								+ ")" + " " + LocalTime.now());
-					});
+					if (executor != null)
+						executor.execute(() -> handle(handler, c, r));
+					else
+						handle(handler, c, r);
 				}
 			}
 		} finally {
@@ -377,13 +345,58 @@ public class HttpServer {
 		selector.wakeup();
 	}
 
-	protected void handle(HttpHandler handler, HttpRequest request, HttpResponse response) throws IOException {
+	protected void handle(IO.Consumer<ExchangeContext> handler, HttpConnection connection,
+			Map<HttpConnection, Long> connectionMillis) {
+//		System.out.println(
+//		Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m) + ")");
+
+		try {
+			String d;
+			try (var q = connection.getInput().readRequest(); var s = connection.getOutput().writeResponse()) {
+
+//		System.out.println(Thread.currentThread().getName() + " " + q.getURI() + " ("
+//				+ (System.currentTimeMillis() - m) + ")");
+				handle(handler, q, s);
+				var h = q.getHeaders();
+				d = Objects.toString(h != null ? h.get("Connection") : null, "close");
+//		System.out.println(Thread.currentThread().getName() + " " + d + " ("
+//				+ (System.currentTimeMillis() - m) + ")");
+			} catch (Exception e) {
+				e.printStackTrace();
+				d = "close";
+			}
+
+			switch (d) {
+			case "keep-alive":
+				synchronized (connectionMillis) {
+					connectionMillis.put(connection, System.currentTimeMillis());
+				}
+				connection.getChannel().register(selector, SelectionKey.OP_READ).attach(connection);
+				selector.wakeup();
+				break;
+			case "close":
+				synchronized (connectionMillis) {
+					connectionMillis.remove(connection);
+				}
+				connection.close();
+				break;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+//System.out.println(Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m)
+//		+ ")" + " " + LocalTime.now());
+	}
+
+	protected void handle(IO.Consumer<ExchangeContext> handler, HttpRequest request, HttpResponse response)
+			throws IOException {
 		var c = newExchangeContext(request);
 		c.setRequest(request);
 		c.setResponse(response);
 		Exception e;
 		try {
-			handler.handle(c);
+			handler.accept(c);
 			e = null;
 		} catch (UncheckedIOException x) {
 			e = x.getCause();
@@ -395,7 +408,7 @@ public class HttpServer {
 		if (e != null) {
 			e.printStackTrace();
 			c.setException(e);
-			handler.handle(c);
+			handler.accept(c);
 		}
 	}
 

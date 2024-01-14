@@ -38,26 +38,28 @@ import javax.net.ssl.SSLContext;
 
 import com.janilla.http.HttpRequest.Method;
 import com.janilla.http.HttpResponse.Status;
+import com.janilla.io.IO;
 
 public class HttpClient implements Closeable {
 
 	public static void main(String[] args) throws IOException {
 		var s = new HttpServer();
+		s.setHandler(c -> {
+			var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
+			switch (t) {
+			case "GET /foo":
+				c.getResponse().setStatus(new Status(200, "OK"));
+				var b = (WritableByteChannel) c.getResponse().getBody();
+				Channels.newOutputStream(b).write("bar".getBytes());
+				break;
+			default:
+				c.getResponse().setStatus(new Status(404, "Not Found"));
+				break;
+			}
+		});
 		new Thread(() -> {
 			try {
-				s.serve(c -> {
-					var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
-					switch (t) {
-					case "GET /foo":
-						c.getResponse().setStatus(new Status(200, "OK"));
-						var b = (WritableByteChannel) c.getResponse().getBody();
-						Channels.newOutputStream(b).write("bar".getBytes());
-						break;
-					default:
-						c.getResponse().setStatus(new Status(404, "Not Found"));
-						break;
-					}
-				});
+				s.serve();
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -134,7 +136,7 @@ public class HttpClient implements Closeable {
 		this.sslContext = sslContext;
 	}
 
-	public void query(HttpHandler handler) throws IOException {
+	public void query(IO.Consumer<ExchangeContext> handler) throws IOException {
 		if (connection == null) {
 			var c = SocketChannel.open();
 			c.configureBlocking(true);
@@ -147,7 +149,7 @@ public class HttpClient implements Closeable {
 
 		try (var r = connection.getOutput().writeRequest(); var s = connection.getInput().readResponse()) {
 			try {
-				handler.handle(newExchangeContext(r, s));
+				handler.accept(newExchangeContext(r, s));
 			} catch (UncheckedIOException e) {
 				throw e.getCause();
 			}

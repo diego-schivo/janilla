@@ -110,7 +110,6 @@ class HeaderAdder {
 				 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 				 * SOFTWARE.
 				 */""".split("\n"));
-//		var s = Path.of(System.getProperty("user.home")).resolve("eclipse-workspace");
 		var s = Path.of(System.getProperty("user.home")).resolve("git");
 		try {
 			Files.walkFileTree(s, new SimpleFileVisitor<>() {

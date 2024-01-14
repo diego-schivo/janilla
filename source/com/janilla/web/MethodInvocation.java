@@ -24,10 +24,8 @@
  */
 package com.janilla.web;
 
-import com.janilla.http.ExchangeContext;
-import com.janilla.io.IO;
+import java.lang.reflect.Method;
+import java.util.List;
 
-public interface HandlerFactory {
-
-	IO.Consumer<ExchangeContext> createHandler(Object object);
+public record MethodInvocation(Method method, Object object, List<String> groups) {
 }

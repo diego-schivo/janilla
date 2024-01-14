@@ -44,10 +44,11 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import com.janilla.html.Html;
 import com.janilla.http.ExchangeContext;
 import com.janilla.http.FilterHttpRequest;
-import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpMessageWritableByteChannel;
+import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.FilterWritableByteChannel;
 import com.janilla.io.IO;
 import com.janilla.util.Evaluator;
@@ -57,22 +58,23 @@ public class TemplateHandlerFactory implements HandlerFactory {
 
 	public static void main(String[] args) throws IOException {
 		var f = new TemplateHandlerFactory();
-		f.setToReader(o -> {
-			var r = new InputStreamReader(new ByteArrayInputStream(o.toString().getBytes()));
-
+		f.setToReader(o -> switch (o) {
+		case Map<?, ?> m -> {
 			var t = new Template();
-			t.setReader(r);
-			return t;
+			t.setReader(new InputStreamReader(new ByteArrayInputStream("foo ${x} baz".getBytes())));
+			yield t;
+		}
+		default -> null;
 		});
 
 		var o = new ByteArrayOutputStream();
 		var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
 
 		try (var s = w.writeResponse()) {
-			var h = f.createHandler("foo");
+			var h = f.createHandler(Map.of("x", "bar"));
 			var c = new ExchangeContext();
 			c.setResponse(s);
-			h.handle(c);
+			h.accept(c);
 		}
 
 		var s = o.toString();
@@ -80,9 +82,9 @@ public class TemplateHandlerFactory implements HandlerFactory {
 		assert Objects.equals(s, """
 				HTTP/1.1 200 OK\r
 				Cache-Control: no-cache\r
-				Content-Length: 4\r
+				Content-Length: 12\r
 				\r
-				foo
+				foo bar baz
 				""") : s;
 	}
 
@@ -107,20 +109,36 @@ public class TemplateHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object) {
 		var t = object != null ? toReader.apply(object) : null;
 		return t != null ? c -> render(object, t, c) : null;
 	}
 
 	protected void render(Object object, Template template, ExchangeContext context) throws IOException {
-		var h = context.getResponse().getHeaders();
-		if (template.getName().endsWith(".html"))
-			h.set("Content-Type", "text/html");
-		else if (template.getName().endsWith(".js"))
-			h.set("Content-Type", "text/javascript");
+		var s = context.getResponse();
+		if (s.getStatus() == null)
+			s.setStatus(new Status(200, "OK"));
 
-		try (var w = new PrintWriter(new BufferedWriter(Channels
-				.newWriter(new FilterWritableByteChannel((WritableByteChannel) context.getResponse().getBody()) {
+		var h = s.getHeaders();
+		if (h.get("Cache-Control") == null)
+			s.getHeaders().set("Cache-Control", "no-cache");
+		if (h.get("Content-Type") == null) {
+			var n = template.getName();
+			var i = n != null ? n.lastIndexOf('.') : -1;
+			var e = i >= 0 ? n.substring(i + 1) : null;
+			if (e != null)
+				switch (e) {
+				case "html":
+					h.set("Content-Type", "text/html");
+					break;
+				case "js":
+					h.set("Content-Type", "text/javascript");
+					break;
+				}
+		}
+
+		try (var w = new PrintWriter(
+				new BufferedWriter(Channels.newWriter(new FilterWritableByteChannel((WritableByteChannel) s.getBody()) {
 
 					@Override
 					public int write(ByteBuffer src) throws IOException {
@@ -140,16 +158,73 @@ public class TemplateHandlerFactory implements HandlerFactory {
 
 	protected void render(Object object, Template template, PrintWriter bw, ExchangeContext context)
 			throws IOException {
-		var e = buildEvaluator(object, context);
-		var i = buildInterpolator(e, context);
+		var i = buildInterpolator(object, context);
 		try (var r = new BufferedReader(template.getReader())) {
 			for (var j = r.lines().iterator(); j.hasNext();)
 				i.println(j.next(), bw);
 		}
 	}
 
-	protected Function<String, Object> buildEvaluator(Object object, ExchangeContext context) {
+	protected Interpolator buildInterpolator(Object object, ExchangeContext context) {
+		var i = new Interpolator() {
+
+			@Override
+			protected void print(Object object, PrintWriter writer) {
+				@SuppressWarnings("unchecked")
+				var m = object instanceof Map ? (Map<String, Object>) object : null;
+				var n = m != null ? (Method) m.get("method") : null;
+				if (n != null && n.isAnnotationPresent(Include.class)) {
+					var u = (URI) m.get("value");
+					if (u != null) {
+						var q = context.getRequest();
+						var f = new FilterHttpRequest(q) {
+
+							@Override
+							public URI getURI() {
+								return u;
+							}
+						};
+						var h = includeFactory.createHandler(f);
+						writer.flush();
+						context.setRequest(f);
+						try {
+							h.accept(context);
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						} finally {
+							context.setRequest(q);
+						}
+					}
+				} else {
+					var v = m != null ? m.get("value") : object;
+					if (v instanceof Stream s)
+						for (var i = s.iterator(); i.hasNext();)
+							TemplateHandlerFactory.this.print(i.next(), writer, context);
+					else
+						TemplateHandlerFactory.this.print(v, writer, context);
+				}
+			}
+		};
+		i.setEvaluators(
+				Map.of('#', buildEvaluator(object, context, false), '$', buildEvaluator(object, context, true)));
+		return i;
+	}
+
+	protected Function<String, Object> buildEvaluator(Object object, ExchangeContext context, boolean escape) {
 		var e = new Evaluator() {
+
+			@Override
+			public Object apply(String expression) {
+				Object o = super.apply(expression);
+				if (escape) {
+					@SuppressWarnings("unchecked")
+					var m = o instanceof Map ? (Map<String, Object>) o : null;
+					var v = m != null ? m.get("value") : null;
+					if (v instanceof String s)
+						m.put("value", Html.escape(s));
+				}
+				return o;
+			}
 
 			@Override
 			protected Object wrap() {
@@ -164,14 +239,14 @@ public class TemplateHandlerFactory implements HandlerFactory {
 			}
 
 			@Override
-			protected Object value(Object wrapper) {
+			protected Object getValue(Object wrapper) {
 				@SuppressWarnings("unchecked")
 				var m = (Map<String, Object>) wrapper;
 				return m.get("value");
 			}
 
 			@Override
-			protected void value(Object value, Object wrapper) {
+			protected void setValue(Object value, Object wrapper) {
 				@SuppressWarnings("unchecked")
 				var m = (Map<String, Object>) wrapper;
 				m.put("value", value);
@@ -189,56 +264,12 @@ public class TemplateHandlerFactory implements HandlerFactory {
 		return e;
 	}
 
-	protected Interpolator buildInterpolator(Function<String, Object> e, ExchangeContext context) {
-		var i = new Interpolator() {
-
-			@Override
-			protected void printResult(Object object, PrintWriter writer) {
-				@SuppressWarnings("unchecked")
-				var m = object instanceof Map ? (Map<String, Object>) object : null;
-				var n = m != null ? (Method) m.get("method") : null;
-				if (n != null && n.isAnnotationPresent(Include.class)) {
-					var u = (URI) m.get("value");
-					if (u != null) {
-						var rq = context.getRequest();
-						var rq2 = new FilterHttpRequest(rq) {
-
-							@Override
-							public URI getURI() {
-								return u;
-							}
-						};
-						var h = includeFactory.createHandler(rq2);
-						writer.flush();
-						context.setRequest(rq2);
-						try {
-							h.handle(context);
-						} catch (IOException x) {
-							throw new UncheckedIOException(x);
-						} finally {
-							context.setRequest(rq);
-						}
-					}
-				} else {
-					var v = m != null ? m.get("value") : object;
-					if (v instanceof Stream s)
-						for (var i = s.iterator(); i.hasNext();)
-							print(i.next(), writer, context);
-					else
-						print(v, writer, context);
-				}
-			}
-		};
-		i.setEvaluators(Map.of('$', e));
-		return i;
-	}
-
 	protected void print(Object object, PrintWriter writer, ExchangeContext context) {
 		var h = createHandler(object);
 		if (h != null) {
 			writer.flush();
 			try {
-				h.handle(context);
+				h.accept(context);
 			} catch (IOException x) {
 				throw new UncheckedIOException(x);
 			}

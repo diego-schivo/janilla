@@ -30,10 +30,10 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 
 import com.janilla.http.ExchangeContext;
-import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpResponse.Status;
+import com.janilla.io.IO;
 
 public class ExceptionHandlerFactory implements HandlerFactory {
 
@@ -56,7 +56,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 			var c = new ExchangeContext();
 			c.setRequest(q);
 			c.setResponse(s);
-			h.handle(c);
+			h.accept(c);
 		}
 
 		var t = o.toString();
@@ -70,7 +70,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object) {
 		if (object instanceof Exception e) {
 			var f = e.getClass().getAnnotation(Error.class);
 			return c -> handle(f, c);

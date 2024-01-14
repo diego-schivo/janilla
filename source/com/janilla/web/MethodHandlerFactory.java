@@ -42,7 +42,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.janilla.http.ExchangeContext;
-import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpRequest;
@@ -74,9 +73,8 @@ public class MethodHandlerFactory implements HandlerFactory {
 			} catch (SecurityException e) {
 				throw new RuntimeException(e);
 			}
-			return m != null ? new Invocation(m, c, null) : null;
+			return m != null ? new MethodInvocation(m, c, null) : null;
 		});
-//		f1.setArgumentsResolver((i, d) -> null);
 		var f2 = new TemplateHandlerFactory();
 		f2.setToReader(o -> {
 			var r = new InputStreamReader(new ByteArrayInputStream(o.toString().getBytes()));
@@ -113,7 +111,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 			var d = new ExchangeContext();
 			d.setRequest(rq);
 			d.setResponse(rs);
-			h.handle(d);
+			h.accept(d);
 		}
 
 		var s = os.toString();
@@ -127,25 +125,25 @@ public class MethodHandlerFactory implements HandlerFactory {
 				""") : s;
 	}
 
-	protected Function<HttpRequest, Invocation> toInvocation;
+	protected Function<HttpRequest, MethodInvocation> toInvocation;
 
-	protected BiFunction<Invocation, ExchangeContext, Object[]> argumentsResolver;
+	protected BiFunction<MethodInvocation, ExchangeContext, Object[]> argumentsResolver;
 
 	protected HandlerFactory renderFactory;
 
-	public Function<HttpRequest, Invocation> getToInvocation() {
+	public Function<HttpRequest, MethodInvocation> getToInvocation() {
 		return toInvocation;
 	}
 
-	public void setToInvocation(Function<HttpRequest, Invocation> toInvocation) {
+	public void setToInvocation(Function<HttpRequest, MethodInvocation> toInvocation) {
 		this.toInvocation = toInvocation;
 	}
 
-	public BiFunction<Invocation, ExchangeContext, Object[]> getArgumentsResolver() {
+	public BiFunction<MethodInvocation, ExchangeContext, Object[]> getArgumentsResolver() {
 		return argumentsResolver;
 	}
 
-	public void setArgumentsResolver(BiFunction<Invocation, ExchangeContext, Object[]> argumentsResolver) {
+	public void setArgumentsResolver(BiFunction<MethodInvocation, ExchangeContext, Object[]> argumentsResolver) {
 		this.argumentsResolver = argumentsResolver;
 	}
 
@@ -158,60 +156,80 @@ public class MethodHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object) {
 		var i = object instanceof HttpRequest q ? toInvocation.apply(q) : null;
 		return i != null ? c -> handle(i, c) : null;
 	}
 
-	Supplier<BiFunction<Invocation, ExchangeContext, Object[]>> argumentsResolver2 = Lazy
+	Supplier<BiFunction<MethodInvocation, ExchangeContext, Object[]>> argumentsResolver2 = Lazy
 			.of(() -> argumentsResolver != null ? argumentsResolver : new MethodArgumentsResolver());
 
-	protected void handle(Invocation i, ExchangeContext c) throws IOException {
+	protected void handle(MethodInvocation invocation, ExchangeContext context) throws IOException {
 		Object[] a;
 		try {
-			a = argumentsResolver2.get().apply(i, c);
+			a = argumentsResolver2.get().apply(invocation, context);
 		} catch (UncheckedIOException e) {
 			throw e.getCause();
 		}
 
 		Object o;
 		try {
-			o = a != null ? i.method().invoke(i.object(), a) : i.method().invoke(i.object());
-		} catch (InvocationTargetException x) {
-			throw new HandleException((Exception) x.getTargetException());
-		} catch (IllegalAccessException x) {
-			throw new RuntimeException(x);
+			o = a != null ? invocation.method().invoke(invocation.object(), a)
+					: invocation.method().invoke(invocation.object());
+		} catch (InvocationTargetException e) {
+			var f = e.getTargetException();
+			throw f instanceof Exception g ? new HandleException(g) : new RuntimeException(e);
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
 		}
 
-		var r = c.getResponse();
-		if (i.method().getReturnType() == Void.TYPE) {
-			if (r.getStatus() == null) {
-				r.setStatus(new Status(204, "No Content"));
-				r.getHeaders().set("Cache-Control", "no-cache");
+		var s = context.getResponse();
+		if (invocation.method().getReturnType() == Void.TYPE) {
+			if (s.getStatus() == null) {
+				s.setStatus(new Status(204, "No Content"));
+				s.getHeaders().set("Cache-Control", "no-cache");
 			}
-		} else if (o instanceof Path f && i.method().isAnnotationPresent(Attachment.class)) {
-			r.setStatus(new Status(200, "OK"));
-			var h = r.getHeaders();
+		} else if (o instanceof Path f && invocation.method().isAnnotationPresent(Attachment.class)) {
+			s.setStatus(new Status(200, "OK"));
+			var h = s.getHeaders();
 			h.set("Cache-Control", "max-age=3600");
 			h.set("Content-Disposition", "attachment; filename=\"" + f.getFileName() + "\"");
 			h.set("Content-Length", String.valueOf(Files.size(f)));
-			try (var fc = Files.newByteChannel(f); var bc = (WritableByteChannel) r.getBody()) {
+			try (var fc = Files.newByteChannel(f); var bc = (WritableByteChannel) s.getBody()) {
 				IO.transfer(fc, bc);
 			}
 		} else if (o instanceof URI v) {
-			r.setStatus(new Status(302, "Found"));
-			r.getHeaders().set("Cache-Control", "no-cache");
-			r.getHeaders().set("Location", v.toString());
+			s.setStatus(new Status(302, "Found"));
+			s.getHeaders().set("Cache-Control", "no-cache");
+			s.getHeaders().set("Location", v.toString());
 		} else {
-			r.setStatus(new Status(200, "OK"));
-			r.getHeaders().set("Cache-Control", "no-cache");
-			render(o, c);
+			s.setStatus(new Status(200, "OK"));
+
+			var h = s.getHeaders();
+			if (h.get("Cache-Control") == null)
+				s.getHeaders().set("Cache-Control", "no-cache");
+			if (h.get("Content-Type") == null) {
+				var n = context.getRequest().getURI().getPath();
+				var i = n != null ? n.lastIndexOf('.') : -1;
+				var e = i >= 0 ? n.substring(i + 1) : null;
+				if (e != null)
+					switch (e) {
+					case "html":
+						h.set("Content-Type", "text/html");
+						break;
+					case "js":
+						h.set("Content-Type", "text/javascript");
+						break;
+					}
+			}
+
+			render(o, context);
 		}
 	}
 
 	protected void render(Object object, ExchangeContext context) throws IOException {
 		var h = renderFactory.createHandler(object);
 		if (h != null)
-			h.handle(context);
+			h.accept(context);
 	}
 }

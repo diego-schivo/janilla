@@ -45,21 +45,20 @@ public class Interpolator {
 		var i = new Interpolator();
 		i.setEvaluators(Map.of('$', e));
 
-		var s = """
+		var j = new ByteArrayInputStream("""
 				foo bar
-				baz ${s} ${r.s} qux""";
-		var is = new ByteArrayInputStream(s.getBytes());
-		var os = new ByteArrayOutputStream();
-		try (var r = new BufferedReader(new InputStreamReader(is)); var w = new PrintWriter(os)) {
+				baz ${s} ${r.s} qux""".getBytes());
+		var o = new ByteArrayOutputStream();
+		try (var r = new BufferedReader(new InputStreamReader(j)); var w = new PrintWriter(o)) {
 			r.lines().forEach(l -> i.println(l, w));
 		}
 
-		var t = os.toString();
-		System.out.println(t);
-		assert Objects.equals(t, """
+		var s = o.toString();
+		System.out.println(s);
+		assert Objects.equals(s, """
 				foo bar
 				baz foo bar qux
-				""") : t;
+				""") : s;
 	}
 
 	protected Map<Character, Function<String, Object>> evaluators;
@@ -86,14 +85,14 @@ public class Interpolator {
 			writer.print(template.substring(j + 1, i));
 			j = template.indexOf('}', i + 2);
 			var e = template.substring(i + 2, j);
-			var r = evaluators.get(template.charAt(i)).apply(e);
-			printResult(r, writer);
+			var o = evaluators.get(template.charAt(i)).apply(e);
+			print(o, writer);
 			i = indexOf(template, prefixes.get(), j + 1);
 		} while (i >= 0);
 		writer.println(template.substring(j + 1));
 	}
 
-	protected void printResult(Object object, PrintWriter writer) {
+	protected void print(Object object, PrintWriter writer) {
 		writer.print(object);
 	}
 

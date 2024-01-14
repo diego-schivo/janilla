@@ -57,8 +57,9 @@ class ReflectionValueIterator extends ValueIterator {
 			var c = object.getClass();
 			i = new ObjectIterator(Reflection.properties(c).map(p -> {
 				var g = Reflection.getter(c, p);
-				var s = Reflection.setter(c, p);
-				return g != null && s != null ? Map.entry(p, g) : null;
+//				var s = Reflection.setter(c, p);
+//				return g != null && s != null ? Map.entry(p, g) : null;
+				return g != null ? Map.entry(p, g) : null;
 			}).filter(Objects::nonNull).map(e -> {
 				Object v;
 				try {

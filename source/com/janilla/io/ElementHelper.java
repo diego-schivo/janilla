@@ -243,6 +243,8 @@ public interface ElementHelper<E> {
 			}
 			var b = new byte[l];
 			buffer.get(p + 4, b);
+			if (element == null)
+				throw new RuntimeException();
 			return new String(b).compareTo(element);
 		}
 	};

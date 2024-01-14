@@ -47,9 +47,9 @@ public class Crud<E> {
 	protected Class<E> type;
 
 	protected Database database;
-	
+
 	protected Function<E, Object> formatter;
-	
+
 	protected Function<Object, E> parser;
 
 	protected Map<String, IndexEntryGetter> indexEntryGetters = new HashMap<>();
@@ -137,6 +137,10 @@ public class Crud<E> {
 				throw new UncheckedIOException(e);
 			}
 		});
+	}
+
+	public <R> Stream<R> indexApply(IO.Function<Long, R> function) throws IOException {
+		return indexApply(null, null, function);
 	}
 
 	public <R> Stream<R> indexApply(String name, Object value, IO.Function<Long, R> function) throws IOException {

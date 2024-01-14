@@ -34,27 +34,23 @@ class Rendering {
 		return this.stack.at(-1).key;
 	}
 
-	get path() {
-		return this.stack ? this.stack.map(e => e.key).join('/') : '';
-	}
-
-	render = async (object, template, stack) => {
+	async render(object, template, stack) {
 		const s = this.stack;
 		if (stack)
 			this.stack = stack;
 		try {
-			return template ? await template(this.renderer(object)) : await object.render();
+			return template ? await template(this.renderer(object)) : await this.renderObject(object);
 		} finally {
 			this.stack = s;
 		}
 	}
 
-	renderer = object => {
+	renderer(object) {
 		return (async (expression, escape) => {
 			let v;
 			if (expression === '') v = object;
 			else {
-				const e = typeof expression === 'string' && expression.includes('.') ? expression.split('.') : [expression];
+				const e = typeof expression === 'string' ? expression.split('.') : [expression];
 				let o = object, i = 0;
 				try {
 					for (let k of e) {
@@ -79,7 +75,7 @@ class Rendering {
 		for (let i = this.stack.length - 1; i >= 0; i--) {
 			const o = this.stack[i].object;
 			if (o && Reflect.has(o, 'render') && typeof o.render === 'function') {
-				v = await o.render(k);
+				v = await o.render(k, this);
 				if (v !== undefined) break;
 			}
 			if (!loop) break;
@@ -93,14 +89,18 @@ class Rendering {
 				}
 				if (!loop) break;
 			}
+		return await this.renderObject(v);
+	}
+
+	async renderObject(v) {
 		if (Array.isArray(v)) {
 			const w = [];
 			for (let i = 0; i < v.length; i++) w.push(await this.renderer(v)(i));
 			return w.join('');
 		}
 		if (v && typeof v === 'object' && Reflect.has(v, 'render') && typeof v.render === 'function')
-			v = await v.render();
-		if (v === undefined || v === null) return '';
+			v = await v.render(undefined, this);
+		v ??= '';
 		return v;
 	}
 }

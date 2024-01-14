@@ -1,3 +1,27 @@
+/*
+ * Copyright (c) 2024, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
 package com.janilla.persistence;
 
 import java.io.IOException;
@@ -6,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import com.janilla.database.BTree;
 import com.janilla.database.Database;
@@ -21,7 +44,7 @@ public class PersistenceBuilder {
 
 	private int order = 100;
 
-	private Supplier<Stream<Class<?>>> types;
+	private Iterable<Class<?>> types;
 
 	private Supplier<Persistence> persistence;
 
@@ -33,7 +56,7 @@ public class PersistenceBuilder {
 		this.order = order;
 	}
 
-	public void setTypes(Supplier<Stream<Class<?>>> types) {
+	public void setTypes(Iterable<Class<?>> types) {
 		this.types = types;
 	}
 
@@ -67,7 +90,8 @@ public class PersistenceBuilder {
 		var p = persistence != null ? persistence.get() : new Persistence();
 		p.database = d;
 		p.configuration = new Configuration();
-		types.get().forEach(p::configure);
+		for (var t : types)
+			p.configure(t);
 
 		d.setInitializeStore((n, s) -> {
 			@SuppressWarnings("unchecked")

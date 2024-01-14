@@ -39,7 +39,6 @@ import java.util.stream.Stream;
 import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.IO;
-import com.janilla.io.IO.UnaryOperator;
 
 public class Index<K, V> {
 
@@ -198,7 +197,7 @@ public class Index<K, V> {
 		var t = btree.get();
 		var k = new KeyAndValues<K>(key, new BlockReference(-1, -1, 0), 0);
 		var a = new A();
-		UnaryOperator<KeyAndValues<K>> o = i -> {
+		IO.UnaryOperator<KeyAndValues<K>> o = i -> {
 			var u = new BTree<V>();
 			u.order = t.order;
 			u.channel = t.channel;

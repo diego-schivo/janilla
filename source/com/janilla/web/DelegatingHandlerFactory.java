@@ -31,9 +31,9 @@ import java.nio.channels.Channels;
 import java.util.function.Function;
 
 import com.janilla.http.ExchangeContext;
-import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
+import com.janilla.io.IO;
 
 public class DelegatingHandlerFactory implements HandlerFactory {
 
@@ -86,10 +86,10 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 						var h = f.createHandler(q);
 						if (h == null)
 							throw new NotFoundException();
-						h.handle(c);
+						h.accept(c);
 					} catch (Exception e) {
 						var h = f.createHandler(e);
-						h.handle(c);
+						h.accept(c);
 					}
 				}
 
@@ -116,18 +116,18 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 			}
 	}
 
-	Function<Object, HttpHandler> toHandler;
+	Function<Object, IO.Consumer<ExchangeContext>> toHandler;
 
-	public Function<Object, HttpHandler> getToHandler() {
+	public Function<Object, IO.Consumer<ExchangeContext>> getToHandler() {
 		return toHandler;
 	}
 
-	public void setToHandler(Function<Object, HttpHandler> toHandler) {
+	public void setToHandler(Function<Object, IO.Consumer<ExchangeContext>> toHandler) {
 		this.toHandler = toHandler;
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object) {
 		return toHandler != null ? toHandler.apply(object) : null;
 	}
 }

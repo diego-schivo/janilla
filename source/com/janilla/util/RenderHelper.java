@@ -22,12 +22,13 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.web;
+package com.janilla.util;
 
-import com.janilla.http.ExchangeContext;
-import com.janilla.io.IO;
+public interface RenderHelper {
 
-public interface HandlerFactory {
+	static Object NOT_RENDERED = new Object();
 
-	IO.Consumer<ExchangeContext> createHandler(Object object);
+	default Object tryToRender(String name) {
+		return NOT_RENDERED;
+	}
 }
