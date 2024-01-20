@@ -41,7 +41,7 @@ public class Stores {
 
 	public static void main(String[] args) throws Exception {
 		var o = 3;
-		var f = Files.createTempFile("stores", null);
+		var f = Files.createTempFile("stores", "");
 		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
 
@@ -52,13 +52,13 @@ public class Stores {
 					var u = m.getFreeBTree();
 					u.setOrder(o);
 					u.setChannel(c);
-					u.setRoot(BTree.readReference(c, 0));
-					m.setAppendPosition(Math.max(2 * (8 + 4), c.size()));
+					u.setRoot(BlockReference.read(c, 0));
+					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
 
 					t.setOrder(o);
 					t.setChannel(c);
 					t.setMemory(m);
-					t.setRoot(BTree.readReference(c, 8 + 4));
+					t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
 				});
 				s.setInitializeStore((n, t) -> {
 					@SuppressWarnings("unchecked")
@@ -71,11 +71,11 @@ public class Stores {
 			var i = new long[1];
 			{
 				var s = g.get();
-				s.<String>accept("articles", t -> {
+				s.perform("articles", t -> {
 					i[0] = t.create(j -> Json.format(Map.of("id", j, "title", "Foo")));
 					t.update(i[0], u -> {
 						@SuppressWarnings("unchecked")
-						var m = (Map<String, Object>) Json.parse(u);
+						var m = (Map<String, Object>) Json.parse((String) u);
 						m.put("title", "FooBarBazQux");
 						return Json.format(m);
 					});
@@ -86,23 +86,23 @@ public class Stores {
 
 			{
 				var s = g.get();
-				s.<String>accept("articles", t -> {
-					var m = Json.parse(t.read(i[0]));
+				s.perform("articles", t -> {
+					var m = Json.parse((String) t.read(i[0]));
 					System.out.println(m);
-					assert m.equals(Map.of("id", i[0], "name", "FooBarBazQux")) : m;
+					assert m.equals(Map.of("id", (int) i[0], "title", "FooBarBazQux")) : m;
 				});
 			}
 		}
 	}
 
-	IO.Consumer<BTree<NameAndStore>> initializeBTree;
+	private IO.Consumer<BTree<NameAndStore>> initializeBTree;
 
-	IO.BiConsumer<String, Store<?>> initializeStore;
+	private IO.BiConsumer<String, Store<?>> initializeStore;
 
-	IO.Supplier<BTree<NameAndStore>> btree = IO.Lazy.of(() -> {
+	private IO.Supplier<BTree<NameAndStore>> btree = IO.Lazy.of(() -> {
 		var t = new BTree<NameAndStore>();
 		initializeBTree.accept(t);
-		t.helper = NameAndStore.HELPER;
+		t.setHelper(NameAndStore.HELPER);
 		return t;
 	});
 
@@ -114,46 +114,27 @@ public class Stores {
 		this.initializeStore = initializeStore;
 	}
 
-	public <E> void accept(String name, IO.Consumer<Store<E>> consumer) throws IOException {
-		var t = btree.get();
-		t.getOrAdd(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)), n -> {
-			var s = new Store<E>();
-			s.initializeBTree = u -> {
-				u.order = t.order;
-				u.channel = t.channel;
-				u.memory = t.memory;
-				u.root = n.root;
-			};
-			s.idAndSize = n.idAndSize;
-			initializeStore.accept(name, s);
-			consumer.accept(s);
-			var r = s.btree.get().root;
-			var i = s.idAndSize;
-			return r.position() != n.root.position() || !i.equals(n.idAndSize) ? new NameAndStore(name, r, i) : null;
-		});
+	public void create(String name) throws IOException {
+		btree.get().getOrAdd(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)));
 	}
 
-	public <E, R> R apply(String name, IO.Function<Store<E>, R> function) throws IOException {
+	public <E> void perform(String name, IO.Consumer<Store<E>> operation) throws IOException {
 		var t = btree.get();
-		var o = new Object[1];
-		t.getOrAdd(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)), n -> {
+		t.get(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)), n -> {
 			var s = new Store<E>();
-			s.initializeBTree = u -> {
-				u.order = t.order;
-				u.channel = t.channel;
-				u.memory = t.memory;
-				u.root = n.root;
-			};
-			s.idAndSize = n.idAndSize;
+			s.setInitializeBTree(u -> {
+				u.setOrder(t.getOrder());
+				u.setChannel(t.getChannel());
+				u.setMemory(t.getMemory());
+				u.setRoot(n.root);
+			});
+			s.setIdAndSize(n.idAndSize);
 			initializeStore.accept(name, s);
-			o[0] = function.apply(s);
-			var r = s.btree.get().root;
-			var i = s.idAndSize;
+			operation.accept(s);
+			var r = s.getBTree().getRoot();
+			var i = s.getIdAndSize();
 			return r.position() != n.root.position() || !i.equals(n.idAndSize) ? new NameAndStore(name, r, i) : null;
 		});
-		@SuppressWarnings("unchecked")
-		var r = (R) o[0];
-		return r;
 	}
 
 	public record NameAndStore(String name, BlockReference root, IdAndSize idAndSize) {
@@ -163,7 +144,7 @@ public class Stores {
 			@Override
 			public byte[] getBytes(NameAndStore element) {
 				var b = element.name().getBytes();
-				var c = ByteBuffer.allocate(4 + b.length + (8 + 4) + 2 * 8);
+				var c = ByteBuffer.allocate(4 + b.length + BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH);
 				c.putInt(b.length);
 				c.put(b);
 				c.putLong(element.root.position());
@@ -175,7 +156,7 @@ public class Stores {
 
 			@Override
 			public int getLength(ByteBuffer buffer) {
-				return 4 + buffer.getInt(buffer.position()) + (8 + 4) + 2 * 8;
+				return 4 + buffer.getInt(buffer.position()) + BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH;
 			}
 
 			@Override

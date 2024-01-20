@@ -36,49 +36,17 @@ import java.util.Arrays;
 
 import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
+import com.janilla.io.ElementHelper.SortOrder;
+import com.janilla.io.ElementHelper.TypeAndOrder;
 import com.janilla.io.IO;
 
 public class Indexes {
 
 	public static void main(String[] args) throws Exception {
 		var o = 3;
-		var f = Files.createTempFile("indexes", null);
+		var f = Files.createTempFile("indexes", "");
 		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
-
-			record IdAndDate(long id, Instant date) {
-
-				static ElementHelper<IdAndDate> HELPER = new ElementHelper<>() {
-
-					@Override
-					public byte[] getBytes(IdAndDate element) {
-						var b = ByteBuffer.allocate(2 * 8);
-						b.putLong(element.id);
-						b.putLong(element.date.toEpochMilli());
-						return b.array();
-					}
-
-					@Override
-					public int getLength(ByteBuffer buffer) {
-						return 2 * 8;
-					}
-
-					@Override
-					public IdAndDate getElement(ByteBuffer buffer) {
-						var i = buffer.getLong();
-						var d = Instant.ofEpochMilli(buffer.getLong());
-						return new IdAndDate(i, d);
-					}
-
-					@Override
-					public int compare(ByteBuffer buffer, IdAndDate element) {
-						var m = buffer.getLong(buffer.position() + 8);
-						var n = element.date.toEpochMilli();
-						return Long.compare(m, n);
-					}
-				};
-			}
-
 			IO.Supplier<Indexes> g = () -> {
 				var i = new Indexes();
 				i.setInitializeBTree(t -> {
@@ -86,30 +54,31 @@ public class Indexes {
 					var u = m.getFreeBTree();
 					u.setOrder(o);
 					u.setChannel(c);
-					u.setRoot(BTree.readReference(c, 0));
-					m.setAppendPosition(Math.max(2 * (8 + 4), c.size()));
+					u.setRoot(BlockReference.read(c, 0));
+					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
 
 					t.setOrder(o);
 					t.setChannel(c);
 					t.setMemory(m);
-					t.setRoot(BTree.readReference(c, 8 + 4));
+					t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
 				});
 				i.setInitializeIndex((n, j) -> {
 					@SuppressWarnings("unchecked")
-					var k = (Index<String, IdAndDate>) j;
+					var k = (Index<String, Object[]>) j;
 					k.setKeyHelper(ElementHelper.STRING);
-					k.setValueHelper(IdAndDate.HELPER);
+					k.setValueHelper(ElementHelper.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
+							new TypeAndOrder(Long.class, SortOrder.DESCENDING)));
 				});
 				return i;
 			};
 
 			{
 				var i = g.get();
-				i.accept("Article.tagList", j -> {
+				i.perform("Article.tagList", j -> {
 					j.add("foo",
-							new IdAndDate(0, LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC)));
+							new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 0L });
 					j.add("foo",
-							new IdAndDate(1, LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC)));
+							new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 1L });
 				});
 			}
 
@@ -117,10 +86,10 @@ public class Indexes {
 
 			{
 				var i = g.get();
-				i.accept("Article.tagList", j -> {
-					var k = j.list("foo").mapToLong(x -> ((IdAndDate) x).id).toArray();
+				i.perform("Article.tagList", j -> {
+					var k = j.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
 					System.out.println(Arrays.toString(k));
-					assert Arrays.equals(k, new long[] { 0, 1 }) : j;
+					assert Arrays.equals(k, new long[] { 1, 0 }) : j;
 				});
 			}
 		}
@@ -133,7 +102,7 @@ public class Indexes {
 	IO.Supplier<BTree<NameAndIndex>> btree = IO.Lazy.of(() -> {
 		var t = new BTree<NameAndIndex>();
 		initializeBTree.accept(t);
-		t.helper = NameAndIndex.HELPER;
+		t.setHelper(NameAndIndex.HELPER);
 		return t;
 	});
 
@@ -145,42 +114,25 @@ public class Indexes {
 		this.initializeIndex = initializeIndex;
 	}
 
-	public <K, V> void accept(String name, IO.Consumer<Index<K, V>> consumer) throws IOException {
-		var t = btree.get();
-		t.getOrAdd(new NameAndIndex(name, new BlockReference(-1, -1, 0)), n -> {
-			var i = new Index<K, V>();
-			i.initializeBTree = u -> {
-				u.order = t.order;
-				u.channel = t.channel;
-				u.memory = t.memory;
-				u.root = n.root;
-			};
-			initializeIndex.accept(name, i);
-			consumer.accept(i);
-			var r = i.btree.get().root;
-			return r.position() != n.root.position() ? new NameAndIndex(name, r) : null;
-		});
+	public void create(String name) throws IOException {
+		btree.get().getOrAdd(new NameAndIndex(name, new BlockReference(-1, -1, 0)));
 	}
 
-	public <K, V, R> R apply(String name, IO.Function<Index<K, V>, R> function) throws IOException {
+	public <K, V> void perform(String name, IO.Consumer<Index<K, V>> operation) throws IOException {
 		var t = btree.get();
-		var o = new Object[1];
-		t.getOrAdd(new NameAndIndex(name, new BlockReference(-1, -1, 0)), n -> {
+		t.get(new NameAndIndex(name, new BlockReference(-1, -1, 0)), n -> {
 			var i = new Index<K, V>();
-			i.initializeBTree = u -> {
-				u.order = t.order;
-				u.channel = t.channel;
-				u.memory = t.memory;
-				u.root = n.root;
-			};
+			i.setInitializeBTree(u -> {
+				u.setOrder(t.getOrder());
+				u.setChannel(t.getChannel());
+				u.setMemory(t.getMemory());
+				u.setRoot(n.root);
+			});
 			initializeIndex.accept(name, i);
-			o[0] = function.apply(i);
-			var r = i.btree.get().root;
+			operation.accept(i);
+			var r = i.getBTree().getRoot();
 			return r.position() != n.root.position() ? new NameAndIndex(name, r) : null;
 		});
-		@SuppressWarnings("unchecked")
-		var r = (R) o[0];
-		return r;
 	}
 
 	public record NameAndIndex(String name, BlockReference root) {
@@ -190,7 +142,7 @@ public class Indexes {
 			@Override
 			public byte[] getBytes(NameAndIndex element) {
 				var b = element.name().getBytes();
-				var c = ByteBuffer.allocate(4 + b.length + 8 + 4);
+				var c = ByteBuffer.allocate(4 + b.length + BlockReference.HELPER_LENGTH);
 				c.putInt(b.length);
 				c.put(b);
 				c.putLong(element.root.position());
@@ -200,7 +152,7 @@ public class Indexes {
 
 			@Override
 			public int getLength(ByteBuffer buffer) {
-				return 4 + buffer.getInt(buffer.position()) + 8 + 4;
+				return 4 + buffer.getInt(buffer.position()) + BlockReference.HELPER_LENGTH;
 			}
 
 			@Override

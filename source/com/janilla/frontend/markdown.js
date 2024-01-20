@@ -22,123 +22,241 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-export default function convertMarkdownIntoHTML(text) {
-	const l = {}, h = [], s = [];
-	let k;
-	text.split('\n').filter(e => {
-		const m = e.match(/^\[(.*)?\]: /);
-		if (!m)
-			return true;
-		e = e.substring(m[0].length);
-		const n = e.match(/^(([^<].*?)|<(.*?)>) ("(.*?)"|'(.*?)'|\((.*?)\))$/);
-		const o = { href: n ? (n[2] ?? n[3]) : e };
-		if (n) o.title = n[5] ?? n[6] ?? n[7];
-		l[m[1]] = o;
-		return false;
-	}).forEach((e, i, a) => {
-		if (k > 0) {
-			k--;
-			return;
-		}
-
-		if (s.at(-1) === 'code') {
-			e = e.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;') + '\n';
-			h.push(e);
-			return;
-		}
-
-		/*
-		if (!/\S/.test(e))
-			return;
-		*/
-
-		let m = e.match(/^(    |\t)+/);
-		let j = m ? m[1].replaceAll('    ', '\t').length : 0;
-		if (m)
-			e = e.substring(m[1].length);
-
-		if (/^(\*\*\*+|---+|___+)$/.test(e)) {
-			h.push('<hr />');
-			return;
-		}
-
-		m = e.match(/^(\d+\.|[-*+]) ?/);
-		if (j === s.length + 1) {
-			s.push('pre', 'code');
-			h.push(`<${s.at(-2)}>`, `<${s.at(-1)}>`);
-		} else if (s.length === j) {
-			if (m)
-				s[j] = `${m[1].at(-1) === '.' ? 'ol' : 'ul'}`;
-			else {
-				let n = e.match(/^(#+) /);
-				if (n) {
-					s[j] = `h${n[1].length}`;
-					e = e.substring(n[0].length);
-				} else {
-					n = e.match(/^(> +)/);
-					if (n) {
-						s[j] = 'blockquote';
-						e = e.substring(n[0].length);
-					} else
-						s[j] = 'p';
+function parseMarkdown(text) {
+	const s = [];
+	{
+		const e = { type: 'Document', children: [], links: [] };
+		s.push(e);
+	}
+	text.split('\n').forEach((l, i, ll) => {
+		const a = [s[0]], b = ['Document'];
+		for (let j = 1; ; j++) {
+			let t = undefined;
+			if (!t) {
+				const m = l.match(/^>([ >]|$)/);
+				if (m) {
+					t = 'Blockquote';
+					l = l.substring(m[1] === ' ' ? 2 : 1);
 				}
 			}
-			h.push(`<${s.at(-1)}>`);
-		} else if (s.length > j) {
-			if (['ol', 'ul'].includes(s.at(-1)))
-				h.push('</li>');
-			// while (s.length > j + 1)
-			while (s.length > j)
-				h.push(`</${s.pop()}>`);
-		}
-		if (m) {
-			e = e.substring(m[1].length);
-			h.push('<li>', e);
-			return;
-		}
-		if (s.length > j && ['ol', 'ul'].includes(s.at(-1)))
-			h.push('</li>');
+			if (!t) {
+				const m = l.match(/^    |^\t/);
+				if (m) {
+					if (['OrderedList', 'UnorderedList'].includes(b.at(-1))) {
+						t = 'ListItem';
+						l = l.substring(m[0].length);
+					} else if (s[j].type.endsWith('List'))
+						t = s[j].type;
+					else {
+						t = 'CodeBlock';
+						l = l.substring(m[0].length);
+					}
+				}
+			}
+			if (!t) {
+				const m = l.match(/^\d+\. /);
+				if (m) {
+					if (b.at(-1) === 'OrderedList') {
+						t = '!ListItem';
+						l = l.substring(2);
+					} else
+						t = 'OrderedList';
+				}
+			}
+			if (!t) {
+				const m = l.match(/^[-*+] /);
+				if (m) {
+					if (b.at(-1) === 'UnorderedList') {
+						t = '!ListItem';
+						l = l.substring(2);
+					} else
+						t = 'UnorderedList';
+				}
+			}
+			if (!t && l.length) {
+				let m = l.match(/^ *\[(.*?)\]: /);
+				if (m) {
+					const o = {};
+					s[0].links[m[1]] = o;
+					l = l.substring(m[0].length);
+					m = l.match(/ "(.*?)"$| '(.*?)'$| \((.*?)\)$/);
+					if (m) {
+						o.title = m[1] ?? m[2] ?? m[3];
+						l = l.substring(0, l.length - m[0].length);
+					}
+					if (l.startsWith('<') && l.endsWith('>')) l = l.substring(1, l.length - 1);
+					o.href = l;
+					return;
+				}
+				t = 'Paragraph';
+			}
 
-		/*
-		m = e.match(/^(#+) /);
-		if (m) {
-			e = e.substring(m[0].length);
-			h.push(`<h${m[1].length}>`, e, `</h${m[1].length}>`);
-			return;
+			if (t)
+				b.push(t);
+
+			const e = s[j];
+			if (e) {
+				const u = e.type;
+				if (b.length > 1 ? (t === u && a.length === j) : (u !== 'Paragraph'))
+					a.push(e);
+			}
+
+			if (b.length > 1 || j >= s.length - 1)
+				if (!t || ['CodeBlock', 'Paragraph'].includes(t))
+					break;
 		}
 
-		m = i + 1 < a.length && a[i + 1].match(/^(=+|-+)$/);
-		if (m) {
-			h.push(`<h${m[1].startsWith('=') ? 1 : 2}>`, e, `</h${m[1].startsWith('=') ? 1 : 2}>`);
-			k = 1;
-			return;
-		}
-		*/
+		while (s.length > a.length)
+			s.pop();
 
-		e = e.replace(/<(.*?)>/g, (_, p1) => `<a href="${p1.includes('@') ? 'mailto:' : ''}${p1}">${p1}</a>`);
-		e = e.replace(/\!\[(.*?)\]\((.*?)\)/g, (_, p1, p2) => {
-			const n = p2.match(/^(.*?) "(.*?)"$/);
-			return `<img src="${n ? n[1] : p2}"${n ? ` title="${n[2]}"` : ''} alt="${p1}" />`;
-		});
-		e = e.replace(/\[(.*?)\] ?\[(.*?)\]/g, (_, p1, p2) => {
-			const o = l[p2];
-			return `<a href="${o.href}"${o.title ? ` title="${o.title}"` : ''}>${p1}</a>`;
-		});
-		e = e.replace(/\[(.*?)\]\((.*?)\)/g, (_, p1, p2) => {
-			const n = p2.match(/^(.*?) "(.*?)"$/);
-			return `<a href="${n ? n[1] : p2}"${n ? ` title="${n[2]}"` : ''}>${p1}</a>`;
-		});
-		m = e.match(/( +)$/);
-		if (m && m[1].length >= 2)
-			e = e.substring(0, e.length - m[1].length) + '<br />';
-		h.push(e);
+		let e = s.at(-1);
+		switch (e.type) {
+			case 'CodeBlock':
+			case 'Paragraph':
+				e.lines.push(l);
+				break;
+			default:
+				for (let j = a.length; j < b.length; j++) {
+					let f;
+					switch (b[j]) {
+						case 'Blockquote':
+							f = { type: 'Blockquote', children: [] };
+							break;
+						case 'CodeBlock':
+							f = { type: 'CodeBlock', lines: [l] };
+							break;
+						case '!ListItem':
+							f = { type: 'ListItem', children: [] };
+							break;
+						case 'OrderedList':
+							f = { type: 'OrderedList', children: [] };
+							break;
+						case 'Paragraph':
+							f = { type: 'Paragraph', lines: [l] };
+							break;
+						case 'UnorderedList':
+							f = { type: 'UnorderedList', children: [] };
+							break;
+					}
+					e.children.push(f);
+					s.push(f);
+					e = f;
+				}
+				break;
+		}
 	});
-	if (s.length) {
-		if (['ol', 'ul'].includes(s.at(-1)))
-			h.push('</li>');
-		while (s.length)
-			h.push(`</${s.pop()}>`);
-	}
-	// console.log(h);
+	// console.log('s[0]', s[0]);
+	return s[0];
+}
+
+function formatMarkdownAsHTML(document) {
+	if (!document)
+		return '';
+	const s = [[document]];
+	const h = [];
+	do {
+		let q = s.at(-1);
+		let e = q[0];
+		switch (e.type) {
+			case 'Blockquote':
+				h.push('<blockquote>');
+				break;
+			case 'CodeBlock':
+				const l = e.lines.flatMap((l, i) => {
+					l = l.replace(/[<>]/g, m => {
+						switch (m) {
+							case '<':
+								return '&lt;';
+							case '>':
+								return '&gt;';
+						}
+					});
+					return i === 0 ? l : ['\n', l];
+				});
+				h.push('<pre>', '<code>', ...l, '</code>', '</pre>');
+				q.shift();
+				break;
+			case 'ListItem':
+				h.push('<li>');
+				break;
+			case 'OrderedList':
+				h.push('<ol>');
+				break;
+			case 'Paragraph':
+				function r(x) {
+					return x
+						.replace(/\*{2}(.*?)\*{2}/g, '<strong>$1</strong>')
+						.replace(/_{2}(.*?)_{2}/g, '<strong>$1</strong>')
+						.replace(/\*(.*?)\*/g, '<em>$1</em>')
+						.replace(/_(.*?)_/g, '<em>$1</em>')
+						.replace(/`(.*?)`/g, '<code>$1</code>')
+						.replace(/!\[(.*?)\]\((.*?)\)/g, (x, y, z) => {
+							const m = z.match(/ "(.*?)"$/);
+							return m ? `<img src="${z.substring(0, z.length - m[0].length)}" alt="${y}" title="${m[1]}" />` : `<img src="${z}" alt="${y}" />`;
+						}).replace(/\[(.*?)\]\((.*?)\)/g, (x, y, z) => {
+							const m = z.match(/ "(.*?)"$/);
+							return m ? `<a href="${z.substring(0, z.length - m[0].length)}" title="${m[1]}">${y}</a>` : `<a href="${z}">${y}</a>`;
+						}).replace(/\[(.*?)\] ?\[(.*?)\]/g, (x, y, z) => {
+							const o = document.links[z];
+							return o ? `<a ${Object.entries(o).map(([k, v]) => `${k}="${v}"`).join(' ')}>${y}</a>` : y;
+						}).replace(/\\(\*)/g, '$1');
+				}
+				if (e.lines.length === 1 && /^#+ /.test(e.lines[0])) {
+					const l = e.lines[0].indexOf(' ');
+					h.push(`<h${l}>`, r(e.lines[0].substring(l + 1)), `</h${l}>`);
+				} else if (e.lines.length === 2 && /^=+$|^-+$/.test(e.lines[1])) {
+					const l = e.lines[1].startsWith('=') ? 1 : 2;
+					h.push(`<h${l}>`, r(e.lines[0]), `</h${l}>`);
+				} else if (e.lines.length === 1 && /^\*{3,}$|^-{3,}$|^_{3,}$/.test(e.lines[0]))
+					h.push('<hr />');
+				else {
+					const d = s.at(-2)[0];
+					const t = r(e.lines.map(l => l.replace(/ {2,}$|<br>$/, '')
+						.replace(/<(.*?)>/g, (x, y) => {
+							return `<a href="${y.includes('@') ? 'mailto:' : ''}${y}">${y}</a>`;
+						}))
+						.join('<br />'));
+					if (d.type === 'ListItem' && e === d.children[0] && !['Blockquote', 'CodeBlock', 'Paragraph'].includes(d.children[1]?.type))
+						h.push(t);
+					else
+						h.push('<p>', t, '</p>');
+				}
+				q.shift();
+				break;
+			case 'UnorderedList':
+				h.push('<ul>');
+				break;
+		}
+
+		if (e.children) {
+			q = [...e.children];
+			s.push(q);
+		}
+
+		while (!q.length) {
+			s.pop();
+			if (!s.length)
+				break;
+			q = s.at(-1);
+			e = q.shift();
+			switch (e.type) {
+				case 'Blockquote':
+					h.push('</blockquote>');
+					break;
+				case 'ListItem':
+					h.push('</li>');
+					break;
+				case 'OrderedList':
+					h.push('</ol>');
+					break;
+				case 'UnorderedList':
+					h.push('</ul>');
+					break;
+			}
+		}
+	} while (s.length);
+	// console.log('h', h);
 	return h.join('');
 }
+
+export { parseMarkdown, formatMarkdownAsHTML };

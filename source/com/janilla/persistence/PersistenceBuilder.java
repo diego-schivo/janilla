@@ -31,11 +31,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Supplier;
 
-import com.janilla.database.BTree;
 import com.janilla.database.Database;
 import com.janilla.database.Memory;
+import com.janilla.database.Memory.BlockReference;
 import com.janilla.database.Store;
 import com.janilla.io.ElementHelper;
+import com.janilla.io.TransactionalByteChannel;
 import com.janilla.persistence.Persistence.Configuration;
 
 public class PersistenceBuilder {
@@ -65,10 +66,14 @@ public class PersistenceBuilder {
 	}
 
 	public Persistence build() throws IOException {
-		FileChannel c;
+		TransactionalByteChannel c;
 		{
-			var f = Files.createDirectories(file.getParent()).resolve(file.getFileName());
-			c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+			var d = Files.createDirectories(file.getParent());
+			var f1 = d.resolve(file.getFileName());
+			var f2 = d.resolve(file.getFileName() + ".transaction");
+			c = new TransactionalByteChannel(
+					FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
+					FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE));
 		}
 
 		var m = new Memory();
@@ -76,16 +81,16 @@ public class PersistenceBuilder {
 			var t = m.getFreeBTree();
 			t.setChannel(c);
 			t.setOrder(order);
-			t.setRoot(BTree.readReference(c, 0));
-			m.setAppendPosition(Math.max(3 * (8 + 4), c.size()));
+			t.setRoot(BlockReference.read(c, 0));
+			m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, c.size()));
 		}
 
 		var d = new Database();
 		d.setBTreeOrder(order);
 		d.setChannel(c);
-		d.setMemoryManager(m);
-		d.setStoresRoot(8 + 4);
-		d.setIndexesRoot(2 * (8 + 4));
+		d.setMemory(m);
+		d.setStoresRoot(BlockReference.HELPER_LENGTH);
+		d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
 
 		var p = persistence != null ? persistence.get() : new Persistence();
 		p.database = d;
@@ -99,9 +104,11 @@ public class PersistenceBuilder {
 			u.setElementHelper(ElementHelper.STRING);
 		});
 		d.setInitializeIndex((n, i) -> {
-			if (p.initialize(n, i))
+			if (p.initializeIndex(n, i))
 				return;
 		});
+
+		p.createStoresAndIndexes();
 		return p;
 	}
 }

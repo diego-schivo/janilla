@@ -24,6 +24,7 @@
  */
 package com.janilla.persistence;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -43,15 +44,15 @@ import com.janilla.reflect.Reflection;
 
 public class Persistence {
 
-	Database database;
+	protected Database database;
 
-	Configuration configuration;
+	protected Configuration configuration;
 
 	public Database getDatabase() {
 		return database;
 	}
 
-	public <K, V> boolean initialize(String name, com.janilla.database.Index<K, V> index) {
+	public <K, V> boolean initializeIndex(String name, com.janilla.database.Index<K, V> index) {
 		var i = configuration.indexInitializers.get(name);
 		if (i == null)
 			return false;
@@ -65,6 +66,13 @@ public class Persistence {
 		@SuppressWarnings("unchecked")
 		var c = (Crud<E>) configuration.cruds.get(class1);
 		return c;
+	}
+
+	protected void createStoresAndIndexes() throws IOException {
+		for (var t : configuration.cruds.keySet())
+			database.performTransaction(() -> database.createStore(t.getSimpleName()));
+		for (var k : configuration.indexInitializers.keySet())
+			database.performTransaction(() -> database.createIndex(k));
 	}
 
 	protected <E> Crud<E> newCrud(Class<E> type) {
@@ -83,7 +91,8 @@ public class Persistence {
 		if (d.parser == null)
 			d.parser = t -> Json.parse((String) t, Json.parseCollector(type));
 		configuration.cruds.put(type, d);
-		for (var i = Stream.concat(Stream.of(type), Reflection.properties(type).map(n -> {
+
+		var r = Stream.concat(Stream.of(type), Reflection.properties(type).map(n -> {
 			Field f;
 			try {
 				f = type.getDeclaredField(n);
@@ -93,49 +102,51 @@ public class Persistence {
 				throw new RuntimeException(e);
 			}
 			return f;
-		}).filter(Objects::nonNull)).iterator();i.hasNext();) {
-			var o = i.next();
-			var j = o.getAnnotation(Index.class);
-			if (j == null)
+		}).filter(Objects::nonNull)).iterator();
+		while (r.hasNext()) {
+			var e = r.next();
+			var i = e.getAnnotation(Index.class);
+			if (i == null)
 				continue;
 
-			var n = o instanceof Field f ? f.getName() : null;
-			var u = n != null ? Reflection.getter(type, n).getReturnType() : null;
-			var b = new IndexInitializer<K, V>();
-			if (u == null) {
+			var n = e instanceof Field f ? f.getName() : null;
+			var t = n != null ? Reflection.getter(type, n).getReturnType() : null;
+			var j = new IndexInitializer<K, V>();
+			if (t == null) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.NULL;
-				b.keyHelper = h;
-			} else if (u == Long.class) {
+				j.keyHelper = h;
+			} else if (t == Long.class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.LONG;
-				b.keyHelper = h;
-			} else if (u == String.class || u == Collection.class) {
+				j.keyHelper = h;
+			} else if (t == String.class || t == Collection.class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.STRING;
-				b.keyHelper = h;
+				j.keyHelper = h;
 			} else
 				throw new RuntimeException();
 
-			var x = j.sort();
-			if (x.startsWith("+") || x.startsWith("-"))
-				x = x.substring(1);
-			var y = !x.isEmpty() ? Reflection.getter(type, x) : null;
-			if (y == null || y.getReturnType() == null) {
+			var s = i.sort();
+			if (s.startsWith("+") || s.startsWith("-"))
+				s = s.substring(1);
+			var g = !s.isEmpty() ? Reflection.getter(type, s) : null;
+			if (g != null && g.getReturnType() != null) {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<V>) ElementHelper.of(type, "id");
-				b.valueHelper = h;
+				var h = (ElementHelper<V>) ElementHelper.of(type, i.sort(), "id");
+				j.valueHelper = h;
 			} else {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<V>) ElementHelper.of(type, j.sort(), "id");
-				b.valueHelper = h;
+				var h = (ElementHelper<V>) ElementHelper.of(type, "id");
+				j.valueHelper = h;
 			}
-			configuration.indexInitializers.put(type.getSimpleName() + (n != null ? "." + n : ""), b);
+			var k = type.getSimpleName() + (n != null ? "." + n : "");
+			configuration.indexInitializers.put(k, j);
 
-			var g = new IndexEntryGetter();
-			g.keyGetter = n != null && !n.isEmpty() ? Reflection.getter(type, n) : null;
-			g.sortGetter = y;
-			d.indexEntryGetters.put(n, g);
+			var v = new IndexEntryGetter();
+			v.keyGetter = n != null && !n.isEmpty() ? Reflection.getter(type, n) : null;
+			v.sortGetter = g;
+			d.indexEntryGetters.put(n, v);
 		}
 	}
 
@@ -164,10 +175,10 @@ public class Persistence {
 
 		Method sortGetter;
 
-		Entry<Object, Object> getIndexEntry(Object entity, Long id) throws ReflectiveOperationException {
+		Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
 			var k = keyGetter != null ? keyGetter.invoke(entity) : null;
 			var v = sortGetter != null ? new Object[] { sortGetter.invoke(entity), id } : new Object[] { id };
-			return new SimpleEntry<>(k, v);
+			return keyGetter == null || k != null ? new SimpleEntry<>(k, v) : null;
 		}
 	}
 }

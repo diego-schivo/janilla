@@ -78,6 +78,10 @@ class StringScanner implements Scanner {
 					buffer.append('\n');
 					a = true;
 					yield 1;
+				case 't':
+					buffer.append('\t');
+					a = true;
+					yield 1;
 				default:
 					a = false;
 					yield -1;

@@ -190,16 +190,6 @@ public interface IO {
 		return n;
 	}
 
-//	static void transfer(ReadableByteChannel source, WritableByteChannel destination) throws IOException {
-//		var a = new byte[DEFAULT_BUFFER_CAPACITY];
-//		for (;;) {
-//			var r = read(source, a);
-//			if (r > 0)
-//				write(a, destination, r);
-//			if (r < a.length)
-//				break;
-//		}
-//	}
 	static void transfer(ReadableByteChannel source, WritableByteChannel destination) throws IOException {
 		var b = ByteBuffer.allocate(IO.DEFAULT_BUFFER_CAPACITY);
 		repeat(x -> {
@@ -217,28 +207,6 @@ public interface IO {
 		return write(ByteBuffer.wrap(source), destination);
 	}
 
-//	static int write(byte[] source, WritableByteChannel destination, int length) throws IOException {
-//		if (length < 0 || length > source.length)
-//			throw new IllegalArgumentException("length=" + length);
-//		if (length == 0)
-//			return 0;
-//		var b = ByteBuffer.wrap(source);
-//		var l = b.limit();
-//		if (length < b.remaining())
-//			b.limit(b.position() + length);
-//		try {
-//			return write(b, destination);
-//		} finally {
-//			b.limit(l);
-//		}
-//	}
-//
-//	static int write(ByteBuffer source, WritableByteChannel destination) throws IOException {
-//		var n = 0;
-//		while (source.hasRemaining())
-//			n += destination.write(source);
-//		return n;
-//	}
 	static int write(ByteBuffer source, WritableByteChannel destination) throws IOException {
 		return repeat(x -> destination.write(source), source.remaining());
 	}
@@ -252,6 +220,11 @@ public interface IO {
 			n += i;
 		}
 		return n;
+	}
+
+	interface Runnable {
+
+		void run() throws IOException;
 	}
 
 	interface Consumer<T> {
@@ -274,9 +247,19 @@ public interface IO {
 		R apply(T t, U u) throws IOException;
 	}
 
+	interface Predicate<T> {
+
+		boolean test(T t) throws IOException;
+	}
+
 	interface Supplier<T> {
 
 		T get() throws IOException;
+	}
+
+	interface BooleanSupplier {
+
+		boolean getAsBoolean() throws IOException;
 	}
 
 	interface IntSupplier {

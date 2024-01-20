@@ -34,15 +34,18 @@ class Rendering {
 		return this.stack.at(-1).key;
 	}
 
-	async render(object, template, stack) {
-		const s = this.stack;
-		if (stack)
-			this.stack = stack;
-		try {
-			return template ? await template(this.renderer(object)) : await this.renderObject(object);
-		} finally {
-			this.stack = s;
+	async render(object, template) {
+		if (template)
+			return await template(this.renderer(object));
+		if (Array.isArray(object)) {
+			const a = [];
+			for (let i = 0; i < object.length; i++) a.push(await this.renderer(object)(i));
+			return a.join('');
 		}
+		if (object && typeof object === 'object' && Reflect.has(object, 'render') && typeof object.render === 'function')
+			object = await object.render(undefined, this);
+		object ??= '';
+		return object;
 	}
 
 	renderer(object) {
@@ -78,7 +81,7 @@ class Rendering {
 				v = await o.render(k, this);
 				if (v !== undefined) break;
 			}
-			if (!loop) break;
+			// if (!loop) break;
 		}
 		if (v === undefined)
 			for (let i = this.stack.length - 1; i >= 0; i--) {
@@ -89,19 +92,7 @@ class Rendering {
 				}
 				if (!loop) break;
 			}
-		return await this.renderObject(v);
-	}
-
-	async renderObject(v) {
-		if (Array.isArray(v)) {
-			const w = [];
-			for (let i = 0; i < v.length; i++) w.push(await this.renderer(v)(i));
-			return w.join('');
-		}
-		if (v && typeof v === 'object' && Reflect.has(v, 'render') && typeof v.render === 'function')
-			v = await v.render(undefined, this);
-		v ??= '';
-		return v;
+		return await this.render(v);
 	}
 }
 

@@ -54,7 +54,7 @@ import com.janilla.io.IO;
 import com.janilla.net.Net;
 import com.janilla.web.HandleException;
 
-public class HttpServer {
+public class HttpServer implements IO.Runnable {
 
 	public static void main(String[] args) throws IOException {
 		var k = Path.of(System.getProperty("user.home")).resolve("Downloads/jssesamples/samples/sslengine/testkeys");
@@ -80,7 +80,7 @@ public class HttpServer {
 		});
 		new Thread(() -> {
 			try {
-				s.serve();
+				s.run();
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -230,7 +230,8 @@ public class HttpServer {
 		return address;
 	}
 
-	public void serve() throws IOException {
+	@Override
+	public void run() throws IOException {
 		{
 			var c = ServerSocketChannel.open();
 			c.configureBlocking(true);

@@ -59,7 +59,7 @@ public class HttpClient implements Closeable {
 		});
 		new Thread(() -> {
 			try {
-				s.serve();
+				s.run();
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

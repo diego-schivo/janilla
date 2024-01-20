@@ -22,71 +22,47 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.json;
+package com.janilla.io;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 
-import com.janilla.json.JsonToken.Type;
+public class FilterSeekableByteChannel extends FilterChannel<SeekableByteChannel> implements SeekableByteChannel {
 
-class StringIterator implements Iterator<JsonToken<?>> {
-
-	String string;
-
-	int state;
-
-	JsonToken<?> token;
-
-	StringIterator(String string) {
-		this.string = string;
+	public FilterSeekableByteChannel(SeekableByteChannel channel) {
+		super(channel);
 	}
 
 	@Override
-	public boolean hasNext() {
-		while (token == null && state != 1) {
-			var s = state;
-			state = switch (s) {
-			case 0 -> {
-				var b = new StringBuilder();
-				for (var i = string.chars().iterator(); i.hasNext();) {
-					var c = (char) i.nextInt();
-					switch (c) {
-					case '"':
-						b.append("\\\"");
-						break;
-					case '\\':
-						b.append("\\\\");
-						break;
-					case '\n':
-						b.append("\\n");
-						break;
-					case '\t':
-						b.append("\\t");
-						break;
-					default:
-						b.append(c);
-						break;
-					}
-				}
-				token = new JsonToken<>(Type.STRING, b.toString());
-				yield 1;
-			}
-			default -> s;
-			};
-
-//			System.out.println("StringIterator.hasNext " + s + " -> " + state);
-
-		}
-		return token != null;
+	public int read(ByteBuffer dst) throws IOException {
+		return channel.read(dst);
 	}
 
 	@Override
-	public JsonToken<?> next() {
-		if (hasNext()) {
-			var t = token;
-			token = null;
-			return t;
-		} else
-			throw new NoSuchElementException();
+	public int write(ByteBuffer src) throws IOException {
+		return channel.write(src);
+	}
+
+	@Override
+	public long position() throws IOException {
+		return channel.position();
+	}
+
+	@Override
+	public SeekableByteChannel position(long newPosition) throws IOException {
+		channel.position(newPosition);
+		return this;
+	}
+
+	@Override
+	public long size() throws IOException {
+		return channel.size();
+	}
+
+	@Override
+	public SeekableByteChannel truncate(long size) throws IOException {
+		channel.truncate(size);
+		return this;
 	}
 }

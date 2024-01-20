@@ -25,7 +25,6 @@
 package com.janilla.persistence;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -35,7 +34,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
+import java.util.stream.LongStream;
 
 import com.janilla.database.Database;
 import com.janilla.io.IO;
@@ -54,40 +53,42 @@ public class Crud<E> {
 
 	protected Map<String, IndexEntryGetter> indexEntryGetters = new HashMap<>();
 
-	public Long create(E entity) throws IOException {
-		var d = database;
-		var n = type.getSimpleName();
-		var i = d.storeApply(n, s -> s.create(j -> {
+	public long create(E entity) throws IOException {
+		var i = new long[1];
+		database.performOnStore(type.getSimpleName(), s -> i[0] = s.create(j -> {
 			try {
 				Reflection.setter(type, "id").invoke(entity, j);
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
-			return formatter.apply(entity);
+			var t = formatter.apply(entity);
+//			System.out.println("Crud.create t=" + t);
+			return t;
 		}));
-		for (var e : getIndexMap(entity, i).entrySet()) {
-			var m = toMap(e.getValue(), null);
-			updateIndex(e.getKey(), null, m);
+		for (var e : getIndexMap(entity, i[0]).entrySet()) {
+			var n = e.getKey();
+			var f = e.getValue();
+			var m = toMap(f);
+			updateIndex(n, null, m);
 		}
-		return i;
+		return i[0];
 	}
 
-	public E read(Long id) throws IOException {
-		var n = type.getSimpleName();
-		var t = database.storeApply(n, s -> s.read(id));
-		return parser.apply(t);
+	public E read(long id) throws IOException {
+		var o = new Object[1];
+		database.performOnStore(type.getSimpleName(), s -> o[0] = s.read(id));
+		return parser.apply(o[0]);
 	}
 
-	public E update(Long id, Consumer<E> consumer) throws IOException {
+	public E update(long id, Consumer<E> consumer) throws IOException {
 		class A {
 
 			E e;
 
 			Map<String, Entry<Object, Object>> m;
 		}
-		var n = type.getSimpleName();
 		var a = new A();
-		database.storeAccept(n, s -> s.update(id, t -> {
+		database.performOnStore(type.getSimpleName(), s -> s.update(id, t -> {
 			a.e = parser.apply(t);
 			a.m = getIndexMap(a.e, id);
 			consumer.accept(a.e);
@@ -97,109 +98,89 @@ public class Crud<E> {
 			for (var e : getIndexMap(a.e, id).entrySet()) {
 				var f1 = a.m.get(e.getKey());
 				var f2 = e.getValue();
-				if (!Objects.equals(f1.getKey(), f2.getKey())) {
-					var m1 = toMap(f1, f2.getKey() instanceof Collection<?> c ? k -> !c.contains(k) : null);
-					var m2 = toMap(f2, f1.getKey() instanceof Collection<?> c ? k -> !c.contains(k) : null);
+				var k1 = f1 != null ? f1.getKey() : null;
+				var k2 = f2 != null ? f2.getKey() : null;
+				if (!Objects.equals(k1, k2)) {
+					var m1 = k2 instanceof Collection<?> c ? toMap(f1, k -> !c.contains(k)) : toMap(f1);
+					var m2 = k1 instanceof Collection<?> c ? toMap(f2, k -> !c.contains(k)) : toMap(f2);
 					updateIndex(e.getKey(), m1, m2);
 				}
 			}
 		return a.e;
 	}
 
-	public E delete(Long id) throws IOException {
-		var n = type.getSimpleName();
-		var t = database.storeApply(n, s -> s.delete(id));
-		var e = parser.apply(t);
+	public E delete(long id) throws IOException {
+		var o = new Object[1];
+		database.performOnStore(type.getSimpleName(), s -> o[0] = s.delete(id));
+		var e = parser.apply(o[0]);
 		for (var f : getIndexMap(e, id).entrySet()) {
-			var m = toMap(f.getValue(), null);
+			var m = toMap(f.getValue());
 			updateIndex(f.getKey(), m, null);
 		}
 		return e;
 	}
 
 	public long count() throws IOException {
-		return database.storeApply(type.getSimpleName(), s -> s.count());
+		class A {
+
+			long c;
+		}
+		var a = new A();
+		database.performOnStore(type.getSimpleName(), s -> a.c = s.count());
+		return a.c;
 	}
 
 	public long indexCount(String name, Object value) throws IOException {
 		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
-		return database.indexApply(n, i -> i.count(value));
+		var c = new long[1];
+		database.performOnIndex(n, i -> c[0] = i.count(value));
+		return c[0];
 	}
 
-	public void indexAccept(String name, Object value, IO.Consumer<Long> consumer) throws IOException {
+	public void indexAccept(String name, Object value, IO.Consumer<LongStream> operation) throws IOException {
 		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
-		var l = database.indexApply(n, i -> i.list(value));
-		l.forEach(o -> {
-			var i = (Long) (o instanceof Object[] a ? a[a.length - 1] : o);
-			try {
-				consumer.accept(i);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
+		database.performOnIndex(n, i -> operation
+				.accept(i.list(value).mapToLong(o -> (Long) (o instanceof Object[] a ? a[a.length - 1] : o))));
 	}
 
-	public <R> Stream<R> indexApply(IO.Function<Long, R> function) throws IOException {
-		return indexApply(null, null, function);
-	}
-
-	public <R> Stream<R> indexApply(String name, Object value, IO.Function<Long, R> function) throws IOException {
-		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
-		var l = database.indexApply(n, i -> i.list(value));
-		return l.map(o -> {
-			var i = (Long) (o instanceof Object[] a ? a[a.length - 1] : o);
-			try {
-				return function.apply(i);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
-	}
-
-	public <K> Stream<K> getIndexKeys(String name) throws IOException {
-		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
-		return database.indexApply(n, i -> {
-			@SuppressWarnings("unchecked")
-			var j = (com.janilla.database.Index<K, ?>) i;
-			return j.keys();
-		});
-	}
-
-	public <V> Stream<V> getIndexValues(String name) throws IOException {
-		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
-		return database.indexApply(n, i -> {
-			@SuppressWarnings("unchecked")
-			var j = (com.janilla.database.Index<?, V>) i;
-			return j.values();
-		});
-	}
-
-	protected Map<String, Entry<Object, Object>> getIndexMap(E entity, Long id) {
+	protected Map<String, Entry<Object, Object>> getIndexMap(E entity, long id) {
 		var m = new HashMap<String, Entry<Object, Object>>();
-		for (var e : indexEntryGetters.entrySet())
+		for (var e : indexEntryGetters.entrySet()) {
+			var n = e.getKey();
+			var g = e.getValue();
 			try {
-				m.put(e.getKey(), e.getValue().getIndexEntry(entity, id));
+				var f = g.getIndexEntry(entity, id);
+				m.put(n, f);
 			} catch (ReflectiveOperationException f) {
 				throw new RuntimeException(f);
 			}
+		}
 		return m;
 	}
 
+	protected Map<Object, Object> toMap(Entry<Object, Object> entry) {
+		return toMap(entry, null);
+	}
+
 	protected Map<Object, Object> toMap(Entry<Object, Object> entry, Predicate<Object> predicate) {
+		if (entry == null)
+			return null;
+		var k = entry.getKey();
+		var v = entry.getValue();
 		var m = new LinkedHashMap<Object, Object>();
-		if (entry.getKey() == null) {
+		if (k == null) {
 			if (predicate == null || predicate.test(null))
-				m.put(null, entry.getValue());
+				m.put(null, v);
 		} else
-			switch (entry.getKey()) {
+			switch (k) {
 			case Collection<?> c:
-				for (var k : c)
-					if (predicate == null || predicate.test(k))
-						m.put(k, entry.getValue());
+				for (var l : c)
+					if (predicate == null || predicate.test(l))
+						m.put(l, v);
 				break;
 			default:
-				if (predicate == null || predicate.test(entry.getKey()))
-					m.put(entry.getKey(), entry.getValue());
+				if (predicate == null || predicate.test(k))
+					m.put(k, v);
 				break;
 			}
 		return m;
@@ -207,7 +188,7 @@ public class Crud<E> {
 
 	protected void updateIndex(String name, Map<Object, Object> remove, Map<Object, Object> add) throws IOException {
 		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
-		database.indexAccept(n, i -> {
+		database.performOnIndex(n, i -> {
 			if (remove != null)
 				for (var e : remove.entrySet())
 					i.remove(e.getKey(), e.getValue());
