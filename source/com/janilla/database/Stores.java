@@ -119,7 +119,15 @@ public class Stores {
 	}
 
 	public <E> void perform(String name, IO.Consumer<Store<E>> operation) throws IOException {
+		this.<E, Object>perform(name, x -> {
+			operation.accept(x);
+			return null;
+		});
+	}
+
+	public <E, R> R perform(String name, IO.Function<Store<E>, R> operation) throws IOException {
 		var t = btree.get();
+		var o = new Object[1];
 		t.get(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)), n -> {
 			var s = new Store<E>();
 			s.setInitializeBTree(u -> {
@@ -130,11 +138,14 @@ public class Stores {
 			});
 			s.setIdAndSize(n.idAndSize);
 			initializeStore.accept(name, s);
-			operation.accept(s);
+			o[0] = operation.apply(s);
 			var r = s.getBTree().getRoot();
 			var i = s.getIdAndSize();
 			return r.position() != n.root.position() || !i.equals(n.idAndSize) ? new NameAndStore(name, r, i) : null;
 		});
+		@SuppressWarnings("unchecked")
+		var r = (R) o[0];
+		return r;
 	}
 
 	public record NameAndStore(String name, BlockReference root, IdAndSize idAndSize) {

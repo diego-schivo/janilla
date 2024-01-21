@@ -108,16 +108,26 @@ public class ResourceHandlerFactory implements HandlerFactory {
 
 	protected void handle(InputStream stream, HttpRequest request, ExchangeContext context) throws IOException {
 		try {
-			context.getResponse().setStatus(new Status(200, "OK"));
-			context.getResponse().getHeaders().set("Cache-Control", "max-age=3600");
+			var s = context.getResponse();
+			s.setStatus(new Status(200, "OK"));
+			var h = s.getHeaders();
+			h.set("Cache-Control", "max-age=3600");
 
 			var u = request.getURI().toString();
-			if (u.endsWith(".js"))
-				context.getResponse().getHeaders().set("Content-Type", "text/javascript");
-			if (u.endsWith(".ico"))
-				context.getResponse().getHeaders().set("Content-Type", "image/x-icon");
+			var e = u.substring(u.lastIndexOf('.') + 1);
+			switch (e) {
+			case "ico":
+				h.set("Content-Type", "image/x-icon");
+				break;
+			case "js":
+				h.set("Content-Type", "text/javascript");
+				break;
+			case "svg":
+				h.set("Content-Type", "image/svg+xml");
+				break;
+			}
 
-			var b = (WritableByteChannel) context.getResponse().getBody();
+			var b = (WritableByteChannel) s.getBody();
 			stream.transferTo(Channels.newOutputStream(b));
 		} finally {
 			stream.close();

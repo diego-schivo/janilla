@@ -267,6 +267,11 @@ public interface IO {
 		int getAsInt() throws IOException;
 	}
 
+	interface LongSupplier {
+
+		long getAsLong() throws IOException;
+	}
+
 	interface UnaryOperator<T> extends Function<T, T> {
 	}
 

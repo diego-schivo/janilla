@@ -119,7 +119,15 @@ public class Indexes {
 	}
 
 	public <K, V> void perform(String name, IO.Consumer<Index<K, V>> operation) throws IOException {
+		this.<K, V, Object>perform(name, x -> {
+			operation.accept(x);
+			return null;
+		});
+	}
+
+	public <K, V, R> R perform(String name, IO.Function<Index<K, V>, R> operation) throws IOException {
 		var t = btree.get();
+		var o = new Object[1];
 		t.get(new NameAndIndex(name, new BlockReference(-1, -1, 0)), n -> {
 			var i = new Index<K, V>();
 			i.setInitializeBTree(u -> {
@@ -129,10 +137,13 @@ public class Indexes {
 				u.setRoot(n.root);
 			});
 			initializeIndex.accept(name, i);
-			operation.accept(i);
+			o[0] = operation.apply(i);
 			var r = i.getBTree().getRoot();
 			return r.position() != n.root.position() ? new NameAndIndex(name, r) : null;
 		});
+		@SuppressWarnings("unchecked")
+		var r = (R) o[0];
+		return r;
 	}
 
 	public record NameAndIndex(String name, BlockReference root) {

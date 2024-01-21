@@ -216,6 +216,10 @@ public class Database {
 		stores.get().perform(name, operation);
 	}
 
+	public synchronized <E, R> R performOnStore(String name, IO.Function<Store<E>, R> operation) throws IOException {
+		return stores.get().perform(name, operation);
+	}
+
 	public void createIndex(String name) throws IOException {
 		indexes.get().create(name);
 	}
@@ -224,11 +228,24 @@ public class Database {
 		indexes.get().perform(name, operation);
 	}
 
+	public synchronized <K, V, R> R performOnIndex(String name, IO.Function<Index<K, V>, R> operation)
+			throws IOException {
+		return indexes.get().perform(name, operation);
+	}
+
 	public synchronized void performTransaction(IO.Runnable operation) throws IOException {
+		performTransaction(() -> {
+			operation.run();
+			return null;
+		});
+	}
+
+	public synchronized <T> T performTransaction(IO.Supplier<T> operation) throws IOException {
 		channel.startTransaction();
+		T t = null;
 		var c = false;
 		try {
-			operation.run();
+			t = operation.get();
 			c = true;
 		} finally {
 			if (c)
@@ -236,5 +253,6 @@ public class Database {
 			else
 				channel.rollbackTransaction();
 		}
+		return t;
 	}
 }
