@@ -60,6 +60,8 @@ public class Evaluator implements Function<String, Object> {
 
 	@Override
 	public Object apply(String expression) {
+		if (expression.isEmpty())
+			return context;
 		var w = wrap();
 		for (var n : expression.split("\\."))
 			next(n, w);
@@ -78,6 +80,11 @@ public class Evaluator implements Function<String, Object> {
 		var u = getValue(wrapper);
 		var v = u != null ? switch (u) {
 		case Map<?, ?> m -> m.get(name);
+		case Function<?, ?> f -> {
+			@SuppressWarnings("unchecked")
+			var g = (Function<Object, Object>) f;
+			yield g.apply(name);
+		}
 		default -> {
 			if (u instanceof RenderHelper e) {
 				var o = e.tryToRender(name);
@@ -102,7 +109,7 @@ public class Evaluator implements Function<String, Object> {
 	protected Object invoke(Method method, Object object, Object wrapper) {
 		try {
 			return method.invoke(object);
-		} catch (Exception e) {
+		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);
 		}
 	}

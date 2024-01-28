@@ -29,5 +29,5 @@ import com.janilla.io.IO;
 
 public interface HandlerFactory {
 
-	IO.Consumer<ExchangeContext> createHandler(Object object);
+	IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context);
 }

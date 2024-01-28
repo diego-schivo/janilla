@@ -34,6 +34,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.function.LongFunction;
 import java.util.function.UnaryOperator;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
@@ -150,11 +152,7 @@ public class Store<E> {
 		var i = t.get(new IdAndElement(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
 			return null;
-		t.getChannel().position(i.element.position());
-		var b = ByteBuffer.allocate(i.element.capacity());
-		IO.repeat(x -> t.getChannel().read(b), b.remaining());
-		b.position(0);
-		return elementHelper.getElement(b);
+		return readElement(i.element);
 	}
 
 	public E update(long id, UnaryOperator<E> operator) throws IOException {
@@ -167,11 +165,12 @@ public class Store<E> {
 		t.get(new IdAndElement(id, new BlockReference(-1, -1, 0)), j -> {
 			if (j == null)
 				return null;
-			t.getChannel().position(j.element.position());
-			var b = ByteBuffer.allocate(j.element.capacity());
-			IO.repeat(x -> t.getChannel().read(b), b.remaining());
-			b.position(0);
-			var e = elementHelper.getElement(b);
+//			t.getChannel().position(j.element.position());
+//			var b = ByteBuffer.allocate(j.element.capacity());
+//			IO.repeat(x -> t.getChannel().read(b), b.remaining());
+//			b.position(0);
+//			var e = elementHelper.getElement(b);
+			var e = readElement(j.element);
 			a.e = operator.apply(e);
 			var c = elementHelper.getBytes(a.e);
 			var r = c.length > j.element.capacity() ? t.getMemory().allocate(c.length) : null;
@@ -190,17 +189,41 @@ public class Store<E> {
 		var i = t.remove(new IdAndElement(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
 			return null;
-		t.getChannel().position(i.element.position());
-		var b = ByteBuffer.allocate(i.element.capacity());
-		IO.repeat(x -> t.getChannel().read(b), b.remaining());
-		b.position(0);
-		var e = elementHelper.getElement(b);
+//		t.getChannel().position(i.element.position());
+//		var b = ByteBuffer.allocate(i.element.capacity());
+//		IO.repeat(x -> t.getChannel().read(b), b.remaining());
+//		b.position(0);
+//		var e = elementHelper.getElement(b);
+		var e = readElement(i.element);
 		idAndSize = new IdAndSize(idAndSize.id, idAndSize.size - 1);
 		return e;
 	}
 
+	public LongStream ids() throws IOException {
+		return btree.get().stream().mapToLong(IdAndElement::id);
+	}
+
+	public Stream<E> elements() throws IOException {
+		return btree.get().stream().map(IdAndElement::element).map(t -> {
+			try {
+				return readElement(t);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		});
+	}
+
 	public long count() throws IOException {
 		return idAndSize.size;
+	}
+
+	protected E readElement(BlockReference e) throws IOException {
+		var c = btree.get().getChannel();
+		c.position(e.position());
+		var b = ByteBuffer.allocate(e.capacity());
+		IO.repeat(x -> c.read(b), b.remaining());
+		b.position(0);
+		return elementHelper.getElement(b);
 	}
 
 	public record IdAndElement(long id, BlockReference element) {

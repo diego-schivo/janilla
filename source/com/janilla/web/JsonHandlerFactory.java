@@ -29,8 +29,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 
+import com.janilla.frontend.RenderEngine.ObjectAndType;
 import com.janilla.http.ExchangeContext;
-import com.janilla.http.HttpRequest;
 import com.janilla.io.IO;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
@@ -39,10 +39,11 @@ import com.janilla.json.ReflectionJsonIterator;
 public class JsonHandlerFactory implements HandlerFactory {
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object) {
-		if (object instanceof HttpRequest || object instanceof Exception)
-			return null;
-		return c -> render(object, c);
+	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
+//		if (object instanceof HttpRequest || object instanceof Exception)
+//			return null;
+//		return c -> render(object, c);
+		return object instanceof ObjectAndType i ? x -> render(i.object(), x) : null;
 	}
 
 	protected void render(Object object, ExchangeContext context) throws IOException {

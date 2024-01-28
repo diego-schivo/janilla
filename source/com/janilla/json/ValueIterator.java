@@ -25,6 +25,7 @@
 package com.janilla.json;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -100,10 +101,11 @@ class ValueIterator extends TokenIterator {
 			var m = (List<Object>) l;
 			yield new ArrayIterator(m.iterator(), context);
 		}
-		case Boolean b -> new BooleanIterator(b);
-		case Instant i -> new StringIterator(i.toString());
-		case Number n -> new NumberIterator(n);
-		case String s -> new StringIterator(s);
+		case Boolean x -> new BooleanIterator(x);
+		case Instant x -> new StringIterator(x.toString());
+		case Number x -> new NumberIterator(x);
+		case String x -> new StringIterator(x);
+		case LocalDate x -> new StringIterator(x.toString());
 		default -> null;
 		};
 	}

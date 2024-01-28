@@ -63,6 +63,7 @@ class ReflectionValueIterator extends ValueIterator {
 			}).filter(Objects::nonNull).map(e -> {
 				Object v;
 				try {
+//					System.out.println(e.getValue() + " " + object);
 					v = e.getValue().invoke(object);
 				} catch (ReflectiveOperationException x) {
 					throw new RuntimeException(x);

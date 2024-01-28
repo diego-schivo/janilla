@@ -27,7 +27,6 @@ package com.janilla.web;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -41,6 +40,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.janilla.frontend.RenderEngine.ObjectAndType;
 import com.janilla.http.ExchangeContext;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
@@ -76,26 +76,26 @@ public class MethodHandlerFactory implements HandlerFactory {
 			return m != null ? new MethodInvocation(m, c, null) : null;
 		});
 		var f2 = new TemplateHandlerFactory();
-		f2.setToReader(o -> {
-			var r = new InputStreamReader(new ByteArrayInputStream(o.toString().getBytes()));
-			var t = new Template();
-			t.setReader(r);
-			return t;
-		});
+//		f2.setToReader(o -> {
+//			var r = new InputStreamReader(new ByteArrayInputStream(o.toString().getBytes()));
+//			var t = new Template();
+//			t.setReader(r);
+//			return t;
+//		});
 		var f = new DelegatingHandlerFactory();
 		{
 			var a = new HandlerFactory[] { f1, f2 };
-			f.setToHandler(o -> {
+			f.setToHandler((o, d) -> {
 				if (a != null)
 					for (var g : a) {
-						var h = g.createHandler(o);
+						var h = g.createHandler(o, d);
 						if (h != null)
 							return h;
 					}
 				return null;
 			});
 		}
-		f1.setRenderFactory(f);
+		f1.setMainFactory(f);
 
 		var is = new ByteArrayInputStream("""
 				GET /foo HTTP/1.1\r
@@ -107,10 +107,10 @@ public class MethodHandlerFactory implements HandlerFactory {
 		var wc = new HttpMessageWritableByteChannel(Channels.newChannel(os));
 
 		try (var rq = rc.readRequest(); var rs = wc.writeResponse()) {
-			var h = f.createHandler(rq);
 			var d = new ExchangeContext();
 			d.setRequest(rq);
 			d.setResponse(rs);
+			var h = f.createHandler(rq, d);
 			h.accept(d);
 		}
 
@@ -129,7 +129,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 
 	protected BiFunction<MethodInvocation, ExchangeContext, Object[]> argumentsResolver;
 
-	protected HandlerFactory renderFactory;
+	protected HandlerFactory mainFactory;
 
 	public Function<HttpRequest, MethodInvocation> getToInvocation() {
 		return toInvocation;
@@ -147,16 +147,16 @@ public class MethodHandlerFactory implements HandlerFactory {
 		this.argumentsResolver = argumentsResolver;
 	}
 
-	public HandlerFactory getRenderFactory() {
-		return renderFactory;
-	}
+//	public HandlerFactory getMainFactory() {
+//		return mainFactory;
+//	}
 
-	public void setRenderFactory(HandlerFactory renderFactory) {
-		this.renderFactory = renderFactory;
+	public void setMainFactory(HandlerFactory mainFactory) {
+		this.mainFactory = mainFactory;
 	}
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
 		var i = object instanceof HttpRequest q ? toInvocation.apply(q) : null;
 		return i != null ? c -> handle(i, c) : null;
 	}
@@ -172,10 +172,10 @@ public class MethodHandlerFactory implements HandlerFactory {
 			throw e.getCause();
 		}
 
+		var m = invocation.method();
 		Object o;
 		try {
-			o = a != null ? invocation.method().invoke(invocation.object(), a)
-					: invocation.method().invoke(invocation.object());
+			o = a != null ? m.invoke(invocation.object(), a) : m.invoke(invocation.object());
 		} catch (InvocationTargetException e) {
 			var f = e.getTargetException();
 			throw f instanceof Exception g ? new HandleException(g) : new RuntimeException(e);
@@ -184,12 +184,12 @@ public class MethodHandlerFactory implements HandlerFactory {
 		}
 
 		var s = context.getResponse();
-		if (invocation.method().getReturnType() == Void.TYPE) {
+		if (m.getReturnType() == Void.TYPE) {
 			if (s.getStatus() == null) {
 				s.setStatus(new Status(204, "No Content"));
 				s.getHeaders().set("Cache-Control", "no-cache");
 			}
-		} else if (o instanceof Path f && invocation.method().isAnnotationPresent(Attachment.class)) {
+		} else if (o instanceof Path f && m.isAnnotationPresent(Attachment.class)) {
 			s.setStatus(new Status(200, "OK"));
 			var h = s.getHeaders();
 			h.set("Cache-Control", "max-age=3600");
@@ -223,12 +223,12 @@ public class MethodHandlerFactory implements HandlerFactory {
 					}
 			}
 
-			render(o, context);
+			render(new ObjectAndType(o, m.getAnnotatedReturnType()), context);
 		}
 	}
 
 	protected void render(Object object, ExchangeContext context) throws IOException {
-		var h = renderFactory.createHandler(object);
+		var h = mainFactory.createHandler(object, context);
 		if (h != null)
 			h.accept(context);
 	}

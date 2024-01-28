@@ -28,7 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import com.janilla.http.ExchangeContext;
 import com.janilla.http.HttpMessageReadableByteChannel;
@@ -52,10 +52,10 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 					</html>""".getBytes()) : null);
 			var f2 = new ExceptionHandlerFactory();
 			var a = new HandlerFactory[] { f1, f2 };
-			f.setToHandler(o -> {
+			f.setToHandler((o, c) -> {
 				if (a != null)
 					for (var g : a) {
-						var h = g.createHandler(o);
+						var h = g.createHandler(o, c);
 						if (h != null)
 							return h;
 					}
@@ -83,12 +83,12 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 					c.setRequest(q);
 					c.setResponse(s);
 					try {
-						var h = f.createHandler(q);
+						var h = f.createHandler(q, c);
 						if (h == null)
 							throw new NotFoundException();
 						h.accept(c);
 					} catch (Exception e) {
-						var h = f.createHandler(e);
+						var h = f.createHandler(e, c);
 						h.accept(c);
 					}
 				}
@@ -116,18 +116,18 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 			}
 	}
 
-	Function<Object, IO.Consumer<ExchangeContext>> toHandler;
+	BiFunction<Object, ExchangeContext, IO.Consumer<ExchangeContext>> toHandler;
 
-	public Function<Object, IO.Consumer<ExchangeContext>> getToHandler() {
+	public BiFunction<Object, ExchangeContext, IO.Consumer<ExchangeContext>> getToHandler() {
 		return toHandler;
 	}
 
-	public void setToHandler(Function<Object, IO.Consumer<ExchangeContext>> toHandler) {
+	public void setToHandler(BiFunction<Object, ExchangeContext, IO.Consumer<ExchangeContext>> toHandler) {
 		this.toHandler = toHandler;
 	}
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object) {
-		return toHandler != null ? toHandler.apply(object) : null;
+	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
+		return toHandler != null ? toHandler.apply(object, context) : null;
 	}
 }

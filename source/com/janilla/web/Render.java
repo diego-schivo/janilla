@@ -30,8 +30,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE })
+@Target({ ElementType.RECORD_COMPONENT, ElementType.TYPE, ElementType.TYPE_USE })
 public @interface Render {
 
-	String template();
+	String template() default "";
+
+	String delimiter() default "";
 }

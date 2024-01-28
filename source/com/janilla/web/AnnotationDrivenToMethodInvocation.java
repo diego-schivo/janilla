@@ -163,14 +163,15 @@ public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest,
 		if (v != null)
 			b.add(new ValueAndGroups(v, null));
 
-		for (var e : j.entrySet()) {
-			var m = e.getKey().matcher(p);
-			if (m.matches()) {
-				v = e.getValue();
-				var s = IntStream.range(1, 1 + m.groupCount()).mapToObj(m::group).toList();
-				b.add(new ValueAndGroups(v, s));
+		if (p != null)
+			for (var e : j.entrySet()) {
+				var m = e.getKey().matcher(p);
+				if (m.matches()) {
+					v = e.getValue();
+					var s = IntStream.range(1, 1 + m.groupCount()).mapToObj(m::group).toList();
+					b.add(new ValueAndGroups(v, s));
+				}
 			}
-		}
 
 		return b.build();
 	}

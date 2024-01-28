@@ -50,7 +50,7 @@ public class Interpolator {
 				baz ${s} ${r.s} qux""".getBytes());
 		var o = new ByteArrayOutputStream();
 		try (var r = new BufferedReader(new InputStreamReader(j)); var w = new PrintWriter(o)) {
-			r.lines().forEach(l -> i.println(l, w));
+			r.lines().forEach(l -> i.print(l, w));
 		}
 
 		var s = o.toString();
@@ -74,10 +74,11 @@ public class Interpolator {
 		this.evaluators = evaluators;
 	}
 
-	public void println(String template, PrintWriter writer) {
+	public void print(String template, PrintWriter writer) {
 		var i = indexOf(template, prefixes.get());
 		if (i < 0) {
-			writer.println(template);
+//			writer.println(template);
+			writer.print(template);
 			return;
 		}
 		var j = -1;
@@ -86,13 +87,14 @@ public class Interpolator {
 			j = template.indexOf('}', i + 2);
 			var e = template.substring(i + 2, j);
 			var o = evaluators.get(template.charAt(i)).apply(e);
-			print(o, writer);
+			printObject(o, writer);
 			i = indexOf(template, prefixes.get(), j + 1);
 		} while (i >= 0);
-		writer.println(template.substring(j + 1));
+//		writer.println(template.substring(j + 1));
+		writer.print(template.substring(j + 1));
 	}
 
-	protected void print(Object object, PrintWriter writer) {
+	protected void printObject(Object object, PrintWriter writer) {
 		writer.print(object);
 	}
 

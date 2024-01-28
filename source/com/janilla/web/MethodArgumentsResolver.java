@@ -31,6 +31,7 @@ import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -186,6 +187,8 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Exc
 			return Integer.parseInt(s);
 		if (type == Long.class || type == Long.TYPE)
 			return Long.parseLong(s);
+		if (type == LocalDate.class)
+			return LocalDate.parse(s);
 		if (type == Path.class)
 			return Path.of(s);
 		if (type == UUID.class)

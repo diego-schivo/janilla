@@ -51,11 +51,10 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 
 		try (var q = r.readRequest(); var s = w.writeResponse()) {
 			var e = new NotFoundException();
-			var h = f.createHandler(e);
-
 			var c = new ExchangeContext();
 			c.setRequest(q);
 			c.setResponse(s);
+			var h = f.createHandler(e, c);
 			h.accept(c);
 		}
 
@@ -70,7 +69,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
 		if (object instanceof Exception e) {
 			var f = e.getClass().getAnnotation(Error.class);
 			return c -> handle(f, c);

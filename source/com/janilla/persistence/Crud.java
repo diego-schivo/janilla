@@ -140,6 +140,14 @@ public class Crud<E> {
 		return e;
 	}
 
+	public Page list(long skip, long limit) throws IOException {
+		return database.performOnStore(type.getSimpleName(), s -> {
+			long[] i = s.ids().skip(skip).limit(limit).toArray();
+			long c = s.count();
+			return new Page(i, c);
+		});
+	}
+
 	public long count() throws IOException {
 		return database.performOnStore(type.getSimpleName(), x -> (Long) x.count());
 	}
@@ -149,61 +157,159 @@ public class Crud<E> {
 		return database.performOnIndex(n, x -> (Long) x.count(value));
 	}
 
-	public long getFirst(String index, Object value) throws IOException {
+	public long find(String index, Object value) throws IOException {
 		return performOnIndex(index, value, x -> (Long) x.findFirst().orElse(-1));
 	}
 
-	public Page getPage(String index, Object[] values, long skip, long limit) throws IOException {
+	public long[] filter(String index, Object... values) throws IOException {
 		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
-		class A {
+		return switch (values.length) {
+		case 0 -> database.performOnIndex(n, x -> {
+			return x.values().mapToLong(y -> {
+				var z = (Object[]) y;
+				return (Long) z[z.length - 1];
+			}).toArray();
+		});
+		case 1 -> database.performOnIndex(n, x -> {
+			return x.list(values[0]).mapToLong(y -> {
+				var z = (Object[]) y;
+				return (Long) z[z.length - 1];
+			}).toArray();
+		});
+		default -> {
+			class A {
 
-			Iterator<Object> i;
+				Iterator<Object> i;
 
-			Object o;
+				Object o;
+			}
+			List<A> a;
+			try {
+				a = database.performOnIndex(n, x -> (List<A>) Arrays.stream(values).map(y -> {
+					try {
+						var z = new A();
+						z.i = x.list(y).iterator();
+						z.o = z.i.hasNext() ? z.i.next() : null;
+						return z;
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				}).toList());
+			} catch (UncheckedIOException e) {
+				throw e.getCause();
+			}
 
-			long l;
+			IO.LongSupplier s = () -> {
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				var z = a.stream().max((x, y) -> {
+					var x0 = x.o != null ? (Comparable) ((Object[]) x.o)[0] : null;
+					var y0 = y.o != null ? (Comparable) ((Object[]) y.o)[0] : null;
+					return x0 != null ? (y0 != null ? x0.compareTo(y0) : 1) : (y0 != null ? -1 : 0);
+				}).orElse(null);
+				if (z == null || z.o == null)
+					return -1;
+				var i = (Long) ((Object[]) z.o)[1];
+				z.o = z.i.hasNext() ? z.i.next() : null;
+				return i;
+			};
+			try {
+				yield LongStream.iterate(s.getAsLong(), x -> {
+					try {
+						return s.getAsLong();
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				}).toArray();
+			} catch (UncheckedIOException e) {
+				throw e.getCause();
+			}
 		}
-		List<A> a;
-		try {
-			a = database.performOnIndex(n, x -> (List<A>) Arrays.stream(values).map(y -> {
-				try {
-					var z = new A();
-					z.i = x.list(y).iterator();
-					z.o = z.i.hasNext() ? z.i.next() : null;
-					z.l = x.count(y);
-					return z;
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			}).toList());
-		} catch (UncheckedIOException e) {
-			throw e.getCause();
-		}
-
-		IO.LongSupplier s = () -> {
-			@SuppressWarnings({ "rawtypes", "unchecked" })
-			var z = a.stream().max((x, y) -> {
-				var x0 = x.o != null ? (Comparable) ((Object[]) x.o)[0] : null;
-				var y0 = y.o != null ? (Comparable) ((Object[]) y.o)[0] : null;
-				return x0 != null ? (y0 != null ? x0.compareTo(y0) : 1) : (y0 != null ? -1 : 0);
-			}).orElse(null);
-			if (z == null || z.o == null)
-				return -1;
-			var i = (Long) ((Object[]) z.o)[1];
-			z.o = z.i.hasNext() ? z.i.next() : null;
-			return i;
 		};
-		try {
-			return new Page(LongStream.iterate(s.getAsLong(), x -> {
-				try {
-					return s.getAsLong();
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			}).skip(skip).limit(limit).filter(x -> x >= 0).toArray(), a.stream().mapToLong(x -> x.l).sum());
-		} catch (UncheckedIOException e) {
-			throw e.getCause();
+	}
+
+	public Page filter(String index, long skip, long limit, Object... values) throws IOException {
+		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		return switch (values.length) {
+		case 0 -> database.performOnIndex(n, x -> {
+			var i = x.values().mapToLong(y -> {
+				var z = (Object[]) y;
+				return (Long) z[z.length - 1];
+			}).skip(skip).limit(limit).toArray();
+			var c = x.count();
+			return (Page) new Page(i, c);
+		});
+		case 1 -> database.performOnIndex(n, x -> {
+			var i = x.list(values[0]).mapToLong(y -> {
+				var z = (Object[]) y;
+				return (Long) z[z.length - 1];
+			}).skip(skip).limit(limit).toArray();
+			var c = x.count(values[0]);
+			return (Page) new Page(i, c);
+		});
+		default -> {
+			class A {
+
+				Iterator<Object> i;
+
+				Object o;
+
+				long l;
+			}
+			List<A> a;
+			try {
+				a = database.performOnIndex(n, x -> (List<A>) Arrays.stream(values).map(y -> {
+					try {
+						var z = new A();
+						z.i = x.list(y).iterator();
+						z.o = z.i.hasNext() ? z.i.next() : null;
+						z.l = x.count(y);
+						return z;
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				}).toList());
+			} catch (UncheckedIOException e) {
+				throw e.getCause();
+			}
+
+			IO.LongSupplier s = () -> {
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				var z = a.stream().max((x, y) -> {
+					var x0 = x.o != null ? (Comparable) ((Object[]) x.o)[0] : null;
+					var y0 = y.o != null ? (Comparable) ((Object[]) y.o)[0] : null;
+					return x0 != null ? (y0 != null ? x0.compareTo(y0) : 1) : (y0 != null ? -1 : 0);
+				}).orElse(null);
+				if (z == null || z.o == null)
+					return -1;
+				var i = (Long) ((Object[]) z.o)[1];
+				z.o = z.i.hasNext() ? z.i.next() : null;
+				return i;
+			};
+			try {
+				yield new Page(LongStream.iterate(s.getAsLong(), x -> {
+					try {
+						return s.getAsLong();
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				}).skip(skip).limit(limit).filter(x -> x >= 0).toArray(), a.stream().mapToLong(x -> x.l).sum());
+			} catch (UncheckedIOException e) {
+				throw e.getCause();
+			}
 		}
+		};
+	}
+
+	public Page filter2(String index, long skip, long limit, Predicate<Object> operation) throws IOException {
+		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		return database.performOnIndex(n, x -> {
+			var i = x.valuesIf(operation).mapToLong(y -> {
+				var z = (Object[]) y;
+				return (Long) z[z.length - 1];
+			}).skip(skip).limit(limit).toArray();
+			var t = x.countIf(operation);
+			return new Page(i, t);
+		});
 	}
 
 	public void performOnIndex(String name, Object value, IO.Consumer<LongStream> operation) throws IOException {
@@ -276,6 +382,12 @@ public class Crud<E> {
 		});
 	}
 
-	public record Page(long[] ids, long count) {
+	public record Page(long[] ids, long total) {
+
+		static Page EMPTY = new Page(new long[0], 0);
+
+		public static Page empty() {
+			return EMPTY;
+		}
 	}
 }

@@ -40,6 +40,7 @@ public class ReflectionJsonIterator extends JsonIterator {
 		var d2 = new D(234);
 		var d3 = new D(345);
 		c.l = List.of(d2, d3);
+		c.m = List.of(456L, 567L);
 		var s = Json.format(new ReflectionJsonIterator(c));
 		System.out.println(s);
 		var o = Json.parse(s, Json.parseCollector(C.class));
@@ -55,28 +56,38 @@ public class ReflectionJsonIterator extends JsonIterator {
 
 		private List<D> l;
 
-		public String s() {
+		private List<Long> m;
+
+		public String getS() {
 			return s;
 		}
 
-		public void s(String value) {
-			s = value;
+		public void setS(String s) {
+			this.s = s;
 		}
 
-		public D d() {
+		public D getD() {
 			return d;
 		}
 
-		public void d(D value) {
-			d = value;
+		public void setD(D d) {
+			this.d = d;
 		}
 
-		public List<D> l() {
+		public List<D> getL() {
 			return l;
 		}
 
-		public void l(List<D> value) {
-			l = value;
+		public void setL(List<D> l) {
+			this.l = l;
+		}
+
+		public List<Long> getM() {
+			return m;
+		}
+
+		public void setM(List<Long> m) {
+			this.m = m;
 		}
 
 		@Override
@@ -84,12 +95,12 @@ public class ReflectionJsonIterator extends JsonIterator {
 			if (obj == null || obj.getClass() != C.class)
 				return false;
 			var c = (C) obj;
-			return Objects.equals(s, c.s) && Objects.equals(d, c.d) && Objects.equals(l, c.l);
+			return Objects.equals(s, c.s) && Objects.equals(d, c.d) && Objects.equals(l, c.l) && Objects.equals(m, c.m);
 		}
 
 		@Override
 		public String toString() {
-			return "C[s=" + s + ", d=" + d + ", l=" + l + "]";
+			return "C[s=" + s + ", d=" + d + ", l=" + l + ", m=" + m + "]";
 		}
 	}
 

@@ -65,10 +65,10 @@ public class ResourceHandlerFactory implements HandlerFactory {
 		var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
 
 		try (var q = r.readRequest(); var s = w.writeResponse()) {
-			var h = f.createHandler(q);
 			var c = new ExchangeContext();
 			c.setRequest(q);
 			c.setResponse(s);
+			var h = f.createHandler(q, c);
 			h.accept(c);
 		}
 
@@ -100,7 +100,7 @@ public class ResourceHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object) {
+	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
 		var u = object instanceof HttpRequest q ? q.getURI() : null;
 		var i = u != null ? toInputStream.apply(u) : null;
 		return i != null ? c -> handle(i, (HttpRequest) object, c) : null;

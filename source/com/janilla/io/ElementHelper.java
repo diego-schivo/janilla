@@ -26,6 +26,7 @@ package com.janilla.io;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Arrays;
 
 import com.janilla.reflect.Reflection;
@@ -56,6 +57,10 @@ public interface ElementHelper<E> {
 		} else if (type == Instant.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ElementHelper<T>) INSTANT;
+			return h;
+		} else if (type == LocalDate.class) {
+			@SuppressWarnings("unchecked")
+			var h = (ElementHelper<T>) LOCAL_DATE;
 			return h;
 		} else
 			throw new IllegalArgumentException("type=" + type);
@@ -271,6 +276,37 @@ public interface ElementHelper<E> {
 		@Override
 		public int compare(ByteBuffer buffer, Instant element) {
 			return Long.compare(buffer.getLong(buffer.position()), element.toEpochMilli());
+		}
+	};
+
+	ElementHelper<LocalDate> LOCAL_DATE = new ElementHelper<>() {
+
+		@Override
+		public byte[] getBytes(LocalDate element) {
+			var b = ByteBuffer.allocate(4 + 2 * 1);
+			b.putInt(element.getYear());
+			b.put((byte) element.getMonthValue());
+			b.put((byte) element.getDayOfMonth());
+			return b.array();
+		}
+
+		@Override
+		public int getLength(ByteBuffer buffer) {
+			return 4 + 2 * 1;
+		}
+
+		@Override
+		public LocalDate getElement(ByteBuffer buffer) {
+			return LocalDate.of(buffer.getInt(), buffer.get(), buffer.get());
+		}
+
+		@Override
+		public int compare(ByteBuffer buffer, LocalDate element) {
+			var c = Integer.compare(buffer.getInt(buffer.position()), element.getYear());
+			if (c != 0)
+				return c;
+			c = Byte.compare(buffer.get(buffer.position() + 4), (byte) element.getMonthValue());
+			return c != 0 ? c : Byte.compare(buffer.get(buffer.position() + 4 + 1), (byte) element.getDayOfMonth());
 		}
 	};
 

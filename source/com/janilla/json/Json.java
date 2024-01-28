@@ -26,6 +26,7 @@ package com.janilla.json;
 
 import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
@@ -262,6 +263,8 @@ public interface Json {
 									var o = e.getValue();
 									if (v == Instant.class)
 										o = o != null ? Instant.parse((String) o) : null;
+									if (v == LocalDate.class)
+										o = o != null ? LocalDate.parse((String) o) : null;
 									else if (v == Long.class && o instanceof Integer j)
 										o = (long) j.intValue();
 //									System.out.println("s=" + s + ", i=" + i + ", o=" + o);
@@ -304,6 +307,10 @@ public interface Json {
 						var e = a.pop();
 						@SuppressWarnings("unchecked")
 						List<Object> l = (List<Object>) a.peek();
+
+						if (b.peek() == Long.class && e instanceof Integer i)
+							e = (long) i;
+
 						l.add(e);
 						break;
 					default:

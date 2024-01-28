@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import com.janilla.database.Memory.BlockReference;
@@ -152,12 +153,20 @@ public class Index<K, V> {
 		return c != null ? c : 0;
 	}
 
+	public long countIf(Predicate<K> operation) throws IOException {
+		return btree.get().stream().filter(x -> operation.test(x.key)).mapToLong(x -> x.size).sum();
+	}
+
 	public Stream<K> keys() throws IOException {
 		return btree.get().stream().map(KeyAndValues::key);
 	}
 
 	public Stream<V> values() throws IOException {
-		return btree.get().stream().flatMap(x -> {
+		return valuesIf(k -> true);
+	}
+
+	public Stream<V> valuesIf(Predicate<K> operation) throws IOException {
+		return btree.get().stream().filter(x -> operation.test(x.key)).flatMap(x -> {
 			try {
 				return apply(x.key, y -> new ResultAndSize<>(y.btree.stream(), y.size), false);
 			} catch (IOException e) {
@@ -166,7 +175,12 @@ public class Index<K, V> {
 		});
 	}
 
-	protected <R> R apply(K key, IO.Function<BTreeAndSize<V>, ResultAndSize<R>> function, boolean add) throws IOException {
+	public long count() throws IOException {
+		return btree.get().stream().mapToLong(KeyAndValues::size).sum();
+	}
+
+	protected <R> R apply(K key, IO.Function<BTreeAndSize<V>, ResultAndSize<R>> function, boolean add)
+			throws IOException {
 		class A {
 
 			ResultAndSize<R> r;

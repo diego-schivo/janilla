@@ -55,4 +55,9 @@ public interface Util {
 		});
 		return b.build();
 	}
+
+	static boolean startsWithIgnoreCase(String string, String prefix) {
+		return string == prefix || (prefix != null && prefix.length() <= string.length()
+				&& string.regionMatches(true, 0, prefix, 0, prefix.length()));
+	}
 }

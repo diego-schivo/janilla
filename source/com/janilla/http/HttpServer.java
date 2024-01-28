@@ -53,6 +53,7 @@ import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
 import com.janilla.net.Net;
 import com.janilla.web.HandleException;
+import com.janilla.web.NotFoundException;
 
 public class HttpServer implements IO.Runnable {
 
@@ -407,7 +408,8 @@ public class HttpServer implements IO.Runnable {
 			e = x;
 		}
 		if (e != null) {
-			e.printStackTrace();
+			if (!(e instanceof NotFoundException))
+				e.printStackTrace();
 			c.setException(e);
 			handler.accept(c);
 		}

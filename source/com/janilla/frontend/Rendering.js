@@ -38,8 +38,9 @@ class Rendering {
 		if (template)
 			return await template(this.renderer(object));
 		if (Array.isArray(object)) {
+			const r = this.renderer(object);
 			const a = [];
-			for (let i = 0; i < object.length; i++) a.push(await this.renderer(object)(i));
+			for (let i = 0; i < object.length; i++) a.push(await r(i));
 			return a.join('');
 		}
 		if (object && typeof object === 'object' && Reflect.has(object, 'render') && typeof object.render === 'function')
@@ -81,7 +82,6 @@ class Rendering {
 				v = await o.render(k, this);
 				if (v !== undefined) break;
 			}
-			// if (!loop) break;
 		}
 		if (v === undefined)
 			for (let i = this.stack.length - 1; i >= 0; i--) {
