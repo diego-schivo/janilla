@@ -116,13 +116,12 @@ class HeaderAdder {
 
 				@Override
 				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					var n = dir.getFileName().toString();
 					if (dir.getParent().equals(s)) {
-						var n = dir.getFileName().toString();
-//						if (!n.equals("janilla") && !n.startsWith("janilla-"))
-						if (!h.containsKey(n))
+						if (!h.containsKey(n) || n.equals("bin") || n.equals("target"))
 							return FileVisitResult.SKIP_SUBTREE;
 					}
-					if (dir.getFileName().toString().startsWith("."))
+					if (n.startsWith(".") || n.equals("bin") || n.equals("target"))
 						return FileVisitResult.SKIP_SUBTREE;
 					return FileVisitResult.CONTINUE;
 				}
@@ -148,10 +147,12 @@ class HeaderAdder {
 							};
 						}
 					};
-					var a = Stream.iterate(i.next(), t -> {
+					var a = Stream.iterate(i.hasNext() ? i.next() : null, t -> {
+						if (t == null)
+							return false;
 						c.accept(t);
 						return c.state == 1 || c.state == 2;
-					}, t -> i.next()).toArray(String[]::new);
+					}, t -> i.hasNext() ? i.next() : null).toArray(String[]::new);
 					var b = h.get(s.relativize(file).getName(0).toString());
 					if (!Arrays.equals(a, b)) {
 						System.out.println(file);
