@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.janilla</groupId>
 	<artifactId>janilla</artifactId>
-	<version>0.0.6-SNAPSHOT</version>
+	<version>0.0.6</version>
 	<properties>
 		<maven.compiler.source>21</maven.compiler.source>
 		<maven.compiler.target>21</maven.compiler.target>
@@ -41,7 +41,7 @@
 		<developerConnection>
 			scm:git:ssh://git@github.com/diego-schivo/janilla.git</developerConnection>
 		<url>https://github.com/diego-schivo/janilla</url>
-		<tag>HEAD</tag>
+		<tag>janilla-0.0.6</tag>
 	</scm>
 	<profiles>
 		<profile>
