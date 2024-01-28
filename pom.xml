@@ -95,7 +95,7 @@
 						<extensions>true</extensions>
 						<configuration>
 							<publishingServerId>central</publishingServerId>
-							<tokenEnabled>true</tokenEnabled>
+							<tokenAuth>true</tokenAuth>
 						</configuration>
 					</plugin>
 				</plugins>
