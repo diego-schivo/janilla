@@ -24,10 +24,13 @@
  */
 package com.janilla.io;
 
+import java.math.BigDecimal;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.UUID;
 
 import com.janilla.reflect.Reflection;
 
@@ -42,11 +45,23 @@ public interface ElementHelper<E> {
 	int compare(ByteBuffer buffer, E element);
 
 	static <T> ElementHelper<T> of(Class<T> type) {
-		if (type == Integer.TYPE || type == Integer.class) {
+		if (type == BigDecimal.class) {
+			@SuppressWarnings("unchecked")
+			var h = (ElementHelper<T>) BIG_DECIMAL;
+			return h;
+		} else if (type == Instant.class) {
+			@SuppressWarnings("unchecked")
+			var h = (ElementHelper<T>) INSTANT;
+			return h;
+		} else if (type == Integer.class || type == Integer.TYPE) {
 			@SuppressWarnings("unchecked")
 			var h = (ElementHelper<T>) INTEGER;
 			return h;
-		} else if (type == Long.TYPE || type == Long.class) {
+		} else if (type == LocalDate.class) {
+			@SuppressWarnings("unchecked")
+			var h = (ElementHelper<T>) LOCAL_DATE;
+			return h;
+		} else if (type == Long.class || type == Long.TYPE) {
 			@SuppressWarnings("unchecked")
 			var h = (ElementHelper<T>) LONG;
 			return h;
@@ -54,13 +69,13 @@ public interface ElementHelper<E> {
 			@SuppressWarnings("unchecked")
 			var h = (ElementHelper<T>) STRING;
 			return h;
-		} else if (type == Instant.class) {
+		} else if (type == URI.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) INSTANT;
+			var h = (ElementHelper<T>) URI1;
 			return h;
-		} else if (type == LocalDate.class) {
+		} else if (type == UUID.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) LOCAL_DATE;
+			var h = (ElementHelper<T>) UUID1;
 			return h;
 		} else
 			throw new IllegalArgumentException("type=" + type);
@@ -142,26 +157,55 @@ public interface ElementHelper<E> {
 		};
 	}
 
-	ElementHelper<Object> NULL = new ElementHelper<>() {
+	ElementHelper<BigDecimal> BIG_DECIMAL = new ElementHelper<>() {
 
 		@Override
-		public byte[] getBytes(Object element) {
-			return new byte[0];
+		public byte[] getBytes(BigDecimal element) {
+			var b = ByteBuffer.allocate(8 + 2);
+			b.putLong(element.unscaledValue().longValue());
+			b.putShort((short) element.scale());
+			return b.array();
 		}
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 0;
+			return 8 + 2;
 		}
 
 		@Override
-		public Object getElement(ByteBuffer buffer) {
-			return null;
+		public BigDecimal getElement(ByteBuffer buffer) {
+			return BigDecimal.valueOf(buffer.getLong(), buffer.getShort());
 		}
 
 		@Override
-		public int compare(ByteBuffer buffer, Object element) {
-			return 0;
+		public int compare(ByteBuffer buffer, BigDecimal element) {
+			var d = BigDecimal.valueOf(buffer.getLong(buffer.position()), buffer.getShort(buffer.position() + 8));
+			return d.compareTo(element);
+		}
+	};
+
+	ElementHelper<Instant> INSTANT = new ElementHelper<>() {
+
+		@Override
+		public byte[] getBytes(Instant element) {
+			var b = ByteBuffer.allocate(8);
+			b.putLong(element.toEpochMilli());
+			return b.array();
+		}
+
+		@Override
+		public int getLength(ByteBuffer buffer) {
+			return 8;
+		}
+
+		@Override
+		public Instant getElement(ByteBuffer buffer) {
+			return Instant.ofEpochMilli(buffer.getLong());
+		}
+
+		@Override
+		public int compare(ByteBuffer buffer, Instant element) {
+			return Long.compare(buffer.getLong(buffer.position()), element.toEpochMilli());
 		}
 	};
 
@@ -190,6 +234,37 @@ public interface ElementHelper<E> {
 		}
 	};
 
+	ElementHelper<LocalDate> LOCAL_DATE = new ElementHelper<>() {
+
+		@Override
+		public byte[] getBytes(LocalDate element) {
+			var b = ByteBuffer.allocate(4 + 2 * 1);
+			b.putInt(element.getYear());
+			b.put((byte) element.getMonthValue());
+			b.put((byte) element.getDayOfMonth());
+			return b.array();
+		}
+
+		@Override
+		public int getLength(ByteBuffer buffer) {
+			return 4 + 2 * 1;
+		}
+
+		@Override
+		public LocalDate getElement(ByteBuffer buffer) {
+			return LocalDate.of(buffer.getInt(), buffer.get(), buffer.get());
+		}
+
+		@Override
+		public int compare(ByteBuffer buffer, LocalDate element) {
+			var c = Integer.compare(buffer.getInt(buffer.position()), element.getYear());
+			if (c != 0)
+				return c;
+			c = Byte.compare(buffer.get(buffer.position() + 4), (byte) element.getMonthValue());
+			return c != 0 ? c : Byte.compare(buffer.get(buffer.position() + 4 + 1), (byte) element.getDayOfMonth());
+		}
+	};
+
 	ElementHelper<Long> LONG = new ElementHelper<>() {
 
 		@Override
@@ -212,6 +287,29 @@ public interface ElementHelper<E> {
 		@Override
 		public int compare(ByteBuffer buffer, Long element) {
 			return Long.compare(buffer.getLong(buffer.position()), element);
+		}
+	};
+
+	ElementHelper<Object> NULL = new ElementHelper<>() {
+
+		@Override
+		public byte[] getBytes(Object element) {
+			return new byte[0];
+		}
+
+		@Override
+		public int getLength(ByteBuffer buffer) {
+			return 0;
+		}
+
+		@Override
+		public Object getElement(ByteBuffer buffer) {
+			return null;
+		}
+
+		@Override
+		public int compare(ByteBuffer buffer, Object element) {
+			return 0;
 		}
 	};
 
@@ -254,59 +352,53 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<Instant> INSTANT = new ElementHelper<>() {
+	ElementHelper<URI> URI1 = new ElementHelper<>() {
 
 		@Override
-		public byte[] getBytes(Instant element) {
-			var b = ByteBuffer.allocate(8);
-			b.putLong(element.toEpochMilli());
-			return b.array();
+		public byte[] getBytes(URI element) {
+			return STRING.getBytes(element.toString());
 		}
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 8;
+			return STRING.getLength(buffer);
 		}
 
 		@Override
-		public Instant getElement(ByteBuffer buffer) {
-			return Instant.ofEpochMilli(buffer.getLong());
+		public URI getElement(ByteBuffer buffer) {
+			return URI.create(STRING.getElement(buffer));
 		}
 
 		@Override
-		public int compare(ByteBuffer buffer, Instant element) {
-			return Long.compare(buffer.getLong(buffer.position()), element.toEpochMilli());
+		public int compare(ByteBuffer buffer, URI element) {
+			return STRING.compare(buffer, element.toString());
 		}
 	};
 
-	ElementHelper<LocalDate> LOCAL_DATE = new ElementHelper<>() {
+	ElementHelper<UUID> UUID1 = new ElementHelper<>() {
 
 		@Override
-		public byte[] getBytes(LocalDate element) {
-			var b = ByteBuffer.allocate(4 + 2 * 1);
-			b.putInt(element.getYear());
-			b.put((byte) element.getMonthValue());
-			b.put((byte) element.getDayOfMonth());
+		public byte[] getBytes(UUID element) {
+			var b = ByteBuffer.allocate(16);
+			b.putLong(element.getMostSignificantBits());
+			b.putLong(element.getLeastSignificantBits());
 			return b.array();
 		}
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 4 + 2 * 1;
+			return 16;
 		}
 
 		@Override
-		public LocalDate getElement(ByteBuffer buffer) {
-			return LocalDate.of(buffer.getInt(), buffer.get(), buffer.get());
+		public UUID getElement(ByteBuffer buffer) {
+			return new UUID(buffer.getLong(), buffer.getLong());
 		}
 
 		@Override
-		public int compare(ByteBuffer buffer, LocalDate element) {
-			var c = Integer.compare(buffer.getInt(buffer.position()), element.getYear());
-			if (c != 0)
-				return c;
-			c = Byte.compare(buffer.get(buffer.position() + 4), (byte) element.getMonthValue());
-			return c != 0 ? c : Byte.compare(buffer.get(buffer.position() + 4 + 1), (byte) element.getDayOfMonth());
+		public int compare(ByteBuffer buffer, UUID element) {
+			var c = Long.compare(buffer.getLong(buffer.position()), element.getMostSignificantBits());
+			return c != 0 ? c : Long.compare(buffer.getLong(buffer.position() + 8), element.getLeastSignificantBits());
 		}
 	};
 

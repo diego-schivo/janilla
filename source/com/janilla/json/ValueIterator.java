@@ -24,12 +24,14 @@
  */
 package com.janilla.json;
 
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 class ValueIterator extends TokenIterator {
 
@@ -91,21 +93,23 @@ class ValueIterator extends TokenIterator {
 
 	protected Iterator<JsonToken<?>> newIterator(Object object) {
 		return object == null ? new NullIterator() : switch (object) {
-		case Map<?, ?> m -> {
-			@SuppressWarnings("unchecked")
-			var n = (Map<String, Object>) m;
-			yield new ObjectIterator(n.entrySet().iterator(), context);
-		}
+		case Boolean x -> new BooleanIterator(x);
+		case Instant x -> new StringIterator(x.toString());
 		case List<?> l -> {
 			@SuppressWarnings("unchecked")
 			var m = (List<Object>) l;
 			yield new ArrayIterator(m.iterator(), context);
 		}
-		case Boolean x -> new BooleanIterator(x);
-		case Instant x -> new StringIterator(x.toString());
+		case LocalDate x -> new StringIterator(x.toString());
+		case Map<?, ?> m -> {
+			@SuppressWarnings("unchecked")
+			var n = (Map<String, Object>) m;
+			yield new ObjectIterator(n.entrySet().iterator(), context);
+		}
 		case Number x -> new NumberIterator(x);
 		case String x -> new StringIterator(x);
-		case LocalDate x -> new StringIterator(x.toString());
+		case URI x -> new StringIterator(x.toString());
+		case UUID x -> new StringIterator(x.toString());
 		default -> null;
 		};
 	}

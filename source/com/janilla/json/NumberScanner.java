@@ -24,7 +24,6 @@
  */
 package com.janilla.json;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 class NumberScanner implements Scanner {
@@ -33,7 +32,7 @@ class NumberScanner implements Scanner {
 
 	StringBuilder buffer;
 
-	int scale;
+//	int scale;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {
@@ -70,16 +69,18 @@ class NumberScanner implements Scanner {
 					yield 2;
 				}
 				if (value == '.') {
+					buffer.append((char) value);
 					a = true;
 					yield 3;
 				}
-				Number n;
-				try {
-					n = Integer.parseInt(buffer.toString());
-				} catch (NumberFormatException e) {
-					n = Long.parseLong(buffer.toString());
-				}
-				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, n));
+//				Number n;
+//				try {
+//					n = Integer.parseInt(buffer.toString());
+//				} catch (NumberFormatException e) {
+//					n = Long.parseLong(buffer.toString());
+//				}
+//				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, n));
+				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, Long.parseLong(buffer.toString())));
 				a = false;
 				yield 5;
 			}
@@ -87,7 +88,7 @@ class NumberScanner implements Scanner {
 			case 3 -> {
 				if (value >= '0' && value <= '9') {
 					buffer.append((char) value);
-					scale = 1;
+//					scale = 1;
 					a = true;
 					yield 4;
 				}
@@ -98,12 +99,13 @@ class NumberScanner implements Scanner {
 			case 4 -> {
 				if (value >= '0' && value <= '9') {
 					buffer.append((char) value);
-					scale++;
+//					scale++;
 					a = true;
 					yield 4;
 				}
-				tokens.add(
-						new JsonToken<>(JsonToken.Type.NUMBER, BigDecimal.valueOf(Long.parseLong(buffer.toString()), scale)));
+//				tokens.add(
+//						new JsonToken<>(JsonToken.Type.NUMBER, BigDecimal.valueOf(Long.parseLong(buffer.toString()), scale)));
+				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, Double.parseDouble(buffer.toString())));
 				a = false;
 				yield 5;
 			}

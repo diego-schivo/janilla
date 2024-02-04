@@ -33,5 +33,6 @@ import java.lang.annotation.Target;
 @Target({ ElementType.PARAMETER })
 public @interface Parameter {
 
-	String value() default "";
+//	String value() default "";
+	String name();
 }

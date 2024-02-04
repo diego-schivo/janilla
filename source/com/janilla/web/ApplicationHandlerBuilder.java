@@ -41,6 +41,9 @@ public class ApplicationHandlerBuilder {
 	Supplier<Collection<Class<?>>> applicationClasses = Lazy
 			.of(() -> Util.getPackageClasses(application.getClass().getPackageName()).toList());
 
+	Supplier<Collection<Class<?>>> frontendClasses = Lazy
+			.of(() -> Util.getPackageClasses("com.janilla.frontend").toList());
+
 	Supplier<HandlerFactory> handlerFactory = Lazy.of(() -> {
 		var a = new HandlerFactory[] { buildMethodHandlerFactory(), buildTemplateHandlerFactory(),
 				buildResourceHandlerFactory(), buildJsonHandlerFactory(), buildExceptionHandlerFactory() };
@@ -89,16 +92,6 @@ public class ApplicationHandlerBuilder {
 
 		var i = new AnnotationDrivenToMethodInvocation() {
 
-//			Map<Class<?>, Supplier<Object>> properties = Reflection.properties(application.getClass())
-//					.map(n -> Reflection.getter(application.getClass(), n)).filter(Objects::nonNull)
-//					.collect(Collectors.toMap(g -> g.getReturnType(), g -> Lazy.of(() -> {
-//						try {
-//							return g.invoke(application);
-//						} catch (ReflectiveOperationException e) {
-//							throw new RuntimeException(e);
-//						}
-//					})));
-
 			@Override
 			protected Object getInstance(Class<?> c) {
 				if (c == application.getClass())
@@ -112,21 +105,14 @@ public class ApplicationHandlerBuilder {
 				return i;
 			}
 		};
-		i.setTypes(() -> applicationClasses.get().iterator());
+		i.setTypes(() -> Stream.concat(applicationClasses.get().stream(), frontendClasses.get().stream()).iterator());
 		f.setToInvocation(i);
 
 		return f;
 	}
 
 	protected TemplateHandlerFactory buildTemplateHandlerFactory() {
-		var f = newHandlerFactory(TemplateHandlerFactory.class);
-
-//		var r = new AnnotationDrivenToTemplateReader.Simple();
-//		r.setResourceClass(application.getClass());
-//		r.setTypes(() -> applicationClasses.get().iterator());
-//		f.setToReader(r);
-
-		return f;
+		return newHandlerFactory(TemplateHandlerFactory.class);
 	}
 
 	protected ResourceHandlerFactory buildResourceHandlerFactory() {
@@ -165,12 +151,13 @@ public class ApplicationHandlerBuilder {
 	}
 
 	protected void foo(Object i) throws ReflectiveOperationException {
-		for (var j = Reflection.properties(i.getClass()) // .map(n -> Reflection.setter(c, n)).filter(Objects::nonNull)
-				.iterator(); j.hasNext();) {
+		for (var j = Reflection.properties(i.getClass()).iterator(); j.hasNext();) {
 			var n = j.next();
 			var s = Reflection.setter(i.getClass(), n);
-//			var t = s.getParameterTypes()[0];
-//			var v = properties.get(t);
+			if (n.equals("application") && s != null) {
+				s.invoke(i, application);
+				continue;
+			}
 			var g = s != null ? Reflection.getter(application.getClass(), n) : null;
 			var v = g != null ? g.invoke(application) : null;
 			if (v != null)

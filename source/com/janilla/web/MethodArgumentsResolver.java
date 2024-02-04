@@ -88,7 +88,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Exc
 		var a = new Object[t.length];
 		for (var j = 0; j < a.length; j++) {
 			var h = g != null && j < g.size() ? g.get(j) : null;
-			var k = h == null && n[j] != null ? n[j].value() : null;
+			var k = h == null && n[j] != null ? n[j].name() : null;
 			var w = k != null ? q : null;
 			a[j] = resolveArgument(t[j], n[j], c, () -> h != null ? new String[] { h }
 					: w != null
@@ -123,7 +123,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Exc
 								.toArray(Parameter[]::new);
 						var a = new Object[t.length];
 						for (var j = 0; j < a.length; j++) {
-							var k = n[j] != null ? n[j].value() : null;
+							var k = n[j] != null ? n[j].name() : null;
 							var w = k != null ? entries : null;
 							a[j] = resolveArgument(t[j], n[j], context,
 									() -> w != null ? w.stream().filter(f -> f.getKey().equals(k)).map(Entry::getValue)

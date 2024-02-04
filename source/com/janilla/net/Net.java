@@ -34,8 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -98,7 +98,7 @@ public interface Net {
 			var i = s.indexOf('=');
 			var k = (i >= 0 ? s.substring(0, i) : s).trim();
 			var v = i >= 0 ? s.substring(i + 1).trim() : null;
-			return Map.entry(urlDecode(k), urlDecode(v));
+			return new SimpleEntry<>(urlDecode(k), urlDecode(v));
 		}).reduce(new EntryList<>(), (l, e) -> {
 			l.add(e.getKey(), e.getValue());
 			return l;

@@ -104,7 +104,7 @@ public class ReflectionJsonIterator extends JsonIterator {
 		}
 	}
 
-	public record D(@Parameter("i") int i) {
+	public record D(@Parameter(name = "i") int i) {
 	}
 
 	public ReflectionJsonIterator(Object object) {

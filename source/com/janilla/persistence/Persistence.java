@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import com.janilla.database.Database;
@@ -116,13 +117,17 @@ public class Persistence {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.NULL;
 				j.keyHelper = h;
-			} else if (t == Long.class) {
+			} else if (t == Long.class || t == Long.TYPE) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.LONG;
 				j.keyHelper = h;
 			} else if (t == String.class || t == Collection.class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.STRING;
+				j.keyHelper = h;
+			} else if (t == UUID.class) {
+				@SuppressWarnings("unchecked")
+				var h = (ElementHelper<K>) ElementHelper.UUID1;
 				j.keyHelper = h;
 			} else
 				throw new RuntimeException();

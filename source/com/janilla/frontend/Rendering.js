@@ -22,7 +22,23 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
+import templates from './templates.js';
+
+const htmlEscapes = {
+	"&": "&amp",
+	"<": "&lt",
+	">": "&gt",
+	'"': "&quot",
+	"'": "&#x27",
+	"`": "&#x60",
+};
+const reUnescapedHtml = /[&<>"'`]/g;
+const reHasUnescapedHtml = new RegExp(reUnescapedHtml.source);
+const escapeHtml = s => s && reHasUnescapedHtml.test(s) ? s.replace(reUnescapedHtml, c => htmlEscapes[c]) : s;
+
 class Rendering {
+
+	templates = templates;
 
 	stack = [];
 
@@ -35,6 +51,7 @@ class Rendering {
 	}
 
 	async render(object, template) {
+		if (typeof template === 'string') template = this.templates[template];
 		if (template)
 			return await template(this.renderer(object));
 		if (Array.isArray(object)) {
@@ -68,7 +85,8 @@ class Rendering {
 						this.stack.pop();
 				}
 			}
-			if (escape && typeof v === 'string') v = v.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+			// if (escape && typeof v === 'string') v = v.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+			if (escape && typeof v === 'string') v = escapeHtml(v);
 			return v;
 		});
 	}
@@ -93,6 +111,12 @@ class Rendering {
 				if (!loop) break;
 			}
 		return await this.render(v);
+	}
+
+	clone() {
+		const r = new Rendering();
+		r.stack = [...this.stack];
+		return r;
 	}
 }
 

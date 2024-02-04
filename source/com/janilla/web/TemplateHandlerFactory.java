@@ -75,9 +75,10 @@ public class TemplateHandlerFactory implements HandlerFactory {
 			if (t.contains("\n"))
 				u = t;
 			else {
-				var i = input.object().getClass().getResourceAsStream(t);
+				var c = input.object().getClass();
+				var i = c.getResourceAsStream(t);
 				if (i == null)
-					throw new NullPointerException(t);
+					throw new NullPointerException(c + " " + t);
 				u = new String(i.readAllBytes());
 			}
 			return Interpolator.of(u);

@@ -80,7 +80,7 @@ public class Crud<E> {
 
 	public E read(long id) throws IOException {
 		var o = database.performOnStore(type.getSimpleName(), x -> (Object) x.read(id));
-		return parser.apply(o);
+		return o != null ? parser.apply(o) : null;
 	}
 
 	public Stream<E> read(long[] ids) throws IOException {
@@ -140,6 +140,12 @@ public class Crud<E> {
 		return e;
 	}
 
+	public long[] list() throws IOException {
+		return database.performOnStore(type.getSimpleName(), s -> {
+			return s.ids().toArray();
+		});
+	}
+
 	public Page list(long skip, long limit) throws IOException {
 		return database.performOnStore(type.getSimpleName(), s -> {
 			long[] i = s.ids().skip(skip).limit(limit).toArray();
@@ -149,16 +155,22 @@ public class Crud<E> {
 	}
 
 	public long count() throws IOException {
-		return database.performOnStore(type.getSimpleName(), x -> (Long) x.count());
+		return database.performOnStore(type.getSimpleName(), x -> {
+			return x.count();
+		});
 	}
 
 	public long count(String index, Object value) throws IOException {
 		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
-		return database.performOnIndex(n, x -> (Long) x.count(value));
+		return database.performOnIndex(n, x -> {
+			return x.count(value);
+		});
 	}
 
 	public long find(String index, Object value) throws IOException {
-		return performOnIndex(index, value, x -> (Long) x.findFirst().orElse(-1));
+		return performOnIndex(index, value, x -> {
+			return x.findFirst().orElse(-1);
+		});
 	}
 
 	public long[] filter(String index, Object... values) throws IOException {

@@ -25,24 +25,28 @@
 package com.janilla.json;
 
 import java.lang.reflect.ParameterizedType;
+import java.math.BigDecimal;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterators;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 import com.janilla.json.JsonToken.Boundary;
-import com.janilla.reflect.Parameter;
 import com.janilla.reflect.Reflection;
 
 public interface Json {
@@ -243,30 +247,62 @@ public interface Json {
 //						System.out.println("c=" + c);
 						var d = c.getConstructors()[0];
 //						System.out.println("d=" + d);
-						var u = d.getParameterAnnotations();
-						var n = Arrays.stream(u)
-								.map(b -> (Parameter) Arrays.stream(b)
-										.filter(e -> e.annotationType() == Parameter.class).findFirst().get())
-								.map(Parameter::value).toArray(String[]::new);
+//						var u = d.getParameterAnnotations();
+//						var n = Arrays.stream(u)
+//								.map(b -> (Parameter) Arrays.stream(b)
+//										.filter(e -> e.annotationType() == Parameter.class).findFirst().get())
+//								.map(Parameter::name).toArray(String[]::new);
+//						var n = c.isRecord()
+//								? Arrays.stream(c.getRecordComponents()).map(x -> x.getName()).toArray(String[]::new)
+//								: null;
+						var n = c.isRecord() ? Arrays.stream(c.getRecordComponents()).collect(
+								Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new))
+								: null;
 						@SuppressWarnings("unchecked")
 						var m = ((Map<String, Object>) a.pop());
 						Object i;
 						try {
-							if (n.length > 0 && Arrays.stream(n).allMatch(Objects::nonNull))
-								i = d.newInstance(Arrays.stream(n).map(m::get).toArray());
-							else {
+//							if (n.length > 0 && Arrays.stream(n).allMatch(Objects::nonNull))
+							if (n != null) {
+//								var z = Arrays.stream(n).map(m::get).toArray();
+								var z = n.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue()))
+										.toArray();
+								i = d.newInstance(z);
+							} else {
 								i = d.newInstance();
 								for (var e : m.entrySet()) {
 //									System.out.println("e=" + e);
 									var s = Reflection.setter(c, e.getKey());
-									var v = s.getParameterTypes()[0];
-									var o = e.getValue();
-									if (v == Instant.class)
-										o = o != null ? Instant.parse((String) o) : null;
-									if (v == LocalDate.class)
-										o = o != null ? LocalDate.parse((String) o) : null;
-									else if (v == Long.class && o instanceof Integer j)
-										o = (long) j.intValue();
+//									var v = s.getParameterTypes()[0];
+//									var o = e.getValue();
+//									if (v == BigDecimal.class) {
+//										if (o != null)
+//											o = switch (o) {
+////											case BigDecimal x -> x;
+////											case Integer x -> BigDecimal.valueOf(x);
+//											case Double x -> BigDecimal.valueOf(x);
+//											case Long x -> BigDecimal.valueOf(x);
+//											default -> throw new RuntimeException();
+//											};
+//									} else if (v == Instant.class)
+//										o = o != null ? Instant.parse((String) o) : null;
+//									else if (v == LocalDate.class)
+//										o = o != null ? LocalDate.parse((String) o) : null;
+////									else if (v == Long.class) {
+////										if (o instanceof Integer j)
+////											o = (long) j.intValue();
+////									}
+//									else if (v == Integer.class || v == Integer.TYPE) {
+//										if (o != null)
+//											o = switch (o) {
+//											case Long x -> x.intValue();
+//											default -> throw new RuntimeException();
+//											};
+//									} else if (v == URI.class)
+//										o = o != null ? URI.create((String) o) : null;
+//									else if (v == UUID.class)
+//										o = o != null ? UUID.fromString((String) o) : null;
+									var o = convert(e.getValue(), s.getParameterTypes()[0]);
 //									System.out.println("s=" + s + ", i=" + i + ", o=" + o);
 									s.invoke(i, o);
 								}
@@ -339,5 +375,28 @@ public interface Json {
 			var t = (T) a.pop();
 			return t;
 		});
+	}
+
+	static Object convert(Object input, Class<?> target) {
+		if (target == BigDecimal.class)
+			return input != null ? switch (input) {
+			case Double x -> BigDecimal.valueOf(x);
+			case Long x -> BigDecimal.valueOf(x);
+			default -> throw new RuntimeException();
+			} : null;
+		if (target == Instant.class)
+			return input != null ? Instant.parse((String) input) : null;
+		if (target == LocalDate.class)
+			return input != null ? LocalDate.parse((String) input) : null;
+		if (target == Integer.class || target == Integer.TYPE)
+			return input != null ? switch (input) {
+			case Long x -> x.intValue();
+			default -> throw new RuntimeException();
+			} : null;
+		if (target == URI.class)
+			return input != null ? URI.create((String) input) : null;
+		if (target == UUID.class)
+			return input != null ? UUID.fromString((String) input) : null;
+		return input;
 	}
 }

@@ -120,7 +120,7 @@ public interface Jwt {
 		var e = Base64.getUrlEncoder();
 		var s = e.encodeToString(a);
 		if (!s.equals(token.substring(j + 1)))
-			throw new RuntimeException("s=" + s);
+			throw new IllegalArgumentException("s=" + s);
 
 		@SuppressWarnings("unchecked")
 		var p = (Map<String, ?>) Json.parse(new String(d.decode(token.substring(i + 1, j))));
