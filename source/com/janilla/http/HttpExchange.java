@@ -22,11 +22,37 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.frontend;
+package com.janilla.http;
 
-import java.io.IOException;
+public class HttpExchange {
 
-public interface Renderable {
+	private HttpRequest request;
 
-	Object render(Object key, RenderEngine engine) throws IOException;
+	private HttpResponse response;
+
+	private Exception exception;
+
+	public HttpRequest getRequest() {
+		return request;
+	}
+
+	public void setRequest(HttpRequest value) {
+		request = value;
+	}
+
+	public HttpResponse getResponse() {
+		return response;
+	}
+
+	public void setResponse(HttpResponse value) {
+		response = value;
+	}
+
+	public Exception getException() {
+		return exception;
+	}
+
+	public void setException(Exception exception) {
+		this.exception = exception;
+	}
 }

@@ -30,7 +30,7 @@ import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 
 import com.janilla.frontend.RenderEngine.ObjectAndType;
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.io.IO;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
@@ -39,14 +39,14 @@ import com.janilla.json.ReflectionJsonIterator;
 public class JsonHandlerFactory implements HandlerFactory {
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
 //		if (object instanceof HttpRequest || object instanceof Exception)
 //			return null;
 //		return c -> render(object, c);
 		return object instanceof ObjectAndType i ? x -> render(i.object(), x) : null;
 	}
 
-	protected void render(Object object, ExchangeContext context) throws IOException {
+	protected void render(Object object, HttpExchange context) throws IOException {
 		var s = context.getResponse();
 		s.getHeaders().set("Content-Type", "application/json");
 
@@ -56,7 +56,7 @@ public class JsonHandlerFactory implements HandlerFactory {
 		IO.repeat(x -> c.write(b), b.remaining());
 	}
 
-	protected Iterator<JsonToken<?>> newJsonIterator(Object object, ExchangeContext context) {
+	protected Iterator<JsonToken<?>> newJsonIterator(Object object, HttpExchange context) {
 		return new ReflectionJsonIterator(object);
 	}
 }

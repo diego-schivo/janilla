@@ -28,7 +28,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.io.IO;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.Lazy;
@@ -77,7 +77,7 @@ public class ApplicationHandlerBuilder {
 		return handlerFactory.get();
 	}
 
-	public IO.Consumer<ExchangeContext> build() {
+	public IO.Consumer<HttpExchange> build() {
 		return c -> {
 			var o = c.getException() != null ? c.getException() : c.getRequest();
 			var h = handlerFactory.get().createHandler(o, c);
@@ -98,7 +98,7 @@ public class ApplicationHandlerBuilder {
 					return application;
 				var i = super.getInstance(c);
 				try {
-					foo(i);
+					initialize(i);
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}
@@ -143,25 +143,25 @@ public class ApplicationHandlerBuilder {
 		try {
 			@SuppressWarnings("unchecked")
 			var i = (T) c.getConstructor().newInstance();
-			foo(i);
+			initialize(i);
 			return i;
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected void foo(Object i) throws ReflectiveOperationException {
-		for (var j = Reflection.properties(i.getClass()).iterator(); j.hasNext();) {
+	protected void initialize(Object object) throws ReflectiveOperationException {
+		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
 			var n = j.next();
-			var s = Reflection.setter(i.getClass(), n);
+			var s = Reflection.setter(object.getClass(), n);
 			if (n.equals("application") && s != null) {
-				s.invoke(i, application);
+				s.invoke(object, application);
 				continue;
 			}
 			var g = s != null ? Reflection.getter(application.getClass(), n) : null;
 			var v = g != null ? g.invoke(application) : null;
 			if (v != null)
-				s.invoke(i, v);
+				s.invoke(object, v);
 		}
 	}
 }

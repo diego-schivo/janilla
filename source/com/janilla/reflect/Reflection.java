@@ -62,18 +62,15 @@ public class Reflection {
 		var d = destination.getClass();
 		for (var i = properties(d).iterator(); i.hasNext();) {
 			var n = i.next();
-			var s = setter(d, n);
-			if (s == null || (filter != null && !filter.test(n)))
-				continue;
-			var g = getter(c, n);
-			if (g == null)
-				continue;
-			try {
-				var v = g.invoke(source);
-				s.invoke(destination, v);
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
-			}
+			var s = filter == null || filter.test(n) ? setter(d, n) : null;
+			var g = s != null ? getter(c, n) : null;
+			if (g != null)
+				try {
+					var v = g.invoke(source);
+					s.invoke(destination, v);
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
 		}
 	}
 
@@ -88,7 +85,7 @@ public class Reflection {
 				default -> false;
 				})
 					continue;
-				if (Modifier.isPublic(n.getModifiers())) {
+				if (Modifier.isPublic(n.getModifiers()) && !Modifier.isStatic(n.getModifiers())) {
 					var g = n.getReturnType() != Void.TYPE && n.getParameterCount() == 0 ? n : null;
 					var s = n.getReturnType() == Void.TYPE && n.getParameterCount() == 1 ? n : null;
 					if (g != null || s != null) {

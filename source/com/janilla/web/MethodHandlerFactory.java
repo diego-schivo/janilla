@@ -41,7 +41,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.janilla.frontend.RenderEngine.ObjectAndType;
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpRequest;
@@ -107,7 +107,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 		var wc = new HttpMessageWritableByteChannel(Channels.newChannel(os));
 
 		try (var rq = rc.readRequest(); var rs = wc.writeResponse()) {
-			var d = new ExchangeContext();
+			var d = new HttpExchange();
 			d.setRequest(rq);
 			d.setResponse(rs);
 			var h = f.createHandler(rq, d);
@@ -127,7 +127,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 
 	protected Function<HttpRequest, MethodInvocation> toInvocation;
 
-	protected BiFunction<MethodInvocation, ExchangeContext, Object[]> argumentsResolver;
+	protected BiFunction<MethodInvocation, HttpExchange, Object[]> argumentsResolver;
 
 	protected HandlerFactory mainFactory;
 
@@ -139,32 +139,28 @@ public class MethodHandlerFactory implements HandlerFactory {
 		this.toInvocation = toInvocation;
 	}
 
-	public BiFunction<MethodInvocation, ExchangeContext, Object[]> getArgumentsResolver() {
+	public BiFunction<MethodInvocation, HttpExchange, Object[]> getArgumentsResolver() {
 		return argumentsResolver;
 	}
 
-	public void setArgumentsResolver(BiFunction<MethodInvocation, ExchangeContext, Object[]> argumentsResolver) {
+	public void setArgumentsResolver(BiFunction<MethodInvocation, HttpExchange, Object[]> argumentsResolver) {
 		this.argumentsResolver = argumentsResolver;
 	}
-
-//	public HandlerFactory getMainFactory() {
-//		return mainFactory;
-//	}
 
 	public void setMainFactory(HandlerFactory mainFactory) {
 		this.mainFactory = mainFactory;
 	}
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
 		var i = object instanceof HttpRequest q ? toInvocation.apply(q) : null;
 		return i != null ? c -> handle(i, c) : null;
 	}
 
-	Supplier<BiFunction<MethodInvocation, ExchangeContext, Object[]>> argumentsResolver2 = Lazy
+	Supplier<BiFunction<MethodInvocation, HttpExchange, Object[]>> argumentsResolver2 = Lazy
 			.of(() -> argumentsResolver != null ? argumentsResolver : new MethodArgumentsResolver());
 
-	protected void handle(MethodInvocation invocation, ExchangeContext context) throws IOException {
+	protected void handle(MethodInvocation invocation, HttpExchange context) throws IOException {
 		Object[] a;
 		try {
 			a = argumentsResolver2.get().apply(invocation, context);
@@ -227,7 +223,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 		}
 	}
 
-	protected void render(Object object, ExchangeContext context) throws IOException {
+	protected void render(Object object, HttpExchange context) throws IOException {
 		var h = mainFactory.createHandler(object, context);
 		if (h != null)
 			h.accept(context);

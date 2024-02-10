@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import com.janilla.database.Database;
 import com.janilla.database.Memory;
@@ -52,7 +53,7 @@ public class ApplicationPersistenceBuilder {
 	protected Object application;
 
 	Supplier<Collection<Class<?>>> applicationClasses = Lazy
-			.of(() -> Util.getPackageClasses(application.getClass().getPackageName()).toList());
+			.of(() -> getPackageNames().flatMap(Util::getPackageClasses).toList());
 
 	public void setFile(Path file) {
 		this.file = file;
@@ -124,21 +125,25 @@ public class ApplicationPersistenceBuilder {
 		try {
 			@SuppressWarnings("unchecked")
 			var i = (T) c.getConstructor().newInstance();
-			foo(i);
+			initialize(i);
 			return i;
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected void foo(Object i) throws ReflectiveOperationException {
-		for (var j = Reflection.properties(i.getClass()).iterator(); j.hasNext();) {
+	protected void initialize(Object object) throws ReflectiveOperationException {
+		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
 			var n = j.next();
-			var s = Reflection.setter(i.getClass(), n);
+			var s = Reflection.setter(object.getClass(), n);
 			var g = s != null ? Reflection.getter(application.getClass(), n) : null;
 			var v = g != null ? g.invoke(application) : null;
 			if (v != null)
-				s.invoke(i, v);
+				s.invoke(object, v);
 		}
+	}
+
+	protected Stream<String> getPackageNames() {
+		return Stream.of(application.getClass().getPackageName());
 	}
 }

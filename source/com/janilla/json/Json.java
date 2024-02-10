@@ -247,14 +247,6 @@ public interface Json {
 //						System.out.println("c=" + c);
 						var d = c.getConstructors()[0];
 //						System.out.println("d=" + d);
-//						var u = d.getParameterAnnotations();
-//						var n = Arrays.stream(u)
-//								.map(b -> (Parameter) Arrays.stream(b)
-//										.filter(e -> e.annotationType() == Parameter.class).findFirst().get())
-//								.map(Parameter::name).toArray(String[]::new);
-//						var n = c.isRecord()
-//								? Arrays.stream(c.getRecordComponents()).map(x -> x.getName()).toArray(String[]::new)
-//								: null;
 						var n = c.isRecord() ? Arrays.stream(c.getRecordComponents()).collect(
 								Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new))
 								: null;
@@ -262,9 +254,7 @@ public interface Json {
 						var m = ((Map<String, Object>) a.pop());
 						Object i;
 						try {
-//							if (n.length > 0 && Arrays.stream(n).allMatch(Objects::nonNull))
 							if (n != null) {
-//								var z = Arrays.stream(n).map(m::get).toArray();
 								var z = n.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue()))
 										.toArray();
 								i = d.newInstance(z);
@@ -273,35 +263,6 @@ public interface Json {
 								for (var e : m.entrySet()) {
 //									System.out.println("e=" + e);
 									var s = Reflection.setter(c, e.getKey());
-//									var v = s.getParameterTypes()[0];
-//									var o = e.getValue();
-//									if (v == BigDecimal.class) {
-//										if (o != null)
-//											o = switch (o) {
-////											case BigDecimal x -> x;
-////											case Integer x -> BigDecimal.valueOf(x);
-//											case Double x -> BigDecimal.valueOf(x);
-//											case Long x -> BigDecimal.valueOf(x);
-//											default -> throw new RuntimeException();
-//											};
-//									} else if (v == Instant.class)
-//										o = o != null ? Instant.parse((String) o) : null;
-//									else if (v == LocalDate.class)
-//										o = o != null ? LocalDate.parse((String) o) : null;
-////									else if (v == Long.class) {
-////										if (o instanceof Integer j)
-////											o = (long) j.intValue();
-////									}
-//									else if (v == Integer.class || v == Integer.TYPE) {
-//										if (o != null)
-//											o = switch (o) {
-//											case Long x -> x.intValue();
-//											default -> throw new RuntimeException();
-//											};
-//									} else if (v == URI.class)
-//										o = o != null ? URI.create((String) o) : null;
-//									else if (v == UUID.class)
-//										o = o != null ? UUID.fromString((String) o) : null;
 									var o = convert(e.getValue(), s.getParameterTypes()[0]);
 //									System.out.println("s=" + s + ", i=" + i + ", o=" + o);
 									s.invoke(i, o);
@@ -378,25 +339,53 @@ public interface Json {
 	}
 
 	static Object convert(Object input, Class<?> target) {
+		if (input == null || (input instanceof String s && s.isEmpty())) {
+			if (target == Boolean.TYPE)
+				return false;
+			if (target == Integer.TYPE)
+				return 0;
+			if (target == Long.TYPE)
+				return 0l;
+			if (target == String.class)
+				return input;
+			return null;
+		}
+
+		if (target.isAssignableFrom(input.getClass()))
+			return input;
 		if (target == BigDecimal.class)
-			return input != null ? switch (input) {
+			return switch (input) {
 			case Double x -> BigDecimal.valueOf(x);
 			case Long x -> BigDecimal.valueOf(x);
 			default -> throw new RuntimeException();
-			} : null;
-		if (target == Instant.class)
-			return input != null ? Instant.parse((String) input) : null;
-		if (target == LocalDate.class)
-			return input != null ? LocalDate.parse((String) input) : null;
-		if (target == Integer.class || target == Integer.TYPE)
-			return input != null ? switch (input) {
-			case Long x -> x.intValue();
+			};
+		if (target == Boolean.class || target == Boolean.TYPE)
+			return switch (input) {
+			case String x -> Boolean.parseBoolean(x);
 			default -> throw new RuntimeException();
-			} : null;
+			};
+		if (target == Instant.class)
+			return Instant.parse((String) input);
+		if (target == Integer.class || target == Integer.TYPE)
+			return switch (input) {
+			case Integer x -> input;
+			case Long x -> x.intValue();
+			case String x -> Integer.parseInt(x);
+			default -> throw new RuntimeException();
+			};
+		if (target == LocalDate.class)
+			return LocalDate.parse((String) input);
+		if (target == Long.class || target == Long.TYPE)
+			return switch (input) {
+			case Integer x -> x.longValue();
+			case Long x -> input;
+			case String x -> Long.parseLong(x);
+			default -> throw new RuntimeException();
+			};
 		if (target == URI.class)
-			return input != null ? URI.create((String) input) : null;
+			return URI.create((String) input);
 		if (target == UUID.class)
-			return input != null ? UUID.fromString((String) input) : null;
+			return UUID.fromString((String) input);
 		return input;
 	}
 }

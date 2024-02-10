@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,40 +44,64 @@ public class RenderEngine {
 	public static void main(String[] args) throws IOException {
 	}
 
-	IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator;
+	protected IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator;
+
+	protected LinkedList<ObjectAndType> stack = new LinkedList<>();
 
 	public void setToInterpolator(
 			IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator) {
 		this.toInterpolator = toInterpolator;
 	}
 
+	public List<ObjectAndType> getStack() {
+		return stack;
+	}
+
+	public Object getObject() {
+		return stack.peek().object;
+	}
+
 	public Object render(ObjectAndType input) throws IOException {
 		if (input.object == null)
 			return null;
-		var r = input.type != null ? input.type.getAnnotation(Render.class) : null;
-		if (r == null)
-			r = input.object.getClass().getAnnotation(Render.class);
-		var i = switch (input.object) {
-		case Collection<?> l -> l.iterator();
-		case Stream<?> s -> s.iterator();
-		default -> null;
-		};
-		if (i != null) {
-			var t = ((AnnotatedParameterizedType) input.type).getAnnotatedActualTypeArguments()[0];
-			var b = Stream.<String>builder();
-			var d = r != null ? r.delimiter() : null;
-			while (i.hasNext()) {
-				b.add(render(new ObjectAndType(i.next(), t)).toString());
-				if (i.hasNext() && r != null && !d.isEmpty())
-					b.add(d);
+		stack.push(input);
+		try {
+			var r = input.type != null ? input.type.getAnnotation(Render.class) : null;
+			if (r == null)
+				r = input.object.getClass().getAnnotation(Render.class);
+			var i = switch (input.object) {
+			case Collection<?> l -> l.iterator();
+			case Stream<?> s -> s.iterator();
+			default -> null;
+			};
+			if (i != null) {
+				var t = ((AnnotatedParameterizedType) input.type).getAnnotatedActualTypeArguments()[0];
+				var b = Stream.<String>builder();
+				var d = r != null ? r.delimiter() : null;
+				while (i.hasNext()) {
+					var x = render(new ObjectAndType(i.next(), t));
+					b.add(x.toString());
+					if (i.hasNext() && r != null && !d.isEmpty())
+						b.add(d);
+				}
+				input = new ObjectAndType(b.build().collect(Collectors.joining()), input.type);
 			}
-			input = new ObjectAndType(b.build().collect(Collectors.joining()), input.type);
-		}
 
-		var t = r != null ? r.template() : null;
-		var j = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
-		var c = input;
-		return j != null ? j.apply(x -> evaluate((String) x, c)) : input.object;
+			var t = r != null ? r.template() : null;
+			var j = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
+			var c = input;
+			if (j != null)
+				return j.apply(x -> evaluate((String) x, c));
+			for (var x : stack)
+				if (x.object instanceof Renderer y) {
+					var z = y.render(this);
+					if (z != Renderer.CANNOT_RENDER)
+						return z;
+				}
+			return input.object;
+		} finally {
+			stack.pop();
+		}
 	}
 
 	Object evaluate(String expression, ObjectAndType context) throws IOException {

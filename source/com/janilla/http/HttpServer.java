@@ -145,7 +145,7 @@ public class HttpServer implements IO.Runnable {
 
 	private Executor executor;
 
-	private IO.Consumer<ExchangeContext> handler;
+	private IO.Consumer<HttpExchange> handler;
 
 	private long idleTimerPeriod;
 
@@ -179,11 +179,11 @@ public class HttpServer implements IO.Runnable {
 		this.executor = executor;
 	}
 
-	public IO.Consumer<ExchangeContext> getHandler() {
+	public IO.Consumer<HttpExchange> getHandler() {
 		return handler;
 	}
 
-	public void setHandler(IO.Consumer<ExchangeContext> handler) {
+	public void setHandler(IO.Consumer<HttpExchange> handler) {
 		this.handler = handler;
 	}
 
@@ -347,7 +347,7 @@ public class HttpServer implements IO.Runnable {
 		selector.wakeup();
 	}
 
-	protected void handle(IO.Consumer<ExchangeContext> handler, HttpConnection connection,
+	protected void handle(IO.Consumer<HttpExchange> handler, HttpConnection connection,
 			Map<HttpConnection, Long> connectionMillis) {
 //		System.out.println(
 //		Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m) + ")");
@@ -391,9 +391,9 @@ public class HttpServer implements IO.Runnable {
 //		+ ")" + " " + LocalTime.now());
 	}
 
-	protected void handle(IO.Consumer<ExchangeContext> handler, HttpRequest request, HttpResponse response)
+	protected void handle(IO.Consumer<HttpExchange> handler, HttpRequest request, HttpResponse response)
 			throws IOException {
-		var c = newExchangeContext(request);
+		var c = newExchange(request);
 		c.setRequest(request);
 		c.setResponse(response);
 		Exception e;
@@ -415,7 +415,7 @@ public class HttpServer implements IO.Runnable {
 		}
 	}
 
-	protected ExchangeContext newExchangeContext(HttpRequest request) {
-		return new ExchangeContext();
+	protected HttpExchange newExchange(HttpRequest request) {
+		return new HttpExchange();
 	}
 }

@@ -26,6 +26,7 @@ package com.janilla.persistence;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.PrimitiveIterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -304,7 +306,7 @@ public class Crud<E> {
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
-				}).skip(skip).limit(limit).filter(x -> x >= 0).toArray(), a.stream().mapToLong(x -> x.l).sum());
+				}).skip(skip).limit(limit).filter(x -> x > 0).toArray(), a.stream().mapToLong(x -> x.l).sum());
 			} catch (UncheckedIOException e) {
 				throw e.getCause();
 			}
@@ -322,6 +324,100 @@ public class Crud<E> {
 			var t = x.countIf(operation);
 			return new Page(i, t);
 		});
+	}
+
+	public Page filter(Map<String, Object[]> keys, long skip, long limit) throws IOException {
+		var ee = keys.entrySet().stream().filter(e -> e.getValue() != null && e.getValue().length > 0).toList();
+		switch (ee.size()) {
+		case 0:
+			return list(skip, limit);
+		case 1:
+			var e = ee.get(0);
+			return filter(e.getKey(), skip, limit, e.getValue());
+		}
+		synchronized (database) {
+			class A {
+
+				PrimitiveIterator.OfLong i;
+
+				long j;
+			}
+			var aa = new ArrayList<A>();
+			for (var e : ee) {
+				var n = type.getSimpleName() + (e.getKey() != null && !e.getKey().isEmpty() ? "." + e.getKey() : "");
+				class B {
+
+					Iterator<Object[]> i;
+
+					Object[] o;
+				}
+				var bb = new ArrayList<B>();
+				database.performOnIndex(n, i -> {
+					for (var k : e.getValue()) {
+						var b = new B();
+						b.i = i.list(k).map(x -> (Object[]) x).iterator();
+						b.o = b.i.hasNext() ? b.i.next() : null;
+						bb.add(b);
+					}
+				});
+				IO.LongSupplier s = () -> {
+					@SuppressWarnings({ "rawtypes", "unchecked" })
+					var b = bb.stream().max((b1, b2) -> {
+						var c1 = b1.o != null ? (Comparable) b1.o[0] : null;
+						var c2 = b2.o != null ? (Comparable) b2.o[0] : null;
+						return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
+					}).orElse(null);
+					if (b == null || b.o == null)
+						return 0;
+					var i = (Long) b.o[b.o.length - 1];
+					b.o = b.i.hasNext() ? b.i.next() : null;
+					return i;
+				};
+				var a = new A();
+				a.i = LongStream.iterate(s.getAsLong(), x -> {
+					try {
+						return s.getAsLong();
+					} catch (IOException f) {
+						throw new UncheckedIOException(f);
+					}
+				}).takeWhile(x -> x > 0).iterator();
+				a.j = a.i.hasNext() ? a.i.nextLong() : 0;
+				aa.add(a);
+			}
+			IO.LongSupplier s = () -> {
+				for (;;) {
+					var j = aa.stream().mapToLong(a -> a.j).max().getAsLong();
+					if (j == 0)
+						return 0;
+					var e = true;
+					for (var a : aa) {
+						while (a.j > 0 && a.j < j)
+							a.j = a.i.hasNext() ? a.i.nextLong() : 0;
+						if (a.j != j)
+							e = false;
+					}
+					if (e) {
+						for (var a : aa)
+							a.j = a.i.hasNext() ? a.i.nextLong() : 0;
+						return j;
+					}
+				}
+			};
+			var i = LongStream.builder();
+			var j = new long[1];
+			var t = LongStream.iterate(s.getAsLong(), x -> {
+				try {
+					return s.getAsLong();
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			}).takeWhile(x -> x > 0).peek(x -> {
+				var d = j[0]++ - skip;
+				if (d >= 0 && d < limit)
+					i.add(x);
+			}).count();
+			return new Page(i.build().toArray(), t);
+		}
 	}
 
 	public void performOnIndex(String name, Object value, IO.Consumer<LongStream> operation) throws IOException {

@@ -30,7 +30,7 @@ import java.nio.channels.WritableByteChannel;
 import com.janilla.frontend.Interpolator;
 import com.janilla.frontend.RenderEngine;
 import com.janilla.frontend.RenderEngine.ObjectAndType;
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
 import com.janilla.io.IO.Consumer;
@@ -38,7 +38,7 @@ import com.janilla.io.IO.Consumer;
 public class TemplateHandlerFactory implements HandlerFactory {
 
 	@Override
-	public Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
+	public Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
 //		var c = object.getClass();
 //		var r = object != null ? c.getAnnotation(Render.class) : null;
 		var i = object instanceof ObjectAndType x ? x : null;
@@ -46,7 +46,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 		return o != null && o.getClass().isAnnotationPresent(Render.class) ? x -> render(i, x) : null;
 	}
 
-	protected void render(ObjectAndType input, ExchangeContext context) throws IOException {
+	protected void render(ObjectAndType input, HttpExchange context) throws IOException {
 		var s = context.getResponse();
 		if (s.getStatus() == null)
 			s.setStatus(new Status(200, "OK"));

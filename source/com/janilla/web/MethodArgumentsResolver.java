@@ -30,16 +30,15 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Path;
-import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.json.Json;
@@ -47,11 +46,12 @@ import com.janilla.net.Net;
 import com.janilla.reflect.Parameter;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;
+import com.janilla.util.Util;
 
-public class MethodArgumentsResolver implements BiFunction<MethodInvocation, ExchangeContext, Object[]> {
+public class MethodArgumentsResolver implements BiFunction<MethodInvocation, HttpExchange, Object[]> {
 
 	@Override
-	public Object[] apply(MethodInvocation i, ExchangeContext c) {
+	public Object[] apply(MethodInvocation i, HttpExchange c) {
 		var q = Net.parseQueryString(c.getRequest().getURI().getQuery());
 		var b = switch (c.getRequest().getMethod().name()) {
 		case "POST", "PUT" -> {
@@ -90,7 +90,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Exc
 			var h = g != null && j < g.size() ? g.get(j) : null;
 			var k = h == null && n[j] != null ? n[j].name() : null;
 			var w = k != null ? q : null;
-			a[j] = resolveArgument(t[j], n[j], c, () -> h != null ? new String[] { h }
+			a[j] = resolveArgument(t[j], c, () -> h != null ? new String[] { h }
 					: w != null
 							? w.stream().filter(f -> f.getKey().equals(k)).map(Entry::getValue).toArray(String[]::new)
 							: null,
@@ -99,41 +99,40 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Exc
 		return a;
 	}
 
-	protected Object resolveArgument(Type type, Parameter parameter, ExchangeContext context, Supplier<String[]> values,
+	protected Object resolveArgument(Type type, HttpExchange context, Supplier<String[]> values,
 			EntryList<String, String> entries, String body) {
-		if (type == HttpRequest.class)
+		var c = type instanceof Class<?> x ? x : null;
+		if (c != null && HttpExchange.class.isAssignableFrom(c))
+			return context;
+		if (c != null && HttpRequest.class.isAssignableFrom(c))
 			return context.getRequest();
-		if (type == HttpResponse.class)
+		if (c != null && HttpResponse.class.isAssignableFrom(c))
 			return context.getResponse();
-		switch (Objects.toString(context.getRequest().getHeaders().get("Content-Type"), "")) {
-		case "application/json":
-			if (type instanceof Class<?> c && c != String.class)
+		if (c != null && !c.getPackageName().startsWith("java."))
+			switch (Objects.toString(context.getRequest().getHeaders().get("Content-Type"), "")) {
+			case "application/json":
 				return Json.parse(body, Json.parseCollector(c));
-			break;
-		default:
-			if (type instanceof Class<?> c) {
+			case "application/x-www-form-urlencoded": {
+				var t = Util.buildTree(entries);
+				return Util.convertTree(t, c);
+			}
+			default:
 				try {
 					if (c.isRecord()) {
-						var d = c.getConstructors()[0];
-						var t = d.getParameterTypes();
-						var u = d.getParameterAnnotations();
-
-						var n = Arrays.stream(u).map(a -> Arrays.stream(a)
-								.filter(e -> e.annotationType() == Parameter.class).findFirst().orElse(null))
-								.toArray(Parameter[]::new);
-						var a = new Object[t.length];
-						for (var j = 0; j < a.length; j++) {
-							var k = n[j] != null ? n[j].name() : null;
-							var w = k != null ? entries : null;
-							a[j] = resolveArgument(t[j], n[j], context,
+						var m = Arrays.stream(c.getRecordComponents()).collect(
+								Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new));
+						var a = m.entrySet().stream().map(e -> {
+							var k = e.getKey();
+							var t = e.getValue();
+							var w = entries;
+							return resolveArgument(t, context,
 									() -> w != null ? w.stream().filter(f -> f.getKey().equals(k)).map(Entry::getValue)
 											.toArray(String[]::new) : null,
 									entries, body);
-						}
-
-						var o = d.newInstance(a);
+						}).toArray();
+						var o = c.getConstructors()[0].newInstance(a);
 						return o;
-					} else if (c != String.class) {
+					} else {
 						Constructor<?> d;
 						try {
 							d = c.getConstructor();
@@ -148,7 +147,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Exc
 								if (s == null)
 									continue;
 								var w = entries;
-								var v = resolveArgument((Type) s.getParameterTypes()[0], null, context,
+								var v = resolveArgument((Type) s.getParameterTypes()[0], context,
 										() -> w != null
 												? w.stream().filter(f -> f.getKey().equals(n)).map(Entry::getValue)
 														.toArray(String[]::new)
@@ -162,37 +161,13 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Exc
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}
+				break;
 			}
-			break;
-		}
 		var a = values.get();
 		return parseParameter(a != null && a.length > 0 ? a[0] : null, type);
 	}
 
 	protected Object parseParameter(String s, Type type) {
-		if (s == null || s.isEmpty()) {
-			if (type == Boolean.TYPE)
-				return false;
-			if (type == Integer.TYPE)
-				return 0;
-			if (type == Long.TYPE)
-				return 0l;
-			if (type == String.class)
-				return s;
-			return null;
-		}
-		if (type == Boolean.class || type == Boolean.TYPE)
-			return Boolean.parseBoolean(s);
-		if (type == Integer.class || type == Integer.TYPE)
-			return Integer.parseInt(s);
-		if (type == Long.class || type == Long.TYPE)
-			return Long.parseLong(s);
-		if (type == LocalDate.class)
-			return LocalDate.parse(s);
-		if (type == Path.class)
-			return Path.of(s);
-		if (type == UUID.class)
-			return UUID.fromString(s);
-		return s;
+		return Json.convert(s, (Class<?>) type);
 	}
 }

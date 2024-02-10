@@ -34,7 +34,7 @@ import java.nio.channels.WritableByteChannel;
 import java.util.Objects;
 import java.util.function.Function;
 
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpRequest;
@@ -65,7 +65,7 @@ public class ResourceHandlerFactory implements HandlerFactory {
 		var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
 
 		try (var q = r.readRequest(); var s = w.writeResponse()) {
-			var c = new ExchangeContext();
+			var c = new HttpExchange();
 			c.setRequest(q);
 			c.setResponse(s);
 			var h = f.createHandler(q, c);
@@ -100,13 +100,13 @@ public class ResourceHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
 		var u = object instanceof HttpRequest q ? q.getURI() : null;
 		var i = u != null ? toInputStream.apply(u) : null;
 		return i != null ? c -> handle(i, (HttpRequest) object, c) : null;
 	}
 
-	protected void handle(InputStream stream, HttpRequest request, ExchangeContext context) throws IOException {
+	protected void handle(InputStream stream, HttpRequest request, HttpExchange context) throws IOException {
 		try {
 			var s = context.getResponse();
 			s.setStatus(new Status(200, "OK"));

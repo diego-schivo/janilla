@@ -176,7 +176,7 @@ public class Stores {
 				buffer.get(b);
 				var p = buffer.getLong();
 				var c = buffer.getInt();
-				var i = buffer.getLong();
+				var i = Math.max(buffer.getLong(), 1);
 				var s = buffer.getLong();
 				return new NameAndStore(new String(b), new BlockReference(-1, p, c), new IdAndSize(i, s));
 			}

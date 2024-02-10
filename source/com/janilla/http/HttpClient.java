@@ -136,7 +136,7 @@ public class HttpClient implements Closeable {
 		this.sslContext = sslContext;
 	}
 
-	public void query(IO.Consumer<ExchangeContext> handler) throws IOException {
+	public void query(IO.Consumer<HttpExchange> handler) throws IOException {
 		if (connection == null) {
 			var c = SocketChannel.open();
 			c.configureBlocking(true);
@@ -149,7 +149,7 @@ public class HttpClient implements Closeable {
 
 		try (var r = connection.getOutput().writeRequest(); var s = connection.getInput().readResponse()) {
 			try {
-				handler.accept(newExchangeContext(r, s));
+				handler.accept(newExchange(r, s));
 			} catch (UncheckedIOException e) {
 				throw e.getCause();
 			}
@@ -162,8 +162,8 @@ public class HttpClient implements Closeable {
 			connection.close();
 	}
 
-	protected ExchangeContext newExchangeContext(HttpRequest request, HttpResponse response) {
-		var c = new ExchangeContext();
+	protected HttpExchange newExchange(HttpRequest request, HttpResponse response) {
+		var c = new HttpExchange();
 		c.setRequest(request);
 		c.setResponse(response);
 		return c;

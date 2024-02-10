@@ -29,7 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpResponse.Status;
@@ -51,7 +51,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 
 		try (var q = r.readRequest(); var s = w.writeResponse()) {
 			var e = new NotFoundException();
-			var c = new ExchangeContext();
+			var c = new HttpExchange();
 			c.setRequest(q);
 			c.setResponse(s);
 			var h = f.createHandler(e, c);
@@ -69,7 +69,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
 		if (object instanceof Exception e) {
 			var f = e.getClass().getAnnotation(Error.class);
 			return c -> handle(f, c);
@@ -77,7 +77,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 		return null;
 	}
 
-	protected void handle(Error error, ExchangeContext context) throws IOException {
+	protected void handle(Error error, HttpExchange context) throws IOException {
 		var s = error != null ? new Status(error.code(), error.text()) : new Status(500, "Internal Server Error");
 		context.getResponse().setStatus(s);
 		context.getResponse().getHeaders().set("Cache-Control", "no-cache");

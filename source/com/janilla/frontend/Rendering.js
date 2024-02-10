@@ -104,7 +104,12 @@ class Rendering {
 		if (v === undefined)
 			for (let i = this.stack.length - 1; i >= 0; i--) {
 				const o = this.stack[i].object;
-				if (o && Reflect.has(o, k)) {
+				if (!o)
+					;
+				else if (o instanceof FormData) {
+					v = o.get(k);
+					break;
+				} else if (Reflect.has(o, k)) {
 					v = o[k];
 					break;
 				}

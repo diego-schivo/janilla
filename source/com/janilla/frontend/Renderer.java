@@ -22,37 +22,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http;
+package com.janilla.frontend;
 
-public class ExchangeContext {
+import java.io.IOException;
 
-	private HttpRequest request;
+public interface Renderer {
 
-	private HttpResponse response;
+	static Object CANNOT_RENDER = new Object();
 
-	private Exception exception;
-
-	public HttpRequest getRequest() {
-		return request;
-	}
-
-	public void setRequest(HttpRequest value) {
-		request = value;
-	}
-
-	public HttpResponse getResponse() {
-		return response;
-	}
-
-	public void setResponse(HttpResponse value) {
-		response = value;
-	}
-
-	public Exception getException() {
-		return exception;
-	}
-
-	public void setException(Exception exception) {
-		this.exception = exception;
-	}
+//	default Object render(RenderEngine engine) throws IOException {
+//		return CANNOT_RENDER;
+//	}
+	Object render(RenderEngine engine) throws IOException;
 }

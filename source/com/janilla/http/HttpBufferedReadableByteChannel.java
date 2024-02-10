@@ -47,7 +47,7 @@ public abstract class HttpBufferedReadableByteChannel extends BufferedReadableBy
 //		var t = System.currentTimeMillis();
 
 		var i1 = 0;
-		var a = new byte[1000];
+		var a = new byte[2000];
 		var i = 0;
 		String l;
 		for (;;) {

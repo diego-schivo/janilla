@@ -24,10 +24,10 @@
  */
 package com.janilla.web;
 
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.io.IO;
 
 public interface HandlerFactory {
 
-	IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context);
+	IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context);
 }

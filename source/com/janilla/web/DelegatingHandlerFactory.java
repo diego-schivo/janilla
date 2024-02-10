@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 import java.util.function.BiFunction;
 
-import com.janilla.http.ExchangeContext;
+import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.io.IO;
@@ -79,7 +79,7 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 					var w = new HttpMessageWritableByteChannel(Channels.newChannel(o))) {
 
 				try (var q = r.readRequest(); var s = w.writeResponse()) {
-					var c = new ExchangeContext();
+					var c = new HttpExchange();
 					c.setRequest(q);
 					c.setResponse(s);
 					try {
@@ -116,18 +116,18 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 			}
 	}
 
-	BiFunction<Object, ExchangeContext, IO.Consumer<ExchangeContext>> toHandler;
+	BiFunction<Object, HttpExchange, IO.Consumer<HttpExchange>> toHandler;
 
-	public BiFunction<Object, ExchangeContext, IO.Consumer<ExchangeContext>> getToHandler() {
+	public BiFunction<Object, HttpExchange, IO.Consumer<HttpExchange>> getToHandler() {
 		return toHandler;
 	}
 
-	public void setToHandler(BiFunction<Object, ExchangeContext, IO.Consumer<ExchangeContext>> toHandler) {
+	public void setToHandler(BiFunction<Object, HttpExchange, IO.Consumer<HttpExchange>> toHandler) {
 		this.toHandler = toHandler;
 	}
 
 	@Override
-	public IO.Consumer<ExchangeContext> createHandler(Object object, ExchangeContext context) {
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
 		return toHandler != null ? toHandler.apply(object, context) : null;
 	}
 }
