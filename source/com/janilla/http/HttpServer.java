@@ -54,6 +54,7 @@ import com.janilla.io.IO;
 import com.janilla.net.Net;
 import com.janilla.web.HandleException;
 import com.janilla.web.NotFoundException;
+import com.janilla.web.UnauthenticatedException;
 
 public class HttpServer implements IO.Runnable {
 
@@ -408,8 +409,15 @@ public class HttpServer implements IO.Runnable {
 			e = x;
 		}
 		if (e != null) {
-			if (!(e instanceof NotFoundException))
+			switch (e) {
+			case NotFoundException x:
+				break;
+			case UnauthenticatedException x:
+				break;
+			default:
 				e.printStackTrace();
+				break;
+			}
 			c.setException(e);
 			handler.accept(c);
 		}

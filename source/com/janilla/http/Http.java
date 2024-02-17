@@ -22,44 +22,31 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.util;
+package com.janilla.http;
 
-import java.util.AbstractMap.SimpleEntry;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
-public class EntryList<K, V> extends LinkedList<Entry<K, V>> {
+import com.janilla.net.Net;
+import com.janilla.util.EntryList;
 
-	public static void main(String[] args) {
-		var l = new EntryList<String, String>();
-		l.add("foo", "bar");
-		l.set("foo", "baz");
-		System.out.println(l);
-		assert l.equals(List.of(Map.entry("foo", "baz"))) : l;
+public class Http {
+
+	public static EntryList<String, String> parseCookieHeader(String string) {
+		return Net.parseEntryList(string, ";", "=");
 	}
 
-	private static final long serialVersionUID = 2930611377458857452L;
-
-	public void add(K key, V value) {
-		add(new SimpleEntry<>(key, value));
-	}
-
-	public V get(Object key) {
-		for (var e : this)
-			if (Objects.equals(e.getKey(), key))
-				return e.getValue();
-		return null;
-	}
-
-	public void set(K key, V value) {
-		for (var e : this)
-			if (Objects.equals(e.getKey(), key)) {
-				e.setValue(value);
-				return;
-			}
-		add(key, value);
+	public static String formatSetCookieHeader(String name, String value, ZonedDateTime expires, String path,
+			String sameSite) {
+		var b = new StringBuilder();
+		b.append(name + "=" + (value != null ? value : ""));
+		if (expires != null) {
+			b.append("; Expires="
+					+ expires.format(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O", Locale.ENGLISH)));
+		}
+		b.append("; Path=" + path);
+		b.append("; SameSite=" + sameSite);
+		return b.toString();
 	}
 }

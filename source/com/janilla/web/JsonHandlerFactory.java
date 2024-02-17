@@ -39,24 +39,25 @@ import com.janilla.json.ReflectionJsonIterator;
 public class JsonHandlerFactory implements HandlerFactory {
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
 //		if (object instanceof HttpRequest || object instanceof Exception)
 //			return null;
 //		return c -> render(object, c);
 		return object instanceof ObjectAndType i ? x -> render(i.object(), x) : null;
 	}
 
-	protected void render(Object object, HttpExchange context) throws IOException {
-		var s = context.getResponse();
+	protected void render(Object object, HttpExchange exchange) throws IOException {
+		var s = exchange.getResponse();
 		s.getHeaders().set("Content-Type", "application/json");
 
-		var t = Json.format(newJsonIterator(object, context));
+		var t = Json.format(newJsonIterator(object, exchange));
+//		System.out.println("t=" + t);
 		var b = ByteBuffer.wrap(t.getBytes());
 		var c = (WritableByteChannel) s.getBody();
 		IO.repeat(x -> c.write(b), b.remaining());
 	}
 
-	protected Iterator<JsonToken<?>> newJsonIterator(Object object, HttpExchange context) {
+	protected Iterator<JsonToken<?>> newJsonIterator(Object object, HttpExchange exchange) {
 		return new ReflectionJsonIterator(object);
 	}
 }

@@ -27,7 +27,8 @@ package com.janilla.frontend;
 import java.io.IOException;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
-import java.util.Collection;
+import java.lang.reflect.ParameterizedType;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 
 import com.janilla.io.IO;
 import com.janilla.reflect.Reflection;
+import com.janilla.util.EntryList;
 import com.janilla.web.Render;
 
 public class RenderEngine {
@@ -70,12 +72,13 @@ public class RenderEngine {
 			if (r == null)
 				r = input.object.getClass().getAnnotation(Render.class);
 			var i = switch (input.object) {
-			case Collection<?> l -> l.iterator();
-			case Stream<?> s -> s.iterator();
+			case Iterable<?> x -> x.iterator();
+			case Stream<?> x -> x.iterator();
 			default -> null;
 			};
 			if (i != null) {
-				var t = ((AnnotatedParameterizedType) input.type).getAnnotatedActualTypeArguments()[0];
+				var t = ((AnnotatedParameterizedType) getAnnotatedInterface(input.type, Iterable.class, Stream.class))
+						.getAnnotatedActualTypeArguments()[0];
 				var b = Stream.<String>builder();
 				var d = r != null ? r.delimiter() : null;
 				while (i.hasNext()) {
@@ -120,6 +123,15 @@ public class RenderEngine {
 			p = new ObjectAndType(v, t);
 			break;
 		}
+		case EntryList<?, ?> m: {
+			var v = m.get(n);
+			var a = context.type;
+			var b = EntryList.class;
+			var t = getAnnotatedSuperclass(a, b);
+			var u = ((AnnotatedParameterizedType) t).getAnnotatedActualTypeArguments()[1];
+			p = new ObjectAndType(v, u);
+			break;
+		}
 		case Function<?, ?> f: {
 			@SuppressWarnings("unchecked")
 			var g = (Function<String, ?>) f;
@@ -148,6 +160,23 @@ public class RenderEngine {
 			p = new ObjectAndType(v, p.type);
 		}
 		return render(p);
+	}
+
+	protected static AnnotatedType getAnnotatedSuperclass(AnnotatedType type, Class<?> class1) {
+		return Stream.iterate(type, a -> getRawType(a).getAnnotatedSuperclass()).filter(a -> getRawType(a) == class1)
+				.findAny().get();
+	}
+
+	protected static AnnotatedType getAnnotatedInterface(AnnotatedType type, Class<?>... interfaces) {
+		var c = getRawType(type);
+		return Stream.concat(Stream.of(type), Arrays.stream(c.getAnnotatedInterfaces())).filter(a -> {
+			var t = getRawType(a);
+			return Arrays.stream(interfaces).anyMatch(i -> i.isAssignableFrom(t));
+		}).findAny().get();
+	}
+
+	protected static Class<?> getRawType(AnnotatedType annotated) {
+		return (Class<?>) (annotated.getType() instanceof ParameterizedType p ? p.getRawType() : annotated.getType());
 	}
 
 	public record ObjectAndType(Object object, AnnotatedType type) {

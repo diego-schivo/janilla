@@ -74,33 +74,58 @@ public class Reflection {
 		}
 	}
 
+//	private static Map<String, Method[]> compute(Class<?> class1) {
+//		var a = Stream.<Class<?>>iterate(class1, c -> c != null && c != Object.class, c -> c.getSuperclass())
+//				.toArray(Class[]::new);
+//		var m = new HashMap<String, Method[]>();
+//		for (var i = a.length - 1; i >= 0; i--)
+//			for (var n : a[i].getDeclaredMethods()) {
+//				if (switch (n.getName()) {
+//				case "getClass", "hashCode", "toString" -> true;
+//				default -> false;
+//				})
+//					continue;
+//				if (Modifier.isPublic(n.getModifiers()) && !Modifier.isStatic(n.getModifiers())) {
+//					var g = n.getReturnType() != Void.TYPE && n.getParameterCount() == 0 ? n : null;
+//					var s = n.getReturnType() == Void.TYPE && n.getParameterCount() == 1 ? n : null;
+//					if (g != null || s != null) {
+//						var k = n.getName();
+//						var p = g != null ? (n.getReturnType() == Boolean.TYPE ? "is" : "get") : "set";
+//						if (k.length() > p.length() && k.startsWith(p) && Character.isUpperCase(k.charAt(p.length())))
+//							k = Character.toLowerCase(k.charAt(p.length())) + k.substring(p.length() + 1);
+//						var b = m.computeIfAbsent(k, l -> new Method[2]);
+//						if (g != null)
+//							b[0] = g;
+//						if (s != null)
+//							b[1] = s;
+//					}
+//				}
+//			}
+//		return m;
+//	}
+
 	private static Map<String, Method[]> compute(Class<?> class1) {
-		var a = Stream.<Class<?>>iterate(class1, c -> c != null && c != Object.class, c -> c.getSuperclass())
-				.toArray(Class[]::new);
 		var m = new HashMap<String, Method[]>();
-		for (var i = a.length - 1; i >= 0; i--)
-			for (var n : a[i].getDeclaredMethods()) {
-				if (switch (n.getName()) {
-				case "getClass", "hashCode", "toString" -> true;
-				default -> false;
-				})
-					continue;
-				if (Modifier.isPublic(n.getModifiers()) && !Modifier.isStatic(n.getModifiers())) {
-					var g = n.getReturnType() != Void.TYPE && n.getParameterCount() == 0 ? n : null;
-					var s = n.getReturnType() == Void.TYPE && n.getParameterCount() == 1 ? n : null;
-					if (g != null || s != null) {
-						var k = n.getName();
-						if (k.length() > 3 && k.startsWith(g != null ? "get" : "set")
-								&& Character.isUpperCase(k.charAt(3)))
-							k = Character.toLowerCase(k.charAt(3)) + k.substring(4);
-						var b = m.computeIfAbsent(k, l -> new Method[2]);
-						if (g != null)
-							b[0] = g;
-						if (s != null)
-							b[1] = s;
-					}
-				}
+		for (var n : class1.getMethods()) {
+			if (Modifier.isStatic(n.getModifiers()) || switch (n.getName()) {
+			case "getClass", "hashCode", "toString" -> true;
+			default -> false;
+			})
+				continue;
+			var g = n.getReturnType() != Void.TYPE && n.getParameterCount() == 0 ? n : null;
+			var s = n.getReturnType() == Void.TYPE && n.getParameterCount() == 1 ? n : null;
+			if (g != null || s != null) {
+				var k = n.getName();
+				var p = g != null ? (n.getReturnType() == Boolean.TYPE ? "is" : "get") : "set";
+				if (k.length() > p.length() && k.startsWith(p) && Character.isUpperCase(k.charAt(p.length())))
+					k = Character.toLowerCase(k.charAt(p.length())) + k.substring(p.length() + 1);
+				var b = m.computeIfAbsent(k, l -> new Method[2]);
+				if (g != null)
+					b[0] = g;
+				if (s != null)
+					b[1] = s;
 			}
+		}
 		return m;
 	}
 }

@@ -24,42 +24,46 @@
  */
 package com.janilla.util;
 
-import java.util.AbstractMap.SimpleEntry;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
+public interface Base32 {
 
-public class EntryList<K, V> extends LinkedList<Entry<K, V>> {
-
-	public static void main(String[] args) {
-		var l = new EntryList<String, String>();
-		l.add("foo", "bar");
-		l.set("foo", "baz");
-		System.out.println(l);
-		assert l.equals(List.of(Map.entry("foo", "baz"))) : l;
-	}
-
-	private static final long serialVersionUID = 2930611377458857452L;
-
-	public void add(K key, V value) {
-		add(new SimpleEntry<>(key, value));
-	}
-
-	public V get(Object key) {
-		for (var e : this)
-			if (Objects.equals(e.getKey(), key))
-				return e.getValue();
-		return null;
-	}
-
-	public void set(K key, V value) {
-		for (var e : this)
-			if (Objects.equals(e.getKey(), key)) {
-				e.setValue(value);
-				return;
+	static String encode(byte[] bytes) {
+		var c = new char[Math.ceilDiv(bytes.length << 3, 5)];
+		for (var i = 0; i < c.length; i++) {
+			var j = i * 5;
+			var d = j >>> 3;
+			var m = j & 7;
+			var h = 8 - m;
+			int k;
+			if (h >= 5)
+				k = (Byte.toUnsignedInt(bytes[d]) >>> (h - 5)) & 0x1f;
+			else {
+				var l = 5 - h;
+				var x = (Byte.toUnsignedInt(bytes[d]) << l) & 0x1f;
+				var y = Byte.toUnsignedInt(bytes[d + 1]) >>> (8 - l);
+				k = x | y;
 			}
-		add(key, value);
+			c[i] = (char) (k < 26 ? 'A' + k : '2' + k - 26);
+		}
+		return new String(c);
+	}
+
+	static byte[] decode(String string) {
+		var c = string.toCharArray();
+		var b = new byte[(c.length * 5) >>> 3];
+		for (var i = 0; i < c.length; i++) {
+			var x = c[i] >= 'A' ? c[i] - 'A' : 26 + c[i] - '2';
+			var j = i * 5;
+			var d = j >>> 3;
+			var m = j & 7;
+			var h = 8 - m;
+			if (h >= 5)
+				b[d] |= x << (h - 5);
+			else {
+				var l = 5 - h;
+				b[d] |= x >>> l;
+				b[d + 1] = (byte) (x << (8 - l));
+			}
+		}
+		return b;
 	}
 }

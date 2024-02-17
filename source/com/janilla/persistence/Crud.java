@@ -60,7 +60,7 @@ public class Crud<E> {
 
 	protected Map<String, IndexEntryGetter> indexEntryGetters = new HashMap<>();
 
-	public long create(E entity) throws IOException {
+	public E create(E entity) throws IOException {
 		var i = database.performOnStore(type.getSimpleName(), x -> (Long) x.create(y -> {
 			try {
 				Reflection.setter(type, "id").invoke(entity, y);
@@ -77,7 +77,7 @@ public class Crud<E> {
 			var m = toMap(f);
 			updateIndex(n, null, m);
 		}
-		return i;
+		return entity;
 	}
 
 	public E read(long id) throws IOException {

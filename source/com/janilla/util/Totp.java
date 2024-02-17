@@ -24,42 +24,33 @@
  */
 package com.janilla.util;
 
-import java.util.AbstractMap.SimpleEntry;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
+import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
 
-public class EntryList<K, V> extends LinkedList<Entry<K, V>> {
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
-	public static void main(String[] args) {
-		var l = new EntryList<String, String>();
-		l.add("foo", "bar");
-		l.set("foo", "baz");
-		System.out.println(l);
-		assert l.equals(List.of(Map.entry("foo", "baz"))) : l;
-	}
+public interface Totp {
 
-	private static final long serialVersionUID = 2930611377458857452L;
+	static String getCode(byte[] key) {
+		var b = ByteBuffer.allocate(Long.BYTES);
+		b.putLong(System.currentTimeMillis() / (30 * 1000));
 
-	public void add(K key, V value) {
-		add(new SimpleEntry<>(key, value));
-	}
+		byte[] r;
+		try {
+			var m = Mac.getInstance("HmacSHA1");
+			var k = new SecretKeySpec(key, "RAW");
+			m.init(k);
+			r = m.doFinal(b.array());
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException(e);
+		}
 
-	public V get(Object key) {
-		for (var e : this)
-			if (Objects.equals(e.getKey(), key))
-				return e.getValue();
-		return null;
-	}
+		b = ByteBuffer.wrap(r, r[r.length - 1] & 0xf, 4);
+		var i = Math.abs(b.getInt()) % 1000000;
 
-	public void set(K key, V value) {
-		for (var e : this)
-			if (Objects.equals(e.getKey(), key)) {
-				e.setValue(value);
-				return;
-			}
-		add(key, value);
+		var p = Integer.toString(i);
+		p = "0".repeat(6 - p.length()) + p;
+		return p;
 	}
 }

@@ -94,7 +94,6 @@ public interface Jwt {
 		if (i < 0 || j <= i)
 			throw new IllegalArgumentException("token=" + token);
 
-//		var d = Base64.getDecoder();
 		var d = Base64.getUrlDecoder();
 		var h = Json.parse(new String(d.decode(token.substring(0, i))));
 
@@ -116,14 +115,14 @@ public interface Jwt {
 		var t = token.substring(0, j);
 		var a = m.doFinal(t.getBytes());
 
-//		var e = Base64.getEncoder();
 		var e = Base64.getUrlEncoder();
 		var s = e.encodeToString(a);
 		if (!s.equals(token.substring(j + 1)))
 			throw new IllegalArgumentException("s=" + s);
 
+		var z = new String(d.decode(token.substring(i + 1, j)));
 		@SuppressWarnings("unchecked")
-		var p = (Map<String, ?>) Json.parse(new String(d.decode(token.substring(i + 1, j))));
+		var p = (Map<String, ?>) Json.parse(z);
 		return p;
 	}
 }

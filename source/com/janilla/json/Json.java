@@ -29,15 +29,19 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Spliterators;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -87,7 +91,7 @@ public interface Json {
 
 	static <T> T parse(String string, Collector<JsonToken<?>, ?, T> collector) {
 		var s = new JsonScanner();
-		var l = new LinkedList<JsonToken<?>>();
+		var l = new ArrayList<JsonToken<?>>();
 		return IntStream.concat(string.chars(), IntStream.of(-1)).boxed().flatMap(i -> {
 			var v = i.intValue();
 
@@ -164,8 +168,8 @@ public interface Json {
 		}, (a, b) -> a, StringBuilder::toString);
 	}
 
-	static Collector<JsonToken<?>, LinkedList<Object>, Object> parseCollector() {
-		return Collector.of(() -> new LinkedList<Object>(), (a, t) -> {
+	static Collector<JsonToken<?>, Deque<Object>, Object> parseCollector() {
+		return Collector.of(() -> new ArrayDeque<Object>(), (a, t) -> {
 			switch (t.type()) {
 			case OBJECT:
 				switch ((Boundary) t.data()) {
@@ -179,7 +183,7 @@ public interface Json {
 			case ARRAY:
 				switch ((Boundary) t.data()) {
 				case START:
-					a.push(new LinkedList<Object>());
+					a.push(new ArrayList<Object>());
 					break;
 				default:
 					break;
@@ -224,9 +228,9 @@ public interface Json {
 	}
 
 	static <T> Collector<JsonToken<?>, ?, T> parseCollector(Class<T> class1) {
-		return Collector.of(() -> (Deque<Object>) new LinkedList<>(), new BiConsumer<>() {
+		return Collector.of(() -> (Deque<Object>) /* new ArrayDeque<>() */ new LinkedList<>(), new BiConsumer<>() {
 
-			Deque<Class<?>> b = new LinkedList<>();
+			Deque<Class<?>> b = new ArrayDeque<>();
 
 			JsonToken<?> p;
 
@@ -278,7 +282,7 @@ public interface Json {
 				case ARRAY:
 					switch ((Boundary) t.data()) {
 					case START:
-						a.push(new LinkedList<Object>());
+						a.push(new ArrayList<Object>());
 						break;
 					default:
 						break;
@@ -361,6 +365,7 @@ public interface Json {
 			};
 		if (target == Boolean.class || target == Boolean.TYPE)
 			return switch (input) {
+			case Boolean x -> input;
 			case String x -> Boolean.parseBoolean(x);
 			default -> throw new RuntimeException();
 			};
@@ -386,6 +391,14 @@ public interface Json {
 			return URI.create((String) input);
 		if (target == UUID.class)
 			return UUID.fromString((String) input);
+
+		if (target == Set.class)
+			return switch (input) {
+			case Set<?> x -> input;
+			case List<?> x -> new LinkedHashSet<>(x);
+			default -> throw new RuntimeException();
+			};
+
 		return input;
 	}
 }

@@ -89,13 +89,9 @@ public interface Net {
 		}
 	}
 
-	static EntryList<String, String> parseCookieHeader(String string) {
-		return parseEntryList(string, ";", "=");
-	}
-
 	static EntryList<String, String> parseEntryList(String string, String delimiter1, String delimiter2) {
-		return string != null ? Arrays.stream(string.split("&")).map(s -> {
-			var i = s.indexOf('=');
+		return string != null ? Arrays.stream(string.split(delimiter1)).map(s -> {
+			var i = s.indexOf(delimiter2);
 			var k = (i >= 0 ? s.substring(0, i) : s).trim();
 			var v = i >= 0 ? s.substring(i + 1).trim() : null;
 			return new SimpleEntry<>(urlDecode(k), urlDecode(v));
