@@ -35,7 +35,7 @@ public class FilterChannel<C extends Channel> implements Channel {
 		this.channel = channel;
 	}
 
-	public C channel() {
+	public C getChannel() {
 		return channel;
 	}
 

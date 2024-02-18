@@ -71,9 +71,15 @@ public class Persistence {
 
 	protected void createStoresAndIndexes() throws IOException {
 		for (var t : configuration.cruds.keySet())
-			database.performTransaction(() -> database.createStore(t.getSimpleName()));
+			database.perform((s, i) -> {
+				s.create(t.getSimpleName());
+				return null;
+			}, true);
 		for (var k : configuration.indexInitializers.keySet())
-			database.performTransaction(() -> database.createIndex(k));
+			database.perform((s, i) -> {
+				i.create(k);
+				return null;
+			}, true);
 	}
 
 	protected <E> Crud<E> newCrud(Class<E> type) {

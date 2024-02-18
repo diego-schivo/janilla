@@ -73,7 +73,7 @@ public class Stores {
 				var s = g.get();
 				s.perform("articles", t -> {
 					i[0] = t.create(j -> Json.format(Map.of("id", j, "title", "Foo")));
-					t.update(i[0], u -> {
+					return t.update(i[0], u -> {
 						@SuppressWarnings("unchecked")
 						var m = (Map<String, Object>) Json.parse((String) u);
 						m.put("title", "FooBarBazQux");
@@ -90,6 +90,7 @@ public class Stores {
 					var m = Json.parse((String) t.read(i[0]));
 					System.out.println(m);
 					assert m.equals(Map.of("id", (int) i[0], "title", "FooBarBazQux")) : m;
+					return m;
 				});
 			}
 		}
@@ -116,13 +117,6 @@ public class Stores {
 
 	public void create(String name) throws IOException {
 		btree.get().getOrAdd(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)));
-	}
-
-	public <E> void perform(String name, IO.Consumer<Store<E>> operation) throws IOException {
-		this.<E, Object>perform(name, x -> {
-			operation.accept(x);
-			return null;
-		});
 	}
 
 	public <E, R> R perform(String name, IO.Function<Store<E>, R> operation) throws IOException {

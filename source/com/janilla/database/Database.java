@@ -83,8 +83,8 @@ public class Database {
 			var i = new long[1];
 			{
 				var d = g.get();
-				d.performTransaction(() -> {
-					d.performOnStore("articles", s -> {
+				d.perform((ss, ii) -> {
+					ss.perform("articles", s -> {
 						i[0] = s.create(j -> Json.format(Map.of("id", j, "title", "Foo")));
 						s.update(i[0], t -> {
 							@SuppressWarnings("unchecked")
@@ -92,32 +92,38 @@ public class Database {
 							m.put("title", "FooBarBazQux");
 							return Json.format(m);
 						});
+						return null;
 					});
-					d.performOnIndex("Article.tagList", j -> {
+					ii.perform("Article.tagList", j -> {
 						j.add("foo", new Object[] {
 								LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 0L });
 						j.add("foo", new Object[] {
 								LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 1L });
+						return null;
 					});
-				});
+					return null;
+				}, true);
 			}
 
 			new ProcessBuilder("hexdump", "-C", f1.toString()).inheritIO().start().waitFor();
 
 			{
 				var d = g.get();
-				d.performTransaction(() -> {
-					d.performOnStore("articles", t -> {
+				d.perform((ss, ii) -> {
+					ss.perform("articles", t -> {
 						var j = Json.parse((String) t.read(i[0]));
 						System.out.println(j);
 						assert j.equals(Map.of("id", (int) i[0], "title", "FooBarBazQux")) : j;
+						return null;
 					});
-					d.performOnIndex("Article.tagList", j -> {
+					ii.perform("Article.tagList", j -> {
 						var k = j.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
 						System.out.println(Arrays.toString(k));
 						assert Arrays.equals(k, new long[] { 1, 0 }) : j;
+						return null;
 					});
-				});
+					return null;
+				}, false);
 			}
 		}
 	}
@@ -208,51 +214,37 @@ public class Database {
 		this.initializeIndex = initializeIndex;
 	}
 
-	public synchronized void createStore(String name) throws IOException {
-		stores.get().create(name);
-	}
+	boolean performing;
 
-	public synchronized <E> void performOnStore(String name, IO.Consumer<Store<E>> operation) throws IOException {
-		stores.get().perform(name, operation);
-	}
-
-	public synchronized <E, R> R performOnStore(String name, IO.Function<Store<E>, R> operation) throws IOException {
-		return stores.get().perform(name, operation);
-	}
-
-	public void createIndex(String name) throws IOException {
-		indexes.get().create(name);
-	}
-
-	public synchronized <K, V> void performOnIndex(String name, IO.Consumer<Index<K, V>> operation) throws IOException {
-		indexes.get().perform(name, operation);
-	}
-
-	public synchronized <K, V, R> R performOnIndex(String name, IO.Function<Index<K, V>, R> operation)
-			throws IOException {
-		return indexes.get().perform(name, operation);
-	}
-
-	public synchronized void performTransaction(IO.Runnable operation) throws IOException {
-		performTransaction(() -> {
-			operation.run();
-			return null;
-		});
-	}
-
-	public synchronized <T> T performTransaction(IO.Supplier<T> operation) throws IOException {
-		channel.startTransaction();
-		T t = null;
-		var c = false;
+	public synchronized <T> T perform(IO.BiFunction<Stores, Indexes, T> operation, boolean write) throws IOException {
+		var p = performing;
+		if (!p)
+			performing = true;
+		var l = !p ? ((FileChannel) channel.getChannel()).lock() : null;
 		try {
-			t = operation.get();
-			c = true;
+			var s = stores.get();
+			var i = indexes.get();
+			T t = null;
+			var c = false;
+			if (!p && write)
+				channel.startTransaction();
+			try {
+				t = operation.apply(s, i);
+				c = true;
+			} finally {
+				if (!p && write) {
+					if (c)
+						channel.commitTransaction();
+					else
+						channel.rollbackTransaction();
+				}
+			}
+			return t;
 		} finally {
-			if (c)
-				channel.commitTransaction();
-			else
-				channel.rollbackTransaction();
+			if (!p) {
+				l.release();
+				performing = false;
+			}
 		}
-		return t;
 	}
 }

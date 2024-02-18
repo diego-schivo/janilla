@@ -61,44 +61,42 @@ public class Crud<E> {
 	protected Map<String, IndexEntryGetter> indexEntryGetters = new HashMap<>();
 
 	public E create(E entity) throws IOException {
-		var i = database.performOnStore(type.getSimpleName(), x -> (Long) x.create(y -> {
-			try {
-				Reflection.setter(type, "id").invoke(entity, y);
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
-			}
-			var t = formatter.apply(entity);
+		database.perform((ss, ii) -> {
+			var i = ss.perform(type.getSimpleName(), s -> s.create(x -> {
+				try {
+					Reflection.setter(type, "id").invoke(entity, x);
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
+				var t = formatter.apply(entity);
 //			System.out.println("Crud.create t=" + t);
-			return t;
-		}));
-		for (var e : getIndexMap(entity, i).entrySet()) {
-			var n = e.getKey();
-			var f = e.getValue();
-			var m = toMap(f);
-			updateIndex(n, null, m);
-		}
+				return t;
+			}));
+			for (var e : getIndexMap(entity, i).entrySet()) {
+				var n = e.getKey();
+				var f = e.getValue();
+				var m = toMap(f);
+				updateIndex(n, null, m);
+			}
+			return i;
+		}, true);
 		return entity;
 	}
 
 	public E read(long id) throws IOException {
-		var o = database.performOnStore(type.getSimpleName(), x -> (Object) x.read(id));
+		var o = database.perform((ss, ii) -> ss.perform(type.getSimpleName(), s -> s.read(id)), false);
 		return o != null ? parser.apply(o) : null;
 	}
 
 	public Stream<E> read(long[] ids) throws IOException {
-		var b = Stream.<E>builder();
-		try {
-			Arrays.stream(ids).mapToObj(x -> {
-				try {
-					return read(x);
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			}).forEach(b::add);
-		} catch (UncheckedIOException e) {
-			throw e.getCause();
-		}
-		return b.build();
+		return database.perform((ss, ii) -> {
+			var b = Stream.<E>builder();
+			for (var i : ids) {
+				var o = ss.perform(type.getSimpleName(), s -> s.read(i));
+				b.add(o != null ? parser.apply(o) : null);
+			}
+			return b.build();
+		}, false);
 	}
 
 	public E update(long id, Consumer<E> consumer) throws IOException {
@@ -108,88 +106,84 @@ public class Crud<E> {
 
 			Map<String, Entry<Object, Object>> m;
 		}
-		var a = new A();
-		database.performOnStore(type.getSimpleName(), x -> {
-			x.update(id, y -> {
-				a.e = parser.apply(y);
+		return database.perform((ss, ii) -> {
+			var a = new A();
+			ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
+				a.e = parser.apply(x);
 				a.m = getIndexMap(a.e, id);
 				consumer.accept(a.e);
 				return formatter.apply(a.e);
-			});
-		});
-		if (a.e != null)
-			for (var e : getIndexMap(a.e, id).entrySet()) {
-				var f1 = a.m.get(e.getKey());
-				var f2 = e.getValue();
-				var k1 = f1 != null ? f1.getKey() : null;
-				var k2 = f2 != null ? f2.getKey() : null;
-				if (!Objects.equals(k1, k2)) {
-					var m1 = k2 instanceof Collection<?> c ? toMap(f1, k -> !c.contains(k)) : toMap(f1);
-					var m2 = k1 instanceof Collection<?> c ? toMap(f2, k -> !c.contains(k)) : toMap(f2);
-					updateIndex(e.getKey(), m1, m2);
+			}));
+			if (a.e != null)
+				for (var e : getIndexMap(a.e, id).entrySet()) {
+					var f1 = a.m.get(e.getKey());
+					var f2 = e.getValue();
+					var k1 = f1 != null ? f1.getKey() : null;
+					var k2 = f2 != null ? f2.getKey() : null;
+					if (!Objects.equals(k1, k2)) {
+						var m1 = k2 instanceof Collection<?> c ? toMap(f1, k -> !c.contains(k)) : toMap(f1);
+						var m2 = k1 instanceof Collection<?> c ? toMap(f2, k -> !c.contains(k)) : toMap(f2);
+						updateIndex(e.getKey(), m1, m2);
+					}
 				}
-			}
-		return a.e;
+			return a.e;
+		}, true);
 	}
 
 	public E delete(long id) throws IOException {
-		var o = database.performOnStore(type.getSimpleName(), x -> (Object) x.delete(id));
-		var e = parser.apply(o);
-		for (var f : getIndexMap(e, id).entrySet()) {
-			var m = toMap(f.getValue());
-			updateIndex(f.getKey(), m, null);
-		}
-		return e;
+		return database.perform((ss, ii) -> {
+			var o = ss.perform(type.getSimpleName(), s -> s.delete(id));
+			var e = parser.apply(o);
+			for (var f : getIndexMap(e, id).entrySet()) {
+				var m = toMap(f.getValue());
+				updateIndex(f.getKey(), m, null);
+			}
+			return e;
+		}, true);
 	}
 
 	public long[] list() throws IOException {
-		return database.performOnStore(type.getSimpleName(), s -> {
-			return s.ids().toArray();
-		});
+		return database.perform((ss, ii) -> ss.perform(type.getSimpleName(), s -> s.ids().toArray()), false);
 	}
 
 	public Page list(long skip, long limit) throws IOException {
-		return database.performOnStore(type.getSimpleName(), s -> {
+		return database.perform((ss, ii) -> ss.perform(type.getSimpleName(), s -> {
 			long[] i = s.ids().skip(skip).limit(limit).toArray();
 			long c = s.count();
 			return new Page(i, c);
-		});
+		}), false);
 	}
 
 	public long count() throws IOException {
-		return database.performOnStore(type.getSimpleName(), x -> {
+		return database.perform((ss, ii) -> ss.perform(type.getSimpleName(), x -> {
 			return x.count();
-		});
+		}), false);
 	}
 
 	public long count(String index, Object value) throws IOException {
 		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
-		return database.performOnIndex(n, x -> {
-			return x.count(value);
-		});
+		return database.perform((ss, ii) -> ii.perform(n, i -> i.count(value)), false);
 	}
 
 	public long find(String index, Object value) throws IOException {
-		return performOnIndex(index, value, x -> {
-			return x.findFirst().orElse(-1);
-		});
+		return performOnIndex(index, value, x -> x.findFirst().orElse(-1));
 	}
 
 	public long[] filter(String index, Object... values) throws IOException {
 		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
 		return switch (values.length) {
-		case 0 -> database.performOnIndex(n, x -> {
+		case 0 -> database.perform((ss, ii) -> ii.perform(n, x -> {
 			return x.values().mapToLong(y -> {
 				var z = (Object[]) y;
 				return (Long) z[z.length - 1];
 			}).toArray();
-		});
-		case 1 -> database.performOnIndex(n, x -> {
+		}), false);
+		case 1 -> database.perform((ss, ii) -> ii.perform(n, x -> {
 			return x.list(values[0]).mapToLong(y -> {
 				var z = (Object[]) y;
 				return (Long) z[z.length - 1];
 			}).toArray();
-		});
+		}), false);
 		default -> {
 			class A {
 
@@ -199,7 +193,7 @@ public class Crud<E> {
 			}
 			List<A> a;
 			try {
-				a = database.performOnIndex(n, x -> (List<A>) Arrays.stream(values).map(y -> {
+				a = database.perform((ss, ii) -> ii.perform(n, x -> (List<A>) Arrays.stream(values).map(y -> {
 					try {
 						var z = new A();
 						z.i = x.list(y).iterator();
@@ -208,7 +202,7 @@ public class Crud<E> {
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
-				}).toList());
+				}).toList()), false);
 			} catch (UncheckedIOException e) {
 				throw e.getCause();
 			}
@@ -244,22 +238,22 @@ public class Crud<E> {
 	public Page filter(String index, long skip, long limit, Object... values) throws IOException {
 		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
 		return switch (values.length) {
-		case 0 -> database.performOnIndex(n, x -> {
+		case 0 -> database.perform((ss, ii) -> ii.perform(n, x -> {
 			var i = x.values().mapToLong(y -> {
 				var z = (Object[]) y;
 				return (Long) z[z.length - 1];
 			}).skip(skip).limit(limit).toArray();
 			var c = x.count();
 			return (Page) new Page(i, c);
-		});
-		case 1 -> database.performOnIndex(n, x -> {
+		}), false);
+		case 1 -> database.perform((ss, ii) -> ii.perform(n, x -> {
 			var i = x.list(values[0]).mapToLong(y -> {
 				var z = (Object[]) y;
 				return (Long) z[z.length - 1];
 			}).skip(skip).limit(limit).toArray();
 			var c = x.count(values[0]);
 			return (Page) new Page(i, c);
-		});
+		}), false);
 		default -> {
 			class A {
 
@@ -271,7 +265,7 @@ public class Crud<E> {
 			}
 			List<A> a;
 			try {
-				a = database.performOnIndex(n, x -> (List<A>) Arrays.stream(values).map(y -> {
+				a = database.perform((ss, ii) -> ii.perform(n, x -> (List<A>) Arrays.stream(values).map(y -> {
 					try {
 						var z = new A();
 						z.i = x.list(y).iterator();
@@ -281,7 +275,7 @@ public class Crud<E> {
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
-				}).toList());
+				}).toList()), false);
 			} catch (UncheckedIOException e) {
 				throw e.getCause();
 			}
@@ -316,14 +310,14 @@ public class Crud<E> {
 
 	public Page filter2(String index, long skip, long limit, Predicate<Object> operation) throws IOException {
 		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
-		return database.performOnIndex(n, x -> {
+		return database.perform((ss, ii) -> ii.perform(n, x -> {
 			var i = x.valuesIf(operation).mapToLong(y -> {
 				var z = (Object[]) y;
 				return (Long) z[z.length - 1];
 			}).skip(skip).limit(limit).toArray();
 			var t = x.countIf(operation);
 			return new Page(i, t);
-		});
+		}), false);
 	}
 
 	public Page filter(Map<String, Object[]> keys, long skip, long limit) throws IOException {
@@ -352,14 +346,15 @@ public class Crud<E> {
 					Object[] o;
 				}
 				var bb = new ArrayList<B>();
-				database.performOnIndex(n, i -> {
+				database.perform((ss, ii) -> ii.perform(n, i -> {
 					for (var k : e.getValue()) {
 						var b = new B();
 						b.i = i.list(k).map(x -> (Object[]) x).iterator();
 						b.o = b.i.hasNext() ? b.i.next() : null;
 						bb.add(b);
 					}
-				});
+					return null;
+				}), false);
 				IO.LongSupplier s = () -> {
 					@SuppressWarnings({ "rawtypes", "unchecked" })
 					var b = bb.stream().max((b1, b2) -> {
@@ -420,19 +415,12 @@ public class Crud<E> {
 		}
 	}
 
-	public void performOnIndex(String name, Object value, IO.Consumer<LongStream> operation) throws IOException {
-		performOnIndex(name, value, x -> {
-			operation.accept(x);
-			return null;
-		});
-	}
-
 	public <R> R performOnIndex(String name, Object value, IO.Function<LongStream, R> operation) throws IOException {
 		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
-		return database.performOnIndex(n, x -> {
-			var l = x.list(value).mapToLong(o -> (Long) (o instanceof Object[] a ? a[a.length - 1] : o));
+		return database.perform((ss, ii) -> ii.perform(n, i -> {
+			var l = i.list(value).mapToLong(o -> (Long) (o instanceof Object[] a ? a[a.length - 1] : o));
 			return operation.apply(l);
-		});
+		}), false);
 	}
 
 	protected Map<String, Entry<Object, Object>> getIndexMap(E entity, long id) {
@@ -480,14 +468,15 @@ public class Crud<E> {
 
 	protected void updateIndex(String name, Map<Object, Object> remove, Map<Object, Object> add) throws IOException {
 		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
-		database.performOnIndex(n, i -> {
+		database.perform((ss, ii) -> ii.perform(n, i -> {
 			if (remove != null)
 				for (var e : remove.entrySet())
 					i.remove(e.getKey(), e.getValue());
 			if (add != null)
 				for (var e : add.entrySet())
 					i.add(e.getKey(), e.getValue());
-		});
+			return null;
+		}), true);
 	}
 
 	public record Page(long[] ids, long total) {

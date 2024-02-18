@@ -79,6 +79,7 @@ public class Indexes {
 							new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 0L });
 					j.add("foo",
 							new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 1L });
+					return null;
 				});
 			}
 
@@ -90,6 +91,7 @@ public class Indexes {
 					var k = j.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
 					System.out.println(Arrays.toString(k));
 					assert Arrays.equals(k, new long[] { 1, 0 }) : j;
+					return k;
 				});
 			}
 		}
@@ -116,13 +118,6 @@ public class Indexes {
 
 	public void create(String name) throws IOException {
 		btree.get().getOrAdd(new NameAndIndex(name, new BlockReference(-1, -1, 0)));
-	}
-
-	public <K, V> void perform(String name, IO.Consumer<Index<K, V>> operation) throws IOException {
-		this.<K, V, Object>perform(name, x -> {
-			operation.accept(x);
-			return null;
-		});
 	}
 
 	public <K, V, R> R perform(String name, IO.Function<Index<K, V>, R> operation) throws IOException {
