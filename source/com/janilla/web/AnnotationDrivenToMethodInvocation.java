@@ -54,7 +54,7 @@ public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest,
 	public static void main(String[] args) throws IOException {
 		class C {
 
-			@Handle(method = "GET", uri = "/foo/(.*)")
+			@Handle(method = "GET", path = "/foo/(.*)")
 			public void foo(Path path) {
 			}
 
@@ -116,7 +116,7 @@ public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest,
 					o = getInstance(t);
 
 				var p = o;
-				var v = m.computeIfAbsent(n.getAnnotation(Handle.class).uri(), k -> new Value(new HashSet<>(), p));
+				var v = m.computeIfAbsent(n.getAnnotation(Handle.class).path(), k -> new Value(new HashSet<>(), p));
 				v.methods().add(n);
 			}
 		}

@@ -77,7 +77,9 @@ public interface Json {
 	}
 
 	static String format(Object object) {
-		return format(new JsonIterator(object));
+		var t = new JsonIterator();
+		t.setObject(object);
+		return format(t);
 	}
 
 	static String format(Iterator<JsonToken<?>> tokens) {

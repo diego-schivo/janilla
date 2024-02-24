@@ -94,7 +94,11 @@ public class Persistence {
 		d.type = type;
 		d.database = database;
 		if (d.formatter == null)
-			d.formatter = e -> Json.format(new ReflectionJsonIterator(e));
+			d.formatter = e -> {
+				var t = new ReflectionJsonIterator();
+				t.setObject(e);
+				return Json.format(t);
+			};
 		if (d.parser == null)
 			d.parser = t -> Json.parse((String) t, Json.parseCollector(type));
 		configuration.cruds.put(type, d);

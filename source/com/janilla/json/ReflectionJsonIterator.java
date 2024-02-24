@@ -41,7 +41,9 @@ public class ReflectionJsonIterator extends JsonIterator {
 		var d3 = new D(345);
 		c.l = List.of(d2, d3);
 		c.m = List.of(456L, 567L);
-		var s = Json.format(new ReflectionJsonIterator(c));
+		var t = new ReflectionJsonIterator();
+		t.setObject(c);
+		var s = Json.format(t);
 		System.out.println(s);
 		var o = Json.parse(s, Json.parseCollector(C.class));
 		System.out.println(o);
@@ -105,10 +107,6 @@ public class ReflectionJsonIterator extends JsonIterator {
 	}
 
 	public record D(@Parameter(name = "i") int i) {
-	}
-
-	public ReflectionJsonIterator(Object object) {
-		super(object);
 	}
 
 	@Override

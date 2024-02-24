@@ -37,13 +37,19 @@ import com.janilla.io.IO.Consumer;
 
 public class TemplateHandlerFactory implements HandlerFactory {
 
+	protected Object application;
+
+	public void setApplication(Object application) {
+		this.application = application;
+	}
+
 	@Override
 	public Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
-//		var c = object.getClass();
-//		var r = object != null ? c.getAnnotation(Render.class) : null;
 		var i = object instanceof ObjectAndType x ? x : null;
 		var o = i != null ? i.object() : null;
-		return o != null && o.getClass().isAnnotationPresent(Render.class) ? x -> render(i, x) : null;
+		var t = i != null ? i.type() : null;
+		return (o != null && o.getClass().isAnnotationPresent(Render.class))
+				|| (t != null && t.isAnnotationPresent(Render.class)) ? x -> render(i, x) : null;
 	}
 
 	protected void render(ObjectAndType input, HttpExchange context) throws IOException {
@@ -54,20 +60,6 @@ public class TemplateHandlerFactory implements HandlerFactory {
 		var h = s.getHeaders();
 		if (h.get("Cache-Control") == null)
 			s.getHeaders().set("Cache-Control", "no-cache");
-//		if (h.get("Content-Type") == null) {
-//			var n = render.template();
-//			var i = n != null ? n.lastIndexOf('.') : -1;
-//			var e = i >= 0 ? n.substring(i + 1) : null;
-//			if (e != null)
-//				switch (e) {
-//				case "html":
-//					h.set("Content-Type", "text/html");
-//					break;
-//				case "js":
-//					h.set("Content-Type", "text/javascript");
-//					break;
-//				}
-//		}
 
 		RenderEngine e = new RenderEngine();
 		e.setToInterpolator(t -> {
@@ -75,7 +67,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 			if (t.contains("\n"))
 				u = t;
 			else {
-				var c = input.object().getClass();
+				var c = application.getClass();
 				var i = c.getResourceAsStream(t);
 				if (i == null)
 					throw new NullPointerException(c + " " + t);

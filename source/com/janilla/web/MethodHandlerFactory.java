@@ -152,7 +152,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
 		var i = object instanceof HttpRequest q ? toInvocation.apply(q) : null;
 		return i != null ? c -> handle(i, c) : null;
 	}
@@ -160,15 +160,16 @@ public class MethodHandlerFactory implements HandlerFactory {
 	Supplier<BiFunction<MethodInvocation, HttpExchange, Object[]>> argumentsResolver2 = Lazy
 			.of(() -> argumentsResolver != null ? argumentsResolver : new MethodArgumentsResolver());
 
-	protected void handle(MethodInvocation invocation, HttpExchange context) throws IOException {
+	protected void handle(MethodInvocation invocation, HttpExchange exchange) throws IOException {
 		Object[] a;
 		try {
-			a = argumentsResolver2.get().apply(invocation, context);
+			a = argumentsResolver2.get().apply(invocation, exchange);
 		} catch (UncheckedIOException e) {
 			throw e.getCause();
 		}
 
 		var m = invocation.method();
+//		System.out.println("m=" + m + " invocation.object()=" + invocation.object() + " a=" + Arrays.toString(a));
 		Object o;
 		try {
 			o = a != null ? m.invoke(invocation.object(), a) : m.invoke(invocation.object());
@@ -179,7 +180,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 			throw new RuntimeException(e);
 		}
 
-		var s = context.getResponse();
+		var s = exchange.getResponse();
 		if (m.getReturnType() == Void.TYPE) {
 			if (s.getStatus() == null) {
 				s.setStatus(new Status(204, "No Content"));
@@ -205,7 +206,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 			if (h.get("Cache-Control") == null)
 				s.getHeaders().set("Cache-Control", "no-cache");
 			if (h.get("Content-Type") == null) {
-				var n = context.getRequest().getURI().getPath();
+				var n = exchange.getRequest().getURI().getPath();
 				var i = n != null ? n.lastIndexOf('.') : -1;
 				var e = i >= 0 ? n.substring(i + 1) : null;
 				if (e != null)
@@ -219,13 +220,13 @@ public class MethodHandlerFactory implements HandlerFactory {
 					}
 			}
 
-			render(new ObjectAndType(o, m.getAnnotatedReturnType()), context);
+			render(new ObjectAndType(o, m.getAnnotatedReturnType()), exchange);
 		}
 	}
 
-	protected void render(Object object, HttpExchange context) throws IOException {
-		var h = mainFactory.createHandler(object, context);
+	protected void render(Object object, HttpExchange exchange) throws IOException {
+		var h = mainFactory.createHandler(object, exchange);
 		if (h != null)
-			h.accept(context);
+			h.accept(exchange);
 	}
 }

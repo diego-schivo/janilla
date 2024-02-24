@@ -37,18 +37,19 @@ public record Interpolator(String[] tokens) implements IO.Function<IO.Function<O
 		var b = Stream.<String>builder();
 		var i1 = 0;
 		for (;;) {
-			var i2a = template.indexOf("${", i1);
-			var i2b = template.indexOf("#{", i1);
+			var i2a = template.indexOf("__", i1);
+			var i2b = template.indexOf("<!--__", i1);
 			var i2 = i2a >= 0 && (i2b < 0 || i2a <= i2b) ? i2a : i2b;
 			if (i2 < 0) {
 				b.add(template.substring(i1));
 				break;
 			}
 			b.add(template.substring(i1, i2));
-			i1 = i2 + 2;
-			i2 = template.indexOf("}", i1);
+			var x = i2 == i2a;
+			i1 = i2 + (x ? 2 : 6);
+			i2 = template.indexOf(x ? "__" : "__-->", i1);
 			b.add(template.substring(i1, i2));
-			i1 = i2 + 1;
+			i1 = i2 + (x ? 2 : 5);
 		}
 		var t = b.build().toArray(String[]::new);
 		return new Interpolator(t);

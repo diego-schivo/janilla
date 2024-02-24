@@ -77,6 +77,7 @@ public class RenderEngine {
 			default -> null;
 			};
 			if (i != null) {
+//				System.out.println("input.type=" + input.type);
 				var t = ((AnnotatedParameterizedType) getAnnotatedInterface(input.type, Iterable.class, Stream.class))
 						.getAnnotatedActualTypeArguments()[0];
 				var b = Stream.<String>builder();
@@ -168,10 +169,9 @@ public class RenderEngine {
 	}
 
 	protected static AnnotatedType getAnnotatedInterface(AnnotatedType type, Class<?>... interfaces) {
-		var c = getRawType(type);
-		return Stream.concat(Stream.of(type), Arrays.stream(c.getAnnotatedInterfaces())).filter(a -> {
+		return Stream.concat(Stream.of(type), Arrays.stream(getRawType(type).getAnnotatedInterfaces())).filter(a -> {
 			var t = getRawType(a);
-			return Arrays.stream(interfaces).anyMatch(i -> i.isAssignableFrom(t));
+			return t.isInterface() && Arrays.stream(interfaces).anyMatch(i -> i.isAssignableFrom(t));
 		}).findAny().get();
 	}
 

@@ -58,6 +58,8 @@ public class JsonHandlerFactory implements HandlerFactory {
 	}
 
 	protected Iterator<JsonToken<?>> newJsonIterator(Object object, HttpExchange exchange) {
-		return new ReflectionJsonIterator(object);
+		var i = new ReflectionJsonIterator();
+		i.setObject(object);
+		return i;
 	}
 }

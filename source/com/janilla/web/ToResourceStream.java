@@ -67,7 +67,7 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 				}""") : s;
 	}
 
-	Iterable<Path> paths;
+	protected Iterable<Path> paths;
 
 	Supplier<Set<String>> resources = Lazy.of(() -> {
 		var s = new HashSet<String>();

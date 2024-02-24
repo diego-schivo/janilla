@@ -35,5 +35,5 @@ public @interface Handle {
 
 	String method();
 
-	String uri();
+	String path();
 }

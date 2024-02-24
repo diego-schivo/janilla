@@ -37,7 +37,7 @@ class JsonIterator extends TokenIterationContext implements Iterator<JsonToken<?
 
 	Iterator<JsonToken<?>> iterator;
 
-	JsonIterator(Object object) {
+	public void setObject(Object object) {
 		this.object = object;
 	}
 
