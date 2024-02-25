@@ -143,19 +143,25 @@ class RenderEngine {
 		return e;
 	}
 
-	isRendering(target) {
-		if (!this.stack.length)
-			return false;
-		const p = this.stack.at(-1);
-		return p.target === target && p.key === undefined;
-	}
+	isRendering(target, key, indexed) {
+		if (target && !key && !indexed) {
+			if (!this.stack.length)
+				return false;
+			const p = this.stack.at(-1);
+			return target === p.target && p.key === undefined;
+		}
 
-	isRenderingArrayItem(key) {
-		return this.stack.length >= 4
-			&& this.stack.at(-4).key === key
-			&& Array.isArray(this.stack.at(-3).target)
-			&& typeof this.stack.at(-2).key === 'number'
-			&& this.stack.at(-1).key === undefined;
+		if (key) {
+			if (indexed)
+				return this.stack.length >= 4
+					&& key === this.stack.at(-4).key
+					&& Array.isArray(this.stack.at(-3).target)
+					&& typeof this.stack.at(-2).key === 'number'
+					&& this.stack.at(-1).key === undefined;
+			return key === this.key && (!target || target === this.target);
+		}
+
+		return false;
 	}
 }
 
