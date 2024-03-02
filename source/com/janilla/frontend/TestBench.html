@@ -1,0 +1,41 @@
+<div class="test-bench">
+	<!--${launcher}-->
+	<!--${runner}-->
+</div>
+
+<template id="TestBench-Launcher">
+	<div class="launcher">
+		<form>
+			<ul>
+				<li>
+					<label>
+						<input type="checkbox" />
+						(select all)
+					</label>
+				</li>
+				<!--${items}-->
+			</ul>
+			<button>Run</button>
+		</form>
+	</div>
+</template>
+
+<template id="TestBench-Launcher-item">
+	<li data-key="${}">
+		<label>
+			<input type="checkbox" name="test" value="${}" />
+			${}
+		</label>
+	</li>
+</template>
+
+<template id="TestBench-Runner">
+	<div class="runner">
+		<!--${iframe}-->
+	</div>
+</template>
+
+<template id="TestBench-Runner-iframe">
+	<iframe src="/">
+	</iframe>
+</template>

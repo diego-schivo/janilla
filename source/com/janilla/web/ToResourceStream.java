@@ -97,8 +97,8 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 		var s = path.toString();
 		if (s.startsWith(File.separator))
 			s = s.substring(1);
-		return s.endsWith(".css") || s.endsWith(".ico") || s.endsWith(".js") || s.endsWith(".png") || s.endsWith(".svg")
-				|| s.endsWith(".ttf") || s.endsWith(".woff") ? s : null;
+		return s.endsWith(".css") || s.endsWith(".ico") || s.endsWith(".jpg") || s.endsWith(".js") || s.endsWith(".png")
+				|| s.endsWith(".svg") || s.endsWith(".ttf") || s.endsWith(".woff") ? s : null;
 	}
 
 	protected abstract InputStream newInputStream(String name);

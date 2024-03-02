@@ -1,0 +1,43 @@
+.test-bench {
+	display: flex;
+}
+
+.launcher {
+	flex-basis: 20rem;
+}
+
+.launcher form,
+.launcher ul {
+	display: flex;
+	flex-direction: column;
+	row-gap: .5rem;
+}
+
+.launcher form {
+	row-gap: 1rem;
+}
+
+.launcher ul {
+	row-gap: .5rem;
+}
+
+.launcher .succeeded {
+	color: green;
+}
+
+.launcher .failed {
+	color: red;
+}
+
+.runner {
+	flex-grow: 1;
+}
+
+.runner iframe {
+	border: 0;
+	display: block;
+	height: 100vh;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+}

@@ -41,8 +41,12 @@ public interface Randomize {
 		return s;
 	}
 
-	static String sentence(int minCount, int maxCount, Supplier<String> word) {
+	static String phrase(int minCount, int maxCount, Supplier<String> word) {
 		return elements(minCount, maxCount, word).collect(Collectors.joining(" "));
+	}
+
+	static String sentence(int minCount, int maxCount, Supplier<String> word) {
+		return Util.capitalizeFirstChar(phrase(minCount, maxCount, word)) + ".";
 	}
 
 	static <E> Stream<E> elements(int minCount, int maxCount, Supplier<E> element) {

@@ -22,13 +22,17 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.frontend;
+package com.janilla.javascript;
 
-import java.io.IOException;
+import java.util.regex.Pattern;
 
-public interface Renderer {
+public interface JavaScript {
 
-	static Object CANNOT_RENDER = new Object();
+	static Pattern specialCharacter = Pattern.compile("[\"'`]");
 
-	Object render(RenderEngine engine) throws IOException;
+	static String escape(String string) {
+		if (string == null || string.isEmpty())
+			return string;
+		return specialCharacter.matcher(string).replaceAll(r -> "\\" + r.group());
+	}
 }

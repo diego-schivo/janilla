@@ -34,7 +34,7 @@ const htmlEscapes = {
 };
 const unescapedHtml = /[&<>"'`]/g;
 const hasUnescapedHtml = new RegExp(unescapedHtml.source);
-const escapeHtml = s => s && hasUnescapedHtml.test(s) ? s.replace(unescapedHtml, c => htmlEscapes[c]) : s;
+const escapeHtml = s => s && hasUnescapedHtml.test(s) ? s.replaceAll(unescapedHtml, c => htmlEscapes[c]) : s;
 
 class RenderEngine {
 

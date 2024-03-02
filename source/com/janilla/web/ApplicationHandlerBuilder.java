@@ -38,11 +38,17 @@ public class ApplicationHandlerBuilder {
 
 	protected Object application;
 
-	Supplier<Collection<Class<?>>> applicationClasses = Lazy
-			.of(() -> Util.getPackageClasses(application.getClass().getPackageName()).toList());
+	Supplier<Collection<Class<?>>> applicationClasses = Lazy.of(() -> {
+		var c = Util.getPackageClasses(application.getClass().getPackageName()).toList();
+//		System.out.println("c=" + c);
+		return c;
+	});
 
-	Supplier<Collection<Class<?>>> frontendClasses = Lazy
-			.of(() -> Util.getPackageClasses("com.janilla.frontend").toList());
+	Supplier<Collection<Class<?>>> frontendClasses = Lazy.of(() -> {
+		var c = Util.getPackageClasses("com.janilla.frontend").toList();
+//		System.out.println("c=" + c);
+		return c;
+	});
 
 	Supplier<HandlerFactory> handlerFactory = Lazy.of(() -> {
 		var a = new HandlerFactory[] { buildMethodHandlerFactory(), buildTemplateHandlerFactory(),

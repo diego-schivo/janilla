@@ -128,6 +128,7 @@ public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest,
 		var s = m.keySet().stream().filter(k -> k.contains("(")).collect(Collectors.toSet());
 		var x = s.stream().collect(Collectors.toMap(k -> Pattern.compile(k), m::get));
 		m.keySet().removeAll(s);
+//		System.out.println("m=" + m + "\nx=" + x);
 		return x;
 	});
 
@@ -147,8 +148,8 @@ public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest,
 	public Stream<ValueAndGroups> getValueAndGroupsStream(HttpRequest q) {
 		var i = invocations1.get();
 		var j = invocations2.get();
-//		System.out.println(
-//				Thread.currentThread().getName() + " ToEndpointInvocation invocations1=" + i + ", invocations2=" + j);
+//		System.out.println(Thread.currentThread().getName() + " AnnotationDrivenToMethodInvocation invocations1=" + i
+//				+ ", invocations2=" + j);
 
 		var b = Stream.<ValueAndGroups>builder();
 

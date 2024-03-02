@@ -24,12 +24,19 @@
  */
 package com.janilla.html;
 
+import java.util.Map;
+import java.util.regex.Pattern;
+
 public interface Html {
 
+	static Pattern specialCharacter = Pattern.compile("[&<>\"'`]");
+
+	static Map<String, String> specialReplacement = Map.of("&", "&amp", "<", "&lt", ">", "&gt", "\"", "&quot", "'", "&#x27", "`",
+			"&#x60");
+
 	static String escape(String string) {
-		return string != null
-				? string.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
-						.replace("'", "&#039;")
-				: null;
+		if (string == null || string.isEmpty())
+			return string;
+		return specialCharacter.matcher(string).replaceAll(r -> specialReplacement.get(r.group()));
 	}
 }

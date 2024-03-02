@@ -43,9 +43,6 @@ import com.janilla.web.Render;
 
 public class RenderEngine {
 
-	public static void main(String[] args) throws IOException {
-	}
-
 	protected IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator;
 
 	protected LinkedList<ObjectAndType> stack = new LinkedList<>();

@@ -30,16 +30,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.janilla.io.IO;
-//import com.janilla.util.Evaluator;
-//import com.janilla.util.Interpolator;
-import com.janilla.util.Lazy;
 import com.janilla.web.Handle;
 import com.janilla.web.Render;
 
@@ -47,26 +42,25 @@ public class TemplatesWeb {
 
 	Object application;
 
-	static Pattern expressions = Pattern.compile("(data-)?__([\\w.]*?)__|<!--__([\\w.]*?)__-->");
+	public static Pattern expression = Pattern.compile("(data-)?\\$\\{([\\w.-]*?)}|<!--\\$\\{([\\w.-]*?)}-->");
 
-	Supplier<Template[]> templates = Lazy.of(() -> {
-		var z = application.getClass();
+	public static Pattern template = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>", Pattern.DOTALL);
+
+	IO.Supplier<Iterable<Template>> templates = IO.Lazy.of(() -> {
+		var l = Thread.currentThread().getContextClassLoader();
 		var b = Stream.<Template>builder();
-		IO.acceptPackageFiles(z.getPackageName(), f -> {
-			var n = f.getFileName().toString();
-			if (!n.endsWith(".html"))
-				return;
-			n = n.substring(0, n.length() - ".html".length());
-			if (n.equals("app"))
-				return;
+		for (var nn = Stream.of(getClass().getPackageName(), application.getClass().getPackageName())
+				.flatMap(p -> IO.getPackageFiles(p).filter(f -> f.getFileName().toString().endsWith(".html")).map(f -> {
+					return p.replace('.', '/') + "/" + f.getFileName().toString();
+				})).iterator();nn.hasNext();) {
+			var n = nn.next();
 			var o = new ByteArrayOutputStream();
-			try (var t = z.getResourceAsStream(n + ".html"); var w = new PrintWriter(o)) {
+			try (var t = l.getResourceAsStream(n); var w = new PrintWriter(o)) {
 				if (t == null)
 					throw new NullPointerException(n);
-
 				try (var r = new BufferedReader(new InputStreamReader(t))) {
 					for (var j = r.lines().iterator(); j.hasNext();)
-						w.print(expressions.matcher(j.next()).replaceAll(x -> {
+						w.print(expression.matcher(j.next()).replaceAll(x -> {
 							var g1 = x.group(1);
 							var g2 = x.group(2);
 							var g3 = x.group(3);
@@ -74,15 +68,15 @@ public class TemplatesWeb {
 									+ ")}";
 						}));
 				}
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
 			}
-
 			var h = o.toString();
-			var u = new Template(n, h);
-			b.add(u);
-		});
-		return b.build().toArray(Template[]::new);
+			h = template.matcher(h).replaceAll(r -> {
+				b.add(new Template(r.group(1), r.group(2)));
+				return "";
+			});
+			b.add(new Template(n.substring(n.lastIndexOf('/') + 1, n.length() - ".html".length()), h));
+		}
+		return b.build().toList();
 	});
 
 	public void setApplication(Object application) {
@@ -91,19 +85,23 @@ public class TemplatesWeb {
 
 	@Handle(method = "GET", path = "/templates.js")
 	public Script getScript() {
-		return new Script(Arrays.stream(templates.get()));
+		try {
+			return new Script(templates.get());
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	@Render(template = """
 			export default {
-				<!--__entries__-->
+				${entries}
 			};""")
-	public record Script(Stream<Template> entries) {
+	public record Script(Iterable<Template> entries) {
 	}
 
 	@Render(template = """
-				'__name__': async r => `
-			<!--__html__-->
+				'${name}': async r => `
+			${html}
 				`,""")
 	public record Template(String name, String html) {
 	}

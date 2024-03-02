@@ -26,43 +26,87 @@ package com.janilla.frontend;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.janilla.html.Html;
 import com.janilla.io.IO;
+import com.janilla.javascript.JavaScript;
 
-public record Interpolator(String[] tokens) implements IO.Function<IO.Function<Object, Object>, String> {
+public record Interpolator(Token[] tokens) implements IO.Function<IO.Function<Object, Object>, String> {
 
-	public static IO.Function<IO.Function<Object, Object>, String> of(String template) {
-		var b = Stream.<String>builder();
-		var i1 = 0;
-		for (;;) {
-			var i2a = template.indexOf("__", i1);
-			var i2b = template.indexOf("<!--__", i1);
-			var i2 = i2a >= 0 && (i2b < 0 || i2a <= i2b) ? i2a : i2b;
-			if (i2 < 0) {
-				b.add(template.substring(i1));
-				break;
+	public static Interpolator of(String template, Language language) {
+		var i = 0;
+		var b = Stream.<Token>builder();
+		for (var rr = language.expression.matcher(template).results().iterator(); rr.hasNext();) {
+			var r = rr.next();
+			var j = r.start();
+			if (j > i) {
+				var i0 = i;
+				var j0 = j;
+				b.add(e -> template.substring(i0, j0));
 			}
-			b.add(template.substring(i1, i2));
-			var x = i2 == i2a;
-			i1 = i2 + (x ? 2 : 6);
-			i2 = template.indexOf(x ? "__" : "__-->", i1);
-			b.add(template.substring(i1, i2));
-			i1 = i2 + (x ? 2 : 5);
+			b.add(language.toToken.apply(r));
+			i = r.end();
 		}
-		var t = b.build().toArray(String[]::new);
-		return new Interpolator(t);
+		var j = template.length();
+		if (j > i) {
+			var i0 = i;
+			var j0 = j;
+			b.add(e -> template.substring(i0, j0));
+		}
+		return new Interpolator(b.build().toArray(Token[]::new));
 	}
 
 	@Override
 	public String apply(IO.Function<Object, Object> evaluator) throws IOException {
 		var b = Stream.<String>builder();
-		var e = false;
 		for (var t : tokens) {
-			b.add(e ? Objects.toString(evaluator.apply(t), "") : t);
-			e = !e;
+			var s = t.apply(evaluator);
+			if (s != null && !s.isEmpty())
+				b.add(s);
 		}
 		return b.build().collect(Collectors.joining(""));
+	}
+
+	public interface Token extends IO.Function<IO.Function<Object, Object>, String> {
+	}
+
+	public enum Language {
+
+		HTML(TemplatesWeb.expression, r -> {
+			var g1 = r.group(1);
+			var g2 = r.group(2);
+			var g3 = r.group(3);
+			return e -> {
+				var f = Objects.toString(g2, g3);
+				var s = Objects.toString(e.apply(f), null);
+				if (g1 == null && g2 != null)
+					s = Html.escape(s);
+				return s;
+			};
+		}), JAVASCRIPT(Pattern.compile("\\$\\{([\\w.-]*?)}|/\\*\\$\\{([\\w.-]*?)}\\*/"), r -> {
+			var g1 = r.group(1);
+			var g2 = r.group(2);
+			return e -> {
+				var f = Objects.toString(g1, g2);
+				var s = Objects.toString(e.apply(f), null);
+				if (g1 != null)
+					s = JavaScript.escape(s);
+				return s;
+			};
+		});
+
+		Pattern expression;
+
+		Function<MatchResult, Token> toToken;
+
+		Language(Pattern expression, Function<MatchResult, Token> toToken) {
+			this.expression = expression;
+			this.toToken = toToken;
+		}
 	}
 }

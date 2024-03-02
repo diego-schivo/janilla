@@ -104,7 +104,7 @@ public interface IO {
 		var fs = new HashMap<String, FileSystem>();
 		try (var s3 = s2.flatMap(n -> {
 //			System.out.println("n=" + n);
-			return ClassLoader.getSystemClassLoader().resources(n).map(r -> {
+			return Thread.currentThread().getContextClassLoader().resources(n).map(r -> {
 //				System.out.println("r=" + r);
 				URI u;
 				try {

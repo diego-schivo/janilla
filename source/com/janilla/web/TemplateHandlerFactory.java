@@ -25,11 +25,15 @@
 package com.janilla.web;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.WritableByteChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.janilla.frontend.Interpolator;
 import com.janilla.frontend.RenderEngine;
 import com.janilla.frontend.RenderEngine.ObjectAndType;
+import com.janilla.frontend.TemplatesWeb;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
@@ -53,30 +57,57 @@ public class TemplateHandlerFactory implements HandlerFactory {
 	}
 
 	protected void render(ObjectAndType input, HttpExchange context) throws IOException {
-		var s = context.getResponse();
-		if (s.getStatus() == null)
-			s.setStatus(new Status(200, "OK"));
-
-		var h = s.getHeaders();
-		if (h.get("Cache-Control") == null)
-			s.getHeaders().set("Cache-Control", "no-cache");
+		{
+			var s = context.getResponse();
+			if (s.getStatus() == null)
+				s.setStatus(new Status(200, "OK"));
+			var h = s.getHeaders();
+			if (h.get("Cache-Control") == null)
+				s.getHeaders().set("Cache-Control", "no-cache");
+			if (h.get("Content-Type") == null)
+				s.getHeaders().set("Content-Type", "text/html");
+		}
 
 		RenderEngine e = new RenderEngine();
-		e.setToInterpolator(t -> {
-			String u;
-			if (t.contains("\n"))
-				u = t;
+		e.setToInterpolator(s -> {
+			String t;
+			if (s.contains("\n"))
+				t = s;
 			else {
-				var c = application.getClass();
-				var i = c.getResourceAsStream(t);
-				if (i == null)
-					throw new NullPointerException(c + " " + t);
-				u = new String(i.readAllBytes());
+				t = foo.get().get(s);
+				if (t == null)
+					throw new NullPointerException(s);
 			}
-			return Interpolator.of(u);
+			var l = switch (context.getResponse().getHeaders().get("Content-Type")) {
+			case "text/html" -> Interpolator.Language.HTML;
+			case "text/javascript" -> Interpolator.Language.JAVASCRIPT;
+			default -> throw new RuntimeException();
+			};
+			return Interpolator.of(t, l);
 		});
 		var b = e.render(input).toString().getBytes();
-		var c = (WritableByteChannel) s.getBody();
+		var c = (WritableByteChannel) context.getResponse().getBody();
 		IO.write(b, c);
 	}
+
+	IO.Supplier<Map<String, String>> foo = IO.Lazy.of(() -> {
+		var c = application.getClass();
+		var m = new HashMap<String, String>();
+		IO.acceptPackageFiles(c.getPackageName(), f -> {
+			var n = f.getFileName().toString();
+			try (var i = c.getResourceAsStream(n)) {
+				if (i == null)
+					throw new NullPointerException(n);
+				var h = new String(i.readAllBytes());
+				h = TemplatesWeb.template.matcher(h).replaceAll(r -> {
+					m.put(r.group(1) + ".html", r.group(2));
+					return "";
+				});
+				m.put(n, h);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		});
+		return m;
+	});
 }
