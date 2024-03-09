@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.janilla.database.Database;
@@ -88,20 +90,21 @@ public class Persistence {
 	}
 
 	<E, K, V> void configure(Class<E> type) {
-		Crud<E> d = newCrud(type);
-		if (d == null)
+		Crud<E> c = newCrud(type);
+		if (c == null)
 			return;
-		d.type = type;
-		d.database = database;
-		if (d.formatter == null)
-			d.formatter = e -> {
+		c.type = type;
+		c.database = database;
+		if (c.formatter == null)
+			c.formatter = e -> {
 				var t = new ReflectionJsonIterator();
 				t.setObject(e);
 				return Json.format(t);
 			};
-		if (d.parser == null)
-			d.parser = t -> Json.parse((String) t, Json.parseCollector(type));
-		configuration.cruds.put(type, d);
+		if (c.parser == null)
+			c.parser = t -> Json.parse((String) t, Json.parseCollector(type));
+		c.indexPresent = type.isAnnotationPresent(Index.class);
+		configuration.cruds.put(type, c);
 
 		var r = Stream.concat(Stream.of(type), Reflection.properties(type).map(n -> {
 			Field f;
@@ -127,7 +130,7 @@ public class Persistence {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.NULL;
 				j.keyHelper = h;
-			} else if (t == Long.class || t == Long.TYPE) {
+			} else if (t == Long.class || t == Long.TYPE || t == long[].class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.LONG;
 				j.keyHelper = h;
@@ -159,9 +162,15 @@ public class Persistence {
 			configuration.indexInitializers.put(k, j);
 
 			var v = new IndexEntryGetter();
-			v.keyGetter = n != null && !n.isEmpty() ? Reflection.getter(type, n) : null;
+			BiFunction<Class<?>, String, Function<Object, Object>> f;
+			try {
+				f = i.keyGetter().getConstructor().newInstance();
+			} catch (ReflectiveOperationException x) {
+				throw new RuntimeException(x);
+			}
+			v.keyGetter = n != null && !n.isEmpty() ? f.apply(type, n) : null;
 			v.sortGetter = g;
-			d.indexEntryGetters.put(n, v);
+			c.indexEntryGetters.put(n, v);
 		}
 	}
 
@@ -186,12 +195,12 @@ public class Persistence {
 
 	static class IndexEntryGetter {
 
-		Method keyGetter;
+		Function<Object, Object> keyGetter;
 
 		Method sortGetter;
 
 		Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
-			var k = keyGetter != null ? keyGetter.invoke(entity) : null;
+			var k = keyGetter != null ? keyGetter.apply(entity) : null;
 			var v = sortGetter != null ? new Object[] { sortGetter.invoke(entity), id } : new Object[] { id };
 			return keyGetter == null || k != null ? new SimpleEntry<>(k, v) : null;
 		}

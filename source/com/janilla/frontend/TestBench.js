@@ -167,5 +167,40 @@ class Runner {
 		});
 	}
 }
+const matchNode = (xpath, context, not) => {
+	const q = resolve => {
+		const n = context.ownerDocument.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+		// console.log(xpath, e);
+		if (not ? !n : n)
+			resolve(n);
+		return n;
+	};
+	let o, t;
+	const r = resolve => {
+		return element => {
+			if (o) {
+				clearTimeout(t);
+				o.disconnect();
+				o = null;
+			}
+			setTimeout(() => resolve(element), 50);
+		};
+	};
+	return new Promise((resolve, reject) => {
+		const n = q(r(resolve));
+		if (not ? n : !n) {
+			o = new MutationObserver(() => q(r(resolve)));
+			o.observe(context, { childList: true, subtree: true });
+			t = setTimeout(() => {
+				if (o) {
+					o.disconnect();
+					o = null;
+				}
+				reject(`Timeout (xpath=${xpath})`);
+			}, 500);
+		} else if (not)
+			reject(`Not found (xpath=${xpath})`);
+	});
+};
 
-export default TestBench;
+export { TestBench, matchNode };

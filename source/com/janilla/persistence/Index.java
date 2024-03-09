@@ -28,10 +28,49 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Collections;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+
+import com.janilla.reflect.Reflection;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD, ElementType.TYPE })
 public @interface Index {
 
+	Class<? extends BiFunction<Class<?>, String, Function<Object, Object>>> keyGetter() default Keyword.class;
+
 	String sort() default "";
+
+	public static class Keyword implements BiFunction<Class<?>, String, Function<Object, Object>> {
+
+		@Override
+		public Function<Object, Object> apply(Class<?> t, String u) {
+			var g = Reflection.getter(t, u);
+			return o -> {
+				try {
+					return g.invoke(o);
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
+			};
+		}
+	}
+
+	public static class KeywordSet extends Keyword {
+
+		public static Pattern space = Pattern.compile("\\s+");
+
+		@Override
+		public Function<Object, Object> apply(Class<?> t, String u) {
+			var f = super.apply(t, u);
+			return o -> {
+				var s = (String) f.apply(o);
+				if (s == null)
+					return Collections.emptyList();
+				return space.splitAsStream(s.toLowerCase()).distinct().sorted().toList();
+			};
+		}
+	}
 }

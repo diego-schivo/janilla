@@ -27,6 +27,7 @@ package com.janilla.frontend;
 import java.io.IOException;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -47,6 +48,8 @@ public class RenderEngine {
 
 	protected LinkedList<ObjectAndType> stack = new LinkedList<>();
 
+	protected String template;
+
 	public void setToInterpolator(
 			IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator) {
 		this.toInterpolator = toInterpolator;
@@ -58,6 +61,14 @@ public class RenderEngine {
 
 	public Object getObject() {
 		return stack.peek().object;
+	}
+
+	public String getTemplate() {
+		return template;
+	}
+
+	public void setTemplate(String template) {
+		this.template = template;
 	}
 
 	public Object render(ObjectAndType input) throws IOException {
@@ -81,24 +92,27 @@ public class RenderEngine {
 				var d = r != null ? r.delimiter() : null;
 				while (i.hasNext()) {
 					var x = render(new ObjectAndType(i.next(), t));
-					b.add(x.toString());
+					var y = x != null ? x.toString() : null;
+					if (y == null || y.isEmpty())
+						continue;
+					b.add(y);
 					if (i.hasNext() && r != null && !d.isEmpty())
 						b.add(d);
 				}
 				input = new ObjectAndType(b.build().collect(Collectors.joining()), input.type);
 			}
 
-			var t = r != null ? r.template() : null;
-			var j = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
-			var c = input;
-			if (j != null)
-				return j.apply(x -> evaluate((String) x, c));
+			template = r != null ? r.template() : null;
 			for (var x : stack)
 				if (x.object instanceof Renderer y) {
 					var z = y.render(this);
 					if (z != Renderer.CANNOT_RENDER)
 						return z;
 				}
+			var j = template != null && !template.isEmpty() ? toInterpolator.apply(template) : null;
+			var c = input;
+			if (j != null)
+				return j.apply(x -> evaluate((String) x, c));
 			return input.object;
 		} finally {
 			stack.pop();
@@ -139,7 +153,10 @@ public class RenderEngine {
 			break;
 		}
 		default: {
-			var g = Reflection.getter(o.getClass(), n);
+			var c = o.getClass();
+			if (!Modifier.isPublic(c.getModifiers()) && o instanceof Map.Entry)
+				c = Map.Entry.class;
+			var g = Reflection.getter(c, n);
 			if (g == null)
 				throw new NullPointerException(o + " " + n);
 			Object v;

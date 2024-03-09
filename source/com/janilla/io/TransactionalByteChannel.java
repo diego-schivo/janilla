@@ -109,7 +109,8 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 				l = -l;
 			}
 
-			b.limit(b.position());
+			var z = b.position();
+			b.limit(Math.min(z, 8 + 4 + l));
 			b.position(8 + 4);
 			channel.position(q);
 			for (var n = 0; n < l;) {
@@ -117,12 +118,14 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 					b.clear();
 					var x = b;
 					IO.repeat(y -> transactionChannel.read(x), b.remaining());
-					b.flip();
+					z = b.position();
+					b.limit(Math.min(z, l - n));
+					b.position(0);
 				}
 				var x = b;
 				n += IO.repeat(y -> channel.write(x), Math.min(l - n, b.remaining()));
 			}
-
+			b.limit(z);
 			b.compact();
 			p += 8 + 4 + l;
 		}

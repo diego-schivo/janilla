@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -258,26 +259,26 @@ public interface Json {
 								: null;
 						@SuppressWarnings("unchecked")
 						var m = ((Map<String, Object>) a.pop());
-						Object i;
+						Object o;
 						try {
 							if (n != null) {
 								var z = n.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue()))
 										.toArray();
-								i = d.newInstance(z);
+								o = d.newInstance(z);
 							} else {
-								i = d.newInstance();
+								o = d.newInstance();
 								for (var e : m.entrySet()) {
 //									System.out.println("e=" + e);
 									var s = Reflection.setter(c, e.getKey());
-									var o = convert(e.getValue(), s.getParameterTypes()[0]);
-//									System.out.println("s=" + s + ", i=" + i + ", o=" + o);
-									s.invoke(i, o);
+									var v = convert(e.getValue(), s.getParameterTypes()[0]);
+//									System.out.println("s=" + s + ", i=" + i + ", v=" + v);
+									s.invoke(o, v);
 								}
 							}
 						} catch (ReflectiveOperationException e) {
 							throw new RuntimeException(e);
 						}
-						a.push(i);
+						a.push(o);
 						break;
 					}
 					break;
@@ -400,6 +401,9 @@ public interface Json {
 			case List<?> x -> new LinkedHashSet<>(x);
 			default -> throw new RuntimeException();
 			};
+
+		if (target == long[].class)
+			return ((Collection<?>) input).stream().mapToLong(x -> (long) x).toArray();
 
 		return input;
 	}

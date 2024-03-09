@@ -29,7 +29,7 @@ import java.util.NoSuchElementException;
 
 class ArrayIterator extends TokenIterator {
 
-	Iterator<Object> elements;
+	Iterator<?> elements;
 
 	int state;
 
@@ -39,7 +39,7 @@ class ArrayIterator extends TokenIterator {
 
 	Iterator<JsonToken<?>> iterator;
 
-	ArrayIterator(Iterator<Object> elements, TokenIterationContext context) {
+	ArrayIterator(Iterator<?> elements, TokenIterationContext context) {
 		super(context);
 		this.elements = elements;
 	}
