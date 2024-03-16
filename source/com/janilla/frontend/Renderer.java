@@ -24,11 +24,9 @@
  */
 package com.janilla.frontend;
 
-import java.io.IOException;
-
 public interface Renderer {
 
 	static Object CANNOT_RENDER = new Object();
 
-	Object render(RenderEngine engine) throws IOException;
+	boolean evaluate(RenderEngine engine);
 }

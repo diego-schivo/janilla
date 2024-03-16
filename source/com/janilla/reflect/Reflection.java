@@ -82,7 +82,10 @@ public class Reflection {
 //			default -> false;
 //			})
 //				continue;
-			if (Modifier.isStatic(n.getModifiers()) || n.getDeclaringClass() == Object.class)
+			if (Modifier.isStatic(n.getModifiers()) || n.getDeclaringClass() == Object.class || switch (n.getName()) {
+			case "hashCode", "toString" -> true;
+			default -> false;
+			})
 				continue;
 			var g = n.getReturnType() != Void.TYPE && n.getParameterCount() == 0 ? n : null;
 			var s = n.getReturnType() == Void.TYPE && n.getParameterCount() == 1 ? n : null;

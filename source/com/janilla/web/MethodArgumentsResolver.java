@@ -62,17 +62,19 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-			switch (Objects.toString(c.getRequest().getHeaders().get("Content-Type"), "")) {
-			case "application/x-www-form-urlencoded":
-				var v = Net.parseQueryString(s);
-				if (v == null)
-					;
-				else if (q == null)
-					q = v;
-				else
-					q.addAll(v);
-				break;
-			}
+			var t = c.getRequest().getHeaders().get("Content-Type");
+			if (t != null)
+				switch (t.split(";")[0]) {
+				case "application/x-www-form-urlencoded":
+					var v = Net.parseQueryString(s);
+					if (v == null)
+						;
+					else if (q == null)
+						q = v;
+					else
+						q.addAll(v);
+					break;
+				}
 			yield s;
 		}
 		default -> null;

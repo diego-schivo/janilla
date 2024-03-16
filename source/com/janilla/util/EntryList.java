@@ -25,13 +25,13 @@
 package com.janilla.util;
 
 import java.util.AbstractMap.SimpleEntry;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-public class EntryList<K, V> extends LinkedList<Entry<K, V>> {
+public class EntryList<K, V> extends ArrayList<Entry<K, V>> {
 
 	public static void main(String[] args) {
 		var l = new EntryList<String, String>();
@@ -42,6 +42,14 @@ public class EntryList<K, V> extends LinkedList<Entry<K, V>> {
 	}
 
 	private static final long serialVersionUID = 2930611377458857452L;
+
+	public EntryList() {
+	}
+
+	public EntryList(EntryList<K, V> l) {
+		for (var e : l)
+			add(e.getKey(), e.getValue());
+	}
 
 	public void add(K key, V value) {
 		add(new SimpleEntry<>(key, value));

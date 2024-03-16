@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.lang.reflect.Modifier;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,26 +45,20 @@ class ReflectionValueIterator extends ValueIterator {
 	@Override
 	protected Iterator<JsonToken<?>> newIterator(Object object) {
 		var i = super.newIterator(object);
-//		if (i == null && object instanceof Collection<?> c) {
-//			@SuppressWarnings("unchecked")
-//			var j = (Iterator<Object>) c.iterator();
-//			i = new ArrayIterator(j, context);
-//		}
-//		if (i == null && object instanceof Stream<?> s) {
-//			@SuppressWarnings("unchecked")
-//			var j = (Iterator<Object>) s.iterator();
-//			i = new ArrayIterator(j, context);
-//		}
 		if (i == null) {
 			i = switch (object) {
 			case long[] ll -> new ArrayIterator(Arrays.stream(ll).boxed().iterator(), context);
+			case Object[] oo -> new ArrayIterator(Arrays.stream(oo).iterator(), context);
 			case Collection<?> c -> new ArrayIterator(c.iterator(), context);
 			case Stream<?> s -> new ArrayIterator(s.iterator(), context);
 			default -> null;
 			};
 		}
 		if (i == null) {
-			var c = object.getClass();
+			var c = Modifier.isPublic(object.getClass().getModifiers()) ? object.getClass() : switch (object) {
+			case Entry<?, ?> x -> Entry.class;
+			default -> throw new RuntimeException();
+			};
 			i = new ObjectIterator(Reflection.properties(c).map(p -> {
 				var g = Reflection.getter(c, p);
 //				var s = Reflection.setter(c, p);

@@ -102,11 +102,11 @@ public class MethodHandlerFactory implements HandlerFactory {
 				Content-Length: 0\r
 				\r
 				""".getBytes());
-		var rc = new HttpMessageReadableByteChannel(Channels.newChannel(is));
 		var os = new ByteArrayOutputStream();
-		var wc = new HttpMessageWritableByteChannel(Channels.newChannel(os));
-
-		try (var rq = rc.readRequest(); var rs = wc.writeResponse()) {
+		try (var rc = new HttpMessageReadableByteChannel(Channels.newChannel(is));
+				var rq = rc.readRequest();
+				var wc = new HttpMessageWritableByteChannel(Channels.newChannel(os));
+				var rs = wc.writeResponse()) {
 			var d = new HttpExchange();
 			d.setRequest(rq);
 			d.setResponse(rs);
@@ -220,7 +220,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 					}
 			}
 
-			render(new ObjectAndType(o, m.getAnnotatedReturnType()), exchange);
+			render(new ObjectAndType(null, o, m.getAnnotatedReturnType()), exchange);
 		}
 	}
 

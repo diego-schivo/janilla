@@ -82,9 +82,8 @@ public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest,
 				Content-Length: 0\r
 				\r
 				""".getBytes());
-		var rc = new HttpMessageReadableByteChannel(Channels.newChannel(is));
 		MethodInvocation i;
-		try (var rq = rc.readRequest()) {
+		try (var rc = new HttpMessageReadableByteChannel(Channels.newChannel(is)); var rq = rc.readRequest()) {
 			i = f.apply(rq);
 		}
 		System.out.println(i);

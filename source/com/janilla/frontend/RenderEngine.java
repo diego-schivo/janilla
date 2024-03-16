@@ -25,17 +25,21 @@
 package com.janilla.frontend;
 
 import java.io.IOException;
+import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.janilla.io.IO;
 import com.janilla.reflect.Reflection;
@@ -46,135 +50,193 @@ public class RenderEngine {
 
 	protected IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator;
 
-	protected LinkedList<ObjectAndType> stack = new LinkedList<>();
-
-	protected String template;
+	protected Deque<ObjectAndType> stack = new LinkedList<>();
 
 	public void setToInterpolator(
 			IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator) {
 		this.toInterpolator = toInterpolator;
 	}
 
-	public List<ObjectAndType> getStack() {
+	public Deque<ObjectAndType> getStack() {
 		return stack;
 	}
 
-	public Object getObject() {
-		return stack.peek().object;
-	}
-
-	public String getTemplate() {
-		return template;
-	}
-
-	public void setTemplate(String template) {
-		this.template = template;
-	}
-
 	public Object render(ObjectAndType input) throws IOException {
-		if (input.object == null)
-			return null;
+		var s = stack.size();
 		stack.push(input);
 		try {
-			var r = input.type != null ? input.type.getAnnotation(Render.class) : null;
-			if (r == null)
-				r = input.object.getClass().getAnnotation(Render.class);
-			var i = switch (input.object) {
-			case Iterable<?> x -> x.iterator();
-			case Stream<?> x -> x.iterator();
-			default -> null;
-			};
-			if (i != null) {
-//				System.out.println("input.type=" + input.type);
-				var t = ((AnnotatedParameterizedType) getAnnotatedInterface(input.type, Iterable.class, Stream.class))
-						.getAnnotatedActualTypeArguments()[0];
-				var b = Stream.<String>builder();
+			for (var x : stack)
+				if (x.value instanceof Renderer y && y.evaluate(this))
+					break;
+
+			if (input.value == null)
+				return null;
+
+			var r = input.value.getClass().getAnnotation(Render.class);
+			var t = r != null ? r.template() : null;
+
+			r = input.type instanceof AnnotatedType x ? x.getAnnotation(Render.class) : null;
+			if (r != null && !r.template().isEmpty())
+				t = r.template();
+
+			if (input.value instanceof Object[] oo) {
+				var z = switch (input.type) {
+				case AnnotatedArrayType u -> u.getAnnotatedGenericComponentType();
+				default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) input.type,
+						Iterable.class, Stream.class)).getAnnotatedActualTypeArguments()[0];
+				};
+				r = z.getAnnotation(Render.class);
 				var d = r != null ? r.delimiter() : null;
-				while (i.hasNext()) {
-					var x = render(new ObjectAndType(i.next(), t));
+				var b = new ArrayList<String>();
+				for (var i = 0; i < oo.length; i++) {
+					var e = oo[i];
+					var x = render(new ObjectAndType(i, e, z));
 					var y = x != null ? x.toString() : null;
 					if (y == null || y.isEmpty())
 						continue;
-					b.add(y);
-					if (i.hasNext() && r != null && !d.isEmpty())
+					if (!b.isEmpty() && d != null && !d.isEmpty())
 						b.add(d);
+					b.add(y);
 				}
-				input = new ObjectAndType(b.build().collect(Collectors.joining()), input.type);
+				return b.stream().collect(Collectors.joining());
 			}
 
-			template = r != null ? r.template() : null;
-			for (var x : stack)
-				if (x.object instanceof Renderer y) {
-					var z = y.render(this);
-					if (z != Renderer.CANNOT_RENDER)
-						return z;
-				}
-			var j = template != null && !template.isEmpty() ? toInterpolator.apply(template) : null;
-			var c = input;
-			if (j != null)
-				return j.apply(x -> evaluate((String) x, c));
-			return input.object;
+			if (input.template != null && !input.template.isEmpty())
+				t = input.template;
+			var i = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
+			if (i != null)
+				return i.apply(x -> {
+					try {
+						var e = (String) x;
+						evaluate(e);
+						var c = stack.pop();
+						if (e.isEmpty()) {
+							c.type = null;
+							c.template = null;
+						}
+						return render(c);
+					} finally {
+						while (stack.size() > s + 1)
+							stack.pop();
+					}
+				});
+
+			return input.value;
 		} finally {
-			stack.pop();
+			while (stack.size() > s)
+				stack.pop();
 		}
 	}
 
-	Object evaluate(String expression, ObjectAndType context) throws IOException {
-		var o = context.object;
-		if (o == null)
-			return null;
-		if (expression.isEmpty())
-			return o;
-		var i = expression.indexOf('.');
-		var n = i >= 0 ? expression.substring(0, i) : expression;
-		ObjectAndType p;
-		switch (o) {
-		case Map<?, ?> m: {
-			var v = m.get(n);
-			var t = ((AnnotatedParameterizedType) context.type).getAnnotatedActualTypeArguments()[1];
-			p = new ObjectAndType(v, t);
-			break;
+	public <T> boolean match(Class<T> type, BiConsumer<T, ObjectAndType> consumer) {
+		var cc = type.getRecordComponents();
+		var ee = stack.iterator();
+		var aa = new Object[cc.length];
+		for (var i = cc.length - 1; i >= 0; i--) {
+			if (!ee.hasNext())
+				return false;
+			var c = cc[i];
+			var e = ee.next();
+			if (e.key instanceof Integer j && c.getType() == Integer.TYPE)
+				aa[i] = j;
+			else if (e.value == null || c.getName().equals(e.key)
+					|| (c.getType() != Object.class && c.getType().isAssignableFrom(e.value.getClass())))
+				aa[i] = e.value;
+			else
+				return false;
 		}
-		case EntryList<?, ?> m: {
-			var v = m.get(n);
-			var a = context.type;
-			var b = EntryList.class;
-			var t = getAnnotatedSuperclass(a, b);
-			var u = ((AnnotatedParameterizedType) t).getAnnotatedActualTypeArguments()[1];
-			p = new ObjectAndType(v, u);
-			break;
-		}
-		case Function<?, ?> f: {
+		try {
+			var c = type.getDeclaredConstructors()[0];
+			c.setAccessible(true);
 			@SuppressWarnings("unchecked")
-			var g = (Function<String, ?>) f;
-			var v = g.apply(n);
-			var t = ((AnnotatedParameterizedType) context.type).getAnnotatedActualTypeArguments()[1];
-			p = new ObjectAndType(v, t);
-			break;
+			var t = (T) c.newInstance(aa);
+			consumer.accept(t, stack.peek());
+			return true;
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
 		}
-		default: {
-			var c = o.getClass();
-			if (!Modifier.isPublic(c.getModifiers()) && o instanceof Map.Entry)
-				c = Map.Entry.class;
-			var g = Reflection.getter(c, n);
-			if (g == null)
-				throw new NullPointerException(o + " " + n);
-			Object v;
-			try {
-				v = g.invoke(o);
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
+	}
+
+	protected void evaluate(String expression) throws IOException {
+		if (expression.isEmpty())
+			return;
+		var c = stack.peek();
+		if (c.value == null)
+			return;
+		var nn = expression.split("\\.");
+		for (var i = 0; i < nn.length; i++) {
+			var n = nn[i];
+
+			switch (c.value) {
+			case Map<?, ?> m: {
+				var v = m.get(n);
+				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[1];
+				c = new ObjectAndType(n, v, t);
+				break;
 			}
-			var t = g.getAnnotatedReturnType();
-			p = new ObjectAndType(v, t);
-			break;
+			case EntryList<?, ?> m: {
+				var v = m.get(n);
+				var a = c.type;
+				var b = EntryList.class;
+				var t = getAnnotatedSuperclass(a, b);
+				var u = ((AnnotatedParameterizedType) t).getAnnotatedActualTypeArguments()[1];
+				c = new ObjectAndType(n, v, u);
+				break;
+			}
+			case Function<?, ?> f: {
+				@SuppressWarnings("unchecked")
+				var g = (Function<String, ?>) f;
+				var v = g.apply(n);
+				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[1];
+				c = new ObjectAndType(n, v, t);
+				break;
+			}
+			default: {
+				var g = Reflection.getter(c.value.getClass(), n);
+				if (g == null && i == 0)
+					for (var dd = stack.stream().skip(1).iterator(); dd.hasNext();) {
+						var d = dd.next();
+						g = Reflection.getter(d.value.getClass(), n);
+						if (g != null) {
+							c = d;
+							break;
+						}
+					}
+				Object v;
+				AnnotatedType t;
+				if (g == null) {
+					v = null;
+					t = null;
+				} else {
+					try {
+						v = g.invoke(c.value);
+					} catch (ReflectiveOperationException e) {
+						throw new RuntimeException(e);
+					}
+					var s = v != null ? switch (v) {
+					case Object[] x -> Arrays.stream(x);
+					case Iterable<?> x -> StreamSupport.stream(x.spliterator(), false);
+					case Stream<?> x -> x;
+					default -> null;
+					} : null;
+					t = g.getAnnotatedReturnType();
+					if (s != null) {
+						var u = switch (t) {
+						case AnnotatedArrayType x -> x.getAnnotatedGenericComponentType();
+						default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) t,
+								Iterable.class, Stream.class)).getAnnotatedActualTypeArguments()[0];
+						};
+						v = s.toArray(l -> (Object[]) Array.newInstance((Class<?>) u.getType(), l));
+					}
+				}
+				c = new ObjectAndType(n, v, t);
+				break;
+			}
+			}
+			stack.push(c);
+			if (c.value == null)
+				return;
 		}
-		}
-		if (i >= 0) {
-			var v = evaluate(expression.substring(i + 1), p);
-			p = new ObjectAndType(v, p.type);
-		}
-		return render(p);
 	}
 
 	protected static AnnotatedType getAnnotatedSuperclass(AnnotatedType type, Class<?> class1) {
@@ -193,6 +255,57 @@ public class RenderEngine {
 		return (Class<?>) (annotated.getType() instanceof ParameterizedType p ? p.getRawType() : annotated.getType());
 	}
 
-	public record ObjectAndType(Object object, AnnotatedType type) {
+	public static class ObjectAndType {
+
+		Object key;
+
+		Object value;
+
+		AnnotatedType type;
+
+		String template;
+
+		public ObjectAndType(Object key, Object value, AnnotatedType type) {
+			this.key = key;
+			this.value = value;
+			this.type = type;
+		}
+
+		public Object getKey() {
+			return key;
+		}
+
+		public void setKey(Object key) {
+			this.key = key;
+		}
+
+		public Object getValue() {
+			return value;
+		}
+
+		public void setValue(Object value) {
+			this.value = value;
+		}
+
+		public AnnotatedType getType() {
+			return type;
+		}
+
+		public void setType(AnnotatedType type) {
+			this.type = type;
+		}
+
+		public String getTemplate() {
+			return template;
+		}
+
+		public void setTemplate(String template) {
+			this.template = template;
+		}
+
+		@Override
+		public String toString() {
+			return "[key=" + key + ", value=" + value + ", type=" + type + "]";
+		}
 	}
 }

@@ -43,7 +43,7 @@ public class JsonHandlerFactory implements HandlerFactory {
 //		if (object instanceof HttpRequest || object instanceof Exception)
 //			return null;
 //		return c -> render(object, c);
-		return object instanceof ObjectAndType i ? x -> render(i.object(), x) : null;
+		return object instanceof ObjectAndType i ? x -> render(i.getValue(), x) : null;
 	}
 
 	protected void render(Object object, HttpExchange exchange) throws IOException {

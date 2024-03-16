@@ -45,11 +45,11 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 				Content-Length: 0\r
 				\r
 				""".getBytes());
-		var r = new HttpMessageReadableByteChannel(Channels.newChannel(i));
 		var o = new ByteArrayOutputStream();
-		var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
-
-		try (var q = r.readRequest(); var s = w.writeResponse()) {
+		try (var r = new HttpMessageReadableByteChannel(Channels.newChannel(i));
+				var q = r.readRequest();
+				var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
+				var s = w.writeResponse()) {
 			var e = new NotFoundException();
 			var c = new HttpExchange();
 			c.setRequest(q);

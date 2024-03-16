@@ -26,9 +26,9 @@ package com.janilla.json;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
-
-import com.janilla.reflect.Parameter;
 
 public class ReflectionJsonIterator extends JsonIterator {
 
@@ -41,6 +41,7 @@ public class ReflectionJsonIterator extends JsonIterator {
 		var d3 = new D(345);
 		c.l = List.of(d2, d3);
 		c.m = List.of(456L, 567L);
+		c.n = List.of(Map.entry("a", "b"), Map.entry("a", "b"));
 		var t = new ReflectionJsonIterator();
 		t.setObject(c);
 		var s = Json.format(t);
@@ -59,6 +60,8 @@ public class ReflectionJsonIterator extends JsonIterator {
 		private List<D> l;
 
 		private List<Long> m;
+
+		private List<Entry<String, String>> n;
 
 		public String getS() {
 			return s;
@@ -92,21 +95,30 @@ public class ReflectionJsonIterator extends JsonIterator {
 			this.m = m;
 		}
 
+		public List<Entry<String, String>> getN() {
+			return n;
+		}
+
+		public void setN(List<Entry<String, String>> n) {
+			this.n = n;
+		}
+
 		@Override
 		public boolean equals(Object obj) {
 			if (obj == null || obj.getClass() != C.class)
 				return false;
 			var c = (C) obj;
-			return Objects.equals(s, c.s) && Objects.equals(d, c.d) && Objects.equals(l, c.l) && Objects.equals(m, c.m);
+			return Objects.equals(s, c.s) && Objects.equals(d, c.d) && Objects.equals(l, c.l) && Objects.equals(m, c.m)
+					&& Objects.equals(n, c.n);
 		}
 
 		@Override
 		public String toString() {
-			return "C[s=" + s + ", d=" + d + ", l=" + l + ", m=" + m + "]";
+			return "C[s=" + s + ", d=" + d + ", l=" + l + ", m=" + m + ", n=" + n + "]";
 		}
 	}
 
-	public record D(@Parameter(name = "i") int i) {
+	public record D(int i) {
 	}
 
 	@Override

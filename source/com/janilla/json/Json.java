@@ -24,11 +24,13 @@
  */
 package com.janilla.json;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -250,34 +252,10 @@ public interface Json {
 						a.push(new HashMap<String, Object>());
 						break;
 					case END:
-						var c = b.peek();
-//						System.out.println("c=" + c);
-						var d = c.getConstructors()[0];
-//						System.out.println("d=" + d);
-						var n = c.isRecord() ? Arrays.stream(c.getRecordComponents()).collect(
-								Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new))
-								: null;
 						@SuppressWarnings("unchecked")
 						var m = ((Map<String, Object>) a.pop());
-						Object o;
-						try {
-							if (n != null) {
-								var z = n.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue()))
-										.toArray();
-								o = d.newInstance(z);
-							} else {
-								o = d.newInstance();
-								for (var e : m.entrySet()) {
-//									System.out.println("e=" + e);
-									var s = Reflection.setter(c, e.getKey());
-									var v = convert(e.getValue(), s.getParameterTypes()[0]);
-//									System.out.println("s=" + s + ", i=" + i + ", v=" + v);
-									s.invoke(o, v);
-								}
-							}
-						} catch (ReflectiveOperationException e) {
-							throw new RuntimeException(e);
-						}
+						var c = b.peek();
+						var o = convert2(m, c);
 						a.push(o);
 						break;
 					}
@@ -325,10 +303,26 @@ public interface Json {
 					a.push(t.data());
 					if (Objects.equals(p, JsonToken.MEMBER_START)) {
 						var m = Reflection.getter(b.peek(), (String) t.data());
-						var u = m.getGenericReturnType();
-						var w = u instanceof ParameterizedType v ? v.getActualTypeArguments()[0] : u;
-						var y = w instanceof Class<?> x ? x : null;
-						b.push(y);
+//						var u = m.getGenericReturnType();
+//						var w = u instanceof ParameterizedType v ? v.getActualTypeArguments()[0] : u;
+//						var y = w instanceof Class<?> x ? x : null;
+//						b.push(y);
+						Class<?> z = null;
+						if (m.getReturnType().isArray())
+							z = m.getReturnType().componentType();
+						else if (m.getGenericReturnType() instanceof ParameterizedType v) {
+							var x = v.getActualTypeArguments()[0];
+//							if (x instanceof Class<?> y)
+//								z = y;
+							z = switch (x) {
+							case Class<?> y -> y;
+							case ParameterizedType y -> (Class<?>) y.getRawType();
+							default -> throw new RuntimeException();
+							};
+						}
+						if (z == null)
+							z = m.getReturnType();
+						b.push(z);
 					}
 					break;
 				default:
@@ -405,6 +399,40 @@ public interface Json {
 		if (target == long[].class)
 			return ((Collection<?>) input).stream().mapToLong(x -> (long) x).toArray();
 
+		if (target.isArray())
+			return ((Collection<?>) input).stream().map(x -> convert(x, target.componentType()))
+					.toArray(l -> (Object[]) Array.newInstance(target.componentType(), l));
+
 		return input;
+	}
+
+	static Object convert2(Map<String, Object> input, Class<?> target) {
+		if (target == Map.Entry.class)
+			return new SimpleEntry<Object, Object>(input.get("key"), input.get("value"));
+
+		// System.out.println("c=" + c);
+		var d = target.getConstructors()[0];
+		// System.out.println("d=" + d);
+		var n = target.isRecord() ? Arrays.stream(target.getRecordComponents())
+				.collect(Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new)) : null;
+		Object o;
+		try {
+			if (n != null) {
+				var z = n.entrySet().stream().map(x -> convert(input.get(x.getKey()), x.getValue())).toArray();
+				o = d.newInstance(z);
+			} else {
+				o = d.newInstance();
+				for (var e : input.entrySet()) {
+					// System.out.println("e=" + e);
+					var s = Reflection.setter(target, e.getKey());
+					var v = convert(e.getValue(), s.getParameterTypes()[0]);
+					// System.out.println("s=" + s + ", i=" + i + ", v=" + v);
+					s.invoke(o, v);
+				}
+			}
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
+		return o;
 	}
 }
