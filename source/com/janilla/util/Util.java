@@ -44,9 +44,9 @@ import com.janilla.reflect.Reflection;
 public interface Util {
 
 	static Class<?> getClass(Path p) {
-		var t = !Files.isDirectory(p) ? p.toString() : null;
+		var t = !Files.isDirectory(p) ? p.toString().replace(File.separatorChar, '/') : null;
 		t = t != null && t.endsWith(".class") ? t : null;
-		t = t != null ? t.substring(0, t.length() - ".class".length()).replace(File.separatorChar, '.') : null;
+		t = t != null ? t.substring(0, t.length() - ".class".length()).replace('/', '.') : null;
 		Class<?> c;
 		try {
 			c = t != null ? Class.forName(t) : null;

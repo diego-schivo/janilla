@@ -94,8 +94,8 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 	}
 
 	protected String toName(Path path) {
-		var s = path.toString();
-		if (s.startsWith(File.separator))
+		var s = path.toString().replace(File.separatorChar, '/');
+		if (s.startsWith("/"))
 			s = s.substring(1);
 		return s.endsWith(".avif") || s.endsWith(".css") || s.endsWith(".ico") || s.endsWith(".jpg")
 				|| s.endsWith(".js") || s.endsWith(".png") || s.endsWith(".svg") || s.endsWith(".ttf")
@@ -115,7 +115,7 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 			var n = super.toName(path);
 			if (n == null)
 				return null;
-			var i = n.lastIndexOf(File.separatorChar);
+			var i = n.lastIndexOf('/');
 			return n.substring(i + 1);
 		}
 
