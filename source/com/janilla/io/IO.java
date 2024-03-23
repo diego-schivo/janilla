@@ -32,23 +32,24 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public interface IO {
+public abstract class IO {
 
-	static int DEFAULT_BUFFER_CAPACITY = 8192;
+	public static int DEFAULT_BUFFER_CAPACITY = 8192;
 
-	static Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.+)!(.+)");
+	public static Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.+)!(.+)");
 
 	public static void emptyDirectory(Path directory) throws IOException {
 		Files.walkFileTree(directory, new SimpleFileVisitor<>() {
@@ -68,13 +69,13 @@ public interface IO {
 		});
 	}
 
-	static Stream<Path> getPackageFiles(String package1) {
+	public static Stream<Path> getPackageFiles(String package1) {
 		var b = Stream.<Path>builder();
 		IO.acceptPackageFiles(package1, b::add);
 		return b.build();
 	}
 
-	static void acceptPackageFiles(String package1, java.util.function.Consumer<Path> consumer) {
+	public static void acceptPackageFiles(String package1, java.util.function.Consumer<Path> consumer) {
 		var c = IntStream.iterate(package1.indexOf('.'), i -> i >= 0, i -> package1.indexOf('.', i + 1)).count() + 1;
 
 		acceptPackagePaths(package1, p -> {
@@ -96,12 +97,12 @@ public interface IO {
 		});
 	}
 
-	static void acceptPackagePaths(String package1, java.util.function.Consumer<Path> consumer) {
+	public static void acceptPackagePaths(String package1, java.util.function.Consumer<Path> consumer) {
 		var s = package1.replace('.', '/');
 		var s1 = IntStream.iterate(s.indexOf('/'), i -> i >= 0, i -> s.indexOf('/', i + 1));
 		var s2 = IntStream.concat(s1, IntStream.of(s.length())).mapToObj(i -> s.substring(0, i));
 
-		var fs = new HashMap<String, FileSystem>();
+//		var fs = new HashMap<String, FileSystem>();
 		try (var s3 = s2.flatMap(n -> {
 //			System.out.println("n=" + n);
 			return Thread.currentThread().getContextClassLoader().resources(n).map(r -> {
@@ -114,14 +115,25 @@ public interface IO {
 				}
 
 				var m = JAR_URI_PATTERN.matcher(u.toString());
-				var p = m.matches() ? fs.computeIfAbsent(m.group(1), k -> {
-//					System.out.println("k=" + k);
-					try {
-						return FileSystems.newFileSystem(URI.create(k), Map.of());
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
-				}).getPath(m.group(2)) : Path.of(u);
+//				var p = m.matches() ? fs.computeIfAbsent(m.group(1), k -> {
+////					System.out.println("k=" + k);
+//					var v = URI.create(k);
+//					try {
+//						return FileSystems.getFileSystem(v);
+//					} catch (FileSystemNotFoundException e) {
+//					}
+//					try {
+//						return FileSystems.newFileSystem(v, Map.of());
+//					} catch (IOException e) {
+//						throw new UncheckedIOException(e);
+//					}
+//				}).getPath(m.group(2)) : Path.of(u);
+				Path p;
+				try {
+					p = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(u);
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 
 				if (n.length() < s.length())
 					p = p.resolve(s.substring(n.length() + 1));
@@ -130,18 +142,18 @@ public interface IO {
 			});
 		}).distinct().filter(Files::exists)) {
 			s3.forEach(consumer);
-		} finally {
-			for (var e : fs.entrySet()) {
-//				System.out.println("e.getKey()=" + e.getKey());
-				try {
-					e.getValue().close();
-				} catch (IOException f) {
-				}
-			}
+//		} finally {
+//			for (var e : fs.entrySet()) {
+////				System.out.println("e.getKey()=" + e.getKey());
+//				try {
+//					e.getValue().close();
+//				} catch (IOException f) {
+//				}
+//			}
 		}
 	}
 
-	static int put(ByteBuffer source, ByteBuffer destination) {
+	public static int put(ByteBuffer source, ByteBuffer destination) {
 		var r1 = source.remaining();
 		var r2 = destination.remaining();
 		var n = Math.min(r1, r2);
@@ -155,7 +167,7 @@ public interface IO {
 		return n;
 	}
 
-	static int put(ByteBuffer source, ByteBuffer destination, int length) {
+	public static int put(ByteBuffer source, ByteBuffer destination, int length) {
 		if (length < 0)
 			throw new IllegalArgumentException("length=" + length);
 		if (length == 0)
@@ -172,14 +184,14 @@ public interface IO {
 		return n;
 	}
 
-	static int read(ReadableByteChannel source, byte[] destination) throws IOException {
+	public static int read(ReadableByteChannel source, byte[] destination) throws IOException {
 		if (destination.length == 0)
 			return 0;
 		var b = ByteBuffer.wrap(destination);
 		return read(source, b);
 	}
 
-	static int read(ReadableByteChannel source, ByteBuffer destination) throws IOException {
+	public static int read(ReadableByteChannel source, ByteBuffer destination) throws IOException {
 		var n = 0;
 		while (destination.hasRemaining()) {
 			var r = source.read(destination);
@@ -190,7 +202,7 @@ public interface IO {
 		return n;
 	}
 
-	static void transfer(ReadableByteChannel source, WritableByteChannel destination) throws IOException {
+	public static void transfer(ReadableByteChannel source, WritableByteChannel destination) throws IOException {
 		var b = ByteBuffer.allocate(IO.DEFAULT_BUFFER_CAPACITY);
 		repeat(x -> {
 			b.clear();
@@ -203,15 +215,15 @@ public interface IO {
 		}, Integer.MAX_VALUE);
 	}
 
-	static int write(byte[] source, WritableByteChannel destination) throws IOException {
+	public static int write(byte[] source, WritableByteChannel destination) throws IOException {
 		return write(ByteBuffer.wrap(source), destination);
 	}
 
-	static int write(ByteBuffer source, WritableByteChannel destination) throws IOException {
+	public static int write(ByteBuffer source, WritableByteChannel destination) throws IOException {
 		return repeat(x -> destination.write(source), source.remaining());
 	}
 
-	static int repeat(IntUnaryOperator operation, int target) throws IOException {
+	public static int repeat(IntUnaryOperator operation, int target) throws IOException {
 		var n = 0;
 		while (n < target) {
 			var i = operation.applyAsInt(target - n);
@@ -222,65 +234,91 @@ public interface IO {
 		return n;
 	}
 
-	interface Runnable {
+	static Map<String, FileSystem> zipFileSystems = new ConcurrentHashMap<>();
+
+	public static FileSystem zipFileSystem(URI uri) throws IOException {
+		try {
+			var s = uri.toString();
+			return zipFileSystems.computeIfAbsent(s, k -> {
+				try {
+					var i = k.lastIndexOf('!');
+					if (i < 0)
+						try {
+							return FileSystems.getFileSystem(uri);
+						} catch (FileSystemNotFoundException e) {
+							return FileSystems.newFileSystem(uri, Map.of());
+						}
+					var t = zipFileSystem(URI.create(k.substring(0, i)));
+					var p = t.getPath(k.substring(i + 1));
+					return FileSystems.newFileSystem(p, Map.of());
+				} catch (IOException f) {
+					throw new UncheckedIOException(f);
+				}
+			});
+		} catch (UncheckedIOException e) {
+			throw e.getCause();
+		}
+	}
+
+	public interface Runnable {
 
 		void run() throws IOException;
 	}
 
-	interface Consumer<T> {
+	public interface Consumer<T> {
 
 		void accept(T t) throws IOException;
 	}
 
-	interface BiConsumer<T, U> {
+	public interface BiConsumer<T, U> {
 
 		void accept(T t, U u) throws IOException;
 	}
 
-	interface Function<T, R> {
+	public interface Function<T, R> {
 
 		R apply(T t) throws IOException;
 	}
 
-	interface BiFunction<T, U, R> {
+	public interface BiFunction<T, U, R> {
 
 		R apply(T t, U u) throws IOException;
 	}
 
-	interface Predicate<T> {
+	public interface Predicate<T> {
 
 		boolean test(T t) throws IOException;
 	}
 
-	interface Supplier<T> {
+	public interface Supplier<T> {
 
 		T get() throws IOException;
 	}
 
-	interface BooleanSupplier {
+	public interface BooleanSupplier {
 
 		boolean getAsBoolean() throws IOException;
 	}
 
-	interface IntSupplier {
+	public interface IntSupplier {
 
 		int getAsInt() throws IOException;
 	}
 
-	interface LongSupplier {
+	public interface LongSupplier {
 
 		long getAsLong() throws IOException;
 	}
 
-	interface UnaryOperator<T> extends Function<T, T> {
+	public interface UnaryOperator<T> extends Function<T, T> {
 	}
 
-	interface IntUnaryOperator {
+	public interface IntUnaryOperator {
 
 		int applyAsInt(int operand) throws IOException;
 	}
 
-	static class Lazy<T> implements Supplier<T> {
+	public static class Lazy<T> implements Supplier<T> {
 
 		public static <T> Lazy<T> of(Supplier<T> supplier) {
 			var l = new Lazy<T>();
