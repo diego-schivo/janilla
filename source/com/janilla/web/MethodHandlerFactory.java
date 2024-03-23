@@ -40,7 +40,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.janilla.frontend.RenderEngine.ObjectAndType;
+import com.janilla.frontend.RenderEngine.Entry;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
@@ -220,7 +220,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 					}
 			}
 
-			render(new ObjectAndType(null, o, m.getAnnotatedReturnType()), exchange);
+			render(new Entry(null, o, m.getAnnotatedReturnType()), exchange);
 		}
 	}
 

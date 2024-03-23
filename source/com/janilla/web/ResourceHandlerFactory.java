@@ -100,15 +100,15 @@ public class ResourceHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
 		var u = object instanceof HttpRequest q ? q.getURI() : null;
 		var i = u != null ? toInputStream.apply(u) : null;
 		return i != null ? c -> handle(i, (HttpRequest) object, c) : null;
 	}
 
-	protected void handle(InputStream stream, HttpRequest request, HttpExchange context) throws IOException {
+	protected void handle(InputStream stream, HttpRequest request, HttpExchange exchange) throws IOException {
 		try {
-			var s = context.getResponse();
+			var s = exchange.getResponse();
 			s.setStatus(new Status(200, "OK"));
 			var h = s.getHeaders();
 			h.set("Cache-Control", "max-age=3600");

@@ -127,7 +127,7 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
-		return toHandler != null ? toHandler.apply(object, context) : null;
+	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+		return toHandler != null ? toHandler.apply(object, exchange) : null;
 	}
 }

@@ -42,99 +42,71 @@ class RenderEngine {
 
 	stack = [];
 
-	get target() {
-		for (let i = this.stack.length - 1; i >= 0; i--) {
-			const t = this.stack[i].target;
-			if (t != null)
-				return t;
-		}
-	}
-
-	get key() {
-		if (this.stack.length)
-			return this.stack.at(-1).key;
-	}
-
-	async render(target, template) {
-		const t = typeof template === 'string' ? this.templates[template] : template;
-		const r = this.renderer(target);
-		return (t ? await t(r) : await r()) ?? '';
-	}
-
-	renderer(target) {
-		const r = async (expression, escape) => {
-			let v;
-			if (expression === '')
-				v = target;
-			else {
-				const e = typeof expression === 'string' ? expression.split('.') : [expression];
-				let t = target, i = 0;
-				try {
-					for (const k of e) {
-						this.stack.push(t !== this.target ? { target: t, key: k } : { key: k });
-						v = await this.evaluate(i == 0);
-						t = v;
-						i++;
+	async render(input) {
+		if (input === undefined)
+			input = this.stack.pop();
+		const s = this.stack.length;
+		this.stack.push(input);
+		try {
+			let v = input.value;
+			for (let i = this.stack.length - 1; i >= 0; i--) {
+				const y = this.stack[i].value;
+				if (typeof y === 'object' && y !== null && !Array.isArray(y))
+					if (Reflect.has(y, 'render') && typeof y.render === 'function')
+						if (await y.render(this))
+							break;
+			}
+			for (; ;) {
+				let y = this.stack.at(-1).value;
+				if (y === v)
+					break;
+				if (typeof y === 'object' && y !== null && !Array.isArray(y))
+					if (Reflect.has(y, 'render') && typeof y.render === 'function')
+						await y.render(this);
+				v = y;
+			}
+			const z = this.stack.at(-1);
+			if (z.template) {
+				const t = this.templates[z.template];
+				return await t(async (expression, escape) => {
+					try {
+						this.evaluate(expression);
+						if (expression.length === 0)
+							return this.stack.at(-1).value;
+						const c = this.stack.pop();
+						return await this.render(c);
+					} finally {
+						while (this.stack.length > s + 1)
+							this.stack.pop();
 					}
-				} finally {
-					for (; i > 0; i--)
-						this.stack.pop();
-				}
+				});
 			}
-			if (escape && typeof v === 'string')
-				v = escapeHtml(v);
-			return v;
-		};
-		return r;
+			if (Array.isArray(z.value)) {
+				const a = [];
+				for (let i = 0; i < z.value.length; i++)
+					a.push(await this.render({ key: i, value: z.value[i] }));
+				return a.join('');
+			}
+			return z.value ?? '';
+		} finally {
+			while (this.stack.length > s)
+				this.stack.pop();
+		}
 	}
 
-	async evaluate(loop) {
-		let v;
-		for (let i = this.stack.length - 1; i >= 0; i--) {
-			const t = this.stack[i].target;
-			if (typeof t === 'object' && t !== null && !Array.isArray(t)) {
-				const o = t;
-				if (Reflect.has(o, 'render') && typeof o.render === 'function') {
-					v = await o.render(this);
-					if (v !== undefined)
-						break;
-				}
-			}
+	async match(pattern, callback) {
+		const i = this.stack.length - pattern.length;
+		if (i < 0)
+			return false;
+		let j = i;
+		for (const x of pattern) {
+			const y = this.stack[j];
+			if (x !== y.value && x !== y.key && x !== typeof y.key)
+				return false;
+			j++;
 		}
-		if (v === undefined) {
-			const k = this.key;
-			if (k != null)
-				for (let i = this.stack.length - 1; i >= 0; i--) {
-					const t = this.stack[i].target;
-					if (t == null)
-						continue;
-
-					if (t instanceof FormData) {
-						v = t.get(k);
-						break;
-					} else if (typeof t === 'object' && t !== null && Reflect.has(t, k)) {
-						v = t[k];
-						break;
-					} else if (!loop)
-						break;
-				}
-			if (v === undefined && k === undefined) {
-				v = this.target;
-				if (Array.isArray(v)) {
-					const r = this.renderer(v);
-					const a = [];
-					for (let i = 0; i < v.length; i++)
-						a.push(await r(i));
-					return a.join('');
-				}
-				return v;
-			}
-		}
-		if (v !== this.target && v != null) {
-			const r = this.renderer(v);
-			return await r();
-		}
-		return v ?? '';
+		await callback(this.stack.slice(i).map(x => x.value), this.stack.at(-1));
+		return true;
 	}
 
 	clone() {
@@ -143,25 +115,30 @@ class RenderEngine {
 		return e;
 	}
 
-	isRendering(target, key, indexed) {
-		if (target && !key && !indexed) {
-			if (!this.stack.length)
-				return false;
-			const p = this.stack.at(-1);
-			return target === p.target && p.key === undefined;
+	evaluate(expression) {
+		if (expression.length === 0)
+			return;
+		let c = this.stack.at(-1);
+		// if (c.value == null)
+		// 	return;
+		const nn = expression.split('.');
+		for (let i = 0; i < nn.length; i++) {
+			const n = nn[i];
+			let d = { key: n };
+			for (let i = this.stack.length - 1; i >= 0; i--) {
+				c = this.stack[i];
+				if (c.value instanceof FormData) {
+					d.value = c.value.get(n);
+					break;
+				} else if (typeof c.value === 'object' && c.value !== null && Reflect.has(c.value, n)) {
+					d.value = c.value[n];
+					break;
+				}
+			}
+			this.stack.push(d);
+			if (d.value == null)
+				break;
 		}
-
-		if (key) {
-			if (indexed)
-				return this.stack.length >= 4
-					&& key === this.stack.at(-4).key
-					&& Array.isArray(this.stack.at(-3).target)
-					&& typeof this.stack.at(-2).key === 'number'
-					&& this.stack.at(-1).key === undefined;
-			return key === this.key && (!target || target === this.target);
-		}
-
-		return false;
 	}
 }
 

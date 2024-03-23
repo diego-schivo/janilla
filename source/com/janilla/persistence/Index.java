@@ -29,6 +29,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -69,7 +70,8 @@ public @interface Index {
 				var s = (String) f.apply(o);
 				if (s == null)
 					return Collections.emptyList();
-				return space.splitAsStream(s.toLowerCase()).distinct().sorted().toList();
+				var l = space.splitAsStream(s.toLowerCase()).distinct().sorted().toList();
+				return l;
 			};
 		}
 	}

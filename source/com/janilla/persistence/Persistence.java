@@ -130,6 +130,14 @@ public class Persistence {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.NULL;
 				j.keyHelper = h;
+			} else if (t == Boolean.class || t == Boolean.TYPE || t == boolean[].class) {
+				@SuppressWarnings("unchecked")
+				var h = (ElementHelper<K>) ElementHelper.BOOLEAN;
+				j.keyHelper = h;
+			} else if (t == Integer.class || t == Integer.TYPE || t == int[].class) {
+				@SuppressWarnings("unchecked")
+				var h = (ElementHelper<K>) ElementHelper.INTEGER;
+				j.keyHelper = h;
 			} else if (t == Long.class || t == Long.TYPE || t == long[].class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.LONG;

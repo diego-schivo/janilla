@@ -160,11 +160,21 @@ public class Crud<E> {
 
 	public Page list(long skip, long limit) throws IOException {
 		return database.perform((ss, ii) -> indexPresent ? ii.perform(type.getSimpleName(), i -> {
-			var j = getIndexIds(i.values().skip(skip).limit(limit)).toArray();
+			var vv = i.values();
+			if (skip > 0)
+				vv = vv.skip(skip);
+			if (limit >= 0)
+				vv = vv.limit(limit);
+			var j = getIndexIds(vv).toArray();
 			var c = i.count();
 			return new Page(j, c);
 		}) : ss.perform(type.getSimpleName(), s -> {
-			var i = s.ids().skip(skip).limit(limit).toArray();
+			var jj = s.ids();
+			if (skip > 0)
+				jj = jj.skip(skip);
+			if (limit >= 0)
+				jj = jj.limit(limit);
+			var i = jj.toArray();
 			var c = s.count();
 			return new Page(i, c);
 		}), false);
@@ -235,14 +245,23 @@ public class Crud<E> {
 		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
 		switch (keys.length) {
 		case 0:
-			return database.perform(
-					(ss, ii) -> ii.perform(n,
-							i -> new Page(getIndexIds(i.values()).skip(skip).limit(limit).toArray(), i.count())),
-					false);
+			return database.perform((ss, ii) -> ii.perform(n, i -> {
+				var jj = getIndexIds(i.values());
+				if (skip > 0)
+					jj = jj.skip(skip);
+				if (limit >= 0)
+					jj = jj.limit(limit);
+				return new Page(jj.toArray(), i.count());
+			}), false);
 		case 1:
-			return database.perform((ss, ii) -> ii.perform(n,
-					i -> new Page(getIndexIds(i.list(keys[0])).skip(skip).limit(limit).toArray(), i.count(keys[0]))),
-					false);
+			return database.perform((ss, ii) -> ii.perform(n, i -> {
+				var jj = getIndexIds(i.list(keys[0]));
+				if (skip > 0)
+					jj = jj.skip(skip);
+				if (limit >= 0)
+					jj = jj.limit(limit);
+				return new Page(jj.toArray(), i.count(keys[0]));
+			}), false);
 		}
 		class A {
 
@@ -357,7 +376,8 @@ public class Crud<E> {
 					for (var a : aa) {
 						while (a.i > 0 && a.i < z)
 							a.i = a.ii.hasNext() ? a.ii.nextLong() : 0;
-						if (a.i != z)
+//						if (a.i != z)
+						if (a.i > 0 && a.i != z)
 							e = false;
 					}
 					if (e) {
@@ -368,7 +388,7 @@ public class Crud<E> {
 				}
 			}).skip(1).takeWhile(x -> x > 0).peek(x -> {
 				var d = j[0]++ - skip;
-				if (d >= 0 && d < limit)
+				if (d >= 0 && (limit < 0 || d < limit))
 					i.add(x);
 			}).count();
 			return new Page(i.build().toArray(), t);

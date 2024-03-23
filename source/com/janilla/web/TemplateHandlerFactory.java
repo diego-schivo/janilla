@@ -32,7 +32,7 @@ import java.util.Map;
 
 import com.janilla.frontend.Interpolator;
 import com.janilla.frontend.RenderEngine;
-import com.janilla.frontend.RenderEngine.ObjectAndType;
+import com.janilla.frontend.RenderEngine.Entry;
 import com.janilla.frontend.TemplatesWeb;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpResponse.Status;
@@ -69,17 +69,17 @@ public class TemplateHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public Consumer<HttpExchange> createHandler(Object object, HttpExchange context) {
-		var i = object instanceof ObjectAndType x ? x : null;
+	public Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+		var i = object instanceof Entry x ? x : null;
 		var o = i != null ? i.getValue() : null;
 		var t = i != null ? i.getType() : null;
 		return (o != null && o.getClass().isAnnotationPresent(Render.class))
 				|| (t != null && t.isAnnotationPresent(Render.class)) ? x -> render(i, x) : null;
 	}
 
-	protected void render(ObjectAndType input, HttpExchange context) throws IOException {
+	protected void render(Entry input, HttpExchange exchange) throws IOException {
 		{
-			var s = context.getResponse();
+			var s = exchange.getResponse();
 			if (s.getStatus() == null)
 				s.setStatus(new Status(200, "OK"));
 			var h = s.getHeaders();
@@ -99,7 +99,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 				if (t == null)
 					throw new NullPointerException(s);
 			}
-			var l = switch (context.getResponse().getHeaders().get("Content-Type")) {
+			var l = switch (exchange.getResponse().getHeaders().get("Content-Type")) {
 			case "text/html" -> Interpolator.Language.HTML;
 			case "text/javascript" -> Interpolator.Language.JAVASCRIPT;
 			default -> throw new RuntimeException();
@@ -109,7 +109,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 		var o = e.render(input);
 		if (o != null) {
 			var b = o.toString().getBytes();
-			var c = (WritableByteChannel) context.getResponse().getBody();
+			var c = (WritableByteChannel) exchange.getResponse().getBody();
 			IO.write(b, c);
 		}
 	}

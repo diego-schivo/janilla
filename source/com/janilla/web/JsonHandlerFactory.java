@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 
-import com.janilla.frontend.RenderEngine.ObjectAndType;
+import com.janilla.frontend.RenderEngine.Entry;
 import com.janilla.http.HttpExchange;
 import com.janilla.io.IO;
 import com.janilla.json.Json;
@@ -43,7 +43,7 @@ public class JsonHandlerFactory implements HandlerFactory {
 //		if (object instanceof HttpRequest || object instanceof Exception)
 //			return null;
 //		return c -> render(object, c);
-		return object instanceof ObjectAndType i ? x -> render(i.getValue(), x) : null;
+		return object instanceof Entry i ? x -> render(i.getValue(), x) : null;
 	}
 
 	protected void render(Object object, HttpExchange exchange) throws IOException {

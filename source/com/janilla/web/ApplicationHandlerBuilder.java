@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.io.IO;
+import com.janilla.io.IO.Consumer;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.Lazy;
 import com.janilla.util.Util;
@@ -50,11 +51,13 @@ public class ApplicationHandlerBuilder {
 		return c;
 	});
 
+	HandlerFactory[] factories;
+	
 	Supplier<HandlerFactory> handlerFactory = Lazy.of(() -> {
-		var a = new HandlerFactory[] { buildMethodHandlerFactory(), buildTemplateHandlerFactory(),
+		factories = new HandlerFactory[] { buildMethodHandlerFactory(), buildTemplateHandlerFactory(),
 				buildResourceHandlerFactory(), buildJsonHandlerFactory(), buildExceptionHandlerFactory() };
 		var f = new DelegatingHandlerFactory();
-		for (var g : a) {
+		for (var g : factories) {
 			var s = Reflection.setter(g.getClass(), "mainFactory");
 			if (s != null)
 				try {
@@ -64,13 +67,7 @@ public class ApplicationHandlerBuilder {
 				}
 		}
 		f.setToHandler((o, c) -> {
-			for (var g : a)
-				if (g != null) {
-					var h = g.createHandler(o, c);
-					if (h != null)
-						return h;
-				}
-			return null;
+			return createHandler(o, c);
 		});
 		return f;
 	});
@@ -169,5 +166,15 @@ public class ApplicationHandlerBuilder {
 			if (v != null)
 				s.invoke(object, v);
 		}
+	}
+
+	protected Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+		for (var g : factories)
+			if (g != null) {
+				var h = g.createHandler(object, exchange);
+				if (h != null)
+					return h;
+			}
+		return null;
 	}
 }

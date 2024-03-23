@@ -101,19 +101,20 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 		return a;
 	}
 
-	protected Object resolveArgument(Type type, HttpExchange context, Supplier<String[]> values,
+	protected Object resolveArgument(Type type, HttpExchange exchange, Supplier<String[]> values,
 			EntryList<String, String> entries, String body) {
 		var c = type instanceof Class<?> x ? x : null;
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
-			return context;
+			return exchange;
 		if (c != null && HttpRequest.class.isAssignableFrom(c))
-			return context.getRequest();
+			return exchange.getRequest();
 		if (c != null && HttpResponse.class.isAssignableFrom(c))
-			return context.getResponse();
+			return exchange.getResponse();
 		if (c != null && !c.getPackageName().startsWith("java."))
-			switch (Objects.toString(context.getRequest().getHeaders().get("Content-Type"), "")) {
+			switch (Objects.toString(exchange.getRequest().getHeaders().get("Content-Type"), "")) {
 			case "application/json":
-				return Json.parse(body, Json.parseCollector(c));
+//				System.out.println("body=" + body);
+				return body != null ? Json.parse(body, Json.parseCollector(c)) : null;
 			case "application/x-www-form-urlencoded": {
 				var t = Util.buildTree(entries);
 				return Util.convertTree(t, c);
@@ -127,7 +128,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 							var k = e.getKey();
 							var t = e.getValue();
 							var w = entries;
-							return resolveArgument(t, context,
+							return resolveArgument(t, exchange,
 									() -> w != null ? w.stream().filter(f -> f.getKey().equals(k)).map(Entry::getValue)
 											.toArray(String[]::new) : null,
 									entries, body);
@@ -149,7 +150,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 								if (s == null)
 									continue;
 								var w = entries;
-								var v = resolveArgument((Type) s.getParameterTypes()[0], context,
+								var v = resolveArgument((Type) s.getParameterTypes()[0], exchange,
 										() -> w != null
 												? w.stream().filter(f -> f.getKey().equals(n)).map(Entry::getValue)
 														.toArray(String[]::new)

@@ -32,21 +32,18 @@ class TestBench {
 
 	runner;
 
-	render = async engine => {
-		if (engine.isRendering(this))
-			return engine.render(this, 'TestBench');
-
-		if (engine.isRendering(this, 'launcher')) {
+	render = async e => {
+		return await e.match([this], (i, o) => {
+			o.template = 'TestBench';
+		}) || await e.match([this, 'launcher'], (i, o) => {
 			this.launcher = new Launcher();
 			this.launcher.selector = () => this.selector().firstElementChild;
-			return this.launcher;
-		}
-
-		if (engine.isRendering(this, 'runner')) {
+			o.value = this.launcher;
+		}) || await e.match([this, 'runner'], (i, o) => {
 			this.runner = new Runner();
 			this.runner.selector = () => this.selector().lastElementChild;
-			return this.runner;
-		}
+			o.value = this.runner;
+		});
 	}
 
 	listen = () => {
@@ -82,12 +79,12 @@ class Launcher {
 		return Object.keys(tests);
 	}
 
-	render = async engine => {
-		if (engine.isRendering(this))
-			return engine.render(this, 'TestBench-Launcher');
-
-		if (engine.isRendering(this, 'items', true))
-			return await engine.render(engine.target, 'TestBench-Launcher-item');
+	render = async e => {
+		return await e.match([this], (i, o) => {
+			o.template = 'TestBench-Launcher';
+		}) || await e.match([this, 'items', 'number'], (i, o) => {
+			o.template = 'TestBench-Launcher-item';
+		});
 	}
 
 	listen = () => {
@@ -118,19 +115,19 @@ class Runner {
 
 	keys;
 
-	render = async engine => {
-		if (engine.isRendering(this)) {
-			this.engine = engine.clone();
-			return engine.render(this, 'TestBench-Runner');
-		}
-
-		if (engine.isRendering(this, 'iframe')) {
+	render = async e => {
+		return await e.match([this], (i, o) => {
+			this.engine = e.clone();
+			o.template = 'TestBench-Runner';
+		}) || await e.match([this, 'iframe'], async (i, o) => {
 			if (!this.keys?.length)
-				return null;
-			await fetch('/test/start', { method: 'POST' });
-			localStorage.removeItem('jwtToken');
-			return engine.render(this, 'TestBench-Runner-iframe');
-		}
+				o.value = null;
+			else {
+				await fetch('/test/start', { method: 'POST' });
+				localStorage.removeItem('jwtToken');
+				o.template = 'TestBench-Runner-iframe';
+			}
+		});
 	}
 
 	listen = () => {
@@ -138,7 +135,7 @@ class Runner {
 	}
 
 	refresh = async () => {
-		this.selector().outerHTML = await this.render(this.engine);
+		this.selector().outerHTML = await this.engine.render({ value : this });
 		this.listen();
 	}
 

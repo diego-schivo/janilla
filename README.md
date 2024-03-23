@@ -23,7 +23,7 @@ Janilla sample applications are the best way to understand how to use the librar
 
 ### Where you can get help with Janilla
 
-Please visit [www.janilla.com](https://www.janilla.com/) for more information.
+Please visit [www.janilla.com](https://janilla.com/) for more information.
 
 You can use [GitHub Issues](https://github.com/diego-schivo/janilla/issues) to give or receive feedback.
 

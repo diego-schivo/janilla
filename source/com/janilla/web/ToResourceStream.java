@@ -28,11 +28,21 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -67,18 +77,15 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 				}""") : s;
 	}
 
+	protected static Map<String, FileSystem> fileSystems = new ConcurrentHashMap<>();
+
 	protected Iterable<Path> paths;
 
 	Supplier<Set<String>> resources = Lazy.of(() -> {
 		var s = new HashSet<String>();
-		for (var p : paths) {
-			var n = toName(p);
-			if (n != null)
-				s.add(n);
-		}
-
-//		System.out.println(Thread.currentThread().getName() + " ToResourceStream resources " + resources);
-
+		for (var p : paths)
+			toNames(p).forEach(s::add);
+//		System.out.println("s=" + s);
 		return s;
 	});
 
@@ -90,39 +97,140 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 	public InputStream apply(URI t) {
 		var p = t.getPath();
 		var n = p.startsWith("/") ? p.substring(1) : null;
+//		System.out.println("n=" + n);
 		return resources.get().contains(n) ? newInputStream(n) : null;
 	}
 
-	protected String toName(Path path) {
+	static Set<String> extensions = Set.of("avif", "css", "ico", "jpg", "js", "png", "svg", "ttf", "webp", "woff",
+			"woff2");
+
+	protected Stream<String> toNames(Path path) {
 		var s = path.toString().replace(File.separatorChar, '/');
 		if (s.startsWith("/"))
 			s = s.substring(1);
-		return s.endsWith(".avif") || s.endsWith(".css") || s.endsWith(".ico") || s.endsWith(".jpg")
-				|| s.endsWith(".js") || s.endsWith(".png") || s.endsWith(".svg") || s.endsWith(".ttf")
-				|| s.endsWith(".woff") || s.endsWith(".woff2") ? s : null;
+		if (s.endsWith(".zip")) {
+			var l = Thread.currentThread().getContextClassLoader();
+			URI u;
+			try {
+				u = l.getResource(s).toURI();
+			} catch (URISyntaxException e) {
+				throw new RuntimeException(e);
+			}
+//			System.out.println("u=" + u);
+			var b = Stream.<String>builder();
+			var p = s.substring(0, s.length() - 4);
+			var t = fileSystems.computeIfAbsent("jar:" + u, k -> {
+				try {
+					return FileSystems.newFileSystem(URI.create(k), Collections.emptyMap());
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			});
+			try {
+				Files.walkFileTree(t.getPath("/"), new SimpleFileVisitor<>() {
+
+					@Override
+					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+//						System.out.println("file=" + file);
+						var n = file.getFileName().toString();
+						var i = n.lastIndexOf('.');
+						var e = i >= 0 ? n.substring(i + 1) : null;
+						if (e != null && extensions.contains(e.toLowerCase()))
+							b.add(p + file);
+						return FileVisitResult.CONTINUE;
+					}
+				});
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+			return b.build();
+		}
+		var n = path.getFileName().toString();
+		var i = n.lastIndexOf('.');
+		var e = i >= 0 ? n.substring(i + 1) : null;
+		return e != null && extensions.contains(e.toLowerCase()) ? Stream.of(s) : Stream.empty();
 	}
 
 	protected abstract InputStream newInputStream(String name);
 
 	public static class Simple extends ToResourceStream {
 
-		Supplier<Map<String, String>> m = Lazy.of(() -> StreamSupport.stream(paths.spliterator(), false)
-				.collect(Collectors.toMap(p -> p.getFileName().toString(),
-						p -> p.getParent().toString().replace(File.separatorChar, '/'))));
+		Supplier<Map<String, String>> resourcePrefixes = Lazy.of(() -> StreamSupport.stream(paths.spliterator(), false).flatMap(p -> {
+			var s = p.toString().replace(File.separatorChar, '/');
+			if (s.endsWith(".zip")) {
+				var l = Thread.currentThread().getContextClassLoader();
+				URI u;
+				try {
+					u = l.getResource(s).toURI();
+				} catch (URISyntaxException e) {
+					throw new RuntimeException(e);
+				}
+//				System.out.println("u=" + u);
+				var b = Stream.<Map.Entry<String, String>>builder();
+				var n = p.getFileName().toString();
+				var q = n.substring(0, n.length() - 4);
+				var t = fileSystems.computeIfAbsent("jar:" + u, k -> {
+					try {
+						return FileSystems.newFileSystem(URI.create(k), Collections.emptyMap());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				});
+				try {
+					Files.walkFileTree(t.getPath("/"), new SimpleFileVisitor<>() {
+
+						@Override
+						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+//							System.out.println("file=" + file);
+							var e = Map.entry(q + file, s);
+//							System.out.println("e=" + e);
+							b.add(e);
+							return FileVisitResult.CONTINUE;
+						}
+					});
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+				return b.build();
+			}
+			var i = s.lastIndexOf('/');
+			var e = Map.entry(s.substring(i + 1), s.substring(0, i));
+//			System.out.println("e=" + e);
+			return Stream.of(e);
+		}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
 		@Override
-		protected String toName(Path path) {
-			var n = super.toName(path);
-			if (n == null)
-				return null;
-			var i = n.lastIndexOf('/');
-			return n.substring(i + 1);
+		protected Stream<String> toNames(Path path) {
+			var p = path.getParent().toString().replace(File.separatorChar, '/') + '/';
+			return super.toNames(path).map(n -> n.substring(p.length()));
 		}
 
 		@Override
 		protected InputStream newInputStream(String name) {
 			var l = Thread.currentThread().getContextClassLoader();
-			var n = m.get().get(name) + "/" + name;
+			var p = resourcePrefixes.get().get(name);
+			if (p.endsWith(".zip")) {
+				URI u;
+				try {
+					u = l.getResource(p).toURI();
+				} catch (URISyntaxException e) {
+					throw new RuntimeException(e);
+				}
+				var s = fileSystems.computeIfAbsent("jar:" + u, k -> {
+					try {
+						return FileSystems.newFileSystem(URI.create(k), Collections.emptyMap());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				});
+				try {
+					return Files.newInputStream(s.getPath(name.substring(name.indexOf('/'))));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			}
+			var n = p + "/" + name;
+//			System.out.println("n=" + n);
 			return l.getResourceAsStream(n);
 		}
 	}

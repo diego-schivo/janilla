@@ -184,6 +184,31 @@ public interface ElementHelper<E> {
 		}
 	};
 
+	ElementHelper<Boolean> BOOLEAN = new ElementHelper<>() {
+
+		@Override
+		public byte[] getBytes(Boolean element) {
+			var b = ByteBuffer.allocate(1);
+			b.put(element ? (byte) 1 : 0);
+			return b.array();
+		}
+
+		@Override
+		public int getLength(ByteBuffer buffer) {
+			return 1;
+		}
+
+		@Override
+		public Boolean getElement(ByteBuffer buffer) {
+			return buffer.get() != (byte) 0;
+		}
+
+		@Override
+		public int compare(ByteBuffer buffer, Boolean element) {
+			return Boolean.compare(buffer.get(buffer.position()) != (byte) 0, element);
+		}
+	};
+
 	ElementHelper<Instant> INSTANT = new ElementHelper<>() {
 
 		@Override
