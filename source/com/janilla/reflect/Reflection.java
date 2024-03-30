@@ -77,11 +77,6 @@ public class Reflection {
 	private static Map<String, Method[]> compute(Class<?> class1) {
 		var m = new HashMap<String, Method[]>();
 		for (var n : class1.getMethods()) {
-//			if (Modifier.isStatic(n.getModifiers()) || switch (n.getName()) {
-//			case "getClass", "hashCode", "toString", "wait" -> true;
-//			default -> false;
-//			})
-//				continue;
 			if (Modifier.isStatic(n.getModifiers()) || n.getDeclaringClass() == Object.class || switch (n.getName()) {
 			case "hashCode", "toString" -> true;
 			default -> false;
@@ -92,8 +87,13 @@ public class Reflection {
 			if (g != null || s != null) {
 				var k = n.getName();
 				var p = g != null ? (n.getReturnType() == Boolean.TYPE ? "is" : "get") : "set";
-				if (k.length() > p.length() && k.startsWith(p) && Character.isUpperCase(k.charAt(p.length())))
-					k = Character.toLowerCase(k.charAt(p.length())) + k.substring(p.length() + 1);
+				if (k.length() > p.length() && k.startsWith(p) && Character.isUpperCase(k.charAt(p.length()))) {
+					var i = p.length();
+					do {
+						i++;
+					} while (i < k.length() && Character.isUpperCase(k.charAt(i)));
+					k = k.substring(p.length(), i).toLowerCase() + k.substring(i);
+				}
 				var b = m.computeIfAbsent(k, l -> new Method[2]);
 				if (g != null)
 					b[0] = g;

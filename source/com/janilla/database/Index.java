@@ -129,10 +129,15 @@ public class Index<K, V> {
 		}
 	}
 
-	public boolean add(K key, V value) throws IOException {
+	public boolean add(K key, @SuppressWarnings("unchecked") V... value) throws IOException {
 		return apply(key, x -> {
-			var v = x.btree.getOrAdd(value);
-			return v == null ? new ResultAndSize<>(true, x.size + 1) : null;
+			var s = x.size;
+			for (var v : value) {
+				var w = x.btree.getOrAdd(v);
+				if (w == null)
+					s++;
+			}
+			return s != x.size ? new ResultAndSize<>(true, s) : null;
 		}, true) != null;
 	}
 

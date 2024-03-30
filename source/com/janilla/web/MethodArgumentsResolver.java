@@ -31,6 +31,7 @@ import java.lang.reflect.Type;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -167,10 +168,12 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 				break;
 			}
 		var a = values.get();
-		return parseParameter(a != null && a.length > 0 ? a[0] : null, type);
+		return parseParameter(a, type);
 	}
 
-	protected Object parseParameter(String s, Type type) {
-		return Json.convert(s, (Class<?>) type);
+	protected Object parseParameter(String[] strings, Type type) {
+		var c = (Class<?>) type;
+		return Json.convert(c.isArray() || Collection.class.isAssignableFrom(c) ? strings
+				: (strings != null && strings.length > 0 ? strings[0] : null), c);
 	}
 }

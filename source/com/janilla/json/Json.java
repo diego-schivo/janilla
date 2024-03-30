@@ -303,17 +303,11 @@ public interface Json {
 					a.push(t.data());
 					if (Objects.equals(p, JsonToken.MEMBER_START)) {
 						var m = Reflection.getter(b.peek(), (String) t.data());
-//						var u = m.getGenericReturnType();
-//						var w = u instanceof ParameterizedType v ? v.getActualTypeArguments()[0] : u;
-//						var y = w instanceof Class<?> x ? x : null;
-//						b.push(y);
 						Class<?> z = null;
 						if (m.getReturnType().isArray())
 							z = m.getReturnType().componentType();
 						else if (m.getGenericReturnType() instanceof ParameterizedType v) {
 							var x = v.getActualTypeArguments()[0];
-//							if (x instanceof Class<?> y)
-//								z = y;
 							z = switch (x) {
 							case Class<?> y -> y;
 							case ParameterizedType y -> (Class<?>) y.getRawType();
@@ -393,6 +387,7 @@ public interface Json {
 			return switch (input) {
 			case Set<?> x -> input;
 			case List<?> x -> new LinkedHashSet<>(x);
+			case Object[] x -> Arrays.stream(x).collect(Collectors.toCollection(LinkedHashSet::new));
 			default -> throw new RuntimeException();
 			};
 
