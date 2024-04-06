@@ -107,18 +107,23 @@ public class RenderEngine {
 			var i = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
 			if (i != null)
 				return i.apply(x -> {
+					var e = (String) x;
+					Entry c = null;
 					try {
-						var e = (String) x;
 						evaluate(e);
-						var c = stack.pop();
+						c = stack.pop();
 						if (e.isEmpty()) {
 							c.type = null;
 							c.template = null;
 						}
 						return render(c);
 					} finally {
-						while (stack.size() > s + 1)
-							stack.pop();
+						if (e.isEmpty()) {
+							if (c != null)
+								stack.push(c);
+						} else
+							while (stack.size() > s + 1)
+								stack.pop();
 					}
 				});
 
@@ -175,6 +180,23 @@ public class RenderEngine {
 				c = new Entry(n, v, t);
 				break;
 			}
+			case Map.Entry<?, ?> e: {
+				int j;
+				var v = switch (n) {
+				case "key" -> {
+					j = 0;
+					yield e.getKey();
+				}
+				case "value" -> {
+					j = 1;
+					yield e.getValue();
+				}
+				default -> throw new RuntimeException();
+				};
+				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[j];
+				c = new Entry(n, v, t);
+				break;
+			}
 			case EntryList<?, ?> m: {
 				var v = m.get(n);
 				var a = c.type;
@@ -227,7 +249,8 @@ public class RenderEngine {
 						default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) t,
 								Iterable.class, Stream.class)).getAnnotatedActualTypeArguments()[0];
 						};
-						v = s.toArray(l -> (Object[]) Array.newInstance((Class<?>) u.getType(), l));
+//						v = s.toArray(l -> (Object[]) Array.newInstance((Class<?>) u.getType(), l));
+						v = s.toArray(l -> (Object[]) Array.newInstance((Class<?>) getRawType(u), l));
 					}
 				}
 				c = new Entry(n, v, t);

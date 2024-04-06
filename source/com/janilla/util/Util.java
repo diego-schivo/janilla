@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
 import com.janilla.io.IO;
@@ -165,5 +166,39 @@ public interface Util {
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	static String[] splitCamelCase(String string) {
+		class A implements IntConsumer {
+
+			StringBuilder s = new StringBuilder();
+
+			Stream.Builder<String> b = Stream.builder();
+			
+			boolean u;
+
+			@Override
+			public void accept(int value) {
+				var c = (char) value;
+				var l = !u;
+				u = Character.isUpperCase(c);
+				if (u && s.length() > 1 && l) {
+					b.add(s.toString());
+					s.setLength(0);
+				}
+				s.append(c);
+			}
+
+			String[] build() {
+				if (!s.isEmpty()) {
+					b.add(s.toString());
+					s.setLength(0);
+				}
+				return b.build().toArray(String[]::new);
+			}
+		}
+		var a = new A();
+		string.chars().forEach(a);
+		return a.build();
 	}
 }

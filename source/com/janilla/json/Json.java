@@ -394,9 +394,18 @@ public interface Json {
 		if (target == long[].class)
 			return ((Collection<?>) input).stream().mapToLong(x -> (long) x).toArray();
 
-		if (target.isArray())
-			return ((Collection<?>) input).stream().map(x -> convert(x, target.componentType()))
-					.toArray(l -> (Object[]) Array.newInstance(target.componentType(), l));
+		if (target.isArray()) {
+			var s = switch (input) {
+			case Object[] x -> Arrays.stream(x);
+			case Collection<?> x -> x.stream();
+			default -> throw new RuntimeException();
+			};
+			s = s.map(y -> convert(y, target.componentType()));
+			if (target.componentType() == Integer.TYPE)
+				return s.mapToInt(x -> (Integer) x).toArray();
+			else
+				return s.toArray(l -> (Object[]) Array.newInstance(target.componentType(), l));
+		}
 
 		return input;
 	}

@@ -33,6 +33,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.io.IO;
 import com.janilla.json.Json;
 import com.janilla.net.Net;
 import com.janilla.reflect.Parameter;
@@ -54,26 +56,42 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 	@Override
 	public Object[] apply(MethodInvocation i, HttpExchange c) {
 		var q = Net.parseQueryString(c.getRequest().getURI().getQuery());
-		var b = switch (c.getRequest().getMethod().name()) {
+		IO.Supplier<String> b = switch (c.getRequest().getMethod().name()) {
 		case "POST", "PUT" -> {
-			var d = (ReadableByteChannel) c.getRequest().getBody();
-			String s;
-			try {
-				s = new String(Channels.newInputStream(d).readAllBytes());
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+			var s = IO.Lazy.of(() -> {
+				var d = (ReadableByteChannel) c.getRequest().getBody();
+				return new String(Channels.newInputStream(d).readAllBytes());
+			});
 			var t = c.getRequest().getHeaders().get("Content-Type");
 			if (t != null)
 				switch (t.split(";")[0]) {
 				case "application/x-www-form-urlencoded":
-					var v = Net.parseQueryString(s);
+					EntryList<String, String> v;
+					try {
+						v = Net.parseQueryString(s.get());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 					if (v == null)
 						;
 					else if (q == null)
 						q = v;
 					else
 						q.addAll(v);
+					break;
+				case "application/json":
+					Object o;
+					try {
+						o = Json.parse(s.get());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+					if (o instanceof Map<?, ?> m && !m.isEmpty()) {
+						if (q == null)
+							q = new EntryList<>();
+						for (var e : m.entrySet())
+							q.add(e.getKey().toString(), e.getValue().toString());
+					}
 					break;
 				}
 			yield s;
@@ -103,7 +121,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 	}
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, Supplier<String[]> values,
-			EntryList<String, String> entries, String body) {
+			EntryList<String, String> entries, IO.Supplier<String> body) {
 		var c = type instanceof Class<?> x ? x : null;
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
 			return exchange;
@@ -115,7 +133,11 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 			switch (Objects.toString(exchange.getRequest().getHeaders().get("Content-Type"), "")) {
 			case "application/json":
 //				System.out.println("body=" + body);
-				return body != null ? Json.parse(body, Json.parseCollector(c)) : null;
+				try {
+					return body != null ? Json.parse(body.get(), Json.parseCollector(c)) : null;
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			case "application/x-www-form-urlencoded": {
 				var t = Util.buildTree(entries);
 				return Util.convertTree(t, c);
@@ -173,7 +195,8 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 
 	protected Object parseParameter(String[] strings, Type type) {
 		var c = (Class<?>) type;
-		return Json.convert(c.isArray() || Collection.class.isAssignableFrom(c) ? strings
-				: (strings != null && strings.length > 0 ? strings[0] : null), c);
+		var i = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
+				: (strings != null && strings.length > 0 ? strings[0] : null);
+		return Json.convert(i, c);
 	}
 }

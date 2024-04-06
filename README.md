@@ -16,6 +16,7 @@ You can add Janilla as a dependency to your project by copy/pasting the snippet 
 
 Janilla sample applications are the best way to understand how to use the library:
 
+- [htmx Examples clone](https://github.com/diego-schivo/janilla-uxpatterns)
 - [RealWorld implementation](https://github.com/diego-schivo/janilla-conduit)
 - [TodoMVC implementation](https://github.com/diego-schivo/janilla-todomvc)
 - [Spring Petclinic clone](https://github.com/diego-schivo/janilla-petclinic)
