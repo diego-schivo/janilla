@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -56,10 +55,11 @@ class ReflectionValueIterator extends ValueIterator {
 		}
 		if (i == null) {
 			var c = Modifier.isPublic(object.getClass().getModifiers()) ? object.getClass() : switch (object) {
-			case Entry<?, ?> x -> Entry.class;
+			case Map.Entry<?, ?> x -> Map.Entry.class;
 			default -> throw new RuntimeException();
 			};
-			i = new ObjectIterator(Reflection.properties(c).map(p -> {
+			var s1 = Stream.of(Map.entry("$type", (Object) c.getSimpleName()));
+			var s2 = Reflection.properties(c).map(p -> {
 				var g = Reflection.getter(c, p);
 //				var s = Reflection.setter(c, p);
 //				return g != null && s != null ? Map.entry(p, g) : null;
@@ -72,9 +72,10 @@ class ReflectionValueIterator extends ValueIterator {
 				} catch (ReflectiveOperationException x) {
 					throw new RuntimeException(x);
 				}
-				Entry<String, Object> f = new SimpleEntry<>(e.getKey(), v);
+				Map.Entry<String, Object> f = new SimpleEntry<>(e.getKey(), v);
 				return f;
-			}).iterator(), context);
+			});
+			i = new ObjectIterator(Stream.concat(s1, s2).iterator(), context);
 		}
 		return i;
 	}

@@ -102,7 +102,8 @@ public class Persistence {
 				return Json.format(t);
 			};
 		if (c.parser == null)
-			c.parser = t -> Json.parse((String) t, Json.parseCollector(type));
+//			c.parser = t -> Json.parse((String) t, Json.parseCollector(type));
+			c.parser = t -> (E) Json.convert(Json.parse((String) t), type);
 		c.indexPresent = type.isAnnotationPresent(Index.class);
 		configuration.cruds.put(type, c);
 

@@ -100,9 +100,11 @@ class RenderEngine {
 			return false;
 		let j = i;
 		for (const x of pattern) {
-			const y = this.stack[j];
-			if (x !== y.value && x !== y.key && x !== typeof y.key)
-				return false;
+			if (x !== undefined) {
+				const y = this.stack[j];
+				if (x !== y.value && x !== y.key && x !== typeof y.key)
+					return false;
+			}
 			j++;
 		}
 		await callback(this.stack.slice(i).map(x => x.value), this.stack.at(-1));

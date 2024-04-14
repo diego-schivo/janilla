@@ -32,7 +32,6 @@ import java.util.Map;
 
 import com.janilla.frontend.Interpolator;
 import com.janilla.frontend.RenderEngine;
-import com.janilla.frontend.RenderEngine.Entry;
 import com.janilla.frontend.TemplatesWeb;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpResponse.Status;
@@ -70,14 +69,14 @@ public class TemplateHandlerFactory implements HandlerFactory {
 
 	@Override
 	public Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
-		var i = object instanceof Entry x ? x : null;
+		var i = object instanceof RenderEngine.Entry x ? x : null;
 		var o = i != null ? i.getValue() : null;
 		var t = i != null ? i.getType() : null;
 		return (o != null && o.getClass().isAnnotationPresent(Render.class))
 				|| (t != null && t.isAnnotationPresent(Render.class)) ? x -> render(i, x) : null;
 	}
 
-	protected void render(Entry input, HttpExchange exchange) throws IOException {
+	protected void render(RenderEngine.Entry input, HttpExchange exchange) throws IOException {
 		{
 			var s = exchange.getResponse();
 			if (s.getStatus() == null)

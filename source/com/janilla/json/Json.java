@@ -25,22 +25,18 @@
 package com.janilla.json;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -95,6 +91,7 @@ public interface Json {
 	}
 
 	static <T> T parse(String string, Collector<JsonToken<?>, ?, T> collector) {
+//		System.out.println("string=" + string);
 		var s = new JsonScanner();
 		var l = new ArrayList<JsonToken<?>>();
 		return IntStream.concat(string.chars(), IntStream.of(-1)).boxed().flatMap(i -> {
@@ -173,13 +170,15 @@ public interface Json {
 		}, (a, b) -> a, StringBuilder::toString);
 	}
 
-	static Collector<JsonToken<?>, Deque<Object>, Object> parseCollector() {
-		return Collector.of(() -> new ArrayDeque<Object>(), (a, t) -> {
+	static Collector<JsonToken<?>, ?, Object> parseCollector() {
+//		return Collector.of(() -> new ArrayDeque<Object>(), (a, t) -> {
+		return Collector.of(() -> new ArrayList<Object>(), (a, t) -> {
+//			System.out.println("t=" + t);
 			switch (t.type()) {
 			case OBJECT:
 				switch ((Boundary) t.data()) {
 				case START:
-					a.push(new HashMap<String, Object>());
+					a.add(new HashMap<String, Object>());
 					break;
 				default:
 					break;
@@ -188,7 +187,7 @@ public interface Json {
 			case ARRAY:
 				switch ((Boundary) t.data()) {
 				case START:
-					a.push(new ArrayList<Object>());
+					a.add(new ArrayList<Object>());
 					break;
 				default:
 					break;
@@ -197,10 +196,10 @@ public interface Json {
 			case MEMBER:
 				switch ((Boundary) t.data()) {
 				case END:
-					var v = a.pop();
-					var k = (String) a.pop();
+					var v = a.remove(a.size() - 1);
+					var k = (String) a.remove(a.size() - 1);
 					@SuppressWarnings("unchecked")
-					var m = (Map<String, Object>) a.peek();
+					var m = (Map<String, Object>) a.get(a.size() - 1);
 					m.put(k, v);
 					break;
 				default:
@@ -210,9 +209,9 @@ public interface Json {
 			case ELEMENT:
 				switch ((Boundary) t.data()) {
 				case END:
-					var e = a.pop();
+					var e = a.remove(a.size() - 1);
 					@SuppressWarnings("unchecked")
-					var l = (List<Object>) a.peek();
+					var l = (List<Object>) a.get(a.size() - 1);
 					l.add(e);
 					break;
 				default:
@@ -220,7 +219,7 @@ public interface Json {
 				}
 				break;
 			case STRING, NUMBER, BOOLEAN, NULL:
-				a.push(t.data());
+				a.add(t.data());
 				break;
 			default:
 				break;
@@ -228,110 +227,110 @@ public interface Json {
 		}, (a, b) -> a, a -> {
 			if (a.size() != 1)
 				throw new RuntimeException();
-			return a.pop();
+			return a.remove(0);
 		});
 	}
 
-	static <T> Collector<JsonToken<?>, ?, T> parseCollector(Class<T> class1) {
-		return Collector.of(() -> (Deque<Object>) /* new ArrayDeque<>() */ new LinkedList<>(), new BiConsumer<>() {
-
-			Deque<Class<?>> b = new ArrayDeque<>();
-
-			JsonToken<?> p;
-
-			{
-				b.push(class1);
-			}
-
-			@Override
-			public void accept(Deque<Object> a, JsonToken<?> t) {
-				switch (t.type()) {
-				case OBJECT:
-					switch ((Boundary) t.data()) {
-					case START:
-						a.push(new HashMap<String, Object>());
-						break;
-					case END:
-						@SuppressWarnings("unchecked")
-						var m = ((Map<String, Object>) a.pop());
-						var c = b.peek();
-						var o = convert2(m, c);
-						a.push(o);
-						break;
-					}
-					break;
-				case ARRAY:
-					switch ((Boundary) t.data()) {
-					case START:
-						a.push(new ArrayList<Object>());
-						break;
-					default:
-						break;
-					}
-					break;
-				case MEMBER:
-					switch ((Boundary) t.data()) {
-					case END:
-						b.pop();
-						var v = a.pop();
-						var k = (String) a.pop();
-						@SuppressWarnings("unchecked")
-						var m = (Map<String, Object>) a.peek();
-						m.put(k, v);
-						break;
-					default:
-						break;
-					}
-					break;
-				case ELEMENT:
-					switch ((Boundary) t.data()) {
-					case END:
-						var e = a.pop();
-						@SuppressWarnings("unchecked")
-						List<Object> l = (List<Object>) a.peek();
-
-						if (b.peek() == Long.class && e instanceof Integer i)
-							e = (long) i;
-
-						l.add(e);
-						break;
-					default:
-						break;
-					}
-					break;
-				case STRING, NUMBER, BOOLEAN, NULL:
-					a.push(t.data());
-					if (Objects.equals(p, JsonToken.MEMBER_START)) {
-						var m = Reflection.getter(b.peek(), (String) t.data());
-						Class<?> z = null;
-						if (m.getReturnType().isArray())
-							z = m.getReturnType().componentType();
-						else if (m.getGenericReturnType() instanceof ParameterizedType v) {
-							var x = v.getActualTypeArguments()[0];
-							z = switch (x) {
-							case Class<?> y -> y;
-							case ParameterizedType y -> (Class<?>) y.getRawType();
-							default -> throw new RuntimeException();
-							};
-						}
-						if (z == null)
-							z = m.getReturnType();
-						b.push(z);
-					}
-					break;
-				default:
-					break;
-				}
-				p = t;
-			}
-		}, (a, b) -> a, a -> {
-			if (a.size() != 1)
-				throw new RuntimeException();
-			@SuppressWarnings("unchecked")
-			var t = (T) a.pop();
-			return t;
-		});
-	}
+//	static <T> Collector<JsonToken<?>, ?, T> parseCollector(Class<T> class1) {
+//		return Collector.of(() -> (Deque<Object>) /* new ArrayDeque<>() */ new LinkedList<>(), new BiConsumer<>() {
+//
+//			Deque<Class<?>> b = new ArrayDeque<>();
+//
+//			JsonToken<?> p;
+//
+//			{
+//				b.push(class1);
+//			}
+//
+//			@Override
+//			public void accept(Deque<Object> a, JsonToken<?> t) {
+//				switch (t.type()) {
+//				case OBJECT:
+//					switch ((Boundary) t.data()) {
+//					case START:
+//						a.push(new HashMap<String, Object>());
+//						break;
+//					case END:
+//						@SuppressWarnings("unchecked")
+//						var m = ((Map<String, Object>) a.pop());
+//						var c = b.peek();
+//						var o = convert2(m, c);
+//						a.push(o);
+//						break;
+//					}
+//					break;
+//				case ARRAY:
+//					switch ((Boundary) t.data()) {
+//					case START:
+//						a.push(new ArrayList<Object>());
+//						break;
+//					default:
+//						break;
+//					}
+//					break;
+//				case MEMBER:
+//					switch ((Boundary) t.data()) {
+//					case END:
+//						b.pop();
+//						var v = a.pop();
+//						var k = (String) a.pop();
+//						@SuppressWarnings("unchecked")
+//						var m = (Map<String, Object>) a.peek();
+//						m.put(k, v);
+//						break;
+//					default:
+//						break;
+//					}
+//					break;
+//				case ELEMENT:
+//					switch ((Boundary) t.data()) {
+//					case END:
+//						var e = a.pop();
+//						@SuppressWarnings("unchecked")
+//						List<Object> l = (List<Object>) a.peek();
+//
+//						if (b.peek() == Long.class && e instanceof Integer i)
+//							e = (long) i;
+//
+//						l.add(e);
+//						break;
+//					default:
+//						break;
+//					}
+//					break;
+//				case STRING, NUMBER, BOOLEAN, NULL:
+//					a.push(t.data());
+//					if (Objects.equals(p, JsonToken.MEMBER_START)) {
+//						var m = Reflection.getter(b.peek(), (String) t.data());
+//						Class<?> z = null;
+//						if (m.getReturnType().isArray())
+//							z = m.getReturnType().componentType();
+//						else if (m.getGenericReturnType() instanceof ParameterizedType v) {
+//							var x = v.getActualTypeArguments()[0];
+//							z = switch (x) {
+//							case Class<?> y -> y;
+//							case ParameterizedType y -> (Class<?>) y.getRawType();
+//							default -> throw new RuntimeException();
+//							};
+//						}
+//						if (z == null)
+//							z = m.getReturnType();
+//						b.push(z);
+//					}
+//					break;
+//				default:
+//					break;
+//				}
+//				p = t;
+//			}
+//		}, (a, b) -> a, a -> {
+//			if (a.size() != 1)
+//				throw new RuntimeException();
+//			@SuppressWarnings("unchecked")
+//			var t = (T) a.pop();
+//			return t;
+//		});
+//	}
 
 	static Object convert(Object input, Class<?> target) {
 		if (input == null || (input instanceof String s && s.isEmpty())) {
@@ -400,33 +399,47 @@ public interface Json {
 			case Collection<?> x -> x.stream();
 			default -> throw new RuntimeException();
 			};
-			s = s.map(y -> convert(y, target.componentType()));
+			var t = target.componentType();
+			s = s.map(y -> convert(y, t));
 			if (target.componentType() == Integer.TYPE)
 				return s.mapToInt(x -> (Integer) x).toArray();
 			else
-				return s.toArray(l -> (Object[]) Array.newInstance(target.componentType(), l));
+				return s.toArray(l -> (Object[]) Array.newInstance(t, l));
 		}
 
-		return input;
-	}
+//		if (input instanceof Map<?, ?> x) {
+		@SuppressWarnings("unchecked")
+		var m = (Map<String, Object>) input;
+		if (m.containsKey("$type"))
+			try {
+				var c = Class.forName(target.getPackageName() + "." + m.get("$type"));
+				if (!target.isAssignableFrom(c))
+					throw new RuntimeException();
+				target = c;
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException(e);
+			}
 
-	static Object convert2(Map<String, Object> input, Class<?> target) {
-		if (target == Map.Entry.class)
-			return new SimpleEntry<Object, Object>(input.get("key"), input.get("value"));
+		if (target == Map.Entry.class) {
+			var o = new SimpleEntry<Object, Object>(m.get("key"), m.get("value"));
+			return o;
+		}
 
 		// System.out.println("c=" + c);
 		var d = target.getConstructors()[0];
 		// System.out.println("d=" + d);
-		var n = target.isRecord() ? Arrays.stream(target.getRecordComponents())
+		var tt = target.isRecord() ? Arrays.stream(target.getRecordComponents())
 				.collect(Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new)) : null;
 		Object o;
 		try {
-			if (n != null) {
-				var z = n.entrySet().stream().map(x -> convert(input.get(x.getKey()), x.getValue())).toArray();
+			if (tt != null) {
+				var z = tt.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue())).toArray();
 				o = d.newInstance(z);
 			} else {
 				o = d.newInstance();
-				for (var e : input.entrySet()) {
+				for (var e : m.entrySet()) {
+					if (e.getKey().equals("$type"))
+						continue;
 					// System.out.println("e=" + e);
 					var s = Reflection.setter(target, e.getKey());
 					var v = convert(e.getValue(), s.getParameterTypes()[0]);
@@ -437,6 +450,57 @@ public interface Json {
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);
 		}
+//			@SuppressWarnings("unchecked")
+//			var t = (T) o;
 		return o;
+//		}
+//
+//		return input;
 	}
+
+//	public static <T> T convert2(Map<String, Object> input, Class<T> target) {
+//		if (input.containsKey("$type"))
+//			try {
+//				@SuppressWarnings("unchecked")
+//				var c = (Class<T>) Class.forName((String) input.get("$type"));
+//				if (!target.isAssignableFrom(c))
+//					throw new RuntimeException();
+//				target = c;
+//			} catch (ClassNotFoundException e) {
+//				throw new RuntimeException(e);
+//			}
+//
+//		if (target == Map.Entry.class) {
+//			@SuppressWarnings("unchecked")
+//			var t = (T) new SimpleEntry<Object, Object>(input.get("key"), input.get("value"));
+//			return t;
+//		}
+//
+//		// System.out.println("c=" + c);
+//		var d = target.getConstructors()[0];
+//		// System.out.println("d=" + d);
+//		var tt = target.isRecord() ? Arrays.stream(target.getRecordComponents())
+//				.collect(Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new)) : null;
+//		Object o;
+//		try {
+//			if (tt != null) {
+//				var z = tt.entrySet().stream().map(x -> convert(input.get(x.getKey()), x.getValue())).toArray();
+//				o = d.newInstance(z);
+//			} else {
+//				o = d.newInstance();
+//				for (var e : input.entrySet()) {
+//					// System.out.println("e=" + e);
+//					var s = Reflection.setter(target, e.getKey());
+//					var v = convert(e.getValue(), s.getParameterTypes()[0]);
+//					// System.out.println("s=" + s + ", i=" + i + ", v=" + v);
+//					s.invoke(o, v);
+//				}
+//			}
+//		} catch (ReflectiveOperationException e) {
+//			throw new RuntimeException(e);
+//		}
+//		@SuppressWarnings("unchecked")
+//		var t = (T) o;
+//		return t;
+//	}
 }

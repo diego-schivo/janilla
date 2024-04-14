@@ -46,7 +46,8 @@ public class ReflectionJsonIterator extends JsonIterator {
 		t.setObject(c);
 		var s = Json.format(t);
 		System.out.println(s);
-		var o = Json.parse(s, Json.parseCollector(C.class));
+//		var o = Json.parse(s, Json.parseCollector(C.class));
+		C o = null;
 		System.out.println(o);
 		assert o.equals(c) : o;
 	}

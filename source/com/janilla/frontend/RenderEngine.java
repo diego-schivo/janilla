@@ -64,6 +64,7 @@ public class RenderEngine {
 
 	public Object render(Entry input) throws IOException {
 		var s = stack.size();
+//		var p = stack.peek();
 		stack.push(input);
 		try {
 			for (var x : stack)
@@ -73,16 +74,20 @@ public class RenderEngine {
 			if (input.getValue() == null)
 				return null;
 
-			var r = input.getValue().getClass().getAnnotation(Render.class);
+			var r = !input.ignore ? input.getValue().getClass().getAnnotation(Render.class) : null;
 			var t = r != null ? r.template() : null;
 
-			r = input.type instanceof AnnotatedType x ? x.getAnnotation(Render.class) : null;
-			if (r != null && !r.template().isEmpty())
+			r = !input.ignore && input.type instanceof AnnotatedType x ? x.getAnnotation(Render.class) : null;
+			if (input.ignore)
+				;
+			else if (input.template != null && !input.template.isEmpty())
+				t = input.template;
+			else if (r != null && !r.template().isEmpty())
 				t = r.template();
 
-			if (input.getValue() instanceof Object[] oo) {
+			if ((t == null || t.isEmpty()) && input.getValue() instanceof Object[] oo) {
 				var z = switch (input.type) {
-				case AnnotatedArrayType u -> u.getAnnotatedGenericComponentType();
+				case AnnotatedArrayType x -> x.getAnnotatedGenericComponentType();
 				default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) input.type,
 						Iterable.class, Stream.class)).getAnnotatedActualTypeArguments()[0];
 				};
@@ -91,7 +96,7 @@ public class RenderEngine {
 				var b = new ArrayList<String>();
 				for (var i = 0; i < oo.length; i++) {
 					var e = oo[i];
-					var x = render(new Entry(i, e, z));
+					var x = render(Entry.of(i, e, z));
 					var y = x != null ? x.toString() : null;
 					if (y == null || y.isEmpty())
 						continue;
@@ -102,8 +107,8 @@ public class RenderEngine {
 				return b.stream().collect(Collectors.joining());
 			}
 
-			if (input.template != null && !input.template.isEmpty())
-				t = input.template;
+//			if (input.template != null && !input.template.isEmpty())
+//				t = input.template;
 			var i = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
 			if (i != null)
 				return i.apply(x -> {
@@ -113,14 +118,17 @@ public class RenderEngine {
 						evaluate(e);
 						c = stack.pop();
 						if (e.isEmpty()) {
-							c.type = null;
-							c.template = null;
+//							c.type = null;
+//							c.template = null;
+							c.ignore = true;
 						}
 						return render(c);
 					} finally {
 						if (e.isEmpty()) {
-							if (c != null)
+							if (c != null) {
+								c.ignore = false;
 								stack.push(c);
+							}
 						} else
 							while (stack.size() > s + 1)
 								stack.pop();
@@ -177,7 +185,7 @@ public class RenderEngine {
 			case Map<?, ?> m: {
 				var v = m.get(n);
 				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[1];
-				c = new Entry(n, v, t);
+				c = Entry.of(n, v, t);
 				break;
 			}
 			case Map.Entry<?, ?> e: {
@@ -194,7 +202,7 @@ public class RenderEngine {
 				default -> throw new RuntimeException();
 				};
 				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[j];
-				c = new Entry(n, v, t);
+				c = Entry.of(n, v, t);
 				break;
 			}
 			case EntryList<?, ?> m: {
@@ -203,7 +211,7 @@ public class RenderEngine {
 				var b = EntryList.class;
 				var t = getAnnotatedSuperclass(a, b);
 				var u = ((AnnotatedParameterizedType) t).getAnnotatedActualTypeArguments()[1];
-				c = new Entry(n, v, u);
+				c = Entry.of(n, v, u);
 				break;
 			}
 			case Function<?, ?> f: {
@@ -211,7 +219,7 @@ public class RenderEngine {
 				var g = (Function<String, ?>) f;
 				var v = g.apply(n);
 				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[1];
-				c = new Entry(n, v, t);
+				c = Entry.of(n, v, t);
 				break;
 			}
 			default: {
@@ -236,24 +244,9 @@ public class RenderEngine {
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
-					var s = v != null ? switch (v) {
-					case Object[] x -> Arrays.stream(x);
-					case Iterable<?> x -> StreamSupport.stream(x.spliterator(), false);
-					case Stream<?> x -> x;
-					default -> null;
-					} : null;
 					t = g.getAnnotatedReturnType();
-					if (s != null) {
-						var u = switch (t) {
-						case AnnotatedArrayType x -> x.getAnnotatedGenericComponentType();
-						default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) t,
-								Iterable.class, Stream.class)).getAnnotatedActualTypeArguments()[0];
-						};
-//						v = s.toArray(l -> (Object[]) Array.newInstance((Class<?>) u.getType(), l));
-						v = s.toArray(l -> (Object[]) Array.newInstance((Class<?>) getRawType(u), l));
-					}
 				}
-				c = new Entry(n, v, t);
+				c = Entry.of(n, v, t);
 				break;
 			}
 			}
@@ -276,18 +269,39 @@ public class RenderEngine {
 	}
 
 	protected static Class<?> getRawType(AnnotatedType annotated) {
-		return (Class<?>) (annotated.getType() instanceof ParameterizedType p ? p.getRawType() : annotated.getType());
+		var t = annotated.getType() instanceof ParameterizedType p ? p.getRawType() : annotated.getType();
+		return t instanceof Class<?> c ? c : Object.class;
 	}
 
 	public static class Entry extends SimpleEntry<Object, Object> {
 
 		private static final long serialVersionUID = -7935499563158999871L;
 
+		public static Entry of(Object key, Object v, AnnotatedType type) {
+			var s = v != null ? switch (v) {
+			case Object[] x -> Arrays.stream(x);
+			case Iterable<?> x -> StreamSupport.stream(x.spliterator(), false);
+			case Stream<?> x -> x;
+			default -> null;
+			} : null;
+			if (s != null) {
+				var u = switch (type) {
+				case AnnotatedArrayType x -> x.getAnnotatedGenericComponentType();
+				default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) type, Iterable.class,
+						Stream.class)).getAnnotatedActualTypeArguments()[0];
+				};
+				v = s.toArray(l -> (Object[]) Array.newInstance(getRawType(u), l));
+			}
+			return new Entry(key, v, type);
+		}
+
 		AnnotatedType type;
 
 		String template;
 
-		public Entry(Object key, Object value, AnnotatedType type) {
+		boolean ignore;
+
+		private Entry(Object key, Object value, AnnotatedType type) {
 			super(key, value);
 			this.type = type;
 		}
@@ -310,7 +324,8 @@ public class RenderEngine {
 
 		@Override
 		public String toString() {
-			return "[key=" + getKey() + ", value=" + getValue() + ", type=" + type + "]";
+			return "[key=" + getKey() + ", value=" + getValue() + ", type=" + type + ", template=" + template
+					+ ", ignore=" + ignore + "]";
 		}
 	}
 }

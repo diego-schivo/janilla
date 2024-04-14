@@ -25,22 +25,12 @@
 package com.janilla.util;
 
 import java.io.File;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
 import com.janilla.io.IO;
-import com.janilla.json.Json;
-import com.janilla.reflect.Reflection;
 
 public interface Util {
 
@@ -78,103 +68,13 @@ public interface Util {
 				&& string.regionMatches(true, 0, prefix, 0, prefix.length()));
 	}
 
-	static Map<String, Object> buildTree(EntryList<String, String> input) {
-		var m = new LinkedHashMap<String, Object>();
-		for (var t : input) {
-			Map<String, Object> n = m;
-			var k = t.getKey().split("\\.");
-			for (var i = 0; i < k.length; i++) {
-				if (k[i].endsWith("]")) {
-					var l = k[i].split("\\[", 2);
-					var j = Integer.parseInt(l[1].substring(0, l[1].length() - 1));
-					@SuppressWarnings("unchecked")
-					var a = (List<Object>) n.computeIfAbsent(l[0], x -> new ArrayList<Object>());
-					while (a.size() <= j)
-						a.add(null);
-					if (i < k.length - 1) {
-						@SuppressWarnings("unchecked")
-						var o = (Map<String, Object>) a.get(j);
-						if (o == null) {
-							o = new LinkedHashMap<String, Object>();
-							a.set(j, o);
-						}
-						n = o;
-					} else
-						a.set(j, t.getValue());
-				} else if (i < k.length - 1) {
-					@SuppressWarnings("unchecked")
-					var o = (Map<String, Object>) n.computeIfAbsent(k[i], x -> new LinkedHashMap<String, Object>());
-					n = o;
-				} else
-					n.put(k[i], t.getValue());
-			}
-		}
-		return m;
-	}
-
-	static <T> T convertTree(Map<String, Object> tree, Class<T> target) {
-		BiFunction<String, Type, Object> c = (name, type) -> {
-			var i = tree.get(name);
-			var o = i != null ? switch (i) {
-			case List<?> l -> {
-				var u = (Class<?>) ((ParameterizedType) type).getActualTypeArguments()[0];
-				var m = new ArrayList<>();
-				for (var e : l) {
-					@SuppressWarnings("unchecked")
-					var f = (Map<String, Object>) e;
-					m.add(convertTree(f, u));
-				}
-				yield m;
-			}
-			case Map<?, ?> m -> {
-				@SuppressWarnings("unchecked")
-				var n = (Map<String, Object>) m;
-				yield convertTree(n, (Class<?>) type);
-			}
-			default -> Json.convert(i, (Class<?>) type);
-			} : Json.convert(i, (Class<?>) type);
-			return o;
-		};
-
-		try {
-			if (target.isRecord()) {
-				var a = new ArrayList<Object>();
-				for (var d : target.getRecordComponents()) {
-					var n = d.getName();
-					var t = d.getGenericType();
-					var b = c.apply(n, t);
-					a.add(b);
-				}
-				@SuppressWarnings("unchecked")
-				var t = (T) target.getConstructors()[0].newInstance(a.toArray());
-				return t;
-			}
-			var t = (T) target.getConstructor().newInstance();
-			for (var i = Reflection.properties(target).map(n -> {
-				var s = Reflection.setter(target, n);
-				return s != null ? Map.entry(n, s) : null;
-			}).filter(Objects::nonNull).iterator();i.hasNext();) {
-				var e = i.next();
-				var n = e.getKey();
-				var s = e.getValue();
-				var u = s.getGenericParameterTypes()[0];
-				var b = c.apply(n, u);
-				if (b != null)
-					s.invoke(t, b);
-			}
-			return t;
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	static String[] splitCamelCase(String string) {
 		class A implements IntConsumer {
 
 			StringBuilder s = new StringBuilder();
 
 			Stream.Builder<String> b = Stream.builder();
-			
+
 			boolean u;
 
 			@Override

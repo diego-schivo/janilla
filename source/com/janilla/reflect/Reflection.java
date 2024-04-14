@@ -24,12 +24,17 @@
  */
 package com.janilla.reflect;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Reflection {
@@ -101,6 +106,17 @@ public class Reflection {
 					b[1] = s;
 			}
 		}
-		return m;
+		return m.keySet().stream().map(n -> {
+			Field f;
+			try {
+				f = class1.getDeclaredField(n);
+			} catch (NoSuchFieldException e) {
+				f = null;
+			}
+			var o = f != null ? f.getAnnotation(Order.class) : null;
+			return new SimpleEntry<>(n, o != null ? o.value() : null);
+//		}).sorted(Comparator.nullsLast(Comparator.comparing(Map.Entry::getValue)))
+		}).sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
+				.collect(Collectors.toMap(e -> e.getKey(), e -> m.get(e.getKey()), (v, w) -> v, LinkedHashMap::new));
 	}
 }

@@ -49,7 +49,7 @@ import com.janilla.net.Net;
 import com.janilla.reflect.Parameter;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;
-import com.janilla.util.Util;
+import com.janilla.util.EntryTree;
 
 public class MethodArgumentsResolver implements BiFunction<MethodInvocation, HttpExchange, Object[]> {
 
@@ -130,17 +130,19 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 		if (c != null && HttpResponse.class.isAssignableFrom(c))
 			return exchange.getResponse();
 		if (c != null && !c.getPackageName().startsWith("java."))
-			switch (Objects.toString(exchange.getRequest().getHeaders().get("Content-Type"), "")) {
+			switch (Objects.toString(exchange.getRequest().getHeaders().get("Content-Type"), "").split(";")[0]) {
 			case "application/json":
 //				System.out.println("body=" + body);
 				try {
-					return body != null ? Json.parse(body.get(), Json.parseCollector(c)) : null;
+//					return body != null ? Json.parse(body.get(), Json.parseCollector(c)) : null;
+					return body != null ? Json.convert(Json.parse(body.get()), c) : null;
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
 			case "application/x-www-form-urlencoded": {
-				var t = Util.buildTree(entries);
-				return Util.convertTree(t, c);
+				var t = newEntryTree();
+				entries.forEach(t::add);
+				return t.convert(c);
 			}
 			default:
 				try {
@@ -198,5 +200,9 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 		var i = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
 		return Json.convert(i, c);
+	}
+
+	protected EntryTree newEntryTree() {
+		return new EntryTree();
 	}
 }
