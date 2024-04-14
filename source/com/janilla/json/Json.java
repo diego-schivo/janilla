@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.Spliterators;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -332,7 +333,7 @@ public interface Json {
 //		});
 //	}
 
-	static Object convert(Object input, Class<?> target) {
+	static Object convert(Object input, Class<?> target, Function<String, Class<?>> typeResolver) {
 		if (input == null || (input instanceof String s && s.isEmpty())) {
 			if (target == Boolean.TYPE)
 				return false;
@@ -345,7 +346,8 @@ public interface Json {
 			return null;
 		}
 
-		if (target.isAssignableFrom(input.getClass()))
+		if (target != Object.class && target.isAssignableFrom(input.getClass()) && !target.isArray()
+				&& !Collection.class.isAssignableFrom(target))
 			return input;
 		if (target == BigDecimal.class)
 			return switch (input) {
@@ -382,80 +384,86 @@ public interface Json {
 		if (target == UUID.class)
 			return UUID.fromString((String) input);
 
-		if (target == Set.class)
-			return switch (input) {
-			case Set<?> x -> input;
-			case List<?> x -> new LinkedHashSet<>(x);
-			case Object[] x -> Arrays.stream(x).collect(Collectors.toCollection(LinkedHashSet::new));
-			default -> throw new RuntimeException();
-			};
+//		if (target == Set.class)
+//			return switch (input) {
+//			case Set<?> x -> input;
+//			case List<?> x -> new LinkedHashSet<>(x);
+//			case Object[] x -> Arrays.stream(x).collect(Collectors.toCollection(LinkedHashSet::new));
+//			default -> throw new RuntimeException();
+//			};
 
 		if (target == long[].class)
 			return ((Collection<?>) input).stream().mapToLong(x -> (long) x).toArray();
 
-		if (target.isArray()) {
+		if (target.isArray() || Collection.class.isAssignableFrom(target)) {
 			var s = switch (input) {
 			case Object[] x -> Arrays.stream(x);
 			case Collection<?> x -> x.stream();
 			default -> throw new RuntimeException();
 			};
-			var t = target.componentType();
-			s = s.map(y -> convert(y, t));
-			if (target.componentType() == Integer.TYPE)
-				return s.mapToInt(x -> (Integer) x).toArray();
-			else
-				return s.toArray(l -> (Object[]) Array.newInstance(t, l));
+			var t = target.isArray() ? target.componentType() : Object.class;
+			s = s.map(y -> convert(y, t, typeResolver));
+
+			if (target.isArray()) {
+				if (target.componentType() == Integer.TYPE)
+					return s.mapToInt(x -> (Integer) x).toArray();
+				else
+					return s.toArray(l -> (Object[]) Array.newInstance(t, l));
+			}
+			if (target == List.class)
+				return s.toList();
+			if (target == Set.class)
+				return s.collect(Collectors.toCollection(LinkedHashSet::new));
 		}
 
-//		if (input instanceof Map<?, ?> x) {
-		@SuppressWarnings("unchecked")
-		var m = (Map<String, Object>) input;
-		if (m.containsKey("$type"))
-			try {
-				var c = Class.forName(target.getPackageName() + "." + m.get("$type"));
+		if (input instanceof Map<?, ?>) {
+			@SuppressWarnings("unchecked")
+			var m = (Map<String, Object>) input;
+			if (m.containsKey("$type")) {
+//			var c = Class.forName(target.getPackageName() + "." + m.get("$type"));
+				var c = typeResolver.apply((String) m.get("$type"));
 				if (!target.isAssignableFrom(c))
 					throw new RuntimeException();
 				target = c;
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException(e);
 			}
 
-		if (target == Map.Entry.class) {
-			var o = new SimpleEntry<Object, Object>(m.get("key"), m.get("value"));
+			if (target == Map.Entry.class) {
+				var o = new SimpleEntry<Object, Object>(m.get("key"), m.get("value"));
+				return o;
+			}
+
+			// System.out.println("c=" + c);
+			var d = target.getConstructors()[0];
+			// System.out.println("d=" + d);
+			var tt = target.isRecord()
+					? Arrays.stream(target.getRecordComponents()).collect(
+							Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new))
+					: null;
+			Object o;
+			try {
+				if (tt != null) {
+					var z = tt.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue(), typeResolver))
+							.toArray();
+					o = d.newInstance(z);
+				} else {
+					o = d.newInstance();
+					for (var e : m.entrySet()) {
+						if (e.getKey().equals("$type"))
+							continue;
+						// System.out.println("e=" + e);
+						var s = Reflection.setter(target, e.getKey());
+						var v = convert(e.getValue(), s.getParameterTypes()[0], typeResolver);
+						// System.out.println("s=" + s + ", i=" + i + ", v=" + v);
+						s.invoke(o, v);
+					}
+				}
+			} catch (ReflectiveOperationException e) {
+				throw new RuntimeException(e);
+			}
 			return o;
 		}
 
-		// System.out.println("c=" + c);
-		var d = target.getConstructors()[0];
-		// System.out.println("d=" + d);
-		var tt = target.isRecord() ? Arrays.stream(target.getRecordComponents())
-				.collect(Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new)) : null;
-		Object o;
-		try {
-			if (tt != null) {
-				var z = tt.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue())).toArray();
-				o = d.newInstance(z);
-			} else {
-				o = d.newInstance();
-				for (var e : m.entrySet()) {
-					if (e.getKey().equals("$type"))
-						continue;
-					// System.out.println("e=" + e);
-					var s = Reflection.setter(target, e.getKey());
-					var v = convert(e.getValue(), s.getParameterTypes()[0]);
-					// System.out.println("s=" + s + ", i=" + i + ", v=" + v);
-					s.invoke(o, v);
-				}
-			}
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
-		}
-//			@SuppressWarnings("unchecked")
-//			var t = (T) o;
-		return o;
-//		}
-//
-//		return input;
+		return input;
 	}
 
 //	public static <T> T convert2(Map<String, Object> input, Class<T> target) {

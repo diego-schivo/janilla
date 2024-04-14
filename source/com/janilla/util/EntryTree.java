@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import com.janilla.json.Json;
 import com.janilla.reflect.Reflection;
@@ -39,6 +40,12 @@ import com.janilla.reflect.Reflection;
 public class EntryTree {
 
 	Map<String, Object> tree = new LinkedHashMap<String, Object>();
+
+	Function<String, Class<?>> typeResolver;
+
+	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
+		this.typeResolver = typeResolver;
+	}
 
 	public void add(Map.Entry<String, String> t) {
 		Map<String, Object> n = tree;
@@ -88,24 +95,25 @@ public class EntryTree {
 
 		BiFunction<String, Type, Object> c = (name, type) -> {
 			var i = tree.get(name);
-			var o = i != null ? switch (i) {
-			case List<?> l -> {
-				var u = getRawType(((ParameterizedType) type).getActualTypeArguments()[0]);
-				var m = new ArrayList<>();
-				for (var e : l) {
-					@SuppressWarnings("unchecked")
-					var f = (Map<String, Object>) e;
-					m.add(convert(f, u));
-				}
-				yield m;
-			}
-			case Map<?, ?> m -> {
-				@SuppressWarnings("unchecked")
-				var n = (Map<String, Object>) m;
-				yield convert(n, getRawType(type));
-			}
-			default -> Json.convert(i, getRawType(type));
-			} : Json.convert(i, getRawType(type));
+//			var o = i != null ? switch (i) {
+//			case List<?> l -> {
+//				var u = getRawType(((ParameterizedType) type).getActualTypeArguments()[0]);
+//				var m = new ArrayList<>();
+//				for (var e : l) {
+//					@SuppressWarnings("unchecked")
+//					var f = (Map<String, Object>) e;
+//					m.add(convert(f, u));
+//				}
+//				yield m;
+//			}
+//			case Map<?, ?> m -> {
+//				@SuppressWarnings("unchecked")
+//				var n = (Map<String, Object>) m;
+//				yield convert(n, getRawType(type));
+//			}
+//			default -> Json.convert(i, getRawType(type), typeResolver);
+//			} : Json.convert(i, getRawType(type), typeResolver);
+			var o = Json.convert(i, getRawType(type), typeResolver);
 			return o;
 		};
 

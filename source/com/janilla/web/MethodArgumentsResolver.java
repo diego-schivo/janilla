@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -52,6 +53,12 @@ import com.janilla.util.EntryList;
 import com.janilla.util.EntryTree;
 
 public class MethodArgumentsResolver implements BiFunction<MethodInvocation, HttpExchange, Object[]> {
+
+	Function<String, Class<?>> typeResolver;
+
+	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
+		this.typeResolver = typeResolver;
+	}
 
 	@Override
 	public Object[] apply(MethodInvocation i, HttpExchange c) {
@@ -135,12 +142,13 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 //				System.out.println("body=" + body);
 				try {
 //					return body != null ? Json.parse(body.get(), Json.parseCollector(c)) : null;
-					return body != null ? Json.convert(Json.parse(body.get()), c) : null;
+					return body != null ? Json.convert(Json.parse(body.get()), c, typeResolver) : null;
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
 			case "application/x-www-form-urlencoded": {
 				var t = newEntryTree();
+				t.setTypeResolver(typeResolver);
 				entries.forEach(t::add);
 				return t.convert(c);
 			}
@@ -199,7 +207,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 		var c = (Class<?>) type;
 		var i = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
-		return Json.convert(i, c);
+		return Json.convert(i, c, typeResolver);
 	}
 
 	protected EntryTree newEntryTree() {

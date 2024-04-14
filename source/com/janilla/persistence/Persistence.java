@@ -51,8 +51,14 @@ public class Persistence {
 
 	protected Configuration configuration;
 
+	Function<String, Class<?>> typeResolver;
+
 	public Database getDatabase() {
 		return database;
+	}
+
+	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
+		this.typeResolver = typeResolver;
 	}
 
 	public <K, V> boolean initializeIndex(String name, com.janilla.database.Index<K, V> index) {
@@ -103,7 +109,7 @@ public class Persistence {
 			};
 		if (c.parser == null)
 //			c.parser = t -> Json.parse((String) t, Json.parseCollector(type));
-			c.parser = t -> (E) Json.convert(Json.parse((String) t), type);
+			c.parser = t -> (E) Json.convert(Json.parse((String) t), type, typeResolver);
 		c.indexPresent = type.isAnnotationPresent(Index.class);
 		configuration.cruds.put(type, c);
 
