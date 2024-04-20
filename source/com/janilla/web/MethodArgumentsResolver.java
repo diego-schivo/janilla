@@ -179,17 +179,17 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 							var o = d.newInstance();
 							for (var i = Reflection.properties(c).iterator(); i.hasNext();) {
 								var n = i.next();
-								var s = Reflection.setter(c, n);
+								var s = Reflection.property(c, n);
 								if (s == null)
 									continue;
 								var w = entries;
-								var v = resolveArgument((Type) s.getParameterTypes()[0], exchange,
+								var v = resolveArgument((Type) s.getType(), exchange,
 										() -> w != null
 												? w.stream().filter(f -> f.getKey().equals(n)).map(Entry::getValue)
 														.toArray(String[]::new)
 												: null,
 										entries, body);
-								s.invoke(o, v);
+								s.set(o, v);
 							}
 							return o;
 						}

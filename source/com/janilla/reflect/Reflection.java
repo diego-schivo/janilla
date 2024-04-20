@@ -25,6 +25,7 @@
 package com.janilla.reflect;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.AbstractMap.SimpleEntry;
@@ -39,23 +40,17 @@ import java.util.stream.Stream;
 
 public class Reflection {
 
-	private static Map<Class<?>, Map<String, Method[]>> methods = new ConcurrentHashMap<>();
+	private static Map<Class<?>, Map<String, Property>> properties = new ConcurrentHashMap<>();
 
 	public static Stream<String> properties(Class<?> class1) {
-		var m = methods.computeIfAbsent(class1, Reflection::compute);
+		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.keySet().stream();
 	}
 
-	public static Method getter(Class<?> class1, String name) {
-		var m = methods.computeIfAbsent(class1, Reflection::compute);
+	public static Property property(Class<?> class1, String name) {
+		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		var a = m.get(name);
-		return a != null ? a[0] : null;
-	}
-
-	public static Method setter(Class<?> class1, String name) {
-		var m = methods.computeIfAbsent(class1, Reflection::compute);
-		var a = m.get(name);
-		return a != null ? a[1] : null;
+		return a;
 	}
 
 	public static void copy(Object source, Object destination) {
@@ -67,46 +62,48 @@ public class Reflection {
 		var d = destination.getClass();
 		for (var i = properties(d).iterator(); i.hasNext();) {
 			var n = i.next();
-			var s = filter == null || filter.test(n) ? setter(d, n) : null;
-			var g = s != null ? getter(c, n) : null;
+			var s = filter == null || filter.test(n) ? property(d, n) : null;
+			var g = s != null ? property(c, n) : null;
 			if (g != null)
 				try {
-					var v = g.invoke(source);
-					s.invoke(destination, v);
+					var v = g.get(source);
+					s.set(destination, v);
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}
 		}
 	}
 
-	private static Map<String, Method[]> compute(Class<?> class1) {
-		var m = new HashMap<String, Method[]>();
-		for (var n : class1.getMethods()) {
-			if (Modifier.isStatic(n.getModifiers()) || n.getDeclaringClass() == Object.class || switch (n.getName()) {
+	private static Map<String, Property> compute(Class<?> class1) {
+		var m1 = new HashMap<String, Member[]>();
+		for (var m : class1.getMethods()) {
+			if (Modifier.isStatic(m.getModifiers()) || m.getDeclaringClass() == Object.class || switch (m.getName()) {
 			case "hashCode", "toString" -> true;
 			default -> false;
 			})
 				continue;
-			var g = n.getReturnType() != Void.TYPE && n.getParameterCount() == 0 ? n : null;
-			var s = n.getReturnType() == Void.TYPE && n.getParameterCount() == 1 ? n : null;
+			var g = m.getReturnType() != Void.TYPE && m.getParameterCount() == 0 ? m : null;
+			var s = m.getReturnType() == Void.TYPE && m.getParameterCount() == 1 ? m : null;
 			if (g != null || s != null) {
-				var k = n.getName();
-				var p = g != null ? (n.getReturnType() == Boolean.TYPE ? "is" : "get") : "set";
-				if (k.length() > p.length() && k.startsWith(p) && Character.isUpperCase(k.charAt(p.length()))) {
-					var i = p.length();
-					do {
-						i++;
-					} while (i < k.length() && Character.isUpperCase(k.charAt(i)));
-					k = k.substring(p.length(), i).toLowerCase() + k.substring(i);
-				}
-				var b = m.computeIfAbsent(k, l -> new Method[2]);
+				var k = Property.name(m);
+				var b = m1.computeIfAbsent(k, l -> new Member[2]);
 				if (g != null)
 					b[0] = g;
 				if (s != null)
 					b[1] = s;
 			}
 		}
-		return m.keySet().stream().map(n -> {
+		for (var f : class1.getFields()) {
+			if (Modifier.isStatic(f.getModifiers()))
+				continue;
+			m1.computeIfAbsent(Property.name(f), l -> new Member[] { f });
+		}
+		var m2 = m1.entrySet().stream().map(e -> {
+			var mm = e.getValue();
+			var p = mm.length == 1 ? Property.of((Field) mm[0]) : Property.of((Method) mm[0], (Method) mm[1]);
+			return Map.entry(e.getKey(), p);
+		}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		return m2.keySet().stream().map(n -> {
 			Field f;
 			try {
 				f = class1.getDeclaredField(n);
@@ -115,8 +112,7 @@ public class Reflection {
 			}
 			var o = f != null ? f.getAnnotation(Order.class) : null;
 			return new SimpleEntry<>(n, o != null ? o.value() : null);
-//		}).sorted(Comparator.nullsLast(Comparator.comparing(Map.Entry::getValue)))
 		}).sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
-				.collect(Collectors.toMap(e -> e.getKey(), e -> m.get(e.getKey()), (v, w) -> v, LinkedHashMap::new));
+				.collect(Collectors.toMap(e -> e.getKey(), e -> m2.get(e.getKey()), (v, w) -> v, LinkedHashMap::new));
 	}
 }

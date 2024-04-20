@@ -58,10 +58,10 @@ public class ApplicationHandlerBuilder {
 				buildResourceHandlerFactory(), buildJsonHandlerFactory(), buildExceptionHandlerFactory() };
 		var f = new DelegatingHandlerFactory();
 		for (var g : factories) {
-			var s = Reflection.setter(g.getClass(), "mainFactory");
+			var s = Reflection.property(g.getClass(), "mainFactory");
 			if (s != null)
 				try {
-					s.invoke(g, f);
+					s.set(g, f);
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}
@@ -156,15 +156,15 @@ public class ApplicationHandlerBuilder {
 	protected void initialize(Object object) throws ReflectiveOperationException {
 		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
 			var n = j.next();
-			var s = Reflection.setter(object.getClass(), n);
+			var s = Reflection.property(object.getClass(), n);
 			if (n.equals("application") && s != null) {
-				s.invoke(object, application);
+				s.set(object, application);
 				continue;
 			}
-			var g = s != null ? Reflection.getter(application.getClass(), n) : null;
-			var v = g != null ? g.invoke(application) : null;
+			var g = s != null ? Reflection.property(application.getClass(), n) : null;
+			var v = g != null ? g.get(application) : null;
 			if (v != null)
-				s.invoke(object, v);
+				s.set(object, v);
 		}
 	}
 

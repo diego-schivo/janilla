@@ -65,7 +65,7 @@ public class Crud<E> {
 		database.perform((ss, ii) -> {
 			var i = ss.perform(type.getSimpleName(), s -> s.create(x -> {
 				try {
-					Reflection.setter(type, "id").invoke(entity, x);
+					Reflection.property(type, "id").set(entity, x);
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}

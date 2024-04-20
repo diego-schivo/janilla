@@ -88,7 +88,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 				s.getHeaders().set("Content-Type", "text/html");
 		}
 
-		RenderEngine e = newRenderEngine();
+		RenderEngine e = newRenderEngine(exchange);
 		e.setToInterpolator(s -> {
 			String t;
 			if (s.contains("\n"))
@@ -113,7 +113,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 		}
 	}
 
-	protected RenderEngine newRenderEngine() {
+	protected RenderEngine newRenderEngine(HttpExchange exchange) {
 		return new RenderEngine();
 	}
 }

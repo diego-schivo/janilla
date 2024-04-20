@@ -121,23 +121,40 @@ class RenderEngine {
 		if (expression.length === 0)
 			return;
 		let c = this.stack.at(-1);
-		// if (c.value == null)
-		// 	return;
 		const nn = expression.split('.');
 		for (let i = 0; i < nn.length; i++) {
-			const n = nn[i];
+			let n = nn[i];
+			let k;
+			if (n.endsWith(']')) {
+				const j = n.lastIndexOf('[');
+				k = parseInt(n.substring(j + 1, n.length - 1), 10);
+				n = n.substring(0, j);
+			} else
+				k = -1;
 			let d = { key: n };
 			for (let i = this.stack.length - 1; i >= 0; i--) {
 				c = this.stack[i];
 				if (c.value instanceof FormData) {
 					d.value = c.value.get(n);
 					break;
-				} else if (typeof c.value === 'object' && c.value !== null && Reflect.has(c.value, n)) {
-					d.value = c.value[n];
-					break;
+				} else if (typeof c.value === 'object' && c.value !== null) {
+					if (n.length) {
+						if (Reflect.has(c.value, n)) {
+							d.value = c.value[n];
+							break;
+						}
+					} else if (k >= 0) {
+						d.key = k;
+						d.value = c.value[k];
+						break;
+					}
 				}
 			}
 			this.stack.push(d);
+			if (n.length && k >= 0) {
+				d = { key: k, value: d.value[k] };
+				stack.push(d);
+			}
 			if (d.value == null)
 				break;
 		}

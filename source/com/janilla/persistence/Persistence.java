@@ -26,7 +26,6 @@ package com.janilla.persistence;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
@@ -43,6 +42,7 @@ import com.janilla.database.Database;
 import com.janilla.io.ElementHelper;
 import com.janilla.json.Json;
 import com.janilla.json.ReflectionJsonIterator;
+import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
 
 public class Persistence {
@@ -108,8 +108,11 @@ public class Persistence {
 				return Json.format(t);
 			};
 		if (c.parser == null)
-//			c.parser = t -> Json.parse((String) t, Json.parseCollector(type));
-			c.parser = t -> (E) Json.convert(Json.parse((String) t), type, typeResolver);
+			c.parser = t -> {
+				@SuppressWarnings("unchecked")
+				var e = (E) Json.convert(Json.parse((String) t), type, typeResolver);
+				return e;
+			};
 		c.indexPresent = type.isAnnotationPresent(Index.class);
 		configuration.cruds.put(type, c);
 
@@ -131,7 +134,7 @@ public class Persistence {
 				continue;
 
 			var n = e instanceof Field f ? f.getName() : null;
-			var t = n != null ? Reflection.getter(type, n).getReturnType() : null;
+			var t = n != null ? Reflection.property(type, n).getType() : null;
 			var j = new IndexInitializer<K, V>();
 			if (t == null) {
 				@SuppressWarnings("unchecked")
@@ -163,8 +166,8 @@ public class Persistence {
 			var s = i.sort();
 			if (s.startsWith("+") || s.startsWith("-"))
 				s = s.substring(1);
-			var g = !s.isEmpty() ? Reflection.getter(type, s) : null;
-			if (g != null && g.getReturnType() != null) {
+			var g = !s.isEmpty() ? Reflection.property(type, s) : null;
+			if (g != null && g.getType() != null) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<V>) ElementHelper.of(type, i.sort(), "id");
 				j.valueHelper = h;
@@ -212,11 +215,11 @@ public class Persistence {
 
 		Function<Object, Object> keyGetter;
 
-		Method sortGetter;
+		Property sortGetter;
 
 		Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
 			var k = keyGetter != null ? keyGetter.apply(entity) : null;
-			var v = sortGetter != null ? new Object[] { sortGetter.invoke(entity), id } : new Object[] { id };
+			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
 			return keyGetter == null || k != null ? new SimpleEntry<>(k, v) : null;
 		}
 	}

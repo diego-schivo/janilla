@@ -27,6 +27,7 @@ package com.janilla.json;
 import java.lang.reflect.Modifier;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -46,10 +47,11 @@ class ReflectionValueIterator extends ValueIterator {
 		var i = super.newIterator(object);
 		if (i == null) {
 			i = switch (object) {
-			case long[] ll -> new ArrayIterator(Arrays.stream(ll).boxed().iterator(), context);
-			case Object[] oo -> new ArrayIterator(Arrays.stream(oo).iterator(), context);
-			case Collection<?> c -> new ArrayIterator(c.iterator(), context);
-			case Stream<?> s -> new ArrayIterator(s.iterator(), context);
+			case byte[] x -> new StringIterator(Base64.getEncoder().encodeToString(x));
+			case long[] x -> new ArrayIterator(Arrays.stream(x).boxed().iterator(), context);
+			case Object[] x -> new ArrayIterator(Arrays.stream(x).iterator(), context);
+			case Collection<?> x -> new ArrayIterator(x.iterator(), context);
+			case Stream<?> x -> new ArrayIterator(x.iterator(), context);
 			default -> null;
 			};
 		}
@@ -58,17 +60,18 @@ class ReflectionValueIterator extends ValueIterator {
 			case Map.Entry<?, ?> x -> Map.Entry.class;
 			default -> throw new RuntimeException();
 			};
-			var s1 = Stream.of(Map.entry("$type", (Object) c.getSimpleName()));
+			var s1 = Stream.of(Map.entry("$type",
+					(Object) c.getName().substring(c.getPackageName().length() + 1).replace('$', '.')));
 			var s2 = Reflection.properties(c).map(p -> {
-				var g = Reflection.getter(c, p);
-//				var s = Reflection.setter(c, p);
+				var g = Reflection.property(c, p);
+//				var s = Reflection.property(c, p);
 //				return g != null && s != null ? Map.entry(p, g) : null;
 				return g != null ? Map.entry(p, g) : null;
 			}).filter(Objects::nonNull).map(e -> {
 				Object v;
 				try {
 //					System.out.println(e.getValue() + " " + object);
-					v = e.getValue().invoke(object);
+					v = e.getValue().get(object);
 				} catch (ReflectiveOperationException x) {
 					throw new RuntimeException(x);
 				}

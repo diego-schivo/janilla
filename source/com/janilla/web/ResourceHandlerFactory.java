@@ -110,20 +110,20 @@ public class ResourceHandlerFactory implements HandlerFactory {
 		try {
 			var s = exchange.getResponse();
 			s.setStatus(new Status(200, "OK"));
-			var h = s.getHeaders();
-			h.set("Cache-Control", "max-age=3600");
+			var hh = s.getHeaders();
+			hh.set("Cache-Control", "max-age=3600");
 
 			var u = request.getURI().toString();
 			var e = u.substring(u.lastIndexOf('.') + 1);
 			switch (e) {
 			case "ico":
-				h.set("Content-Type", "image/x-icon");
+				hh.set("Content-Type", "image/x-icon");
 				break;
 			case "js":
-				h.set("Content-Type", "text/javascript");
+				hh.set("Content-Type", "text/javascript");
 				break;
 			case "svg":
-				h.set("Content-Type", "image/svg+xml");
+				hh.set("Content-Type", "image/svg+xml");
 				break;
 			}
 

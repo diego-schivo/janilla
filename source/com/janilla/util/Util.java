@@ -28,6 +28,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.janilla.io.IO;
@@ -100,5 +101,59 @@ public interface Util {
 		var a = new A();
 		string.chars().forEach(a);
 		return a.build();
+	}
+
+	static int[] findIndexes(byte[] bytes, byte[] search) {
+		return findIndexes(bytes, search, -1);
+	}
+
+	static int[] findIndexes(byte[] bytes, byte[] search, int limit) {
+		if (limit == 0)
+			return new int[0];
+		var w = search;
+		var t = new int[w.length + 1];
+		{
+			var p = 1;
+			var c = 0;
+			t[0] = -1;
+			while (p < w.length) {
+				if (w[p] == w[c])
+					t[p] = t[c];
+				else {
+					t[p] = c;
+					while (c >= 0 && w[p] != w[c])
+						c = t[c];
+				}
+				p++;
+				c++;
+			}
+			t[p] = c;
+//			System.out.println(Arrays.toString(t));
+		}
+		var s = bytes;
+		var j = 0;
+		var k = 0;
+		var p = IntStream.builder();
+		var n = 0;
+		while (j < s.length) {
+			if (w[k] == s[j]) {
+				j++;
+				k++;
+				if (k == w.length) {
+					p.add(j - k);
+					n++;
+					if (limit > 0 && n == limit)
+						break;
+					k = t[k];
+				}
+			} else {
+				k = t[k];
+				if (k < 0) {
+					j++;
+					k++;
+				}
+			}
+		}
+		return p.build().toArray();
 	}
 }

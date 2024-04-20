@@ -86,7 +86,7 @@ public interface ElementHelper<E> {
 			var d = n.startsWith("-");
 			if (n.startsWith("+") || d)
 				n = n.substring(1);
-			var t = Reflection.getter(type, n).getReturnType();
+			var t = Reflection.property(type, n).getType();
 			var o = d ? SortOrder.DESCENDING : SortOrder.ASCENDING;
 			return new TypeAndOrder(t, o);
 		}).toArray(TypeAndOrder[]::new));

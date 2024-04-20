@@ -91,7 +91,7 @@
 //				if (o != RenderHelper.NOT_RENDERED)
 //					yield o;
 //			}
-//			var g = Reflection.getter(u.getClass(), name);
+//			var g = Reflection.property(u.getClass(), name);
 //			yield g != null ? invoke(g, u, wrapper) : null;
 //		}
 //		} : null;

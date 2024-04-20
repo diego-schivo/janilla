@@ -165,11 +165,6 @@ public class Store<E> {
 		t.get(new IdAndElement(id, new BlockReference(-1, -1, 0)), j -> {
 			if (j == null)
 				return null;
-//			t.getChannel().position(j.element.position());
-//			var b = ByteBuffer.allocate(j.element.capacity());
-//			IO.repeat(x -> t.getChannel().read(b), b.remaining());
-//			b.position(0);
-//			var e = elementHelper.getElement(b);
 			var e = readElement(j.element);
 			a.e = operator.apply(e);
 			var c = elementHelper.getBytes(a.e);
@@ -189,11 +184,6 @@ public class Store<E> {
 		var i = t.remove(new IdAndElement(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
 			return null;
-//		t.getChannel().position(i.element.position());
-//		var b = ByteBuffer.allocate(i.element.capacity());
-//		IO.repeat(x -> t.getChannel().read(b), b.remaining());
-//		b.position(0);
-//		var e = elementHelper.getElement(b);
 		var e = readElement(i.element);
 		idAndSize = new IdAndSize(idAndSize.id, idAndSize.size - 1);
 		return e;

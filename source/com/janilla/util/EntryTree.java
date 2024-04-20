@@ -24,7 +24,6 @@
  */
 package com.janilla.util;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -95,25 +94,7 @@ public class EntryTree {
 
 		BiFunction<String, Type, Object> c = (name, type) -> {
 			var i = tree.get(name);
-//			var o = i != null ? switch (i) {
-//			case List<?> l -> {
-//				var u = getRawType(((ParameterizedType) type).getActualTypeArguments()[0]);
-//				var m = new ArrayList<>();
-//				for (var e : l) {
-//					@SuppressWarnings("unchecked")
-//					var f = (Map<String, Object>) e;
-//					m.add(convert(f, u));
-//				}
-//				yield m;
-//			}
-//			case Map<?, ?> m -> {
-//				@SuppressWarnings("unchecked")
-//				var n = (Map<String, Object>) m;
-//				yield convert(n, getRawType(type));
-//			}
-//			default -> Json.convert(i, getRawType(type), typeResolver);
-//			} : Json.convert(i, getRawType(type), typeResolver);
-			var o = Json.convert(i, getRawType(type), typeResolver);
+			var o = Json.convert(i, type, typeResolver);
 			return o;
 		};
 
@@ -133,28 +114,20 @@ public class EntryTree {
 			var z = target;
 			var t = (T) z.getConstructor().newInstance();
 			for (var i = Reflection.properties(z).map(n -> {
-				var s = Reflection.setter(z, n);
+				var s = Reflection.property(z, n);
 				return s != null ? Map.entry(n, s) : null;
 			}).filter(Objects::nonNull).iterator();i.hasNext();) {
 				var e = i.next();
 				var n = e.getKey();
 				var s = e.getValue();
-				var u = s.getGenericParameterTypes()[0];
+				var u = s.getGenericType();
 				var b = c.apply(n, u);
 				if (b != null)
-					s.invoke(t, b);
+					s.set(t, b);
 			}
 			return t;
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	static Class<?> getRawType(Type type) {
-		return switch (type) {
-		case Class<?> x -> x;
-		case ParameterizedType x -> (Class<?>) x.getRawType();
-		default -> throw new IllegalArgumentException();
-		};
 	}
 }

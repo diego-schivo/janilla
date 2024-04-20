@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -100,12 +101,13 @@ class ValueIterator extends TokenIterator {
 			var m = (List<Object>) l;
 			yield new ArrayIterator(m.iterator(), context);
 		}
+		case Locale x -> new StringIterator(x.toLanguageTag());
 		case LocalDate x -> new StringIterator(x.toString());
-		case Map<?, ?> m -> {
-			@SuppressWarnings("unchecked")
-			var n = (Map<String, Object>) m;
-			yield new ObjectIterator(n.entrySet().iterator(), context);
-		}
+		case Map<?, ?> x -> new ObjectIterator(x.entrySet().stream().map(e -> {
+			var k = e.getKey();
+			var v = e.getValue();
+			return Map.entry(k instanceof Locale l ? l.toLanguageTag() : (String) k, v);
+		}).iterator(), context);
 		case Number x -> new NumberIterator(x);
 		case String x -> new StringIterator(x);
 		case URI x -> new StringIterator(x.toString());

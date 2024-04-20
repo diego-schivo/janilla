@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -64,7 +65,6 @@ public class RenderEngine {
 
 	public Object render(Entry input) throws IOException {
 		var s = stack.size();
-//		var p = stack.peek();
 		stack.push(input);
 		try {
 			for (var x : stack)
@@ -96,7 +96,7 @@ public class RenderEngine {
 				var b = new ArrayList<String>();
 				for (var i = 0; i < oo.length; i++) {
 					var e = oo[i];
-					var x = render(Entry.of(i, e, z));
+					var x = render(entryOf(i, e, z));
 					var y = x != null ? x.toString() : null;
 					if (y == null || y.isEmpty())
 						continue;
@@ -107,8 +107,6 @@ public class RenderEngine {
 				return b.stream().collect(Collectors.joining());
 			}
 
-//			if (input.template != null && !input.template.isEmpty())
-//				t = input.template;
 			var i = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
 			if (i != null)
 				return i.apply(x -> {
@@ -118,8 +116,6 @@ public class RenderEngine {
 						evaluate(e);
 						c = stack.pop();
 						if (e.isEmpty()) {
-//							c.type = null;
-//							c.template = null;
 							c.ignore = true;
 						}
 						return render(c);
@@ -135,7 +131,8 @@ public class RenderEngine {
 					}
 				});
 
-			return input.getValue();
+			var v = input.getValue();
+			return v instanceof Locale x ? x.toLanguageTag() : v;
 		} finally {
 			while (stack.size() > s)
 				stack.pop();
@@ -181,11 +178,19 @@ public class RenderEngine {
 		for (var i = 0; i < nn.length; i++) {
 			var n = nn[i];
 
+			int k;
+			if (n.endsWith("]")) {
+				var j = n.lastIndexOf('[');
+				k = Integer.parseInt(n.substring(j + 1, n.length() - 1));
+				n = n.substring(0, j);
+			} else
+				k = -1;
+
 			switch (c.getValue()) {
 			case Map<?, ?> m: {
 				var v = m.get(n);
 				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[1];
-				c = Entry.of(n, v, t);
+				c = entryOf(n, v, t);
 				break;
 			}
 			case Map.Entry<?, ?> e: {
@@ -202,7 +207,7 @@ public class RenderEngine {
 				default -> throw new RuntimeException();
 				};
 				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[j];
-				c = Entry.of(n, v, t);
+				c = entryOf(n, v, t);
 				break;
 			}
 			case EntryList<?, ?> m: {
@@ -211,7 +216,7 @@ public class RenderEngine {
 				var b = EntryList.class;
 				var t = getAnnotatedSuperclass(a, b);
 				var u = ((AnnotatedParameterizedType) t).getAnnotatedActualTypeArguments()[1];
-				c = Entry.of(n, v, u);
+				c = entryOf(n, v, u);
 				break;
 			}
 			case Function<?, ?> f: {
@@ -219,15 +224,15 @@ public class RenderEngine {
 				var g = (Function<String, ?>) f;
 				var v = g.apply(n);
 				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[1];
-				c = Entry.of(n, v, t);
+				c = entryOf(n, v, t);
 				break;
 			}
 			default: {
-				var g = Reflection.getter(c.getValue().getClass(), n);
+				var g = Reflection.property(c.getValue().getClass(), n);
 				if (g == null && i == 0)
 					for (var dd = stack.stream().skip(1).iterator(); dd.hasNext();) {
 						var d = dd.next();
-						g = Reflection.getter(d.getValue().getClass(), n);
+						g = Reflection.property(d.getValue().getClass(), n);
 						if (g != null) {
 							c = d;
 							break;
@@ -240,20 +245,29 @@ public class RenderEngine {
 					t = null;
 				} else {
 					try {
-						v = g.invoke(c.getValue());
+						v = g.get(c.getValue());
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
-					t = g.getAnnotatedReturnType();
+					t = g.getAnnotatedType();
 				}
-				c = Entry.of(n, v, t);
+				c = entryOf(n, v, t);
 				break;
 			}
 			}
 			stack.push(c);
+			if (k >= 0) {
+				c = entryOf(k, ((Object[]) c.getValue())[k],
+						((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[0]);
+				stack.push(c);
+			}
 			if (c.getValue() == null)
 				return;
 		}
+	}
+
+	protected Entry entryOf(Object key, Object value, AnnotatedType type) {
+		return Entry.of(key, value, type);
 	}
 
 	protected static AnnotatedType getAnnotatedSuperclass(AnnotatedType type, Class<?> class1) {
@@ -277,8 +291,8 @@ public class RenderEngine {
 
 		private static final long serialVersionUID = -7935499563158999871L;
 
-		public static Entry of(Object key, Object v, AnnotatedType type) {
-			var s = v != null ? switch (v) {
+		public static Entry of(Object key, Object value, AnnotatedType type) {
+			var s = value != null ? switch (value) {
 			case Object[] x -> Arrays.stream(x);
 			case Iterable<?> x -> StreamSupport.stream(x.spliterator(), false);
 			case Stream<?> x -> x;
@@ -290,9 +304,9 @@ public class RenderEngine {
 				default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) type, Iterable.class,
 						Stream.class)).getAnnotatedActualTypeArguments()[0];
 				};
-				v = s.toArray(l -> (Object[]) Array.newInstance(getRawType(u), l));
+				value = s.toArray(l -> (Object[]) Array.newInstance(getRawType(u), l));
 			}
-			return new Entry(key, v, type);
+			return new Entry(key, value, type);
 		}
 
 		AnnotatedType type;

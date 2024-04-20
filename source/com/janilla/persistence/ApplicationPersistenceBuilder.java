@@ -135,11 +135,11 @@ public class ApplicationPersistenceBuilder {
 	protected void initialize(Object object) throws ReflectiveOperationException {
 		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
 			var n = j.next();
-			var s = Reflection.setter(object.getClass(), n);
-			var g = s != null ? Reflection.getter(application.getClass(), n) : null;
-			var v = g != null ? g.invoke(application) : null;
+			var s = Reflection.property(object.getClass(), n);
+			var g = s != null ? Reflection.property(application.getClass(), n) : null;
+			var v = g != null ? g.get(application) : null;
 			if (v != null)
-				s.invoke(object, v);
+				s.set(object, v);
 		}
 	}
 

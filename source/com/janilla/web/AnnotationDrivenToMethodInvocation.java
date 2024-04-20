@@ -32,6 +32,7 @@ import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -100,6 +101,8 @@ public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest,
 
 	private Iterable<Class<?>> types;
 
+	private Comparator<MethodInvocation> comparator;
+
 	Supplier<Map<String, Value>> invocations1 = Lazy.of(() -> {
 		Map<String, Value> m = new HashMap<>();
 		for (var t : types) {
@@ -135,13 +138,20 @@ public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest,
 		this.types = types;
 	}
 
+	public void setComparator(Comparator<MethodInvocation> comparator) {
+		this.comparator = comparator;
+	}
+
 	@Override
 	public MethodInvocation apply(HttpRequest r) {
-		return getValueAndGroupsStream(r).map(w -> {
+		var s = getValueAndGroupsStream(r).map(w -> {
 			var v = w.value();
 			var m = v.method(r);
 			return m != null ? new MethodInvocation(m, v.object(), w.groups()) : null;
-		}).filter(Objects::nonNull).findFirst().orElse(null);
+		}).filter(Objects::nonNull);
+		if (comparator != null)
+			s = s.sorted(comparator);
+		return s.findFirst().orElse(null);
 	}
 
 	public Stream<ValueAndGroups> getValueAndGroupsStream(HttpRequest q) {

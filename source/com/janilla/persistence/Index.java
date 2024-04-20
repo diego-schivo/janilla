@@ -47,10 +47,10 @@ public @interface Index {
 
 		@Override
 		public Function<Object, Object> apply(Class<?> t, String u) {
-			var g = Reflection.getter(t, u);
+			var g = Reflection.property(t, u);
 			return o -> {
 				try {
-					return g.invoke(o);
+					return g.get(o);
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}
