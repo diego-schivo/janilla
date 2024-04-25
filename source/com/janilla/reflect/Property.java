@@ -24,6 +24,8 @@
  */
 package com.janilla.reflect;
 
+import static com.janilla.reflect.Property.name;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
@@ -98,6 +100,41 @@ public interface Property {
 			@Override
 			public void set(Object object, Object value) throws ReflectiveOperationException {
 				setter.invoke(object, value);
+			}
+		};
+	}
+
+	static Property of(Property property1, Property property2) {
+		return new Property() {
+
+			@Override
+			public Class<?> getType() {
+				return property2.getType();
+			}
+
+			@Override
+			public Type getGenericType() {
+				return property2.getGenericType();
+			}
+
+			@Override
+			public AnnotatedType getAnnotatedType() {
+				return property2.getAnnotatedType();
+			}
+
+			@Override
+			public String getName() {
+				return property2.getName();
+			}
+
+			@Override
+			public Object get(Object object) throws ReflectiveOperationException {
+				return property2.get(property1.get(object));
+			}
+
+			@Override
+			public void set(Object object, Object value) throws ReflectiveOperationException {
+				property2.set(property1.get(object), value);
 			}
 		};
 	}

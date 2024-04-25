@@ -47,6 +47,11 @@ public class Reflection {
 		return m.keySet().stream();
 	}
 
+	public static Stream<Property> properties2(Class<?> class1) {
+		var m = properties.computeIfAbsent(class1, Reflection::compute);
+		return m.values().stream();
+	}
+
 	public static Property property(Class<?> class1, String name) {
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		var a = m.get(name);
@@ -75,7 +80,7 @@ public class Reflection {
 	}
 
 	private static Map<String, Property> compute(Class<?> class1) {
-		var m1 = new HashMap<String, Member[]>();
+		var mm = new HashMap<String, Member[]>();
 		for (var m : class1.getMethods()) {
 			if (Modifier.isStatic(m.getModifiers()) || m.getDeclaringClass() == Object.class || switch (m.getName()) {
 			case "hashCode", "toString" -> true;
@@ -86,7 +91,7 @@ public class Reflection {
 			var s = m.getReturnType() == Void.TYPE && m.getParameterCount() == 1 ? m : null;
 			if (g != null || s != null) {
 				var k = Property.name(m);
-				var b = m1.computeIfAbsent(k, l -> new Member[2]);
+				var b = mm.computeIfAbsent(k, l -> new Member[2]);
 				if (g != null)
 					b[0] = g;
 				if (s != null)
@@ -96,23 +101,29 @@ public class Reflection {
 		for (var f : class1.getFields()) {
 			if (Modifier.isStatic(f.getModifiers()))
 				continue;
-			m1.computeIfAbsent(Property.name(f), l -> new Member[] { f });
+			mm.computeIfAbsent(Property.name(f), l -> new Member[] { f });
 		}
-		var m2 = m1.entrySet().stream().map(e -> {
-			var mm = e.getValue();
-			var p = mm.length == 1 ? Property.of((Field) mm[0]) : Property.of((Method) mm[0], (Method) mm[1]);
-			return Map.entry(e.getKey(), p);
-		}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-		return m2.keySet().stream().map(n -> {
-			Field f;
-			try {
-				f = class1.getDeclaredField(n);
-			} catch (NoSuchFieldException e) {
-				f = null;
-			}
-			var o = f != null ? f.getAnnotation(Order.class) : null;
-			return new SimpleEntry<>(n, o != null ? o.value() : null);
-		}).sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
-				.collect(Collectors.toMap(e -> e.getKey(), e -> m2.get(e.getKey()), (v, w) -> v, LinkedHashMap::new));
+		return mm.values().stream()
+				.map(x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of((Method) x[0], (Method) x[1]))
+				.map(p -> {
+					Field f;
+					try {
+						f = class1.getDeclaredField(p.getName());
+					} catch (NoSuchFieldException e) {
+						f = null;
+					}
+					var o = f != null ? f.getAnnotation(Order.class) : null;
+					return new SimpleEntry<>(p, o != null ? o.value() : null);
+				}).sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
+				.map(Map.Entry::getKey).flatMap(p -> {
+					Field f;
+					try {
+						f = class1.getDeclaredField(p.getName());
+					} catch (NoSuchFieldException e) {
+						f = null;
+					}
+					return f != null && f.isAnnotationPresent(Flatten.class) ? properties2(f.getType())
+							.filter(q -> !mm.containsKey(q.getName())).map(q -> Property.of(p, q)) : Stream.of(p);
+				}).collect(Collectors.toMap(Property::getName, p -> p, (v, w) -> v, LinkedHashMap::new));
 	}
 }

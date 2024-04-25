@@ -256,8 +256,8 @@ public class RenderEngine {
 			}
 			}
 			stack.push(c);
-			if (k >= 0) {
-				c = entryOf(k, ((Object[]) c.getValue())[k],
+			if (k >= 0 && c.getValue() instanceof Object[] oo) {
+				c = entryOf(k, oo != null && k < oo.length ? oo[k] : null,
 						((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[0]);
 				stack.push(c);
 			}

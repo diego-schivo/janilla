@@ -141,7 +141,6 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 			case "application/json":
 //				System.out.println("body=" + body);
 				try {
-//					return body != null ? Json.parse(body.get(), Json.parseCollector(c)) : null;
 					return body != null ? Json.convert(Json.parse(body.get()), c, typeResolver) : null;
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);

@@ -35,6 +35,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -161,18 +162,18 @@ public class MethodHandlerFactory implements HandlerFactory {
 			.of(() -> argumentsResolver != null ? argumentsResolver : new MethodArgumentsResolver());
 
 	protected void handle(MethodInvocation invocation, HttpExchange exchange) throws IOException {
-		Object[] a;
+		Object[] aa;
 		try {
-			a = argumentsResolver2.get().apply(invocation, exchange);
+			aa = argumentsResolver2.get().apply(invocation, exchange);
 		} catch (UncheckedIOException e) {
 			throw e.getCause();
 		}
 
 		var m = invocation.method();
-//		System.out.println("m=" + m + " invocation.object()=" + invocation.object() + " a=" + Arrays.toString(a));
+//		System.out.println("m=" + m + " invocation.object()=" + invocation.object() + " a=" + Arrays.toString(aa));
 		Object o;
 		try {
-			o = a != null ? m.invoke(invocation.object(), a) : m.invoke(invocation.object());
+			o = aa != null ? m.invoke(invocation.object(), aa) : m.invoke(invocation.object());
 		} catch (InvocationTargetException e) {
 			var f = e.getTargetException();
 			throw f instanceof Exception g ? new HandleException(g) : new RuntimeException(e);
