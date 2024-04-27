@@ -28,11 +28,14 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Map;
 
 public interface Property {
 
 	static Property of(Field field) {
+		var n = name(field);
 		return new Property() {
 
 			@Override
@@ -52,7 +55,7 @@ public interface Property {
 
 			@Override
 			public String getName() {
-				return name(field);
+				return n;
 			}
 
 			@Override
@@ -68,6 +71,7 @@ public interface Property {
 	}
 
 	static Property of(Method getter, Method setter) {
+		var n = getter != null ? name(getter) : name(setter);
 		return new Property() {
 
 			@Override
@@ -87,12 +91,20 @@ public interface Property {
 
 			@Override
 			public String getName() {
-				return getter != null ? name(getter) : name(setter);
+				return n;
 			}
 
 			@Override
 			public Object get(Object object) throws ReflectiveOperationException {
-				return getter.invoke(object);
+				try {
+					return Modifier.isStatic(getter.getModifiers()) ? getter.invoke(null, object)
+							: getter.invoke(object);
+				} catch (IllegalAccessException e) {
+					if (object instanceof Map.Entry<?, ?>)
+						return Map.Entry.class.getMethod(getter.getName()).invoke(object);
+					else
+						throw e;
+				}
 			}
 
 			@Override
@@ -141,7 +153,8 @@ public interface Property {
 		return switch (member) {
 		case Field f -> member.getName();
 		case Method n -> {
-			var g = n.getReturnType() != Void.TYPE && n.getParameterCount() == 0 ? n : null;
+			var g = n.getReturnType() != Void.TYPE
+					&& n.getParameterCount() == (Modifier.isStatic(n.getModifiers()) ? 1 : 0) ? n : null;
 			var s = n.getReturnType() == Void.TYPE && n.getParameterCount() == 1 ? n : null;
 			if (g == null && s == null)
 				yield null;

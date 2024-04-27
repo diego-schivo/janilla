@@ -64,6 +64,12 @@ public interface Util {
 		return string.substring(0, 1).toUpperCase() + string.substring(1);
 	}
 
+	static String uncapitalizeFirstChar(String string) {
+		if (string == null || string.length() == 0)
+			return string;
+		return string.substring(0, 1).toLowerCase() + string.substring(1);
+	}
+
 	static boolean startsWithIgnoreCase(String string, String prefix) {
 		return string == prefix || (prefix != null && prefix.length() <= string.length()
 				&& string.regionMatches(true, 0, prefix, 0, prefix.length()));

@@ -31,10 +31,10 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -52,7 +52,8 @@ public class RenderEngine {
 
 	protected IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator;
 
-	protected Deque<Entry> stack = new LinkedList<>();
+//	protected Deque<Entry> stack = new LinkedList<>();
+	protected Deque<Entry> stack = new ArrayDeque<>();
 
 	public void setToInterpolator(
 			IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator) {
@@ -67,9 +68,9 @@ public class RenderEngine {
 		var s = stack.size();
 		stack.push(input);
 		try {
-			for (var x : stack)
-				if (x.getValue() instanceof Renderer y && y.evaluate(this))
-					break;
+//			for (var x : stack)
+//				if (x.getValue() instanceof Renderer y && y.evaluate(this))
+//					break;
 
 			if (input.getValue() == null)
 				return null;
@@ -187,29 +188,40 @@ public class RenderEngine {
 				k = -1;
 
 			switch (c.getValue()) {
+//			case Object[] x: {
+//				int j;
+//				var v = switch (n) {
+//				case "length" -> 
+//					x.length;
+//				default -> throw new RuntimeException();
+//				};
+//				var t = (Object[]).cl;
+//				c = entryOf(n, v, t);
+//				break;
+//			}
 			case Map<?, ?> m: {
 				var v = m.get(n);
 				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[1];
 				c = entryOf(n, v, t);
 				break;
 			}
-			case Map.Entry<?, ?> e: {
-				int j;
-				var v = switch (n) {
-				case "key" -> {
-					j = 0;
-					yield e.getKey();
-				}
-				case "value" -> {
-					j = 1;
-					yield e.getValue();
-				}
-				default -> throw new RuntimeException();
-				};
-				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[j];
-				c = entryOf(n, v, t);
-				break;
-			}
+//			case Map.Entry<?, ?> e: {
+//				int j;
+//				var v = switch (n) {
+//				case "key" -> {
+//					j = 0;
+//					yield e.getKey();
+//				}
+//				case "value" -> {
+//					j = 1;
+//					yield e.getValue();
+//				}
+//				default -> throw new RuntimeException();
+//				};
+//				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[j];
+//				c = entryOf(n, v, t);
+//				break;
+//			}
 			case EntryList<?, ?> m: {
 				var v = m.get(n);
 				var a = c.type;
@@ -256,6 +268,9 @@ public class RenderEngine {
 			}
 			}
 			stack.push(c);
+			for (var x : stack)
+				if (x.getValue() instanceof Renderer y && y.evaluate(this))
+					break;
 			if (k >= 0 && c.getValue() instanceof Object[] oo) {
 				c = entryOf(k, oo != null && k < oo.length ? oo[k] : null,
 						((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[0]);

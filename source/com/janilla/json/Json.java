@@ -443,9 +443,8 @@ public interface Json {
 			// System.out.println("c=" + c);
 			var d = r.getConstructors()[0];
 			// System.out.println("d=" + d);
-			var tt = r.isRecord()
-					? Arrays.stream(r.getRecordComponents()).collect(
-							Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new))
+			var tt = r.isRecord() ? Arrays.stream(r.getRecordComponents()).collect(
+					Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, y) -> x, LinkedHashMap::new))
 					: null;
 			Object o;
 			try {
