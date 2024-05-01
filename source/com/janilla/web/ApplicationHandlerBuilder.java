@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import com.janilla.http.HttpExchange;
 import com.janilla.io.IO;
 import com.janilla.io.IO.Consumer;
+import com.janilla.reflect.Factory;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.Lazy;
 import com.janilla.util.Util;
@@ -45,6 +46,13 @@ public class ApplicationHandlerBuilder {
 		return c;
 	});
 
+	Supplier<Factory> factory = Lazy.of(() -> {
+		var f = new Factory();
+		f.setTypes(applicationClasses.get());
+		f.setEnclosing(application);
+		return f;
+	});
+
 	Supplier<Collection<Class<?>>> frontendClasses = Lazy.of(() -> {
 		var c = Util.getPackageClasses("com.janilla.frontend").toList();
 //		System.out.println("c=" + c);
@@ -52,7 +60,7 @@ public class ApplicationHandlerBuilder {
 	});
 
 	HandlerFactory[] factories;
-	
+
 	Supplier<HandlerFactory> handlerFactory = Lazy.of(() -> {
 		factories = new HandlerFactory[] { buildMethodHandlerFactory(), buildTemplateHandlerFactory(),
 				buildResourceHandlerFactory(), buildJsonHandlerFactory(), buildExceptionHandlerFactory() };
@@ -60,11 +68,7 @@ public class ApplicationHandlerBuilder {
 		for (var g : factories) {
 			var s = Reflection.property(g.getClass(), "mainFactory");
 			if (s != null)
-				try {
-					s.set(g, f);
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
+				s.set(g, f);
 		}
 		f.setToHandler((o, c) -> {
 			return createHandler(o, c);
@@ -91,7 +95,7 @@ public class ApplicationHandlerBuilder {
 	}
 
 	protected MethodHandlerFactory buildMethodHandlerFactory() {
-		var f = newHandlerFactory(MethodHandlerFactory.class);
+		var f = newInstance(MethodHandlerFactory.class);
 
 		var i = new AnnotationDrivenToMethodInvocation() {
 
@@ -100,12 +104,12 @@ public class ApplicationHandlerBuilder {
 				if (c == application.getClass())
 					return application;
 				var i = super.getInstance(c);
-				try {
-					initialize(i);
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
-				return i;
+//				try {
+//					initialize(i);
+//				} catch (ReflectiveOperationException e) {
+//					throw new RuntimeException(e);
+//				}
+				return Reflection.copy(application, i);
 			}
 		};
 		i.setTypes(() -> Stream.concat(applicationClasses.get().stream(), frontendClasses.get().stream()).iterator());
@@ -115,11 +119,11 @@ public class ApplicationHandlerBuilder {
 	}
 
 	protected TemplateHandlerFactory buildTemplateHandlerFactory() {
-		return newHandlerFactory(TemplateHandlerFactory.class);
+		return newInstance(TemplateHandlerFactory.class);
 	}
 
 	protected ResourceHandlerFactory buildResourceHandlerFactory() {
-		var f = newHandlerFactory(ResourceHandlerFactory.class);
+		var f = newInstance(ResourceHandlerFactory.class);
 		var s = new ToResourceStream.Simple();
 		s.setPaths(() -> Stream.concat(IO.getPackageFiles("com.janilla.frontend"),
 				IO.getPackageFiles(application.getClass().getPackageName())).iterator());
@@ -128,44 +132,54 @@ public class ApplicationHandlerBuilder {
 	}
 
 	protected JsonHandlerFactory buildJsonHandlerFactory() {
-		return newHandlerFactory(JsonHandlerFactory.class);
+		return newInstance(JsonHandlerFactory.class);
 	}
 
 	protected ExceptionHandlerFactory buildExceptionHandlerFactory() {
-		return newHandlerFactory(ExceptionHandlerFactory.class);
+		return newInstance(ExceptionHandlerFactory.class);
 	}
 
-	protected <T extends HandlerFactory> T newHandlerFactory(Class<T> factoryClass) {
-		Class<?> c = factoryClass;
-		for (var d : applicationClasses.get()) {
-			if (d.getSuperclass() == factoryClass) {
-				c = d;
-				break;
-			}
-		}
-		try {
-			@SuppressWarnings("unchecked")
-			var i = (T) c.getConstructor().newInstance();
-			initialize(i);
-			return i;
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
-		}
-	}
+//	protected <T extends HandlerFactory> T newHandlerFactory(Class<T> factoryClass) {
+//		Class<?> c = factoryClass;
+//		for (var d : applicationClasses.get()) {
+//			if (!Modifier.isAbstract(d.getModifiers()) && factoryClass.isAssignableFrom(d)) {
+//				c = d;
+//				break;
+//			}
+//		}
+//		try {
+//			@SuppressWarnings("unchecked")
+//			var t = (T) (c.getEnclosingClass() == application.getClass()
+//					? c.getConstructors()[0].newInstance(application)
+//					: c.getConstructor().newInstance());
+//			initialize(t);
+//			return t;
+//		} catch (ReflectiveOperationException e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
+//
+//	protected void initialize(Object object) throws ReflectiveOperationException {
+//		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
+//			var n = j.next();
+//			var s = Reflection.property(object.getClass(), n);
+//			if (n.equals("application") && s != null) {
+//				s.set(object, application);
+//				continue;
+//			}
+//			var g = s != null ? Reflection.property(application.getClass(), n) : null;
+//			var v = g != null ? g.get(application) : null;
+//			if (v != null)
+//				s.set(object, v);
+//		}
+//	}
 
-	protected void initialize(Object object) throws ReflectiveOperationException {
-		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
-			var n = j.next();
-			var s = Reflection.property(object.getClass(), n);
-			if (n.equals("application") && s != null) {
-				s.set(object, application);
-				continue;
-			}
-			var g = s != null ? Reflection.property(application.getClass(), n) : null;
-			var v = g != null ? g.get(application) : null;
-			if (v != null)
-				s.set(object, v);
-		}
+	protected <T> T newInstance(Class<T> type) {
+		var t = factory.get().newInstance(type);
+		var p = Reflection.property(type, "application");
+		if (p != null)
+			p.set(t, application);
+		return t;
 	}
 
 	protected Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {

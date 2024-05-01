@@ -68,13 +68,8 @@ class ReflectionValueIterator extends ValueIterator {
 //				return g != null && s != null ? Map.entry(p, g) : null;
 				return g != null ? Map.entry(p, g) : null;
 			}).filter(Objects::nonNull).map(e -> {
-				Object v;
-				try {
 //					System.out.println(e.getValue() + " " + object);
-					v = e.getValue().get(object);
-				} catch (ReflectiveOperationException x) {
-					throw new RuntimeException(x);
-				}
+				var v = e.getValue().get(object);
 				Map.Entry<String, Object> f = new SimpleEntry<>(e.getKey(), v);
 				return f;
 			});

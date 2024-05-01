@@ -25,6 +25,7 @@
 package com.janilla.persistence;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,7 +41,7 @@ import com.janilla.database.Store;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.persistence.Persistence.Configuration;
-import com.janilla.reflect.Reflection;
+import com.janilla.reflect.Factory;
 import com.janilla.util.Lazy;
 import com.janilla.util.Util;
 
@@ -55,6 +56,13 @@ public class ApplicationPersistenceBuilder {
 	Supplier<Collection<Class<?>>> applicationClasses = Lazy
 			.of(() -> getPackageNames().flatMap(Util::getPackageClasses).toList());
 
+	Supplier<Factory> factory = Lazy.of(() -> {
+		var f = new Factory();
+		f.setTypes(applicationClasses.get());
+		f.setEnclosing(application);
+		return f;
+	});
+
 	public void setFile(Path file) {
 		this.file = file;
 	}
@@ -67,81 +75,88 @@ public class ApplicationPersistenceBuilder {
 		this.application = application;
 	}
 
-	public Persistence build() throws IOException {
-		TransactionalByteChannel c;
-		{
-			var d = Files.createDirectories(file.getParent());
-			var f1 = d.resolve(file.getFileName());
-			var f2 = d.resolve(file.getFileName() + ".transaction");
-			c = new TransactionalByteChannel(
-					FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
-					FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE));
-		}
-
-		var m = new Memory();
-		{
-			var t = m.getFreeBTree();
-			t.setChannel(c);
-			t.setOrder(order);
-			t.setRoot(BlockReference.read(c, 0));
-			m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, c.size()));
-		}
-
-		var d = new Database();
-		d.setBTreeOrder(order);
-		d.setChannel(c);
-		d.setMemory(m);
-		d.setStoresRoot(BlockReference.HELPER_LENGTH);
-		d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
-
-		var p = newPersistence(Persistence.class);
-		p.database = d;
-		p.configuration = new Configuration();
-		for (var t : applicationClasses.get())
-			p.configure(t);
-
-		d.setInitializeStore((n, s) -> {
-			@SuppressWarnings("unchecked")
-			var u = (Store<String>) s;
-			u.setElementHelper(ElementHelper.STRING);
-		});
-		d.setInitializeIndex((n, i) -> {
-			if (p.initializeIndex(n, i))
-				return;
-		});
-
-		p.createStoresAndIndexes();
-		return p;
-	}
-
-	protected <T extends Persistence> T newPersistence(Class<T> persistenceClass) {
-		Class<?> c = persistenceClass;
-		for (var d : applicationClasses.get()) {
-			if (d.getSuperclass() == persistenceClass) {
-				c = d;
-				break;
-			}
-		}
+	public Persistence build() {
 		try {
-			@SuppressWarnings("unchecked")
-			var i = (T) c.getConstructor().newInstance();
-			initialize(i);
-			return i;
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
+			TransactionalByteChannel c;
+			{
+				var d = Files.createDirectories(file.getParent());
+				var f1 = d.resolve(file.getFileName());
+				var f2 = d.resolve(file.getFileName() + ".transaction");
+				c = new TransactionalByteChannel(
+						FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ,
+								StandardOpenOption.WRITE),
+						FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ,
+								StandardOpenOption.WRITE));
+			}
+
+			var m = new Memory();
+			{
+				var t = m.getFreeBTree();
+				t.setChannel(c);
+				t.setOrder(order);
+				t.setRoot(BlockReference.read(c, 0));
+				m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, c.size()));
+			}
+
+			var d = new Database();
+			d.setBTreeOrder(order);
+			d.setChannel(c);
+			d.setMemory(m);
+			d.setStoresRoot(BlockReference.HELPER_LENGTH);
+			d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
+
+//			var p = newPersistence(Persistence.class);
+			var p = factory.get().newInstance(Persistence.class);
+			p.database = d;
+			p.configuration = new Configuration();
+			for (var t : applicationClasses.get())
+				p.configure(t);
+
+			d.setInitializeStore((n, s) -> {
+				@SuppressWarnings("unchecked")
+				var u = (Store<String>) s;
+				u.setElementHelper(ElementHelper.STRING);
+			});
+			d.setInitializeIndex((n, i) -> {
+				if (p.initializeIndex(n, i))
+					return;
+			});
+
+			p.createStoresAndIndexes();
+			return p;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 
-	protected void initialize(Object object) throws ReflectiveOperationException {
-		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
-			var n = j.next();
-			var s = Reflection.property(object.getClass(), n);
-			var g = s != null ? Reflection.property(application.getClass(), n) : null;
-			var v = g != null ? g.get(application) : null;
-			if (v != null)
-				s.set(object, v);
-		}
-	}
+//	protected <T extends Persistence> T newPersistence(Class<T> persistenceClass) {
+//		Class<?> c = persistenceClass;
+//		for (var d : applicationClasses.get()) {
+//			if (d.getSuperclass() == persistenceClass) {
+//				c = d;
+//				break;
+//			}
+//		}
+//		try {
+//			@SuppressWarnings("unchecked")
+//			var t = (T) c.getConstructor().newInstance();
+//			initialize(t);
+//			return t;
+//		} catch (ReflectiveOperationException e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
+//
+//	protected void initialize(Object object) {
+//		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
+//			var n = j.next();
+//			var s = Reflection.property(object.getClass(), n);
+//			var g = s != null ? Reflection.property(application.getClass(), n) : null;
+//			var v = g != null ? g.get(application) : null;
+//			if (v != null)
+//				s.set(object, v);
+//		}
+//	}
 
 	protected Stream<String> getPackageNames() {
 		return Stream.of(application.getClass().getPackageName());

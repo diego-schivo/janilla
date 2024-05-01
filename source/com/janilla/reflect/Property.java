@@ -26,6 +26,7 @@ package com.janilla.reflect;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -59,13 +60,23 @@ public interface Property {
 			}
 
 			@Override
-			public Object get(Object object) throws ReflectiveOperationException {
-				return object != null ? field.get(object) : null;
+			public Object get(Object object) {
+				if (object == null)
+					return null;
+				try {
+					return field.get(object);
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
 			}
 
 			@Override
-			public void set(Object object, Object value) throws ReflectiveOperationException {
-				field.set(object, value);
+			public void set(Object object, Object value) {
+				try {
+					field.set(object, value);
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
 			}
 		};
 	}
@@ -95,21 +106,31 @@ public interface Property {
 			}
 
 			@Override
-			public Object get(Object object) throws ReflectiveOperationException {
+			public Object get(Object object) {
 				try {
 					return Modifier.isStatic(getter.getModifiers()) ? getter.invoke(null, object)
 							: getter.invoke(object);
 				} catch (IllegalAccessException e) {
 					if (object instanceof Map.Entry<?, ?>)
-						return Map.Entry.class.getMethod(getter.getName()).invoke(object);
+						try {
+							return Map.Entry.class.getMethod(getter.getName()).invoke(object);
+						} catch (ReflectiveOperationException f) {
+							throw new RuntimeException(f);
+						}
 					else
-						throw e;
+						throw new RuntimeException(e);
+				} catch (InvocationTargetException e) {
+					throw new RuntimeException(e);
 				}
 			}
 
 			@Override
-			public void set(Object object, Object value) throws ReflectiveOperationException {
-				setter.invoke(object, value);
+			public void set(Object object, Object value) {
+				try {
+					setter.invoke(object, value);
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
 			}
 		};
 	}
@@ -138,12 +159,12 @@ public interface Property {
 			}
 
 			@Override
-			public Object get(Object object) throws ReflectiveOperationException {
+			public Object get(Object object) {
 				return property2.get(property1.get(object));
 			}
 
 			@Override
-			public void set(Object object, Object value) throws ReflectiveOperationException {
+			public void set(Object object, Object value) {
 				property2.set(property1.get(object), value);
 			}
 		};
@@ -181,7 +202,7 @@ public interface Property {
 
 	String getName();
 
-	Object get(Object object) throws ReflectiveOperationException;
+	Object get(Object object);
 
-	void set(Object object, Object value) throws ReflectiveOperationException;
+	void set(Object object, Object value);
 }

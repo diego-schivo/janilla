@@ -42,7 +42,8 @@ public class TemplatesWeb {
 
 	Object application;
 
-	public static Pattern expression = Pattern.compile("(data-)?\\$\\{([\\w\\[\\].-]*?)}|<!--\\$\\{([\\w\\[\\].-]*?)}-->");
+//	public static Pattern expression = Pattern.compile("(data-)?\\$\\{([\\w\\[\\].-]*?)}|<!--\\$\\{([\\w\\[\\].-]*?)}-->");
+	public static Pattern expression = Pattern.compile("(data-)?\\{([\\w\\[\\].-]*?)}|<\\{([\\w\\[\\].-]*?)}>");
 
 	public static Pattern template = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>", Pattern.DOTALL);
 

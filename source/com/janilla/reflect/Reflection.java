@@ -29,9 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -58,38 +56,43 @@ public class Reflection {
 
 	public static Property property(Class<?> class1, String name) {
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
-		var a = m.get(name);
-		return a;
+		return m.get(name);
 	}
 
-	public static void copy(Object source, Object destination) {
-		copy(source, destination, null);
+	public static <T> T copy(Object source, T destination) {
+		return copy(source, destination, null);
 	}
 
-	public static void copy(Object source, Object destination, Predicate<String> filter) {
-		var c = source.getClass();
-		var d = destination.getClass();
-		for (var i = properties(d).iterator(); i.hasNext();) {
-			var n = i.next();
-			var s = filter == null || filter.test(n) ? property(d, n) : null;
-			var g = s != null ? property(c, n) : null;
-			if (g != null)
-				try {
-					var v = g.get(source);
-					s.set(destination, v);
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
+	public static <T> T copy(Object source, T destination, Predicate<String> filter) {
+		var c1 = source.getClass();
+		var c2 = destination.getClass();
+		if (c2.isRecord()) {
+			var cc = c2.getRecordComponents();
+			var aa = new Object[cc.length];
+			for (var i = 0; i < cc.length; i++) {
+				var n = cc[i].getName();
+				var g = filter == null || filter.test(n) ? property(c1, n) : null;
+				aa[i] = g != null ? g.get(source) : property(c2, n).get(destination);
+			}
+			try {
+				@SuppressWarnings("unchecked")
+				var t = (T) c2.getConstructors()[0].newInstance(aa);
+				return t;
+			} catch (ReflectiveOperationException e) {
+				throw new RuntimeException(e);
+			}
 		}
+		for (var i = properties(c2).iterator(); i.hasNext();) {
+			var n = i.next();
+			var s = filter == null || filter.test(n) ? property(c2, n) : null;
+			var g = s != null ? property(c1, n) : null;
+			if (g != null)
+				s.set(destination, g.get(source));
+		}
+		return destination;
 	}
 
 	private static Map<String, Property> compute(Class<?> class1) {
-//		if (Map.Entry.class.isAssignableFrom(class1)) {
-//			class1 = (Class<?>) Arrays.stream(class1.getGenericInterfaces())
-//					.filter(x -> x instanceof ParameterizedType t && t.getRawType().equals(Map.Entry.class)).findFirst()
-//					.orElseThrow();
-//		}
-		var c = class1;
 		var mm = new HashMap<String, Member[]>();
 		for (var m : class1.getMethods()) {
 			if (Modifier.isStatic(m.getModifiers()) || m.getDeclaringClass() == Object.class || switch (m.getName()) {
@@ -132,7 +135,7 @@ public class Reflection {
 				.map(p -> {
 					Field f;
 					try {
-						f = c.getDeclaredField(p.getName());
+						f = class1.getDeclaredField(p.getName());
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}
@@ -143,7 +146,7 @@ public class Reflection {
 				.map(Map.Entry::getKey).flatMap(p -> {
 					Field f;
 					try {
-						f = c.getDeclaredField(p.getName());
+						f = class1.getDeclaredField(p.getName());
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}

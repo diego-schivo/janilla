@@ -256,11 +256,7 @@ public class RenderEngine {
 					v = null;
 					t = null;
 				} else {
-					try {
-						v = g.get(c.getValue());
-					} catch (ReflectiveOperationException e) {
-						throw new RuntimeException(e);
-					}
+					v = g.get(c.getValue());
 					t = g.getAnnotatedType();
 				}
 				c = entryOf(n, v, t);
