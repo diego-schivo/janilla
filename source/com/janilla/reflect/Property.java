@@ -107,6 +107,8 @@ public interface Property {
 
 			@Override
 			public Object get(Object object) {
+				if (object == null)
+					return null;
 				try {
 					return Modifier.isStatic(getter.getModifiers()) ? getter.invoke(null, object)
 							: getter.invoke(object);

@@ -1,6 +1,6 @@
 <div class="test-bench">
-	<!--${launcher}-->
-	<!--${runner}-->
+	<{launcher}>
+	<{runner}>
 </div>
 
 <template id="TestBench-Launcher">
@@ -13,7 +13,7 @@
 						(select all)
 					</label>
 				</li>
-				<!--${items}-->
+				<{items}>
 			</ul>
 			<button>Run</button>
 		</form>
@@ -21,17 +21,17 @@
 </template>
 
 <template id="TestBench-Launcher-item">
-	<li data-key="${}">
+	<li data-key="{}">
 		<label>
-			<input type="checkbox" name="test" value="${}" />
-			${}
+			<input type="checkbox" name="test" value="{}" />
+			{}
 		</label>
 	</li>
 </template>
 
 <template id="TestBench-Runner">
 	<div class="runner">
-		<!--${iframe}-->
+		<{iframe}>
 	</div>
 </template>
 

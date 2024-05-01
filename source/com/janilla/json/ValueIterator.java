@@ -27,6 +27,7 @@ package com.janilla.json;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -104,9 +105,11 @@ class ValueIterator extends TokenIterator {
 		case Locale x -> new StringIterator(x.toLanguageTag());
 		case LocalDate x -> new StringIterator(x.toString());
 		case Map<?, ?> x -> new ObjectIterator(x.entrySet().stream().map(e -> {
-			var k = e.getKey();
-			var v = e.getValue();
-			return Map.entry(k instanceof Locale l ? l.toLanguageTag() : (String) k, v);
+			@SuppressWarnings("unchecked")
+			var f = e.getKey() instanceof Locale l
+					? new AbstractMap.SimpleEntry<String, Object>(l.toLanguageTag(), e.getValue())
+					: (Map.Entry<String, Object>) e;
+			return f;
 		}).iterator(), context);
 		case Number x -> new NumberIterator(x);
 		case String x -> new StringIterator(x);

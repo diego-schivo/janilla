@@ -109,7 +109,11 @@ public class ApplicationHandlerBuilder {
 //				} catch (ReflectiveOperationException e) {
 //					throw new RuntimeException(e);
 //				}
-				return Reflection.copy(application, i);
+				i = Reflection.copy(application, i);
+				var p = Reflection.property(c, "application");
+				if (p != null)
+					p.set(i, application);
+				return i;
 			}
 		};
 		i.setTypes(() -> Stream.concat(applicationClasses.get().stream(), frontendClasses.get().stream()).iterator());
