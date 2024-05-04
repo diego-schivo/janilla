@@ -93,14 +93,14 @@ public class TemplatesWeb {
 		}
 	}
 
-	@Render(template = """
+	@Render("""
 			export default {
 				${entries}
 			};""")
 	public record Script(Iterable<Template> entries) {
 	}
 
-	@Render(template = """
+	@Render("""
 				'${name}': async r => `
 			${html}
 				`,""")

@@ -33,6 +33,8 @@ import java.lang.annotation.Target;
 @Target({ ElementType.RECORD_COMPONENT, ElementType.TYPE, ElementType.TYPE_USE })
 public @interface Render {
 
+	String value() default "";
+
 	String template() default "";
 
 	String delimiter() default "";

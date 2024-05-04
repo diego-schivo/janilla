@@ -30,9 +30,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import com.janilla.database.Database;
 import com.janilla.database.Memory;
@@ -42,8 +39,6 @@ import com.janilla.io.ElementHelper;
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.persistence.Persistence.Configuration;
 import com.janilla.reflect.Factory;
-import com.janilla.util.Lazy;
-import com.janilla.util.Util;
 
 public class ApplicationPersistenceBuilder {
 
@@ -51,17 +46,19 @@ public class ApplicationPersistenceBuilder {
 
 	protected int order = 100;
 
-	protected Object application;
+//	protected Object application;
+//
+//	Supplier<Collection<Class<?>>> applicationClasses = Lazy
+//			.of(() -> getPackageNames().flatMap(Util::getPackageClasses).toList());
+//
+//	Supplier<Factory> factory = Lazy.of(() -> {
+//		var f = new Factory();
+//		f.setTypes(applicationClasses.get());
+//		f.setEnclosing(application);
+//		return f;
+//	});
 
-	Supplier<Collection<Class<?>>> applicationClasses = Lazy
-			.of(() -> getPackageNames().flatMap(Util::getPackageClasses).toList());
-
-	Supplier<Factory> factory = Lazy.of(() -> {
-		var f = new Factory();
-		f.setTypes(applicationClasses.get());
-		f.setEnclosing(application);
-		return f;
-	});
+	protected Factory factory;
 
 	public void setFile(Path file) {
 		this.file = file;
@@ -71,8 +68,12 @@ public class ApplicationPersistenceBuilder {
 		this.order = order;
 	}
 
-	public void setApplication(Object application) {
-		this.application = application;
+//	public void setApplication(Object application) {
+//		this.application = application;
+//	}
+
+	public void setFactory(Factory factory) {
+		this.factory = factory;
 	}
 
 	public Persistence build() {
@@ -105,11 +106,10 @@ public class ApplicationPersistenceBuilder {
 			d.setStoresRoot(BlockReference.HELPER_LENGTH);
 			d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
 
-//			var p = newPersistence(Persistence.class);
-			var p = factory.get().newInstance(Persistence.class);
+			var p = factory.newInstance(Persistence.class);
 			p.database = d;
 			p.configuration = new Configuration();
-			for (var t : applicationClasses.get())
+			for (var t : factory.getTypes())
 				p.configure(t);
 
 			d.setInitializeStore((n, s) -> {
@@ -123,42 +123,23 @@ public class ApplicationPersistenceBuilder {
 			});
 
 			p.createStoresAndIndexes();
+
+			p.setTypeResolver(x -> {
+				try {
+					return Class
+							.forName(factory.getEnclosing().getClass().getPackageName() + "." + x.replace('.', '$'));
+				} catch (ClassNotFoundException f) {
+					throw new RuntimeException(f);
+				}
+			});
+
 			return p;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
 	}
 
-//	protected <T extends Persistence> T newPersistence(Class<T> persistenceClass) {
-//		Class<?> c = persistenceClass;
-//		for (var d : applicationClasses.get()) {
-//			if (d.getSuperclass() == persistenceClass) {
-//				c = d;
-//				break;
-//			}
-//		}
-//		try {
-//			@SuppressWarnings("unchecked")
-//			var t = (T) c.getConstructor().newInstance();
-//			initialize(t);
-//			return t;
-//		} catch (ReflectiveOperationException e) {
-//			throw new RuntimeException(e);
-//		}
+//	protected Stream<String> getPackageNames() {
+//		return Stream.of(application.getClass().getPackageName());
 //	}
-//
-//	protected void initialize(Object object) {
-//		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
-//			var n = j.next();
-//			var s = Reflection.property(object.getClass(), n);
-//			var g = s != null ? Reflection.property(application.getClass(), n) : null;
-//			var v = g != null ? g.get(application) : null;
-//			if (v != null)
-//				s.set(object, v);
-//		}
-//	}
-
-	protected Stream<String> getPackageNames() {
-		return Stream.of(application.getClass().getPackageName());
-	}
 }

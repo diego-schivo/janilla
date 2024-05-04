@@ -28,12 +28,20 @@ import java.lang.reflect.Modifier;
 
 public class Factory {
 
-	protected Iterable<Class<?>> types;
+	private Iterable<Class<?>> types;
 
-	protected Object enclosing;
+	private Object enclosing;
+
+	public Iterable<Class<?>> getTypes() {
+		return types;
+	}
 
 	public void setTypes(Iterable<Class<?>> types) {
 		this.types = types;
+	}
+
+	public Object getEnclosing() {
+		return enclosing;
 	}
 
 	public void setEnclosing(Object enclosing) {

@@ -56,7 +56,7 @@ import com.janilla.web.HandleException;
 import com.janilla.web.NotFoundException;
 import com.janilla.web.UnauthenticatedException;
 
-public class HttpServer implements IO.Runnable {
+public class HttpServer implements Runnable {
 
 	public static void main(String[] args) throws IOException {
 		var k = Path.of(System.getProperty("user.home")).resolve("Downloads/jssesamples/samples/sslengine/testkeys");
@@ -80,13 +80,7 @@ public class HttpServer implements IO.Runnable {
 				break;
 			}
 		});
-		new Thread(() -> {
-			try {
-				s.run();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		}, "Server").start();
+		new Thread(s::run, "Server").start();
 
 		synchronized (s) {
 			while (s.getAddress() == null) {
@@ -233,8 +227,8 @@ public class HttpServer implements IO.Runnable {
 	}
 
 	@Override
-	public void run() throws IOException {
-		{
+	public void run() {
+		try {
 			var c = ServerSocketChannel.open();
 			c.configureBlocking(true);
 			c.socket().bind(new InetSocketAddress(port));
@@ -243,6 +237,8 @@ public class HttpServer implements IO.Runnable {
 			c.configureBlocking(false);
 			selector = SelectorProvider.provider().openSelector();
 			c.register(selector, SelectionKey.OP_ACCEPT);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 
 		var r = new HashMap<HttpConnection, Long>();
@@ -336,6 +332,8 @@ public class HttpServer implements IO.Runnable {
 						handle(handler, c, r);
 				}
 			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		} finally {
 			if (executor instanceof ExecutorService s)
 				s.shutdownNow();

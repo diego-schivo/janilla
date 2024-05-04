@@ -68,23 +68,22 @@ public class RenderEngine {
 		var s = stack.size();
 		stack.push(input);
 		try {
-//			for (var x : stack)
-//				if (x.getValue() instanceof Renderer y && y.evaluate(this))
-//					break;
-
 			if (input.getValue() == null)
 				return null;
 
 			var r = !input.ignore ? input.getValue().getClass().getAnnotation(Render.class) : null;
-			var t = r != null ? r.template() : null;
+			var t = r != null ? (!r.template().isEmpty() ? r.template() : r.value()) : null;
 
 			r = !input.ignore && input.type instanceof AnnotatedType x ? x.getAnnotation(Render.class) : null;
 			if (input.ignore)
 				;
 			else if (input.template != null && !input.template.isEmpty())
 				t = input.template;
-			else if (r != null && !r.template().isEmpty())
-				t = r.template();
+			else if (r != null) {
+				var u = !r.template().isEmpty() ? r.template() : r.value();
+				if (!u.isEmpty())
+					t = u;
+			}
 
 			if ((t == null || t.isEmpty()) && input.getValue() instanceof Object[] oo) {
 				var z = switch (input.type) {

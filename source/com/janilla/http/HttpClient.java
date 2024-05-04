@@ -57,13 +57,7 @@ public class HttpClient implements Closeable {
 				break;
 			}
 		});
-		new Thread(() -> {
-			try {
-				s.run();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		}, "Server").start();
+		new Thread(s::run, "Server").start();
 
 		synchronized (s) {
 			while (s.getAddress() == null) {
@@ -136,23 +130,24 @@ public class HttpClient implements Closeable {
 		this.sslContext = sslContext;
 	}
 
-	public void query(IO.Consumer<HttpExchange> handler) throws IOException {
-		if (connection == null) {
-			var c = SocketChannel.open();
-			c.configureBlocking(true);
-			c.connect(address);
-			var e = sslContext != null ? sslContext.createSSLEngine("client", address.getPort()) : null;
-			if (e != null)
-				e.setUseClientMode(true);
-			connection = new HttpConnection(c, e);
-		}
+	public void query(IO.Consumer<HttpExchange> handler) {
+		if (connection == null)
+			try {
+				var c = SocketChannel.open();
+				c.configureBlocking(true);
+				c.connect(address);
+				var e = sslContext != null ? sslContext.createSSLEngine("client", address.getPort()) : null;
+				if (e != null)
+					e.setUseClientMode(true);
+				connection = new HttpConnection(c, e);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 
 		try (var r = connection.getOutput().writeRequest(); var s = connection.getInput().readResponse()) {
-			try {
-				handler.accept(newExchange(r, s));
-			} catch (UncheckedIOException e) {
-				throw e.getCause();
-			}
+			handler.accept(newExchange(r, s));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 

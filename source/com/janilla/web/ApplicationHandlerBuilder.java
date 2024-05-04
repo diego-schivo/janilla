@@ -104,11 +104,6 @@ public class ApplicationHandlerBuilder {
 				if (c == application.getClass())
 					return application;
 				var i = super.getInstance(c);
-//				try {
-//					initialize(i);
-//				} catch (ReflectiveOperationException e) {
-//					throw new RuntimeException(e);
-//				}
 				i = Reflection.copy(application, i);
 				var p = Reflection.property(c, "application");
 				if (p != null)
@@ -142,41 +137,6 @@ public class ApplicationHandlerBuilder {
 	protected ExceptionHandlerFactory buildExceptionHandlerFactory() {
 		return newInstance(ExceptionHandlerFactory.class);
 	}
-
-//	protected <T extends HandlerFactory> T newHandlerFactory(Class<T> factoryClass) {
-//		Class<?> c = factoryClass;
-//		for (var d : applicationClasses.get()) {
-//			if (!Modifier.isAbstract(d.getModifiers()) && factoryClass.isAssignableFrom(d)) {
-//				c = d;
-//				break;
-//			}
-//		}
-//		try {
-//			@SuppressWarnings("unchecked")
-//			var t = (T) (c.getEnclosingClass() == application.getClass()
-//					? c.getConstructors()[0].newInstance(application)
-//					: c.getConstructor().newInstance());
-//			initialize(t);
-//			return t;
-//		} catch (ReflectiveOperationException e) {
-//			throw new RuntimeException(e);
-//		}
-//	}
-//
-//	protected void initialize(Object object) throws ReflectiveOperationException {
-//		for (var j = Reflection.properties(object.getClass()).iterator(); j.hasNext();) {
-//			var n = j.next();
-//			var s = Reflection.property(object.getClass(), n);
-//			if (n.equals("application") && s != null) {
-//				s.set(object, application);
-//				continue;
-//			}
-//			var g = s != null ? Reflection.property(application.getClass(), n) : null;
-//			var v = g != null ? g.get(application) : null;
-//			if (v != null)
-//				s.set(object, v);
-//		}
-//	}
 
 	protected <T> T newInstance(Class<T> type) {
 		var t = factory.get().newInstance(type);
