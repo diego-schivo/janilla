@@ -46,18 +46,6 @@ public class ApplicationPersistenceBuilder {
 
 	protected int order = 100;
 
-//	protected Object application;
-//
-//	Supplier<Collection<Class<?>>> applicationClasses = Lazy
-//			.of(() -> getPackageNames().flatMap(Util::getPackageClasses).toList());
-//
-//	Supplier<Factory> factory = Lazy.of(() -> {
-//		var f = new Factory();
-//		f.setTypes(applicationClasses.get());
-//		f.setEnclosing(application);
-//		return f;
-//	});
-
 	protected Factory factory;
 
 	public void setFile(Path file) {
@@ -67,10 +55,6 @@ public class ApplicationPersistenceBuilder {
 	public void setOrder(int order) {
 		this.order = order;
 	}
-
-//	public void setApplication(Object application) {
-//		this.application = application;
-//	}
 
 	public void setFactory(Factory factory) {
 		this.factory = factory;
@@ -127,7 +111,8 @@ public class ApplicationPersistenceBuilder {
 			p.setTypeResolver(x -> {
 				try {
 					return Class
-							.forName(factory.getEnclosing().getClass().getPackageName() + "." + x.replace('.', '$'));
+//							.forName(factory.getEnclosing().getClass().getPackageName() + "." + x.replace('.', '$'));
+							.forName(getClass().getPackageName() + "." + x.replace('.', '$'));
 				} catch (ClassNotFoundException f) {
 					throw new RuntimeException(f);
 				}
@@ -138,8 +123,4 @@ public class ApplicationPersistenceBuilder {
 			throw new UncheckedIOException(e);
 		}
 	}
-
-//	protected Stream<String> getPackageNames() {
-//		return Stream.of(application.getClass().getPackageName());
-//	}
 }

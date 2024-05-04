@@ -27,6 +27,7 @@ package com.janilla.web;
 import java.util.Collection;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.io.IO;
@@ -38,26 +39,13 @@ import com.janilla.util.Util;
 
 public class ApplicationHandlerBuilder {
 
-	protected Object application;
-
-	Supplier<Collection<Class<?>>> applicationClasses = Lazy.of(() -> {
-		var c = Util.getPackageClasses(application.getClass().getPackageName()).toList();
-//		System.out.println("c=" + c);
-		return c;
-	});
-
-	Supplier<Factory> factory = Lazy.of(() -> {
-		var f = new Factory();
-		f.setTypes(applicationClasses.get());
-		f.setEnclosing(application);
-		return f;
-	});
-
 	Supplier<Collection<Class<?>>> frontendClasses = Lazy.of(() -> {
 		var c = Util.getPackageClasses("com.janilla.frontend").toList();
 //		System.out.println("c=" + c);
 		return c;
 	});
+
+	protected Factory factory;
 
 	HandlerFactory[] factories;
 
@@ -76,8 +64,8 @@ public class ApplicationHandlerBuilder {
 		return f;
 	});
 
-	public void setApplication(Object application) {
-		this.application = application;
+	public void setFactory(Factory factory) {
+		this.factory = factory;
 	}
 
 	public HandlerFactory getHandlerFactory() {
@@ -101,17 +89,15 @@ public class ApplicationHandlerBuilder {
 
 			@Override
 			protected Object getInstance(Class<?> c) {
-				if (c == application.getClass())
-					return application;
-				var i = super.getInstance(c);
-				i = Reflection.copy(application, i);
-				var p = Reflection.property(c, "application");
-				if (p != null)
-					p.set(i, application);
-				return i;
+				var a = factory.getEnclosing();
+				if (c == a.getClass())
+					return a;
+				return newInstance(c);
 			}
 		};
-		i.setTypes(() -> Stream.concat(applicationClasses.get().stream(), frontendClasses.get().stream()).iterator());
+		i.setTypes(() -> Stream
+				.concat(StreamSupport.stream(factory.getTypes().spliterator(), false), frontendClasses.get().stream())
+				.iterator());
 		f.setToInvocation(i);
 
 		return f;
@@ -125,7 +111,7 @@ public class ApplicationHandlerBuilder {
 		var f = newInstance(ResourceHandlerFactory.class);
 		var s = new ToResourceStream.Simple();
 		s.setPaths(() -> Stream.concat(IO.getPackageFiles("com.janilla.frontend"),
-				IO.getPackageFiles(application.getClass().getPackageName())).iterator());
+				IO.getPackageFiles(factory.getEnclosing().getClass().getPackageName())).iterator());
 		f.setToInputStream(s);
 		return f;
 	}
@@ -139,10 +125,10 @@ public class ApplicationHandlerBuilder {
 	}
 
 	protected <T> T newInstance(Class<T> type) {
-		var t = factory.get().newInstance(type);
+		var t = factory.newInstance(type);
 		var p = Reflection.property(type, "application");
 		if (p != null)
-			p.set(t, application);
+			p.set(t, factory.getEnclosing());
 		return t;
 	}
 
