@@ -116,7 +116,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 		var a = new Object[t.length];
 		for (var j = 0; j < a.length; j++) {
 			var h = g != null && j < g.size() ? g.get(j) : null;
-			var k = h == null && n[j] != null ? n[j].name() : null;
+			var k = h == null && n[j] != null ? (!n[j].name().isEmpty() ? n[j].name() : n[j].value()) : null;
 			var w = k != null ? q : null;
 			a[j] = resolveArgument(t[j], c, () -> h != null ? new String[] { h }
 					: w != null

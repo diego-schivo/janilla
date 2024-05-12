@@ -29,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.nio.channels.WritableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.janilla.frontend.Interpolator;
 import com.janilla.frontend.RenderEngine;
@@ -37,12 +38,13 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
 import com.janilla.io.IO.Consumer;
+import com.janilla.util.Lazy;
 
 public class TemplateHandlerFactory implements HandlerFactory {
 
 	protected Object application;
 
-	IO.Supplier<Map<String, String>> templateMap = IO.Lazy.of(() -> {
+	Supplier<Map<String, String>> templateMap = Lazy.of(() -> {
 		var c = application.getClass();
 		var m = new HashMap<String, String>();
 		IO.acceptPackageFiles(c.getPackageName(), f -> {

@@ -236,107 +236,6 @@ public interface Json {
 		});
 	}
 
-//	static <T> Collector<JsonToken<?>, ?, T> parseCollector(Class<T> class1) {
-//		return Collector.of(() -> (Deque<Object>) /* new ArrayDeque<>() */ new LinkedList<>(), new BiConsumer<>() {
-//
-//			Deque<Class<?>> b = new ArrayDeque<>();
-//
-//			JsonToken<?> p;
-//
-//			{
-//				b.push(class1);
-//			}
-//
-//			@Override
-//			public void accept(Deque<Object> a, JsonToken<?> t) {
-//				switch (t.type()) {
-//				case OBJECT:
-//					switch ((Boundary) t.data()) {
-//					case START:
-//						a.push(new HashMap<String, Object>());
-//						break;
-//					case END:
-//						@SuppressWarnings("unchecked")
-//						var m = ((Map<String, Object>) a.pop());
-//						var c = b.peek();
-//						var o = convert2(m, c);
-//						a.push(o);
-//						break;
-//					}
-//					break;
-//				case ARRAY:
-//					switch ((Boundary) t.data()) {
-//					case START:
-//						a.push(new ArrayList<Object>());
-//						break;
-//					default:
-//						break;
-//					}
-//					break;
-//				case MEMBER:
-//					switch ((Boundary) t.data()) {
-//					case END:
-//						b.pop();
-//						var v = a.pop();
-//						var k = (String) a.pop();
-//						@SuppressWarnings("unchecked")
-//						var m = (Map<String, Object>) a.peek();
-//						m.put(k, v);
-//						break;
-//					default:
-//						break;
-//					}
-//					break;
-//				case ELEMENT:
-//					switch ((Boundary) t.data()) {
-//					case END:
-//						var e = a.pop();
-//						@SuppressWarnings("unchecked")
-//						List<Object> l = (List<Object>) a.peek();
-//
-//						if (b.peek() == Long.class && e instanceof Integer i)
-//							e = (long) i;
-//
-//						l.add(e);
-//						break;
-//					default:
-//						break;
-//					}
-//					break;
-//				case STRING, NUMBER, BOOLEAN, NULL:
-//					a.push(t.data());
-//					if (Objects.equals(p, JsonToken.MEMBER_START)) {
-//						var m = Reflection.property(b.peek(), (String) t.data());
-//						Class<?> z = null;
-//						if (m.getReturnType().isArray())
-//							z = m.getReturnType().componentType();
-//						else if (m.getGenericReturnType() instanceof ParameterizedType v) {
-//							var x = v.getActualTypeArguments()[0];
-//							z = switch (x) {
-//							case Class<?> y -> y;
-//							case ParameterizedType y -> (Class<?>) y.getRawType();
-//							default -> throw new RuntimeException();
-//							};
-//						}
-//						if (z == null)
-//							z = m.getReturnType();
-//						b.push(z);
-//					}
-//					break;
-//				default:
-//					break;
-//				}
-//				p = t;
-//			}
-//		}, (a, b) -> a, a -> {
-//			if (a.size() != 1)
-//				throw new RuntimeException();
-//			@SuppressWarnings("unchecked")
-//			var t = (T) a.pop();
-//			return t;
-//		});
-//	}
-
 	static Object convert(Object input, Type target, Function<String, Class<?>> typeResolver) {
 		var r = getRawType(target);
 
@@ -404,14 +303,15 @@ public interface Json {
 			default -> throw new RuntimeException();
 			};
 			var t = r.isArray() ? r.componentType()
-					: getRawType(((ParameterizedType) target).getActualTypeArguments()[0]);
+//					: getRawType(((ParameterizedType) target).getActualTypeArguments()[0]);
+					: ((ParameterizedType) target).getActualTypeArguments()[0];
 			s = s.map(y -> convert(y, t, typeResolver));
 
 			if (r.isArray()) {
 				if (r.componentType() == Integer.TYPE)
 					return s.mapToInt(x -> (Integer) x).toArray();
 				else
-					return s.toArray(l -> (Object[]) Array.newInstance(t, l));
+					return s.toArray(l -> (Object[]) Array.newInstance(getRawType(t), l));
 			}
 			if (r == List.class)
 				return s.toList();
@@ -437,8 +337,12 @@ public interface Json {
 					return new SimpleEntry<>(k, v);
 				}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 			}
-			if (r == Map.Entry.class)
-				return new SimpleEntry<>(m.get("key"), m.get("value"));
+			if (r == Map.Entry.class) {
+				var aa = ((ParameterizedType) target).getActualTypeArguments();
+				var k = convert(m.get("key"), aa[0], typeResolver);
+				var v = convert(m.get("value"), aa[1], typeResolver);
+				return new SimpleEntry<>(k, v);
+			}
 
 			// System.out.println("c=" + c);
 			var d = r.getConstructors()[0];

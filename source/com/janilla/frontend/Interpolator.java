@@ -24,7 +24,6 @@
  */
 package com.janilla.frontend;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.regex.MatchResult;
@@ -33,10 +32,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.html.Html;
-import com.janilla.io.IO;
 import com.janilla.javascript.JavaScript;
 
-public record Interpolator(Token[] tokens) implements IO.Function<IO.Function<Object, Object>, String> {
+public record Interpolator(Token[] tokens) implements Function<Function<Object, Object>, String> {
 
 	public static Interpolator of(String template, Language language) {
 		var i = 0;
@@ -62,7 +60,7 @@ public record Interpolator(Token[] tokens) implements IO.Function<IO.Function<Ob
 	}
 
 	@Override
-	public String apply(IO.Function<Object, Object> evaluator) throws IOException {
+	public String apply(Function<Object, Object> evaluator) {
 		var b = Stream.<String>builder();
 		for (var t : tokens) {
 			var s = t.apply(evaluator);
@@ -72,7 +70,7 @@ public record Interpolator(Token[] tokens) implements IO.Function<IO.Function<Ob
 		return b.build().collect(Collectors.joining(""));
 	}
 
-	public interface Token extends IO.Function<IO.Function<Object, Object>, String> {
+	public interface Token extends Function<Function<Object, Object>, String> {
 	}
 
 	public enum Language {

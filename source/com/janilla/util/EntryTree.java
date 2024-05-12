@@ -36,9 +36,11 @@ import java.util.function.Function;
 import com.janilla.json.Json;
 import com.janilla.reflect.Reflection;
 
-public class EntryTree {
+public class EntryTree extends LinkedHashMap<String, Object> {
 
-	Map<String, Object> tree = new LinkedHashMap<String, Object>();
+	private static final long serialVersionUID = 2351446498774467936L;
+
+//	Map<String, Object> tree = new LinkedHashMap<String, Object>();
 
 	Function<String, Class<?>> typeResolver;
 
@@ -47,7 +49,8 @@ public class EntryTree {
 	}
 
 	public void add(Map.Entry<String, String> t) {
-		Map<String, Object> n = tree;
+//		Map<String, Object> n = tree;
+		Map<String, Object> n = this;
 		var k = t.getKey().split("\\.");
 		for (var i = 0; i < k.length; i++) {
 			if (k[i].endsWith("]")) {
@@ -77,7 +80,7 @@ public class EntryTree {
 	}
 
 	public <T> T convert(Class<T> target) {
-		return convert(tree, target);
+		return convert(this, target);
 	}
 
 	protected <T> T convert(Map<String, Object> tree, Class<T> target) {

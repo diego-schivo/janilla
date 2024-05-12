@@ -24,7 +24,6 @@
  */
 package com.janilla.frontend;
 
-import java.io.IOException;
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
@@ -43,20 +42,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import com.janilla.io.IO;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;
 import com.janilla.web.Render;
 
 public class RenderEngine {
 
-	protected IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator;
+	protected Function<String, Function<Function<Object, Object>, String>> toInterpolator;
 
-//	protected Deque<Entry> stack = new LinkedList<>();
 	protected Deque<Entry> stack = new ArrayDeque<>();
 
-	public void setToInterpolator(
-			IO.Function<String, IO.Function<IO.Function<Object, Object>, String>> toInterpolator) {
+	public void setToInterpolator(Function<String, Function<Function<Object, Object>, String>> toInterpolator) {
 		this.toInterpolator = toInterpolator;
 	}
 
@@ -64,79 +60,9 @@ public class RenderEngine {
 		return stack;
 	}
 
-	public Object render(Entry input) throws IOException {
-		var s = stack.size();
+	public Object render(Entry input) {
 		stack.push(input);
-		try {
-			if (input.getValue() == null)
-				return null;
-
-			var r = !input.ignore ? input.getValue().getClass().getAnnotation(Render.class) : null;
-			var t = r != null ? (!r.template().isEmpty() ? r.template() : r.value()) : null;
-
-			r = !input.ignore && input.type instanceof AnnotatedType x ? x.getAnnotation(Render.class) : null;
-			if (input.ignore)
-				;
-			else if (input.template != null && !input.template.isEmpty())
-				t = input.template;
-			else if (r != null) {
-				var u = !r.template().isEmpty() ? r.template() : r.value();
-				if (!u.isEmpty())
-					t = u;
-			}
-
-			if ((t == null || t.isEmpty()) && input.getValue() instanceof Object[] oo) {
-				var z = switch (input.type) {
-				case AnnotatedArrayType x -> x.getAnnotatedGenericComponentType();
-				default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) input.type,
-						Iterable.class, Stream.class)).getAnnotatedActualTypeArguments()[0];
-				};
-				r = z.getAnnotation(Render.class);
-				var d = r != null ? r.delimiter() : null;
-				var b = new ArrayList<String>();
-				for (var i = 0; i < oo.length; i++) {
-					var e = oo[i];
-					var x = render(entryOf(i, e, z));
-					var y = x != null ? x.toString() : null;
-					if (y == null || y.isEmpty())
-						continue;
-					if (!b.isEmpty() && d != null && !d.isEmpty())
-						b.add(d);
-					b.add(y);
-				}
-				return b.stream().collect(Collectors.joining());
-			}
-
-			var i = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
-			if (i != null)
-				return i.apply(x -> {
-					var e = (String) x;
-					Entry c = null;
-					try {
-						evaluate(e);
-						c = stack.pop();
-						if (e.isEmpty()) {
-							c.ignore = true;
-						}
-						return render(c);
-					} finally {
-						if (e.isEmpty()) {
-							if (c != null) {
-								c.ignore = false;
-								stack.push(c);
-							}
-						} else
-							while (stack.size() > s + 1)
-								stack.pop();
-					}
-				});
-
-			var v = input.getValue();
-			return v instanceof Locale x ? x.toLanguageTag() : v;
-		} finally {
-			while (stack.size() > s)
-				stack.pop();
-		}
+		return render();
 	}
 
 	public <T> boolean match(Class<T> type, BiConsumer<T, Entry> consumer) {
@@ -148,10 +74,13 @@ public class RenderEngine {
 		for (var i = cc.length - 1; i >= 0; i--) {
 			var c = cc[i];
 			var e = ee.next();
+//			System.out.println("e=" + e);
 			if (e.getKey() instanceof Integer j && c.getType() == Integer.TYPE)
 				aa[i] = j;
-			else if (e.getValue() == null || c.getName().equals(e.getKey())
-					|| (c.getType() != Object.class && c.getType().isAssignableFrom(e.getValue().getClass())))
+//			else if (e.getValue() == null || c.getName().equals(e.getKey())
+//					|| (c.getType() != Object.class && c.getType().isAssignableFrom(e.getValue().getClass())))
+			else if (c.getName().equals(e.getKey()) || (c.getType() != Object.class && e.getValue() != null
+					&& c.getType().isAssignableFrom(e.getValue().getClass())))
 				aa[i] = e.getValue();
 			else
 				return false;
@@ -168,7 +97,86 @@ public class RenderEngine {
 		}
 	}
 
-	protected void evaluate(String expression) throws IOException {
+	protected Object render() {
+		var i = stack.peek();
+		var s = stack.size();
+		try {
+			if (i.getValue() == null)
+				return null;
+
+			var r = !i.ignore ? i.getValue().getClass().getAnnotation(Render.class) : null;
+			var t = r != null ? (!r.template().isEmpty() ? r.template() : r.value()) : null;
+
+			r = !i.ignore && i.type instanceof AnnotatedType x ? x.getAnnotation(Render.class) : null;
+			if (i.ignore)
+				;
+			else if (i.template != null && !i.template.isEmpty())
+				t = i.template;
+			else if (r != null) {
+				var u = !r.template().isEmpty() ? r.template() : r.value();
+				if (!u.isEmpty())
+					t = u;
+			}
+
+			if ((t == null || t.isEmpty()) && i.getValue() instanceof Object[] oo) {
+				var z = switch (i.type) {
+				case AnnotatedArrayType x -> x.getAnnotatedGenericComponentType();
+				default -> ((AnnotatedParameterizedType) getAnnotatedInterface((AnnotatedType) i.type, Iterable.class,
+						Stream.class)).getAnnotatedActualTypeArguments()[0];
+				};
+				r = z.getAnnotation(Render.class);
+				var d = r != null ? r.delimiter() : null;
+				var b = new ArrayList<String>();
+				for (var j = 0; j < oo.length; j++) {
+					var e = oo[j];
+					stack.push(entryOf(j, e, z));
+					for (var x : stack)
+						if (x.getValue() instanceof Renderer y && y.evaluate(this))
+							break;
+					var x = render();
+					var y = x != null ? x.toString() : null;
+					if (y == null || y.isEmpty())
+						continue;
+					if (!b.isEmpty() && d != null && !d.isEmpty())
+						b.add(d);
+					b.add(y);
+				}
+				return b.stream().collect(Collectors.joining());
+			}
+
+			var j = t != null && !t.isEmpty() ? toInterpolator.apply(t) : null;
+			if (j != null)
+				return j.apply(x -> {
+					var e = (String) x;
+					Entry c = null;
+					try {
+						evaluate(e);
+						c = stack.peek();
+						if (e.isEmpty()) {
+							c.ignore = true;
+						}
+						return render();
+					} finally {
+						if (e.isEmpty()) {
+							if (c != null) {
+								c.ignore = false;
+								stack.push(c);
+							}
+						} else
+							while (stack.size() > s)
+								stack.pop();
+					}
+				});
+
+			var v = i.getValue();
+			return v instanceof Locale x ? x.toLanguageTag() : v;
+		} finally {
+			while (stack.size() >= s)
+				stack.pop();
+		}
+	}
+
+	protected void evaluate(String expression) {
 		if (expression.isEmpty())
 			return;
 		var c = stack.peek();
@@ -187,40 +195,12 @@ public class RenderEngine {
 				k = -1;
 
 			switch (c.getValue()) {
-//			case Object[] x: {
-//				int j;
-//				var v = switch (n) {
-//				case "length" -> 
-//					x.length;
-//				default -> throw new RuntimeException();
-//				};
-//				var t = (Object[]).cl;
-//				c = entryOf(n, v, t);
-//				break;
-//			}
 			case Map<?, ?> m: {
 				var v = m.get(n);
 				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[1];
 				c = entryOf(n, v, t);
 				break;
 			}
-//			case Map.Entry<?, ?> e: {
-//				int j;
-//				var v = switch (n) {
-//				case "key" -> {
-//					j = 0;
-//					yield e.getKey();
-//				}
-//				case "value" -> {
-//					j = 1;
-//					yield e.getValue();
-//				}
-//				default -> throw new RuntimeException();
-//				};
-//				var t = ((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[j];
-//				c = entryOf(n, v, t);
-//				break;
-//			}
 			case EntryList<?, ?> m: {
 				var v = m.get(n);
 				var a = c.type;
@@ -263,16 +243,18 @@ public class RenderEngine {
 			}
 			}
 			stack.push(c);
+
 			for (var x : stack)
 				if (x.getValue() instanceof Renderer y && y.evaluate(this))
 					break;
+
 			if (k >= 0 && c.getValue() instanceof Object[] oo) {
 				c = entryOf(k, oo != null && k < oo.length ? oo[k] : null,
 						((AnnotatedParameterizedType) c.type).getAnnotatedActualTypeArguments()[0]);
 				stack.push(c);
 			}
 			if (c.getValue() == null)
-				return;
+				break;
 		}
 	}
 
