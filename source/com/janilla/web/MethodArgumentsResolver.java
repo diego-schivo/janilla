@@ -39,18 +39,19 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.io.IO;
+import com.janilla.json.Converter;
 import com.janilla.json.Json;
 import com.janilla.net.Net;
-import com.janilla.reflect.Parameter;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;
 import com.janilla.util.EntryTree;
+import com.janilla.util.Lazy;
 
 public class MethodArgumentsResolver implements BiFunction<MethodInvocation, HttpExchange, Object[]> {
 
@@ -63,22 +64,21 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 	@Override
 	public Object[] apply(MethodInvocation i, HttpExchange c) {
 		var q = Net.parseQueryString(c.getRequest().getURI().getQuery());
-		IO.Supplier<String> b = switch (c.getRequest().getMethod().name()) {
+		Supplier<String> b = switch (c.getRequest().getMethod().name()) {
 		case "POST", "PUT" -> {
-			var s = IO.Lazy.of(() -> {
+			var s = Lazy.of(() -> {
 				var d = (ReadableByteChannel) c.getRequest().getBody();
-				return new String(Channels.newInputStream(d).readAllBytes());
+				try {
+					return new String(Channels.newInputStream(d).readAllBytes());
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			});
 			var t = c.getRequest().getHeaders().get("Content-Type");
 			if (t != null)
 				switch (t.split(";")[0]) {
 				case "application/x-www-form-urlencoded":
-					EntryList<String, String> v;
-					try {
-						v = Net.parseQueryString(s.get());
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
+					var v = Net.parseQueryString(s.get());
 					if (v == null)
 						;
 					else if (q == null)
@@ -87,12 +87,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 						q.addAll(v);
 					break;
 				case "application/json":
-					Object o;
-					try {
-						o = Json.parse(s.get());
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
+					var o = Json.parse(s.get());
 					if (o instanceof Map<?, ?> m && !m.isEmpty()) {
 						if (q == null)
 							q = new EntryList<>();
@@ -111,24 +106,32 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 		var t = m.getParameterTypes();
 		var u = m.getParameterAnnotations();
 		var n = Arrays.stream(u)
-				.map(a -> Arrays.stream(a).filter(e -> e.annotationType() == Parameter.class).findFirst().orElse(null))
-				.toArray(Parameter[]::new);
+				.map(a -> Arrays.stream(a).filter(e -> e.annotationType() == Bind.class).findFirst().orElse(null))
+				.toArray(Bind[]::new);
 		var a = new Object[t.length];
 		for (var j = 0; j < a.length; j++) {
 			var h = g != null && j < g.size() ? g.get(j) : null;
-			var k = h == null && n[j] != null ? (!n[j].name().isEmpty() ? n[j].name() : n[j].value()) : null;
+			var k = h == null && n[j] != null ? (!n[j].parameter().isEmpty() ? n[j].parameter() : n[j].value()) : null;
 			var w = k != null ? q : null;
-			a[j] = resolveArgument(t[j], c, () -> h != null ? new String[] { h }
-					: w != null
-							? w.stream().filter(f -> f.getKey().equals(k)).map(Entry::getValue).toArray(String[]::new)
-							: null,
-					q, b);
+			var f = n[j];
+			a[j] = resolveArgument(t[j], c,
+					() -> h != null ? new String[] { h }
+							: w != null ? w.stream().filter(x -> x.getKey().equals(k)).map(Entry::getValue)
+									.toArray(String[]::new) : null,
+					q, b, f != null && f.resolver() != Bind.NullResolver.class ? () -> {
+						try {
+							return f.resolver().getConstructor().newInstance();
+						} catch (ReflectiveOperationException e) {
+							throw new RuntimeException(e);
+						}
+					} : null);
 		}
 		return a;
 	}
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, Supplier<String[]> values,
-			EntryList<String, String> entries, IO.Supplier<String> body) {
+			EntryList<String, String> entries, Supplier<String> body,
+			Supplier<UnaryOperator<Converter.MapType>> resolver) {
 		var c = type instanceof Class<?> x ? x : null;
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
 			return exchange;
@@ -140,11 +143,28 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 			switch (Objects.toString(exchange.getRequest().getHeaders().get("Content-Type"), "").split(";")[0]) {
 			case "application/json":
 //				System.out.println("body=" + body);
-				try {
-					return body != null ? Json.convert(Json.parse(body.get()), c, typeResolver) : null;
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
+//				try {
+//					return body != null ? Json.convert(Json.parse(body.get()), c, typeResolver) : null;
+//				} catch (IOException e) {
+//					throw new UncheckedIOException(e);
+//				}
+				if (body == null)
+					return null;
+				var z = new Converter();
+//				z.setTypeResolver(typeResolver);
+//				z.setResolver(x -> x.map().containsKey("$type")
+//						? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
+//						: null);
+//				var u = type.getAnnotation(Foo.class);
+//				if (u != null)
+//					try {
+//						z.setResolver(u.value().getConstructor().newInstance());
+//					} catch (ReflectiveOperationException e) {
+//						throw new RuntimeException(e);
+//					}
+				if (resolver != null)
+					z.setResolver(resolver.get());
+				return z.convert(Json.parse(body.get()), c);
 			case "application/x-www-form-urlencoded": {
 				var t = newEntryTree();
 				t.setTypeResolver(typeResolver);
@@ -163,7 +183,7 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 							return resolveArgument(t, exchange,
 									() -> w != null ? w.stream().filter(f -> f.getKey().equals(k)).map(Entry::getValue)
 											.toArray(String[]::new) : null,
-									entries, body);
+									entries, body, null);
 						}).toArray();
 						var o = c.getConstructors()[0].newInstance(a);
 						return o;
@@ -182,12 +202,12 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 								if (s == null)
 									continue;
 								var w = entries;
-								var v = resolveArgument((Type) s.getType(), exchange,
+								var v = resolveArgument(s.getType(), exchange,
 										() -> w != null
 												? w.stream().filter(f -> f.getKey().equals(n)).map(Entry::getValue)
 														.toArray(String[]::new)
 												: null,
-										entries, body);
+										entries, body, null);
 								s.set(o, v);
 							}
 							return o;
@@ -206,7 +226,13 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 		var c = (Class<?>) type;
 		var i = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
-		return Json.convert(i, c, typeResolver);
+//		return Json.convert(i, c, typeResolver);
+		var z = new Converter();
+//		z.setTypeResolver(typeResolver);
+		z.setResolver(x -> x.map().containsKey("$type")
+				? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
+				: null);
+		return z.convert(i, c);
 	}
 
 	protected EntryTree newEntryTree() {

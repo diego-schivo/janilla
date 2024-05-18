@@ -22,18 +22,32 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.reflect;
+package com.janilla.web;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.function.UnaryOperator;
+
+import com.janilla.json.Converter;
+import com.janilla.json.Converter.MapType;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.PARAMETER })
-public @interface Parameter {
+public @interface Bind {
 
-	String name() default "";
+	String parameter() default "";
 
 	String value() default "";
+
+	Class<? extends UnaryOperator<Converter.MapType>> resolver() default NullResolver.class;
+
+	public static class NullResolver implements UnaryOperator<Converter.MapType> {
+
+		@Override
+		public MapType apply(MapType mt) {
+			return null;
+		}
+	}
 }

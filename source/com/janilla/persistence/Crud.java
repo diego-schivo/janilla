@@ -132,8 +132,8 @@ public class Crud<E> {
 				ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
 					a.e = parser.apply(x);
 					a.m = getIndexMap(a.e, id);
-					var e = operator.apply(a.e);
-					return formatter.apply(e);
+					a.e = operator.apply(a.e);
+					return formatter.apply(a.e);
 				}));
 				if (a.e != null)
 					for (var e : getIndexMap(a.e, id).entrySet()) {

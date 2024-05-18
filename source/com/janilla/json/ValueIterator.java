@@ -27,6 +27,7 @@ package com.janilla.json;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.List;
@@ -112,6 +113,7 @@ class ValueIterator extends TokenIterator {
 			return f;
 		}).iterator(), context);
 		case Number x -> new NumberIterator(x);
+		case OffsetDateTime x -> new StringIterator(x.toString());
 		case String x -> new StringIterator(x);
 		case URI x -> new StringIterator(x.toString());
 		case UUID x -> new StringIterator(x.toString());

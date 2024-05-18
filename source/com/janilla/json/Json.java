@@ -24,38 +24,19 @@
  */
 package com.janilla.json;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Spliterators;
-import java.util.UUID;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 import com.janilla.json.JsonToken.Boundary;
-import com.janilla.reflect.Reflection;
 
 public interface Json {
 
@@ -81,7 +62,11 @@ public interface Json {
 	}
 
 	static String format(Object object) {
-		var t = new JsonIterator();
+		return format(object, false);
+	}
+
+	static String format(Object object, boolean reflection) {
+		var t = reflection ? new ReflectionJsonIterator() : new JsonIterator();
 		t.setObject(object);
 		return format(t);
 	}
@@ -176,7 +161,6 @@ public interface Json {
 	}
 
 	static Collector<JsonToken<?>, ?, Object> parseCollector() {
-//		return Collector.of(() -> new ArrayDeque<Object>(), (a, t) -> {
 		return Collector.of(() -> new ArrayList<Object>(), (a, t) -> {
 //			System.out.println("t=" + t);
 			switch (t.type()) {
@@ -234,154 +218,5 @@ public interface Json {
 				throw new RuntimeException();
 			return a.remove(0);
 		});
-	}
-
-	static Object convert(Object input, Type target, Function<String, Class<?>> typeResolver) {
-		var r = getRawType(target);
-
-		if (input == null || (input instanceof String s && s.isEmpty())) {
-			if (r == Boolean.TYPE)
-				return false;
-			if (r == Integer.TYPE)
-				return 0;
-			if (r == Long.TYPE)
-				return 0l;
-			if (r == String.class)
-				return input;
-			return null;
-		}
-
-		if (r != Object.class && r.isAssignableFrom(input.getClass()) && !r.isArray()
-				&& !Collection.class.isAssignableFrom(r) && !Map.class.isAssignableFrom(r))
-			return input;
-
-		if (r == BigDecimal.class)
-			return switch (input) {
-			case Double x -> BigDecimal.valueOf(x);
-			case Long x -> BigDecimal.valueOf(x);
-			default -> throw new RuntimeException();
-			};
-		if (r == Boolean.class || r == Boolean.TYPE)
-			return switch (input) {
-			case Boolean x -> input;
-			case String x -> Boolean.parseBoolean(x);
-			default -> throw new RuntimeException();
-			};
-		if (r == Instant.class)
-			return Instant.parse((String) input);
-		if (r == Integer.class || r == Integer.TYPE)
-			return switch (input) {
-			case Integer x -> input;
-			case Long x -> x.intValue();
-			case String x -> Integer.parseInt(x);
-			default -> throw new RuntimeException();
-			};
-		if (r == LocalDate.class)
-			return LocalDate.parse((String) input);
-		if (r == Locale.class)
-			return Locale.forLanguageTag((String) input);
-		if (r == Long.class || r == Long.TYPE)
-			return switch (input) {
-			case Integer x -> x.longValue();
-			case Long x -> input;
-			case String x -> Long.parseLong(x);
-			default -> throw new RuntimeException();
-			};
-		if (r == URI.class)
-			return URI.create((String) input);
-		if (r == UUID.class)
-			return UUID.fromString((String) input);
-		if (r == byte[].class)
-			return Base64.getDecoder().decode((String) input);
-		if (r == long[].class)
-			return ((Collection<?>) input).stream().mapToLong(x -> (long) x).toArray();
-
-		if (r.isArray() || Collection.class.isAssignableFrom(r)) {
-			var s = switch (input) {
-			case Object[] x -> Arrays.stream(x);
-			case Collection<?> x -> x.stream();
-			default -> throw new RuntimeException();
-			};
-			var t = r.isArray() ? r.componentType()
-//					: getRawType(((ParameterizedType) target).getActualTypeArguments()[0]);
-					: ((ParameterizedType) target).getActualTypeArguments()[0];
-			s = s.map(y -> convert(y, t, typeResolver));
-
-			if (r.isArray()) {
-				if (r.componentType() == Integer.TYPE)
-					return s.mapToInt(x -> (Integer) x).toArray();
-				else
-					return s.toArray(l -> (Object[]) Array.newInstance(getRawType(t), l));
-			}
-			if (r == List.class)
-				return s.toList();
-			if (r == Set.class)
-				return s.collect(Collectors.toCollection(LinkedHashSet::new));
-		}
-
-		if (input instanceof Map<?, ?>) {
-			@SuppressWarnings("unchecked")
-			var m = (Map<String, Object>) input;
-			if (m.containsKey("$type")) {
-				var c = typeResolver.apply((String) m.get("$type"));
-				if (!r.isAssignableFrom(c))
-					throw new RuntimeException();
-				r = c;
-			}
-
-			if (r == Map.class) {
-				var aa = ((ParameterizedType) target).getActualTypeArguments();
-				return m.entrySet().stream().map(e -> {
-					var k = convert(e.getKey(), aa[0], typeResolver);
-					var v = convert(e.getValue(), aa[1], typeResolver);
-					return new SimpleEntry<>(k, v);
-				}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-			}
-			if (r == Map.Entry.class) {
-				var aa = ((ParameterizedType) target).getActualTypeArguments();
-				var k = convert(m.get("key"), aa[0], typeResolver);
-				var v = convert(m.get("value"), aa[1], typeResolver);
-				return new SimpleEntry<>(k, v);
-			}
-
-			// System.out.println("c=" + c);
-			var d = r.getConstructors()[0];
-			// System.out.println("d=" + d);
-			var tt = r.isRecord() ? Arrays.stream(r.getRecordComponents()).collect(
-					Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, y) -> x, LinkedHashMap::new))
-					: null;
-			Object o;
-			try {
-				if (tt != null) {
-					var z = tt.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue(), typeResolver))
-							.toArray();
-					o = d.newInstance(z);
-				} else {
-					o = d.newInstance();
-					for (var e : m.entrySet()) {
-						if (e.getKey().equals("$type"))
-							continue;
-						// System.out.println("e=" + e);
-						var s = Reflection.property(r, e.getKey());
-						var v = convert(e.getValue(), s.getGenericType(), typeResolver);
-						// System.out.println("s=" + s + ", i=" + i + ", v=" + v);
-						s.set(o, v);
-					}
-				}
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
-			}
-			return o;
-		}
-
-		return input;
-	}
-
-	static Class<?> getRawType(Type type) {
-		return switch (type) {
-		case Class<?> x -> x;
-		case ParameterizedType x -> (Class<?>) x.getRawType();
-		default -> throw new IllegalArgumentException();
-		};
 	}
 }

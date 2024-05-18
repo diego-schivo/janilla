@@ -392,7 +392,7 @@ public class HttpServer implements Runnable {
 
 	protected void handle(IO.Consumer<HttpExchange> handler, HttpRequest request, HttpResponse response)
 			throws IOException {
-		var c = newExchange(request);
+		var c = createExchange(request);
 		c.setRequest(request);
 		c.setResponse(response);
 		Exception e;
@@ -421,7 +421,7 @@ public class HttpServer implements Runnable {
 		}
 	}
 
-	protected HttpExchange newExchange(HttpRequest request) {
+	protected HttpExchange createExchange(HttpRequest request) {
 		return new HttpExchange();
 	}
 }

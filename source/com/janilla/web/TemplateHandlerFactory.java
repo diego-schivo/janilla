@@ -107,6 +107,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 			};
 			return Interpolator.of(t, l);
 		});
+		e.getStack().push(RenderEngine.Entry.of(null, exchange, null));
 		var o = e.render(input);
 		if (o != null) {
 			var b = o.toString().getBytes();

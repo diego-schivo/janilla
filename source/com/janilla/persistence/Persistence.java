@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 
 import com.janilla.database.Database;
 import com.janilla.io.ElementHelper;
+import com.janilla.json.Converter;
 import com.janilla.json.Json;
 import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.reflect.Property;
@@ -109,8 +110,13 @@ public class Persistence {
 			};
 		if (c.parser == null)
 			c.parser = t -> {
+				var z = new Converter();
+//				z.setTypeResolver(typeResolver);
+				z.setResolver(x -> x.map().containsKey("$type")
+						? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
+						: null);
 				@SuppressWarnings("unchecked")
-				var e = (E) Json.convert(Json.parse((String) t), type, typeResolver);
+				var e = (E) z.convert(Json.parse((String) t), type);
 				return e;
 			};
 		c.indexPresent = type.isAnnotationPresent(Index.class);

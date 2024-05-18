@@ -60,20 +60,19 @@ class ReflectionValueIterator extends ValueIterator {
 			case Map.Entry<?, ?> x -> Map.Entry.class;
 			default -> throw new RuntimeException();
 			};
-			var s1 = Stream.of(Map.entry("$type",
-					(Object) c.getName().substring(c.getPackageName().length() + 1).replace('$', '.')));
+//			var s1 = Stream.of(Map.entry("$type",
+//					(Object) c.getName().substring(c.getPackageName().length() + 1).replace('$', '.')));
 			var s2 = Reflection.properties(c).map(p -> {
 				var g = Reflection.property(c, p);
-//				var s = Reflection.property(c, p);
-//				return g != null && s != null ? Map.entry(p, g) : null;
 				return g != null ? Map.entry(p, g) : null;
 			}).filter(Objects::nonNull).map(e -> {
-//					System.out.println(e.getValue() + " " + object);
+//				System.out.println(e.getValue() + " " + object);
 				var v = e.getValue().get(object);
 				Map.Entry<String, Object> f = new SimpleEntry<>(e.getKey(), v);
 				return f;
 			});
-			i = new ObjectIterator(Stream.concat(s1, s2).iterator(), context);
+//			i = new ObjectIterator(Stream.concat(s1, s2).iterator(), context);
+			i = new ObjectIterator(s2.iterator(), context);
 		}
 		return i;
 	}

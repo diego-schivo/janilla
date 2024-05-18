@@ -28,6 +28,18 @@ import java.util.List;
 
 class StringScanner implements Scanner {
 
+	public static void main(String[] args) {
+		var s = """
+				{"returnUrl":"https:\\/\\/your-company.com\\/checkout?shopperOrder=12xy.."}""";
+		var o = Json.parse(s);
+		System.out.println(o);
+		var t = Json.format(o);
+		System.out.println(t);
+		var p = Json.parse(t);
+		System.out.println(p);
+		assert p.equals(o) : p;
+	}
+
 	int state;
 
 	StringBuilder buffer;
@@ -80,6 +92,10 @@ class StringScanner implements Scanner {
 					yield 1;
 				case 't':
 					buffer.append('\t');
+					a = true;
+					yield 1;
+				case '/':
+					buffer.append('/');
 					a = true;
 					yield 1;
 				default:

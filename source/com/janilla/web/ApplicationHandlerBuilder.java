@@ -25,6 +25,7 @@
 package com.janilla.web;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -47,11 +48,10 @@ public class ApplicationHandlerBuilder {
 
 	protected Factory factory;
 
-	HandlerFactory[] factories;
+	List<HandlerFactory> factories;
 
 	Supplier<HandlerFactory> handlerFactory = Lazy.of(() -> {
-		factories = new HandlerFactory[] { buildMethodHandlerFactory(), buildTemplateHandlerFactory(),
-				buildResourceHandlerFactory(), buildJsonHandlerFactory(), buildExceptionHandlerFactory() };
+		factories = buildFactories().toList();
 		var f = new DelegatingHandlerFactory();
 		for (var g : factories) {
 			var s = Reflection.property(g.getClass(), "mainFactory");
@@ -80,6 +80,11 @@ public class ApplicationHandlerBuilder {
 				throw new NotFoundException();
 			h.accept(c);
 		};
+	}
+
+	protected Stream<HandlerFactory> buildFactories() {
+		return Stream.of(buildMethodHandlerFactory(), buildTemplateHandlerFactory(), buildResourceHandlerFactory(),
+				buildJsonHandlerFactory(), buildExceptionHandlerFactory());
 	}
 
 	protected MethodHandlerFactory buildMethodHandlerFactory() {
