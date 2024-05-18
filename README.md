@@ -1,5 +1,5 @@
-[![Maven_Central 0.13.0](https://img.shields.io/badge/Maven_Central-0.13.0-green)](https://central.sonatype.com/artifact/com.janilla/janilla)
-![Java CI with Maven](https://github.com/diego-schivo/janilla/actions/workflows/maven.yml/badge.svg)
+[![Maven_Central 0.13.0](https://img.shields.io/badge/Maven_Central-0.13.0-blue)](https://central.sonatype.com/artifact/com.janilla/janilla)
+[![Java CI with Maven](https://github.com/diego-schivo/janilla/actions/workflows/maven.yml/badge.svg)](https://github.com/diego-schivo/janilla/actions/workflows/maven.yml)
 
 # Janilla
 
