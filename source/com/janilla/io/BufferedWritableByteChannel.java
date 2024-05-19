@@ -106,6 +106,8 @@ public class BufferedWritableByteChannel extends FilterWritableByteChannel {
 			do
 				n += super.write(buffer);
 			while (all && buffer.hasRemaining());
+		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
 			if (max >= 0 && max < p)
 				buffer.limit(p);

@@ -29,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileSystem;
@@ -232,6 +233,10 @@ public abstract class IO {
 			n += i;
 		}
 		return n;
+	}
+
+	public static byte[] readAllBytes(ReadableByteChannel channel) throws IOException {
+		return Channels.newInputStream(channel).readAllBytes();
 	}
 
 	static Map<String, FileSystem> zipFileSystems = new ConcurrentHashMap<>();

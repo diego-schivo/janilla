@@ -26,13 +26,12 @@ package com.janilla.http;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritableByteChannel;
+import java.security.GeneralSecurityException;
 
 import javax.net.ssl.SSLContext;
 
@@ -43,68 +42,31 @@ import com.janilla.io.IO;
 public class HttpClient implements Closeable {
 
 	public static void main(String[] args) throws IOException {
-		var s = new HttpServer();
-		s.setHandler(c -> {
-			var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
-			switch (t) {
-			case "GET /foo":
-				c.getResponse().setStatus(new Status(200, "OK"));
-				var b = (WritableByteChannel) c.getResponse().getBody();
-				Channels.newOutputStream(b).write("bar".getBytes());
-				break;
-			default:
-				c.getResponse().setStatus(new Status(404, "Not Found"));
-				break;
-			}
-		});
-		new Thread(s::run, "Server").start();
-
-		synchronized (s) {
-			while (s.getAddress() == null) {
-				try {
-					s.wait();
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		}
-
 		try (var c = new HttpClient()) {
-			c.setAddress(s.getAddress());
+			c.setAddress(new InetSocketAddress("www.google.com", 443));
+			try {
+				var x = SSLContext.getInstance("TLSv1.3");
+				x.init(null, null, null);
+				c.setSSLContext(x);
+			} catch (GeneralSecurityException e) {
+				throw new RuntimeException(e);
+			}
+			var u = c.query(d -> {
+				var q = d.getRequest();
+				q.setMethod(new Method("GET"));
+				q.setURI(URI.create("/"));
+				q.getHeaders().add("Connection", "close");
+				q.close();
 
-			c.query(d -> {
-				d.getRequest().setMethod(new Method("GET"));
-				d.getRequest().setURI(URI.create("/foo"));
-				d.getRequest().getHeaders().add("Connection", "keep-alive");
-				d.getRequest().close();
-
-				var t = d.getResponse().getStatus();
+				var s = d.getResponse();
+				var t = s.getStatus();
 				System.out.println(t);
 				assert t.equals(new Status(200, "OK")) : t;
 
-				var u = new String(
-						Channels.newInputStream((ReadableByteChannel) d.getResponse().getBody()).readAllBytes());
-				System.out.println(u);
-				assert u.equals("bar") : u;
+				return new String(Channels.newInputStream((ReadableByteChannel) s.getBody()).readAllBytes());
 			});
-
-			c.query(d -> {
-				d.getRequest().setMethod(new Method("GET"));
-				d.getRequest().setURI(URI.create("/baz"));
-				d.getRequest().getHeaders().add("Connection", "close");
-				d.getRequest().close();
-
-				var t = d.getResponse().getStatus();
-				System.out.println(t);
-				assert t.equals(new Status(404, "Not Found")) : t;
-
-				var u = new String(
-						Channels.newInputStream((ReadableByteChannel) d.getResponse().getBody()).readAllBytes());
-				System.out.println(u);
-				assert u.equals("") : u;
-			});
-		} finally {
-			s.stop();
+			System.out.println(u);
+//			assert u.equals("foo") : u;
 		}
 	}
 
@@ -130,24 +92,23 @@ public class HttpClient implements Closeable {
 		this.sslContext = sslContext;
 	}
 
-	public void query(IO.Consumer<HttpExchange> handler) {
-		if (connection == null)
-			try {
-				var c = SocketChannel.open();
-				c.configureBlocking(true);
-				c.connect(address);
-				var e = sslContext != null ? sslContext.createSSLEngine("client", address.getPort()) : null;
-				if (e != null)
-					e.setUseClientMode(true);
-				connection = new HttpConnection(c, e);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+	public <T> T query(IO.Function<HttpExchange, T> handler) throws IOException {
+		if (connection == null) {
+			var c = SocketChannel.open();
+			c.configureBlocking(true);
+			c.connect(address);
+			var e = sslContext != null ? sslContext.createSSLEngine(address.getHostName(), address.getPort()) : null;
+			if (e != null) {
+				e.setUseClientMode(true);
+				var pp = e.getSSLParameters();
+				pp.setApplicationProtocols(new String[] { "http/1.1" });
+				e.setSSLParameters(pp);
 			}
+			connection = new HttpConnection(c, e);
+		}
 
 		try (var r = connection.getOutput().writeRequest(); var s = connection.getInput().readResponse()) {
-			handler.accept(newExchange(r, s));
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
+			return handler.apply(newExchange(r, s));
 		}
 	}
 

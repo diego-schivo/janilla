@@ -338,7 +338,8 @@ public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChan
 			super.advance(target);
 			if (x) {
 				var s = spaces.split(startLine.strip(), 3);
-				status = new Status(Integer.parseInt(s[1]), s[2]);
+				var c = Integer.parseInt(s[1]);
+				status = s.length >= 3 ? new Status(c, s[2]) : Status.of(c);
 			}
 		}
 	}

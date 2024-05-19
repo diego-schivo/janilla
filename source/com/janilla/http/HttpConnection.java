@@ -58,10 +58,11 @@ public class HttpConnection implements Closeable {
 
 //				if (n > 0)
 //					System.out.println("<<< " + new String(dst.array(), dst.position() - n, n).replace("\n", "\n<<< "));
-//					try {
-//						Thread.sleep(1);
-//					} catch (InterruptedException e) {
-//					}
+
+//				try {
+//					Thread.sleep(1);
+//				} catch (InterruptedException e) {
+//				}
 
 				return n;
 			}
@@ -72,10 +73,11 @@ public class HttpConnection implements Closeable {
 
 //				if (n > 0)
 //					System.out.println(">>> " + new String(src.array(), src.position() - n, n).replace("\n", "\n>>> "));
-//					try {
-//						Thread.sleep(1);
-//					} catch (InterruptedException e) {
-//					}
+
+//				try {
+//					Thread.sleep(1);
+//				} catch (InterruptedException e) {
+//				}
 
 				return n;
 			}

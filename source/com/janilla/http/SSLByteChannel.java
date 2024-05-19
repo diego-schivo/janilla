@@ -179,8 +179,15 @@ public class SSLByteChannel extends FilterByteChannel {
 						status = r.getStatus();
 						handshake = r.getHandshakeStatus();
 
-						if (status != Status.OK)
+//						if (status != Status.OK)
+//							throw new IOException(status.toString());
+						switch (status) {
+						case OK:
+						case CLOSED:
+							break;
+						default:
 							throw new IOException(status.toString());
+						}
 					} finally {
 						application2.compact();
 					}
@@ -260,7 +267,7 @@ public class SSLByteChannel extends FilterByteChannel {
 			break;
 
 		case NEED_UNWRAP:
-			if (packet1.position() == 0)
+			if (packet1.position() == 0 || status == Status.BUFFER_UNDERFLOW)
 				super.read(packet1);
 			if (packet1.position() > 0) {
 				packet1.flip();

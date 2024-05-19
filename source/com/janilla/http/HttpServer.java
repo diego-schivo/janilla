@@ -36,6 +36,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -59,14 +60,16 @@ import com.janilla.web.UnauthenticatedException;
 public class HttpServer implements Runnable {
 
 	public static void main(String[] args) throws IOException {
-		var k = Path.of(System.getProperty("user.home")).resolve("Downloads/jssesamples/samples/sslengine/testkeys");
-		var p = "passphrase".toCharArray();
-		var x = Net.getSSLContext(k, p);
-
 		var s = new HttpServer();
 		s.setBufferCapacity(100);
 		s.setMaxMessageLength(1000);
-		s.setSSLContext(x);
+		{
+			var k = Path.of(System.getProperty("user.home"))
+					.resolve("Downloads/jssesamples/samples/sslengine/testkeys");
+			var p = "passphrase".toCharArray();
+			var x = Net.getSSLContext(k, p);
+			s.setSSLContext(x);
+		}
 		s.setHandler(c -> {
 			var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
 			switch (t) {
@@ -94,8 +97,15 @@ public class HttpServer implements Runnable {
 
 		try (var c = new HttpClient()) {
 			c.setAddress(s.getAddress());
-			c.setSSLContext(x);
-			c.query(d -> {
+//			c.setSSLContext(x);
+			try {
+				var x = SSLContext.getInstance("TLSv1.2");
+				x.init(null, null, null);
+				c.setSSLContext(x);
+			} catch (GeneralSecurityException e) {
+				throw new RuntimeException(e);
+			}
+			var u = c.query(d -> {
 				d.getRequest().setMethod(new Method("POST"));
 				d.getRequest().setURI(URI.create("/foo"));
 				d.getRequest().getHeaders().add("Content-Length", "120");
@@ -110,13 +120,13 @@ public class HttpServer implements Runnable {
 				System.out.println(t);
 				assert t.equals(new Status(200, "OK")) : t;
 
-				var u = new String(
+				return new String(
 						Channels.newInputStream((ReadableByteChannel) d.getResponse().getBody()).readAllBytes());
-				System.out.println(u);
-				assert u.equals("bar") : u;
 			});
+			System.out.println(u);
+			assert u.equals("bar") : u;
 
-			c.query(d -> {
+			u = c.query(d -> {
 				d.getRequest().setMethod(new Method("GET"));
 				d.getRequest().setURI(URI.create("/baz"));
 				d.getRequest().getHeaders().add("Connection", "close");
@@ -126,11 +136,11 @@ public class HttpServer implements Runnable {
 				System.out.println(t);
 				assert t.equals(new Status(404, "Not Found")) : t;
 
-				var u = new String(
+				return new String(
 						Channels.newInputStream((ReadableByteChannel) d.getResponse().getBody()).readAllBytes());
-				System.out.println(u);
-				assert u.equals("") : u;
 			});
+			System.out.println(u);
+			assert u.equals("") : u;
 		} finally {
 			s.stop();
 		}
