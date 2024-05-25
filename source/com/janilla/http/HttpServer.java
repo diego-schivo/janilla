@@ -29,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.Channels;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -320,8 +321,12 @@ public class HttpServer implements Runnable {
 						var d = ((ServerSocketChannel) k.channel()).accept();
 						d.configureBlocking(false);
 						var e = sslContext != null ? sslContext.createSSLEngine() : null;
-						if (e != null)
+						if (e != null) {
 							e.setUseClientMode(false);
+							var pp = e.getSSLParameters();
+							pp.setApplicationProtocols(new String[] { "http/1.1" });
+							e.setSSLParameters(pp);
+						}
 						var c = new HttpConnection(d, e, bufferCapacity, maxMessageLength);
 						synchronized (r) {
 							r.put(c, System.currentTimeMillis());
@@ -383,7 +388,7 @@ public class HttpServer implements Runnable {
 //		System.out.println(Thread.currentThread().getName() + " " + d + " ("
 //				+ (System.currentTimeMillis() - m) + ")");
 			} catch (Exception e) {
-				e.printStackTrace();
+				printStackTrace(e);
 				d = "close";
 			}
 
@@ -403,7 +408,7 @@ public class HttpServer implements Runnable {
 				break;
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			printStackTrace(e);
 		}
 
 //System.out.println(Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m)
@@ -424,15 +429,7 @@ public class HttpServer implements Runnable {
 			e = x;
 		}
 		if (e != null) {
-			switch (e) {
-			case NotFoundException x:
-				break;
-			case UnauthenticatedException x:
-				break;
-			default:
-				e.printStackTrace();
-				break;
-			}
+			printStackTrace(e);
 			c.setException(e);
 			handler.handle(c);
 		}
@@ -443,5 +440,29 @@ public class HttpServer implements Runnable {
 		e.setRequest(request);
 		e.setResponse(response);
 		return e;
+	}
+
+	static void printStackTrace(Exception exception) {
+		switch (exception) {
+		case NotFoundException x:
+			break;
+		case UnauthenticatedException x:
+			break;
+		case ClosedChannelException x:
+			break;
+		default:
+			if (exception.getMessage() != null)
+				switch (exception.getMessage()) {
+				case "Broken pipe":
+				case "no bytes written":
+				case "startLine":
+				case "Stream closed":
+				case "The requested action is disabled on this public server: please set up and run the application locally":
+					break;
+				default:
+					exception.printStackTrace();
+					break;
+				}
+		}
 	}
 }
