@@ -1,32 +1,38 @@
-[![Maven_Central 0.13.0](https://img.shields.io/badge/Maven_Central-0.13.0-blue)](https://central.sonatype.com/artifact/com.janilla/janilla)
+[![Maven_Central 1.0.0](https://img.shields.io/badge/Maven_Central-1.0.0-blue)](https://central.sonatype.com/artifact/com.janilla/janilla)
 [![Java CI with Maven](https://github.com/diego-schivo/janilla/actions/workflows/maven.yml/badge.svg)](https://github.com/diego-schivo/janilla/actions/workflows/maven.yml)
 
 # Janilla
 
 ### What it does
 
-Janilla provides a full [solution stack](https://en.wikipedia.org/wiki/Solution_stack) to develop [web applications](https://en.wikipedia.org/wiki/Web_application) and more.
+This Java library provides a full solution stack ([wikipedia](https://en.wikipedia.org/wiki/Solution_stack)) to develop web applications and more.
 
-### Why Janilla is useful
+### Why it is useful
 
-Janilla allows you to create web applications that are straightforward to write, clean to read and easy to debug.
+Janilla aims to facilitate creating web applications that are straightforward to write, clean to read and easy to debug.
  
-If you are familiar with modern [Java SE](https://docs.oracle.com/en/java/javase/21/index.html) and [MDN Web Docs](https://developer.mozilla.org/), then you already know almost everything you need to start your new project with Janilla.
+If you are familiar with modern [Java SE](https://docs.oracle.com/en/java/javase/21/index.html) and [MDN Web Docs](https://developer.mozilla.org/), then you already have most of the skills you need to start your new project with Janilla.
 
-### How you can get started with Janilla
+### How you can get started
 
-You can add Janilla as a dependency to your project by copy/pasting the snippet from the [maven central repository](https://central.sonatype.com/artifact/com.janilla/janilla/overview).
+You can add Janilla as a dependency to your project by copy/pasting the snippet from [Maven Central](https://central.sonatype.com/artifact/com.janilla/janilla).
 
-Janilla sample applications are the best way to understand how to use the library:
+We provide a rich set of example applications showing how to use the library: 
 
-- [htmx Examples clone](https://github.com/diego-schivo/janilla-uxpatterns)
-- [RealWorld implementation](https://github.com/diego-schivo/janilla-conduit)
+- [Next.js Commerce (partial) porting](https://github.com/diego-schivo/janilla-acmestore)
+- [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla-conduit)
+- [Microsoft eShopOnWeb porting](https://github.com/diego-schivo/janilla-eshopweb)
+- [Strapi FoodAdvisor (partial) porting](https://github.com/diego-schivo/janilla-foodadvisor)
+- [Medusa MyStore (partial) porting](https://github.com/diego-schivo/janilla-mystore)
+- [Adyen Payment Examples (partial) porting](https://github.com/diego-schivo/janilla-payment)
+- [Spring Petclinic porting](https://github.com/diego-schivo/janilla-petclinic)
 - [TodoMVC implementation](https://github.com/diego-schivo/janilla-todomvc)
-- [Spring Petclinic clone](https://github.com/diego-schivo/janilla-petclinic)
-- [Microsoft eShopOnWeb clone](https://github.com/diego-schivo/janilla-eshopweb)
-- [Next.js Commerce clone](https://github.com/diego-schivo/janilla-commerce)
+- [htmx Examples porting](https://github.com/diego-schivo/janilla-uxpatterns)
+- [Janilla website](https://github.com/diego-schivo/janilla-website)
 
-### Where you can get help with Janilla
+Video tutorials are available on our [YouTube Channel](https://www.youtube.com/@janilla).
+
+### Where you can get help
 
 Please visit [www.janilla.com](https://janilla.com/) for more information.
 

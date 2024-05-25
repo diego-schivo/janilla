@@ -33,7 +33,7 @@ import java.nio.channels.ReadableByteChannel;
 
 public class BufferedReadableByteChannel extends FilterReadableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("foobarbazqux".getBytes());
 		try (var c = new BufferedReadableByteChannel(Channels.newChannel(i), ByteBuffer.allocate(10))) {
 			var b = ByteBuffer.allocate(3);

@@ -22,11 +22,11 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.frontend;
+package com.janilla.web;
 
-public interface Renderer {
+import com.janilla.http.HttpExchange;
 
-	static Object CANNOT_RENDER = new Object();
+public interface WebHandler {
 
-	boolean evaluate(RenderEngine engine);
+	void handle(HttpExchange exchange);
 }

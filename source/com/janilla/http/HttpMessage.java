@@ -24,14 +24,15 @@
  */
 package com.janilla.http;
 
-import java.io.Closeable;
 import java.nio.channels.Channel;
 
 import com.janilla.util.EntryList;
 
-public interface HttpMessage extends Closeable {
+public interface HttpMessage extends AutoCloseable {
 
 	EntryList<String, String> getHeaders();
 
 	Channel getBody();
+	
+	void close();
 }

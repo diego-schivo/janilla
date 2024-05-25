@@ -36,7 +36,7 @@ import com.janilla.io.IO;
 
 public class ChunkedReadableByteChannel extends HttpBufferedReadableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("""
 				A\r
 				foobarbazq\r

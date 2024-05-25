@@ -43,7 +43,7 @@ import com.janilla.net.Net;
 
 public class SSLByteChannel extends FilterByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var k = Path.of(System.getProperty("user.home")).resolve("Downloads/jssesamples/samples/sslengine/testkeys");
 		var p = "passphrase".toCharArray();
 		var x = Net.getSSLContext(k, p);
@@ -179,8 +179,6 @@ public class SSLByteChannel extends FilterByteChannel {
 						status = r.getStatus();
 						handshake = r.getHandshakeStatus();
 
-//						if (status != Status.OK)
-//							throw new IOException(status.toString());
 						switch (status) {
 						case OK:
 						case CLOSED:

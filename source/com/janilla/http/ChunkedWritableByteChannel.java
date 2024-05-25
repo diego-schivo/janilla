@@ -34,7 +34,7 @@ import java.util.Objects;
 
 public class ChunkedWritableByteChannel extends HttpBufferedWritableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("foobarbazqux".getBytes());
 		var o = new ByteArrayOutputStream();
 		try (var c = new ChunkedWritableByteChannel(Channels.newChannel(o), ByteBuffer.allocate(10))) {

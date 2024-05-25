@@ -25,17 +25,22 @@
 package com.janilla.database;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.janilla.database.Memory.BlockReference;
 import com.janilla.database.Store.IdAndSize;
 import com.janilla.io.ElementHelper;
-import com.janilla.io.IO;
 import com.janilla.json.Json;
+import com.janilla.util.Lazy;
 
 public class Stores {
 
@@ -45,20 +50,24 @@ public class Stores {
 		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
 
-			IO.Supplier<Stores> g = () -> {
+			Supplier<Stores> g = () -> {
 				var s = new Stores();
 				s.setInitializeBTree(t -> {
-					var m = new Memory();
-					var u = m.getFreeBTree();
-					u.setOrder(o);
-					u.setChannel(c);
-					u.setRoot(BlockReference.read(c, 0));
-					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
+					try {
+						var m = new Memory();
+						var u = m.getFreeBTree();
+						u.setOrder(o);
+						u.setChannel(c);
+						u.setRoot(BlockReference.read(c, 0));
+						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
 
-					t.setOrder(o);
-					t.setChannel(c);
-					t.setMemory(m);
-					t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+						t.setOrder(o);
+						t.setChannel(c);
+						t.setMemory(m);
+						t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 				});
 				s.setInitializeStore((n, t) -> {
 					@SuppressWarnings("unchecked")
@@ -96,30 +105,30 @@ public class Stores {
 		}
 	}
 
-	private IO.Consumer<BTree<NameAndStore>> initializeBTree;
+	private Consumer<BTree<NameAndStore>> initializeBTree;
 
-	private IO.BiConsumer<String, Store<?>> initializeStore;
+	private BiConsumer<String, Store<?>> initializeStore;
 
-	private IO.Supplier<BTree<NameAndStore>> btree = IO.Lazy.of(() -> {
+	private Supplier<BTree<NameAndStore>> btree = Lazy.of(() -> {
 		var t = new BTree<NameAndStore>();
 		initializeBTree.accept(t);
 		t.setHelper(NameAndStore.HELPER);
 		return t;
 	});
 
-	public void setInitializeBTree(IO.Consumer<BTree<NameAndStore>> initializeBTree) {
+	public void setInitializeBTree(Consumer<BTree<NameAndStore>> initializeBTree) {
 		this.initializeBTree = initializeBTree;
 	}
 
-	public void setInitializeStore(IO.BiConsumer<String, Store<?>> initializeStore) {
+	public void setInitializeStore(BiConsumer<String, Store<?>> initializeStore) {
 		this.initializeStore = initializeStore;
 	}
 
-	public void create(String name) throws IOException {
+	public void create(String name) {
 		btree.get().getOrAdd(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)));
 	}
 
-	public <E, R> R perform(String name, IO.Function<Store<E>, R> operation) throws IOException {
+	public <E, R> R perform(String name, Function<Store<E>, R> operation) {
 		var t = btree.get();
 		var o = new Object[1];
 		t.get(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)), n -> {

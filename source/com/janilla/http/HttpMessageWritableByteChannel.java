@@ -42,7 +42,7 @@ import com.janilla.util.EntryList;
 
 public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var o = new ByteArrayOutputStream();
 		try (var c = new HttpMessageWritableByteChannel(Channels.newChannel(o), ByteBuffer.allocate(10))) {
 
@@ -182,9 +182,13 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 		}
 
 		@Override
-		public void close() throws IOException {
+		public void close() {
 			if (state > 0)
-				getBody().close();
+				try {
+					getBody().close();
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 		}
 
 		protected void advance(int target) {

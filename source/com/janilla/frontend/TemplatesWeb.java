@@ -31,10 +31,12 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.janilla.io.IO;
+import com.janilla.util.Lazy;
 import com.janilla.web.Handle;
 import com.janilla.web.Render;
 
@@ -42,12 +44,11 @@ public class TemplatesWeb {
 
 	Object application;
 
-//	public static Pattern expression = Pattern.compile("(data-)?\\$\\{([\\w\\[\\].-]*?)}|<!--\\$\\{([\\w\\[\\].-]*?)}-->");
 	public static Pattern expression = Pattern.compile("(data-)?\\{([\\w\\[\\].-]*?)}|<\\{([\\w\\[\\].-]*?)}>");
 
 	public static Pattern template = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>", Pattern.DOTALL);
 
-	IO.Supplier<Iterable<Template>> templates = IO.Lazy.of(() -> {
+	Supplier<Iterable<Template>> templates = Lazy.of(() -> {
 		var l = Thread.currentThread().getContextClassLoader();
 		var b = Stream.<Template>builder();
 		for (var nn = Stream.of(getClass().getPackageName(), application.getClass().getPackageName())
@@ -69,6 +70,8 @@ public class TemplatesWeb {
 									+ ")}";
 						}));
 				}
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
 			var h = o.toString();
 			h = template.matcher(h).replaceAll(r -> {
@@ -86,11 +89,7 @@ public class TemplatesWeb {
 
 	@Handle(method = "GET", path = "/templates.js")
 	public Script getScript() {
-		try {
-			return new Script(templates.get());
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		return new Script(templates.get());
 	}
 
 	@Render("""

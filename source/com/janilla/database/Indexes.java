@@ -25,6 +25,7 @@
 package com.janilla.database;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -33,12 +34,16 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.ElementHelper.SortOrder;
 import com.janilla.io.ElementHelper.TypeAndOrder;
-import com.janilla.io.IO;
+import com.janilla.util.Lazy;
 
 public class Indexes {
 
@@ -47,20 +52,24 @@ public class Indexes {
 		var f = Files.createTempFile("indexes", "");
 		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
-			IO.Supplier<Indexes> g = () -> {
+			Supplier<Indexes> g = () -> {
 				var i = new Indexes();
 				i.setInitializeBTree(t -> {
-					var m = new Memory();
-					var u = m.getFreeBTree();
-					u.setOrder(o);
-					u.setChannel(c);
-					u.setRoot(BlockReference.read(c, 0));
-					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
+					try {
+						var m = new Memory();
+						var u = m.getFreeBTree();
+						u.setOrder(o);
+						u.setChannel(c);
+						u.setRoot(BlockReference.read(c, 0));
+						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
 
-					t.setOrder(o);
-					t.setChannel(c);
-					t.setMemory(m);
-					t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+						t.setOrder(o);
+						t.setChannel(c);
+						t.setMemory(m);
+						t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 				});
 				i.setInitializeIndex((n, j) -> {
 					@SuppressWarnings("unchecked")
@@ -97,30 +106,30 @@ public class Indexes {
 		}
 	}
 
-	IO.Consumer<BTree<NameAndIndex>> initializeBTree;
+	Consumer<BTree<NameAndIndex>> initializeBTree;
 
-	IO.BiConsumer<String, Index<?, ?>> initializeIndex;
+	BiConsumer<String, Index<?, ?>> initializeIndex;
 
-	IO.Supplier<BTree<NameAndIndex>> btree = IO.Lazy.of(() -> {
+	Supplier<BTree<NameAndIndex>> btree = Lazy.of(() -> {
 		var t = new BTree<NameAndIndex>();
 		initializeBTree.accept(t);
 		t.setHelper(NameAndIndex.HELPER);
 		return t;
 	});
 
-	public void setInitializeBTree(IO.Consumer<BTree<NameAndIndex>> initializeBTree) {
+	public void setInitializeBTree(Consumer<BTree<NameAndIndex>> initializeBTree) {
 		this.initializeBTree = initializeBTree;
 	}
 
-	public void setInitializeIndex(IO.BiConsumer<String, Index<?, ?>> initializeIndex) {
+	public void setInitializeIndex(BiConsumer<String, Index<?, ?>> initializeIndex) {
 		this.initializeIndex = initializeIndex;
 	}
 
-	public void create(String name) throws IOException {
+	public void create(String name) {
 		btree.get().getOrAdd(new NameAndIndex(name, new BlockReference(-1, -1, 0)));
 	}
 
-	public <K, V, R> R perform(String name, IO.Function<Index<K, V>, R> operation) throws IOException {
+	public <K, V, R> R perform(String name, Function<Index<K, V>, R> operation) {
 		var t = btree.get();
 		var o = new Object[1];
 		t.get(new NameAndIndex(name, new BlockReference(-1, -1, 0)), n -> {

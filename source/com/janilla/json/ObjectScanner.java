@@ -26,7 +26,7 @@ package com.janilla.json;
 
 import java.util.List;
 
-class ObjectScanner implements Scanner {
+public class ObjectScanner implements Scanner {
 
 	int state;
 

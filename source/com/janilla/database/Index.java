@@ -34,14 +34,18 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.ElementHelper.SortOrder;
 import com.janilla.io.ElementHelper.TypeAndOrder;
-import com.janilla.io.IO;
+import com.janilla.util.Lazy;
 
 public class Index<K, V> {
 
@@ -50,20 +54,24 @@ public class Index<K, V> {
 		var f = Files.createTempFile("index", "");
 		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
-			IO.Supplier<Index<String, Object[]>> g = () -> {
+			Supplier<Index<String, Object[]>> g = () -> {
 				var i = new Index<String, Object[]>();
 				i.setInitializeBTree(t -> {
-					var m = new Memory();
-					var u = m.getFreeBTree();
-					u.setOrder(o);
-					u.setChannel(c);
-					u.setRoot(BlockReference.read(c, 0));
-					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
+					try {
+						var m = new Memory();
+						var u = m.getFreeBTree();
+						u.setOrder(o);
+						u.setChannel(c);
+						u.setRoot(BlockReference.read(c, 0));
+						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
 
-					t.setOrder(o);
-					t.setChannel(c);
-					t.setMemory(m);
-					t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+						t.setOrder(o);
+						t.setChannel(c);
+						t.setMemory(m);
+						t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 				});
 				i.setKeyHelper(ElementHelper.STRING);
 				i.setValueHelper(ElementHelper.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
@@ -88,20 +96,20 @@ public class Index<K, V> {
 		}
 	}
 
-	private IO.Consumer<BTree<KeyAndValues<K>>> initializeBTree;
+	private Consumer<BTree<KeyAndValues<K>>> initializeBTree;
 
 	private ElementHelper<K> keyHelper;
 
 	private ElementHelper<V> valueHelper;
 
-	private IO.Supplier<BTree<KeyAndValues<K>>> btree = IO.Lazy.of(() -> {
+	private Supplier<BTree<KeyAndValues<K>>> btree = Lazy.of(() -> {
 		var t = new BTree<KeyAndValues<K>>();
 		initializeBTree.accept(t);
 		t.setHelper(KeyAndValues.getHelper(keyHelper));
 		return t;
 	});
 
-	public void setInitializeBTree(IO.Consumer<BTree<KeyAndValues<K>>> initializeBTree) {
+	public void setInitializeBTree(Consumer<BTree<KeyAndValues<K>>> initializeBTree) {
 		this.initializeBTree = initializeBTree;
 	}
 
@@ -122,14 +130,10 @@ public class Index<K, V> {
 	}
 
 	public BTree<KeyAndValues<K>> getBTree() {
-		try {
-			return btree.get();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		return btree.get();
 	}
 
-	public boolean add(K key, @SuppressWarnings("unchecked") V... value) throws IOException {
+	public boolean add(K key, @SuppressWarnings("unchecked") V... value) {
 		return apply(key, x -> {
 			var s = x.size;
 			for (var v : value) {
@@ -141,51 +145,45 @@ public class Index<K, V> {
 		}, true) != null;
 	}
 
-	public boolean remove(K key, V value) throws IOException {
+	public boolean remove(K key, V value) {
 		return apply(key, x -> {
 			var v = x.btree.remove(value);
 			return v != null ? new ResultAndSize<>(true, x.size - 1) : null;
 		}, false) != null;
 	}
 
-	public Stream<V> list(K key) throws IOException {
+	public Stream<V> list(K key) {
 		var s = apply(key, x -> new ResultAndSize<>(x.btree.stream(), x.size), false);
 		return s != null ? s : Stream.empty();
 	}
 
-	public long count(K key) throws IOException {
+	public long count(K key) {
 		var c = apply(key, x -> new ResultAndSize<>(Long.valueOf(x.size), x.size), false);
 		return c != null ? c : 0;
 	}
 
-	public long countIf(Predicate<K> operation) throws IOException {
+	public long countIf(Predicate<K> operation) {
 		return btree.get().stream().filter(x -> operation.test(x.key)).mapToLong(x -> x.size).sum();
 	}
 
-	public Stream<K> keys() throws IOException {
+	public Stream<K> keys() {
 		return btree.get().stream().map(KeyAndValues::key);
 	}
 
-	public Stream<V> values() throws IOException {
+	public Stream<V> values() {
 		return valuesIf(k -> true);
 	}
 
-	public Stream<V> valuesIf(Predicate<K> operation) throws IOException {
-		return btree.get().stream().filter(x -> operation.test(x.key)).flatMap(x -> {
-			try {
-				return apply(x.key, y -> new ResultAndSize<>(y.btree.stream(), y.size), false);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
+	public Stream<V> valuesIf(Predicate<K> operation) {
+		return btree.get().stream().filter(x -> operation.test(x.key))
+				.flatMap(x -> apply(x.key, y -> new ResultAndSize<>(y.btree.stream(), y.size), false));
 	}
 
-	public long count() throws IOException {
+	public long count() {
 		return btree.get().stream().mapToLong(KeyAndValues::size).sum();
 	}
 
-	protected <R> R apply(K key, IO.Function<BTreeAndSize<V>, ResultAndSize<R>> function, boolean add)
-			throws IOException {
+	protected <R> R apply(K key, Function<BTreeAndSize<V>, ResultAndSize<R>> function, boolean add) {
 		class A {
 
 			ResultAndSize<R> r;
@@ -193,7 +191,7 @@ public class Index<K, V> {
 		var t = btree.get();
 		var k = new KeyAndValues<K>(key, new BlockReference(-1, -1, 0), 0);
 		var a = new A();
-		IO.UnaryOperator<KeyAndValues<K>> o = i -> {
+		UnaryOperator<KeyAndValues<K>> o = i -> {
 			var u = new BTree<V>();
 			u.setOrder(t.getOrder());
 			u.setChannel(t.getChannel());

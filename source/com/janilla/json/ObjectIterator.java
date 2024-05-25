@@ -28,9 +28,9 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
-class ObjectIterator extends TokenIterator {
+public class ObjectIterator extends TokenIterator {
 
-	Iterator<Entry<String, Object>> entries;
+	protected Iterator<Entry<String, Object>> entries;
 
 	int state;
 
@@ -40,8 +40,7 @@ class ObjectIterator extends TokenIterator {
 
 	Iterator<JsonToken<?>> iterator;
 
-	ObjectIterator(Iterator<Entry<String, Object>> entries, TokenIterationContext context) {
-		super(context);
+	public void setEntries(Iterator<Entry<String, Object>> entries) {
 		this.entries = entries;
 	}
 
@@ -66,7 +65,7 @@ class ObjectIterator extends TokenIterator {
 			}
 			case 2 -> {
 				if (iterator == null)
-					iterator = new StringIterator(entry.getKey());
+					iterator = context.buildStringIterator(entry.getKey());
 				if (iterator.hasNext())
 					yield 2;
 				iterator = null;
@@ -74,7 +73,7 @@ class ObjectIterator extends TokenIterator {
 			}
 			case 3 -> {
 				if (iterator == null)
-					iterator = context.newValueIterator(entry.getValue());
+					iterator = context.buildValueIterator(entry.getValue());
 				if (iterator.hasNext())
 					yield 3;
 				iterator = null;

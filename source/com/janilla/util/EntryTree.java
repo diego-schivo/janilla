@@ -40,8 +40,6 @@ public class EntryTree extends LinkedHashMap<String, Object> {
 
 	private static final long serialVersionUID = 2351446498774467936L;
 
-//	Map<String, Object> tree = new LinkedHashMap<String, Object>();
-
 	Function<String, Class<?>> typeResolver;
 
 	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
@@ -49,13 +47,14 @@ public class EntryTree extends LinkedHashMap<String, Object> {
 	}
 
 	public void add(Map.Entry<String, String> t) {
-//		Map<String, Object> n = tree;
 		Map<String, Object> n = this;
 		var k = t.getKey().split("\\.");
 		for (var i = 0; i < k.length; i++) {
 			if (k[i].endsWith("]")) {
 				var l = k[i].split("\\[", 2);
 				var j = Integer.parseInt(l[1].substring(0, l[1].length() - 1));
+				if (j < 0 || j >= 1000)
+					throw new ArrayIndexOutOfBoundsException();
 				@SuppressWarnings("unchecked")
 				var a = (List<Object>) n.computeIfAbsent(l[0], x -> new ArrayList<Object>());
 				while (a.size() <= j)
@@ -98,7 +97,6 @@ public class EntryTree extends LinkedHashMap<String, Object> {
 		BiFunction<String, Type, Object> c = (name, type) -> {
 			var i = tree.get(name);
 			var z = new Converter();
-//			z.setTypeResolver(typeResolver);
 			z.setResolver(x -> x.map().containsKey("$type")
 					? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
 					: null);

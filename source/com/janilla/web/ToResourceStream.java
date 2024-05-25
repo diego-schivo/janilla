@@ -50,11 +50,11 @@ import com.janilla.util.Lazy;
 
 public abstract class ToResourceStream implements Function<URI, InputStream> {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var f = new ToResourceStream() {
 
 			@Override
-			protected InputStream newInputStream(String name) {
+			protected InputStream getResourceAsStream(String name) {
 				return name.equals("style.css") ? new ByteArrayInputStream("""
 						body {
 							margin: 0;
@@ -93,7 +93,7 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 		var p = t.getPath();
 		var n = p.startsWith("/") ? p.substring(1) : null;
 //		System.out.println("n=" + n);
-		return resources.get().contains(n) ? newInputStream(n) : null;
+		return resources.get().contains(n) ? getResourceAsStream(n) : null;
 	}
 
 	static Set<String> extensions = Set.of("avif", "css", "ico", "jpg", "js", "png", "svg", "ttf", "webp", "woff",
@@ -142,7 +142,7 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 		return e != null && extensions.contains(e.toLowerCase()) ? Stream.of(s) : Stream.empty();
 	}
 
-	protected abstract InputStream newInputStream(String name);
+	protected abstract InputStream getResourceAsStream(String name);
 
 	public static class Simple extends ToResourceStream {
 
@@ -194,7 +194,7 @@ public abstract class ToResourceStream implements Function<URI, InputStream> {
 		}
 
 		@Override
-		protected InputStream newInputStream(String name) {
+		protected InputStream getResourceAsStream(String name) {
 			var l = Thread.currentThread().getContextClassLoader();
 			var p = resourcePrefixes.get().get(name);
 			if (p.endsWith(".zip")) {

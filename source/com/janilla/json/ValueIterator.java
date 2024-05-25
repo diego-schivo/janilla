@@ -36,9 +36,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
-class ValueIterator extends TokenIterator {
+public class ValueIterator extends TokenIterator {
 
-	Object object;
+	protected Object object;
 
 	int state;
 
@@ -46,8 +46,7 @@ class ValueIterator extends TokenIterator {
 
 	Iterator<JsonToken<?>> iterator;
 
-	ValueIterator(Object object, TokenIterationContext context) {
-		super(context);
+	public void setObject(Object object) {
 		this.object = object;
 	}
 
@@ -62,7 +61,7 @@ class ValueIterator extends TokenIterator {
 			}
 			case 1 -> {
 				if (iterator == null)
-					iterator = newIterator(object);
+					iterator = createIterator();
 				if (iterator.hasNext())
 					yield 1;
 				yield 2;
@@ -94,29 +93,29 @@ class ValueIterator extends TokenIterator {
 			throw new NoSuchElementException();
 	}
 
-	protected Iterator<JsonToken<?>> newIterator(Object object) {
-		return object == null ? new NullIterator() : switch (object) {
-		case Boolean x -> new BooleanIterator(x);
-		case Instant x -> new StringIterator(x.toString());
+	protected Iterator<JsonToken<?>> createIterator() {
+		return object == null ? context.buildNullIterator() : switch (object) {
+		case Boolean x -> context.buildBooleanIterator(x);
+		case Instant x -> context.buildStringIterator(x.toString());
 		case List<?> l -> {
 			@SuppressWarnings("unchecked")
 			var m = (List<Object>) l;
-			yield new ArrayIterator(m.iterator(), context);
+			yield context.buildArrayIterator(m.iterator());
 		}
-		case Locale x -> new StringIterator(x.toLanguageTag());
-		case LocalDate x -> new StringIterator(x.toString());
-		case Map<?, ?> x -> new ObjectIterator(x.entrySet().stream().map(e -> {
+		case Locale x -> context.buildStringIterator(x.toLanguageTag());
+		case LocalDate x -> context.buildStringIterator(x.toString());
+		case Map<?, ?> x -> context.buildObjectIterator(x.entrySet().stream().map(e -> {
 			@SuppressWarnings("unchecked")
 			var f = e.getKey() instanceof Locale l
 					? new AbstractMap.SimpleEntry<String, Object>(l.toLanguageTag(), e.getValue())
 					: (Map.Entry<String, Object>) e;
 			return f;
-		}).iterator(), context);
-		case Number x -> new NumberIterator(x);
-		case OffsetDateTime x -> new StringIterator(x.toString());
-		case String x -> new StringIterator(x);
-		case URI x -> new StringIterator(x.toString());
-		case UUID x -> new StringIterator(x.toString());
+		}).iterator());
+		case Number x -> context.buildNumberIterator(x);
+		case OffsetDateTime x -> context.buildStringIterator(x.toString());
+		case String x -> context.buildStringIterator(x);
+		case URI x -> context.buildStringIterator(x.toString());
+		case UUID x -> context.buildStringIterator(x.toString());
 		default -> null;
 		};
 	}

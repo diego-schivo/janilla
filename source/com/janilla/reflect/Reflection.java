@@ -29,7 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -140,7 +140,7 @@ public class Reflection {
 						f = null;
 					}
 					var o = f != null ? f.getAnnotation(Order.class) : null;
-					return new SimpleEntry<>(p,
+					return new AbstractMap.SimpleEntry<>(p,
 							o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(p.getName()) : null);
 				}).sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
 				.map(Map.Entry::getKey).flatMap(p -> {

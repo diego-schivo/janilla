@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-class Transaction {
+public class Transaction {
 
 	public static void main(String[] args) {
 		var r = ThreadLocalRandom.current();
@@ -80,6 +80,6 @@ class Transaction {
 		return range;
 	}
 
-	record Range(long start, long end) {
+	public record Range(long start, long end) {
 	}
 }

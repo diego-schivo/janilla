@@ -26,11 +26,11 @@ package com.janilla.json;
 
 import java.util.Iterator;
 
-abstract class TokenIterator implements Iterator<JsonToken<?>> {
+public abstract class TokenIterator implements Iterator<JsonToken<?>> {
 
 	protected TokenIterationContext context;
 
-	protected TokenIterator(TokenIterationContext context) {
+	public void setContext(TokenIterationContext context) {
 		this.context = context;
 	}
 }

@@ -25,7 +25,7 @@
 package com.janilla.json;
 
 import java.lang.reflect.Modifier;
-import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -36,22 +36,18 @@ import java.util.stream.Stream;
 
 import com.janilla.reflect.Reflection;
 
-class ReflectionValueIterator extends ValueIterator {
-
-	ReflectionValueIterator(Object object, TokenIterationContext context) {
-		super(object, context);
-	}
+public class ReflectionValueIterator extends ValueIterator {
 
 	@Override
-	protected Iterator<JsonToken<?>> newIterator(Object object) {
-		var i = super.newIterator(object);
+	protected Iterator<JsonToken<?>> createIterator() {
+		var i = super.createIterator();
 		if (i == null) {
 			i = switch (object) {
-			case byte[] x -> new StringIterator(Base64.getEncoder().encodeToString(x));
-			case long[] x -> new ArrayIterator(Arrays.stream(x).boxed().iterator(), context);
-			case Object[] x -> new ArrayIterator(Arrays.stream(x).iterator(), context);
-			case Collection<?> x -> new ArrayIterator(x.iterator(), context);
-			case Stream<?> x -> new ArrayIterator(x.iterator(), context);
+			case byte[] x -> context.buildStringIterator(Base64.getEncoder().encodeToString(x));
+			case long[] x -> context.buildArrayIterator(Arrays.stream(x).boxed().iterator());
+			case Object[] x -> context.buildArrayIterator(Arrays.stream(x).iterator());
+			case Collection<?> x -> context.buildArrayIterator(x.iterator());
+			case Stream<?> x -> context.buildArrayIterator(x.iterator());
 			default -> null;
 			};
 		}
@@ -60,19 +56,19 @@ class ReflectionValueIterator extends ValueIterator {
 			case Map.Entry<?, ?> x -> Map.Entry.class;
 			default -> throw new RuntimeException();
 			};
-//			var s1 = Stream.of(Map.entry("$type",
-//					(Object) c.getName().substring(c.getPackageName().length() + 1).replace('$', '.')));
-			var s2 = Reflection.properties(c).map(p -> {
+			var s = Reflection.properties(c).map(p -> {
 				var g = Reflection.property(c, p);
 				return g != null ? Map.entry(p, g) : null;
 			}).filter(Objects::nonNull).map(e -> {
 //				System.out.println(e.getValue() + " " + object);
 				var v = e.getValue().get(object);
-				Map.Entry<String, Object> f = new SimpleEntry<>(e.getKey(), v);
+				Map.Entry<String, Object> f = new AbstractMap.SimpleEntry<>(e.getKey(), v);
 				return f;
 			});
-//			i = new ObjectIterator(Stream.concat(s1, s2).iterator(), context);
-			i = new ObjectIterator(s2.iterator(), context);
+			if (((ReflectionJsonIterator) context).includeType)
+				s = Stream.concat(Stream.of(Map.entry("$type",
+						(Object) c.getName().substring(c.getPackageName().length() + 1).replace('$', '.'))), s);
+			i = context.buildObjectIterator(s.iterator());
 		}
 		return i;
 	}

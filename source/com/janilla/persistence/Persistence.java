@@ -24,10 +24,9 @@
  */
 package com.janilla.persistence;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +53,7 @@ public class Persistence {
 
 	Function<String, Class<?>> typeResolver;
 
-	public Database getDatabase() {
+	public Database database() {
 		return database;
 	}
 
@@ -72,13 +71,13 @@ public class Persistence {
 		return true;
 	}
 
-	public <E> Crud<E> getCrud(Class<E> class1) {
+	public <E> Crud<E> crud(Class<E> class1) {
 		@SuppressWarnings("unchecked")
 		var c = (Crud<E>) configuration.cruds.get(class1);
 		return c;
 	}
 
-	protected void createStoresAndIndexes() throws IOException {
+	protected void createStoresAndIndexes() {
 		for (var t : configuration.cruds.keySet())
 			database.perform((s, i) -> {
 				s.create(t.getSimpleName());
@@ -91,13 +90,13 @@ public class Persistence {
 			}, true);
 	}
 
-	protected <E> Crud<E> newCrud(Class<E> type) {
+	protected <E> Crud<E> createCrud(Class<E> type) {
 		return Modifier.isInterface(type.getModifiers()) || Modifier.isAbstract(type.getModifiers())
 				|| !type.isAnnotationPresent(Store.class) ? null : new Crud<>();
 	}
 
 	<E, K, V> void configure(Class<E> type) {
-		Crud<E> c = newCrud(type);
+		Crud<E> c = createCrud(type);
 		if (c == null)
 			return;
 		c.type = type;
@@ -106,12 +105,12 @@ public class Persistence {
 			c.formatter = e -> {
 				var t = new ReflectionJsonIterator();
 				t.setObject(e);
+				t.setIncludeType(true);
 				return Json.format(t);
 			};
 		if (c.parser == null)
 			c.parser = t -> {
 				var z = new Converter();
-//				z.setTypeResolver(typeResolver);
 				z.setResolver(x -> x.map().containsKey("$type")
 						? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
 						: null);
@@ -226,7 +225,7 @@ public class Persistence {
 		Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
 			var k = keyGetter != null ? keyGetter.apply(entity) : null;
 			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
-			return keyGetter == null || k != null ? new SimpleEntry<>(k, v) : null;
+			return keyGetter == null || k != null ? new AbstractMap.SimpleEntry<>(k, v) : null;
 		}
 	}
 }

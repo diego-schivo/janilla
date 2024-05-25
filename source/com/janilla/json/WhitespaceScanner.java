@@ -26,7 +26,7 @@ package com.janilla.json;
 
 import java.util.List;
 
-class WhitespaceScanner implements Scanner {
+public class WhitespaceScanner implements Scanner {
 
 	int state;
 

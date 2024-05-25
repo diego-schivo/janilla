@@ -37,10 +37,9 @@ import com.janilla.frontend.TemplatesWeb;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
-import com.janilla.io.IO.Consumer;
 import com.janilla.util.Lazy;
 
-public class TemplateHandlerFactory implements HandlerFactory {
+public class TemplateHandlerFactory implements WebHandlerFactory {
 
 	protected Object application;
 
@@ -70,7 +69,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+	public WebHandler createHandler(Object object, HttpExchange exchange) {
 		var i = object instanceof RenderEngine.Entry x ? x : null;
 		var o = i != null ? i.getValue() : null;
 		var t = i != null ? i.getType() : null;
@@ -78,7 +77,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 				|| (t != null && t.isAnnotationPresent(Render.class)) ? x -> render(i, x) : null;
 	}
 
-	protected void render(RenderEngine.Entry input, HttpExchange exchange) throws IOException {
+	protected void render(RenderEngine.Entry input, HttpExchange exchange) {
 		{
 			var s = exchange.getResponse();
 			if (s.getStatus() == null)
@@ -90,7 +89,7 @@ public class TemplateHandlerFactory implements HandlerFactory {
 				s.getHeaders().set("Content-Type", "text/html");
 		}
 
-		RenderEngine e = newRenderEngine(exchange);
+		var e = createRenderEngine(exchange);
 		e.setToInterpolator(s -> {
 			String t;
 			if (s.contains("\n"))
@@ -112,11 +111,15 @@ public class TemplateHandlerFactory implements HandlerFactory {
 		if (o != null) {
 			var b = o.toString().getBytes();
 			var c = (WritableByteChannel) exchange.getResponse().getBody();
-			IO.write(b, c);
+			try {
+				IO.write(b, c);
+			} catch (IOException f) {
+				throw new UncheckedIOException(f);
+			}
 		}
 	}
 
-	protected RenderEngine newRenderEngine(HttpExchange exchange) {
+	protected RenderEngine createRenderEngine(HttpExchange exchange) {
 		return new RenderEngine();
 	}
 }

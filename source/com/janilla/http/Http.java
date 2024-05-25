@@ -80,22 +80,25 @@ public abstract class Http {
 					throw new RuntimeException(e);
 				}
 			return c.query(e -> {
-				var q = e.getRequest();
-				q.setMethod(method);
-				q.setURI(URI.create(uri.getPath()));
-				var hh = q.getHeaders();
-				for (var f : headers.entrySet())
-					hh.add(f.getKey(), f.getValue());
-				if (hh.get("Host") == null)
-					hh.add("Host", uri.getHost());
-				IO.write(body.getBytes(), (WritableByteChannel) q.getBody());
-				q.close();
+				try (var q = e.getRequest()) {
+					q.setMethod(method);
+					q.setURI(URI.create(uri.getPath()));
+					var hh = q.getHeaders();
+					for (var f : headers.entrySet())
+						hh.add(f.getKey(), f.getValue());
+					if (hh.get("Host") == null)
+						hh.add("Host", uri.getHost());
+					IO.write(body.getBytes(), (WritableByteChannel) q.getBody());
+				} catch (IOException f) {
+					throw new UncheckedIOException(f);
+				}
 
-				var s = e.getResponse();
-				return new String(IO.readAllBytes((ReadableByteChannel) s.getBody()));
+				try (var s = e.getResponse()) {
+					return new String(IO.readAllBytes((ReadableByteChannel) s.getBody()));
+				} catch (IOException f) {
+					throw new UncheckedIOException(f);
+				}
 			});
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
 		}
 	}
 }

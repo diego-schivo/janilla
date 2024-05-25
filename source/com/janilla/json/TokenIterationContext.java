@@ -24,17 +24,59 @@
  */
 package com.janilla.json;
 
+import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.Map.Entry;
 
 public abstract class TokenIterationContext {
 
-	private Deque<Object> stack = new LinkedList<>();
+	private Deque<Object> stack = new ArrayDeque<>();
 
 	public Deque<Object> getStack() {
 		return stack;
 	}
 
-	public abstract Iterator<JsonToken<?>> newValueIterator(Object object);
+	public Iterator<JsonToken<?>> buildArrayIterator(Iterator<?> elements) {
+		var i = new ArrayIterator();
+		i.setContext(this);
+		i.setElements(elements);
+		return i;
+	}
+
+	public Iterator<JsonToken<?>> buildBooleanIterator(Boolean value) {
+		var i = new BooleanIterator();
+		i.setValue(value);
+		return i;
+	}
+
+	public Iterator<JsonToken<?>> buildNullIterator() {
+		return new NullIterator();
+	}
+
+	public Iterator<JsonToken<?>> buildNumberIterator(Number number) {
+		var i = new NumberIterator();
+		i.setNumber(number);
+		return i;
+	}
+
+	public Iterator<JsonToken<?>> buildObjectIterator(Iterator<Entry<String, Object>> entries) {
+		var i = new ObjectIterator();
+		i.setContext(this);
+		i.setEntries(entries);
+		return i;
+	}
+
+	public Iterator<JsonToken<?>> buildStringIterator(String string) {
+		var i = new StringIterator();
+		i.setString(string);
+		return i;
+	}
+
+	public Iterator<JsonToken<?>> buildValueIterator(Object object) {
+		var i = new ValueIterator();
+		i.setContext(this);
+		i.setObject(object);
+		return i;
+	}
 }

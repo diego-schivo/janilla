@@ -32,7 +32,9 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.LongFunction;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -41,6 +43,7 @@ import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.IO;
 import com.janilla.json.Json;
+import com.janilla.util.Lazy;
 
 public class Store<E> {
 
@@ -50,23 +53,32 @@ public class Store<E> {
 		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
 
-			IO.Supplier<Store<String>> g = () -> {
+			Supplier<Store<String>> g = () -> {
 				var s = new Store<String>();
 				s.setInitializeBTree(t -> {
-					var m = new Memory();
-					var u = m.getFreeBTree();
-					u.setOrder(o);
-					u.setChannel(c);
-					u.setRoot(BlockReference.read(c, 0));
-					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH, c.size()));
+					try {
+						var m = new Memory();
+						var u = m.getFreeBTree();
+						u.setOrder(o);
+						u.setChannel(c);
+						u.setRoot(BlockReference.read(c, 0));
+						m.setAppendPosition(
+								Math.max(2 * BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH, c.size()));
 
-					t.setOrder(o);
-					t.setChannel(c);
-					t.setMemory(m);
-					t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+						t.setOrder(o);
+						t.setChannel(c);
+						t.setMemory(m);
+						t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 				});
 				s.setElementHelper(ElementHelper.STRING);
-				s.setIdAndSize(IdAndSize.read(c, 2 * BlockReference.HELPER_LENGTH));
+				try {
+					s.setIdAndSize(IdAndSize.read(c, 2 * BlockReference.HELPER_LENGTH));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 				return s;
 			};
 
@@ -86,19 +98,29 @@ public class Store<E> {
 
 			{
 				var s = g.get();
-				var m = Json.parse(s.read(i));
+				var m = Json.parse(s.delete(i));
 				System.out.println(m);
-				var n = Map.of("id", (int) i, "title", "FooBarBazQux");
+				var n = Map.of("id", i, "title", "FooBarBazQux");
 				assert m.equals(n) : m;
 			}
+
+			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
+
+			{
+				var s = g.get();
+				var t = s.read(i);
+				assert t == null : t;
+			}
+
+			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 		}
 	}
 
-	private IO.Consumer<BTree<IdAndElement>> initializeBTree;
+	private Consumer<BTree<IdAndElement>> initializeBTree;
 
 	private ElementHelper<E> elementHelper;
 
-	private IO.Supplier<BTree<IdAndElement>> btree = IO.Lazy.of(() -> {
+	private Supplier<BTree<IdAndElement>> btree = Lazy.of(() -> {
 		var t = new BTree<IdAndElement>();
 		t.setHelper(IdAndElement.HELPER);
 		initializeBTree.accept(t);
@@ -107,7 +129,7 @@ public class Store<E> {
 
 	private IdAndSize idAndSize;
 
-	public void setInitializeBTree(IO.Consumer<BTree<IdAndElement>> initializeBTree) {
+	public void setInitializeBTree(Consumer<BTree<IdAndElement>> initializeBTree) {
 		this.initializeBTree = initializeBTree;
 	}
 
@@ -116,11 +138,7 @@ public class Store<E> {
 	}
 
 	public BTree<IdAndElement> getBTree() {
-		try {
-			return btree.get();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		return btree.get();
 	}
 
 	public IdAndSize getIdAndSize() {
@@ -131,23 +149,27 @@ public class Store<E> {
 		this.idAndSize = idAndSize;
 	}
 
-	public long create(LongFunction<E> element) throws IOException {
-		var t = btree.get();
-		var i = idAndSize.id;
-		var e = element.apply(i);
-		var b = elementHelper.getBytes(e);
-		var a = t.getMemory().allocate(b.length);
-		t.getChannel().position(a.position());
-		var d = ByteBuffer.allocate(a.capacity());
-		d.put(0, b);
-		IO.repeat(x -> t.getChannel().write(d), d.remaining());
-		var r = new BlockReference(-1, a.position(), a.capacity());
-		t.add(new IdAndElement(i, r));
-		idAndSize = new IdAndSize(i + 1, idAndSize.size + 1);
-		return i;
+	public long create(LongFunction<E> element) {
+		try {
+			var t = btree.get();
+			var i = idAndSize.id;
+			var e = element.apply(i);
+			var b = elementHelper.getBytes(e);
+			var a = t.getMemory().allocate(b.length);
+			t.getChannel().position(a.position());
+			var d = ByteBuffer.allocate(a.capacity());
+			d.put(0, b);
+			IO.repeat(x -> t.getChannel().write(d), d.remaining());
+			var r = new BlockReference(-1, a.position(), a.capacity());
+			t.add(new IdAndElement(i, r));
+			idAndSize = new IdAndSize(i + 1, idAndSize.size + 1);
+			return i;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
-	public E read(long id) throws IOException {
+	public E read(long id) {
 		var t = btree.get();
 		var i = t.get(new IdAndElement(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
@@ -155,7 +177,7 @@ public class Store<E> {
 		return readElement(i.element);
 	}
 
-	public E update(long id, UnaryOperator<E> operator) throws IOException {
+	public E update(long id, UnaryOperator<E> operator) {
 		var t = btree.get();
 		class A {
 
@@ -163,23 +185,27 @@ public class Store<E> {
 		}
 		var a = new A();
 		t.get(new IdAndElement(id, new BlockReference(-1, -1, 0)), j -> {
-			if (j == null)
-				return null;
-			var e = readElement(j.element);
-			a.e = operator.apply(e);
-			var c = elementHelper.getBytes(a.e);
-			var r = c.length > j.element.capacity() ? t.getMemory().allocate(c.length) : null;
-			var p = r != null ? r.position() : j.element.position();
-			t.getChannel().position(p);
-			var d = ByteBuffer.allocate(r != null ? r.capacity() : j.element.capacity());
-			d.put(0, c);
-			IO.repeat(x -> t.getChannel().write(d), d.remaining());
-			return r != null ? new IdAndElement(id, new BlockReference(-1, r.position(), r.capacity())) : null;
+			try {
+				if (j == null)
+					return null;
+				var e = readElement(j.element);
+				a.e = operator.apply(e);
+				var c = elementHelper.getBytes(a.e);
+				var r = c.length > j.element.capacity() ? t.getMemory().allocate(c.length) : null;
+				var p = r != null ? r.position() : j.element.position();
+				t.getChannel().position(p);
+				var d = ByteBuffer.allocate(r != null ? r.capacity() : j.element.capacity());
+				d.put(0, c);
+				IO.repeat(x -> t.getChannel().write(d), d.remaining());
+				return r != null ? new IdAndElement(id, new BlockReference(-1, r.position(), r.capacity())) : null;
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		});
 		return a.e;
 	}
 
-	public E delete(long id) throws IOException {
+	public E delete(long id) {
 		var t = btree.get();
 		var i = t.remove(new IdAndElement(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
@@ -189,31 +215,29 @@ public class Store<E> {
 		return e;
 	}
 
-	public LongStream ids() throws IOException {
+	public LongStream ids() {
 		return btree.get().stream().mapToLong(IdAndElement::id);
 	}
 
-	public Stream<E> elements() throws IOException {
-		return btree.get().stream().map(IdAndElement::element).map(t -> {
-			try {
-				return readElement(t);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
+	public Stream<E> elements() {
+		return btree.get().stream().map(IdAndElement::element).map(this::readElement);
 	}
 
-	public long count() throws IOException {
+	public long count() {
 		return idAndSize.size;
 	}
 
-	protected E readElement(BlockReference e) throws IOException {
-		var c = btree.get().getChannel();
-		c.position(e.position());
-		var b = ByteBuffer.allocate(e.capacity());
-		IO.repeat(x -> c.read(b), b.remaining());
-		b.position(0);
-		return elementHelper.getElement(b);
+	protected E readElement(BlockReference e) {
+		try {
+			var c = btree.get().getChannel();
+			c.position(e.position());
+			var b = ByteBuffer.allocate(e.capacity());
+			IO.repeat(x -> c.read(b), b.remaining());
+			b.position(0);
+			return elementHelper.getElement(b);
+		} catch (IOException f) {
+			throw new UncheckedIOException(f);
+		}
 	}
 
 	public record IdAndElement(long id, BlockReference element) {
@@ -238,10 +262,9 @@ public class Store<E> {
 
 			@Override
 			public IdAndElement getElement(ByteBuffer buffer) {
-				var p = buffer.position();
-				var i = buffer.getLong(p);
-				var q = buffer.getLong(p + 8);
-				var c = buffer.getInt(p + 2 * 8);
+				var i = buffer.getLong();
+				var q = buffer.getLong();
+				var c = buffer.getInt();
 				return new IdAndElement(i, new BlockReference(-1, q, c));
 			}
 

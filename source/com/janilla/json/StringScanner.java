@@ -26,7 +26,7 @@ package com.janilla.json;
 
 import java.util.List;
 
-class StringScanner implements Scanner {
+public class StringScanner implements Scanner {
 
 	public static void main(String[] args) {
 		var s = """

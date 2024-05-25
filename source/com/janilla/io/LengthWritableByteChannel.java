@@ -34,7 +34,7 @@ import java.util.Objects;
 
 public class LengthWritableByteChannel extends FilterWritableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("foobarbazq".getBytes());
 		var o = new ByteArrayOutputStream();
 		try (var c = new LengthWritableByteChannel(Channels.newChannel(o), 10)) {

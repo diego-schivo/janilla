@@ -32,7 +32,6 @@ import java.util.stream.StreamSupport;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.io.IO;
-import com.janilla.io.IO.Consumer;
 import com.janilla.reflect.Factory;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.Lazy;
@@ -48,9 +47,9 @@ public class ApplicationHandlerBuilder {
 
 	protected Factory factory;
 
-	List<HandlerFactory> factories;
+	List<WebHandlerFactory> factories;
 
-	Supplier<HandlerFactory> handlerFactory = Lazy.of(() -> {
+	Supplier<WebHandlerFactory> handlerFactory = Lazy.of(() -> {
 		factories = buildFactories().toList();
 		var f = new DelegatingHandlerFactory();
 		for (var g : factories) {
@@ -68,36 +67,36 @@ public class ApplicationHandlerBuilder {
 		this.factory = factory;
 	}
 
-	public HandlerFactory getHandlerFactory() {
+	public WebHandlerFactory getHandlerFactory() {
 		return handlerFactory.get();
 	}
 
-	public IO.Consumer<HttpExchange> build() {
+	public WebHandler build() {
 		return c -> {
 			var o = c.getException() != null ? c.getException() : c.getRequest();
 			var h = handlerFactory.get().createHandler(o, c);
 			if (h == null)
 				throw new NotFoundException();
-			h.accept(c);
+			h.handle(c);
 		};
 	}
 
-	protected Stream<HandlerFactory> buildFactories() {
+	protected Stream<WebHandlerFactory> buildFactories() {
 		return Stream.of(buildMethodHandlerFactory(), buildTemplateHandlerFactory(), buildResourceHandlerFactory(),
 				buildJsonHandlerFactory(), buildExceptionHandlerFactory());
 	}
 
 	protected MethodHandlerFactory buildMethodHandlerFactory() {
-		var f = newInstance(MethodHandlerFactory.class);
+		var f = factory.create(MethodHandlerFactory.class);
 
 		var i = new AnnotationDrivenToMethodInvocation() {
 
 			@Override
 			protected Object getInstance(Class<?> c) {
-				var a = factory.getEnclosing();
+				var a = factory.getSource();
 				if (c == a.getClass())
 					return a;
-				return newInstance(c);
+				return factory.create(c);
 			}
 		};
 		i.setTypes(() -> Stream
@@ -109,35 +108,27 @@ public class ApplicationHandlerBuilder {
 	}
 
 	protected TemplateHandlerFactory buildTemplateHandlerFactory() {
-		return newInstance(TemplateHandlerFactory.class);
+		return factory.create(TemplateHandlerFactory.class);
 	}
 
 	protected ResourceHandlerFactory buildResourceHandlerFactory() {
-		var f = newInstance(ResourceHandlerFactory.class);
+		var f = factory.create(ResourceHandlerFactory.class);
 		var s = new ToResourceStream.Simple();
 		s.setPaths(() -> Stream.concat(IO.getPackageFiles("com.janilla.frontend"),
-				IO.getPackageFiles(factory.getEnclosing().getClass().getPackageName())).iterator());
+				IO.getPackageFiles(factory.getSource().getClass().getPackageName())).iterator());
 		f.setToInputStream(s);
 		return f;
 	}
 
 	protected JsonHandlerFactory buildJsonHandlerFactory() {
-		return newInstance(JsonHandlerFactory.class);
+		return factory.create(JsonHandlerFactory.class);
 	}
 
 	protected ExceptionHandlerFactory buildExceptionHandlerFactory() {
-		return newInstance(ExceptionHandlerFactory.class);
+		return factory.create(ExceptionHandlerFactory.class);
 	}
 
-	protected <T> T newInstance(Class<T> type) {
-		var t = factory.newInstance(type);
-		var p = Reflection.property(type, "application");
-		if (p != null)
-			p.set(t, factory.getEnclosing());
-		return t;
-	}
-
-	protected Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+	protected WebHandler createHandler(Object object, HttpExchange exchange) {
 		for (var g : factories)
 			if (g != null) {
 				var h = g.createHandler(object, exchange);

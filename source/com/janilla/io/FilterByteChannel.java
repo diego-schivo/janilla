@@ -30,7 +30,7 @@ import java.nio.channels.ByteChannel;
 
 public class FilterByteChannel extends FilterChannel<ByteChannel> implements ByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var s = new ByteBufferHolder();
 		s.setBuffer(ByteBuffer.wrap("foo".getBytes()).position(3));
 		var d = new ByteBufferHolder();

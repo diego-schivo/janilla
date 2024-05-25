@@ -26,18 +26,16 @@ package com.janilla.web;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.channels.Channels;
 import java.util.function.BiFunction;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
-import com.janilla.io.IO;
 
-public class DelegatingHandlerFactory implements HandlerFactory {
+public class DelegatingHandlerFactory implements WebHandlerFactory {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var f = new DelegatingHandlerFactory();
 		{
 			var f1 = new ResourceHandlerFactory();
@@ -51,7 +49,7 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 						</body>
 					</html>""".getBytes()) : null);
 			var f2 = new ExceptionHandlerFactory();
-			var a = new HandlerFactory[] { f1, f2 };
+			var a = new WebHandlerFactory[] { f1, f2 };
 			f.setToHandler((o, c) -> {
 				if (a != null)
 					for (var g : a) {
@@ -86,10 +84,10 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 						var h = f.createHandler(q, c);
 						if (h == null)
 							throw new NotFoundException();
-						h.accept(c);
+						h.handle(c);
 					} catch (Exception e) {
 						var h = f.createHandler(e, c);
-						h.accept(c);
+						h.handle(c);
 					}
 				}
 
@@ -116,18 +114,18 @@ public class DelegatingHandlerFactory implements HandlerFactory {
 			}
 	}
 
-	BiFunction<Object, HttpExchange, IO.Consumer<HttpExchange>> toHandler;
+	BiFunction<Object, HttpExchange, WebHandler> toHandler;
 
-	public BiFunction<Object, HttpExchange, IO.Consumer<HttpExchange>> getToHandler() {
+	public BiFunction<Object, HttpExchange, WebHandler> getToHandler() {
 		return toHandler;
 	}
 
-	public void setToHandler(BiFunction<Object, HttpExchange, IO.Consumer<HttpExchange>> toHandler) {
+	public void setToHandler(BiFunction<Object, HttpExchange, WebHandler> toHandler) {
 		this.toHandler = toHandler;
 	}
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+	public WebHandler createHandler(Object object, HttpExchange exchange) {
 		return toHandler != null ? toHandler.apply(object, exchange) : null;
 	}
 }

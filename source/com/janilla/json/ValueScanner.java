@@ -27,7 +27,7 @@ package com.janilla.json;
 import java.util.List;
 import java.util.stream.Stream;
 
-class ValueScanner implements Scanner {
+public class ValueScanner implements Scanner {
 
 	int state;
 

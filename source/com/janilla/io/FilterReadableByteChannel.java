@@ -32,7 +32,7 @@ import java.nio.channels.ReadableByteChannel;
 
 public class FilterReadableByteChannel extends FilterChannel<ReadableByteChannel> implements ReadableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("foo".getBytes());
 		try (var c = Channels.newChannel(i); var d = new FilterReadableByteChannel(c)) {
 			var a = new byte[3];

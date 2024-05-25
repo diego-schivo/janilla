@@ -26,13 +26,11 @@ package com.janilla.json;
 
 import java.util.List;
 
-class NumberScanner implements Scanner {
+public class NumberScanner implements Scanner {
 
 	int state;
 
 	StringBuilder buffer;
-
-//	int scale;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {
@@ -73,13 +71,6 @@ class NumberScanner implements Scanner {
 					a = true;
 					yield 3;
 				}
-//				Number n;
-//				try {
-//					n = Integer.parseInt(buffer.toString());
-//				} catch (NumberFormatException e) {
-//					n = Long.parseLong(buffer.toString());
-//				}
-//				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, n));
 				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, Long.parseLong(buffer.toString())));
 				a = false;
 				yield 5;
@@ -88,7 +79,6 @@ class NumberScanner implements Scanner {
 			case 3 -> {
 				if (value >= '0' && value <= '9') {
 					buffer.append((char) value);
-//					scale = 1;
 					a = true;
 					yield 4;
 				}
@@ -99,12 +89,9 @@ class NumberScanner implements Scanner {
 			case 4 -> {
 				if (value >= '0' && value <= '9') {
 					buffer.append((char) value);
-//					scale++;
 					a = true;
 					yield 4;
 				}
-//				tokens.add(
-//						new JsonToken<>(JsonToken.Type.NUMBER, BigDecimal.valueOf(Long.parseLong(buffer.toString()), scale)));
 				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, Double.parseDouble(buffer.toString())));
 				a = false;
 				yield 5;

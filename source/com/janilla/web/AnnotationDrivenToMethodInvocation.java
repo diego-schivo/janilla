@@ -25,7 +25,6 @@
 package com.janilla.web;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -52,7 +51,7 @@ import com.janilla.util.Lazy;
 
 public class AnnotationDrivenToMethodInvocation implements Function<HttpRequest, MethodInvocation> {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		class C {
 
 			@Handle(method = "GET", path = "/foo/(.*)")

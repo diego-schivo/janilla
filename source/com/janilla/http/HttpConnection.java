@@ -24,7 +24,6 @@
  */
 package com.janilla.http;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -34,7 +33,7 @@ import javax.net.ssl.SSLEngine;
 import com.janilla.io.FilterByteChannel;
 import com.janilla.io.IO;
 
-public class HttpConnection implements Closeable {
+public class HttpConnection implements AutoCloseable {
 
 	protected SocketChannel channel;
 
@@ -105,7 +104,7 @@ public class HttpConnection implements Closeable {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		try {
 			input.close();
 		} catch (IOException e) {
@@ -115,6 +114,9 @@ public class HttpConnection implements Closeable {
 		} catch (IOException e) {
 		}
 		while (channel.isOpen())
-			channel.close();
+			try {
+				channel.close();
+			} catch (IOException e) {
+			}
 	}
 }

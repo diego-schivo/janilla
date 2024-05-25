@@ -29,15 +29,15 @@ import java.util.NoSuchElementException;
 
 import com.janilla.json.JsonToken.Type;
 
-class StringIterator implements Iterator<JsonToken<?>> {
+public class StringIterator implements Iterator<JsonToken<?>> {
 
-	String string;
+	protected String string;
 
 	int state;
 
 	JsonToken<?> token;
 
-	StringIterator(String string) {
+	public void setString(String string) {
 		this.string = string;
 	}
 

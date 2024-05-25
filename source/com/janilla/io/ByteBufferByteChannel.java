@@ -33,7 +33,7 @@ import java.nio.channels.Channels;
 
 public class ByteBufferByteChannel implements ByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var s = new ByteBufferHolder();
 		s.setBuffer(ByteBuffer.allocate(10));
 		var d = new ByteBufferHolder();

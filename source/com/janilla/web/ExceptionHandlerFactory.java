@@ -26,18 +26,16 @@ package com.janilla.web;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.channels.Channels;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpResponse.Status;
-import com.janilla.io.IO;
 
-public class ExceptionHandlerFactory implements HandlerFactory {
+public class ExceptionHandlerFactory implements WebHandlerFactory {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var f = new ExceptionHandlerFactory();
 
 		var i = new ByteArrayInputStream("""
@@ -55,7 +53,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 			c.setRequest(q);
 			c.setResponse(s);
 			var h = f.createHandler(e, c);
-			h.accept(c);
+			h.handle(c);
 		}
 
 		var t = o.toString();
@@ -69,7 +67,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+	public WebHandler createHandler(Object object, HttpExchange exchange) {
 		if (object instanceof Exception e) {
 			var f = e.getClass().getAnnotation(Error.class);
 			return c -> handle(f, c);
@@ -77,7 +75,7 @@ public class ExceptionHandlerFactory implements HandlerFactory {
 		return null;
 	}
 
-	protected void handle(Error error, HttpExchange exchange) throws IOException {
+	protected void handle(Error error, HttpExchange exchange) {
 		var s = error != null ? new Status(error.code(), error.text()) : new Status(500, "Internal Server Error");
 		exchange.getResponse().setStatus(s);
 		exchange.getResponse().getHeaders().set("Cache-Control", "no-cache");

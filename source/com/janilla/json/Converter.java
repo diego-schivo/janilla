@@ -32,7 +32,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -145,14 +145,14 @@ public class Converter {
 				return n.entrySet().stream().map(e -> {
 					var k = convert(e.getKey(), aa[0]);
 					var v = convert(e.getValue(), aa[1]);
-					return new SimpleEntry<>(k, v);
+					return new AbstractMap.SimpleEntry<>(k, v);
 				}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 			}
 			if (r == Map.Entry.class) {
 				var aa = ((ParameterizedType) target).getActualTypeArguments();
 				var k = convert(n.get("key"), aa[0]);
 				var v = convert(n.get("value"), aa[1]);
-				return new SimpleEntry<>(k, v);
+				return new AbstractMap.SimpleEntry<>(k, v);
 			}
 			return convert(n, r);
 		}
@@ -185,10 +185,11 @@ public class Converter {
 			} else {
 				o = d.newInstance();
 				for (var e : input.entrySet()) {
-					if (e.getKey().equals("$type"))
+					var n = (String) e.getKey();
+					if (n.startsWith("$"))
 						continue;
 					// System.out.println("e=" + e);
-					var s = Reflection.property(target, (String) e.getKey());
+					var s = Reflection.property(target, n);
 					var v = convert(e.getValue(), s.getGenericType());
 					// System.out.println("s=" + s + ", i=" + i + ", v=" + v);
 					s.set(o, v);

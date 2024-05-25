@@ -143,30 +143,14 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 			switch (Objects.toString(exchange.getRequest().getHeaders().get("Content-Type"), "").split(";")[0]) {
 			case "application/json":
 //				System.out.println("body=" + body);
-//				try {
-//					return body != null ? Json.convert(Json.parse(body.get()), c, typeResolver) : null;
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
 				if (body == null)
 					return null;
 				var z = new Converter();
-//				z.setTypeResolver(typeResolver);
-//				z.setResolver(x -> x.map().containsKey("$type")
-//						? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
-//						: null);
-//				var u = type.getAnnotation(Foo.class);
-//				if (u != null)
-//					try {
-//						z.setResolver(u.value().getConstructor().newInstance());
-//					} catch (ReflectiveOperationException e) {
-//						throw new RuntimeException(e);
-//					}
 				if (resolver != null)
 					z.setResolver(resolver.get());
 				return z.convert(Json.parse(body.get()), c);
 			case "application/x-www-form-urlencoded": {
-				var t = newEntryTree();
+				var t = createEntryTree();
 				t.setTypeResolver(typeResolver);
 				entries.forEach(t::add);
 				return t.convert(c);
@@ -226,16 +210,14 @@ public class MethodArgumentsResolver implements BiFunction<MethodInvocation, Htt
 		var c = (Class<?>) type;
 		var i = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
-//		return Json.convert(i, c, typeResolver);
 		var z = new Converter();
-//		z.setTypeResolver(typeResolver);
 		z.setResolver(x -> x.map().containsKey("$type")
 				? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
 				: null);
 		return z.convert(i, c);
 	}
 
-	protected EntryTree newEntryTree() {
+	protected EntryTree createEntryTree() {
 		return new EntryTree();
 	}
 }

@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
@@ -39,11 +40,10 @@ import com.janilla.http.HttpMessageReadableByteChannel;
 import com.janilla.http.HttpMessageWritableByteChannel;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse.Status;
-import com.janilla.io.IO;
 
-public class ResourceHandlerFactory implements HandlerFactory {
+public class ResourceHandlerFactory implements WebHandlerFactory {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var f = new ResourceHandlerFactory();
 		f.setToInputStream(u -> u.getPath().equals("/test.html") ? new ByteArrayInputStream("""
 				<html>
@@ -69,7 +69,7 @@ public class ResourceHandlerFactory implements HandlerFactory {
 			c.setRequest(q);
 			c.setResponse(s);
 			var h = f.createHandler(q, c);
-			h.accept(c);
+			h.handle(c);
 		}
 
 		var s = o.toString();
@@ -100,13 +100,13 @@ public class ResourceHandlerFactory implements HandlerFactory {
 	}
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+	public WebHandler createHandler(Object object, HttpExchange exchange) {
 		var u = object instanceof HttpRequest q ? q.getURI() : null;
 		var i = u != null ? toInputStream.apply(u) : null;
 		return i != null ? c -> handle(i, (HttpRequest) object, c) : null;
 	}
 
-	protected void handle(InputStream stream, HttpRequest request, HttpExchange exchange) throws IOException {
+	protected void handle(InputStream stream, HttpRequest request, HttpExchange exchange) {
 		try {
 			var s = exchange.getResponse();
 			s.setStatus(new Status(200, "OK"));
@@ -129,8 +129,13 @@ public class ResourceHandlerFactory implements HandlerFactory {
 
 			var b = (WritableByteChannel) s.getBody();
 			stream.transferTo(Channels.newOutputStream(b));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		} finally {
-			stream.close();
+			try {
+				stream.close();
+			} catch (IOException e) {
+			}
 		}
 	}
 }

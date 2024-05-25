@@ -31,16 +31,19 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.IO;
+import com.janilla.io.TransactionalByteChannel;
 
 public class BTree<E> {
 
@@ -53,36 +56,45 @@ public class BTree<E> {
 		System.out.println(Arrays.toString(b));
 
 		var f = Files.createTempFile("btree", "");
-		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
-				StandardOpenOption.WRITE)) {
-			IO.Supplier<BTree<Integer>> g = () -> {
-				var m = new Memory();
-				var u = m.getFreeBTree();
-				u.setOrder(o);
-				u.setChannel(c);
-				u.setRoot(BlockReference.read(c, 0));
-				m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
+		var g = Files.createTempFile("btree", ".transaction");
+		try (var c = new TransactionalByteChannel(
+				FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
+				FileChannel.open(g, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+			Supplier<BTree<Integer>> ts = () -> {
+				try {
+					var m = new Memory();
+					var u = m.getFreeBTree();
+					u.setOrder(o);
+					u.setChannel(c);
+					u.setRoot(BlockReference.read(c, 0));
+					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
 
-				var t = new BTree<Integer>();
-				t.setOrder(o);
-				t.setChannel(c);
-				t.setMemory(m);
-				t.setHelper(ElementHelper.INTEGER);
-				t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
-				return t;
+					var t = new BTree<Integer>();
+					t.setOrder(o);
+					t.setChannel(c);
+					t.setMemory(m);
+					t.setHelper(ElementHelper.INTEGER);
+					t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+					return t;
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			};
 
+			c.startTransaction();
 			{
-				var t = g.get();
+				var t = ts.get();
 				for (var i : a)
 					t.add(i);
 			}
+			c.commitTransaction();
 
 			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 
+			c.startTransaction();
 			int[] e;
 			{
-				var t = g.get();
+				var t = ts.get();
 				for (var i : b) {
 					t.remove(a[i]);
 					a[i] = -1;
@@ -90,11 +102,12 @@ public class BTree<E> {
 				e = Arrays.stream(a).filter(x -> x >= 0).toArray();
 				System.out.println(Arrays.toString(e));
 			}
+			c.commitTransaction();
 
 			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 
 			{
-				var t = g.get();
+				var t = ts.get();
 				var s = t.stream().mapToInt(Integer::intValue).toArray();
 				System.out.println(Arrays.toString(s));
 				Arrays.sort(e);
@@ -153,16 +166,16 @@ public class BTree<E> {
 		this.root = root;
 	}
 
-	public void add(E element) throws IOException {
+	public void add(E element) {
 		add(element, null);
 	}
 
-	public void add(E element, IO.UnaryOperator<E> operator) throws IOException {
+	public void add(E element, UnaryOperator<E> operator) {
 //		System.out.println("add element=" + element);
 
 		BlockReference r = root;
 		var n = new Node();
-		var l = new LinkedList<ElementReference>();
+		var l = new ArrayDeque<ElementReference>();
 		for (;;) {
 			n.setReference(r);
 			n.read();
@@ -177,16 +190,16 @@ public class BTree<E> {
 		}
 	}
 
-	public E get(E element) throws IOException {
+	public E get(E element) {
 		return get(element, null);
 	}
 
-	public E get(E element, IO.UnaryOperator<E> operator) throws IOException {
+	public E get(E element, UnaryOperator<E> operator) {
 //		System.out.println("get element=" + element);
 
 		BlockReference r = root;
 		var n = new Node();
-		var l = new LinkedList<ElementReference>();
+		var l = new ArrayDeque<ElementReference>();
 		for (;;) {
 			n.setReference(r);
 			n.read();
@@ -201,16 +214,16 @@ public class BTree<E> {
 		}
 	}
 
-	public E getOrAdd(E element) throws IOException {
+	public E getOrAdd(E element) {
 		return getOrAdd(element, null);
 	}
 
-	public E getOrAdd(E element, IO.UnaryOperator<E> operator) throws IOException {
+	public E getOrAdd(E element, UnaryOperator<E> operator) {
 //		System.out.println("getOrAdd element=" + element);
 
 		BlockReference r = root;
 		var n = new Node();
-		var l = new LinkedList<ElementReference>();
+		var l = new ArrayDeque<ElementReference>();
 		for (;;) {
 			n.setReference(r);
 			n.read();
@@ -227,12 +240,12 @@ public class BTree<E> {
 		}
 	}
 
-	public E remove(E element) throws IOException {
+	public E remove(E element) {
 //		System.out.println("remove element=" + element);
 
 		BlockReference r = root;
 		var n = new Node();
-		var l = new LinkedList<ElementReference>();
+		var l = new ArrayDeque<ElementReference>();
 		for (;;) {
 			n.setReference(r);
 			n.read();
@@ -247,7 +260,7 @@ public class BTree<E> {
 		}
 	}
 
-	public Stream<E> stream() throws IOException {
+	public Stream<E> stream() {
 		var r = root;
 		var n = new Node();
 		class A {
@@ -256,7 +269,7 @@ public class BTree<E> {
 
 			int i;
 		}
-		var l = new LinkedList<A>();
+		var l = new ArrayDeque<A>();
 		do {
 			n.setReference(r);
 			n.read();
@@ -277,7 +290,7 @@ public class BTree<E> {
 				return true;
 			}
 
-			E n() throws IOException {
+			E n() {
 				var a = l.peek();
 				if (a == null) {
 					e = true;
@@ -325,16 +338,10 @@ public class BTree<E> {
 		}
 
 		var b = new B();
-		return Stream.iterate(b.n(), x -> b.h(), x -> {
-			try {
-				return b.n();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
+		return Stream.iterate(b.n(), x -> b.h(), x -> b.n());
 	}
 
-	void add(E element, IO.UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) throws IOException {
+	void add(E element, UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) {
 //		System.out.println("add element=" + element);
 		BlockReference r;
 		var e = element;
@@ -442,7 +449,7 @@ public class BTree<E> {
 			root = node.reference;
 	}
 
-	E get(IO.UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) throws IOException {
+	E get(UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) {
 		var a = stack.pop();
 		node.setReference(a.node);
 		node.reset();
@@ -458,7 +465,7 @@ public class BTree<E> {
 		return e;
 	}
 
-	E remove(Node node, LinkedList<ElementReference> stack) throws IOException {
+	E remove(Node node, Deque<ElementReference> stack) {
 		BlockReference r;
 		var a = stack.pop();
 		node.setReference(a.node);
@@ -599,7 +606,7 @@ public class BTree<E> {
 
 		boolean referenceChanged;
 
-		void setReference(BlockReference reference) throws IOException {
+		void setReference(BlockReference reference) {
 			this.reference = reference;
 			var c = reference != null ? reference.capacity() : 0;
 			if (c > (buffer != null ? buffer.capacity() : 0))
@@ -626,7 +633,7 @@ public class BTree<E> {
 			return s;
 		}
 
-		void appendChildren(Node source, int start, int length) throws IOException {
+		void appendChildren(Node source, int start, int length) {
 			if (length == 0)
 				return;
 			var l = (buffer != null ? buffer.limit() : 2 * 4) + length * BlockReference.HELPER_LENGTH;
@@ -643,7 +650,7 @@ public class BTree<E> {
 			changed = true;
 		}
 
-		void appendElements(Node source, int start, int length) throws IOException {
+		void appendElements(Node source, int start, int length) {
 			if (length == 0)
 				return;
 			source.buffer.position(2 * 4 + source.buffer.getInt(4) * BlockReference.HELPER_LENGTH);
@@ -667,7 +674,7 @@ public class BTree<E> {
 			changed = true;
 		}
 
-		BlockReference deleteChild(int index) throws IOException {
+		BlockReference deleteChild(int index) {
 			var p = 2 * 4 + index * BlockReference.HELPER_LENGTH;
 			var r = new BlockReference(-1, buffer.getLong(p), buffer.getInt(p + 8));
 			var q = p + BlockReference.HELPER_LENGTH;
@@ -680,7 +687,7 @@ public class BTree<E> {
 			return r;
 		}
 
-		E deleteElement(int index) throws IOException {
+		E deleteElement(int index) {
 			buffer.position(2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH);
 			for (var i = 0; i < index; i++)
 				buffer.position(buffer.position() + helper.getLength(buffer));
@@ -734,7 +741,7 @@ public class BTree<E> {
 			return -i - 1;
 		}
 
-		void insertChild(int index, BlockReference child) throws IOException {
+		void insertChild(int index, BlockReference child) {
 			var l = buffer.limit() + BlockReference.HELPER_LENGTH;
 			resize(l);
 			var p = 2 * 4 + index * BlockReference.HELPER_LENGTH;
@@ -749,7 +756,7 @@ public class BTree<E> {
 			changed = true;
 		}
 
-		void insertElement(int index, E element) throws IOException {
+		void insertElement(int index, E element) {
 			int p;
 			if (buffer == null && index == 0)
 				p = 2 * 4;
@@ -772,28 +779,32 @@ public class BTree<E> {
 			changed = true;
 		}
 
-		void read() throws IOException {
-			var c = reference.capacity();
-			if (c == 0)
-				return;
-			if (c > (buffer != null ? buffer.capacity() : 0))
-				resize(c);
-			channel.position(reference.position());
-			buffer.position(0);
-			buffer.limit(reference.capacity());
-			IO.repeat(x -> channel.read(buffer), buffer.remaining());
-			buffer.limit(buffer.getInt(0));
-			changed = false;
+		void read() {
+			try {
+				var c = reference.capacity();
+				if (c == 0)
+					return;
+				if (c > (buffer != null ? buffer.capacity() : 0))
+					resize(c);
+				channel.position(reference.position());
+				buffer.position(0);
+				buffer.limit(reference.capacity());
+				IO.repeat(x -> channel.read(buffer), buffer.remaining());
+				buffer.limit(buffer.getInt(0));
+				changed = false;
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
 
-		void replaceChild(int index, BlockReference child) throws IOException {
+		void replaceChild(int index, BlockReference child) {
 			var p = 2 * 4 + index * BlockReference.HELPER_LENGTH;
 			buffer.putLong(p, child.position());
 			buffer.putInt(p + 8, child.capacity());
 			changed = true;
 		}
 
-		void replaceElement(int index, E element) throws IOException {
+		void replaceElement(int index, E element) {
 			buffer.position(2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH);
 			for (var i = 0; i < index; i++)
 				buffer.position(buffer.position() + helper.getLength(buffer));
@@ -821,7 +832,7 @@ public class BTree<E> {
 			changed = false;
 		}
 
-		void resize(int length) throws IOException {
+		void resize(int length) {
 			var r = reference;
 			if (length > r.capacity()) {
 				if (r.capacity() > 0)
@@ -848,27 +859,36 @@ public class BTree<E> {
 			}
 		}
 
-		void write() throws IOException {
-			if (!changed)
-				return;
-			channel.position(reference.position());
-			var l = buffer.limit();
-			buffer.position(0);
-			buffer.limit(reference.capacity());
-			IO.repeat(x -> channel.write(buffer), buffer.remaining());
-			buffer.limit(l);
-			changed = false;
+		void write() {
+			try {
+				if (!changed)
+					return;
+				int l;
+				channel.position(reference.position());
+				l = buffer.limit();
+				buffer.position(0);
+				buffer.limit(reference.capacity());
+				IO.repeat(x -> channel.write(buffer), buffer.remaining());
+				buffer.limit(l);
+				changed = false;
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
 
-		void writeReference() throws IOException {
-			if (!referenceChanged)
-				return;
-			if (reference.self() >= 0)
-				BlockReference.write(reference, channel);
-			referenceChanged = false;
+		void writeReference() {
+			try {
+				if (!referenceChanged)
+					return;
+				if (reference.self() >= 0)
+					BlockReference.write(reference, channel);
+				referenceChanged = false;
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
 
-		void copyTo(Node destination) throws IOException {
+		void copyTo(Node destination) {
 			destination.setReference(reference);
 			System.arraycopy(buffer.array(), 0, destination.buffer.array(), 0, buffer.limit());
 			destination.buffer.limit(buffer.limit());

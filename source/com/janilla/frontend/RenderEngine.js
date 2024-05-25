@@ -73,8 +73,9 @@ class RenderEngine {
 						this.evaluate(expression);
 						if (expression.length === 0)
 							return this.stack.at(-1).value;
-						const c = this.stack.pop();
-						return await this.render(c);
+						//const c = this.stack.pop();
+						//return await this.render(c);
+						return await this.render();
 					} finally {
 						while (this.stack.length > s + 1)
 							this.stack.pop();

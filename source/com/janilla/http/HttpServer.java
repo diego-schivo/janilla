@@ -56,10 +56,11 @@ import com.janilla.net.Net;
 import com.janilla.web.HandleException;
 import com.janilla.web.NotFoundException;
 import com.janilla.web.UnauthenticatedException;
+import com.janilla.web.WebHandler;
 
 public class HttpServer implements Runnable {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var s = new HttpServer();
 		s.setBufferCapacity(100);
 		s.setMaxMessageLength(1000);
@@ -76,7 +77,11 @@ public class HttpServer implements Runnable {
 			case "POST /foo":
 				c.getResponse().setStatus(new Status(200, "OK"));
 				var b = (WritableByteChannel) c.getResponse().getBody();
-				Channels.newOutputStream(b).write("bar".getBytes());
+				try {
+					Channels.newOutputStream(b).write("bar".getBytes());
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 				break;
 			default:
 				c.getResponse().setStatus(new Status(404, "Not Found"));
@@ -97,7 +102,6 @@ public class HttpServer implements Runnable {
 
 		try (var c = new HttpClient()) {
 			c.setAddress(s.getAddress());
-//			c.setSSLContext(x);
 			try {
 				var x = SSLContext.getInstance("TLSv1.2");
 				x.init(null, null, null);
@@ -106,38 +110,48 @@ public class HttpServer implements Runnable {
 				throw new RuntimeException(e);
 			}
 			var u = c.query(d -> {
-				d.getRequest().setMethod(new Method("POST"));
-				d.getRequest().setURI(URI.create("/foo"));
-				d.getRequest().getHeaders().add("Content-Length", "120");
-				d.getRequest().getHeaders().add("Connection", "keep-alive");
-				try (var bc = (WritableByteChannel) d.getRequest().getBody()) {
-					for (var i = 0; i < 10; i++)
-						IO.write("foobarbazqux".getBytes(), bc);
+				try (var q = d.getRequest()) {
+					q.setMethod(new Method("POST"));
+					q.setURI(URI.create("/foo"));
+					q.getHeaders().add("Content-Length", "120");
+					q.getHeaders().add("Connection", "keep-alive");
+					try (var bc = (WritableByteChannel) q.getBody()) {
+						for (var i = 0; i < 10; i++)
+							IO.write("foobarbazqux".getBytes(), bc);
+					}
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
 				}
-				d.getRequest().close();
 
-				var t = d.getResponse().getStatus();
-				System.out.println(t);
-				assert t.equals(new Status(200, "OK")) : t;
+				try (var z = d.getResponse()) {
+					var t = z.getStatus();
+					System.out.println(t);
+					assert t.equals(new Status(200, "OK")) : t;
 
-				return new String(
-						Channels.newInputStream((ReadableByteChannel) d.getResponse().getBody()).readAllBytes());
+					return new String(IO.readAllBytes((ReadableByteChannel) z.getBody()));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			});
 			System.out.println(u);
 			assert u.equals("bar") : u;
 
 			u = c.query(d -> {
-				d.getRequest().setMethod(new Method("GET"));
-				d.getRequest().setURI(URI.create("/baz"));
-				d.getRequest().getHeaders().add("Connection", "close");
-				d.getRequest().close();
+				try (var q = d.getRequest()) {
+					q.setMethod(new Method("GET"));
+					q.setURI(URI.create("/baz"));
+					q.getHeaders().add("Connection", "close");
+				}
 
-				var t = d.getResponse().getStatus();
-				System.out.println(t);
-				assert t.equals(new Status(404, "Not Found")) : t;
+				try (var z = d.getResponse()) {
+					var t = z.getStatus();
+					System.out.println(t);
+					assert t.equals(new Status(404, "Not Found")) : t;
 
-				return new String(
-						Channels.newInputStream((ReadableByteChannel) d.getResponse().getBody()).readAllBytes());
+					return new String(IO.readAllBytes((ReadableByteChannel) z.getBody()));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			});
 			System.out.println(u);
 			assert u.equals("") : u;
@@ -150,7 +164,7 @@ public class HttpServer implements Runnable {
 
 	private Executor executor;
 
-	private IO.Consumer<HttpExchange> handler;
+	private WebHandler handler;
 
 	private long idleTimerPeriod;
 
@@ -184,11 +198,11 @@ public class HttpServer implements Runnable {
 		this.executor = executor;
 	}
 
-	public IO.Consumer<HttpExchange> getHandler() {
+	public WebHandler getHandler() {
 		return handler;
 	}
 
-	public void setHandler(IO.Consumer<HttpExchange> handler) {
+	public void setHandler(WebHandler handler) {
 		this.handler = handler;
 	}
 
@@ -276,10 +290,7 @@ public class HttpServer implements Runnable {
 //						System.out.println(Thread.currentThread().getName() + " IdleTimer s " + s.size());
 
 						for (var c : s)
-							try {
-								c.close();
-							} catch (IOException x) {
-							}
+							c.close();
 					}
 				}
 			}, p, p);
@@ -356,8 +367,7 @@ public class HttpServer implements Runnable {
 		selector.wakeup();
 	}
 
-	protected void handle(IO.Consumer<HttpExchange> handler, HttpConnection connection,
-			Map<HttpConnection, Long> connectionMillis) {
+	protected void handle(WebHandler handler, HttpConnection connection, Map<HttpConnection, Long> connectionMillis) {
 //		System.out.println(
 //		Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m) + ")");
 
@@ -400,14 +410,11 @@ public class HttpServer implements Runnable {
 //		+ ")" + " " + LocalTime.now());
 	}
 
-	protected void handle(IO.Consumer<HttpExchange> handler, HttpRequest request, HttpResponse response)
-			throws IOException {
-		var c = createExchange(request);
-		c.setRequest(request);
-		c.setResponse(response);
+	protected void handle(WebHandler handler, HttpRequest request, HttpResponse response) {
+		var c = buildExchange(request, response);
 		Exception e;
 		try {
-			handler.accept(c);
+			handler.handle(c);
 			e = null;
 		} catch (UncheckedIOException x) {
 			e = x.getCause();
@@ -427,11 +434,14 @@ public class HttpServer implements Runnable {
 				break;
 			}
 			c.setException(e);
-			handler.accept(c);
+			handler.handle(c);
 		}
 	}
 
-	protected HttpExchange createExchange(HttpRequest request) {
-		return new HttpExchange();
+	protected HttpExchange buildExchange(HttpRequest request, HttpResponse response) {
+		var e = new HttpExchange();
+		e.setRequest(request);
+		e.setResponse(response);
+		return e;
 	}
 }

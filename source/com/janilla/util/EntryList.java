@@ -24,7 +24,7 @@
  */
 package com.janilla.util;
 
-import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +52,7 @@ public class EntryList<K, V> extends ArrayList<Entry<K, V>> {
 	}
 
 	public void add(K key, V value) {
-		add(new SimpleEntry<>(key, value));
+		add(new AbstractMap.SimpleEntry<>(key, value));
 	}
 
 	public V get(Object key) {

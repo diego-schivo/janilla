@@ -24,7 +24,6 @@
  */
 package com.janilla.http;
 
-import java.io.IOException;
 import java.nio.channels.Channel;
 
 import com.janilla.util.EntryList;
@@ -48,7 +47,7 @@ public abstract class FilterHttpMessage<T extends HttpMessage> implements HttpMe
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		message.close();
 	}
 }

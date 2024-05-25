@@ -24,14 +24,14 @@
  */
 package com.janilla.http;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.GeneralSecurityException;
+import java.util.function.Function;
 
 import javax.net.ssl.SSLContext;
 
@@ -39,9 +39,9 @@ import com.janilla.http.HttpRequest.Method;
 import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
 
-public class HttpClient implements Closeable {
+public class HttpClient implements AutoCloseable {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		try (var c = new HttpClient()) {
 			c.setAddress(new InetSocketAddress("www.google.com", 443));
 			try {
@@ -63,10 +63,13 @@ public class HttpClient implements Closeable {
 				System.out.println(t);
 				assert t.equals(new Status(200, "OK")) : t;
 
-				return new String(Channels.newInputStream((ReadableByteChannel) s.getBody()).readAllBytes());
+				try {
+					return new String(IO.readAllBytes((ReadableByteChannel) s.getBody()));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			});
 			System.out.println(u);
-//			assert u.equals("foo") : u;
 		}
 	}
 
@@ -92,33 +95,38 @@ public class HttpClient implements Closeable {
 		this.sslContext = sslContext;
 	}
 
-	public <T> T query(IO.Function<HttpExchange, T> handler) throws IOException {
+	public <T> T query(Function<HttpExchange, T> handler) {
 		if (connection == null) {
-			var c = SocketChannel.open();
-			c.configureBlocking(true);
-			c.connect(address);
-			var e = sslContext != null ? sslContext.createSSLEngine(address.getHostName(), address.getPort()) : null;
-			if (e != null) {
-				e.setUseClientMode(true);
-				var pp = e.getSSLParameters();
-				pp.setApplicationProtocols(new String[] { "http/1.1" });
-				e.setSSLParameters(pp);
+			try {
+				var c = SocketChannel.open();
+				c.configureBlocking(true);
+				c.connect(address);
+				var e = sslContext != null ? sslContext.createSSLEngine(address.getHostName(), address.getPort())
+						: null;
+				if (e != null) {
+					e.setUseClientMode(true);
+					var pp = e.getSSLParameters();
+					pp.setApplicationProtocols(new String[] { "http/1.1" });
+					e.setSSLParameters(pp);
+				}
+				connection = new HttpConnection(c, e);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
-			connection = new HttpConnection(c, e);
 		}
 
 		try (var r = connection.getOutput().writeRequest(); var s = connection.getInput().readResponse()) {
-			return handler.apply(newExchange(r, s));
+			return handler.apply(buildExchange(r, s));
 		}
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		if (connection != null)
 			connection.close();
 	}
 
-	protected HttpExchange newExchange(HttpRequest request, HttpResponse response) {
+	protected HttpExchange buildExchange(HttpRequest request, HttpResponse response) {
 		var c = new HttpExchange();
 		c.setRequest(request);
 		c.setResponse(response);

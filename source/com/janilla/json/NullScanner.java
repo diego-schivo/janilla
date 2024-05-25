@@ -26,7 +26,7 @@ package com.janilla.json;
 
 import java.util.List;
 
-class NullScanner implements Scanner {
+public class NullScanner implements Scanner {
 
 	int state;
 

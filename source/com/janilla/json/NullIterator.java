@@ -27,7 +27,7 @@ package com.janilla.json;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-class NullIterator implements Iterator<JsonToken<?>> {
+public class NullIterator implements Iterator<JsonToken<?>> {
 
 	int state;
 

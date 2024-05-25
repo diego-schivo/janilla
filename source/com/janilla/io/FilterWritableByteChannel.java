@@ -32,7 +32,7 @@ import java.nio.channels.WritableByteChannel;
 
 public class FilterWritableByteChannel extends FilterChannel<WritableByteChannel> implements WritableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var o = new ByteArrayOutputStream();
 		try (var c = new FilterWritableByteChannel(Channels.newChannel(o))) {
 			var b = "foo".getBytes();

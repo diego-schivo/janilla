@@ -46,10 +46,8 @@ public class ReflectionJsonIterator extends JsonIterator {
 		t.setObject(c);
 		var s = Json.format(t);
 		System.out.println(s);
-//		var o = Json.parse(s, Json.parseCollector(C.class));
 		C o = null;
 		System.out.println(o);
-//		assert o.equals(c) : o;
 	}
 
 	public static class C {
@@ -121,9 +119,18 @@ public class ReflectionJsonIterator extends JsonIterator {
 
 	public record D(int i) {
 	}
+	
+	protected boolean includeType;
+	
+	public void setIncludeType(boolean includeType) {
+		this.includeType = includeType;
+	}
 
 	@Override
-	public Iterator<JsonToken<?>> newValueIterator(Object object) {
-		return new ReflectionValueIterator(object, this);
+	public Iterator<JsonToken<?>> buildValueIterator(Object object) {
+		var i = new ReflectionValueIterator();
+		i.setContext(this);
+		i.setObject(object);
+		return i;
 	}
 }

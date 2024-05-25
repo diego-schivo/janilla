@@ -30,12 +30,13 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
 import com.janilla.io.ElementHelper;
@@ -44,7 +45,7 @@ import com.janilla.util.Lazy;
 
 public class Memory {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var o = 3;
 		var f = Files.createTempFile("memory", "");
 		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
@@ -122,13 +123,13 @@ public class Memory {
 		t.setMemory(new Memory() {
 
 			@Override
-			public void free(BlockReference reference) throws IOException {
+			public void free(BlockReference reference) {
 //				System.out.println("free " + reference + "!");
 				t.queue.offer(reference);
 			}
 
 			@Override
-			public BlockReference allocate(int size) throws IOException {
+			public BlockReference allocate(int size) {
 				var c = computeCapacity(size);
 				var p = m.append(c);
 				var r = new BlockReference(-1, p, c);
@@ -151,7 +152,7 @@ public class Memory {
 		return freeBTree.get();
 	}
 
-	public BlockReference allocate(int size) throws IOException {
+	public BlockReference allocate(int size) {
 		var c = computeCapacity(size);
 		var r = freeBTree.get().remove(new BlockReference(-1, -1, c));
 		if (r != null) {
@@ -164,14 +165,14 @@ public class Memory {
 		return r;
 	}
 
-	public void free(BlockReference reference) throws IOException {
+	public void free(BlockReference reference) {
 		var r = reference;
 //		System.out.println("free " + r);
 		var t = freeBTree.get();
 		t.getOrAdd(r);
 	}
 
-	protected long append(int capacity) throws IOException {
+	protected long append(int capacity) {
 		var p = appendPosition;
 		appendPosition += capacity;
 		return p;
@@ -245,21 +246,21 @@ public class Memory {
 
 	protected static class FreeBTree extends BTree<BlockReference> {
 
-		protected Queue<BlockReference> queue = new LinkedList<>();
+		protected Queue<BlockReference> queue = new ArrayDeque<>();
 
 		{
 			setHelper(BlockReference.HELPER);
 		}
 
 		@Override
-		public void add(BlockReference element, IO.UnaryOperator<BlockReference> operator) throws IOException {
+		public void add(BlockReference element, UnaryOperator<BlockReference> operator) {
 			super.add(element, operator);
 			while (!queue.isEmpty())
 				super.add(queue.poll());
 		}
 
 		@Override
-		public BlockReference remove(BlockReference element) throws IOException {
+		public BlockReference remove(BlockReference element) {
 			var e = super.remove(element);
 			while (!queue.isEmpty())
 				super.add(queue.poll());

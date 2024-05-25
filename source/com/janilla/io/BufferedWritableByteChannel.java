@@ -33,7 +33,7 @@ import java.util.List;
 
 public class BufferedWritableByteChannel extends FilterWritableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var o = new ByteArrayOutputStream();
 		try (var c = new BufferedWritableByteChannel(Channels.newChannel(o), ByteBuffer.allocate(10))) {
 			for (var s : List.of("foo", "bar", "baz")) {

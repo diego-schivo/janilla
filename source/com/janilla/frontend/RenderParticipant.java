@@ -22,45 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.io;
+package com.janilla.frontend;
 
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
+public interface RenderParticipant {
 
-public class ByteBufferHolder {
-
-	public static void main(String[] args) {
-		var h = new ByteBufferHolder();
-		h.setBuffer(ByteBuffer.allocate(10));
-		try {
-			h.getBuffer().put("foobarbazqux".getBytes());
-			assert false;
-		} catch (BufferOverflowException e) {
-		}
-
-		h.grow();
-		h.getBuffer().put("foobarbazqux".getBytes());
-	}
-
-	ByteBuffer buffer;
-
-	public ByteBuffer getBuffer() {
-		return buffer;
-	}
-
-	public void setBuffer(ByteBuffer buffer) {
-		this.buffer = buffer;
-	}
-
-	public ByteBuffer grow() {
-		var b = ByteBuffer.allocate(buffer.capacity() * 2);
-		buffer.flip();
-		try {
-			b.put(buffer);
-		} finally {
-			buffer.compact();
-		}
-		buffer = b;
-		return buffer;
-	}
+	boolean render(RenderEngine engine);
 }

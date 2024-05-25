@@ -25,6 +25,7 @@
 package com.janilla.database;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -33,14 +34,17 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.ElementHelper.SortOrder;
 import com.janilla.io.ElementHelper.TypeAndOrder;
-import com.janilla.io.IO;
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.json.Json;
+import com.janilla.util.Lazy;
 
 public class Database {
 
@@ -51,33 +55,37 @@ public class Database {
 		try (var c = new TransactionalByteChannel(
 				FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
 				FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
-			IO.Supplier<Database> g = () -> {
-				var d = new Database();
-				var m = new Memory();
-				var u = m.getFreeBTree();
-				u.setOrder(o);
-				u.setChannel(c);
-				u.setRoot(BlockReference.read(c, 0));
-				m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, c.size()));
+			Supplier<Database> g = () -> {
+				try {
+					var d = new Database();
+					var m = new Memory();
+					var u = m.getFreeBTree();
+					u.setOrder(o);
+					u.setChannel(c);
+					u.setRoot(BlockReference.read(c, 0));
+					m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, c.size()));
 
-				d.setBTreeOrder(o);
-				d.setChannel(c);
-				d.setMemory(m);
-				d.setStoresRoot(BlockReference.HELPER_LENGTH);
-				d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
-				d.setInitializeStore((n, s) -> {
-					@SuppressWarnings("unchecked")
-					var t = (Store<String>) s;
-					t.setElementHelper(ElementHelper.STRING);
-				});
-				d.setInitializeIndex((n, i) -> {
-					@SuppressWarnings("unchecked")
-					var k = (Index<String, Object[]>) i;
-					k.setKeyHelper(ElementHelper.STRING);
-					k.setValueHelper(ElementHelper.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
-							new TypeAndOrder(Long.class, SortOrder.DESCENDING)));
-				});
-				return d;
+					d.setBTreeOrder(o);
+					d.setChannel(c);
+					d.setMemory(m);
+					d.setStoresRoot(BlockReference.HELPER_LENGTH);
+					d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
+					d.setInitializeStore((n, s) -> {
+						@SuppressWarnings("unchecked")
+						var t = (Store<String>) s;
+						t.setElementHelper(ElementHelper.STRING);
+					});
+					d.setInitializeIndex((n, i) -> {
+						@SuppressWarnings("unchecked")
+						var k = (Index<String, Object[]>) i;
+						k.setKeyHelper(ElementHelper.STRING);
+						k.setValueHelper(ElementHelper.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
+								new TypeAndOrder(Long.class, SortOrder.DESCENDING)));
+					});
+					return d;
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			};
 
 			var i = new long[1];
@@ -138,29 +146,37 @@ public class Database {
 
 	private long indexesRoot;
 
-	private IO.BiConsumer<String, Store<?>> initializeStore;
+	private BiConsumer<String, Store<?>> initializeStore;
 
-	private IO.BiConsumer<String, Index<?, ?>> initializeIndex;
+	private BiConsumer<String, Index<?, ?>> initializeIndex;
 
-	private IO.Supplier<Stores> stores = IO.Lazy.of(() -> {
+	private Supplier<Stores> stores = Lazy.of(() -> {
 		var s = new Stores();
 		s.setInitializeBTree(t -> {
-			t.setOrder(btreeOrder);
-			t.setChannel(channel);
-			t.setMemory(memory);
-			t.setRoot(BlockReference.read(channel, storesRoot));
+			try {
+				t.setOrder(btreeOrder);
+				t.setChannel(channel);
+				t.setMemory(memory);
+				t.setRoot(BlockReference.read(channel, storesRoot));
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		});
 		s.setInitializeStore(initializeStore);
 		return s;
 	});
 
-	private IO.Supplier<Indexes> indexes = IO.Lazy.of(() -> {
+	private Supplier<Indexes> indexes = Lazy.of(() -> {
 		var i = new Indexes();
 		i.initializeBTree = t -> {
-			t.setOrder(btreeOrder);
-			t.setChannel(channel);
-			t.setMemory(memory);
-			t.setRoot(BlockReference.read(channel, indexesRoot));
+			try {
+				t.setOrder(btreeOrder);
+				t.setChannel(channel);
+				t.setMemory(memory);
+				t.setRoot(BlockReference.read(channel, indexesRoot));
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		};
 		i.initializeIndex = initializeIndex;
 		return i;
@@ -206,45 +222,49 @@ public class Database {
 		this.indexesRoot = indexesRoot;
 	}
 
-	public void setInitializeStore(IO.BiConsumer<String, Store<?>> initializeStore) {
+	public void setInitializeStore(BiConsumer<String, Store<?>> initializeStore) {
 		this.initializeStore = initializeStore;
 	}
 
-	public void setInitializeIndex(IO.BiConsumer<String, Index<?, ?>> initializeIndex) {
+	public void setInitializeIndex(BiConsumer<String, Index<?, ?>> initializeIndex) {
 		this.initializeIndex = initializeIndex;
 	}
 
 	boolean performing;
 
-	public synchronized <T> T perform(IO.BiFunction<Stores, Indexes, T> operation, boolean write) throws IOException {
-		var p = performing;
-		if (!p)
-			performing = true;
-		var l = !p ? ((FileChannel) channel.getChannel()).lock() : null;
+	public synchronized <T> T perform(BiFunction<Stores, Indexes, T> operation, boolean write) {
 		try {
-			var s = stores.get();
-			var i = indexes.get();
-			T t = null;
-			var c = false;
-			if (!p && write)
-				channel.startTransaction();
+			var p = performing;
+			if (!p)
+				performing = true;
+			var l = !p ? ((FileChannel) channel.getChannel()).lock() : null;
 			try {
-				t = operation.apply(s, i);
-				c = true;
+				var s = stores.get();
+				var i = indexes.get();
+				T t = null;
+				var c = false;
+				if (!p && write)
+					channel.startTransaction();
+				try {
+					t = operation.apply(s, i);
+					c = true;
+				} finally {
+					if (!p && write) {
+						if (c)
+							channel.commitTransaction();
+						else
+							channel.rollbackTransaction();
+					}
+				}
+				return t;
 			} finally {
-				if (!p && write) {
-					if (c)
-						channel.commitTransaction();
-					else
-						channel.rollbackTransaction();
+				if (!p) {
+					l.release();
+					performing = false;
 				}
 			}
-			return t;
-		} finally {
-			if (!p) {
-				l.release();
-				performing = false;
-			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 }

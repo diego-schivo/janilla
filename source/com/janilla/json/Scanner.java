@@ -26,7 +26,7 @@ package com.janilla.json;
 
 import java.util.List;
 
-interface Scanner {
+public interface Scanner {
 
 	boolean accept(int value, List<JsonToken<?>> tokens);
 

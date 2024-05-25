@@ -90,7 +90,7 @@ public class ApplicationPersistenceBuilder {
 			d.setStoresRoot(BlockReference.HELPER_LENGTH);
 			d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
 
-			var p = factory.newInstance(Persistence.class);
+			var p = factory.create(Persistence.class);
 			p.database = d;
 			p.configuration = new Configuration();
 			for (var t : factory.getTypes())
@@ -111,7 +111,6 @@ public class ApplicationPersistenceBuilder {
 			p.setTypeResolver(x -> {
 				try {
 					return Class
-//							.forName(factory.getEnclosing().getClass().getPackageName() + "." + x.replace('.', '$'));
 							.forName(getClass().getPackageName() + "." + x.replace('.', '$'));
 				} catch (ClassNotFoundException f) {
 					throw new RuntimeException(f);

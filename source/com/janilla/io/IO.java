@@ -103,7 +103,6 @@ public abstract class IO {
 		var s1 = IntStream.iterate(s.indexOf('/'), i -> i >= 0, i -> s.indexOf('/', i + 1));
 		var s2 = IntStream.concat(s1, IntStream.of(s.length())).mapToObj(i -> s.substring(0, i));
 
-//		var fs = new HashMap<String, FileSystem>();
 		try (var s3 = s2.flatMap(n -> {
 //			System.out.println("n=" + n);
 			return Thread.currentThread().getContextClassLoader().resources(n).map(r -> {
@@ -116,19 +115,6 @@ public abstract class IO {
 				}
 
 				var m = JAR_URI_PATTERN.matcher(u.toString());
-//				var p = m.matches() ? fs.computeIfAbsent(m.group(1), k -> {
-////					System.out.println("k=" + k);
-//					var v = URI.create(k);
-//					try {
-//						return FileSystems.getFileSystem(v);
-//					} catch (FileSystemNotFoundException e) {
-//					}
-//					try {
-//						return FileSystems.newFileSystem(v, Map.of());
-//					} catch (IOException e) {
-//						throw new UncheckedIOException(e);
-//					}
-//				}).getPath(m.group(2)) : Path.of(u);
 				Path p;
 				try {
 					p = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(u);
@@ -143,14 +129,6 @@ public abstract class IO {
 			});
 		}).distinct().filter(Files::exists)) {
 			s3.forEach(consumer);
-//		} finally {
-//			for (var e : fs.entrySet()) {
-////				System.out.println("e.getKey()=" + e.getKey());
-//				try {
-//					e.getValue().close();
-//				} catch (IOException f) {
-//				}
-//			}
 		}
 	}
 

@@ -43,7 +43,7 @@ import com.janilla.util.EntryList;
 
 public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChannel {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("""
 				GET /foo HTTP/1.1\r
 				Content-Length: 0\r
@@ -163,7 +163,7 @@ public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChan
 		}
 
 		@Override
-		public void close() throws IOException {
+		public void close() {
 			Channel b;
 			try {
 				b = getBody();
@@ -171,7 +171,11 @@ public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChan
 				b = null;
 			}
 			if (b != null)
-				b.close();
+				try {
+					b.close();
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 		}
 
 		protected void advance(int target) {

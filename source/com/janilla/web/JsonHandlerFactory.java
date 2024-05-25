@@ -25,6 +25,7 @@
 package com.janilla.web;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
@@ -36,28 +37,29 @@ import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 
-public class JsonHandlerFactory implements HandlerFactory {
+public class JsonHandlerFactory implements WebHandlerFactory {
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
-//		if (object instanceof HttpRequest || object instanceof Exception)
-//			return null;
-//		return c -> render(object, c);
+	public WebHandler createHandler(Object object, HttpExchange exchange) {
 		return object instanceof RenderEngine.Entry i ? x -> render(i.getValue(), x) : null;
 	}
 
-	protected void render(Object object, HttpExchange exchange) throws IOException {
+	protected void render(Object object, HttpExchange exchange) {
 		var s = exchange.getResponse();
 		s.getHeaders().set("Content-Type", "application/json");
 
-		var t = Json.format(newJsonIterator(object, exchange));
+		var t = Json.format(buildJsonIterator(object, exchange));
 //		System.out.println("t=" + t);
 		var b = ByteBuffer.wrap(t.getBytes());
 		var c = (WritableByteChannel) s.getBody();
-		IO.repeat(x -> c.write(b), b.remaining());
+		try {
+			IO.repeat(x -> c.write(b), b.remaining());
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
-	protected Iterator<JsonToken<?>> newJsonIterator(Object object, HttpExchange exchange) {
+	protected Iterator<JsonToken<?>> buildJsonIterator(Object object, HttpExchange exchange) {
 		var i = new ReflectionJsonIterator();
 		i.setObject(object);
 		return i;

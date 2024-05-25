@@ -29,7 +29,7 @@ import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
-import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,8 +77,6 @@ public class RenderEngine {
 //			System.out.println("e=" + e);
 			if (e.getKey() instanceof Integer j && c.getType() == Integer.TYPE)
 				aa[i] = j;
-//			else if (e.getValue() == null || c.getName().equals(e.getKey())
-//					|| (c.getType() != Object.class && c.getType().isAssignableFrom(e.getValue().getClass())))
 			else if (c.getName().equals(e.getKey()) || (c.getType() != Object.class && e.getValue() != null
 					&& c.getType().isAssignableFrom(e.getValue().getClass())))
 				aa[i] = e.getValue();
@@ -131,7 +129,7 @@ public class RenderEngine {
 					var e = oo[j];
 					stack.push(entryOf(j, e, z));
 					for (var x : stack)
-						if (x.getValue() instanceof Renderer y && y.evaluate(this))
+						if (x.getValue() instanceof RenderParticipant y && y.render(this))
 							break;
 					var x = render();
 					var y = x != null ? x.toString() : null;
@@ -245,7 +243,7 @@ public class RenderEngine {
 			stack.push(c);
 
 			for (var x : stack)
-				if (x.getValue() instanceof Renderer y && y.evaluate(this))
+				if (x.getValue() instanceof RenderParticipant y && y.render(this))
 					break;
 
 			if (k >= 0 && c.getValue() instanceof Object[] oo) {
@@ -279,7 +277,7 @@ public class RenderEngine {
 		return t instanceof Class<?> c ? c : Object.class;
 	}
 
-	public static class Entry extends SimpleEntry<Object, Object> {
+	public static class Entry extends AbstractMap.SimpleEntry<Object, Object> {
 
 		private static final long serialVersionUID = -7935499563158999871L;
 

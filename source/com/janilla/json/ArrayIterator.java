@@ -27,9 +27,9 @@ package com.janilla.json;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-class ArrayIterator extends TokenIterator {
+public class ArrayIterator extends TokenIterator {
 
-	Iterator<?> elements;
+	protected Iterator<?> elements;
 
 	int state;
 
@@ -39,8 +39,7 @@ class ArrayIterator extends TokenIterator {
 
 	Iterator<JsonToken<?>> iterator;
 
-	ArrayIterator(Iterator<?> elements, TokenIterationContext context) {
-		super(context);
+	public void setElements(Iterator<?> elements) {
 		this.elements = elements;
 	}
 
@@ -64,7 +63,7 @@ class ArrayIterator extends TokenIterator {
 			}
 			case 2 -> {
 				if (iterator == null)
-					iterator = context.newValueIterator(element);
+					iterator = context.buildValueIterator(element);
 				if (iterator.hasNext())
 					yield 2;
 				iterator = null;

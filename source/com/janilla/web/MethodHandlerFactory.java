@@ -49,9 +49,9 @@ import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
 import com.janilla.util.Lazy;
 
-public class MethodHandlerFactory implements HandlerFactory {
+public class MethodHandlerFactory implements WebHandlerFactory {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		class C {
 
 			@SuppressWarnings("unused")
@@ -76,15 +76,9 @@ public class MethodHandlerFactory implements HandlerFactory {
 			return m != null ? new MethodInvocation(m, c, null) : null;
 		});
 		var f2 = new TemplateHandlerFactory();
-//		f2.setToReader(o -> {
-//			var r = new InputStreamReader(new ByteArrayInputStream(o.toString().getBytes()));
-//			var t = new Template();
-//			t.setReader(r);
-//			return t;
-//		});
 		var f = new DelegatingHandlerFactory();
 		{
-			var a = new HandlerFactory[] { f1, f2 };
+			var a = new WebHandlerFactory[] { f1, f2 };
 			f.setToHandler((o, d) -> {
 				if (a != null)
 					for (var g : a) {
@@ -111,7 +105,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 			d.setRequest(rq);
 			d.setResponse(rs);
 			var h = f.createHandler(rq, d);
-			h.accept(d);
+			h.handle(d);
 		}
 
 		var s = os.toString();
@@ -129,7 +123,7 @@ public class MethodHandlerFactory implements HandlerFactory {
 
 	protected BiFunction<MethodInvocation, HttpExchange, Object[]> argumentsResolver;
 
-	protected HandlerFactory mainFactory;
+	protected WebHandlerFactory mainFactory;
 
 	public Function<HttpRequest, MethodInvocation> getToInvocation() {
 		return toInvocation;
@@ -147,12 +141,12 @@ public class MethodHandlerFactory implements HandlerFactory {
 		this.argumentsResolver = argumentsResolver;
 	}
 
-	public void setMainFactory(HandlerFactory mainFactory) {
+	public void setMainFactory(WebHandlerFactory mainFactory) {
 		this.mainFactory = mainFactory;
 	}
 
 	@Override
-	public IO.Consumer<HttpExchange> createHandler(Object object, HttpExchange exchange) {
+	public WebHandler createHandler(Object object, HttpExchange exchange) {
 		var i = object instanceof HttpRequest q ? toInvocation.apply(q) : null;
 		return i != null ? c -> handle(i, c) : null;
 	}
@@ -160,13 +154,8 @@ public class MethodHandlerFactory implements HandlerFactory {
 	Supplier<BiFunction<MethodInvocation, HttpExchange, Object[]>> argumentsResolver2 = Lazy
 			.of(() -> argumentsResolver != null ? argumentsResolver : new MethodArgumentsResolver());
 
-	protected void handle(MethodInvocation invocation, HttpExchange exchange) throws IOException {
-		Object[] aa;
-		try {
-			aa = argumentsResolver2.get().apply(invocation, exchange);
-		} catch (UncheckedIOException e) {
-			throw e.getCause();
-		}
+	protected void handle(MethodInvocation invocation, HttpExchange exchange) {
+		var aa = argumentsResolver2.get().apply(invocation, exchange);
 
 		var m = invocation.method();
 //		System.out.println("m=" + m + " invocation.object()=" + invocation.object() + " a=" + Arrays.toString(aa));
@@ -191,9 +180,15 @@ public class MethodHandlerFactory implements HandlerFactory {
 			var h = s.getHeaders();
 			h.set("Cache-Control", "max-age=3600");
 			h.set("Content-Disposition", "attachment; filename=\"" + f.getFileName() + "\"");
-			h.set("Content-Length", String.valueOf(Files.size(f)));
+			try {
+				h.set("Content-Length", String.valueOf(Files.size(f)));
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 			try (var fc = Files.newByteChannel(f); var bc = (WritableByteChannel) s.getBody()) {
 				IO.transfer(fc, bc);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
 		} else if (o instanceof URI v) {
 			s.setStatus(new Status(302, "Found"));
@@ -224,9 +219,9 @@ public class MethodHandlerFactory implements HandlerFactory {
 		}
 	}
 
-	protected void render(Object object, HttpExchange exchange) throws IOException {
+	protected void render(Object object, HttpExchange exchange) {
 		var h = mainFactory.createHandler(object, exchange);
 		if (h != null)
-			h.accept(exchange);
+			h.handle(exchange);
 	}
 }

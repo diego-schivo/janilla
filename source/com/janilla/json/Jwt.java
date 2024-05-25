@@ -62,7 +62,6 @@ public interface Jwt {
 		var p = Json.format(payload);
 //		System.out.println("h=" + h + ", p=" + p);
 
-//		var e = Base64.getEncoder();
 		var e = Base64.getUrlEncoder();
 		var t = e.encodeToString(h.getBytes()) + "." + e.encodeToString(p.getBytes());
 //		System.out.println("t=" + t);

@@ -25,7 +25,6 @@
 package com.janilla.http;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -33,7 +32,7 @@ import java.util.Objects;
 
 public class FilterHttpRequest extends FilterHttpMessage<HttpRequest> implements HttpRequest {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("""
 				POST /foo HTTP/1.1\r
 				Content-Length: 3\r
