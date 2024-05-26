@@ -5,7 +5,7 @@
 
 ### What it does
 
-This Java library provides a full solution stack ([wikipedia](https://en.wikipedia.org/wiki/Solution_stack)) to develop web applications and more.
+This Java library provides a [solution stack](https://en.wikipedia.org/wiki/Solution_stack) to develop web applications and more.
 
 ### Why it is useful
 
