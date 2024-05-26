@@ -76,8 +76,12 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected void handle(Error error, HttpExchange exchange) {
-		var s = error != null ? new Status(error.code(), error.text()) : new Status(500, "Internal Server Error");
-		exchange.getResponse().setStatus(s);
-		exchange.getResponse().getHeaders().set("Cache-Control", "no-cache");
+		var s = exchange.getResponse();
+		var t = error != null ? new Status(error.code(), error.text()) : new Status(500, "Internal Server Error");
+
+//		System.out.println("t=" + t);
+
+		s.setStatus(t);
+		s.getHeaders().set("Cache-Control", "no-cache");
 	}
 }

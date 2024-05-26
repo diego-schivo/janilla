@@ -373,20 +373,15 @@ public class HttpServer implements Runnable {
 	}
 
 	protected void handle(WebHandler handler, HttpConnection connection, Map<HttpConnection, Long> connectionMillis) {
-//		System.out.println(
-//		Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m) + ")");
-
 		try {
 			String d;
 			try (var q = connection.getInput().readRequest(); var s = connection.getOutput().writeResponse()) {
 
-//		System.out.println(Thread.currentThread().getName() + " " + q.getURI() + " ("
-//				+ (System.currentTimeMillis() - m) + ")");
+//				System.out.println(Thread.currentThread().getName() + " " + q.getURI());
+
 				handle(handler, q, s);
 				var h = q.getHeaders();
 				d = Objects.toString(h != null ? h.get("Connection") : null, "close");
-//		System.out.println(Thread.currentThread().getName() + " " + d + " ("
-//				+ (System.currentTimeMillis() - m) + ")");
 			} catch (Exception e) {
 				printStackTrace(e);
 				d = "close";
@@ -410,9 +405,6 @@ public class HttpServer implements Runnable {
 		} catch (IOException e) {
 			printStackTrace(e);
 		}
-
-//System.out.println(Thread.currentThread().getName() + " (" + (System.currentTimeMillis() - m)
-//		+ ")" + " " + LocalTime.now());
 	}
 
 	protected void handle(WebHandler handler, HttpRequest request, HttpResponse response) {

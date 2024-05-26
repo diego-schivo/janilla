@@ -17,7 +17,7 @@ If you are familiar with modern [Java SE](https://docs.oracle.com/en/java/javase
 
 You can add Janilla as a dependency to your project by copy/pasting the snippet from [Maven Central](https://central.sonatype.com/artifact/com.janilla/janilla).
 
-We provide a rich set of example applications showing how to use the library: 
+We provide several example applications showing how to use the library: 
 
 - [Next.js Commerce (partial) porting](https://github.com/diego-schivo/janilla-acmestore)
 - [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla-conduit)

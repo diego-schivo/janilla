@@ -58,7 +58,11 @@ public class ApplicationHandlerBuilder {
 				s.set(g, f);
 		}
 		f.setToHandler((o, c) -> {
-			return createHandler(o, c);
+			var h = createHandler(o, c);
+
+//			System.out.println("h=" + h);
+
+			return h;
 		});
 		return f;
 	});
