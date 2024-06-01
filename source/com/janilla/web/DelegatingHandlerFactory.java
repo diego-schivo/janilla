@@ -38,27 +38,27 @@ public class DelegatingHandlerFactory implements WebHandlerFactory {
 	public static void main(String[] args) throws Exception {
 		var f = new DelegatingHandlerFactory();
 		{
-			var f1 = new ResourceHandlerFactory();
-			f1.setToInputStream(u -> u.getPath().equals("/test.html") ? new ByteArrayInputStream("""
-					<html>
-						<head>
-							<title>My test page</title>
-						</head>
-						<body>
-							<p>My cat is very grumpy</p>
-						</body>
-					</html>""".getBytes()) : null);
-			var f2 = new ExceptionHandlerFactory();
-			var a = new WebHandlerFactory[] { f1, f2 };
-			f.setToHandler((o, c) -> {
-				if (a != null)
-					for (var g : a) {
-						var h = g.createHandler(o, c);
-						if (h != null)
-							return h;
-					}
-				return null;
-			});
+//			var f1 = new ResourceHandlerFactory();
+//			f1.setToInputStream(u -> u.getPath().equals("/test.html") ? new ByteArrayInputStream("""
+//					<html>
+//						<head>
+//							<title>My test page</title>
+//						</head>
+//						<body>
+//							<p>My cat is very grumpy</p>
+//						</body>
+//					</html>""".getBytes()) : null);
+//			var f2 = new ExceptionHandlerFactory();
+//			var a = new WebHandlerFactory[] { f1, f2 };
+//			f.setToHandler((o, c) -> {
+//				if (a != null)
+//					for (var g : a) {
+//						var h = g.createHandler(o, c);
+//						if (h != null)
+//							return h;
+//					}
+//				return null;
+//			});
 		}
 
 		var t = new String[] { """

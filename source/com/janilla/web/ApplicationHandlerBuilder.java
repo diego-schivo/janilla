@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.janilla.http.HttpExchange;
-import com.janilla.io.IO;
 import com.janilla.reflect.Factory;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.Lazy;
@@ -90,7 +89,7 @@ public class ApplicationHandlerBuilder {
 				buildJsonHandlerFactory(), buildExceptionHandlerFactory());
 	}
 
-	protected MethodHandlerFactory buildMethodHandlerFactory() {
+	protected WebHandlerFactory buildMethodHandlerFactory() {
 		var f = factory.create(MethodHandlerFactory.class);
 
 		var i = new AnnotationDrivenToMethodInvocation() {
@@ -111,24 +110,21 @@ public class ApplicationHandlerBuilder {
 		return f;
 	}
 
-	protected TemplateHandlerFactory buildTemplateHandlerFactory() {
+	protected WebHandlerFactory buildTemplateHandlerFactory() {
 		return factory.create(TemplateHandlerFactory.class);
 	}
 
-	protected ResourceHandlerFactory buildResourceHandlerFactory() {
+	protected WebHandlerFactory buildResourceHandlerFactory() {
 		var f = factory.create(ResourceHandlerFactory.class);
-		var s = new ToResourceStream.Simple();
-		s.setPaths(() -> Stream.concat(IO.getPackageFiles("com.janilla.frontend"),
-				IO.getPackageFiles(factory.getSource().getClass().getPackageName())).iterator());
-		f.setToInputStream(s);
+		f.setPackages("com.janilla.frontend", factory.getSource().getClass().getPackageName());
 		return f;
 	}
 
-	protected JsonHandlerFactory buildJsonHandlerFactory() {
+	protected WebHandlerFactory buildJsonHandlerFactory() {
 		return factory.create(JsonHandlerFactory.class);
 	}
 
-	protected ExceptionHandlerFactory buildExceptionHandlerFactory() {
+	protected WebHandlerFactory buildExceptionHandlerFactory() {
 		return factory.create(ExceptionHandlerFactory.class);
 	}
 
