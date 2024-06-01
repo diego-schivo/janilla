@@ -192,7 +192,7 @@ public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChan
 				headers = new EntryList<>();
 				for (;;) {
 					var l = readLine();
-					if (l.isEmpty())
+					if (l == null || l.isEmpty())
 						break;
 					var i = l.indexOf(':');
 					var k = l.substring(0, i).trim();

@@ -223,6 +223,7 @@ public abstract class IO {
 		try {
 			var s = uri.toString();
 			return zipFileSystems.computeIfAbsent(s, k -> {
+//				System.out.println("k=" + k);
 				try {
 					var i = k.lastIndexOf('!');
 					if (i < 0)
