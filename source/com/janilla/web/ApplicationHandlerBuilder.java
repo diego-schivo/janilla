@@ -91,22 +91,15 @@ public class ApplicationHandlerBuilder {
 
 	protected WebHandlerFactory buildMethodHandlerFactory() {
 		var f = factory.create(MethodHandlerFactory.class);
-
-		var i = new AnnotationDrivenToMethodInvocation() {
-
-			@Override
-			protected Object getInstance(Class<?> c) {
-				var a = factory.getSource();
-				if (c == a.getClass())
-					return a;
-				return factory.create(c);
-			}
-		};
-		i.setTypes(() -> Stream
+		f.setTypes(() -> Stream
 				.concat(StreamSupport.stream(factory.getTypes().spliterator(), false), frontendClasses.get().stream())
 				.iterator());
-		f.setToInvocation(i);
-
+		f.setToInstance(x -> {
+			var a = factory.getSource();
+			if (x == a.getClass())
+				return a;
+			return factory.create(x);
+		});
 		return f;
 	}
 

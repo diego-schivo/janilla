@@ -52,6 +52,52 @@ import com.janilla.util.Lazy;
 
 public class ResourceHandlerFactory implements WebHandlerFactory {
 
+//	public static void main(String[] args) throws Exception {
+//		var f = new ResourceHandlerFactory();
+//		f.setToInputStream(u -> u.getPath().equals("/test.html") ? new ByteArrayInputStream("""
+//				<html>
+//					<head>
+//						<title>My test page</title>
+//					</head>
+//					<body>
+//						<p>My cat is very grumpy</p>
+//					</body>
+//				</html>""".getBytes()) : null);
+//
+//		var i = new ByteArrayInputStream("""
+//				GET /test.html HTTP/1.1\r
+//				Content-Length: 0\r
+//				\r
+//				""".getBytes());
+//		var o = new ByteArrayOutputStream();
+//		try (var r = new HttpMessageReadableByteChannel(Channels.newChannel(i));
+//				var q = r.readRequest();
+//				var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
+//				var s = w.writeResponse()) {
+//			var c = new HttpExchange();
+//			c.setRequest(q);
+//			c.setResponse(s);
+//			var h = f.createHandler(q, c);
+//			h.handle(c);
+//		}
+//
+//		var s = o.toString();
+//		System.out.println(s);
+//		assert Objects.equals(s, """
+//				HTTP/1.1 200 OK\r
+//				Cache-Control: max-age=3600\r
+//				Content-Length: 109\r
+//				\r
+//				<html>
+//					<head>
+//						<title>My test page</title>
+//					</head>
+//					<body>
+//						<p>My cat is very grumpy</p>
+//					</body>
+//				</html>""") : s;
+//	}
+
 	protected String[] packages;
 
 	public void setPackages(String... packages) {

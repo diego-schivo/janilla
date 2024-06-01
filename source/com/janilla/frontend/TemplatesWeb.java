@@ -42,13 +42,13 @@ import com.janilla.web.Render;
 
 public class TemplatesWeb {
 
-	Object application;
-
 	public static Pattern expression = Pattern.compile("(data-)?\\{([\\w\\[\\].-]*?)}|<\\{([\\w\\[\\].-]*?)}>");
 
 	public static Pattern template = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>", Pattern.DOTALL);
 
-	Supplier<Iterable<Template>> templates = Lazy.of(() -> {
+	protected Object application;
+
+	protected Supplier<Iterable<Template>> templates = Lazy.of(() -> {
 		var l = Thread.currentThread().getContextClassLoader();
 		var b = Stream.<Template>builder();
 		for (var nn = Stream.of(getClass().getPackageName(), application.getClass().getPackageName())
