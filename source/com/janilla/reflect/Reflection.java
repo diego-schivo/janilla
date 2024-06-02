@@ -93,6 +93,12 @@ public class Reflection {
 	}
 
 	private static Map<String, Property> compute(Class<?> class1) {
+		if (!Modifier.isPublic(class1.getModifiers())) {
+			if (Map.Entry.class.isAssignableFrom(class1))
+				class1 = Map.Entry.class;
+			else
+				throw new IllegalArgumentException();
+		}
 		var mm = new HashMap<String, Member[]>();
 		for (var m : class1.getMethods()) {
 			if (Modifier.isStatic(m.getModifiers()) || m.getDeclaringClass() == Object.class || switch (m.getName()) {
@@ -130,12 +136,13 @@ public class Reflection {
 		var oo = cc != null
 				? IntStream.range(0, cc.length).boxed().collect(Collectors.toMap(i -> cc[i].getName(), i -> i + 1))
 				: null;
+		var c = class1;
 		return mm.values().stream()
 				.map(x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of((Method) x[0], (Method) x[1]))
 				.map(p -> {
 					Field f;
 					try {
-						f = class1.getDeclaredField(p.getName());
+						f = c.getDeclaredField(p.getName());
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}
@@ -146,7 +153,7 @@ public class Reflection {
 				.map(Map.Entry::getKey).flatMap(p -> {
 					Field f;
 					try {
-						f = class1.getDeclaredField(p.getName());
+						f = c.getDeclaredField(p.getName());
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}
