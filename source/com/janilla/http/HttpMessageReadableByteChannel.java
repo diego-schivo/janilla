@@ -80,7 +80,7 @@ public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChan
 				assert t.equals("POST /bar") : t;
 
 				var b = (ReadableByteChannel) r.getBody();
-				t = new String(Channels.newInputStream(b).readAllBytes());
+				t = new String(IO.readAllBytes(b));
 				System.out.println(t);
 				assert t.equals("baz") : t;
 			}
@@ -91,7 +91,7 @@ public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChan
 				assert t.equals("200 OK") : t;
 
 				var b = (ReadableByteChannel) s.getBody();
-				t = new String(Channels.newInputStream(b).readAllBytes());
+				t = new String(IO.readAllBytes(b));
 				System.out.println(t);
 				assert t.equals("foobarbazqux") : t;
 			}
