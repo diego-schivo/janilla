@@ -24,19 +24,26 @@
  */
 package com.janilla.reflect;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.Map;
 
 public interface Property {
 
 	static Property of(Field field) {
 		var n = name(field);
+		VarHandle h;
+		try {
+			h = MethodHandles.publicLookup().unreflectVarHandle(field);
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
 		return new Property() {
 
 			@Override
@@ -63,26 +70,36 @@ public interface Property {
 			public Object get(Object object) {
 				if (object == null)
 					return null;
-				try {
-					return field.get(object);
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
+//				try {
+//					return field.get(object);
+//				} catch (ReflectiveOperationException e) {
+//					throw new RuntimeException(e);
+//				}
+				return h.get(object);
 			}
 
 			@Override
 			public void set(Object object, Object value) {
-				try {
-					field.set(object, value);
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
+//				try {
+//					field.set(object, value);
+//				} catch (ReflectiveOperationException e) {
+//					throw new RuntimeException(e);
+//				}
+				h.set(object, value);
 			}
 		};
 	}
 
 	static Property of(Method getter, Method setter) {
 		var n = getter != null ? name(getter) : name(setter);
+		MethodHandle g, s;
+		try {
+			var l = MethodHandles.publicLookup();
+			g = getter != null ? l.unreflect(getter) : null;
+			s = setter != null ? l.unreflect(setter) : null;
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
 		return new Property() {
 
 			@Override
@@ -109,29 +126,39 @@ public interface Property {
 			public Object get(Object object) {
 				if (object == null)
 					return null;
+//				try {
+//					return Modifier.isStatic(getter.getModifiers()) ? getter.invoke(null, object)
+//							: getter.invoke(object);
+//				} catch (IllegalAccessException e) {
+//					if (object instanceof Map.Entry<?, ?>)
+//						try {
+//							return Map.Entry.class.getMethod(getter.getName()).invoke(object);
+//						} catch (ReflectiveOperationException f) {
+//							throw new RuntimeException(f);
+//						}
+//					else
+//						throw new RuntimeException(e);
+//				} catch (InvocationTargetException e) {
+//					throw new RuntimeException(e);
+//				}
 				try {
-					return Modifier.isStatic(getter.getModifiers()) ? getter.invoke(null, object)
-							: getter.invoke(object);
-				} catch (IllegalAccessException e) {
-					if (object instanceof Map.Entry<?, ?>)
-						try {
-							return Map.Entry.class.getMethod(getter.getName()).invoke(object);
-						} catch (ReflectiveOperationException f) {
-							throw new RuntimeException(f);
-						}
-					else
-						throw new RuntimeException(e);
-				} catch (InvocationTargetException e) {
-					throw new RuntimeException(e);
+					return g.invoke(object);
+				} catch (Throwable e) {
+					throw e instanceof RuntimeException re ? re : new RuntimeException(e);
 				}
 			}
 
 			@Override
 			public void set(Object object, Object value) {
+//				try {
+//					setter.invoke(object, value);
+//				} catch (ReflectiveOperationException e) {
+//					throw new RuntimeException(e);
+//				}
 				try {
-					setter.invoke(object, value);
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
+					s.invoke(object, value);
+				} catch (Throwable e) {
+					throw e instanceof RuntimeException re ? re : new RuntimeException(e);
 				}
 			}
 		};
