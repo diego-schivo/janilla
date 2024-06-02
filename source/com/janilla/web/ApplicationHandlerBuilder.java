@@ -94,7 +94,7 @@ public class ApplicationHandlerBuilder {
 		f.setTypes(() -> Stream
 				.concat(StreamSupport.stream(factory.getTypes().spliterator(), false), frontendClasses.get().stream())
 				.iterator());
-		f.setToInstance(x -> {
+		f.setTargetResolver(x -> {
 			var a = factory.getSource();
 			if (x == a.getClass())
 				return a;

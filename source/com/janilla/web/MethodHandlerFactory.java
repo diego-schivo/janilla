@@ -26,27 +26,25 @@ package com.janilla.web;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -140,59 +138,66 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected Iterable<Class<?>> types;
 
-	protected Comparator<Invocation> comparator;
+	protected Comparator<Invocation> invocationComparator;
 
 	protected Function<String, Class<?>> typeResolver;
 
-	protected Function<Class<?>, Object> toInstance;
+	protected Function<Class<?>, Object> targetResolver;
 
 	protected WebHandlerFactory mainFactory;
 
-	Supplier<Map<String, Value>> invocations1 = Lazy.of(() -> {
-		Map<String, Value> m = new HashMap<>();
+	Supplier<Map<String, Invocable>> invocables = Lazy.of(() -> {
+		Map<String, Invocable> ii = new HashMap<>();
 		for (var t : types) {
 			if (Modifier.isInterface(t.getModifiers()) || Modifier.isAbstract(t.getModifiers()))
 				continue;
 
 			Object o = null;
-			for (var n : t.getMethods()) {
-				if (!n.isAnnotationPresent(Handle.class))
+			for (var m : t.getMethods()) {
+				if (!m.isAnnotationPresent(Handle.class))
 					continue;
 
 				if (o == null)
-					o = getInstance(t);
+					o = resolveTarget(t);
 
 				var p = o;
-				var v = m.computeIfAbsent(n.getAnnotation(Handle.class).path(), k -> new Value(new HashSet<>(), p));
-				v.methods().add(n);
+				var i = ii.computeIfAbsent(m.getAnnotation(Handle.class).path(),
+						k -> new Invocable(p, new HashMap<>()));
+				MethodHandle h;
+				try {
+					h = MethodHandles.publicLookup().unreflect(m);
+				} catch (IllegalAccessException e) {
+					throw new RuntimeException(e);
+				}
+				i.methodHandles.put(m, h);
 			}
 		}
-		return m;
+		return ii;
 	});
 
-	Supplier<Map<Pattern, Value>> invocations2 = Lazy.of(() -> {
-		var m = invocations1.get();
-		var s = m.keySet().stream().filter(k -> k.contains("(")).collect(Collectors.toSet());
-		var x = s.stream().collect(Collectors.toMap(k -> Pattern.compile(k), m::get));
-		m.keySet().removeAll(s);
+	Supplier<Map<Pattern, Invocable>> regexInvocables = Lazy.of(() -> {
+		var ii = invocables.get();
+		var kk = ii.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).collect(Collectors.toSet());
+		var jj = kk.stream().collect(Collectors.toMap(k -> Pattern.compile(k), ii::get));
+		ii.keySet().removeAll(kk);
 //		System.out.println("m=" + m + "\nx=" + x);
-		return x;
+		return jj;
 	});
 
 	public void setTypes(Iterable<Class<?>> types) {
 		this.types = types;
 	}
 
-	public void setComparator(Comparator<Invocation> comparator) {
-		this.comparator = comparator;
+	public void setInvocationComparator(Comparator<Invocation> comparator) {
+		this.invocationComparator = comparator;
 	}
 
 	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
 		this.typeResolver = typeResolver;
 	}
 
-	public void setToInstance(Function<Class<?>, Object> toInstance) {
-		this.toInstance = toInstance;
+	public void setTargetResolver(Function<Class<?>, Object> targetResolver) {
+		this.targetResolver = targetResolver;
 	}
 
 	public void setMainFactory(WebHandlerFactory mainFactory) {
@@ -202,12 +207,12 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	@Override
 	public WebHandler createHandler(Object object, HttpExchange exchange) {
 		var i = object instanceof HttpRequest q ? toInvocation(q) : null;
-		return i != null ? c -> handle(i, c) : null;
+		return i != null ? e -> handle(i, e) : null;
 	}
 
-	protected Object getInstance(Class<?> type) {
-		if (toInstance != null)
-			return toInstance.apply(type);
+	protected Object resolveTarget(Class<?> type) {
+		if (targetResolver != null)
+			return targetResolver.apply(type);
 		try {
 			return type.getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {
@@ -215,66 +220,87 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		}
 	}
 
-	protected Invocation toInvocation(HttpRequest r) {
-		var s = getValueAndGroupsStream(r).map(w -> {
-			var v = w.value();
-			var m = v.method(r);
-			return m != null ? new Invocation(m, v.object(), w.groups()) : null;
-		}).filter(Objects::nonNull);
-		if (comparator != null)
-			s = s.sorted(comparator);
-		return s.findFirst().orElse(null);
-	}
-
-	public Stream<ValueAndGroups> getValueAndGroupsStream(HttpRequest q) {
-		var i = invocations1.get();
-		var j = invocations2.get();
+	public Stream<Map.Entry<Invocable, String[]>> resolveInvocables(HttpRequest request) {
+		var ii = invocables.get();
+		var jj = regexInvocables.get();
 //		System.out.println(Thread.currentThread().getName() + " AnnotationDrivenToMethodInvocation invocations1=" + i
 //				+ ", invocations2=" + j);
 
-		var b = Stream.<ValueAndGroups>builder();
-
+		var b = Stream.<Map.Entry<Invocable, String[]>>builder();
 		URI u;
 		try {
-			u = q.getURI();
+			u = request.getURI();
 		} catch (NullPointerException e) {
 			u = null;
 		}
 		var p = u != null ? u.getPath() : null;
-		var v = p != null ? i.get(p) : null;
-		if (v != null)
-			b.add(new ValueAndGroups(v, null));
+		if (p != null) {
+			var i = ii.get(p);
+			if (i != null)
+				b.add(new AbstractMap.SimpleEntry<>(i, null));
 
-		if (p != null)
-			for (var e : j.entrySet()) {
+			for (var e : jj.entrySet()) {
 				var m = e.getKey().matcher(p);
 				if (m.matches()) {
-					v = e.getValue();
-					var s = IntStream.range(1, 1 + m.groupCount()).mapToObj(m::group).toList();
-					b.add(new ValueAndGroups(v, s));
+					i = e.getValue();
+					var s = IntStream.range(1, 1 + m.groupCount()).mapToObj(m::group).toArray(String[]::new);
+					b.add(Map.entry(i, s));
 				}
 			}
-
+		}
 		return b.build();
 	}
 
-//	Supplier<BiFunction<Invocation, HttpExchange, Object[]>> argumentsResolver2 = Lazy
-//			.of(() -> argumentsResolver != null ? argumentsResolver : new MethodArgumentsResolver());
+	protected Invocation toInvocation(HttpRequest request) {
+		String a;
+		{
+			var n = request.getMethod() != null ? request.getMethod().name() : null;
+			if (n == null)
+				n = "";
+			a = n;
+		}
+		var jj = resolveInvocables(request).map(x -> {
+			var i = x.getKey();
+			Map.Entry<Method, MethodHandle> e = null;
+			for (var f : i.methodHandles.entrySet()) {
+				var b = f.getKey().getAnnotation(Handle.class).method();
+				if (b == null)
+					b = "";
+				if (b.equalsIgnoreCase(a)) {
+					e = f;
+					break;
+				}
+				if (b.isEmpty())
+					e = f;
+			}
+			return e != null ? new Invocation(i.target, e.getKey(), e.getValue(), x.getValue()) : null;
+		}).filter(Objects::nonNull);
+		if (invocationComparator != null)
+			jj = jj.sorted(invocationComparator);
+		return jj.findFirst().orElse(null);
+	}
 
 	protected void handle(Invocation invocation, HttpExchange exchange) {
-//		var aa = argumentsResolver2.get().apply(invocation, exchange);
 		var aa = resolveArguments(invocation, exchange);
 
-		var m = invocation.method();
+		var m = invocation.method;
 //		System.out.println("m=" + m + " invocation.object()=" + invocation.object() + " a=" + Arrays.toString(aa));
 		Object o;
 		try {
-			o = aa != null ? m.invoke(invocation.object(), aa) : m.invoke(invocation.object());
-		} catch (InvocationTargetException e) {
-			var f = e.getTargetException();
-			throw f instanceof Exception g ? new HandleException(g) : new RuntimeException(e);
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
+			var bb = new Object[1 + aa.length];
+			bb[0] = invocation.target;
+			if (aa.length > 0)
+				System.arraycopy(aa, 0, bb, 1, aa.length);
+			o = invocation.methodHandle.invokeWithArguments(bb);
+		} catch (Throwable e) {
+			switch (e) {
+			case RuntimeException x:
+				throw x;
+			case Exception x:
+				throw new HandleException(x);
+			default:
+				throw new RuntimeException(e);
+			}
 		}
 
 		var s = exchange.getResponse();
@@ -293,71 +319,71 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-			try (var fc = Files.newByteChannel(f); var bc = (WritableByteChannel) s.getBody()) {
-				IO.transfer(fc, bc);
+			try (var sc = Files.newByteChannel(f); var tc = (WritableByteChannel) s.getBody()) {
+				IO.transfer(sc, tc);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
 		} else if (o instanceof URI v) {
 			s.setStatus(new HttpResponse.Status(302, "Found"));
-			s.getHeaders().set("Cache-Control", "no-cache");
-			s.getHeaders().set("Location", v.toString());
+			var hh = s.getHeaders();
+			hh.set("Cache-Control", "no-cache");
+			hh.set("Location", v.toString());
 		} else {
 			s.setStatus(new HttpResponse.Status(200, "OK"));
-
-			var h = s.getHeaders();
-			if (h.get("Cache-Control") == null)
-				s.getHeaders().set("Cache-Control", "no-cache");
-			if (h.get("Content-Type") == null) {
-				var n = exchange.getRequest().getURI().getPath();
-				var i = n != null ? n.lastIndexOf('.') : -1;
-				var e = i >= 0 ? n.substring(i + 1) : null;
+			var hh = s.getHeaders();
+			if (hh.get("Cache-Control") == null)
+				hh.set("Cache-Control", "no-cache");
+			if (hh.get("Content-Type") == null) {
+				var p = exchange.getRequest().getURI().getPath();
+				var i = p != null ? p.lastIndexOf('.') : -1;
+				var e = i >= 0 ? p.substring(i + 1) : null;
 				if (e != null)
 					switch (e) {
 					case "html":
-						h.set("Content-Type", "text/html");
+						hh.set("Content-Type", "text/html");
 						break;
 					case "js":
-						h.set("Content-Type", "text/javascript");
+						hh.set("Content-Type", "text/javascript");
 						break;
 					}
 			}
-
 			render(RenderEngine.Entry.of(null, o, m.getAnnotatedReturnType()), exchange);
 		}
 	}
 
 	protected Object[] resolveArguments(Invocation invocation, HttpExchange exchange) {
-		var q = Net.parseQueryString(exchange.getRequest().getURI().getQuery());
-		Supplier<String> b = switch (exchange.getRequest().getMethod().name()) {
+		var rq = exchange.getRequest();
+		var qs = Net.parseQueryString(rq.getURI().getQuery());
+		Supplier<String> z = switch (rq.getMethod().name()) {
 		case "POST", "PUT" -> {
 			var s = Lazy.of(() -> {
-				var d = (ReadableByteChannel) exchange.getRequest().getBody();
+				var c = (ReadableByteChannel) rq.getBody();
 				try {
-					return new String(Channels.newInputStream(d).readAllBytes());
+					return new String(IO.readAllBytes(c));
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
 			});
-			var t = exchange.getRequest().getHeaders().get("Content-Type");
+			var t = rq.getHeaders().get("Content-Type");
 			if (t != null)
 				switch (t.split(";")[0]) {
 				case "application/x-www-form-urlencoded":
 					var v = Net.parseQueryString(s.get());
 					if (v == null)
 						;
-					else if (q == null)
-						q = v;
+					else if (qs == null)
+						qs = v;
 					else
-						q.addAll(v);
+						qs.addAll(v);
 					break;
 				case "application/json":
 					var o = Json.parse(s.get());
 					if (o instanceof Map<?, ?> m && !m.isEmpty()) {
-						if (q == null)
-							q = new EntryList<>();
+						if (qs == null)
+							qs = new EntryList<>();
 						for (var e : m.entrySet())
-							q.add(e.getKey().toString(), e.getValue().toString());
+							qs.add(e.getKey().toString(), e.getValue().toString());
 					}
 					break;
 				}
@@ -366,32 +392,32 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		default -> null;
 		};
 
-		var m = invocation.method();
-		var g = invocation.groups();
-		var t = m.getParameterTypes();
-		var u = m.getParameterAnnotations();
-		var n = Arrays.stream(u)
-				.map(a -> Arrays.stream(a).filter(e -> e.annotationType() == Bind.class).findFirst().orElse(null))
+		var m = invocation.method;
+		var gg = invocation.regexGroups;
+		var ptt = m.getParameterTypes();
+		var paa = m.getParameterAnnotations();
+		var bb = Arrays.stream(paa)
+				.map(x -> Arrays.stream(x).filter(y -> y.annotationType() == Bind.class).findFirst().orElse(null))
 				.toArray(Bind[]::new);
-		var a = new Object[t.length];
-		for (var j = 0; j < a.length; j++) {
-			var h = g != null && j < g.size() ? g.get(j) : null;
-			var k = h == null && n[j] != null ? (!n[j].parameter().isEmpty() ? n[j].parameter() : n[j].value()) : null;
-			var w = k != null ? q : null;
-			var f = n[j];
-			a[j] = resolveArgument(t[j], exchange,
-					() -> h != null ? new String[] { h }
-							: w != null ? w.stream().filter(x -> x.getKey().equals(k)).map(Map.Entry::getValue)
+		var aa = new Object[ptt.length];
+		for (var i = 0; i < aa.length; i++) {
+			var g = gg != null && i < gg.length ? gg[i] : null;
+			var b = bb[i];
+			var p = g == null && b != null ? (!b.parameter().isEmpty() ? b.parameter() : b.value()) : null;
+			var qs2 = p != null ? qs : null;
+			aa[i] = resolveArgument(ptt[i], exchange,
+					() -> g != null ? new String[] { g }
+							: qs2 != null ? qs2.stream().filter(x -> x.getKey().equals(p)).map(Map.Entry::getValue)
 									.toArray(String[]::new) : null,
-					q, b, f != null && f.resolver() != Bind.NullResolver.class ? () -> {
+					qs, z, b != null && b.resolver() != Bind.NullResolver.class ? () -> {
 						try {
-							return f.resolver().getConstructor().newInstance();
+							return b.resolver().getConstructor().newInstance();
 						} catch (ReflectiveOperationException e) {
 							throw new RuntimeException(e);
 						}
 					} : null);
 		}
-		return a;
+		return aa;
 	}
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, Supplier<String[]> values,
@@ -406,14 +432,15 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			return exchange.getResponse();
 		if (c != null && !c.getPackageName().startsWith("java."))
 			switch (Objects.toString(exchange.getRequest().getHeaders().get("Content-Type"), "").split(";")[0]) {
-			case "application/json":
+			case "application/json": {
 //		System.out.println("body=" + body);
 				if (body == null)
 					return null;
-				var z = new Converter();
+				var d = new Converter();
 				if (resolver != null)
-					z.setResolver(resolver.get());
-				return z.convert(Json.parse(body.get()), c);
+					d.setResolver(resolver.get());
+				return d.convert(Json.parse(body.get()), c);
+			}
 			case "application/x-www-form-urlencoded": {
 				var t = createEntryTree();
 				t.setTypeResolver(typeResolver);
@@ -421,56 +448,58 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				return t.convert(c);
 			}
 			default:
-				try {
-					if (c.isRecord()) {
-						var m = Arrays.stream(c.getRecordComponents()).collect(
-								Collectors.toMap(x -> x.getName(), x -> x.getType(), (x, y) -> x, LinkedHashMap::new));
-						var a = m.entrySet().stream().map(e -> {
-							var k = e.getKey();
-							var t = e.getValue();
-							var w = entries;
-							return resolveArgument(t, exchange,
-									() -> w != null
-											? w.stream().filter(f -> f.getKey().equals(k)).map(Map.Entry::getValue)
-													.toArray(String[]::new)
+				if (c.isRecord()) {
+					var tt = Arrays.stream(c.getRecordComponents()).collect(
+							Collectors.toMap(x -> x.getName(), x -> x.getType(), (v, w) -> v, LinkedHashMap::new));
+					var aa = tt.entrySet().stream().map(x -> {
+						var n = x.getKey();
+						var t = x.getValue();
+						return resolveArgument(t, exchange,
+								() -> entries != null
+										? entries.stream().filter(y -> y.getKey().equals(n)).map(Map.Entry::getValue)
+												.toArray(String[]::new)
+										: null,
+								entries, body, null);
+					}).toArray();
+					try {
+						return c.getConstructors()[0].newInstance(aa);
+					} catch (ReflectiveOperationException e) {
+						throw new RuntimeException(e);
+					}
+				} else {
+					Constructor<?> d;
+					try {
+						d = c.getConstructor();
+					} catch (NoSuchMethodException e) {
+						d = null;
+					}
+					if (d != null) {
+						Object o;
+						try {
+							o = d.newInstance();
+						} catch (ReflectiveOperationException e) {
+							throw new RuntimeException(e);
+						}
+						for (var nn = Reflection.properties(c).iterator(); nn.hasNext();) {
+							var n = nn.next();
+							var p = Reflection.property(c, n);
+							if (p == null)
+								continue;
+							var v = resolveArgument(p.getType(), exchange,
+									() -> entries != null
+											? entries.stream().filter(x -> x.getKey().equals(n))
+													.map(Map.Entry::getValue).toArray(String[]::new)
 											: null,
 									entries, body, null);
-						}).toArray();
-						var o = c.getConstructors()[0].newInstance(a);
+							p.set(o, v);
+						}
 						return o;
-					} else {
-						Constructor<?> d;
-						try {
-							d = c.getConstructor();
-						} catch (NoSuchMethodException e) {
-							d = null;
-						}
-						if (d != null) {
-							var o = d.newInstance();
-							for (var i = Reflection.properties(c).iterator(); i.hasNext();) {
-								var n = i.next();
-								var s = Reflection.property(c, n);
-								if (s == null)
-									continue;
-								var w = entries;
-								var v = resolveArgument(s.getType(), exchange,
-										() -> w != null
-												? w.stream().filter(f -> f.getKey().equals(n)).map(Map.Entry::getValue)
-														.toArray(String[]::new)
-												: null,
-										entries, body, null);
-								s.set(o, v);
-							}
-							return o;
-						}
 					}
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
 				}
 				break;
 			}
-		var a = values.get();
-		return parseParameter(a, type);
+		var vv = values.get();
+		return parseParameter(vv, type);
 	}
 
 	protected EntryTree createEntryTree() {
@@ -481,11 +510,11 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		var c = (Class<?>) type;
 		var i = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
-		var z = new Converter();
-		z.setResolver(x -> x.map().containsKey("$type")
+		var d = new Converter();
+		d.setResolver(x -> x.map().containsKey("$type")
 				? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
 				: null);
-		return z.convert(i, c);
+		return d.convert(i, c);
 	}
 
 	protected void render(Object object, HttpExchange exchange) {
@@ -494,29 +523,9 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			h.handle(exchange);
 	}
 
-	public record Invocation(Method method, Object object, List<String> groups) {
+	public record Invocable(Object target, Map<Method, MethodHandle> methodHandles) {
 	}
 
-	public record Value(Set<Method> methods, Object object) {
-
-		Method method(HttpRequest request) {
-			var s = request.getMethod() != null ? request.getMethod().name() : null;
-			if (s == null)
-				s = "";
-			Method m = null;
-			for (var n : methods()) {
-				var t = n.getAnnotation(Handle.class).method();
-				if (t == null)
-					t = "";
-				if (t.equalsIgnoreCase(s))
-					return n;
-				if (t.isEmpty())
-					m = n;
-			}
-			return m;
-		}
-	}
-
-	public record ValueAndGroups(Value value, List<String> groups) {
+	public record Invocation(Object target, Method method, MethodHandle methodHandle, String... regexGroups) {
 	}
 }
