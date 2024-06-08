@@ -24,5 +24,55 @@
  */
 package com.janilla.smtp;
 
-public interface SmtpRequest extends SmtpMessage {
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+
+public class MimePartWriter implements AutoCloseable {
+
+	protected OutputStream output;
+
+	protected int state;
+
+	public MimePartWriter(OutputStream output) {
+		this.output = output;
+	}
+
+	public void writeBoundary(String line) {
+		if (state != 0)
+			throw new IllegalStateException();
+		writeLine(line);
+		state = 1;
+	}
+
+	public void writeHeader(String line) {
+		if (state != 1)
+			throw new IllegalStateException();
+		writeLine(line);
+	}
+
+	public OutputStream getBody() {
+		if (state != 1)
+			throw new IllegalStateException();
+		writeLine("");
+		state = 2;
+		return output;
+	}
+
+	@Override
+	public void close() {
+		if (state != 2)
+			throw new IllegalStateException();
+		writeLine("");
+	}
+
+	protected void writeLine(String line) {
+		try {
+			if (!line.isEmpty())
+				output.write(line.getBytes());
+			output.write("\r\n".getBytes());
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 }

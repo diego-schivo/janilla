@@ -112,4 +112,12 @@ public class BufferedReadableByteChannel extends FilterReadableByteChannel {
 		}
 		return n;
 	}
+
+	protected int readByte() {
+		if (index == buffer.position())
+			while (readBuffer() == 0)
+				if (ended)
+					return -1;
+		return buffer.array()[index++];
+	}
 }

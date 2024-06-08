@@ -64,12 +64,4 @@ public class TextReadableByteChannel extends BufferedReadableByteChannel {
 
 		return l;
 	}
-
-	protected int readByte() {
-		if (index == buffer.position())
-			while (readBuffer() == 0)
-				if (ended)
-					return -1;
-		return buffer.array()[index++];
-	}
 }

@@ -1,7 +1,32 @@
+/*
+ * Copyright (c) 2024, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
 package com.janilla.smtp;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -108,14 +133,14 @@ public class SmtpConnection implements AutoCloseable {
 				public int read(ByteBuffer dst) throws IOException {
 					var n = super.read(dst);
 
-//					if (n > 0)
-//						System.out.println(
-//								"<<< " + new String(dst.array(), dst.position() - n, n).replace("\n", "\n<<< "));
+					if (n > 0)
+						System.out.println(
+								"<<< " + new String(dst.array(), dst.position() - n, n).replace("\n", "\n<<< "));
 
-//							try {
-//								Thread.sleep(1);
-//							} catch (InterruptedException e) {
-//							}
+//					try {
+//						Thread.sleep(1);
+//					} catch (InterruptedException e) {
+//					}
 
 					return n;
 				}
@@ -124,14 +149,14 @@ public class SmtpConnection implements AutoCloseable {
 				public int write(ByteBuffer src) throws IOException {
 					var n = super.write(src);
 
-//					if (n > 0)
-//						System.out.println(
-//								">>> " + new String(src.array(), src.position() - n, n).replace("\n", "\n>>> "));
+					if (n > 0)
+						System.out.println(
+								">>> " + new String(src.array(), src.position() - n, n).replace("\n", "\n>>> "));
 
-//							try {
-//								Thread.sleep(1);
-//							} catch (InterruptedException e) {
-//							}
+//					try {
+//						Thread.sleep(1);
+//					} catch (InterruptedException e) {
+//					}
 
 					return n;
 				}
@@ -139,7 +164,6 @@ public class SmtpConnection implements AutoCloseable {
 
 			c.input = c.new InputChannel(ch, ByteBuffer.allocate(bufferCapacity));
 			c.output = c.new OutputChannel(ch, ByteBuffer.allocate(bufferCapacity));
-			c.state = State.NEW;
 			return c;
 		}
 	}
@@ -184,7 +208,6 @@ public class SmtpConnection implements AutoCloseable {
 			@Override
 			public void writeLine(String line) {
 				throw new UnsupportedOperationException();
-
 			}
 
 			@Override
@@ -197,7 +220,12 @@ public class SmtpConnection implements AutoCloseable {
 			@Override
 			public String readHeader() {
 				var l = InputChannel.this.readLine();
-				return !l.isEmpty() ? l : null;
+				return l != null && !l.isEmpty() ? l : null;
+			}
+
+			@Override
+			public void writeHeader(String line) {
+				throw new UnsupportedOperationException();
 			}
 
 			@Override
@@ -210,7 +238,7 @@ public class SmtpConnection implements AutoCloseable {
 					public int read() throws IOException {
 						if (state == 5)
 							return -1;
-						var b = InputChannel.this.readByte();
+						var b = readByte();
 						state = switch (state) {
 						case 0 -> b == '\r' ? 1 : 0;
 						case 1 -> b == '\n' ? 2 : b == '\r' ? 1 : 0;
@@ -264,7 +292,11 @@ public class SmtpConnection implements AutoCloseable {
 		}
 
 		public SmtpRequest newRequest() {
-			return new CommandRequest();
+			var rq = switch (state) {
+			case NEW, COMMAND -> new CommandRequest();
+			case DATA -> new DataRequest();
+			};
+			return rq;
 		}
 
 		public SmtpResponse newResponse() {
@@ -293,7 +325,47 @@ public class SmtpConnection implements AutoCloseable {
 				try {
 					flush();
 				} catch (IOException e) {
+				}
+			}
+		}
+
+		protected class DataRequest implements DataSmtpRequest {
+
+			@Override
+			public String readHeader() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void writeHeader(String line) {
+				try {
+					OutputChannel.this.writeLine(line);
+				} catch (IOException e) {
 					throw new UncheckedIOException(e);
+				}
+			}
+
+			@Override
+			public OutputStream getBody() {
+				try {
+					OutputChannel.this.writeLine("");
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+				return new OutputStream() {
+
+					@Override
+					public void write(int b) throws IOException {
+						writeByte((byte) b);
+					}
+				};
+			}
+
+			@Override
+			public void close() {
+				try {
+					flush();
+				} catch (IOException e) {
 				}
 			}
 		}
@@ -323,9 +395,12 @@ public class SmtpConnection implements AutoCloseable {
 				try {
 					if (previous != null)
 						OutputChannel.this.writeLine(previous.substring(0, 3) + " " + previous.substring(4));
-					flush();
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
+				}
+				try {
+					flush();
+				} catch (IOException e) {
 				}
 			}
 		}

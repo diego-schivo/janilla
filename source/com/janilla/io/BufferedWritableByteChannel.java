@@ -119,4 +119,10 @@ public class BufferedWritableByteChannel extends FilterWritableByteChannel {
 
 		return n;
 	}
+
+	protected void writeByte(byte b) throws IOException {
+		while (!buffer.hasRemaining() && writeBuffer(false, -1) == 0)
+			;
+		buffer.put(b);
+	}
 }
