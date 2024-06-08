@@ -30,6 +30,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Objects;
 
+import com.janilla.io.IO;
+
 public class FilterHttpRequest extends FilterHttpMessage<HttpRequest> implements HttpRequest {
 
 	public static void main(String[] args) throws Exception {
@@ -51,7 +53,7 @@ public class FilterHttpRequest extends FilterHttpMessage<HttpRequest> implements
 			assert Objects.equals(t, "POST /bar") : t;
 
 			var b = (ReadableByteChannel) r.getBody();
-			t = new String(Channels.newInputStream(b).readAllBytes());
+			t = new String(IO.readAllBytes(b));
 			System.out.println(t);
 			assert Objects.equals(t, "baz") : t;
 		}

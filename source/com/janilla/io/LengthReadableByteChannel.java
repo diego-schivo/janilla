@@ -37,8 +37,8 @@ public class LengthReadableByteChannel extends FilterReadableByteChannel {
 	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("foobarbazqux".getBytes());
 		var o = new ByteArrayOutputStream();
-		try (var c = new LengthReadableByteChannel(Channels.newChannel(i), 10)) {
-			Channels.newInputStream(c).transferTo(o);
+		try (var sc = new LengthReadableByteChannel(Channels.newChannel(i), 10); var tc = Channels.newChannel(o)) {
+			IO.transfer(sc, tc);
 		}
 
 		var t = o.toString();
