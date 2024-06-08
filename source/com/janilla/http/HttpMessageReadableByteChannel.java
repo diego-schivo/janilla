@@ -39,9 +39,10 @@ import java.util.regex.Pattern;
 
 import com.janilla.io.IO;
 import com.janilla.io.LengthReadableByteChannel;
+import com.janilla.io.TextReadableByteChannel;
 import com.janilla.util.EntryList;
 
-public class HttpMessageReadableByteChannel extends HttpBufferedReadableByteChannel {
+public class HttpMessageReadableByteChannel extends TextReadableByteChannel {
 
 	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("""

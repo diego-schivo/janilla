@@ -22,25 +22,22 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http;
+package com.janilla.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
-import com.janilla.io.BufferedWritableByteChannel;
-import com.janilla.io.IO;
+public class TextWritableByteChannel extends BufferedWritableByteChannel {
 
-public abstract class HttpBufferedWritableByteChannel extends BufferedWritableByteChannel {
-
-	public HttpBufferedWritableByteChannel(WritableByteChannel channel, ByteBuffer buffer) {
+	public TextWritableByteChannel(WritableByteChannel channel, ByteBuffer buffer) {
 		super(channel, buffer);
 	}
 
-	protected void writeLine(String line) throws IOException {
+	public void writeLine(String line) throws IOException {
 
 //		System.out.println(
-//				Thread.currentThread().getName() + " HttpBufferedWritableByteChannel.writeLineToBuffer line " + line);
+//				Thread.currentThread().getName() + " TextWritableByteChannel.writeLine line=" + line);
 
 		var a = line.getBytes();
 		var b = "\r\n".getBytes();
@@ -60,7 +57,7 @@ public abstract class HttpBufferedWritableByteChannel extends BufferedWritableBy
 	protected void writeLineToChannel(String line) throws IOException {
 
 //		System.out.println(
-//				Thread.currentThread().getName() + " HttpBufferedWritableByteChannel.writeLineToChannel line " + line);
+//				Thread.currentThread().getName() + " TextWritableByteChannel.writeLineToChannel line=" + line);
 
 		var a = line.getBytes();
 		var b = "\r\n".getBytes();

@@ -32,7 +32,9 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.Objects;
 
-public class ChunkedWritableByteChannel extends HttpBufferedWritableByteChannel {
+import com.janilla.io.TextWritableByteChannel;
+
+public class ChunkedWritableByteChannel extends TextWritableByteChannel {
 
 	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("foobarbazqux".getBytes());

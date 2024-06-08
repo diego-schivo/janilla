@@ -34,20 +34,20 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.Objects;
 
-import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.BufferedWritableByteChannel;
 import com.janilla.io.IO;
 import com.janilla.io.LengthWritableByteChannel;
+import com.janilla.io.TextWritableByteChannel;
 import com.janilla.util.EntryList;
 
-public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChannel {
+public class HttpMessageWritableByteChannel extends TextWritableByteChannel {
 
 	public static void main(String[] args) throws Exception {
 		var o = new ByteArrayOutputStream();
 		try (var c = new HttpMessageWritableByteChannel(Channels.newChannel(o), ByteBuffer.allocate(10))) {
 
 			try (var s = c.writeResponse()) {
-				s.setStatus(new Status(404, "Not Found"));
+				s.setStatus(new HttpResponse.Status(404, "Not Found"));
 			}
 			var t = o.toString();
 			System.out.println(t);
@@ -59,7 +59,7 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 			o.reset();
 
 			try (var s = c.writeResponse()) {
-				s.setStatus(new Status(200, "OK"));
+				s.setStatus(new HttpResponse.Status(200, "OK"));
 				var b = (WritableByteChannel) s.getBody();
 				IO.write("foo".getBytes(), b);
 			}
@@ -74,7 +74,7 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 			o.reset();
 
 			try (var s = c.writeResponse()) {
-				s.setStatus(new Status(200, "OK"));
+				s.setStatus(new HttpResponse.Status(200, "OK"));
 				var b = (WritableByteChannel) s.getBody();
 				IO.write("foobarbazqux".getBytes(), b);
 			} catch (IOException e) {
@@ -97,7 +97,7 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 			o.reset();
 
 			try (var s = c.writeResponse()) {
-				s.setStatus(new Status(200, "OK"));
+				s.setStatus(new HttpResponse.Status(200, "OK"));
 				s.getHeaders().add("Content-Length", "12");
 				var b = (WritableByteChannel) s.getBody();
 				IO.write("foobarbazqux".getBytes(), b);
@@ -115,7 +115,7 @@ public class HttpMessageWritableByteChannel extends HttpBufferedWritableByteChan
 			o.reset();
 
 			try (var s = c.writeResponse()) {
-				s.setStatus(new Status(200, "OK"));
+				s.setStatus(new HttpResponse.Status(200, "OK"));
 				s.getHeaders().add("Transfer-Encoding", "chunked");
 				var b = (WritableByteChannel) s.getBody();
 				IO.write("foo".getBytes(), b);

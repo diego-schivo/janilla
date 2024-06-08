@@ -32,6 +32,7 @@ import javax.net.ssl.SSLEngine;
 
 import com.janilla.io.FilterByteChannel;
 import com.janilla.io.IO;
+import com.janilla.net.SSLByteChannel;
 
 public class HttpConnection implements AutoCloseable {
 

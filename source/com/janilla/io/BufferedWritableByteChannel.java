@@ -86,7 +86,10 @@ public class BufferedWritableByteChannel extends FilterWritableByteChannel {
 
 	@Override
 	public void close() throws IOException {
-		flush();
+		try {
+			flush();
+		} catch (Exception e) {
+		}
 		super.close();
 	}
 

@@ -50,8 +50,6 @@ import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 
-import com.janilla.http.HttpRequest.Method;
-import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
 import com.janilla.net.Net;
 import com.janilla.web.HandleException;
@@ -76,7 +74,7 @@ public class HttpServer implements Runnable {
 			var t = c.getRequest().getMethod().name() + " " + c.getRequest().getURI();
 			switch (t) {
 			case "POST /foo":
-				c.getResponse().setStatus(new Status(200, "OK"));
+				c.getResponse().setStatus(new HttpResponse.Status(200, "OK"));
 				var b = (WritableByteChannel) c.getResponse().getBody();
 				try {
 					Channels.newOutputStream(b).write("bar".getBytes());
@@ -85,7 +83,7 @@ public class HttpServer implements Runnable {
 				}
 				break;
 			default:
-				c.getResponse().setStatus(new Status(404, "Not Found"));
+				c.getResponse().setStatus(new HttpResponse.Status(404, "Not Found"));
 				break;
 			}
 		});
@@ -112,7 +110,7 @@ public class HttpServer implements Runnable {
 			}
 			var u = c.query(d -> {
 				try (var q = d.getRequest()) {
-					q.setMethod(new Method("POST"));
+					q.setMethod(new HttpRequest.Method("POST"));
 					q.setURI(URI.create("/foo"));
 					q.getHeaders().add("Content-Length", "120");
 					q.getHeaders().add("Connection", "keep-alive");
@@ -127,7 +125,7 @@ public class HttpServer implements Runnable {
 				try (var z = d.getResponse()) {
 					var t = z.getStatus();
 					System.out.println(t);
-					assert t.equals(new Status(200, "OK")) : t;
+					assert t.equals(new HttpResponse.Status(200, "OK")) : t;
 
 					return new String(IO.readAllBytes((ReadableByteChannel) z.getBody()));
 				} catch (IOException e) {
@@ -139,7 +137,7 @@ public class HttpServer implements Runnable {
 
 			u = c.query(d -> {
 				try (var q = d.getRequest()) {
-					q.setMethod(new Method("GET"));
+					q.setMethod(new HttpRequest.Method("GET"));
 					q.setURI(URI.create("/baz"));
 					q.getHeaders().add("Connection", "close");
 				}
@@ -147,7 +145,7 @@ public class HttpServer implements Runnable {
 				try (var z = d.getResponse()) {
 					var t = z.getStatus();
 					System.out.println(t);
-					assert t.equals(new Status(404, "Not Found")) : t;
+					assert t.equals(new HttpResponse.Status(404, "Not Found")) : t;
 
 					return new String(IO.readAllBytes((ReadableByteChannel) z.getBody()));
 				} catch (IOException e) {
@@ -353,9 +351,9 @@ public class HttpServer implements Runnable {
 				for (var i = l.build().iterator(); i.hasNext();) {
 					var c = i.next();
 					if (executor != null)
-						executor.execute(() -> handle(handler, c, r));
+						executor.execute(() -> handle(c, r));
 					else
-						handle(handler, c, r);
+						handle(c, r);
 				}
 			}
 		} catch (IOException e) {
@@ -372,14 +370,14 @@ public class HttpServer implements Runnable {
 		selector.wakeup();
 	}
 
-	protected void handle(WebHandler handler, HttpConnection connection, Map<HttpConnection, Long> connectionMillis) {
+	protected void handle(HttpConnection connection, Map<HttpConnection, Long> connectionMillis) {
 		try {
 			String d;
 			try (var q = connection.getInput().readRequest(); var s = connection.getOutput().writeResponse()) {
 
 //				System.out.println(Thread.currentThread().getName() + " " + q.getURI());
 
-				handle(handler, q, s);
+				handle(q, s);
 				var h = q.getHeaders();
 				d = Objects.toString(h != null ? h.get("Connection") : null, "close");
 			} catch (Exception e) {
@@ -407,7 +405,7 @@ public class HttpServer implements Runnable {
 		}
 	}
 
-	protected void handle(WebHandler handler, HttpRequest request, HttpResponse response) {
+	protected void handle(HttpRequest request, HttpResponse response) {
 		var c = buildExchange(request, response);
 		Exception e;
 		try {

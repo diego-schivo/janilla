@@ -35,8 +35,6 @@ import java.util.function.Function;
 
 import javax.net.ssl.SSLContext;
 
-import com.janilla.http.HttpRequest.Method;
-import com.janilla.http.HttpResponse.Status;
 import com.janilla.io.IO;
 
 public class HttpClient implements AutoCloseable {
@@ -53,7 +51,7 @@ public class HttpClient implements AutoCloseable {
 			}
 			var u = c.query(d -> {
 				var q = d.getRequest();
-				q.setMethod(new Method("GET"));
+				q.setMethod(new HttpRequest.Method("GET"));
 				q.setURI(URI.create("/"));
 				q.getHeaders().add("Connection", "close");
 				q.close();
@@ -61,7 +59,7 @@ public class HttpClient implements AutoCloseable {
 				var s = d.getResponse();
 				var t = s.getStatus();
 				System.out.println(t);
-				assert t.equals(new Status(200, "OK")) : t;
+				assert t.equals(new HttpResponse.Status(200, "OK")) : t;
 
 				try {
 					return new String(IO.readAllBytes((ReadableByteChannel) s.getBody()));

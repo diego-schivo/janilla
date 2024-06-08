@@ -22,24 +22,25 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http;
+package com.janilla.net;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
+import javax.net.ssl.SSLException;
 
 import com.janilla.io.ByteBufferByteChannel;
 import com.janilla.io.ByteBufferHolder;
 import com.janilla.io.FilterByteChannel;
 import com.janilla.io.IO;
-import com.janilla.net.Net;
 
 public class SSLByteChannel extends FilterByteChannel {
 
@@ -112,11 +113,17 @@ public class SSLByteChannel extends FilterByteChannel {
 
 	protected ByteBuffer packet2;
 
-	protected Status status = Status.OK;
+//	protected Status status = Status.OK;
+//
+//	protected HandshakeStatus handshake = HandshakeStatus.NOT_HANDSHAKING;
 
-	protected HandshakeStatus handshake = HandshakeStatus.NOT_HANDSHAKING;
+	protected Status status;
+
+	protected HandshakeStatus handshake;
 
 	protected Close close;
+
+	protected SSLException sslException;
 
 	public SSLByteChannel(ByteChannel channel, SSLEngine engine) {
 		super(channel);
@@ -131,47 +138,33 @@ public class SSLByteChannel extends FilterByteChannel {
 
 	@Override
 	public int read(ByteBuffer dst) throws IOException {
-		if (application1.position() == 0) {
-			switch (handshake) {
-			case FINISHED:
-			case NOT_HANDSHAKING:
-			case NEED_UNWRAP:
-				if (packet1.position() == 0 || status == Status.BUFFER_UNDERFLOW)
+		if (sslException != null)
+			throw new IOException("SSL");
+		try {
+
+//			System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read\n\t"
+//					+ engine.getHandshakeStatus().toString().replace("\n", "\n\t"));
+
+			if (application1.position() == 0) {
+				if (handshake == null)
+					handshake = engine.getUseClientMode() ? HandshakeStatus.NEED_WRAP : HandshakeStatus.NEED_UNWRAP;
+
+				switch (handshake) {
+				case FINISHED:
+				case NOT_HANDSHAKING:
+				case NEED_UNWRAP:
+					if (packet1.position() == 0 || status == Status.BUFFER_UNDERFLOW)
+						try {
+//						var n = super.read(packet1);
+							var n = read(packet1, true);
+							if (n <= 0)
+								return n;
+						} catch (ClosedChannelException e) {
+							return -1;
+						}
+					packet1.flip();
 					try {
-						var n = super.read(packet1);
-						if (n <= 0)
-							return n;
-					} catch (ClosedChannelException e) {
-						return -1;
-					}
-				packet1.flip();
-				try {
-					var r = engine.unwrap(packet1, application1);
-
-//					System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read r\n\t"
-//							+ r.toString().replace("\n", "\n\t"));
-
-					status = r.getStatus();
-					handshake = r.getHandshakeStatus();
-
-					switch (status) {
-					case OK:
-					case BUFFER_UNDERFLOW:
-					case CLOSED:
-						break;
-					default:
-						throw new IOException(status.toString());
-					}
-				} finally {
-					packet1.compact();
-				}
-				break;
-
-			case NEED_WRAP:
-				if (packet2.position() == 0) {
-					application2.flip();
-					try {
-						var r = engine.wrap(application2, packet2);
+						var r = engine.unwrap(packet1, application1);
 
 //						System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read r\n\t"
 //								+ r.toString().replace("\n", "\n\t"));
@@ -181,96 +174,110 @@ public class SSLByteChannel extends FilterByteChannel {
 
 						switch (status) {
 						case OK:
+						case BUFFER_UNDERFLOW:
 						case CLOSED:
 							break;
 						default:
 							throw new IOException(status.toString());
 						}
 					} finally {
-						application2.compact();
+						packet1.compact();
+					}
+					break;
+
+				case NEED_WRAP:
+					if (packet2.position() == 0) {
+						application2.flip();
+						try {
+							var r = engine.wrap(application2, packet2);
+
+//							System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read r\n\t"
+//									+ r.toString().replace("\n", "\n\t"));
+
+							status = r.getStatus();
+							handshake = r.getHandshakeStatus();
+
+							switch (status) {
+							case OK:
+							case CLOSED:
+								break;
+							default:
+								throw new IOException(status.toString());
+							}
+						} finally {
+							application2.compact();
+						}
+					}
+					break;
+
+				case NEED_TASK:
+					engine.getDelegatedTask().run();
+
+//					System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read handshake=" + handshake
+//							+ "->" + engine.getHandshakeStatus());
+
+					handshake = engine.getHandshakeStatus();
+					break;
+
+				default:
+					throw new IOException(handshake.toString());
+				}
+
+//				if (handshake != HandshakeStatus.NOT_HANDSHAKING)
+//					System.out
+//							.println(Thread.currentThread().getName() + " SSLByteChannel.read handshake=" + handshake);
+
+				if (packet2.position() > 0) {
+					packet2.flip();
+					try {
+//					super.write(packet2);
+						write(packet2, true);
+					} finally {
+						packet2.compact();
 					}
 				}
-				break;
-
-			case NEED_TASK:
-				engine.getDelegatedTask().run();
-				handshake = engine.getHandshakeStatus();
-
-//				System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read handshake=" + handshake);
-
-				break;
-
-			default:
-				throw new IOException(handshake.toString());
 			}
 
-//			if (handshake != HandshakeStatus.NOT_HANDSHAKING)
-//				System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read handshake=" + handshake);
-
-			if (packet2.position() > 0) {
-				packet2.flip();
-				try {
-					super.write(packet2);
-				} finally {
-					packet2.compact();
-				}
+			var p = application1.position();
+			var r = dst.remaining();
+			var n = Math.min(p, r);
+			if (n == 0) {
+				if (status == Status.CLOSED)
+					n = -1;
+			} else {
+				application1.flip();
+				if (n < p)
+					application1.limit(n);
+				dst.put(application1);
+				if (n < p)
+					application1.limit(p);
+				application1.compact();
 			}
+			return n;
+		} catch (SSLException e) {
+			this.sslException = e;
+			throw e;
 		}
-
-		var p = application1.position();
-		var r = dst.remaining();
-		var n = Math.min(p, r);
-		if (n == 0) {
-			if (status == Status.CLOSED)
-				n = -1;
-		} else {
-			application1.flip();
-			if (n < p)
-				application1.limit(n);
-			dst.put(application1);
-			if (n < p)
-				application1.limit(p);
-			application1.compact();
-		}
-		return n;
 	}
 
 	@Override
 	public int write(ByteBuffer src) throws IOException {
-		var n = 0;
-		switch (handshake) {
-		case FINISHED:
-		case NOT_HANDSHAKING:
-		case NEED_WRAP:
-			if (packet2.position() == 0) {
-				var r = engine.wrap(src, packet2);
+		if (sslException != null)
+			throw new IOException("SSL");
+		try {
+//			System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write\n\t"
+//					+ engine.getHandshakeStatus().toString().replace("\n", "\n\t"));
 
-//				System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write r\n\t"
-//						+ r.toString().replace("\n", "\n\t"));
+			if (handshake == null)
+				handshake = engine.getUseClientMode() ? HandshakeStatus.NEED_WRAP : HandshakeStatus.NEED_UNWRAP;
 
-				status = r.getStatus();
-				handshake = r.getHandshakeStatus();
-
-				switch (status) {
-				case OK:
-					break;
-				case CLOSED:
-					throw new IOException("Stream closed");
-				default:
-					throw new IOException(status.toString());
-				}
-
-				n = r.bytesConsumed();
-			}
-			break;
-
-		case NEED_UNWRAP:
-			if (packet1.position() == 0 || status == Status.BUFFER_UNDERFLOW)
-				super.read(packet1);
-			if (packet1.position() > 0) {
-				packet1.flip();
-				try {
-					var r = engine.unwrap(packet1, application1);
+			var n = 0;
+			switch (handshake) {
+			case FINISHED:
+			case NOT_HANDSHAKING:
+			case NEED_WRAP:
+				if (packet2.position() == 0) {
+					var r = engine.wrap(src, packet2);
 
 //					System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write r\n\t"
 //							+ r.toString().replace("\n", "\n\t"));
@@ -278,44 +285,78 @@ public class SSLByteChannel extends FilterByteChannel {
 					status = r.getStatus();
 					handshake = r.getHandshakeStatus();
 
-					if (status != Status.OK && status != Status.BUFFER_UNDERFLOW)
+					switch (status) {
+					case OK:
+						break;
+					case CLOSED:
+						throw new IOException("Stream closed");
+					default:
 						throw new IOException(status.toString());
+					}
+
+					n = r.bytesConsumed();
+				}
+				break;
+
+			case NEED_UNWRAP:
+				if (packet1.position() == 0 || status == Status.BUFFER_UNDERFLOW)
+//				super.read(packet1);
+					read(packet1, true);
+				if (packet1.position() > 0) {
+					packet1.flip();
+					try {
+						var r = engine.unwrap(packet1, application1);
+
+//						System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write r\n\t"
+//								+ r.toString().replace("\n", "\n\t"));
+
+						status = r.getStatus();
+						handshake = r.getHandshakeStatus();
+
+						if (status != Status.OK && status != Status.BUFFER_UNDERFLOW)
+							throw new IOException(status.toString());
+					} finally {
+						packet1.compact();
+					}
+				}
+				break;
+
+			case NEED_TASK:
+				engine.getDelegatedTask().run();
+
+//				System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write handshake=" + handshake
+//						+ "->" + engine.getHandshakeStatus());
+
+				handshake = engine.getHandshakeStatus();
+				break;
+
+			default:
+				throw new IOException(handshake.toString());
+			}
+
+//			if (handshake != HandshakeStatus.NOT_HANDSHAKING)
+//				System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write handshake=" + handshake);
+
+			if (packet2.position() > 0) {
+				packet2.flip();
+				try {
+//				super.write(packet2);
+					write(packet2, true);
 				} finally {
-					packet1.compact();
+					packet2.compact();
 				}
 			}
-			break;
 
-		case NEED_TASK:
-			engine.getDelegatedTask().run();
-			handshake = engine.getHandshakeStatus();
-
-//			System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write handshake=" + handshake);
-
-			break;
-
-		default:
-			throw new IOException(handshake.toString());
+			return n;
+		} catch (SSLException e) {
+			this.sslException = e;
+			throw e;
 		}
-
-//		if (handshake != HandshakeStatus.NOT_HANDSHAKING)
-//			System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write handshake=" + handshake);
-
-		if (packet2.position() > 0) {
-			packet2.flip();
-			try {
-				super.write(packet2);
-			} finally {
-				packet2.compact();
-			}
-		}
-
-		return n;
 	}
 
 	@Override
 	public boolean isOpen() {
-		return close != null ? close.state < 3 : super.isOpen();
+		return close == null ? super.isOpen() : close.state < 3;
 	}
 
 	@Override
@@ -328,6 +369,48 @@ public class SSLByteChannel extends FilterByteChannel {
 			} catch (UncheckedIOException e) {
 				throw e.getCause();
 			}
+	}
+
+//	int count;
+
+	protected int read(ByteBuffer dst, boolean block) throws IOException {
+
+//		System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read block=" + block);
+
+//		if (++count >= 50)
+//			throw new RuntimeException();
+
+		@SuppressWarnings("resource")
+		var sc = channel instanceof SocketChannel x ? x : null;
+		var b = sc != null && sc.isBlocking();
+		if (block != b && sc != null)
+			sc.configureBlocking(block);
+		try {
+			return super.read(dst);
+		} finally {
+			if (block != b && sc != null)
+				sc.configureBlocking(b);
+		}
+	}
+
+	protected int write(ByteBuffer src, boolean block) throws IOException {
+
+//		System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write block=" + block);
+
+//		if (++count >= 50)
+//			throw new RuntimeException();
+
+		@SuppressWarnings("resource")
+		var sc = channel instanceof SocketChannel x ? x : null;
+		var b = sc != null && sc.isBlocking();
+		if (block != b && sc != null)
+			sc.configureBlocking(block);
+		try {
+			return super.write(src);
+		} finally {
+			if (block != b && sc != null)
+				sc.configureBlocking(b);
+		}
 	}
 
 	protected class Close implements Runnable {
@@ -343,7 +426,8 @@ public class SSLByteChannel extends FilterByteChannel {
 						packet2.flip();
 						try {
 							while (packet2.hasRemaining())
-								SSLByteChannel.super.write(packet2);
+//								SSLByteChannel.super.write(packet2);
+								write(packet2, true);
 						} finally {
 							packet2.compact();
 						}
@@ -371,7 +455,8 @@ public class SSLByteChannel extends FilterByteChannel {
 					if (engine.isInboundDone())
 						yield 2;
 					if (packet1.position() == 0 || status == Status.BUFFER_UNDERFLOW) {
-						var n = SSLByteChannel.super.read(packet1);
+//						var n = SSLByteChannel.super.read(packet1);
+						var n = read(packet1, true);
 						if (n < 0)
 							yield 2;
 					}

@@ -22,29 +22,21 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http;
+package com.janilla.io;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import com.janilla.io.BufferedReadableByteChannel;
+public class TextReadableByteChannel extends BufferedReadableByteChannel {
 
-public abstract class HttpBufferedReadableByteChannel extends BufferedReadableByteChannel {
-
-	public HttpBufferedReadableByteChannel(ReadableByteChannel channel, ByteBuffer buffer) {
+	public TextReadableByteChannel(ReadableByteChannel channel, ByteBuffer buffer) {
 		super(channel, buffer);
 	}
 
-	protected int readByte() {
-		if (index == buffer.position())
-			while (readBuffer() == 0)
-				if (ended)
-					return -1;
-		return buffer.array()[index++];
-	}
+	public String readLine() {
+//		System.out.println(Thread.currentThread().getName() + " TextReadableByteChannel.readLine");
 
-	protected String readLine() {
-//		var t = System.currentTimeMillis();
+		// var t = System.currentTimeMillis();
 
 		var i1 = 0;
 		var a = new byte[2000];
@@ -52,6 +44,9 @@ public abstract class HttpBufferedReadableByteChannel extends BufferedReadableBy
 		String l;
 		for (;;) {
 			var i2 = readByte();
+
+//			System.out.println("i2=" + i2);
+
 			if (i2 < 0) {
 				l = i > 0 ? new String(a, 0, i) : null;
 				break;
@@ -64,9 +59,17 @@ public abstract class HttpBufferedReadableByteChannel extends BufferedReadableBy
 			i1 = i2;
 		}
 
-//		System.out.println(Thread.currentThread().getName() + " HttpBufferedReadableByteChannel.readLine l " + l + " "
+//		System.out.println(Thread.currentThread().getName() + " TextReadableByteChannel.readLine l " + l + " "
 //				+ (System.currentTimeMillis() - t));
 
 		return l;
+	}
+
+	protected int readByte() {
+		if (index == buffer.position())
+			while (readBuffer() == 0)
+				if (ended)
+					return -1;
+		return buffer.array()[index++];
 	}
 }

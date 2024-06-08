@@ -33,8 +33,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Objects;
 
 import com.janilla.io.IO;
+import com.janilla.io.TextReadableByteChannel;
 
-public class ChunkedReadableByteChannel extends HttpBufferedReadableByteChannel {
+public class ChunkedReadableByteChannel extends TextReadableByteChannel {
 
 	public static void main(String[] args) throws Exception {
 		var i = new ByteArrayInputStream("""
