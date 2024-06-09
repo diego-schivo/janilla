@@ -60,6 +60,7 @@ public class SmtpClient implements AutoCloseable {
 				}
 			}
 		}
+
 		try (var c = new SmtpClient()) {
 			c.setAddress(s.getAddress());
 			{
@@ -139,7 +140,7 @@ public class SmtpClient implements AutoCloseable {
 				});
 				System.out.println(u);
 
-				c.connection().setState(SmtpConnection.State.DATA);
+				c.connection().setRequestType(SmtpRequest.Type.DATA);
 
 				u = c.query(e -> {
 					try (var crq = (DataSmtpRequest) e.getRequest()) {
@@ -200,7 +201,7 @@ public class SmtpClient implements AutoCloseable {
 				});
 				System.out.println(u);
 
-				c.connection().setState(SmtpConnection.State.COMMAND);
+				c.connection().setRequestType(SmtpRequest.Type.COMMAND);
 
 				u = c.query(e -> {
 					try (var crq = (CommandSmtpRequest) e.getRequest()) {
@@ -254,7 +255,7 @@ public class SmtpClient implements AutoCloseable {
 				e.setUseClientMode(true);
 				connection = new SmtpConnection.Builder().channel(sc).sslEngine(e).build();
 				connection.setUseClientMode(true);
-				connection.setState(SmtpConnection.State.NEW);
+				connection.setRequestType(SmtpRequest.Type.COMMAND);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

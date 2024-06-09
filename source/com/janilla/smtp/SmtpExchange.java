@@ -30,19 +30,29 @@ public class SmtpExchange {
 
 	private SmtpResponse response;
 
+	private SmtpConnection connection;
+
 	public SmtpRequest getRequest() {
 		return request;
 	}
 
-	public void setRequest(SmtpRequest value) {
-		request = value;
+	public void setRequest(SmtpRequest request) {
+		this.request = request;
 	}
 
 	public SmtpResponse getResponse() {
 		return response;
 	}
 
-	public void setResponse(SmtpResponse value) {
-		response = value;
+	public void setResponse(SmtpResponse response) {
+		this.response = response;
+	}
+
+	public SmtpConnection getConnection() {
+		return connection;
+	}
+
+	public void setConnection(SmtpConnection connection) {
+		this.connection = connection;
 	}
 }

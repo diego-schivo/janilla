@@ -43,70 +43,73 @@ import com.janilla.net.SSLByteChannel;
 
 public class SmtpConnection implements AutoCloseable {
 
-	protected SocketChannel channel;
+	protected SocketChannel socketChannel;
 
 	protected SSLByteChannel sslChannel;
 
-	protected InputChannel input;
+	protected InputChannel inputChannel;
 
-	protected OutputChannel output;
-
-	protected State state;
+	protected OutputChannel outputChannel;
 
 	protected boolean useClientMode;
 
-	public SocketChannel channel() {
-		return channel;
-	}
+	protected SmtpRequest.Type requestType;
 
-	public SmtpRequest newRequest() {
-		return useClientMode ? output.newRequest() : input.newRequest();
-	}
-
-	public SmtpResponse newResponse() {
-		return useClientMode ? input.newResponse() : output.newResponse();
-	}
-
-	public State getState() {
-		return state;
-	}
-
-	public void setState(State state) {
-		this.state = state;
-	}
-
-	public boolean isUseClientMode() {
-		return useClientMode;
+	public SocketChannel socketChannel() {
+		return socketChannel;
 	}
 
 	public void setUseClientMode(boolean useClientMode) {
 		this.useClientMode = useClientMode;
 	}
 
+	public SmtpRequest.Type getRequestType() {
+		return requestType;
+	}
+
+	public void setRequestType(SmtpRequest.Type requestType) {
+		this.requestType = requestType;
+	}
+
+	public SmtpRequest newRequest() {
+		return useClientMode ? outputChannel.newRequest() : inputChannel.newRequest();
+	}
+
+	public SmtpResponse newResponse() {
+		return useClientMode ? inputChannel.newResponse() : outputChannel.newResponse();
+	}
+
 	@Override
 	public void close() {
 		try {
-			input.close();
+			inputChannel.close();
 		} catch (IOException e) {
 		}
 		try {
-			output.close();
+			outputChannel.close();
 		} catch (IOException e) {
 		}
-		while (channel.isOpen())
+		while (socketChannel.isOpen())
 			try {
-				channel.close();
+				socketChannel.close();
 			} catch (IOException e) {
 			}
 	}
 
 	public static class Builder {
 
+		protected SmtpConnection connection;
+
 		protected SocketChannel channel;
 
 		protected SSLEngine sslEngine;
 
 		protected int bufferCapacity = IO.DEFAULT_BUFFER_CAPACITY;
+
+		public Builder connection(SmtpConnection connection) {
+			this.connection = connection;
+			return this;
+		}
 
 		public Builder channel(SocketChannel channel) {
 			this.channel = channel;
@@ -124,8 +127,8 @@ public class SmtpConnection implements AutoCloseable {
 		}
 
 		public SmtpConnection build() {
-			var c = new SmtpConnection();
-			c.channel = channel;
+			var c = connection != null ? connection : new SmtpConnection();
+			c.socketChannel = channel;
 			c.sslChannel = new SSLByteChannel(channel, sslEngine);
 			var ch = new FilterByteChannel(c.sslChannel) {
 
@@ -162,8 +165,8 @@ public class SmtpConnection implements AutoCloseable {
 				}
 			};
 
-			c.input = c.new InputChannel(ch, ByteBuffer.allocate(bufferCapacity));
-			c.output = c.new OutputChannel(ch, ByteBuffer.allocate(bufferCapacity));
+			c.inputChannel = c.new InputChannel(ch, ByteBuffer.allocate(bufferCapacity));
+			c.outputChannel = c.new OutputChannel(ch, ByteBuffer.allocate(bufferCapacity));
 			return c;
 		}
 	}
@@ -179,8 +182,8 @@ public class SmtpConnection implements AutoCloseable {
 		}
 
 		public SmtpRequest newRequest() {
-			var rq = switch (state) {
-			case NEW -> new EmptyRequest();
+			var rq = switch (requestType) {
+			case EMPTY -> new EmptyRequest();
 			case COMMAND -> new CommandRequest();
 			case DATA -> new DataRequest();
 			};
@@ -292,9 +295,10 @@ public class SmtpConnection implements AutoCloseable {
 		}
 
 		public SmtpRequest newRequest() {
-			var rq = switch (state) {
-			case NEW, COMMAND -> new CommandRequest();
+			var rq = switch (requestType) {
+			case COMMAND -> new CommandRequest();
 			case DATA -> new DataRequest();
+			default -> throw new IllegalArgumentException();
 			};
 			return rq;
 		}
@@ -404,10 +408,5 @@ public class SmtpConnection implements AutoCloseable {
 				}
 			}
 		}
-	}
-
-	public enum State {
-
-		NEW, COMMAND, DATA
 	}
 }
