@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpServer;
 import com.janilla.reflect.Factory;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.Lazy;
@@ -74,13 +75,13 @@ public class ApplicationHandlerBuilder {
 		return handlerFactory.get();
 	}
 
-	public WebHandler build() {
-		return c -> {
-			var o = c.getException() != null ? c.getException() : c.getRequest();
-			var h = handlerFactory.get().createHandler(o, c);
+	public HttpServer.Handler build() {
+		return ex -> {
+			var o = ex.getException() != null ? ex.getException() : ex.getRequest();
+			var h = handlerFactory.get().createHandler(o, ex);
 			if (h == null)
 				throw new NotFoundException();
-			h.handle(c);
+			return h.handle(ex);
 		};
 	}
 
@@ -121,7 +122,7 @@ public class ApplicationHandlerBuilder {
 		return factory.create(ExceptionHandlerFactory.class);
 	}
 
-	protected WebHandler createHandler(Object object, HttpExchange exchange) {
+	protected HttpServer.Handler createHandler(Object object, HttpExchange exchange) {
 		for (var g : factories)
 			if (g != null) {
 				var h = g.createHandler(object, exchange);

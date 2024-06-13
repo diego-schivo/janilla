@@ -105,4 +105,34 @@ public interface HttpResponse extends HttpMessage {
 			return new Status(code, texts.get(code));
 		}
 	}
+
+	class Default extends HttpMessage.Default implements HttpResponse {
+
+		protected Status status;
+
+		@Override
+		public Status getStatus() {
+			if (state == 0)
+				getStartLine();
+			return status;
+		}
+
+		@Override
+		public void setStatus(Status status) {
+			this.status = status;
+			if (status != null)
+				setStartLine("HTTP/1.1 " + status.code() + " " + status.text());
+		}
+
+		@Override
+		public String getStartLine() {
+			var s = state;
+			var l = super.getStartLine();
+			if (s == 0) {
+				var ss = l != null ? l.split(" ", 3) : null;
+				status = ss != null && ss.length > 2 ? new Status(Integer.parseInt(ss[1].trim()), ss[2].trim()) : null;
+			}
+			return l;
+		}
+	}
 }

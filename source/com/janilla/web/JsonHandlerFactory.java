@@ -25,14 +25,14 @@
 package com.janilla.web;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 
 import com.janilla.frontend.RenderEngine;
 import com.janilla.http.HttpExchange;
-import com.janilla.io.IO;
+import com.janilla.http.HttpHeader;
+import com.janilla.http.HttpServer;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -40,20 +40,30 @@ import com.janilla.json.ReflectionJsonIterator;
 public class JsonHandlerFactory implements WebHandlerFactory {
 
 	@Override
-	public WebHandler createHandler(Object object, HttpExchange exchange) {
-		return object instanceof RenderEngine.Entry i ? x -> render(i.getValue(), x) : null;
+	public HttpServer.Handler createHandler(Object object, HttpExchange exchange) {
+		return object instanceof RenderEngine.Entry i ? x -> {
+			render(i.getValue(), x);
+			return true;
+		} : null;
 	}
 
 	protected void render(Object object, HttpExchange exchange) {
-		var s = exchange.getResponse();
-		s.getHeaders().set("Content-Type", "application/json");
+		var rs = exchange.getResponse();
+		rs.getHeaders().add(new HttpHeader("Content-Type", "application/json"));
 
 		var t = Json.format(buildJsonIterator(object, exchange));
 //		System.out.println("t=" + t);
-		var b = ByteBuffer.wrap(t.getBytes());
-		var c = (WritableByteChannel) s.getBody();
+//		var b = ByteBuffer.wrap(t.getBytes());
+//		var c = (WritableByteChannel) rs.getBody();
+//		try {
+//			IO.repeat(x -> c.write(b), b.remaining());
+//		} catch (IOException e) {
+//			throw new UncheckedIOException(e);
+//		}
+		var bb = t.getBytes();
+		rs.getHeaders().add(new HttpHeader("Content-Length", String.valueOf(bb.length)));
 		try {
-			IO.repeat(x -> c.write(b), b.remaining());
+			((OutputStream) rs.getBody()).write(bb);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

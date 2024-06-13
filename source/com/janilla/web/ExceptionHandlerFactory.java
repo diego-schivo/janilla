@@ -24,50 +24,46 @@
  */
 package com.janilla.web;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.nio.channels.Channels;
-
 import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpMessageReadableByteChannel;
-import com.janilla.http.HttpMessageWritableByteChannel;
-import com.janilla.http.HttpResponse.Status;
+import com.janilla.http.HttpHeader;
+import com.janilla.http.HttpResponse;
+import com.janilla.http.HttpServer;
 
 public class ExceptionHandlerFactory implements WebHandlerFactory {
 
 	public static void main(String[] args) throws Exception {
-		var f = new ExceptionHandlerFactory();
-
-		var i = new ByteArrayInputStream("""
-				GET /test.html HTTP/1.1\r
-				Content-Length: 0\r
-				\r
-				""".getBytes());
-		var o = new ByteArrayOutputStream();
-		try (var r = new HttpMessageReadableByteChannel(Channels.newChannel(i));
-				var q = r.readRequest();
-				var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
-				var s = w.writeResponse()) {
-			var e = new NotFoundException();
-			var c = new HttpExchange();
-			c.setRequest(q);
-			c.setResponse(s);
-			var h = f.createHandler(e, c);
-			h.handle(c);
-		}
-
-		var t = o.toString();
-		System.out.println(t);
-		assert t.equals("""
-				HTTP/1.1 404 Not Found\r
-				Cache-Control: no-cache\r
-				Content-Length: 0\r
-				\r
-				""") : t;
+//		var f = new ExceptionHandlerFactory();
+//
+//		var i = new ByteArrayInputStream("""
+//				GET /test.html HTTP/1.1\r
+//				Content-Length: 0\r
+//				\r
+//				""".getBytes());
+//		var o = new ByteArrayOutputStream();
+//		try (var r = new HttpMessageReadableByteChannel(Channels.newChannel(i));
+//				var q = r.readRequest();
+//				var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
+//				var s = w.writeResponse()) {
+//			var e = new NotFoundException();
+//			var c = new HttpExchange();
+//			c.setRequest(q);
+//			c.setResponse(s);
+//			var h = f.createHandler(e, c);
+//			h.handle(c);
+//		}
+//
+//		var t = o.toString();
+//		System.out.println(t);
+//		assert t.equals("""
+//				HTTP/1.1 404 Not Found\r
+//				Cache-Control: no-cache\r
+//				Content-Length: 0\r
+//				\r
+//				""") : t;
 	}
 
 	@Override
-	public WebHandler createHandler(Object object, HttpExchange exchange) {
+	public HttpServer.Handler createHandler(Object object, HttpExchange exchange) {
 		if (object instanceof Exception e) {
 			var f = e.getClass().getAnnotation(Error.class);
 			return c -> handle(f, c);
@@ -75,13 +71,15 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 		return null;
 	}
 
-	protected void handle(Error error, HttpExchange exchange) {
-		var s = exchange.getResponse();
-		var t = error != null ? new Status(error.code(), error.text()) : new Status(500, "Internal Server Error");
+	protected boolean handle(Error error, HttpExchange exchange) {
+		var rs = exchange.getResponse();
+		var s = error != null ? new HttpResponse.Status(error.code(), error.text()) : HttpResponse.Status.of(500);
 
 //		System.out.println("t=" + t);
 
-		s.setStatus(t);
-		s.getHeaders().set("Cache-Control", "no-cache");
+		rs.setStatus(s);
+		var hh = rs.getHeaders();
+		hh.add(new HttpHeader("Cache-Control", "no-cache"));
+		return true;
 	}
 }

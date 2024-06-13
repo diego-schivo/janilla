@@ -25,6 +25,8 @@
 package com.janilla.web;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -33,8 +35,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
@@ -55,9 +55,10 @@ import java.util.stream.Stream;
 
 import com.janilla.frontend.RenderEngine;
 import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpHeader;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.io.IO;
+import com.janilla.http.HttpServer;
 import com.janilla.json.Converter;
 import com.janilla.json.Json;
 import com.janilla.net.Net;
@@ -205,9 +206,12 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	}
 
 	@Override
-	public WebHandler createHandler(Object object, HttpExchange exchange) {
+	public HttpServer.Handler createHandler(Object object, HttpExchange exchange) {
 		var i = object instanceof HttpRequest q ? toInvocation(q) : null;
-		return i != null ? e -> handle(i, e) : null;
+		return i != null ? e -> {
+			handle(i, e);
+			return true;
+		} : null;
 	}
 
 	protected Object resolveTarget(Class<?> type) {
@@ -229,7 +233,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		var b = Stream.<Map.Entry<Invocable, String[]>>builder();
 		URI u;
 		try {
-			u = request.getURI();
+			u = request.getUri();
 		} catch (NullPointerException e) {
 			u = null;
 		}
@@ -303,48 +307,53 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			}
 		}
 
-		var s = exchange.getResponse();
+		var rs = exchange.getResponse();
 		if (m.getReturnType() == Void.TYPE) {
-			if (s.getStatus() == null) {
-				s.setStatus(new HttpResponse.Status(204, "No Content"));
-				s.getHeaders().set("Cache-Control", "no-cache");
+			if (rs.getStatus() == null) {
+				rs.setStatus(HttpResponse.Status.of(204));
+				rs.getHeaders().add(new HttpHeader("Cache-Control", "no-cache"));
 			}
 		} else if (o instanceof Path f && m.isAnnotationPresent(Attachment.class)) {
-			s.setStatus(new HttpResponse.Status(200, "OK"));
-			var h = s.getHeaders();
-			h.set("Cache-Control", "max-age=3600");
-			h.set("Content-Disposition", "attachment; filename=\"" + f.getFileName() + "\"");
+			rs.setStatus(HttpResponse.Status.of(200));
+			var hh = rs.getHeaders();
+			hh.add(new HttpHeader("Cache-Control", "max-age=3600"));
+			hh.add(new HttpHeader("Content-Disposition", "attachment; filename=\"" + f.getFileName() + "\""));
 			try {
-				h.set("Content-Length", String.valueOf(Files.size(f)));
+				hh.add(new HttpHeader("Content-Length", String.valueOf(Files.size(f))));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-			try (var sc = Files.newByteChannel(f); var tc = (WritableByteChannel) s.getBody()) {
-				IO.transfer(sc, tc);
+//			try (var sc = Files.newByteChannel(f); var tc = (WritableByteChannel) s.getBody()) {
+//				IO.transfer(sc, tc);
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+			try (var sc = Files.newInputStream(f); var tc = (OutputStream) rs.getBody()) {
+				sc.transferTo(tc);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
 		} else if (o instanceof URI v) {
-			s.setStatus(new HttpResponse.Status(302, "Found"));
-			var hh = s.getHeaders();
-			hh.set("Cache-Control", "no-cache");
-			hh.set("Location", v.toString());
+			rs.setStatus(HttpResponse.Status.of(302));
+			var hh = rs.getHeaders();
+			hh.add(new HttpHeader("Cache-Control", "no-cache"));
+			hh.add(new HttpHeader("Location", v.toString()));
 		} else {
-			s.setStatus(new HttpResponse.Status(200, "OK"));
-			var hh = s.getHeaders();
-			if (hh.get("Cache-Control") == null)
-				hh.set("Cache-Control", "no-cache");
-			if (hh.get("Content-Type") == null) {
-				var p = exchange.getRequest().getURI().getPath();
+			rs.setStatus(HttpResponse.Status.of(200));
+			var hh = rs.getHeaders();
+			if (hh.stream().noneMatch(x -> x.name().equals("Cache-Control")))
+				hh.add(new HttpHeader("Cache-Control", "no-cache"));
+			if (hh.stream().noneMatch(x -> x.name().equals("Content-Type"))) {
+				var p = exchange.getRequest().getUri().getPath();
 				var i = p != null ? p.lastIndexOf('.') : -1;
 				var e = i >= 0 ? p.substring(i + 1) : null;
 				if (e != null)
 					switch (e) {
 					case "html":
-						hh.set("Content-Type", "text/html");
+						hh.add(new HttpHeader("Content-Type", "text/html"));
 						break;
 					case "js":
-						hh.set("Content-Type", "text/javascript");
+						hh.add(new HttpHeader("Content-Type", "text/javascript"));
 						break;
 					}
 			}
@@ -354,18 +363,22 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected Object[] resolveArguments(Invocation invocation, HttpExchange exchange) {
 		var rq = exchange.getRequest();
-		var qs = Net.parseQueryString(rq.getURI().getQuery());
-		Supplier<String> z = switch (rq.getMethod().name()) {
+		var qs = Net.parseQueryString(rq.getUri().getQuery());
+		var mn = rq.getMethod().name();
+		Supplier<String> z = switch (mn) {
 		case "POST", "PUT" -> {
 			var s = Lazy.of(() -> {
-				var c = (ReadableByteChannel) rq.getBody();
+//				var c = (ReadableByteChannel) rq.getBody();
+				var c = (InputStream) rq.getBody();
 				try {
-					return new String(IO.readAllBytes(c));
+//					return new String(IO.readAllBytes(c));
+					return new String(c.readAllBytes());
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
 			});
-			var t = rq.getHeaders().get("Content-Type");
+			var t = rq.getHeaders().stream().filter(x -> x.name().equals("Content-Type")).map(HttpHeader::value)
+					.findFirst().orElse(null);
 			if (t != null)
 				switch (t.split(";")[0]) {
 				case "application/x-www-form-urlencoded":
@@ -430,8 +443,10 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			return exchange.getRequest();
 		if (c != null && HttpResponse.class.isAssignableFrom(c))
 			return exchange.getResponse();
-		if (c != null && !c.getPackageName().startsWith("java."))
-			switch (Objects.toString(exchange.getRequest().getHeaders().get("Content-Type"), "").split(";")[0]) {
+		if (c != null && !c.getPackageName().startsWith("java.")) {
+			var ct = exchange.getRequest().getHeaders().stream().filter(x -> x.name().equals("Content-Type"))
+					.map(HttpHeader::value).findFirst().orElse(null);
+			switch (Objects.toString(ct, "").split(";")[0]) {
 			case "application/json": {
 //		System.out.println("body=" + body);
 				if (body == null)
@@ -498,6 +513,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				}
 				break;
 			}
+		}
 		var vv = values.get();
 		return parseParameter(vv, type);
 	}

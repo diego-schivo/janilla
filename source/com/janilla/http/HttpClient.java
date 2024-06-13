@@ -25,49 +25,119 @@
 package com.janilla.http;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
-import java.security.GeneralSecurityException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Function;
 
 import javax.net.ssl.SSLContext;
 
-import com.janilla.io.IO;
+import com.janilla.net.Net;
 
 public class HttpClient implements AutoCloseable {
 
-	public static void main(String[] args) throws Exception {
-		try (var c = new HttpClient()) {
-			c.setAddress(new InetSocketAddress("www.google.com", 443));
+	public static void main(String[] args) {
+		var s = new HttpServer();
+		{
+			var k = Path.of(System.getProperty("user.home"))
+					.resolve("Downloads/jssesamples/samples/sslengine/testkeys");
+			var p = "passphrase".toCharArray();
+			var x = Net.getSSLContext(k, p);
+			s.setSslContext(x);
+		}
+		s.setHandler(exchange -> {
+			var rq = exchange.getRequest();
+			if (rq.getUri() == null)
+				return false;
+			String t;
 			try {
-				var x = SSLContext.getInstance("TLSv1.3");
-				x.init(null, null, null);
-				c.setSSLContext(x);
-			} catch (GeneralSecurityException e) {
-				throw new RuntimeException(e);
+				t = new String(((InputStream) rq.getBody()).readAllBytes());
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
-			var u = c.query(d -> {
-				var q = d.getRequest();
-				q.setMethod(new HttpRequest.Method("GET"));
-				q.setURI(URI.create("/"));
-				q.getHeaders().add("Connection", "close");
-				q.close();
+			System.out.println(t);
+			assert t.equals("name=Joe%20User&request=Send%20me%20one%20of%20your%20catalogue") : t;
+			var rs = exchange.getResponse();
+			rs.setStatus(HttpResponse.Status.of(200));
+			rs.setHeaders(List.of(new HttpHeader("Content-Type", "text/plain"),
+					new HttpHeader("Transfer-Encoding", "chunked")));
+			try {
+				((OutputStream) rs.getBody()).write("""
+						7\r
+						Mozilla\r
+						11\r
+						Developer Network\r
+						0\r
+						\r
+						""".getBytes());
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+			return true;
+		});
+		new Thread(s::run, "Server").start();
 
-				var s = d.getResponse();
-				var t = s.getStatus();
-				System.out.println(t);
-				assert t.equals(new HttpResponse.Status(200, "OK")) : t;
-
+		synchronized (s) {
+			while (s.getAddress() == null) {
 				try {
-					return new String(IO.readAllBytes((ReadableByteChannel) s.getBody()));
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
+					s.wait();
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
 				}
-			});
-			System.out.println(u);
+			}
+		}
+
+		try (var c = new HttpClient()) {
+			c.setAddress(s.getAddress());
+			{
+				var k = Path.of(System.getProperty("user.home"))
+						.resolve("Downloads/jssesamples/samples/sslengine/testkeys");
+				var p = "passphrase".toCharArray();
+				var x = Net.getSSLContext(k, p);
+				c.setSslContext(x);
+			}
+			try {
+				var u = c.query(ex -> {
+					try (var rq = (HttpRequest) ex.getRequest()) {
+						rq.setMethod(new HttpRequest.Method("POST"));
+						rq.setUri(URI.create("/contact_form.php"));
+						rq.setHeaders(List.of(new HttpHeader("Host", "developer.mozilla.org"),
+								new HttpHeader("Content-Length", "63"),
+								new HttpHeader("Content-Type", "application/x-www-form-urlencoded")));
+						try {
+							((OutputStream) rq.getBody()).write(
+									"name=Joe%20User&request=Send%20me%20one%20of%20your%20catalogue".getBytes());
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					}
+					try (var rs = (HttpResponse) ex.getResponse()) {
+						try {
+							return new String(((InputStream) rs.getBody()).readAllBytes());
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					}
+				});
+				System.out.println(u);
+				assert u.equals("""
+						7\r
+						Mozilla\r
+						11\r
+						Developer Network\r
+						0\r
+						\r
+						""") : u;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} finally {
+			s.stop();
 		}
 	}
 
@@ -75,46 +145,36 @@ public class HttpClient implements AutoCloseable {
 
 	private SSLContext sslContext;
 
-	private HttpConnection connection;
-
-	public InetSocketAddress getAddress() {
-		return address;
-	}
+	protected HttpConnection connection;
 
 	public void setAddress(InetSocketAddress address) {
 		this.address = address;
 	}
 
-	public SSLContext getSSLContext() {
-		return sslContext;
+	public void setSslContext(SSLContext sslContext) {
+		this.sslContext = sslContext;
 	}
 
-	public void setSSLContext(SSLContext sslContext) {
-		this.sslContext = sslContext;
+	public HttpConnection connection() {
+		return connection;
 	}
 
 	public <T> T query(Function<HttpExchange, T> handler) {
 		if (connection == null) {
 			try {
-				var c = SocketChannel.open();
-				c.configureBlocking(true);
-				c.connect(address);
-				var e = sslContext != null ? sslContext.createSSLEngine(address.getHostName(), address.getPort())
-						: null;
-				if (e != null) {
-					e.setUseClientMode(true);
-					var pp = e.getSSLParameters();
-					pp.setApplicationProtocols(new String[] { "http/1.1" });
-					e.setSSLParameters(pp);
-				}
-				connection = new HttpConnection(c, e);
+				var sc = SocketChannel.open();
+				sc.configureBlocking(true);
+				sc.connect(address);
+				var e = sslContext.createSSLEngine(address.getHostName(), address.getPort());
+				e.setUseClientMode(true);
+				connection = new HttpConnection.Builder().channel(sc).sslEngine(e).build();
+				connection.setUseClientMode(true);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
 		}
-
-		try (var r = connection.getOutput().writeRequest(); var s = connection.getInput().readResponse()) {
-			return handler.apply(buildExchange(r, s));
+		try (var ex = buildExchange(connection)) {
+			return handler.apply(ex);
 		}
 	}
 
@@ -124,10 +184,19 @@ public class HttpClient implements AutoCloseable {
 			connection.close();
 	}
 
-	protected HttpExchange buildExchange(HttpRequest request, HttpResponse response) {
-		var c = new HttpExchange();
-		c.setRequest(request);
-		c.setResponse(response);
-		return c;
+	protected HttpExchange buildExchange(HttpConnection connection) {
+		var rq = new HttpRequest.Default();
+		rq.setRaw(connection.startRequest());
+		rq.setUseInputMode(false);
+
+		var rs = new HttpResponse.Default();
+		rs.setRaw(connection.startResponse());
+		rs.setUseInputMode(true);
+
+		var ex = new HttpExchange();
+		ex.setRequest(rq);
+		ex.setResponse(rs);
+		ex.setConnection(connection);
+		return ex;
 	}
 }

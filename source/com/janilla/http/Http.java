@@ -75,19 +75,19 @@ public abstract class Http {
 				try {
 					var x = SSLContext.getInstance("TLSv1.2");
 					x.init(null, null, null);
-					c.setSSLContext(x);
+					c.setSslContext(x);
 				} catch (GeneralSecurityException e) {
 					throw new RuntimeException(e);
 				}
 			return c.query(e -> {
 				try (var q = e.getRequest()) {
 					q.setMethod(method);
-					q.setURI(URI.create(uri.getPath()));
+					q.setUri(URI.create(uri.getPath()));
 					var hh = q.getHeaders();
 					for (var f : headers.entrySet())
-						hh.add(f.getKey(), f.getValue());
-					if (hh.get("Host") == null)
-						hh.add("Host", uri.getHost());
+						hh.add(new HttpHeader(f.getKey(), f.getValue()));
+					if (hh.stream().noneMatch(x -> x.name().equals("Host")))
+						hh.add(new HttpHeader("Host", uri.getHost()));
 					IO.write(body.getBytes(), (WritableByteChannel) q.getBody());
 				} catch (IOException f) {
 					throw new UncheckedIOException(f);

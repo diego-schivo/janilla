@@ -82,6 +82,7 @@ public class Mail {
 
 		var m = new Mail();
 		m.setAddress(s.getAddress());
+//		m.setAddress(new InetSocketAddress("smtp.example.com", 465));
 		{
 			var k = Path.of(System.getProperty("user.home"))
 					.resolve("Downloads/jssesamples/samples/sslengine/testkeys");

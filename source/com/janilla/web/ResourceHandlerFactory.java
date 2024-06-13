@@ -25,11 +25,10 @@
 package com.janilla.web;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,8 +44,10 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpHeader;
 import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse.Status;
+import com.janilla.http.HttpResponse;
+import com.janilla.http.HttpServer;
 import com.janilla.io.IO;
 import com.janilla.util.Lazy;
 
@@ -115,11 +116,14 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 			}, x -> x, (v, w) -> w, LinkedHashMap::new)));
 
 	@Override
-	public WebHandler createHandler(Object object, HttpExchange exchange) {
-		var u = object instanceof HttpRequest q ? q.getURI() : null;
+	public HttpServer.Handler createHandler(Object object, HttpExchange exchange) {
+		var u = object instanceof HttpRequest q ? q.getUri() : null;
 		var p = u != null ? u.getPath() : null;
 		var r = p != null ? resources.get().get(p) : null;
-		return r != null ? c -> handle(r, c) : null;
+		return r != null ? c -> {
+			handle(r, c);
+			return true;
+		} : null;
 	}
 
 	static Set<String> extensions = Set.of("avif", "css", "ico", "jpg", "js", "png", "svg", "ttf", "webp", "woff",
@@ -217,26 +221,27 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 
 	protected void handle(Resource resource, HttpExchange exchange) {
 		var s = exchange.getResponse();
-		s.setStatus(new Status(200, "OK"));
+		s.setStatus(HttpResponse.Status.of(200));
 
 		var hh = s.getHeaders();
-		hh.set("Cache-Control", "max-age=3600");
+		hh.add(new HttpHeader("Cache-Control", "max-age=3600"));
 		switch (resource.path().substring(resource.path().lastIndexOf('.') + 1)) {
 		case "ico":
-			hh.set("Content-Type", "image/x-icon");
+			hh.add(new HttpHeader("Content-Type", "image/x-icon"));
 			break;
 		case "js":
-			hh.set("Content-Type", "text/javascript");
+			hh.add(new HttpHeader("Content-Type", "text/javascript"));
 			break;
 		case "svg":
-			hh.set("Content-Type", "image/svg+xml");
+			hh.add(new HttpHeader("Content-Type", "image/svg+xml"));
 			break;
 		}
-		hh.set("Content-Length", String.valueOf(resource.size()));
+		hh.add(new HttpHeader("Content-Length", String.valueOf(resource.size())));
 
 		var l = Thread.currentThread().getContextClassLoader();
 		try (var c = switch (resource) {
-		case FileResource x -> Channels.newChannel(l.getResourceAsStream(x.path.substring(1)));
+//		case FileResource x -> Channels.newChannel(l.getResourceAsStream(x.path.substring(1)));
+		case FileResource x -> l.getResourceAsStream(x.path.substring(1));
 		case ZipEntryResource x -> {
 			URI u;
 			try {
@@ -247,11 +252,13 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 			var v = u.toString();
 			if (!v.startsWith("jar:"))
 				u = URI.create("jar:" + v);
-			yield Files.newByteChannel(IO.zipFileSystem(u).getPath(x.path));
+//			yield Files.newByteChannel(IO.zipFileSystem(u).getPath(x.path));
+			yield Files.newInputStream(IO.zipFileSystem(u).getPath(x.path));
 		}
 		default -> throw new IllegalArgumentException();
 		}) {
-			IO.transfer(c, (WritableByteChannel) s.getBody());
+//			IO.transfer(c, (WritableByteChannel) s.getBody());
+			c.transferTo((OutputStream) s.getBody());
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

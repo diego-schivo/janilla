@@ -225,16 +225,8 @@ public class SmtpClient implements AutoCloseable {
 
 	protected SmtpConnection connection;
 
-	public InetSocketAddress getAddress() {
-		return address;
-	}
-
 	public void setAddress(InetSocketAddress address) {
 		this.address = address;
-	}
-
-	public SSLContext getSslContext() {
-		return sslContext;
 	}
 
 	public void setSslContext(SSLContext sslContext) {
@@ -261,8 +253,8 @@ public class SmtpClient implements AutoCloseable {
 			}
 		}
 		try (var rq = connection.newRequest(); var rs = connection.newResponse()) {
-			var e = buildExchange(rq, rs);
-			return handler.apply(e);
+			var ex = buildExchange(rq, rs, connection);
+			return handler.apply(ex);
 		}
 	}
 
@@ -272,10 +264,11 @@ public class SmtpClient implements AutoCloseable {
 			connection.close();
 	}
 
-	protected SmtpExchange buildExchange(SmtpRequest request, SmtpResponse response) {
-		var e = new SmtpExchange();
-		e.setRequest(request);
-		e.setResponse(response);
-		return e;
+	protected SmtpExchange buildExchange(SmtpRequest request, SmtpResponse response, SmtpConnection connection) {
+		var ex = new SmtpExchange();
+		ex.setRequest(request);
+		ex.setResponse(response);
+		ex.setConnection(connection);
+		return ex;
 	}
 }
