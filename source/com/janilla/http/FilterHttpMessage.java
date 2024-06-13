@@ -24,5 +24,44 @@
  */
 package com.janilla.http;
 
-public record HttpHeader(String name, String value) {
+import java.io.Closeable;
+import java.util.Collection;
+
+public abstract class FilterHttpMessage<T extends HttpMessage> implements HttpMessage {
+
+	protected T message;
+
+	public FilterHttpMessage(T message) {
+		this.message = message;
+	}
+
+	@Override
+	public String getStartLine() {
+		return message.getStartLine();
+	}
+
+	@Override
+	public void setStartLine(String startLine) {
+		message.setStartLine(startLine);
+	}
+
+	@Override
+	public Collection<HttpHeader> getHeaders() {
+		return message.getHeaders();
+	}
+
+	@Override
+	public void setHeaders(Collection<HttpHeader> headers) {
+		message.setHeaders(headers);
+	}
+
+	@Override
+	public Closeable getBody() {
+		return message.getBody();
+	}
+
+	@Override
+	public void close() {
+		message.close();
+	}
 }
