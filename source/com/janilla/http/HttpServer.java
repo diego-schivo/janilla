@@ -32,6 +32,10 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
@@ -44,6 +48,10 @@ public class HttpServer implements Runnable {
 	protected SSLContext sslContext;
 
 	protected Handler handler;
+
+	protected long idleTimerPeriod;
+
+	protected long maxIdleDuration;
 
 	protected volatile ServerSocketChannel channel;
 
@@ -61,6 +69,14 @@ public class HttpServer implements Runnable {
 
 	public void setHandler(Handler handler) {
 		this.handler = handler;
+	}
+
+	public void setIdleTimerPeriod(long idleTimerPeriod) {
+		this.idleTimerPeriod = idleTimerPeriod;
+	}
+
+	public void setMaxIdleDuration(long maxIdleDuration) {
+		this.maxIdleDuration = maxIdleDuration;
 	}
 
 	public InetSocketAddress getAddress() {
@@ -81,11 +97,49 @@ public class HttpServer implements Runnable {
 			channel.configureBlocking(false);
 			selector = SelectorProvider.provider().openSelector();
 			channel.register(selector, SelectionKey.OP_ACCEPT);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 
-			synchronized (this) {
-				notifyAll();
-			}
+		var r = new HashMap<HttpConnection, Long>();
+		var t = new Timer(Thread.currentThread().getName() + "-IdleTimer", true);
+		{
+			var p = idleTimerPeriod > 0 ? idleTimerPeriod : 10 * 1000;
+			var d = maxIdleDuration > 0 ? maxIdleDuration : 30 * 1000;
+			t.schedule(new TimerTask() {
 
+				@Override
+				public void run() {
+					var t = System.currentTimeMillis() - d;
+					var s = new HashSet<HttpConnection>();
+					synchronized (r) {
+						for (var i = r.entrySet().iterator(); i.hasNext();) {
+							var e = i.next();
+							if (e.getValue() <= t) {
+								s.add(e.getKey());
+								i.remove();
+							}
+						}
+					}
+					if (!s.isEmpty()) {
+
+//							System.out.println(Thread.currentThread().getName() + " IdleTimer s " + s.size());
+
+						for (var c : s)
+							try {
+								c.close();
+							} catch (Exception e) {
+							}
+					}
+				}
+			}, p, p);
+		}
+
+		synchronized (this) {
+			notifyAll();
+		}
+
+		try {
 			for (;;) {
 				selector.select(1000);
 
@@ -94,12 +148,12 @@ public class HttpServer implements Runnable {
 
 				var ccb = Stream.<HttpConnection>builder();
 				var n = 0;
-				for (var i = selector.selectedKeys().iterator(); i.hasNext();) {
-					var k = i.next();
+				for (var kk = selector.selectedKeys().iterator(); kk.hasNext();) {
+					var k = kk.next();
 
 //					System.out.println("k=" + k);
 
-					i.remove();
+					kk.remove();
 
 					if (!k.isValid())
 						continue;
@@ -111,10 +165,16 @@ public class HttpServer implements Runnable {
 						if (sslContext != null) {
 							e = sslContext.createSSLEngine();
 							e.setUseClientMode(false);
+							var pp = e.getSSLParameters();
+							pp.setApplicationProtocols(new String[] { "http/1.1" });
+							e.setSSLParameters(pp);
 						} else
 							e = null;
 						var c = buildConnection(sc, e);
-						sc.register(selector, SelectionKey.OP_WRITE).attach(c);
+						synchronized (r) {
+							r.put(c, System.currentTimeMillis());
+						}
+						sc.register(selector, SelectionKey.OP_READ).attach(c);
 					}
 
 					if (k.isReadable() || k.isWritable()) {
@@ -135,11 +195,13 @@ public class HttpServer implements Runnable {
 
 				for (var cc = ccb.build().iterator(); cc.hasNext();) {
 					var c = cc.next();
-					handle(c);
+					Thread.ofVirtual().start(() -> handle(c));
 				}
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
+		} finally {
+			t.cancel();
 		}
 	}
 
