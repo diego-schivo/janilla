@@ -25,6 +25,7 @@
 package com.janilla.hpack;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -32,7 +33,7 @@ class HuffmanTable extends ArrayList<HuffmanTable.Row> {
 
 	private static final long serialVersionUID = 7599260395553249133L;
 
-	int maxLength;
+	int maxBitLength;
 
 	List<KeyAndRow> sortedRows;
 
@@ -72,20 +73,24 @@ class HuffmanTable extends ArrayList<HuffmanTable.Row> {
 				0x3fffffff, 30 };
 		for (var i = 0; i < ii.length; i += 2)
 			add(new Row(size(), ii[i], ii[i + 1]));
-		maxLength = stream().mapToInt(x -> x.length()).max().getAsInt();
-		sortedRows = stream().map(x -> new KeyAndRow(x.code() << (maxLength - x.length()), x))
+		maxBitLength = stream().mapToInt(x -> x.bitLength()).max().getAsInt();
+		sortedRows = stream().map(x -> new KeyAndRow(x.code() << (maxBitLength - x.bitLength()), x))
 				.sorted(Comparator.comparingInt(KeyAndRow::key)).toList();
 	}
 
-	public int maxLength() {
-		return maxLength;
+	public int maxBitLength() {
+		return maxBitLength;
 	}
 
-	public List<KeyAndRow> sortedRows() {
-		return sortedRows;
+	Row row(int z) {
+		var j = Collections.binarySearch(sortedRows, z,
+				Comparator.comparing(x -> x instanceof HuffmanTable.KeyAndRow r ? r.key() : (Integer) x));
+		if (j < 0)
+			j = -j - 2;
+		return sortedRows.get(j).row();
 	}
 
-	record Row(int symbol, int code, int length) {
+	record Row(int symbol, int code, int bitLength) {
 	}
 
 	record KeyAndRow(int key, Row row) {

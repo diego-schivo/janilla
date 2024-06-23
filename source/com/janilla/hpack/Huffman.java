@@ -24,8 +24,6 @@
  */
 package com.janilla.hpack;
 
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.PrimitiveIterator;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
@@ -52,8 +50,10 @@ public class Huffman {
 
 			@Override
 			public void accept(int value, IntConsumer ic) {
+				if (value == 256 && length == 0)
+					return;
 				var c = table.get(value);
-				length += c.length();
+				length += c.bitLength();
 				bits |= ((long) c.code()) << (64 - length);
 				var n = value == 256 ? 1 : length >> 3;
 				for (var i = 1; i <= n; i++) {
@@ -68,21 +68,22 @@ public class Huffman {
 	static String decode(PrimitiveIterator.OfInt bytes, int length) {
 		var i = 0L;
 		var l = 0;
-		var cc = new char[length];
-		for (var z = 0; z < length; z++) {
-			while (l < table.maxLength()) {
-				i = (i << 8) | (bytes.hasNext() ? bytes.nextInt() : 0xff);
-				l += 8;
+		var cc = new StringBuilder();
+		for (var z = 0; z < length;) {
+			for (; l < table.maxBitLength() && z < length; l += 8) {
+				int y;
+				if (bytes.hasNext()) {
+					y = bytes.nextInt();
+					z++;
+				} else
+					y = 0xff;
+				i = (i << 8) | y;
 			}
-			var j = Collections.binarySearch(table.sortedRows(), (int) (i >>> (l - table.maxLength())),
-					Comparator.comparing(x -> x instanceof HuffmanTable.KeyAndRow r ? r.key() : (Integer) x));
-			if (j < 0)
-				j = -j - 2;
-			var r = table.sortedRows().get(j);
-			cc[z] = (char) r.row().symbol();
-			l -= r.row().length();
+			var r = table.row((int) (i >>> (l - table.maxBitLength())));
+			cc.append((char) r.symbol());
+			l -= r.bitLength();
 			i &= (1L << l) - 1;
 		}
-		return new String(cc);
+		return cc.toString();
 	}
 }

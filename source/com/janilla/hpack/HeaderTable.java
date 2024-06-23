@@ -29,15 +29,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class HeaderTable extends ArrayList<Header> {
+class HeaderTable {
 
-	private static final long serialVersionUID = -2826276932226096535L;
-
-	static HeaderTable staticTable;
+	static HeaderTable STATIC;
 
 	static {
-		staticTable = new HeaderTable();
-		staticTable.startIndex = 1;
+		STATIC = new HeaderTable();
+		STATIC.setStartIndex(1);
 		"""
 				:authority
 				:method: GET
@@ -101,53 +99,102 @@ class HeaderTable extends ArrayList<Header> {
 				via
 				www-authenticate: """.lines().map(x -> {
 			var i = x.indexOf(':', 1);
-			return new Header(i >= 0 ? x.substring(0, i).trim() : x, i >= 0 ? x.substring(i + 1).trim() : null);
-		}).forEach(staticTable::add);
+			return new HeaderField(i >= 0 ? x.substring(0, i).trim() : x, i >= 0 ? x.substring(i + 1).trim() : null);
+		}).forEach(STATIC::add);
+	}
+
+	static int size(HeaderField header) {
+		return header.name().length() + (header.value() != null ? header.value().length() : 0) + 32;
 	}
 
 	boolean dynamic;
 
 	int startIndex;
 
+	int maxSize = -1;
+
+	int size;
+
+	List<HeaderField> list = new ArrayList<>();
+
 	Map<String, List<IndexAndHeader>> map = new HashMap<>();
 
-	Header header(int index) {
+	int addCount;
+
+	public void setDynamic(boolean dynamic) {
+		this.dynamic = dynamic;
+	}
+
+	public void setStartIndex(int startIndex) {
+		this.startIndex = startIndex;
+	}
+
+	public void setMaxSize(int maxSize) {
+		this.maxSize = maxSize;
+	}
+
+	public int size() {
+		return size;
+	}
+
+	public int maxIndex() {
+		return startIndex + list.size() - 1;
+	}
+
+	HeaderField header(int index) {
 		var i = index - startIndex;
-		return i >= 0 && i < size() ? get(dynamic ? size() - 1 - i : i) : null;
+		return i >= 0 && i < list.size() ? list.get(i) : null;
 	}
 
 	List<IndexAndHeader> headers(String name) {
 		return map.get(name);
 	}
 
+	public void add(HeaderField header) {
+		var s = size + size(header);
+		if (maxSize >= 0)
+			while (s > maxSize && !list.isEmpty()) {
+				var h = list.removeLast();
+				map.get(h.name()).removeIf(x -> x.header().equals(h));
+				s -= size(h);
+			}
+		if (maxSize < 0 || s <= maxSize) {
+			if (dynamic)
+				list.add(0, header);
+			else
+				list.add(header);
+			map.compute(header.name(), (k, v) -> {
+				if (v == null)
+					v = new ArrayList<>();
+				v.add(new IndexAndHeader(addCount, header));
+				return v;
+			});
+			addCount++;
+			size = s;
+		}
+	}
+
 	@Override
-	public boolean add(Header e) {
-		var a = super.add(e);
-		map.compute(e.name(), (k, v) -> {
-			if (v == null)
-				v = new ArrayList<>();
-			v.add(new IndexAndHeader(size() - 1, e));
-			return v;
-		});
-		return a;
+	public String toString() {
+		return "[list=" + list + ",size=" + size + "]";
 	}
 
 	class IndexAndHeader {
 
-		private int index;
+		private int previousAddCount;
 
-		private Header header;
+		private HeaderField header;
 
-		private IndexAndHeader(int index, Header header) {
-			this.index = index;
+		private IndexAndHeader(int previousAddCount, HeaderField header) {
+			this.previousAddCount = previousAddCount;
 			this.header = header;
 		}
 
 		int index() {
-			return startIndex + (dynamic ? size() - 1 - index : index);
+			return dynamic ? startIndex - 1 + addCount - previousAddCount : startIndex + previousAddCount;
 		}
 
-		Header header() {
+		HeaderField header() {
 			return header;
 		}
 	}

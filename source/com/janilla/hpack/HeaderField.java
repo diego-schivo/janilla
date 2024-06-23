@@ -24,5 +24,10 @@
  */
 package com.janilla.hpack;
 
-record Header(String name, String value) {
+record HeaderField(String name, String value) {
+
+	enum Representation {
+
+		WITH_INDEXING, WITHOUT_INDEXING, NEVER_INDEXED;
+	}
 }

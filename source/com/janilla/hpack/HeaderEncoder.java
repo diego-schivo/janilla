@@ -30,70 +30,76 @@ import java.util.stream.Stream;
 
 class HeaderEncoder {
 
-	boolean huffman;
-
 	HeaderTable table;
+
+	boolean huffman;
 
 	{
 		table = new HeaderTable();
-		table.dynamic = true;
-		table.startIndex = HeaderTable.staticTable.startIndex + HeaderTable.staticTable.size();
+		table.setDynamic(true);
+		table.setStartIndex(HeaderTable.STATIC.maxIndex() + 1);
+	}
+
+	public HeaderTable table() {
+		return table;
 	}
 
 	public void setHuffman(boolean huffman) {
 		this.huffman = huffman;
 	}
 
-	IntStream encodeHeaderList(List<Header> headers) {
-		return headers.stream().flatMapToInt(this::encodeHeader);
+	IntStream encode(List<HeaderField> headers, HeaderField.Representation representation) {
+		return headers.stream().flatMapToInt(x -> encode(x, representation));
 	}
 
-	IntStream encodeHeader(Header header) {
-		var ni = header.name().equals("password");
-		var b = IntStream.builder();
-		var hh1 = HeaderTable.staticTable.headers(header.name());
-		var hh2 = table.headers(header.name());
-		var hh = Stream.concat(hh1 != null ? hh1.stream() : Stream.empty(), hh2 != null ? hh2.stream() : Stream.empty())
-				.toList();
+	IntStream encode(HeaderField header, HeaderField.Representation representation) {
 		HeaderTable.IndexAndHeader h;
-		if (!hh.isEmpty()) {
+		{
+			var hh1 = HeaderTable.STATIC.headers(header.name());
+			var hh2 = table.headers(header.name());
+			var hh = Stream
+					.concat(hh1 != null ? hh1.stream() : Stream.empty(), hh2 != null ? hh2.stream() : Stream.empty())
+					.toList();
 			h = hh.stream().filter(x -> x.header().equals(header)).findFirst().orElse(null);
-			if (h != null)
-				encodeInteger(h.index(), 0x80, 7).forEach(b::add);
-			else
-				encodeInteger(hh.get(0).index(), 0x40, 6).forEach(b::add);
-		} else {
-			h = null;
-			b.add(ni ? 0x10 : 0x40);
-			encodeString(header.name(), b);
+			if (h == null && !hh.isEmpty())
+				h = hh.getFirst();
 		}
-		if (h == null) {
-			encodeString(header.value(), b);
-			if (!ni)
-				table.add(header);
+		if (h != null && h.header().equals(header))
+			return Hpack.encodeInteger(h.index(), 7, 0x80);
+		int p, f;
+		switch (representation) {
+		case WITH_INDEXING:
+			p = 6;
+			f = 0x40;
+			break;
+		case WITHOUT_INDEXING:
+			p = 4;
+			f = 0x00;
+			break;
+		case NEVER_INDEXED:
+			p = 4;
+			f = 0x10;
+			break;
+		default:
+			throw new RuntimeException();
 		}
-		return b.build();
-	}
-
-	IntStream encodeInteger(int value, int first, int prefix) {
-		var z = 1 << prefix;
-		first &= -1 ^ (z - 1);
-		if (value < z - 1)
-			return IntStream.of(first | (value & (z - 1)));
 		var b = IntStream.builder();
-		b.add(first | (z - 1));
-		value -= (z - 1);
-		var y = 1 << 7;
-		while (value >= y) {
-			b.add(y | (value & (y - 1)));
-			value >>>= 7;
+		if (h != null)
+			Hpack.encodeInteger(h.index(), p, f).forEach(b::add);
+		else {
+			b.add(f);
+			Hpack.encodeString(header.name(), huffman).forEach(b::add);
 		}
-		b.add(value);
+		if (h == null || !h.header().equals(header)) {
+			Hpack.encodeString(header.value(), huffman).forEach(b::add);
+			switch (representation) {
+			case NEVER_INDEXED:
+				break;
+			default:
+				table.add(header);
+				break;
+			}
+		}
 		return b.build();
-	}
-
-	void encodeString(String string, IntStream.Builder builder) {
-		encodeInteger(string.length(), huffman ? 0x80 : 0, 7).forEach(builder::add);
-		(huffman ? Huffman.encode(string) : string.chars()).forEach(builder::add);
 	}
 }
