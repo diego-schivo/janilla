@@ -24,6 +24,7 @@
  */
 package com.janilla.hpack;
 
+import java.util.Arrays;
 import java.util.PrimitiveIterator;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
@@ -34,11 +35,14 @@ public class Huffman {
 	static HuffmanTable table = new HuffmanTable();
 
 	public static void main(String[] args) {
-		var s = "www.example.com";
-		var h = Hpack.toHexString(encode(s));
+		var s1 = "www.example.com";
+		var ii = encode(s1).toArray();
+		var h = Hpack.toHexString(Arrays.stream(ii));
 		System.out.println("h=" + h);
-		s = decode(Hpack.parseHex(h).iterator(), s.length());
-		System.out.println("s=" + s);
+		assert h.equals("f1e3 c2e5 f23a 6ba0 ab90 f4ff") : h;
+		var s2 = decode(Hpack.parseHex(h).iterator(), ii.length);
+		System.out.println("s2=" + s2);
+		assert s2.equals(s1) : s2;
 	}
 
 	static IntStream encode(String string) {
@@ -66,24 +70,22 @@ public class Huffman {
 	}
 
 	static String decode(PrimitiveIterator.OfInt bytes, int length) {
-		var i = 0L;
+		var bb = 0L;
 		var l = 0;
-		var cc = new StringBuilder();
-		for (var z = 0; z < length;) {
-			for (; l < table.maxBitLength() && z < length; l += 8) {
-				int y;
-				if (bytes.hasNext()) {
-					y = bytes.nextInt();
-					z++;
-				} else
-					y = 0xff;
-				i = (i << 8) | y;
+		var b = new StringBuilder();
+		for (var i = 0; i < length || l > 0;) {
+			for (; l < table.maxBitLength() && i < length; l += 8) {
+				bb = (bb << 8) | (bytes.hasNext() ? bytes.nextInt() : 0xff);
+				i++;
 			}
-			var r = table.row((int) (i >>> (l - table.maxBitLength())));
-			cc.append((char) r.symbol());
+			var d = l - table.maxBitLength();
+			var r = table.row((int) (d >= 0 ? bb >>> d : bb << -d));
+			if (l < r.bitLength())
+				break;
+			b.append((char) r.symbol());
 			l -= r.bitLength();
-			i &= (1L << l) - 1;
+			bb &= (1L << l) - 1;
 		}
-		return cc.toString();
+		return b.toString();
 	}
 }
