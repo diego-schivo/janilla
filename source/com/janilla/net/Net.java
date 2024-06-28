@@ -79,7 +79,8 @@ public interface Net {
 			var t = TrustManagerFactory.getInstance("SunX509");
 			t.init(s);
 
-			var c = SSLContext.getInstance("TLSv1.2");
+//			var c = SSLContext.getInstance("TLSv1.2");
+			var c = SSLContext.getInstance("TLSv1.3");
 			c.init(k.getKeyManagers(), t.getTrustManagers(), null);
 			return c;
 		} catch (GeneralSecurityException e) {

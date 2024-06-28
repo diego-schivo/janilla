@@ -22,29 +22,27 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http2;
 
-public record HeaderField(String name, String value) {
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.util.function.IntConsumer;
 
-	public enum Representation {
+public class ByteWriter implements IntConsumer {
 
-		INDEXED(7, 0x80), WITH_INDEXING(6, 0x40), WITHOUT_INDEXING(4, 0x00), NEVER_INDEXED(4, 0x10);
+	OutputStream output;
 
-		int prefix;
+	public ByteWriter(OutputStream output) {
+		this.output = output;
+	}
 
-		int first;
-
-		Representation(int prefix, int first) {
-			this.prefix = prefix;
-			this.first = first;
-		}
-
-		public int prefix() {
-			return prefix;
-		}
-
-		public int first() {
-			return first;
+	@Override
+	public void accept(int value) {
+		try {
+			output.write(value);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 }

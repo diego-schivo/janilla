@@ -28,6 +28,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.IntConsumer;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -161,5 +163,33 @@ public interface Util {
 			}
 		}
 		return p.build().toArray();
+	}
+
+	public static String toBinaryString(IntStream integers) {
+		return integers.mapToObj(Integer::toBinaryString).collect(Collectors.joining(" "));
+	}
+
+	public static String toHexString(IntStream integers) {
+		return integers.mapToObj(x -> {
+			var s = Integer.toHexString(x);
+			return s.length() == 1 ? "0" + s : s;
+		}).collect(Collector.of(StringBuilder::new, (b, x) -> {
+			if (b.length() % 5 == 4)
+				b.append(b.length() % 40 == 39 ? '\n' : ' ');
+			b.append(x);
+		}, (b1, b2) -> b1, StringBuilder::toString));
+	}
+
+	public static IntStream toIntStream(byte[] bytes) {
+		return IntStream.range(0, bytes.length).map(x -> Byte.toUnsignedInt(bytes[x]));
+	}
+
+	public static IntStream parseHex(String string) {
+		var e = (string.length() - (string.length() / 5)) / 2;
+		return IntStream.range(0, e).map(x -> {
+			var i = x * 2;
+			i += i / 4;
+			return Integer.parseInt(string.substring(i, i + 2), 16);
+		});
 	}
 }

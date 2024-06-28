@@ -22,29 +22,32 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http2;
 
-public record HeaderField(String name, String value) {
+import java.util.PrimitiveIterator;
 
-	public enum Representation {
+class LengthIntIterator implements PrimitiveIterator.OfInt {
 
-		INDEXED(7, 0x80), WITH_INDEXING(6, 0x40), WITHOUT_INDEXING(4, 0x00), NEVER_INDEXED(4, 0x10);
+	PrimitiveIterator.OfInt iterator;
 
-		int prefix;
+	int length;
 
-		int first;
+	int count;
 
-		Representation(int prefix, int first) {
-			this.prefix = prefix;
-			this.first = first;
-		}
+	public LengthIntIterator(PrimitiveIterator.OfInt iterator, int length) {
+		this.iterator = iterator;
+		this.length = length;
+	}
 
-		public int prefix() {
-			return prefix;
-		}
+	@Override
+	public boolean hasNext() {
+		return count < length && iterator.hasNext();
+	}
 
-		public int first() {
-			return first;
-		}
+	@Override
+	public int nextInt() {
+		var i = iterator.nextInt();
+		count++;
+		return i;
 	}
 }

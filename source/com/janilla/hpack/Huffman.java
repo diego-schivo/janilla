@@ -24,11 +24,14 @@
  */
 package com.janilla.hpack;
 
-import java.util.Arrays;
-import java.util.PrimitiveIterator;
+import java.io.ByteArrayOutputStream;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
-import java.util.stream.IntStream.IntMapMultiConsumer;
+
+import com.janilla.http2.BitsReader;
+import com.janilla.http2.BitsWriter;
+import com.janilla.http2.ByteWriter;
+import com.janilla.util.Util;
 
 public class Huffman {
 
@@ -36,55 +39,56 @@ public class Huffman {
 
 	public static void main(String[] args) {
 		var s1 = "www.example.com";
-		var ii = encode(s1).toArray();
-		var h = Hpack.toHexString(Arrays.stream(ii));
+		var baos = new ByteArrayOutputStream();
+		var bw = new BitsWriter(new ByteWriter(baos));
+		encode(s1, bw);
+		var bb = baos.toByteArray();
+		var h = Util.toHexString(IntStream.range(0, bb.length).map(x -> Byte.toUnsignedInt(bb[x])));
 		System.out.println("h=" + h);
 		assert h.equals("f1e3 c2e5 f23a 6ba0 ab90 f4ff") : h;
-		var s2 = decode(Hpack.parseHex(h).iterator(), ii.length);
+		var s2 = decode(new BitsReader(Util.parseHex(h).iterator()), bb.length);
 		System.out.println("s2=" + s2);
 		assert s2.equals(s1) : s2;
 	}
 
-	static IntStream encode(String string) {
-		return IntStream.concat(string.chars(), IntStream.of(256)).mapMulti(new IntMapMultiConsumer() {
+	static void encode(String string, BitsWriter bits) {
+		IntStream.concat(string.chars(), IntStream.of(256)).forEach(new IntConsumer() {
 
-			long bits;
-
-			int length;
+			int totalBitLength;
 
 			@Override
-			public void accept(int value, IntConsumer ic) {
-				if (value == 256 && length == 0)
-					return;
-				var c = table.get(value);
-				length += c.bitLength();
-				bits |= ((long) c.code()) << (64 - length);
-				var n = value == 256 ? 1 : length >> 3;
-				for (var i = 1; i <= n; i++) {
-					ic.accept((int) ((bits >>> (64 - 8)) & 0xff));
-					bits <<= 8;
-					length -= 8;
+			public void accept(int value) {
+				var r = table.get(value);
+				var bl = r.bitLength();
+				if (value == 256) {
+					bl = 8 - (totalBitLength & 0x07);
+					if (bl == 8)
+						return;
 				}
+				bits.accept(r.code(), bl);
+				totalBitLength += bl;
 			}
 		});
 	}
 
-	static String decode(PrimitiveIterator.OfInt bytes, int length) {
-		var bb = 0L;
-		var l = 0;
+	static String decode(BitsReader bits, int byteLength) {
+		var k = 0;
+		var kl = 0;
+		var t = byteLength << 3;
 		var b = new StringBuilder();
-		for (var i = 0; i < length || l > 0;) {
-			for (; l < table.maxBitLength() && i < length; l += 8) {
-				bb = (bb << 8) | (bytes.hasNext() ? bytes.nextInt() : 0xff);
-				i++;
-			}
-			var d = l - table.maxBitLength();
-			var r = table.row((int) (d >= 0 ? bb >>> d : bb << -d));
-			if (l < r.bitLength())
+		while (t > 0) {
+			var d = table.maxBitLength() - kl;
+			var l = Math.min(d, t - kl);
+			var i = bits.nextInt(l);
+			k = (k << l) | i;
+			kl += l;
+			var r = table.row(k << (d - l));
+			if (r.bitLength() > t)
 				break;
 			b.append((char) r.symbol());
-			l -= r.bitLength();
-			bb &= (1L << l) - 1;
+			kl -= r.bitLength();
+			k &= (1 << kl) - 1;
+			t -= r.bitLength();
 		}
 		return b.toString();
 	}

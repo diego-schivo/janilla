@@ -24,17 +24,18 @@
  */
 package com.janilla.hpack;
 
-import java.util.List;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-class HeaderEncoder {
+import com.janilla.http2.BitsWriter;
+
+public class HeaderEncoder {
+
+	BitsWriter bits;
 
 	HeaderTable table;
 
-	boolean huffman;
-
-	{
+	public HeaderEncoder(BitsWriter bits) {
+		this.bits = bits;
 		table = new HeaderTable();
 		table.setDynamic(true);
 		table.setStartIndex(HeaderTable.STATIC.maxIndex() + 1);
@@ -44,31 +45,38 @@ class HeaderEncoder {
 		return table;
 	}
 
-	public void setHuffman(boolean huffman) {
-		this.huffman = huffman;
+	public void encode(HeaderField header) {
+		encode(header, false);
 	}
 
-	IntStream encode(List<HeaderField> headers, HeaderField.Representation representation) {
-		return headers.stream().flatMapToInt(x -> encode(x, representation));
+	public void encode(HeaderField header, boolean huffman) {
+		encode(header, huffman, null);
 	}
 
-	IntStream encode(HeaderField header, HeaderField.Representation literalRepresentation) {
+	public void encode(HeaderField header, boolean huffman, HeaderField.Representation representation) {
 		var ih = indexAndHeader(header);
-		var r = ih != null && ih.header().equals(header) ? HeaderField.Representation.INDEXED : literalRepresentation;
-		if (r == HeaderField.Representation.INDEXED)
-			return Hpack.encodeInteger(ih.index(), r.prefix(), r.first());
-		var b = IntStream.builder();
-		if (ih != null)
-			Hpack.encodeInteger(ih.index(), literalRepresentation.prefix(), literalRepresentation.first())
-					.forEach(b::add);
-		else {
-			b.add(literalRepresentation.first());
-			Hpack.encodeString(header.name(), huffman).forEach(b::add);
+		var r = ih != null && ih.header().equals(header) ? HeaderField.Representation.INDEXED
+				: representation != null ? representation : HeaderField.Representation.WITH_INDEXING;
+		if (r == HeaderField.Representation.INDEXED) {
+			bits.accept(r.first() >>> r.prefix(), 8 - r.prefix());
+			Hpack.encodeInteger(ih.index(), r.prefix(), bits);
+			return;
 		}
-		Hpack.encodeString(header.value(), huffman).forEach(b::add);
-		if (literalRepresentation != HeaderField.Representation.NEVER_INDEXED)
+		if (ih != null) {
+			bits.accept(r.first() >>> r.prefix(), 8 - r.prefix());
+			Hpack.encodeInteger(ih.index(), r.prefix(), bits);
+		} else {
+			bits.accept(r.first());
+			Hpack.encodeString(header.name(), huffman, bits);
+		}
+		Hpack.encodeString(header.value(), huffman, bits);
+		if (r != HeaderField.Representation.NEVER_INDEXED)
 			table.add(header);
-		return b.build();
+	}
+
+	public void encodeDynamicTableSizeUpdate(int maxSize) {
+		bits.accept(0x01, 3);
+		Hpack.encodeInteger(maxSize, 5, bits);
 	}
 
 	HeaderTable.IndexAndHeader indexAndHeader(HeaderField header) {

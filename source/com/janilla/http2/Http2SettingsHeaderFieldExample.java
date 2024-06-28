@@ -22,29 +22,43 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http2;
 
-public record HeaderField(String name, String value) {
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.stream.IntStream;
 
-	public enum Representation {
+import com.janilla.util.Util;
 
-		INDEXED(7, 0x80), WITH_INDEXING(6, 0x40), WITHOUT_INDEXING(4, 0x00), NEVER_INDEXED(4, 0x10);
+public class Http2SettingsHeaderFieldExample {
 
-		int prefix;
-
-		int first;
-
-		Representation(int prefix, int first) {
-			this.prefix = prefix;
-			this.first = first;
+	public static void main(String[] args) {
+		var rq = """
+				GET / HTTP/1.1\r
+				Connection: Upgrade, HTTP2-Settings\r
+				Host: localhost:8080\r
+				HTTP2-Settings: AAEAAEAAAAIAAAABAAMAAABkAAQBAAAAAAUAAEAA\r
+				Upgrade: h2c\r
+				User-Agent: Java-http-client/22.0.1\r
+				\r
+				""";
+		BitsReader jj;
+		{
+			var v = rq.lines().filter(x -> x.startsWith("HTTP2-Settings:"))
+					.map(x -> x.substring("HTTP2-Settings:".length()).trim()).findFirst().get();
+			var bb = Base64.getUrlDecoder().decode(v);
+			var ii = IntStream.range(0, bb.length).map(x -> bb[x]).toArray();
+			var h = Util.toHexString(Arrays.stream(ii));
+			System.out.println("h=" + h);
+			jj = new BitsReader(Arrays.stream(ii).iterator());
+//		var l = IntStream.range(0, 3).map(x -> jj.nextInt()).reduce(0, (a, b) -> (a << 8) | b);
+//		System.out.println("l=" + l);
 		}
-
-		public int prefix() {
-			return prefix;
-		}
-
-		public int first() {
-			return first;
+		while (jj.hasNext()) {
+			var i = jj.nextInt(16);
+			var s = SettingName.of(i);
+			var v = jj.nextInt(32);
+			System.out.println(s + "=" + v);
 		}
 	}
 }

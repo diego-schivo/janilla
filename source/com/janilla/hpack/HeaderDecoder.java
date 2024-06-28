@@ -24,12 +24,18 @@
  */
 package com.janilla.hpack;
 
-import java.util.PrimitiveIterator;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.List;
 
-class HeaderDecoder {
+import com.janilla.http2.BitsReader;
+
+public class HeaderDecoder {
 
 	HeaderTable table;
+
+	List<Integer> dynamicTableMaxSizes = new ArrayList<>();
+
+	List<HeaderField> headerFields = new ArrayList<>();
 
 	{
 		table = new HeaderTable();
@@ -41,57 +47,75 @@ class HeaderDecoder {
 		return table;
 	}
 
-	Stream<HeaderField> decode(PrimitiveIterator.OfInt bytes) {
-		var bb = bytes instanceof IntIterator x ? x : new IntIterator(bytes);
-		return Stream.generate(() -> decodeNext(bb)).takeWhile(x -> x != null);
+	public List<Integer> dynamicTableMaxSizes() {
+		return dynamicTableMaxSizes;
 	}
 
-	HeaderField decodeNext(PrimitiveIterator.OfInt bytes) {
-		if (!bytes.hasNext())
-			return null;
-		var bb = bytes instanceof IntIterator x ? x : new IntIterator(bytes);
-		var b = bb.nextInt(true);
-		if ((b & 0x80) != 0) {
-			var i = Hpack.decodeInteger(bb, 7);
+	public List<HeaderField> headerFields() {
+		return headerFields;
+	}
+
+	public void decode(BitsReader bits) {
+		if (bits.nextInt(1) == 0x01) {
+			System.out.println(HeaderField.Representation.INDEXED);
+			var i = Hpack.decodeInteger(bits, 7);
 			var h = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
-			return h;
-		} else if ((b & 0x40) != 0) {
-			if ((b & 0x3f) != 0) {
-				var i = Hpack.decodeInteger(bb, 6);
-				var h0 = HeaderTable.STATIC.header(i);
-				var v = Hpack.decodeString(bb);
-				var h = new HeaderField(h0.name(), v);
-				table.add(h);
-				return h;
-			} else {
-				bb.nextInt();
-				var n = Hpack.decodeString(bb);
-				var v = Hpack.decodeString(bb);
-				var h = new HeaderField(n, v);
-				table.add(h);
-				return h;
-			}
-		} else if ((b & 0x10) != 0) {
-			bb.nextInt();
-			var n = Hpack.decodeString(bb);
-			var v = Hpack.decodeString(bb);
-			var h = new HeaderField(n, v);
-			return h;
-		} else if ((b & 0xf0) == 0) {
-			if ((b & 0x0f) != 0) {
-				var i = Hpack.decodeInteger(bb, 4);
-				var h0 = HeaderTable.STATIC.header(i);
-				var v = Hpack.decodeString(bb);
-				var h = new HeaderField(h0.name(), v);
-				return h;
-			} else {
-				bb.nextInt();
-				var n = Hpack.decodeString(bb);
-				var v = Hpack.decodeString(bb);
-				var h = new HeaderField(n, v);
-				return h;
-			}
+			headerFields.add(h);
+			return;
 		}
-		throw new RuntimeException();
+		if (bits.nextInt(1) == 0x01) {
+			System.out.println(HeaderField.Representation.WITH_INDEXING);
+			var i = Hpack.decodeInteger(bits, 6);
+			if (i != 0) {
+				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
+				var v = Hpack.decodeString(bits);
+				var h = new HeaderField(h0.name(), v);
+				table.add(h);
+				headerFields.add(h);
+				return;
+			}
+			var n = Hpack.decodeString(bits);
+			var v = Hpack.decodeString(bits);
+			var h = new HeaderField(n, v);
+			table.add(h);
+			headerFields.add(h);
+			return;
+		}
+		if (bits.nextInt(1) == 0x01) {
+			var s = Hpack.decodeInteger(bits, 5);
+			table.setMaxSize(s);
+			dynamicTableMaxSizes.add(s);
+			return;
+		}
+		if (bits.nextInt(1) == 0x01) {
+			System.out.println(HeaderField.Representation.NEVER_INDEXED);
+			var i = Hpack.decodeInteger(bits, 4);
+			if (i != 0) {
+				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
+				var v = Hpack.decodeString(bits);
+				var h = new HeaderField(h0.name(), v);
+				headerFields.add(h);
+				return;
+			}
+			var n = Hpack.decodeString(bits);
+			var v = Hpack.decodeString(bits);
+			var h = new HeaderField(n, v);
+			headerFields.add(h);
+			return;
+		}
+		System.out.println(HeaderField.Representation.WITHOUT_INDEXING);
+		var i = Hpack.decodeInteger(bits, 4);
+		if (i != 0) {
+			var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
+			var v = Hpack.decodeString(bits);
+			var h = new HeaderField(h0.name(), v);
+			headerFields.add(h);
+			return;
+		}
+		var n = Hpack.decodeString(bits);
+		var v = Hpack.decodeString(bits);
+		var h = new HeaderField(n, v);
+		headerFields.add(h);
+		return;
 	}
 }

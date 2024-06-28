@@ -22,29 +22,46 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http2;
 
-public record HeaderField(String name, String value) {
+import java.util.PrimitiveIterator;
 
-	public enum Representation {
+public class BitsReader implements PrimitiveIterator.OfInt {
 
-		INDEXED(7, 0x80), WITH_INDEXING(6, 0x40), WITHOUT_INDEXING(4, 0x00), NEVER_INDEXED(4, 0x10);
+	PrimitiveIterator.OfInt bytes;
 
-		int prefix;
+	long current;
 
-		int first;
+	int currentLength;
 
-		Representation(int prefix, int first) {
-			this.prefix = prefix;
-			this.first = first;
+	public BitsReader(PrimitiveIterator.OfInt bytes) {
+		this.bytes = bytes;
+	}
+
+	@Override
+	public boolean hasNext() {
+		return hasNext(8);
+	}
+
+	@Override
+	public int nextInt() {
+		return nextInt(8);
+	}
+
+	public boolean hasNext(int bitLength) {
+		return currentLength >= bitLength || bytes.hasNext();
+	}
+
+	public int nextInt(int bitLength) {
+		while (currentLength < bitLength) {
+			var i = bytes.nextInt();
+			current = (current << 8) | i;
+			currentLength += 8;
 		}
-
-		public int prefix() {
-			return prefix;
-		}
-
-		public int first() {
-			return first;
-		}
+		var l = currentLength - bitLength;
+		var i = (int) (current >>> l);
+		current &= (1 << l) - 1;
+		currentLength = l;
+		return i;
 	}
 }

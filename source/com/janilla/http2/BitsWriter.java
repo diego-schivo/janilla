@@ -22,29 +22,45 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http2;
 
-public record HeaderField(String name, String value) {
+import java.util.function.IntConsumer;
 
-	public enum Representation {
+public class BitsWriter implements IntConsumer { //, AutoCloseable {
 
-		INDEXED(7, 0x80), WITH_INDEXING(6, 0x40), WITHOUT_INDEXING(4, 0x00), NEVER_INDEXED(4, 0x10);
+	IntConsumer bytes;
 
-		int prefix;
+	long current;
 
-		int first;
+	int currentLength;
 
-		Representation(int prefix, int first) {
-			this.prefix = prefix;
-			this.first = first;
-		}
-
-		public int prefix() {
-			return prefix;
-		}
-
-		public int first() {
-			return first;
-		}
+	public BitsWriter(IntConsumer bytes) {
+		this.bytes = bytes;
 	}
+
+	@Override
+	public void accept(int value) {
+		accept(value, 8);
+	}
+
+	public void accept(int value, int bitsLength) {
+		current = (current << bitsLength) | (value & ((1L << bitsLength) - 1));
+		var l = currentLength + bitsLength;
+		for (; l >= 8; l -= 8) {
+			bytes.accept((int) (current >>> (l - 8)));
+			current &= (1 << (l - 8)) - 1;
+		}
+		currentLength = l;
+	}
+
+	public void accept(byte[] bytes) {
+		for (var b : bytes)
+			accept(b);
+	}
+
+//	@Override
+//	public void close() {
+//		if (currentLength > 0)
+//			accept(0, 8 - currentLength);
+//	}
 }

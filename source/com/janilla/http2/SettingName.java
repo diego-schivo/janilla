@@ -22,29 +22,35 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http2;
 
-public record HeaderField(String name, String value) {
+import java.util.Arrays;
 
-	public enum Representation {
+enum SettingName {
 
-		INDEXED(7, 0x80), WITH_INDEXING(6, 0x40), WITHOUT_INDEXING(4, 0x00), NEVER_INDEXED(4, 0x10);
+	HEADER_TABLE_SIZE(0x01), ENABLE_PUSH(0x02), MAX_CONCURRENT_STREAMS(0x03), INITIAL_WINDOW_SIZE(0x04),
+	MAX_FRAME_SIZE(0x05), MAX_HEADER_LIST_SIZE(0x06);
 
-		int prefix;
+	static SettingName[] array;
 
-		int first;
+	static {
+		var i = Arrays.stream(values()).mapToInt(SettingName::identifier).max().getAsInt();
+		array = new SettingName[i + 1];
+		for (var s : values())
+			array[s.identifier()] = s;
+	}
 
-		Representation(int prefix, int first) {
-			this.prefix = prefix;
-			this.first = first;
-		}
+	static SettingName of(int identifier) {
+		return 0 <= identifier && identifier < array.length ? array[identifier] : null;
+	}
 
-		public int prefix() {
-			return prefix;
-		}
+	int identifier;
 
-		public int first() {
-			return first;
-		}
+	SettingName(int identifier) {
+		this.identifier = identifier;
+	}
+
+	int identifier() {
+		return identifier;
 	}
 }
