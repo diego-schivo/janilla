@@ -57,14 +57,14 @@ public class HeaderDecoder {
 
 	public void decode(BitsReader bits) {
 		if (bits.nextInt(1) == 0x01) {
-			System.out.println(HeaderField.Representation.INDEXED);
+//			System.out.println(HeaderField.Representation.INDEXED);
 			var i = Hpack.decodeInteger(bits, 7);
 			var h = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
 			headerFields.add(h);
 			return;
 		}
 		if (bits.nextInt(1) == 0x01) {
-			System.out.println(HeaderField.Representation.WITH_INDEXING);
+//			System.out.println(HeaderField.Representation.WITH_INDEXING);
 			var i = Hpack.decodeInteger(bits, 6);
 			if (i != 0) {
 				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
@@ -88,7 +88,7 @@ public class HeaderDecoder {
 			return;
 		}
 		if (bits.nextInt(1) == 0x01) {
-			System.out.println(HeaderField.Representation.NEVER_INDEXED);
+//			System.out.println(HeaderField.Representation.NEVER_INDEXED);
 			var i = Hpack.decodeInteger(bits, 4);
 			if (i != 0) {
 				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
@@ -103,7 +103,7 @@ public class HeaderDecoder {
 			headerFields.add(h);
 			return;
 		}
-		System.out.println(HeaderField.Representation.WITHOUT_INDEXING);
+//		System.out.println(HeaderField.Representation.WITHOUT_INDEXING);
 		var i = Hpack.decodeInteger(bits, 4);
 		if (i != 0) {
 			var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);

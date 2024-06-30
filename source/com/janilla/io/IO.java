@@ -244,6 +244,53 @@ public abstract class IO {
 		}
 	}
 
+	public static IntStream toIntStream(ReadableByteChannel channel) {
+		var bb = ByteBuffer.allocate(1);
+		return IntStream.generate(() -> {
+			try {
+				bb.position(0);
+				for (;;) {
+					var r = channel.read(bb);
+					if (r > 0)
+						return Byte.toUnsignedInt(bb.get(0));
+					if (r < 0)
+						return r;
+				}
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}).takeWhile(x -> x >= 0);
+	}
+
+	public static ReadableByteChannel toReadableByteChannel(ByteBuffer buffer) {
+		return new ReadableByteChannel() {
+
+			boolean closed;
+
+			@Override
+			public boolean isOpen() {
+				return !closed;
+			}
+
+			@Override
+			public void close() throws IOException {
+				closed = true;
+			}
+
+			@Override
+			public int read(ByteBuffer dst) throws IOException {
+				if (closed)
+					throw new IOException("closed");
+				var r = buffer.remaining();
+				if (r == 0)
+					return -1;
+				var l = Math.min(r, dst.remaining());
+				put(buffer, dst, l);
+				return l;
+			}
+		};
+	}
+
 	public interface Runnable {
 
 		void run() throws IOException;

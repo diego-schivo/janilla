@@ -55,6 +55,10 @@ class FrameEncoder {
 	}
 
 	void encodeFlags(Collection<Flag> flags) {
+		if (flags == null || flags.isEmpty()) {
+			bits.accept(0x00);
+			return;
+		}
 		switch (frame) {
 		case DATA:
 			bits.accept(0x00, 4);

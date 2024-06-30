@@ -91,7 +91,7 @@ public class Hpack {
 
 	public static String decodeString(BitsReader bits) {
 		var h = bits.nextInt(1) == 0x01;
-		System.out.println("h=" + h);
+//		System.out.println("h=" + h);
 		var l = decodeInteger(bits, 7);
 		if (h)
 			return Huffman.decode(bits, l);
