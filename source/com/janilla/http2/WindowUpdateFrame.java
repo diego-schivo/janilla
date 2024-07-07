@@ -24,30 +24,5 @@
  */
 package com.janilla.http2;
 
-import java.util.PrimitiveIterator;
-
-class LengthIntIterator implements PrimitiveIterator.OfInt {
-
-	PrimitiveIterator.OfInt iterator;
-
-	int length;
-
-	int count;
-
-	public LengthIntIterator(PrimitiveIterator.OfInt iterator, int length) {
-		this.iterator = iterator;
-		this.length = length;
-	}
-
-	@Override
-	public boolean hasNext() {
-		return count < length && iterator.hasNext();
-	}
-
-	@Override
-	public int nextInt() {
-		var i = iterator.nextInt();
-		count++;
-		return i;
-	}
+record WindowUpdateFrame(int streamIdentifier, int windowSizeIncrement) implements Frame {
 }

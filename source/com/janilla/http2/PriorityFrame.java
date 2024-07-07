@@ -24,18 +24,5 @@
  */
 package com.janilla.http2;
 
-import java.io.ByteArrayOutputStream;
-import java.util.Set;
-
-import com.janilla.hpack.HeaderField;
-import com.janilla.util.Util;
-
-public class Foo {
-
-	public static void main(String[] args) {
-		try {
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+record PriorityFrame(int streamIdentifier, boolean exclusive, int streamDependency, int weight) implements Frame {
 }

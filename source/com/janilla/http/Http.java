@@ -24,21 +24,10 @@
  */
 package com.janilla.http;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
-import java.security.GeneralSecurityException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.Map;
 
-import javax.net.ssl.SSLContext;
-
-import com.janilla.io.IO;
 import com.janilla.net.Net;
 import com.janilla.util.EntryList;
 
@@ -61,44 +50,44 @@ public abstract class Http {
 		return b.toString();
 	}
 
-	public static String fetch(URI uri, HttpRequest.Method method, Map<String, String> headers, String body) {
-		try (var c = new HttpClient()) {
-			var p = uri.getPort();
-			if (p == -1)
-				p = switch (uri.getScheme()) {
-				case "http" -> 80;
-				case "https" -> 443;
-				default -> throw new RuntimeException();
-				};
-			c.setAddress(new InetSocketAddress(uri.getHost(), p));
-			if (uri.getScheme().equals("https"))
-				try {
-					var x = SSLContext.getInstance("TLSv1.2");
-					x.init(null, null, null);
-					c.setSslContext(x);
-				} catch (GeneralSecurityException e) {
-					throw new RuntimeException(e);
-				}
-			return c.query(e -> {
-				try (var q = e.getRequest()) {
-					q.setMethod(method);
-					q.setUri(URI.create(uri.getPath()));
-					var hh = q.getHeaders();
-					for (var f : headers.entrySet())
-						hh.add(new HttpHeader(f.getKey(), f.getValue()));
-					if (hh.stream().noneMatch(x -> x.name().equals("Host")))
-						hh.add(new HttpHeader("Host", uri.getHost()));
-					IO.write(body.getBytes(), (WritableByteChannel) q.getBody());
-				} catch (IOException f) {
-					throw new UncheckedIOException(f);
-				}
-
-				try (var s = e.getResponse()) {
-					return new String(IO.readAllBytes((ReadableByteChannel) s.getBody()));
-				} catch (IOException f) {
-					throw new UncheckedIOException(f);
-				}
-			});
-		}
-	}
+//	public static String fetch(URI uri, HttpRequest.Method method, Map<String, String> headers, String body) {
+//		try (var c = new HttpClient()) {
+//			var p = uri.getPort();
+//			if (p == -1)
+//				p = switch (uri.getScheme()) {
+//				case "http" -> 80;
+//				case "https" -> 443;
+//				default -> throw new RuntimeException();
+//				};
+//			c.setAddress(new InetSocketAddress(uri.getHost(), p));
+//			if (uri.getScheme().equals("https"))
+//				try {
+//					var x = SSLContext.getInstance("TLSv1.2");
+//					x.init(null, null, null);
+//					c.setSslContext(x);
+//				} catch (GeneralSecurityException e) {
+//					throw new RuntimeException(e);
+//				}
+//			return c.query(e -> {
+//				try (var q = e.getRequest()) {
+//					q.setMethod(method);
+//					q.setUri(URI.create(uri.getPath()));
+//					var hh = q.getHeaders();
+//					for (var f : headers.entrySet())
+//						hh.add(new HttpHeader(f.getKey(), f.getValue()));
+//					if (hh.stream().noneMatch(x -> x.name().equals("Host")))
+//						hh.add(new HttpHeader("Host", uri.getHost()));
+//					IO.write(body.getBytes(), (WritableByteChannel) q.getBody());
+//				} catch (IOException f) {
+//					throw new UncheckedIOException(f);
+//				}
+//
+//				try (var s = e.getResponse()) {
+//					return new String(IO.readAllBytes((ReadableByteChannel) s.getBody()));
+//				} catch (IOException f) {
+//					throw new UncheckedIOException(f);
+//				}
+//			});
+//		}
+//	}
 }

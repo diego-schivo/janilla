@@ -22,11 +22,11 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.util;
 
 import java.util.PrimitiveIterator;
 
-public class BitsReader implements PrimitiveIterator.OfInt {
+public class BitsIterator implements PrimitiveIterator.OfInt {
 
 	PrimitiveIterator.OfInt bytes;
 
@@ -34,7 +34,7 @@ public class BitsReader implements PrimitiveIterator.OfInt {
 
 	int currentLength;
 
-	public BitsReader(PrimitiveIterator.OfInt bytes) {
+	public BitsIterator(PrimitiveIterator.OfInt bytes) {
 		this.bytes = bytes;
 	}
 

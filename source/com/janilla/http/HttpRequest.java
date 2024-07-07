@@ -26,63 +26,25 @@ package com.janilla.http;
 
 import java.net.URI;
 
-public interface HttpRequest extends HttpMessage {
+public class HttpRequest extends Message {
 
-	Method getMethod();
+	private String method;
 
-	void setMethod(Method method);
+	private URI uri;
 
-	URI getUri();
-
-	void setUri(URI uri);
-
-	record Method(String name) {
+	public String getMethod() {
+		return method;
 	}
 
-	class Default extends HttpMessage.Default implements HttpRequest {
+	public void setMethod(String method) {
+		this.method = method;
+	}
 
-		protected Method method;
+	public URI getUri() {
+		return uri;
+	}
 
-		protected URI uri;
-
-		@Override
-		public Method getMethod() {
-			if (state == 0)
-				getStartLine();
-			return method;
-		}
-
-		@Override
-		public void setMethod(Method method) {
-			this.method = method;
-			if (method != null && uri != null)
-				setStartLine(method.name() + " " + uri + " HTTP/1.1");
-		}
-
-		@Override
-		public URI getUri() {
-			if (state == 0)
-				getStartLine();
-			return uri;
-		}
-
-		@Override
-		public void setUri(URI uri) {
-			this.uri = uri;
-			if (method != null && uri != null)
-				setStartLine(method.name() + " " + uri + " HTTP/1.1");
-		}
-
-		@Override
-		public String getStartLine() {
-			var s = state;
-			var l = super.getStartLine();
-			if (s == 0) {
-				var ss = l != null ? l.split(" ", 3) : null;
-				method = ss != null && ss.length > 0 ? new Method(ss[0].trim().toUpperCase()) : null;
-				uri = ss != null && ss.length > 1 ? URI.create(ss[1].trim()) : null;
-			}
-			return l;
-		}
+	public void setUri(URI uri) {
+		this.uri = uri;
 	}
 }

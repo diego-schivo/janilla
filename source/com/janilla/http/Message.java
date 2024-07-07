@@ -22,17 +22,31 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.http;
 
-public class Http2 {
+import java.util.List;
 
-	static String CLIENT_CONNECTION_PREFACE_PREFIX = """
-			PRI * HTTP/2.0\r
-			\r
-			SM\r
-			\r
-			""";
+import com.janilla.media.HeaderField;
 
-	public static void main(String[] args) {
+abstract class Message {
+
+	private List<HeaderField> headers;
+
+	private byte[] body;
+
+	public List<HeaderField> getHeaders() {
+		return headers;
+	}
+
+	public void setHeaders(List<HeaderField> headers) {
+		this.headers = headers;
+	}
+
+	public byte[] getBody() {
+		return body;
+	}
+
+	public void setBody(byte[] body) {
+		this.body = body;
 	}
 }

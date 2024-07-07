@@ -27,9 +27,9 @@ package com.janilla.hpack;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 
-import com.janilla.http2.BitsReader;
-import com.janilla.http2.BitsWriter;
-import com.janilla.http2.ByteWriter;
+import com.janilla.media.HeaderField;
+import com.janilla.util.BitsConsumer;
+import com.janilla.util.BitsIterator;
 import com.janilla.util.Util;
 
 public class Hpack {
@@ -43,7 +43,7 @@ public class Hpack {
 		responseExamplesWithHuffmanCoding();
 	}
 
-	public static void encodeInteger(int value, int prefix, BitsWriter bits) {
+	public static void encodeInteger(int value, int prefix, BitsConsumer bits) {
 		var z = 1 << prefix;
 		if (value < z - 1) {
 			bits.accept(value, prefix);
@@ -59,7 +59,7 @@ public class Hpack {
 		bits.accept(value);
 	}
 
-	public static int decodeInteger(BitsReader bits, int prefix) {
+	public static int decodeInteger(BitsIterator bits, int prefix) {
 		var z = 1 << prefix;
 		var i = bits.nextInt(prefix);
 		if (i < z - 1)
@@ -74,11 +74,11 @@ public class Hpack {
 		return i;
 	}
 
-	public static void encodeString(String string, boolean huffman, BitsWriter bits) {
+	public static void encodeString(String string, boolean huffman, BitsConsumer bits) {
 		byte[] bb;
 		if (huffman) {
 			var baos = new ByteArrayOutputStream();
-			var bw = new BitsWriter(new ByteWriter(baos));
+			var bw = new BitsConsumer(baos::write);
 			Huffman.encode(string, bw);
 			bb = baos.toByteArray();
 		} else {
@@ -89,9 +89,9 @@ public class Hpack {
 		bits.accept(bb);
 	}
 
-	public static String decodeString(BitsReader bits) {
+	public static String decodeString(BitsIterator bits) {
 		var h = bits.nextInt(1) == 0x01;
-//		System.out.println("h=" + h);
+		System.out.println("h=" + h);
 		var l = decodeInteger(bits, 7);
 		if (h)
 			return Huffman.decode(bits, l);
@@ -103,7 +103,7 @@ public class Hpack {
 
 	static void integerRepresentationExamples() {
 		var baos = new ByteArrayOutputStream();
-		var bw = new BitsWriter(new ByteWriter(baos));
+		var bw = new BitsConsumer(baos::write);
 		String s;
 
 		bw.accept(0x00, 3);
@@ -129,8 +129,8 @@ public class Hpack {
 
 	static void headerFieldRepresentationExamples() {
 		var baos = new ByteArrayOutputStream();
-		var bw = new BitsWriter(new ByteWriter(baos));
-		BitsReader br;
+		var bw = new BitsConsumer(baos::write);
+		BitsIterator br;
 		String s;
 		HeaderEncoder e;
 		HeaderDecoder d;
@@ -148,7 +148,7 @@ public class Hpack {
 		assert s.equals("""
 				400a 6375 7374 6f6d 2d6b 6579 0d63 7573
 				746f 6d2d 6865 6164 6572""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -164,11 +164,11 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		baos.reset();
 		for (var h : hh1)
-			e.encode(h, false, HeaderField.Representation.WITHOUT_INDEXING);
+			e.encode(h, false, Representation.WITHOUT_INDEXING);
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("040c 2f73 616d 706c 652f 7061 7468") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -184,13 +184,13 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		baos.reset();
 		for (var h : hh1)
-			e.encode(h, false, HeaderField.Representation.NEVER_INDEXED);
+			e.encode(h, false, Representation.NEVER_INDEXED);
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("""
 				1008 7061 7373 776f 7264 0673 6563 7265
 				74""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -210,7 +210,7 @@ public class Hpack {
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("82") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -223,8 +223,8 @@ public class Hpack {
 
 	static void requestExamplesWithoutHuffmanCoding() {
 		var baos = new ByteArrayOutputStream();
-		var bw = new BitsWriter(new ByteWriter(baos));
-		BitsReader br;
+		var bw = new BitsConsumer(baos::write);
+		BitsIterator br;
 		String s;
 		HeaderEncoder e;
 		HeaderDecoder d;
@@ -250,7 +250,7 @@ public class Hpack {
 		assert s.equals("""
 				8286 8441 0f77 7777 2e65 7861 6d70 6c65
 				2e63 6f6d""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -277,7 +277,7 @@ public class Hpack {
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("8286 84be 5808 6e6f 2d63 6163 6865") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -306,7 +306,7 @@ public class Hpack {
 		assert s.equals("""
 				8287 85bf 400a 6375 7374 6f6d 2d6b 6579
 				0c63 7573 746f 6d2d 7661 6c75 65""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -319,8 +319,8 @@ public class Hpack {
 
 	static void requestExamplesWithHuffmanCoding() {
 		var baos = new ByteArrayOutputStream();
-		var bw = new BitsWriter(new ByteWriter(baos));
-		BitsReader br;
+		var bw = new BitsConsumer(baos::write);
+		BitsIterator br;
 		String s;
 		HeaderEncoder e;
 		HeaderDecoder d;
@@ -340,13 +340,13 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		baos.reset();
 		for (var h : hh1)
-			e.encode(h);
+			e.encode(h, true);
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("""
 				8286 8441 8cf1 e3c2 e5f2 3a6b a0ab 90f4
 				ff""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -369,11 +369,11 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		baos.reset();
 		for (var h : hh1)
-			e.encode(h);
+			e.encode(h, true);
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("8286 84be 5886 a8eb 1064 9cbf") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -396,13 +396,13 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		baos.reset();
 		for (var h : hh1)
-			e.encode(h);
+			e.encode(h, true);
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("""
 				8287 85bf 4088 25a8 49e9 5ba9 7d7f 8925
 				a849 e95b b8e8 b4bf""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -415,8 +415,8 @@ public class Hpack {
 
 	static void responseExamplesWithoutHuffmanCoding() {
 		var baos = new ByteArrayOutputStream();
-		var bw = new BitsWriter(new ByteWriter(baos));
-		BitsReader br;
+		var bw = new BitsConsumer(baos::write);
+		BitsIterator br;
 		String s;
 		HeaderEncoder e;
 		HeaderDecoder d;
@@ -447,7 +447,7 @@ public class Hpack {
 				2032 303a 3133 3a32 3120 474d 546e 1768
 				7474 7073 3a2f 2f77 7777 2e65 7861 6d70
 				6c65 2e63 6f6d""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -473,7 +473,7 @@ public class Hpack {
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("4803 3330 37c1 c0bf") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -508,7 +508,7 @@ public class Hpack {
 				5541 5851 5745 4f49 553b 206d 6178 2d61
 				6765 3d33 3630 303b 2076 6572 7369 6f6e
 				3d31""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -521,8 +521,8 @@ public class Hpack {
 
 	static void responseExamplesWithHuffmanCoding() {
 		var baos = new ByteArrayOutputStream();
-		var bw = new BitsWriter(new ByteWriter(baos));
-		BitsReader br;
+		var bw = new BitsConsumer(baos::write);
+		BitsIterator br;
 		String s;
 		HeaderEncoder e;
 		HeaderDecoder d;
@@ -544,7 +544,7 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		baos.reset();
 		for (var h : hh1)
-			e.encode(h);
+			e.encode(h, true);
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("""
@@ -552,7 +552,7 @@ public class Hpack {
 				9410 54d4 44a8 2005 9504 0b81 66e0 82a6
 				2d1b ff6e 919d 29ad 1718 63c7 8f0b 97c8
 				e9ae 82ae 43d3""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -574,11 +574,11 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		baos.reset();
 		for (var h : hh1)
-			e.encode(h);
+			e.encode(h, true);
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("4883 640e ffc1 c0bf") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);
@@ -602,7 +602,7 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		baos.reset();
 		for (var h : hh1)
-			e.encode(h);
+			e.encode(h, true);
 		s = Util.toHexString(Util.toIntStream(baos.toByteArray()));
 		System.out.println(s);
 		assert s.equals("""
@@ -611,7 +611,7 @@ public class Hpack {
 				77ad 94e7 821d d7f2 e6c7 b335 dfdf cd5b
 				3960 d5af 2708 7f36 72c1 ab27 0fb5 291f
 				9587 3160 65c0 03ed 4ee5 b106 3d50 07""") : s;
-		br = new BitsReader(Util.parseHex(s).iterator());
+		br = new BitsIterator(Util.parseHex(s).iterator());
 		d.headerFields().clear();
 		while (br.hasNext())
 			d.decode(br);

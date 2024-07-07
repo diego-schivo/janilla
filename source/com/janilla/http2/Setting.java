@@ -24,5 +24,5 @@
  */
 package com.janilla.http2;
 
-public record Setting(SettingName name, int value) {
+record Setting(SettingName name, int value) {
 }

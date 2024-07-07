@@ -22,58 +22,58 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http;
-
-import java.net.URI;
-
-public class FilterHttpRequest extends FilterHttpMessage<HttpRequest> implements HttpRequest {
-
-//	public static void main(String[] args) throws Exception {
-//		var i = new ByteArrayInputStream("""
-//				POST /foo HTTP/1.1\r
-//				Content-Length: 3\r
-//				\r
-//				baz""".getBytes());
-//		try (var c = new HttpMessageReadableByteChannel(Channels.newChannel(i));
-//				var r = new FilterHttpRequest(c.readRequest()) {
+//package com.janilla.http;
 //
-//					@Override
-//					public URI getURI() {
-//						return URI.create("/bar");
-//					}
-//				}) {
-//			var t = r.getMethod().name() + " " + r.getURI();
-//			System.out.println(t);
-//			assert Objects.equals(t, "POST /bar") : t;
+//import java.net.URI;
 //
-//			var b = (ReadableByteChannel) r.getBody();
-//			t = new String(IO.readAllBytes(b));
-//			System.out.println(t);
-//			assert Objects.equals(t, "baz") : t;
-//		}
+//public class FilterHttpRequest extends FilterHttpMessage<HttpRequest> implements HttpRequest {
+//
+////	public static void main(String[] args) throws Exception {
+////		var i = new ByteArrayInputStream("""
+////				POST /foo HTTP/1.1\r
+////				Content-Length: 3\r
+////				\r
+////				baz""".getBytes());
+////		try (var c = new HttpMessageReadableByteChannel(Channels.newChannel(i));
+////				var r = new FilterHttpRequest(c.readRequest()) {
+////
+////					@Override
+////					public URI getURI() {
+////						return URI.create("/bar");
+////					}
+////				}) {
+////			var t = r.getMethod().name() + " " + r.getURI();
+////			System.out.println(t);
+////			assert Objects.equals(t, "POST /bar") : t;
+////
+////			var b = (ReadableByteChannel) r.getBody();
+////			t = new String(IO.readAllBytes(b));
+////			System.out.println(t);
+////			assert Objects.equals(t, "baz") : t;
+////		}
+////	}
+//
+//	public FilterHttpRequest(HttpRequest message) {
+//		super(message);
 //	}
-
-	public FilterHttpRequest(HttpRequest message) {
-		super(message);
-	}
-
-	@Override
-	public Method getMethod() {
-		return message.getMethod();
-	}
-
-	@Override
-	public void setMethod(Method method) {
-		message.setMethod(method);
-	}
-
-	@Override
-	public URI getUri() {
-		return message.getUri();
-	}
-
-	@Override
-	public void setUri(URI uri) {
-		message.setUri(uri);
-	}
-}
+//
+//	@Override
+//	public Method getMethod() {
+//		return message.getMethod();
+//	}
+//
+//	@Override
+//	public void setMethod(Method method) {
+//		message.setMethod(method);
+//	}
+//
+//	@Override
+//	public URI getUri() {
+//		return message.getUri();
+//	}
+//
+//	@Override
+//	public void setUri(URI uri) {
+//		message.setUri(uri);
+//	}
+//}

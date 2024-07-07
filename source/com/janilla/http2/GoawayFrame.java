@@ -24,7 +24,10 @@
  */
 package com.janilla.http2;
 
-import java.nio.channels.Channel;
+record GoawayFrame(int lastStreamId, int errorCode, byte[] additionalDebugData) implements Frame {
 
-public record GoawayFrame(int lastStreamId, int errorCode, Channel additionalDebugData) implements Frame {
+	@Override
+	public int streamIdentifier() {
+		return 0;
+	}
 }

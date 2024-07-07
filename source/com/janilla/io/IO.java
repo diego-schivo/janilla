@@ -256,6 +256,7 @@ public abstract class IO {
 					if (r < 0)
 						return r;
 				}
+//				return channel.read(bb) > 0 ? Byte.toUnsignedInt(bb.get(0)) : -1;
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

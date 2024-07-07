@@ -29,6 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.janilla.hpack.HeaderTable.IndexAndHeader;
+import com.janilla.media.HeaderField;
+
 class HeaderTable {
 
 	static HeaderTable STATIC;

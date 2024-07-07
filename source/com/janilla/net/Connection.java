@@ -22,27 +22,35 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.net;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SocketChannel;
 
-import com.janilla.io.IO;
+public abstract class Connection {
 
-public record Http2Response(ReadableByteChannel body) implements AutoCloseable {
+	private int number;
 
-	@Override
-	public void close() {
-		if (body.isOpen())
-			try {
-				var bb = ByteBuffer.allocate(IO.DEFAULT_BUFFER_CAPACITY);
-				while (IO.read(body, bb) >= 0)
-					bb.clear();
-				body.close();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+	private SocketChannel channel;
+
+	private SSLByteChannel sslChannel;
+
+	protected Connection(int number, SocketChannel channel, SSLByteChannel sslChannel) {
+		this.number = number;
+		this.channel = channel;
+		this.sslChannel = sslChannel;
 	}
+
+	public int getNumber() {
+		return number;
+	}
+
+	public SocketChannel channel() {
+		return channel;
+	}
+
+	public SSLByteChannel sslChannel() {
+		return sslChannel;
+	}
+
+//	public abstract Exchange newExchange();
 }

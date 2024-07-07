@@ -24,43 +24,10 @@
  */
 package com.janilla.http2;
 
-import java.util.function.IntConsumer;
+import java.util.Collection;
 
-public class BitsWriter implements IntConsumer { //, AutoCloseable {
+record Stream(int identifier, Collection<Entry> entries) {
 
-	IntConsumer bytes;
-
-	long current;
-
-	int currentLength;
-
-	public BitsWriter(IntConsumer bytes) {
-		this.bytes = bytes;
+	public record Entry(Frame frame, boolean output) {
 	}
-
-	@Override
-	public void accept(int value) {
-		accept(value, 8);
-	}
-
-	public void accept(int value, int bitsLength) {
-		current = (current << bitsLength) | (value & ((1L << bitsLength) - 1));
-		var l = currentLength + bitsLength;
-		for (; l >= 8; l -= 8) {
-			bytes.accept((int) (current >>> (l - 8)));
-			current &= (1 << (l - 8)) - 1;
-		}
-		currentLength = l;
-	}
-
-	public void accept(byte[] bytes) {
-		for (var b : bytes)
-			accept(b);
-	}
-
-//	@Override
-//	public void close() {
-//		if (currentLength > 0)
-//			accept(0, 8 - currentLength);
-//	}
 }

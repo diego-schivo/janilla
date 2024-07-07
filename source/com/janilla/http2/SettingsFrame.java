@@ -26,49 +26,10 @@ package com.janilla.http2;
 
 import java.util.Map;
 
-public record SettingsFrame(boolean acknowledge, Map<SettingName, Integer> parameters) implements Frame {
+record SettingsFrame(boolean acknowledge, Map<SettingName, Integer> parameters) implements Frame {
+
+	@Override
+	public int streamIdentifier() {
+		return 0;
+	}
 }
-//public class SettingsFrame {
-//
-//	public static void encode(SettingsFrame frame, WritableByteChannel channel) {
-//		var baos = new ByteArrayOutputStream();
-//		var bw = new BitsWriter(new ByteWriter(baos));
-//		var fe = new FrameEncoder(FrameName.SETTINGS, bw);
-//		var pp = frame.getParameters();
-//		var l = (pp != null ? pp.size() : 0) * (Short.BYTES + Integer.BYTES);
-//		fe.encodeLength(l);
-//		fe.encodeType();
-//		fe.encodeFlags(frame.isAcknowledge() ? Set.of(Flag.ACK) : null);
-//		fe.encodeReserved();
-//		fe.encodeStreamIdentifier(0);
-//		if (l > 0)
-//			for (var e : pp.entrySet())
-//				fe.encodeSetting(new Setting(e.getKey(), e.getValue()));
-//
-//		try {
-//			IO.write(baos.toByteArray(), channel);
-//		} catch (IOException e) {
-//			throw new UncheckedIOException(e);
-//		}
-//	}
-//
-//	private boolean acknowledge;
-//
-//	private Map<SettingName, Integer> parameters;
-//
-//	public boolean isAcknowledge() {
-//		return acknowledge;
-//	}
-//
-//	public void setAcknowledge(boolean acknowledge) {
-//		this.acknowledge = acknowledge;
-//	}
-//
-//	public Map<SettingName, Integer> getParameters() {
-//		return parameters;
-//	}
-//
-//	public void setParameters(Map<SettingName, Integer> parameters) {
-//		this.parameters = parameters;
-//	}
-//}

@@ -22,43 +22,38 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.media;
 
 import java.util.Arrays;
-import java.util.Base64;
-import java.util.stream.IntStream;
+import java.util.Properties;
 
-import com.janilla.util.Util;
+public record HeaderField(String name, String value) {
 
-public class Http2SettingsHeaderFieldExample {
+	public static HeaderField fromLine(String line) {
+		var i = line.indexOf(':');
+		return new HeaderField(line.substring(0, i).trim(), line.substring(i + 1).trim());
+	}
 
-	public static void main(String[] args) {
-		var rq = """
-				GET / HTTP/1.1\r
-				Connection: Upgrade, HTTP2-Settings\r
-				Host: localhost:8080\r
-				HTTP2-Settings: AAEAAEAAAAIAAAABAAMAAABkAAQBAAAAAAUAAEAA\r
-				Upgrade: h2c\r
-				User-Agent: Java-http-client/22.0.1\r
-				\r
-				""";
-		BitsReader jj;
-		{
-			var v = rq.lines().filter(x -> x.startsWith("HTTP2-Settings:"))
-					.map(x -> x.substring("HTTP2-Settings:".length()).trim()).findFirst().get();
-			var bb = Base64.getUrlDecoder().decode(v);
-			var ii = IntStream.range(0, bb.length).map(x -> bb[x]).toArray();
-			var h = Util.toHexString(Arrays.stream(ii));
-			System.out.println("h=" + h);
-			jj = new BitsReader(Arrays.stream(ii).iterator());
-//		var l = IntStream.range(0, 3).map(x -> jj.nextInt()).reduce(0, (a, b) -> (a << 8) | b);
-//		System.out.println("l=" + l);
-		}
-		while (jj.hasNext()) {
-			var i = jj.nextInt(16);
-			var s = SettingName.of(i);
-			var v = jj.nextInt(32);
-			System.out.println(s + "=" + v);
-		}
+	public String toLine() {
+		return name + ": " + value;
+	}
+
+	public ComplexValue toComplexValue() {
+		var i = value.indexOf(';');
+		var s1 = value.substring(0, i).trim();
+		var s2 = value.substring(i + 1).trim();
+		var p = Arrays.stream(s2.split(";")).reduce(new Properties(), (x, y) -> {
+			var j = y.indexOf('=');
+			var k = y.substring(0, j).trim();
+			var v = y.substring(j + 1).trim();
+			if (v.startsWith("\"") && v.endsWith("\""))
+				v = v.substring(1, v.length() - 1);
+			x.setProperty(k, v);
+			return x;
+		}, (x1, x2) -> x1);
+		return new ComplexValue(s1, p);
+	}
+
+	public record ComplexValue(String value, Properties properties) {
 	}
 }

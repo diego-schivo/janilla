@@ -29,20 +29,25 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
+import java.util.PrimitiveIterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.hpack.HeaderDecoder;
-import com.janilla.hpack.HeaderField;
+import com.janilla.hpack.Representation;
 import com.janilla.io.IO;
-import com.janilla.io.LengthReadableByteChannel;
+import com.janilla.util.BitsConsumer;
+import com.janilla.util.BitsIterator;
 
-public sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, SettingsFrame {
+sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, PriorityFrame, SettingsFrame, WindowUpdateFrame {
+
+	int streamIdentifier();
 
 	static void encode(Frame frame, WritableByteChannel channel) {
 		var baos = new ByteArrayOutputStream();
-		var bw = new BitsWriter(new ByteWriter(baos));
+		var bw = new BitsConsumer(baos::write);
 		FrameEncoder fe;
 		switch (frame) {
 		case DataFrame x:
@@ -63,14 +68,19 @@ public sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, Sett
 			break;
 		case HeadersFrame x:
 			fe = new FrameEncoder(FrameName.HEADERS, bw);
-			for (var e : x.fields().entrySet()) {
-				var hf = new HeaderField(e.getKey(), e.getValue());
+			for (var hf : x.fields()) {
 				switch (hf.name()) {
-				case ":method", ":scheme":
+				case ":method", ":scheme", ":status", "content-type":
 					fe.headerEncoder().encode(hf);
 					break;
+				case "content-length":
+					fe.headerEncoder().encode(hf, false, Representation.NEVER_INDEXED);
+					break;
+				case "date":
+					fe.headerEncoder().encode(hf, true, Representation.NEVER_INDEXED);
+					break;
 				default:
-					fe.headerEncoder().encode(hf, true, HeaderField.Representation.WITHOUT_INDEXING);
+					fe.headerEncoder().encode(hf, true, Representation.WITHOUT_INDEXING);
 					break;
 				}
 			}
@@ -88,6 +98,8 @@ public sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, Sett
 				throw new UncheckedIOException(e);
 			}
 			break;
+		case PriorityFrame x:
+			throw new RuntimeException();
 		case SettingsFrame x:
 			fe = new FrameEncoder(FrameName.SETTINGS, bw);
 			fe.encodeLength(x.parameters().size() * (Short.BYTES + Integer.BYTES));
@@ -98,18 +110,23 @@ public sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, Sett
 			for (var e : x.parameters().entrySet())
 				fe.encodeSetting(new Setting(e.getKey(), e.getValue()));
 			break;
+		case WindowUpdateFrame x:
+			throw new RuntimeException();
 		}
 		try {
-			IO.write(baos.toByteArray(), channel);
+			var bb = baos.toByteArray();
+//			System.out.println("bb=\n" + Util.toHexString(Util.toIntStream(bb)));
+			IO.write(bb, channel);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
 	}
 
-	static Frame decode(ReadableByteChannel channel) {
+	static Frame decode(ReadableByteChannel channel, HeaderDecoder hd) {
 		var ii = IO.toIntStream(channel).iterator();
-		var br = new BitsReader(ii);
-		var hd = new HeaderDecoder();
+//		if (!ii.hasNext())
+//			return null;
+		var br = new BitsIterator(ii);
 		var l = br.nextInt(24);
 //		System.out.println("l=" + l);
 		var t = FrameName.of(br.nextInt(8));
@@ -127,6 +144,10 @@ public sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, Sett
 				br.nextInt(1) != 0 ? null : null, br.nextInt(1) != 0 ? Flag.PADDED : null,
 				br.nextInt(1) != 0 ? Flag.END_HEADERS : null, br.nextInt(1) != 0 ? null : null,
 				br.nextInt(1) != 0 ? Flag.END_STREAM : null).filter(x -> x != null).collect(Collectors.toSet());
+		case PRIORITY -> {
+			br.nextInt();
+			yield Set.of();
+		}
 		case SETTINGS -> Stream.of(br.nextInt(7) != 0 ? null : null, br.nextInt(1) != 0 ? Flag.ACK : null)
 				.filter(x -> x != null).collect(Collectors.toSet());
 		case WINDOW_UPDATE -> {
@@ -143,7 +164,7 @@ public sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, Sett
 		case DATA -> {
 			var d = new byte[l];
 			try {
-				if (IO.read(channel, d) < l)
+				if (IO.read(channel, d) < d.length)
 					throw new RuntimeException();
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
@@ -154,15 +175,66 @@ public sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, Sett
 			br.nextInt(1);
 			var lsi = br.nextInt(31);
 			var ec = br.nextInt(32);
-			var add = new LengthReadableByteChannel(channel, l - 2 * Integer.BYTES);
+			var add = new byte[l - 2 * Integer.BYTES];
+			try {
+				if (IO.read(channel, add) < add.length)
+					throw new RuntimeException();
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 			yield new GoawayFrame(lsi, ec, add);
 		}
 		case HEADERS -> {
-			var br2 = new BitsReader(new LengthIntIterator(ii, l));
+			var p = ff.contains(Flag.PRIORITY);
+			boolean e;
+			int sd, w;
+			if (p) {
+				e = br.nextInt(1) == 0x01;
+				sd = br.nextInt(31);
+				w = br.nextInt(8);
+			} else {
+				e = false;
+				sd = 0;
+				w = 0;
+			}
+			class LengthIntIterator implements PrimitiveIterator.OfInt {
+
+				PrimitiveIterator.OfInt iterator;
+
+				int length;
+
+				int count;
+
+				LengthIntIterator(PrimitiveIterator.OfInt iterator, int length) {
+					this.iterator = iterator;
+					this.length = length;
+				}
+
+				@Override
+				public boolean hasNext() {
+					return count < length && iterator.hasNext();
+				}
+
+				@Override
+				public int nextInt() {
+					var i = iterator.nextInt();
+					count++;
+					return i;
+				}
+			}
+			var br2 = new BitsIterator(new LengthIntIterator(ii, l - (p ? Integer.BYTES + Byte.BYTES : 0)));
+			hd.headerFields().clear();
 			while (br2.hasNext())
 				hd.decode(br2);
-			var ff2 = hd.headerFields().stream().collect(Collectors.toMap(HeaderField::name, HeaderField::value));
-			yield new HeadersFrame(ff.contains(Flag.END_HEADERS), ff.contains(Flag.END_STREAM), si, ff2);
+			System.out.println("hd.headerFields=" + hd.headerFields());
+			yield new HeadersFrame(p, ff.contains(Flag.END_HEADERS), ff.contains(Flag.END_STREAM), si, e, sd, w,
+					new ArrayList<>(hd.headerFields()));
+		}
+		case PRIORITY -> {
+			var e = br.nextInt(1) == 0x01;
+			var sd = br.nextInt(31);
+			var w = br.nextInt(8);
+			yield new PriorityFrame(si, e, sd, w);
 		}
 		case SETTINGS -> {
 			var a = ff.contains(Flag.ACK);
@@ -171,11 +243,10 @@ public sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, Sett
 			yield new SettingsFrame(a, pp);
 		}
 		case WINDOW_UPDATE -> {
-			var r = br.nextInt(1);
-			System.out.println("r=" + r);
+			br.nextInt(1);
 			var wsi = br.nextInt(31);
-			System.out.println("wsi=" + wsi);
-			throw new RuntimeException();
+//			System.out.println("wsi=" + wsi);
+			yield new WindowUpdateFrame(si, wsi);
 		}
 		default -> throw new RuntimeException();
 		};

@@ -24,5 +24,5 @@
  */
 package com.janilla.http2;
 
-public record DataFrame(boolean padded, boolean endStream, int streamIdentifier, byte[] data) implements Frame {
+record DataFrame(boolean padded, boolean endStream, int streamIdentifier, byte[] data) implements Frame {
 }

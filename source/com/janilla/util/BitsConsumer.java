@@ -22,7 +22,39 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http;
+package com.janilla.util;
 
-public record HttpHeader(String name, String value) {
+import java.util.function.IntConsumer;
+
+public class BitsConsumer implements IntConsumer {
+
+	IntConsumer bytes;
+
+	long current;
+
+	int currentLength;
+
+	public BitsConsumer(IntConsumer bytes) {
+		this.bytes = bytes;
+	}
+
+	@Override
+	public void accept(int value) {
+		accept(value, 8);
+	}
+
+	public void accept(int value, int bitsLength) {
+		current = (current << bitsLength) | (value & ((1L << bitsLength) - 1));
+		var l = currentLength + bitsLength;
+		for (; l >= 8; l -= 8) {
+			bytes.accept((int) (current >>> (l - 8)));
+			current &= (1 << (l - 8)) - 1;
+		}
+		currentLength = l;
+	}
+
+	public void accept(byte[] bytes) {
+		for (var b : bytes)
+			accept(b);
+	}
 }

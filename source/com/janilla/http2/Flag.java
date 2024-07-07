@@ -24,7 +24,7 @@
  */
 package com.janilla.http2;
 
-public enum Flag {
+enum Flag {
 
 	ACK, END_HEADERS, END_STREAM, PADDED, PRIORITY
 }

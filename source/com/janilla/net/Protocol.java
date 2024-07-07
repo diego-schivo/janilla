@@ -22,27 +22,17 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.net;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.util.function.IntConsumer;
+import java.nio.channels.SocketChannel;
 
-public class ByteWriter implements IntConsumer {
+import javax.net.ssl.SSLEngine;
 
-	OutputStream output;
+public interface Protocol {
 
-	public ByteWriter(OutputStream output) {
-		this.output = output;
-	}
+	String name();
 
-	@Override
-	public void accept(int value) {
-		try {
-			output.write(value);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
+	Connection buildConnection(SocketChannel channel, SSLEngine engine);
+
+	Exchange buildExchange(Connection connection);
 }

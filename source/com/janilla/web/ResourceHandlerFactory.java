@@ -25,7 +25,6 @@
 package com.janilla.web;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -44,11 +43,10 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHeader;
 import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpServer;
 import com.janilla.io.IO;
+import com.janilla.media.HeaderField;
+import com.janilla.net.Server;
 import com.janilla.util.Lazy;
 
 public class ResourceHandlerFactory implements WebHandlerFactory {
@@ -116,12 +114,12 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 			}, x -> x, (v, w) -> w, LinkedHashMap::new)));
 
 	@Override
-	public HttpServer.Handler createHandler(Object object, HttpExchange exchange) {
+	public Server.Handler createHandler(Object object, HttpExchange exchange) {
 		var u = object instanceof HttpRequest q ? q.getUri() : null;
 		var p = u != null ? u.getPath() : null;
 		var r = p != null ? resources.get().get(p) : null;
 		return r != null ? c -> {
-			handle(r, c);
+			handle(r, (HttpExchange) c);
 			return true;
 		} : null;
 	}
@@ -221,22 +219,23 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 
 	protected void handle(Resource resource, HttpExchange exchange) {
 		var s = exchange.getResponse();
-		s.setStatus(HttpResponse.Status.of(200));
+//		s.setStatus(HttpResponse.Status.of(200));
+		s.setStatus(200);
 
 		var hh = s.getHeaders();
-		hh.add(new HttpHeader("Cache-Control", "max-age=3600"));
+		hh.add(new HeaderField("Cache-Control", "max-age=3600"));
 		switch (resource.path().substring(resource.path().lastIndexOf('.') + 1)) {
 		case "ico":
-			hh.add(new HttpHeader("Content-Type", "image/x-icon"));
+			hh.add(new HeaderField("Content-Type", "image/x-icon"));
 			break;
 		case "js":
-			hh.add(new HttpHeader("Content-Type", "text/javascript"));
+			hh.add(new HeaderField("Content-Type", "text/javascript"));
 			break;
 		case "svg":
-			hh.add(new HttpHeader("Content-Type", "image/svg+xml"));
+			hh.add(new HeaderField("Content-Type", "image/svg+xml"));
 			break;
 		}
-		hh.add(new HttpHeader("Content-Length", String.valueOf(resource.size())));
+		hh.add(new HeaderField("Content-Length", String.valueOf(resource.size())));
 
 		var l = Thread.currentThread().getContextClassLoader();
 		try (var c = switch (resource) {
@@ -258,7 +257,8 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		default -> throw new IllegalArgumentException();
 		}) {
 //			IO.transfer(c, (WritableByteChannel) s.getBody());
-			c.transferTo((OutputStream) s.getBody());
+//			c.transferTo((OutputStream) s.getBody());
+			s.setBody(c.readAllBytes());
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

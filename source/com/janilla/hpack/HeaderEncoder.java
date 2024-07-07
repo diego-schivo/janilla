@@ -26,15 +26,16 @@ package com.janilla.hpack;
 
 import java.util.stream.Stream;
 
-import com.janilla.http2.BitsWriter;
+import com.janilla.media.HeaderField;
+import com.janilla.util.BitsConsumer;
 
 public class HeaderEncoder {
 
-	BitsWriter bits;
+	BitsConsumer bits;
 
 	HeaderTable table;
 
-	public HeaderEncoder(BitsWriter bits) {
+	public HeaderEncoder(BitsConsumer bits) {
 		this.bits = bits;
 		table = new HeaderTable();
 		table.setDynamic(true);
@@ -53,11 +54,11 @@ public class HeaderEncoder {
 		encode(header, huffman, null);
 	}
 
-	public void encode(HeaderField header, boolean huffman, HeaderField.Representation representation) {
+	public void encode(HeaderField header, boolean huffman, Representation representation) {
 		var ih = indexAndHeader(header);
-		var r = ih != null && ih.header().equals(header) ? HeaderField.Representation.INDEXED
-				: representation != null ? representation : HeaderField.Representation.WITH_INDEXING;
-		if (r == HeaderField.Representation.INDEXED) {
+		var r = ih != null && ih.header().equals(header) ? Representation.INDEXED
+				: representation != null ? representation : Representation.WITH_INDEXING;
+		if (r == Representation.INDEXED) {
 			bits.accept(r.first() >>> r.prefix(), 8 - r.prefix());
 			Hpack.encodeInteger(ih.index(), r.prefix(), bits);
 			return;
@@ -70,7 +71,7 @@ public class HeaderEncoder {
 			Hpack.encodeString(header.name(), huffman, bits);
 		}
 		Hpack.encodeString(header.value(), huffman, bits);
-		if (r != HeaderField.Representation.NEVER_INDEXED)
+		if (r != Representation.NEVER_INDEXED)
 			table.add(header);
 	}
 

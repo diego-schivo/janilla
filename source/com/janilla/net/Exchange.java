@@ -22,13 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.net;
 
-import java.net.URI;
-
-public record Http2Request(String method, URI uri) implements AutoCloseable {
-
-	@Override
-	public void close() {
-	}
+public interface Exchange extends AutoCloseable {
 }

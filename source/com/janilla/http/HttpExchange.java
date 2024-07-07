@@ -24,15 +24,13 @@
  */
 package com.janilla.http;
 
-public class HttpExchange implements AutoCloseable {
+import com.janilla.net.Exchange;
+
+public class HttpExchange implements Exchange {
 
 	private HttpRequest request;
 
 	private HttpResponse response;
-
-	private HttpConnection connection;
-
-	private Exception exception;
 
 	public HttpRequest getRequest() {
 		return request;
@@ -50,31 +48,12 @@ public class HttpExchange implements AutoCloseable {
 		this.response = response;
 	}
 
-	public HttpConnection getConnection() {
-		return connection;
-	}
-
-	public void setConnection(HttpConnection connection) {
-		this.connection = connection;
-	}
-
 	public Exception getException() {
-		return exception;
-	}
-
-	public void setException(Exception exception) {
-		this.exception = exception;
+		// TODO
+		return null;
 	}
 
 	@Override
 	public void close() {
-		try {
-			request.close();
-		} catch (Exception e) {
-		}
-		try {
-			response.close();
-		} catch (Exception e) {
-		}
 	}
 }

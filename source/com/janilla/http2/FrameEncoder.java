@@ -27,16 +27,17 @@ package com.janilla.http2;
 import java.util.Collection;
 
 import com.janilla.hpack.HeaderEncoder;
+import com.janilla.util.BitsConsumer;
 
 class FrameEncoder {
 
 	FrameName frame;
 
-	BitsWriter bits;
+	BitsConsumer bits;
 
 	HeaderEncoder headerEncoder;
 
-	FrameEncoder(FrameName frame, BitsWriter bits) {
+	FrameEncoder(FrameName frame, BitsConsumer bits) {
 		this.frame = frame;
 		this.bits = bits;
 		headerEncoder = new HeaderEncoder(bits);
