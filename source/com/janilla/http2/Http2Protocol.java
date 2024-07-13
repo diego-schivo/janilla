@@ -67,7 +67,7 @@ public class Http2Protocol extends HttpProtocol {
 		if (!c.p1 && bb1.remaining() >= 24) {
 			var cc = new byte[24];
 			bb1.get(cc);
-			System.out.println(c.number() + " " + new String(cc));
+//			System.out.println(c.number() + " " + new String(cc));
 			c.p1 = true;
 		}
 		if (c.p1) {
@@ -81,7 +81,7 @@ public class Http2Protocol extends HttpProtocol {
 				if (bb1.remaining() < fl)
 					break;
 				var f1 = Frame.decode(bb1, c.headerDecoder());
-				System.out.println(c.number() + " f1=" + f1);
+//				System.out.println(c.number() + " f1=" + f1);
 				ff1.add(f1);
 			}
 			if (!c.p2) {
@@ -89,10 +89,8 @@ public class Http2Protocol extends HttpProtocol {
 						List.of(new Setting.Parameter(Setting.Name.INITIAL_WINDOW_SIZE, 65535),
 								new Setting.Parameter(Setting.Name.HEADER_TABLE_SIZE, 4096),
 								new Setting.Parameter(Setting.Name.MAX_FRAME_SIZE, 16384)));
-				System.out.println(c.number() + " f2=" + f2);
 				Frame.encode(f2, bb2);
 				f2 = new Frame.Settings(true, List.of());
-				System.out.println(c.number() + " f2=" + f2);
 				ff2.add(f2);
 				c.p2 = true;
 			}
@@ -165,7 +163,7 @@ public class Http2Protocol extends HttpProtocol {
 					}
 				}
 			for (var f2 : ff2) {
-				System.out.println(c.number() + " f2=" + f2);
+//				System.out.println(c.number() + " f2=" + f2);
 				Frame.encode(f2, bb2);
 			}
 		}

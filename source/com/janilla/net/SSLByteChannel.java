@@ -269,11 +269,12 @@ public class SSLByteChannel extends FilterByteChannel {
 					packet2.flip();
 					try {
 						if (super.write(packet2) == 0)
-							return 0;
+							break;
 					} finally {
 						packet2.compact();
 					}
-				}
+				} else if (!src.hasRemaining())
+					break;
 			} while (n == 0);
 
 			return n;

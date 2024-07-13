@@ -37,47 +37,19 @@ import com.janilla.io.IO;
 
 public class Server {
 
-	private SocketAddress address;
+	protected SocketAddress address;
 
-//	private SSLContext sslContext;
-
-	private Protocol protocol;
-
-//	private Handler handler;
+	protected Protocol protocol;
 
 	protected volatile Selector selector;
-
-	public SocketAddress getAddress() {
-		return address;
-	}
 
 	public void setAddress(SocketAddress address) {
 		this.address = address;
 	}
 
-//	public SSLContext getSslContext() {
-//		return sslContext;
-//	}
-//
-//	public void setSslContext(SSLContext sslContext) {
-//		this.sslContext = sslContext;
-//	}
-
-	public Protocol getProtocol() {
-		return protocol;
-	}
-
 	public void setProtocol(Protocol protocol) {
 		this.protocol = protocol;
 	}
-
-//	public Handler getHandler() {
-//		return handler;
-//	}
-//
-//	public void setHandler(Handler handler) {
-//		this.handler = handler;
-//	}
 
 	public void serve() {
 		try {
@@ -90,28 +62,24 @@ public class Server {
 			}
 			var cc = new ArrayList<Connection>();
 			for (;;) {
-				var m = System.currentTimeMillis();
+//				var m = System.currentTimeMillis();
 				selector.select(1000);
-				System.out.println(millis() + " selector.select " + (System.currentTimeMillis() - m));
+//				System.out.println(millis() + " selector.select " + (System.currentTimeMillis() - m));
 				for (var kk = selector.selectedKeys().iterator(); kk.hasNext();) {
 					var k = kk.next();
-					System.out.println("k=" + k);
+//					System.out.println("k=" + k);
 					kk.remove();
 					if (!k.isValid())
 						continue;
 					if (k.isAcceptable()) {
 						var sc = ((ServerSocketChannel) k.channel()).accept();
 						sc.configureBlocking(false);
-//						var se = sslContext.createSSLEngine();
-//						se.setUseClientMode(false);
-//						var pp = se.getSSLParameters();
-//						pp.setApplicationProtocols(new String[] { protocol.name() });
-//						se.setSSLParameters(pp);
-//						var c = protocol.buildConnection(sc, se);
+						var k2 = sc.register(selector, SelectionKey.OP_READ);
 						var c = protocol.buildConnection(sc);
-						System.out.println("c=" + c.number());
+						System.out.println("serve, c=" + c.number());
+						k2.attach(c);
 						Thread.startVirtualThread(() -> handle(c));
-//						sc.register(selector, SelectionKey.OP_READ).attach(c);
+//						new Thread(() -> handle(c)).start();
 						synchronized (c) {
 							while (c.r < 0)
 								try {
@@ -129,15 +97,17 @@ public class Server {
 				}
 				if (cc.isEmpty())
 					continue;
-				System.out.println(millis() + " selector.selectNow");
+//				System.out.println(millis() + " selector.selectNow");
 				selector.selectNow();
-				for (var c : cc) {
-					System.out.println("notify c=" + c.number());
+				for (var c : cc)
 					synchronized (c) {
 						c.r++;
+						if (c.r > 20)
+							throw new RuntimeException();
+						System.out.println("serve, c=" + c.number() + ", c.r=" + c.r + ", notify");
 						c.notify();
 					}
-				}
+				cc.clear();
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
@@ -148,6 +118,7 @@ public class Server {
 		var bb1 = ByteBuffer.allocate(IO.DEFAULT_BUFFER_CAPACITY);
 		var bb2 = ByteBuffer.allocate(IO.DEFAULT_BUFFER_CAPACITY);
 		for (;;) {
+			System.out.println("handle, connection=" + connection.number() + ", connection.r=" + connection.r);
 			synchronized (connection) {
 				if (connection.r < 0) {
 					connection.r = 0;
@@ -155,6 +126,7 @@ public class Server {
 				}
 				while (connection.r == 0)
 					try {
+						System.out.println("handle, connection=" + connection.number() + ", wait");
 						connection.wait();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
@@ -162,54 +134,13 @@ public class Server {
 					}
 				connection.r--;
 			}
-			System.out.println("wait connection=" + connection.number());
 			try {
 				{
 					var n = connection.applicationChannel().read(bb1);
 					connection.socketChannel().register(selector, SelectionKey.OP_READ).attach(connection);
 					selector.wakeup();
-					System.out.println("connection=" + connection.number() + " n=" + n);
+					System.out.println("handle, connection=" + connection.number() + ", n=" + n);
 				}
-//				var k = true;
-//				try (var ex = protocol.buildExchange(connection)) {
-//					if (ex != null) {
-//						Exception e;
-//						try {
-//							k = handler.handle(ex);
-//							e = null;
-//						} catch (UncheckedIOException x) {
-//							e = x.getCause();
-//						} catch (Exception x) {
-//							e = x;
-//						}
-//
-//						if (e != null)
-//							try {
-//								e.printStackTrace();
-//								ex.setException(e);
-//								k = handler.handle(ex);
-//							} catch (Exception x) {
-//								k = false;
-//							}
-//
-//						if (((HttpExchange) ex).getRequest().getUri().getPath().endsWith("/base.css")) {
-//							System.out.println("""
-//									XXXXXXXXXX
-//									XXXXXXXXXX
-//									XXXXXXXXXX
-//									XXXXXXXXXX
-//									XXXXXXXXXX""");
-//						}
-//						System.out.println(millis() + " A");
-//					}
-//				}
-//				System.out.println(millis() + " C " + k);
-//				if (k) {
-//					connection.socketChannel().register(selector, SelectionKey.OP_READ).attach(connection);
-//					System.out.println(millis() + " selector.wakeup");
-//					selector.wakeup();
-//				} else
-//					connection.socketChannel().close();
 				bb1.flip();
 				protocol.handle(connection, bb1, bb2);
 				bb1.compact();
@@ -218,7 +149,8 @@ public class Server {
 				bb2.compact();
 			} catch (Exception e) {
 				e.printStackTrace();
-				System.out.println("connection=" + connection.number());
+				System.out.println("handle, connection=" + connection.number());
+				throw new RuntimeException(e);
 			}
 		}
 	}

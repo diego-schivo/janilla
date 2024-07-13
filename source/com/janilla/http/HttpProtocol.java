@@ -38,6 +38,14 @@ public class HttpProtocol implements Protocol {
 
 	protected HttpHandler handler;
 
+	public void setSslContext(SSLContext sslContext) {
+		this.sslContext = sslContext;
+	}
+
+	public void setHandler(HttpHandler handler) {
+		this.handler = handler;
+	}
+
 	@Override
 	public Connection buildConnection(SocketChannel channel) {
 		// TODO Auto-generated method stub
