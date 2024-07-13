@@ -33,11 +33,10 @@ import java.nio.file.StandardOpenOption;
 
 import com.janilla.database.Database;
 import com.janilla.database.Memory;
-import com.janilla.database.Memory.BlockReference;
 import com.janilla.database.Store;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.TransactionalByteChannel;
-import com.janilla.persistence.Persistence.Configuration;
+import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Factory;
 
 public class ApplicationPersistenceBuilder {
@@ -79,20 +78,20 @@ public class ApplicationPersistenceBuilder {
 				var t = m.getFreeBTree();
 				t.setChannel(c);
 				t.setOrder(order);
-				t.setRoot(BlockReference.read(c, 0));
-				m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, c.size()));
+				t.setRoot(Memory.BlockReference.read(c, 0));
+				m.setAppendPosition(Math.max(3 * Memory.BlockReference.HELPER_LENGTH, c.size()));
 			}
 
 			var d = new Database();
 			d.setBTreeOrder(order);
 			d.setChannel(c);
 			d.setMemory(m);
-			d.setStoresRoot(BlockReference.HELPER_LENGTH);
-			d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
+			d.setStoresRoot(Memory.BlockReference.HELPER_LENGTH);
+			d.setIndexesRoot(2 * Memory.BlockReference.HELPER_LENGTH);
 
 			var p = factory.create(Persistence.class);
 			p.database = d;
-			p.configuration = new Configuration();
+			p.configuration = new Persistence.Configuration();
 			for (var t : factory.getTypes())
 				p.configure(t);
 

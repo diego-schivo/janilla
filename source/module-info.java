@@ -42,4 +42,5 @@ module com.janilla {
 	exports com.janilla.web;
 
 	opens com.janilla.frontend;
+	opens com.janilla.net;
 }

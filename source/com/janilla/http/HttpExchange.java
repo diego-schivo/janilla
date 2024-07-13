@@ -24,13 +24,13 @@
  */
 package com.janilla.http;
 
-import com.janilla.net.Exchange;
-
-public class HttpExchange implements Exchange {
+public class HttpExchange {
 
 	private HttpRequest request;
 
 	private HttpResponse response;
+
+	private Exception exception;
 
 	public HttpRequest getRequest() {
 		return request;
@@ -49,11 +49,10 @@ public class HttpExchange implements Exchange {
 	}
 
 	public Exception getException() {
-		// TODO
-		return null;
+		return exception;
 	}
 
-	@Override
-	public void close() {
+	public void setException(Exception exception) {
+		this.exception = exception;
 	}
 }

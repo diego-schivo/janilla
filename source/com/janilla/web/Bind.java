@@ -31,7 +31,6 @@ import java.lang.annotation.Target;
 import java.util.function.UnaryOperator;
 
 import com.janilla.json.Converter;
-import com.janilla.json.Converter.MapType;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.PARAMETER })
@@ -46,7 +45,7 @@ public @interface Bind {
 	public static class NullResolver implements UnaryOperator<Converter.MapType> {
 
 		@Override
-		public MapType apply(MapType mt) {
+		public Converter.MapType apply(Converter.MapType mt) {
 			return null;
 		}
 	}

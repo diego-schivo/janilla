@@ -39,10 +39,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
-import com.janilla.io.ElementHelper.SortOrder;
-import com.janilla.io.ElementHelper.TypeAndOrder;
 import com.janilla.util.Lazy;
 
 public class Indexes {
@@ -60,13 +57,13 @@ public class Indexes {
 						var u = m.getFreeBTree();
 						u.setOrder(o);
 						u.setChannel(c);
-						u.setRoot(BlockReference.read(c, 0));
-						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
+						u.setRoot(Memory.BlockReference.read(c, 0));
+						m.setAppendPosition(Math.max(2 * Memory.BlockReference.HELPER_LENGTH, c.size()));
 
 						t.setOrder(o);
 						t.setChannel(c);
 						t.setMemory(m);
-						t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+						t.setRoot(Memory.BlockReference.read(c, Memory.BlockReference.HELPER_LENGTH));
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
@@ -75,8 +72,8 @@ public class Indexes {
 					@SuppressWarnings("unchecked")
 					var k = (Index<String, Object[]>) j;
 					k.setKeyHelper(ElementHelper.STRING);
-					k.setValueHelper(ElementHelper.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
-							new TypeAndOrder(Long.class, SortOrder.DESCENDING)));
+					k.setValueHelper(ElementHelper.of(new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
+							new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
 				});
 				return i;
 			};
@@ -126,13 +123,13 @@ public class Indexes {
 	}
 
 	public void create(String name) {
-		btree.get().getOrAdd(new NameAndIndex(name, new BlockReference(-1, -1, 0)));
+		btree.get().getOrAdd(new NameAndIndex(name, new Memory.BlockReference(-1, -1, 0)));
 	}
 
 	public <K, V, R> R perform(String name, Function<Index<K, V>, R> operation) {
 		var t = btree.get();
 		var o = new Object[1];
-		t.get(new NameAndIndex(name, new BlockReference(-1, -1, 0)), n -> {
+		t.get(new NameAndIndex(name, new Memory.BlockReference(-1, -1, 0)), n -> {
 			var i = new Index<K, V>();
 			i.setInitializeBTree(u -> {
 				u.setOrder(t.getOrder());
@@ -150,14 +147,14 @@ public class Indexes {
 		return r;
 	}
 
-	public record NameAndIndex(String name, BlockReference root) {
+	public record NameAndIndex(String name, Memory.BlockReference root) {
 
 		static ElementHelper<NameAndIndex> HELPER = new ElementHelper<>() {
 
 			@Override
 			public byte[] getBytes(NameAndIndex element) {
 				var b = element.name().getBytes();
-				var c = ByteBuffer.allocate(4 + b.length + BlockReference.HELPER_LENGTH);
+				var c = ByteBuffer.allocate(4 + b.length + Memory.BlockReference.HELPER_LENGTH);
 				c.putInt(b.length);
 				c.put(b);
 				c.putLong(element.root.position());
@@ -167,7 +164,7 @@ public class Indexes {
 
 			@Override
 			public int getLength(ByteBuffer buffer) {
-				return 4 + buffer.getInt(buffer.position()) + BlockReference.HELPER_LENGTH;
+				return 4 + buffer.getInt(buffer.position()) + Memory.BlockReference.HELPER_LENGTH;
 			}
 
 			@Override
@@ -176,7 +173,7 @@ public class Indexes {
 				buffer.get(b);
 				var p = buffer.getLong();
 				var c = buffer.getInt();
-				return new NameAndIndex(new String(b), new BlockReference(-1, p, c));
+				return new NameAndIndex(new String(b), new Memory.BlockReference(-1, p, c));
 			}
 
 			@Override

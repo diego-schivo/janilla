@@ -27,8 +27,6 @@ package com.janilla.json;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.janilla.json.JsonToken.Type;
-
 public class StringIterator implements Iterator<JsonToken<?>> {
 
 	protected String string;
@@ -68,7 +66,7 @@ public class StringIterator implements Iterator<JsonToken<?>> {
 						break;
 					}
 				}
-				token = new JsonToken<>(Type.STRING, b.toString());
+				token = new JsonToken<>(JsonToken.Type.STRING, b.toString());
 				yield 1;
 			}
 			default -> s;

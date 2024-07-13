@@ -27,7 +27,6 @@ package com.janilla.json;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 
 public class ReflectionJsonIterator extends JsonIterator {
@@ -60,7 +59,7 @@ public class ReflectionJsonIterator extends JsonIterator {
 
 		private List<Long> m;
 
-		private List<Entry<String, String>> n;
+		private List<Map.Entry<String, String>> n;
 
 		public String getS() {
 			return s;
@@ -94,11 +93,11 @@ public class ReflectionJsonIterator extends JsonIterator {
 			this.m = m;
 		}
 
-		public List<Entry<String, String>> getN() {
+		public List<Map.Entry<String, String>> getN() {
 			return n;
 		}
 
-		public void setN(List<Entry<String, String>> n) {
+		public void setN(List<Map.Entry<String, String>> n) {
 			this.n = n;
 		}
 

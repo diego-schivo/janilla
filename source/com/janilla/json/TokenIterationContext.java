@@ -27,7 +27,7 @@ package com.janilla.json;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.Map;
 
 public abstract class TokenIterationContext {
 
@@ -60,7 +60,7 @@ public abstract class TokenIterationContext {
 		return i;
 	}
 
-	public Iterator<JsonToken<?>> buildObjectIterator(Iterator<Entry<String, Object>> entries) {
+	public Iterator<JsonToken<?>> buildObjectIterator(Iterator<Map.Entry<String, Object>> entries) {
 		var i = new ObjectIterator();
 		i.setContext(this);
 		i.setEntries(entries);

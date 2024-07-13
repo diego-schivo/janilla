@@ -22,35 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.http;
 
-import java.util.Arrays;
+public interface HttpHandler {
 
-enum FrameName {
-
-	DATA(0x00), HEADERS(0x01), PRIORITY(0x02), RST_STREAM(0x03), SETTINGS(0x04), PUSH_PROMISE(0x05), PING(0x06),
-	GOAWAY(0x07), WINDOW_UPDATE(0x08), CONTINUATION(0x09);
-
-	static FrameName[] array;
-
-	static {
-		var t = Arrays.stream(values()).mapToInt(FrameName::type).max().getAsInt();
-		array = new FrameName[t + 1];
-		for (var f : values())
-			array[f.type()] = f;
-	}
-
-	static FrameName of(int type) {
-		return 0 <= type && type < array.length ? array[type] : null;
-	}
-
-	int type;
-
-	FrameName(int type) {
-		this.type = type;
-	}
-
-	int type() {
-		return type;
-	}
+	boolean handle(HttpExchange exchange);
 }

@@ -24,9 +24,14 @@
  */
 package com.janilla.util;
 
+import java.nio.ByteBuffer;
 import java.util.function.IntConsumer;
 
 public class BitsConsumer implements IntConsumer {
+	
+	public static BitsConsumer of(ByteBuffer buffer) {
+		return new BitsConsumer(x -> buffer.put((byte) x));
+	}
 
 	IntConsumer bytes;
 

@@ -28,10 +28,9 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 
-public class EntryList<K, V> extends ArrayList<Entry<K, V>> {
+public class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
 
 	public static void main(String[] args) {
 		var l = new EntryList<String, String>();

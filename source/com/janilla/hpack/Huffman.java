@@ -24,10 +24,11 @@
  */
 package com.janilla.hpack;
 
-import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
+import com.janilla.io.IO;
 import com.janilla.util.BitsConsumer;
 import com.janilla.util.BitsIterator;
 import com.janilla.util.Util;
@@ -38,19 +39,20 @@ public class Huffman {
 
 	public static void main(String[] args) {
 		var s1 = "www.example.com";
-		var baos = new ByteArrayOutputStream();
-		var bw = new BitsConsumer(baos::write);
-		encode(s1, bw);
-		var bb = baos.toByteArray();
-		var h = Util.toHexString(IntStream.range(0, bb.length).map(x -> Byte.toUnsignedInt(bb[x])));
+		var bb = ByteBuffer.allocate(100);
+		encode(s1, bb);
+		bb.flip();
+		var h = Util.toHexString(IO.toIntStream(bb));
 		System.out.println("h=" + h);
 		assert h.equals("f1e3 c2e5 f23a 6ba0 ab90 f4ff") : h;
-		var s2 = decode(new BitsIterator(Util.parseHex(h).iterator()), bb.length);
+		bb.position(0);
+		var s2 = decode(bb);
 		System.out.println("s2=" + s2);
 		assert s2.equals(s1) : s2;
 	}
 
-	static void encode(String string, BitsConsumer bits) {
+	static void encode(String string, ByteBuffer buffer) {
+		var bc = BitsConsumer.of(buffer);
 		IntStream.concat(string.chars(), IntStream.of(256)).forEach(new IntConsumer() {
 
 			int totalBitLength;
@@ -64,21 +66,22 @@ public class Huffman {
 					if (bl == 8)
 						return;
 				}
-				bits.accept(r.code(), bl);
+				bc.accept(r.code(), bl);
 				totalBitLength += bl;
 			}
 		});
 	}
 
-	static String decode(BitsIterator bits, int byteLength) {
+	static String decode(ByteBuffer buffer) {
 		var k = 0;
 		var kl = 0;
-		var t = byteLength << 3;
+		var t = buffer.remaining() << 3;
+		var bi = BitsIterator.of(buffer);
 		var b = new StringBuilder();
 		while (t > 0) {
 			var d = table.maxBitLength() - kl;
 			var l = Math.min(d, t - kl);
-			var i = bits.nextInt(l);
+			var i = bi.nextInt(l);
 			k = (k << l) | i;
 			kl += l;
 			var r = table.row(k << (d - l));

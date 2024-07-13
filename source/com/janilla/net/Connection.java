@@ -24,33 +24,34 @@
  */
 package com.janilla.net;
 
+import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 
 public abstract class Connection {
 
 	private int number;
 
-	private SocketChannel channel;
+	private SocketChannel socketChannel;
 
-	private SSLByteChannel sslChannel;
+	private ByteChannel applicationChannel;
 
-	protected Connection(int number, SocketChannel channel, SSLByteChannel sslChannel) {
+	int r = -1;
+
+	protected Connection(int number, SocketChannel socketChannel, ByteChannel applicationChannel) {
 		this.number = number;
-		this.channel = channel;
-		this.sslChannel = sslChannel;
+		this.socketChannel = socketChannel;
+		this.applicationChannel = applicationChannel;
 	}
 
-	public int getNumber() {
+	public int number() {
 		return number;
 	}
 
-	public SocketChannel channel() {
-		return channel;
+	public SocketChannel socketChannel() {
+		return socketChannel;
 	}
 
-	public SSLByteChannel sslChannel() {
-		return sslChannel;
+	public ByteChannel applicationChannel() {
+		return applicationChannel;
 	}
-
-//	public abstract Exchange newExchange();
 }

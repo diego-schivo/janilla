@@ -64,10 +64,14 @@ public class Mail {
 			var k = Path.of(System.getProperty("user.home"))
 					.resolve("Downloads/jssesamples/samples/sslengine/testkeys");
 			var p = "passphrase".toCharArray();
-			var x = Net.getSSLContext(k, p);
-			s.setSslContext(x);
+			try (var is = Files.newInputStream(k)) {
+				var x = Net.getSSLContext("JKS", is, p);
+				s.setSslContext(x);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
-		s.setHandler(new StubHandler());
+//		s.setHandler(new StubHandler());
 		new Thread(s::run, "Server").start();
 
 		synchronized (s) {
@@ -87,8 +91,12 @@ public class Mail {
 			var k = Path.of(System.getProperty("user.home"))
 					.resolve("Downloads/jssesamples/samples/sslengine/testkeys");
 			var p = "passphrase".toCharArray();
-			var x = Net.getSSLContext(k, p);
-			m.setSslContext(x);
+			try (var is = Files.newInputStream(k)) {
+				var x = Net.getSSLContext("JKS", is, p);
+				m.setSslContext(x);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
 //		try {
 //			var x = SSLContext.getInstance("TLSv1.3");

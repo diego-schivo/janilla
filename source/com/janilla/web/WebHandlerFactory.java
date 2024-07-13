@@ -25,9 +25,9 @@
 package com.janilla.web;
 
 import com.janilla.http.HttpExchange;
-import com.janilla.net.Server;
+import com.janilla.http.HttpHandler;
 
 public interface WebHandlerFactory {
 
-	Server.Handler createHandler(Object object, HttpExchange exchange);
+	HttpHandler createHandler(Object object, HttpExchange exchange);
 }

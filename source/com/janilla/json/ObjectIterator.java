@@ -25,22 +25,22 @@
 package com.janilla.json;
 
 import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class ObjectIterator extends TokenIterator {
 
-	protected Iterator<Entry<String, Object>> entries;
+	protected Iterator<Map.Entry<String, Object>> entries;
 
 	int state;
 
 	JsonToken<?> token;
 
-	Entry<String, Object> entry;
+	Map.Entry<String, Object> entry;
 
 	Iterator<JsonToken<?>> iterator;
 
-	public void setEntries(Iterator<Entry<String, Object>> entries) {
+	public void setEntries(Iterator<Map.Entry<String, Object>> entries) {
 		this.entries = entries;
 	}
 

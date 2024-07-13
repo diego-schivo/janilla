@@ -31,8 +31,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 
-import com.janilla.io.Transaction.Range;
-
 public class TransactionalByteChannel extends FilterSeekableByteChannel {
 
 	public static void main(String[] args) throws Exception {
@@ -136,7 +134,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 	public int write(ByteBuffer src) throws IOException {
 		if (src.remaining() > 0) {
 			var p = channel.position();
-			var i = transaction.include(new Range(p, p + src.remaining()));
+			var i = transaction.include(new Transaction.Range(p, p + src.remaining()));
 			if (i != null) {
 				var l = (int) (i.end() - i.start());
 				var b = ByteBuffer.allocate(8 + 4 + Math.abs(l));

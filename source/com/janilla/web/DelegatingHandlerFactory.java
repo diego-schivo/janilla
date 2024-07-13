@@ -27,7 +27,7 @@ package com.janilla.web;
 import java.util.function.BiFunction;
 
 import com.janilla.http.HttpExchange;
-import com.janilla.net.Server;
+import com.janilla.http.HttpHandler;
 
 public class DelegatingHandlerFactory implements WebHandlerFactory {
 
@@ -110,18 +110,18 @@ public class DelegatingHandlerFactory implements WebHandlerFactory {
 //			}
 	}
 
-	BiFunction<Object, HttpExchange, Server.Handler> toHandler;
+	BiFunction<Object, HttpExchange, HttpHandler> toHandler;
 
-	public BiFunction<Object, HttpExchange, Server.Handler> getToHandler() {
+	public BiFunction<Object, HttpExchange, HttpHandler> getToHandler() {
 		return toHandler;
 	}
 
-	public void setToHandler(BiFunction<Object, HttpExchange, Server.Handler> toHandler) {
+	public void setToHandler(BiFunction<Object, HttpExchange, HttpHandler> toHandler) {
 		this.toHandler = toHandler;
 	}
 
 	@Override
-	public Server.Handler createHandler(Object object, HttpExchange exchange) {
+	public HttpHandler createHandler(Object object, HttpExchange exchange) {
 		return toHandler != null ? toHandler.apply(object, exchange) : null;
 	}
 }

@@ -24,5 +24,39 @@
  */
 package com.janilla.http2;
 
-record Setting(SettingName name, int value) {
+import java.util.Arrays;
+
+record Setting(Name name, int value) {
+
+	enum Name {
+
+		HEADER_TABLE_SIZE(0x01), ENABLE_PUSH(0x02), MAX_CONCURRENT_STREAMS(0x03), INITIAL_WINDOW_SIZE(0x04),
+		MAX_FRAME_SIZE(0x05), MAX_HEADER_LIST_SIZE(0x06);
+
+		static Name[] array;
+
+		static {
+			var i = Arrays.stream(values()).mapToInt(Name::identifier).max().getAsInt();
+			array = new Name[i + 1];
+			for (var s : values())
+				array[s.identifier()] = s;
+		}
+
+		static Name of(int identifier) {
+			return 0 <= identifier && identifier < array.length ? array[identifier] : null;
+		}
+
+		int identifier;
+
+		Name(int identifier) {
+			this.identifier = identifier;
+		}
+
+		int identifier() {
+			return identifier;
+		}
+	}
+
+	record Parameter(Name name, int value) {
+	}
 }

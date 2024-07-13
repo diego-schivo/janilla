@@ -41,10 +41,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
-import com.janilla.io.ElementHelper.SortOrder;
-import com.janilla.io.ElementHelper.TypeAndOrder;
 import com.janilla.util.Lazy;
 
 public class Index<K, V> {
@@ -62,20 +59,20 @@ public class Index<K, V> {
 						var u = m.getFreeBTree();
 						u.setOrder(o);
 						u.setChannel(c);
-						u.setRoot(BlockReference.read(c, 0));
-						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
+						u.setRoot(Memory.BlockReference.read(c, 0));
+						m.setAppendPosition(Math.max(2 * Memory.BlockReference.HELPER_LENGTH, c.size()));
 
 						t.setOrder(o);
 						t.setChannel(c);
 						t.setMemory(m);
-						t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+						t.setRoot(Memory.BlockReference.read(c, Memory.BlockReference.HELPER_LENGTH));
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
 				});
 				i.setKeyHelper(ElementHelper.STRING);
-				i.setValueHelper(ElementHelper.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
-						new TypeAndOrder(Long.class, SortOrder.DESCENDING)));
+				i.setValueHelper(ElementHelper.of(new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
+						new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
 				return i;
 			};
 
@@ -189,7 +186,7 @@ public class Index<K, V> {
 			ResultAndSize<R> r;
 		}
 		var t = btree.get();
-		var k = new KeyAndValues<K>(key, new BlockReference(-1, -1, 0), 0);
+		var k = new KeyAndValues<K>(key, new Memory.BlockReference(-1, -1, 0), 0);
 		var a = new A();
 		UnaryOperator<KeyAndValues<K>> o = i -> {
 			var u = new BTree<V>();
@@ -213,7 +210,7 @@ public class Index<K, V> {
 		return a.r != null ? a.r.result : null;
 	}
 
-	public record KeyAndValues<K>(K key, BlockReference root, long size) {
+	public record KeyAndValues<K>(K key, Memory.BlockReference root, long size) {
 
 		static <K> ElementHelper<KeyAndValues<K>> getHelper(ElementHelper<K> keyHelper) {
 			return new ElementHelper<>() {
@@ -221,7 +218,7 @@ public class Index<K, V> {
 				@Override
 				public byte[] getBytes(KeyAndValues<K> element) {
 					var b = keyHelper.getBytes(element.key());
-					var c = ByteBuffer.allocate(b.length + BlockReference.HELPER_LENGTH + 8);
+					var c = ByteBuffer.allocate(b.length + Memory.BlockReference.HELPER_LENGTH + 8);
 					c.put(b);
 					var r = element.root();
 					c.putLong(r.position());
@@ -232,7 +229,7 @@ public class Index<K, V> {
 
 				@Override
 				public int getLength(ByteBuffer buffer) {
-					return keyHelper.getLength(buffer) + BlockReference.HELPER_LENGTH + 8;
+					return keyHelper.getLength(buffer) + Memory.BlockReference.HELPER_LENGTH + 8;
 				}
 
 				@Override
@@ -241,7 +238,7 @@ public class Index<K, V> {
 					var p = buffer.getLong();
 					var c = buffer.getInt();
 					var s = buffer.getLong();
-					return new KeyAndValues<>(k, new BlockReference(-1, p, c), s);
+					return new KeyAndValues<>(k, new Memory.BlockReference(-1, p, c), s);
 				}
 
 				@Override

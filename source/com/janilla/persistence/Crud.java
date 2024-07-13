@@ -32,7 +32,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.function.Function;
@@ -42,7 +41,6 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.janilla.database.Database;
-import com.janilla.persistence.Persistence.IndexEntryGetter;
 import com.janilla.reflect.Reflection;
 
 public class Crud<E> {
@@ -55,7 +53,7 @@ public class Crud<E> {
 
 	protected Function<Object, E> parser;
 
-	protected Map<String, IndexEntryGetter> indexEntryGetters = new HashMap<>();
+	protected Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new HashMap<>();
 
 	protected boolean indexPresent;
 
@@ -110,7 +108,7 @@ public class Crud<E> {
 
 				E e;
 
-				Map<String, Entry<Object, Object>> m;
+				Map<String, Map.Entry<Object, Object>> m;
 			}
 			var a = new A();
 			ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
@@ -377,8 +375,8 @@ public class Crud<E> {
 		}, false);
 	}
 
-	protected Map<String, Entry<Object, Object>> getIndexMap(E entity, long id) {
-		var m = new HashMap<String, Entry<Object, Object>>();
+	protected Map<String, Map.Entry<Object, Object>> getIndexMap(E entity, long id) {
+		var m = new HashMap<String, Map.Entry<Object, Object>>();
 		for (var e : indexEntryGetters.entrySet()) {
 			var n = e.getKey();
 			var g = e.getValue();
@@ -392,11 +390,11 @@ public class Crud<E> {
 		return m;
 	}
 
-	protected Map<Object, Object> toMap(Entry<Object, Object> entry) {
+	protected Map<Object, Object> toMap(Map.Entry<Object, Object> entry) {
 		return toMap(entry, null);
 	}
 
-	protected Map<Object, Object> toMap(Entry<Object, Object> entry, Predicate<Object> predicate) {
+	protected Map<Object, Object> toMap(Map.Entry<Object, Object> entry, Predicate<Object> predicate) {
 		if (entry == null)
 			return null;
 		var k = entry.getKey();

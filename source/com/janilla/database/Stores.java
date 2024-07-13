@@ -36,8 +36,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.janilla.database.Memory.BlockReference;
-import com.janilla.database.Store.IdAndSize;
 import com.janilla.io.ElementHelper;
 import com.janilla.json.Json;
 import com.janilla.util.Lazy;
@@ -58,13 +56,13 @@ public class Stores {
 						var u = m.getFreeBTree();
 						u.setOrder(o);
 						u.setChannel(c);
-						u.setRoot(BlockReference.read(c, 0));
-						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
+						u.setRoot(Memory.BlockReference.read(c, 0));
+						m.setAppendPosition(Math.max(2 * Memory.BlockReference.HELPER_LENGTH, c.size()));
 
 						t.setOrder(o);
 						t.setChannel(c);
 						t.setMemory(m);
-						t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+						t.setRoot(Memory.BlockReference.read(c, Memory.BlockReference.HELPER_LENGTH));
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
@@ -125,13 +123,13 @@ public class Stores {
 	}
 
 	public void create(String name) {
-		btree.get().getOrAdd(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)));
+		btree.get().getOrAdd(new NameAndStore(name, new Memory.BlockReference(-1, -1, 0), new Store.IdAndSize(0, 0)));
 	}
 
 	public <E, R> R perform(String name, Function<Store<E>, R> operation) {
 		var t = btree.get();
 		var o = new Object[1];
-		t.get(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)), n -> {
+		t.get(new NameAndStore(name, new Memory.BlockReference(-1, -1, 0), new Store.IdAndSize(0, 0)), n -> {
 			var s = new Store<E>();
 			s.setInitializeBTree(u -> {
 				u.setOrder(t.getOrder());
@@ -151,14 +149,14 @@ public class Stores {
 		return r;
 	}
 
-	public record NameAndStore(String name, BlockReference root, IdAndSize idAndSize) {
+	public record NameAndStore(String name, Memory.BlockReference root, Store.IdAndSize idAndSize) {
 
 		static ElementHelper<NameAndStore> HELPER = new ElementHelper<>() {
 
 			@Override
 			public byte[] getBytes(NameAndStore element) {
 				var b = element.name().getBytes();
-				var c = ByteBuffer.allocate(4 + b.length + BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH);
+				var c = ByteBuffer.allocate(4 + b.length + Memory.BlockReference.HELPER_LENGTH + Store.IdAndSize.HELPER_LENGTH);
 				c.putInt(b.length);
 				c.put(b);
 				c.putLong(element.root.position());
@@ -170,7 +168,7 @@ public class Stores {
 
 			@Override
 			public int getLength(ByteBuffer buffer) {
-				return 4 + buffer.getInt(buffer.position()) + BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH;
+				return 4 + buffer.getInt(buffer.position()) + Memory.BlockReference.HELPER_LENGTH + Store.IdAndSize.HELPER_LENGTH;
 			}
 
 			@Override
@@ -181,7 +179,7 @@ public class Stores {
 				var c = buffer.getInt();
 				var i = Math.max(buffer.getLong(), 1);
 				var s = buffer.getLong();
-				return new NameAndStore(new String(b), new BlockReference(-1, p, c), new IdAndSize(i, s));
+				return new NameAndStore(new String(b), new Memory.BlockReference(-1, p, c), new Store.IdAndSize(i, s));
 			}
 
 			@Override

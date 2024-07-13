@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,8 +47,12 @@ public class SmtpClient implements AutoCloseable {
 			var k = Path.of(System.getProperty("user.home"))
 					.resolve("Downloads/jssesamples/samples/sslengine/testkeys");
 			var p = "passphrase".toCharArray();
-			var x = Net.getSSLContext(k, p);
-			s.setSslContext(x);
+			try (var is = Files.newInputStream(k)) {
+				var x = Net.getSSLContext("JKS", is, p);
+				s.setSslContext(x);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
 		new Thread(s::run, "Server").start();
 
@@ -67,8 +72,12 @@ public class SmtpClient implements AutoCloseable {
 				var k = Path.of(System.getProperty("user.home"))
 						.resolve("Downloads/jssesamples/samples/sslengine/testkeys");
 				var p = "passphrase".toCharArray();
-				var x = Net.getSSLContext(k, p);
-				c.setSslContext(x);
+				try (var is = Files.newInputStream(k)) {
+					var x = Net.getSSLContext("JKS", is, p);
+					c.setSslContext(x);
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			}
 			try {
 				var u = c.query(e -> {

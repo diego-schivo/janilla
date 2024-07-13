@@ -24,231 +24,232 @@
  */
 package com.janilla.http2;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.PrimitiveIterator;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Arrays;
+import java.util.List;
 
 import com.janilla.hpack.HeaderDecoder;
+import com.janilla.hpack.HeaderEncoder;
 import com.janilla.hpack.Representation;
-import com.janilla.io.IO;
-import com.janilla.util.BitsConsumer;
-import com.janilla.util.BitsIterator;
+import com.janilla.media.HeaderField;
 
-sealed interface Frame permits DataFrame, GoawayFrame, HeadersFrame, PriorityFrame, SettingsFrame, WindowUpdateFrame {
+sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Ping, Frame.Priority, Frame.RstStream,
+		Frame.Settings, Frame.WindowUpdate {
 
-	int streamIdentifier();
-
-	static void encode(Frame frame, WritableByteChannel channel) {
-		var baos = new ByteArrayOutputStream();
-		var bw = new BitsConsumer(baos::write);
-		FrameEncoder fe;
+	static void encode(Frame frame, ByteBuffer buffer) {
+		int pl;
 		switch (frame) {
-		case DataFrame x:
-			fe = new FrameEncoder(FrameName.DATA, bw);
-			fe.encodeLength(x.data().length);
-			fe.encodeType();
-			fe.encodeFlags(Stream.of(x.padded() ? Flag.PADDED : null, x.endStream() ? Flag.END_STREAM : null)
-					.filter(y -> y != null).collect(Collectors.toSet()));
-			fe.encodeReserved();
-			fe.encodeStreamIdentifier(x.streamIdentifier());
-			try {
-				baos.write(x.data());
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+		case Data x:
+			pl = x.data().length;
+			buffer.putShort((short) ((pl >>> 8) & 0xffff));
+			buffer.put((byte) pl);
+			buffer.put((byte) Name.DATA.type());
+			buffer.put((byte) ((x.padded() ? 0x08 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
+			buffer.putInt(x.streamIdentifier());
+			buffer.put(x.data());
 			break;
-		case GoawayFrame x:
-			break;
-		case HeadersFrame x:
-			fe = new FrameEncoder(FrameName.HEADERS, bw);
+		case Goaway x:
+			throw new RuntimeException();
+		case Headers x:
+			var p0 = buffer.position();
+			buffer.position(buffer.position() + 9);
+			var he = new HeaderEncoder();
 			for (var hf : x.fields()) {
 				switch (hf.name()) {
 				case ":method", ":scheme", ":status", "content-type":
-					fe.headerEncoder().encode(hf);
+					he.encode(hf, buffer);
 					break;
 				case "content-length":
-					fe.headerEncoder().encode(hf, false, Representation.NEVER_INDEXED);
+					he.encode(hf, buffer, false, Representation.NEVER_INDEXED);
 					break;
 				case "date":
-					fe.headerEncoder().encode(hf, true, Representation.NEVER_INDEXED);
+					he.encode(hf, buffer, true, Representation.NEVER_INDEXED);
 					break;
 				default:
-					fe.headerEncoder().encode(hf, true, Representation.WITHOUT_INDEXING);
+					he.encode(hf, buffer, true, Representation.WITHOUT_INDEXING);
 					break;
 				}
 			}
-			var p = baos.toByteArray();
-			baos.reset();
-			fe.encodeLength(p.length);
-			fe.encodeType();
-			fe.encodeFlags(Stream.of(x.endHeaders() ? Flag.END_HEADERS : null, x.endStream() ? Flag.END_STREAM : null)
-					.filter(y -> y != null).collect(Collectors.toSet()));
-			fe.encodeReserved();
-			fe.encodeStreamIdentifier(x.streamIdentifier());
-			try {
-				baos.write(p);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+			pl = buffer.position() - p0 - 9;
+			buffer.position(p0);
+			buffer.putShort((short) ((pl >>> 8) & 0xffff));
+			buffer.put((byte) pl);
+			buffer.put((byte) Name.HEADERS.type());
+			buffer.put((byte) ((x.endHeaders() ? 0x04 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
+			buffer.putInt(x.streamIdentifier());
+			buffer.position(buffer.position() + pl);
+			break;
+		case Ping x:
+			throw new RuntimeException();
+		case Priority x:
+			throw new RuntimeException();
+		case RstStream x:
+			throw new RuntimeException();
+		case Settings x:
+			pl = x.parameters().size() * (Short.BYTES + Integer.BYTES);
+			buffer.putShort((short) ((pl >>> 8) & 0xffff));
+			buffer.put((byte) pl);
+			buffer.put((byte) Name.SETTINGS.type());
+			buffer.put((byte) (x.ack() ? 0x01 : 0x00));
+			buffer.putInt(0);
+			for (var y : x.parameters()) {
+				buffer.putShort((short) y.name().identifier());
+				buffer.putInt(y.value());
 			}
 			break;
-		case PriorityFrame x:
+		case WindowUpdate x:
 			throw new RuntimeException();
-		case SettingsFrame x:
-			fe = new FrameEncoder(FrameName.SETTINGS, bw);
-			fe.encodeLength(x.parameters().size() * (Short.BYTES + Integer.BYTES));
-			fe.encodeType();
-			fe.encodeFlags(x.acknowledge() ? Set.of(Flag.ACK) : null);
-			fe.encodeReserved();
-			fe.encodeStreamIdentifier(0);
-			for (var e : x.parameters().entrySet())
-				fe.encodeSetting(new Setting(e.getKey(), e.getValue()));
-			break;
-		case WindowUpdateFrame x:
-			throw new RuntimeException();
-		}
-		try {
-			var bb = baos.toByteArray();
-//			System.out.println("bb=\n" + Util.toHexString(Util.toIntStream(bb)));
-			IO.write(bb, channel);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
 		}
 	}
 
-	static Frame decode(ReadableByteChannel channel, HeaderDecoder hd) {
-		var ii = IO.toIntStream(channel).iterator();
-//		if (!ii.hasNext())
-//			return null;
-		var br = new BitsIterator(ii);
-		var l = br.nextInt(24);
-//		System.out.println("l=" + l);
-		var t = FrameName.of(br.nextInt(8));
-//		System.out.println("t=" + t);
-		var ff = switch (t) {
-		case DATA -> Stream
-				.of(br.nextInt(4) != 0 ? null : null, br.nextInt(1) != 0 ? Flag.PADDED : null,
-						br.nextInt(2) != 0 ? null : null, br.nextInt(1) != 0 ? Flag.END_STREAM : null)
-				.filter(x -> x != null).collect(Collectors.toSet());
-		case GOAWAY -> {
-			br.nextInt();
-			yield Set.of();
-		}
-		case HEADERS -> Stream.of(br.nextInt(2) != 0 ? null : null, br.nextInt(1) != 0 ? Flag.PRIORITY : null,
-				br.nextInt(1) != 0 ? null : null, br.nextInt(1) != 0 ? Flag.PADDED : null,
-				br.nextInt(1) != 0 ? Flag.END_HEADERS : null, br.nextInt(1) != 0 ? null : null,
-				br.nextInt(1) != 0 ? Flag.END_STREAM : null).filter(x -> x != null).collect(Collectors.toSet());
-		case PRIORITY -> {
-			br.nextInt();
-			yield Set.of();
-		}
-		case SETTINGS -> Stream.of(br.nextInt(7) != 0 ? null : null, br.nextInt(1) != 0 ? Flag.ACK : null)
-				.filter(x -> x != null).collect(Collectors.toSet());
-		case WINDOW_UPDATE -> {
-			br.nextInt();
-			yield Set.of();
-		}
-		default -> throw new RuntimeException("t=" + t);
-		};
-//		System.out.println("ff=" + ff);
-		br.nextInt(1);
-		var si = br.nextInt(31);
-//		System.out.println("si=" + si);
-		return switch (t) {
+	static Frame decode(ByteBuffer buffer, HeaderDecoder hd) {
+		var aa = buffer.position();
+		var zz = buffer.limit();
+		var pl = (Short.toUnsignedInt(buffer.getShort()) << 8) | Byte.toUnsignedInt(buffer.get());
+		buffer.limit(aa + 9 + pl);
+
+//buffer.position(aa);
+//System.out.println(Util.toHexString(IO.toIntStream(buffer)));
+//buffer.position(aa + Short.BYTES + Byte.BYTES);
+
+//System.out.println("pl=" + pl);
+		var t0 = Byte.toUnsignedInt(buffer.get());
+		var t = Name.of(t0);
+		if (t == null)
+			System.out.println("t0=" + t0 + ", t=" + t);
+		var ff = Byte.toUnsignedInt(buffer.get());
+//System.out.println("ff=" + ff);
+		var si = buffer.getInt() & 0x8fffffff;
+//System.out.println("si=" + si);
+		var f = switch (t) {
 		case DATA -> {
-			var d = new byte[l];
-			try {
-				if (IO.read(channel, d) < d.length)
-					throw new RuntimeException();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-			yield new DataFrame(ff.contains(Flag.PADDED), ff.contains(Flag.END_STREAM), si, d);
+			var d = new byte[buffer.remaining()];
+			buffer.get(d);
+			yield new Data((ff & 0x08) != 0, (ff & 0x01) != 0, si, d);
 		}
 		case GOAWAY -> {
-			br.nextInt(1);
-			var lsi = br.nextInt(31);
-			var ec = br.nextInt(32);
-			var add = new byte[l - 2 * Integer.BYTES];
-			try {
-				if (IO.read(channel, add) < add.length)
-					throw new RuntimeException();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-			yield new GoawayFrame(lsi, ec, add);
+			var lsi = buffer.getInt() & 0x8fffffff;
+			var ec = buffer.getInt();
+			var add = new byte[buffer.remaining()];
+			buffer.get(add);
+			yield new Goaway(lsi, ec, add);
 		}
 		case HEADERS -> {
-			var p = ff.contains(Flag.PRIORITY);
+			var p = (ff & 0x20) != 0;
 			boolean e;
 			int sd, w;
 			if (p) {
-				e = br.nextInt(1) == 0x01;
-				sd = br.nextInt(31);
-				w = br.nextInt(8);
+				var i = buffer.getInt();
+				e = (i & 0x80000000) != 0;
+				sd = i & 0x7fffffff;
+				w = Byte.toUnsignedInt(buffer.get());
 			} else {
 				e = false;
 				sd = 0;
 				w = 0;
 			}
-			class LengthIntIterator implements PrimitiveIterator.OfInt {
-
-				PrimitiveIterator.OfInt iterator;
-
-				int length;
-
-				int count;
-
-				LengthIntIterator(PrimitiveIterator.OfInt iterator, int length) {
-					this.iterator = iterator;
-					this.length = length;
-				}
-
-				@Override
-				public boolean hasNext() {
-					return count < length && iterator.hasNext();
-				}
-
-				@Override
-				public int nextInt() {
-					var i = iterator.nextInt();
-					count++;
-					return i;
-				}
-			}
-			var br2 = new BitsIterator(new LengthIntIterator(ii, l - (p ? Integer.BYTES + Byte.BYTES : 0)));
 			hd.headerFields().clear();
-			while (br2.hasNext())
-				hd.decode(br2);
-			System.out.println("hd.headerFields=" + hd.headerFields());
-			yield new HeadersFrame(p, ff.contains(Flag.END_HEADERS), ff.contains(Flag.END_STREAM), si, e, sd, w,
-					new ArrayList<>(hd.headerFields()));
+			while (buffer.hasRemaining())
+				hd.decode(buffer);
+//	System.out.println("hd.headerFields=" + hd.headerFields());
+			yield new Headers(p, (ff & 0x04) != 0, (ff & 0x01) != 0, si, e, sd, w, new ArrayList<>(hd.headerFields()));
+		}
+		case PING -> {
+			var od = buffer.getLong();
+			yield new Ping((ff & 0x01) != 0, si, od);
 		}
 		case PRIORITY -> {
-			var e = br.nextInt(1) == 0x01;
-			var sd = br.nextInt(31);
-			var w = br.nextInt(8);
-			yield new PriorityFrame(si, e, sd, w);
+			var i = buffer.getInt();
+			var e = (i & 0xf0000000) != 0;
+			var sd = i & 0x8fffffff;
+			var w = Byte.toUnsignedInt(buffer.get());
+			yield new Priority(si, e, sd, w);
+		}
+		case RST_STREAM -> {
+			var ec = buffer.getInt();
+			yield new RstStream(si, ec);
 		}
 		case SETTINGS -> {
-			var a = ff.contains(Flag.ACK);
-			var pp = Stream.generate(() -> null).limit(l / (Short.BYTES + Integer.BYTES))
-					.collect(Collectors.toMap(x -> SettingName.of(br.nextInt(16)), x -> br.nextInt(32)));
-			yield new SettingsFrame(a, pp);
+			var pp = new ArrayList<Setting.Parameter>();
+			while (buffer.hasRemaining())
+				pp.add(new Setting.Parameter(Setting.Name.of(buffer.getShort()), buffer.getInt()));
+			yield new Settings((ff & 0x01) != 0, pp);
 		}
 		case WINDOW_UPDATE -> {
-			br.nextInt(1);
-			var wsi = br.nextInt(31);
-//			System.out.println("wsi=" + wsi);
-			yield new WindowUpdateFrame(si, wsi);
+			var wsi = buffer.getInt() & 0x8fffffff;
+//	System.out.println("wsi=" + wsi);
+			yield new WindowUpdate(si, wsi);
 		}
-		default -> throw new RuntimeException();
+		default -> throw new RuntimeException(t.name());
 		};
+		buffer.limit(zz);
+		return f;
+	}
+
+	int streamIdentifier();
+
+	enum Name {
+
+		DATA(0x00), HEADERS(0x01), PRIORITY(0x02), RST_STREAM(0x03), SETTINGS(0x04), PUSH_PROMISE(0x05), PING(0x06),
+		GOAWAY(0x07), WINDOW_UPDATE(0x08), CONTINUATION(0x09);
+
+		static Name[] array;
+
+		static {
+			var t = Arrays.stream(values()).mapToInt(Name::type).max().getAsInt();
+			array = new Name[t + 1];
+			for (var f : values())
+				array[f.type()] = f;
+		}
+
+		static Name of(int type) {
+			return 0 <= type && type < array.length ? array[type] : null;
+		}
+
+		int type;
+
+		Name(int type) {
+			this.type = type;
+		}
+
+		int type() {
+			return type;
+		}
+	}
+
+	record Data(boolean padded, boolean endStream, int streamIdentifier, byte[] data) implements Frame {
+	}
+
+	record Goaway(int lastStreamId, int errorCode, byte[] additionalDebugData) implements Frame {
+
+		@Override
+		public int streamIdentifier() {
+			return 0;
+		}
+	}
+
+	record Headers(boolean priority, boolean endHeaders, boolean endStream, int streamIdentifier, boolean exclusive,
+			int streamDependency, int weight, Iterable<HeaderField> fields) implements Frame {
+	}
+
+	record Ping(boolean ack, int streamIdentifier, Long opaqueData) implements Frame {
+	}
+
+	record Priority(int streamIdentifier, boolean exclusive, int streamDependency, int weight) implements Frame {
+	}
+
+	record RstStream(int streamIdentifier, int errorCode) implements Frame {
+	}
+
+	record Settings(boolean ack, List<Setting.Parameter> parameters) implements Frame {
+
+		@Override
+		public int streamIdentifier() {
+			return 0;
+		}
+	}
+
+	record WindowUpdate(int streamIdentifier, int windowSizeIncrement) implements Frame {
 	}
 }

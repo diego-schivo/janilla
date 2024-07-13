@@ -24,20 +24,16 @@
  */
 package com.janilla.hpack;
 
+import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
 import com.janilla.media.HeaderField;
-import com.janilla.util.BitsConsumer;
 
 public class HeaderEncoder {
 
-	BitsConsumer bits;
+	HeaderTable table = new HeaderTable();
 
-	HeaderTable table;
-
-	public HeaderEncoder(BitsConsumer bits) {
-		this.bits = bits;
-		table = new HeaderTable();
+	{
 		table.setDynamic(true);
 		table.setStartIndex(HeaderTable.STATIC.maxIndex() + 1);
 	}
@@ -46,38 +42,35 @@ public class HeaderEncoder {
 		return table;
 	}
 
-	public void encode(HeaderField header) {
-		encode(header, false);
+	public void encode(HeaderField header, ByteBuffer buffer) {
+		encode(header, buffer, false);
 	}
 
-	public void encode(HeaderField header, boolean huffman) {
-		encode(header, huffman, null);
+	public void encode(HeaderField header, ByteBuffer buffer, boolean huffman) {
+		encode(header, buffer, huffman, null);
 	}
 
-	public void encode(HeaderField header, boolean huffman, Representation representation) {
+	public void encode(HeaderField header, ByteBuffer buffer, boolean huffman, Representation representation) {
 		var ih = indexAndHeader(header);
 		var r = ih != null && ih.header().equals(header) ? Representation.INDEXED
 				: representation != null ? representation : Representation.WITH_INDEXING;
 		if (r == Representation.INDEXED) {
-			bits.accept(r.first() >>> r.prefix(), 8 - r.prefix());
-			Hpack.encodeInteger(ih.index(), r.prefix(), bits);
+			Hpack.encodeInteger(ih.index(), buffer, r.first(), r.prefix());
 			return;
 		}
 		if (ih != null) {
-			bits.accept(r.first() >>> r.prefix(), 8 - r.prefix());
-			Hpack.encodeInteger(ih.index(), r.prefix(), bits);
+			Hpack.encodeInteger(ih.index(), buffer, r.first(), r.prefix());
 		} else {
-			bits.accept(r.first());
-			Hpack.encodeString(header.name(), huffman, bits);
+			buffer.put(r.first());
+			Hpack.encodeString(header.name(), buffer, huffman);
 		}
-		Hpack.encodeString(header.value(), huffman, bits);
+		Hpack.encodeString(header.value(), buffer, huffman);
 		if (r != Representation.NEVER_INDEXED)
 			table.add(header);
 	}
 
-	public void encodeDynamicTableSizeUpdate(int maxSize) {
-		bits.accept(0x01, 3);
-		Hpack.encodeInteger(maxSize, 5, bits);
+	public void encodeDynamicTableSizeUpdate(int maxSize, ByteBuffer buffer) {
+		Hpack.encodeInteger(maxSize, buffer, (byte) 0x20, 5);
 	}
 
 	HeaderTable.IndexAndHeader indexAndHeader(HeaderField header) {

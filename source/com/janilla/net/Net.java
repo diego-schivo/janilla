@@ -25,13 +25,12 @@
 package com.janilla.net;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.AbstractMap;
@@ -68,18 +67,14 @@ public interface Net {
 				: null;
 	}
 
-	static SSLContext getSSLContext(Path keystore, char[] password) {
+	static SSLContext getSSLContext(String type, InputStream stream, char[] password) {
 		try {
-			var s = KeyStore
-					.getInstance(keystore.getFileName().toString().toLowerCase().endsWith(".p12") ? "PKCS12" : "JKS");
-			s.load(Files.newInputStream(keystore), password);
-
+			var s = KeyStore.getInstance(type);
+			s.load(stream, password);
 			var k = KeyManagerFactory.getInstance("SunX509");
 			k.init(s, password);
 			var t = TrustManagerFactory.getInstance("SunX509");
 			t.init(s);
-
-//			var c = SSLContext.getInstance("TLSv1.2");
 			var c = SSLContext.getInstance("TLSv1.3");
 			c.init(k.getKeyManagers(), t.getTrustManagers(), null);
 			return c;

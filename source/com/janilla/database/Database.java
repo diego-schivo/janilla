@@ -38,10 +38,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
-import com.janilla.io.ElementHelper.SortOrder;
-import com.janilla.io.ElementHelper.TypeAndOrder;
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.json.Json;
 import com.janilla.util.Lazy;
@@ -62,14 +59,14 @@ public class Database {
 					var u = m.getFreeBTree();
 					u.setOrder(o);
 					u.setChannel(c);
-					u.setRoot(BlockReference.read(c, 0));
-					m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, c.size()));
+					u.setRoot(Memory.BlockReference.read(c, 0));
+					m.setAppendPosition(Math.max(3 * Memory.BlockReference.HELPER_LENGTH, c.size()));
 
 					d.setBTreeOrder(o);
 					d.setChannel(c);
 					d.setMemory(m);
-					d.setStoresRoot(BlockReference.HELPER_LENGTH);
-					d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
+					d.setStoresRoot(Memory.BlockReference.HELPER_LENGTH);
+					d.setIndexesRoot(2 * Memory.BlockReference.HELPER_LENGTH);
 					d.setInitializeStore((n, s) -> {
 						@SuppressWarnings("unchecked")
 						var t = (Store<String>) s;
@@ -79,8 +76,9 @@ public class Database {
 						@SuppressWarnings("unchecked")
 						var k = (Index<String, Object[]>) i;
 						k.setKeyHelper(ElementHelper.STRING);
-						k.setValueHelper(ElementHelper.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
-								new TypeAndOrder(Long.class, SortOrder.DESCENDING)));
+						k.setValueHelper(ElementHelper.of(
+								new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
+								new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
 					});
 					return d;
 				} catch (IOException e) {
@@ -157,7 +155,7 @@ public class Database {
 				t.setOrder(btreeOrder);
 				t.setChannel(channel);
 				t.setMemory(memory);
-				t.setRoot(BlockReference.read(channel, storesRoot));
+				t.setRoot(Memory.BlockReference.read(channel, storesRoot));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -173,7 +171,7 @@ public class Database {
 				t.setOrder(btreeOrder);
 				t.setChannel(channel);
 				t.setMemory(memory);
-				t.setRoot(BlockReference.read(channel, indexesRoot));
+				t.setRoot(Memory.BlockReference.read(channel, indexesRoot));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

@@ -64,7 +64,7 @@
 //			assert t.equals("name=Joe%20User&request=Send%20me%20one%20of%20your%20catalogue") : t;
 //			var rs = exchange.getResponse();
 //			rs.setStatus(HttpResponse.Status.of(200));
-//			rs.setHeaders(List.of(new HttpHeader("Content-Type", "text/plain"),
+//			rs.setHeaders(List.of(new HttpHeader("content-type", "text/plain"),
 //					new HttpHeader("Transfer-Encoding", "chunked")));
 //			try {
 //				((OutputStream) rs.getBody()).write("""
@@ -107,8 +107,8 @@
 //						rq.setMethod(new HttpRequest.Method("POST"));
 //						rq.setUri(URI.create("/contact_form.php"));
 //						rq.setHeaders(List.of(new HttpHeader("Host", "developer.mozilla.org"),
-//								new HttpHeader("Content-Length", "63"),
-//								new HttpHeader("Content-Type", "application/x-www-form-urlencoded")));
+//								new HttpHeader("content-length", "63"),
+//								new HttpHeader("content-type", "application/x-www-form-urlencoded")));
 //						try {
 //							((OutputStream) rq.getBody()).write(
 //									"name=Joe%20User&request=Send%20me%20one%20of%20your%20catalogue".getBytes());

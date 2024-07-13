@@ -244,23 +244,33 @@ public abstract class IO {
 		}
 	}
 
+	public static IntStream toIntStream(ByteBuffer buffer) {
+		return IntStream.generate(() -> buffer.hasRemaining() ? Byte.toUnsignedInt(buffer.get()) : -1)
+				.takeWhile(x -> x != -1);
+	}
+
 	public static IntStream toIntStream(ReadableByteChannel channel) {
-		var bb = ByteBuffer.allocate(1);
+		var bb = ByteBuffer.wrap(new byte[1]);
 		return IntStream.generate(() -> {
 			try {
-				bb.position(0);
-				for (;;) {
-					var r = channel.read(bb);
-					if (r > 0)
-						return Byte.toUnsignedInt(bb.get(0));
-					if (r < 0)
-						return r;
-				}
+//				bb.position(0);
+//				for (;;) {
+//					var r = channel.read(bb);
+//					if (r > 0)
+//						return Byte.toUnsignedInt(bb.get(0));
+//					if (r < 0)
+//						return r;
+//				}
 //				return channel.read(bb) > 0 ? Byte.toUnsignedInt(bb.get(0)) : -1;
+				return switch (channel.read(bb)) {
+				case 0 -> -2;
+				case -1 -> -1;
+				default -> bb.get(0);
+				};
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-		}).takeWhile(x -> x >= 0);
+		}); // .takeWhile(x -> x != -1);
 	}
 
 	public static ReadableByteChannel toReadableByteChannel(ByteBuffer buffer) {

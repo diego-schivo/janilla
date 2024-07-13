@@ -24,9 +24,11 @@
  */
 package com.janilla.web;
 
+import java.util.ArrayList;
+
 import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpHandler;
 import com.janilla.media.HeaderField;
-import com.janilla.net.Server;
 
 public class ExceptionHandlerFactory implements WebHandlerFactory {
 
@@ -62,7 +64,7 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 	}
 
 	@Override
-	public Server.Handler createHandler(Object object, HttpExchange exchange) {
+	public HttpHandler createHandler(Object object, HttpExchange exchange) {
 		if (object instanceof Exception e) {
 			var f = e.getClass().getAnnotation(Error.class);
 			return c -> handle(f, (HttpExchange) c);
@@ -79,7 +81,9 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 
 		rs.setStatus(s);
 		var hh = rs.getHeaders();
-		hh.add(new HeaderField("Cache-Control", "no-cache"));
+		if (hh == null)
+			rs.setHeaders(hh = new ArrayList<>());
+		hh.add(new HeaderField("cache-control", "no-cache"));
 		return true;
 	}
 }

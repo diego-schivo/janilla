@@ -27,8 +27,6 @@ package com.janilla.json;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.janilla.json.JsonToken.Type;
-
 public class BooleanIterator implements Iterator<JsonToken<?>> {
 
 	protected Boolean value;
@@ -47,7 +45,7 @@ public class BooleanIterator implements Iterator<JsonToken<?>> {
 			var s = state;
 			state = switch (s) {
 			case 0 -> {
-				token = new JsonToken<>(Type.BOOLEAN, value);
+				token = new JsonToken<>(JsonToken.Type.BOOLEAN, value);
 				yield 1;
 			}
 			default -> s;

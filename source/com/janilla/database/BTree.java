@@ -40,7 +40,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.janilla.database.Memory.BlockReference;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.IO;
 import com.janilla.io.TransactionalByteChannel;
@@ -66,15 +65,15 @@ public class BTree<E> {
 					var u = m.getFreeBTree();
 					u.setOrder(o);
 					u.setChannel(c);
-					u.setRoot(BlockReference.read(c, 0));
-					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, c.size()));
+					u.setRoot(Memory.BlockReference.read(c, 0));
+					m.setAppendPosition(Math.max(2 * Memory.BlockReference.HELPER_LENGTH, c.size()));
 
 					var t = new BTree<Integer>();
 					t.setOrder(o);
 					t.setChannel(c);
 					t.setMemory(m);
 					t.setHelper(ElementHelper.INTEGER);
-					t.setRoot(BlockReference.read(c, BlockReference.HELPER_LENGTH));
+					t.setRoot(Memory.BlockReference.read(c, Memory.BlockReference.HELPER_LENGTH));
 					return t;
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
@@ -124,7 +123,7 @@ public class BTree<E> {
 
 	private ElementHelper<E> helper;
 
-	private BlockReference root;
+	private Memory.BlockReference root;
 
 	public int getOrder() {
 		return order;
@@ -158,11 +157,11 @@ public class BTree<E> {
 		this.helper = elementHelper;
 	}
 
-	public BlockReference getRoot() {
+	public Memory.BlockReference getRoot() {
 		return root;
 	}
 
-	public void setRoot(BlockReference root) {
+	public void setRoot(Memory.BlockReference root) {
 		this.root = root;
 	}
 
@@ -173,7 +172,7 @@ public class BTree<E> {
 	public void add(E element, UnaryOperator<E> operator) {
 //		System.out.println("add element=" + element);
 
-		BlockReference r = root;
+		Memory.BlockReference r = root;
 		var n = new Node();
 		var l = new ArrayDeque<ElementReference>();
 		for (;;) {
@@ -197,7 +196,7 @@ public class BTree<E> {
 	public E get(E element, UnaryOperator<E> operator) {
 //		System.out.println("get element=" + element);
 
-		BlockReference r = root;
+		Memory.BlockReference r = root;
 		var n = new Node();
 		var l = new ArrayDeque<ElementReference>();
 		for (;;) {
@@ -221,7 +220,7 @@ public class BTree<E> {
 	public E getOrAdd(E element, UnaryOperator<E> operator) {
 //		System.out.println("getOrAdd element=" + element);
 
-		BlockReference r = root;
+		Memory.BlockReference r = root;
 		var n = new Node();
 		var l = new ArrayDeque<ElementReference>();
 		for (;;) {
@@ -243,7 +242,7 @@ public class BTree<E> {
 	public E remove(E element) {
 //		System.out.println("remove element=" + element);
 
-		BlockReference r = root;
+		Memory.BlockReference r = root;
 		var n = new Node();
 		var l = new ArrayDeque<ElementReference>();
 		for (;;) {
@@ -265,7 +264,7 @@ public class BTree<E> {
 		var n = new Node();
 		class A {
 
-			BlockReference r;
+			Memory.BlockReference r;
 
 			int i;
 		}
@@ -343,7 +342,7 @@ public class BTree<E> {
 
 	void add(E element, UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) {
 //		System.out.println("add element=" + element);
-		BlockReference r;
+		Memory.BlockReference r;
 		var e = element;
 		r = null;
 		E f = null;
@@ -372,7 +371,7 @@ public class BTree<E> {
 				var u = new Node();
 				{
 					u.reset();
-					u.setReference(stack.isEmpty() ? new BlockReference(-1, -1, 0) : node.reference);
+					u.setReference(stack.isEmpty() ? new Memory.BlockReference(-1, -1, 0) : node.reference);
 					var s = o;
 					if (i < o)
 						s--;
@@ -399,7 +398,7 @@ public class BTree<E> {
 				var v = new Node();
 				{
 					v.reset();
-					v.setReference(new BlockReference(-1, -1, 0));
+					v.setReference(new Memory.BlockReference(-1, -1, 0));
 					var s = order - 1 - o;
 					if (i > o)
 						s--;
@@ -466,7 +465,7 @@ public class BTree<E> {
 	}
 
 	E remove(Node node, Deque<ElementReference> stack) {
-		BlockReference r;
+		Memory.BlockReference r;
 		var a = stack.pop();
 		node.setReference(a.node);
 		node.reset();
@@ -575,7 +574,7 @@ public class BTree<E> {
 
 			var s = p.getSize();
 			if (stack.isEmpty() && s == 0) {
-				m.reference = new BlockReference(root.self(), m.reference.position(), m.reference.capacity());
+				m.reference = new Memory.BlockReference(root.self(), m.reference.position(), m.reference.capacity());
 				memory.free(root);
 				root = m.reference;
 			}
@@ -593,7 +592,7 @@ public class BTree<E> {
 		}
 	}
 
-	record ElementReference(BlockReference node, int index) {
+	record ElementReference(Memory.BlockReference node, int index) {
 	}
 
 	class Node {
@@ -602,11 +601,11 @@ public class BTree<E> {
 
 		boolean changed;
 
-		BlockReference reference;
+		Memory.BlockReference reference;
 
 		boolean referenceChanged;
 
-		void setReference(BlockReference reference) {
+		void setReference(Memory.BlockReference reference) {
 			this.reference = reference;
 			var c = reference != null ? reference.capacity() : 0;
 			if (c > (buffer != null ? buffer.capacity() : 0))
@@ -617,7 +616,7 @@ public class BTree<E> {
 		int getSize() {
 			if (buffer == null)
 				return 0;
-			var p = 2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH;
+			var p = 2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH;
 			buffer.position(p);
 			var s = 0;
 			while (buffer.hasRemaining()) {
@@ -636,14 +635,14 @@ public class BTree<E> {
 		void appendChildren(Node source, int start, int length) {
 			if (length == 0)
 				return;
-			var l = (buffer != null ? buffer.limit() : 2 * 4) + length * BlockReference.HELPER_LENGTH;
+			var l = (buffer != null ? buffer.limit() : 2 * 4) + length * Memory.BlockReference.HELPER_LENGTH;
 			resize(l);
-			var p = 2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH;
+			var p = 2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH;
 			if (p < buffer.limit())
-				System.arraycopy(buffer.array(), p, buffer.array(), p + length * BlockReference.HELPER_LENGTH,
+				System.arraycopy(buffer.array(), p, buffer.array(), p + length * Memory.BlockReference.HELPER_LENGTH,
 						buffer.limit() - p);
-			System.arraycopy(source.buffer.array(), 2 * 4 + start * BlockReference.HELPER_LENGTH, buffer.array(), p,
-					length * BlockReference.HELPER_LENGTH);
+			System.arraycopy(source.buffer.array(), 2 * 4 + start * Memory.BlockReference.HELPER_LENGTH, buffer.array(), p,
+					length * Memory.BlockReference.HELPER_LENGTH);
 			buffer.limit(l);
 			buffer.putInt(0, buffer.limit());
 			buffer.putInt(4, buffer.getInt(4) + length);
@@ -653,7 +652,7 @@ public class BTree<E> {
 		void appendElements(Node source, int start, int length) {
 			if (length == 0)
 				return;
-			source.buffer.position(2 * 4 + source.buffer.getInt(4) * BlockReference.HELPER_LENGTH);
+			source.buffer.position(2 * 4 + source.buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
 			var i = 0;
 			var p0 = source.buffer.position();
 			while (source.buffer.hasRemaining()) {
@@ -674,13 +673,13 @@ public class BTree<E> {
 			changed = true;
 		}
 
-		BlockReference deleteChild(int index) {
-			var p = 2 * 4 + index * BlockReference.HELPER_LENGTH;
-			var r = new BlockReference(-1, buffer.getLong(p), buffer.getInt(p + 8));
-			var q = p + BlockReference.HELPER_LENGTH;
+		Memory.BlockReference deleteChild(int index) {
+			var p = 2 * 4 + index * Memory.BlockReference.HELPER_LENGTH;
+			var r = new Memory.BlockReference(-1, buffer.getLong(p), buffer.getInt(p + 8));
+			var q = p + Memory.BlockReference.HELPER_LENGTH;
 			if (q < buffer.limit())
 				System.arraycopy(buffer.array(), q, buffer.array(), p, buffer.limit() - q);
-			buffer.limit(buffer.limit() - BlockReference.HELPER_LENGTH);
+			buffer.limit(buffer.limit() - Memory.BlockReference.HELPER_LENGTH);
 			buffer.putInt(0, buffer.limit());
 			buffer.putInt(4, buffer.getInt(4) - 1);
 			changed = true;
@@ -688,7 +687,7 @@ public class BTree<E> {
 		}
 
 		E deleteElement(int index) {
-			buffer.position(2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH);
+			buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
 			for (var i = 0; i < index; i++)
 				buffer.position(buffer.position() + helper.getLength(buffer));
 			var p = buffer.position();
@@ -702,18 +701,18 @@ public class BTree<E> {
 			return e;
 		}
 
-		BlockReference getChild(int index) {
+		Memory.BlockReference getChild(int index) {
 			if (index < 0 || index >= (buffer != null ? buffer.getInt(4) : 0))
 				return null;
-			var p = 2 * 4 + index * BlockReference.HELPER_LENGTH;
-			var r = new BlockReference(reference.position() + p, buffer.getLong(p), buffer.getInt(p + 8));
+			var p = 2 * 4 + index * Memory.BlockReference.HELPER_LENGTH;
+			var r = new Memory.BlockReference(reference.position() + p, buffer.getLong(p), buffer.getInt(p + 8));
 			return r;
 		}
 
 		E getElement(int index) {
 			if (buffer == null)
 				return null;
-			buffer.position(2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH);
+			buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
 			var i = 0;
 			while (buffer.hasRemaining()) {
 				if (i == index)
@@ -727,7 +726,7 @@ public class BTree<E> {
 		int getIndex(E element) {
 			if (buffer == null)
 				return -1;
-			buffer.position(2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH);
+			buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
 			var i = 0;
 			while (buffer.hasRemaining()) {
 				var c = helper.compare(buffer, element);
@@ -741,12 +740,12 @@ public class BTree<E> {
 			return -i - 1;
 		}
 
-		void insertChild(int index, BlockReference child) {
-			var l = buffer.limit() + BlockReference.HELPER_LENGTH;
+		void insertChild(int index, Memory.BlockReference child) {
+			var l = buffer.limit() + Memory.BlockReference.HELPER_LENGTH;
 			resize(l);
-			var p = 2 * 4 + index * BlockReference.HELPER_LENGTH;
+			var p = 2 * 4 + index * Memory.BlockReference.HELPER_LENGTH;
 			if (p < buffer.limit())
-				System.arraycopy(buffer.array(), p, buffer.array(), p + BlockReference.HELPER_LENGTH,
+				System.arraycopy(buffer.array(), p, buffer.array(), p + Memory.BlockReference.HELPER_LENGTH,
 						buffer.limit() - p);
 			buffer.limit(l);
 			buffer.putLong(p, child.position());
@@ -761,7 +760,7 @@ public class BTree<E> {
 			if (buffer == null && index == 0)
 				p = 2 * 4;
 			else {
-				buffer.position(2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH);
+				buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
 				for (var i = 0; i < index; i++)
 					buffer.position(buffer.position() + helper.getLength(buffer));
 				p = buffer.position();
@@ -797,15 +796,15 @@ public class BTree<E> {
 			}
 		}
 
-		void replaceChild(int index, BlockReference child) {
-			var p = 2 * 4 + index * BlockReference.HELPER_LENGTH;
+		void replaceChild(int index, Memory.BlockReference child) {
+			var p = 2 * 4 + index * Memory.BlockReference.HELPER_LENGTH;
 			buffer.putLong(p, child.position());
 			buffer.putInt(p + 8, child.capacity());
 			changed = true;
 		}
 
 		void replaceElement(int index, E element) {
-			buffer.position(2 * 4 + buffer.getInt(4) * BlockReference.HELPER_LENGTH);
+			buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
 			for (var i = 0; i < index; i++)
 				buffer.position(buffer.position() + helper.getLength(buffer));
 			var p = buffer.position();
@@ -838,7 +837,7 @@ public class BTree<E> {
 				if (r.capacity() > 0)
 					memory.free(r);
 				r = memory.allocate(length);
-				r = new BlockReference(reference.self(), r.position(), r.capacity());
+				r = new Memory.BlockReference(reference.self(), r.position(), r.capacity());
 				reference = r;
 				referenceChanged = true;
 			}
@@ -881,7 +880,7 @@ public class BTree<E> {
 				if (!referenceChanged)
 					return;
 				if (reference.self() >= 0)
-					BlockReference.write(reference, channel);
+					Memory.BlockReference.write(reference, channel);
 				referenceChanged = false;
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);

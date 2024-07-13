@@ -30,7 +30,6 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -222,7 +221,7 @@ public class Persistence {
 
 		Property sortGetter;
 
-		Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
+		Map.Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
 			var k = keyGetter != null ? keyGetter.apply(entity) : null;
 			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
 			return keyGetter == null || k != null ? new AbstractMap.SimpleEntry<>(k, v) : null;

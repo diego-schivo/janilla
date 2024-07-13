@@ -22,10 +22,31 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.http;
 
-import com.janilla.media.HeaderField;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
-record HeadersFrame(boolean priority, boolean endHeaders, boolean endStream, int streamIdentifier, boolean exclusive,
-		int streamDependency, int weight, Iterable<HeaderField> fields) implements Frame {
+import javax.net.ssl.SSLContext;
+
+import com.janilla.net.Connection;
+import com.janilla.net.Protocol;
+
+public class HttpProtocol implements Protocol {
+
+	protected SSLContext sslContext;
+
+	protected HttpHandler handler;
+
+	@Override
+	public Connection buildConnection(SocketChannel channel) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void handle(Connection connection, ByteBuffer bb1, ByteBuffer bb2) {
+		// TODO Auto-generated method stub
+
+	}
 }

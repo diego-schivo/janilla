@@ -27,8 +27,6 @@ package com.janilla.json;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.janilla.json.JsonToken.Type;
-
 public class NumberIterator implements Iterator<JsonToken<?>> {
 
 	protected Number number;
@@ -47,7 +45,7 @@ public class NumberIterator implements Iterator<JsonToken<?>> {
 			var s = state;
 			state = switch (s) {
 			case 0 -> {
-				token = new JsonToken<>(Type.NUMBER, number);
+				token = new JsonToken<>(JsonToken.Type.NUMBER, number);
 				yield 1;
 			}
 			default -> s;

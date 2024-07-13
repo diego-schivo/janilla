@@ -24,38 +24,34 @@
  */
 package com.janilla.http2;
 
-import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.List;
 import java.util.stream.IntStream;
 
-import javax.net.ssl.SSLEngine;
-
+import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpProtocol;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.io.IO;
 import com.janilla.media.HeaderField;
 import com.janilla.net.Connection;
-import com.janilla.net.Exchange;
-import com.janilla.net.Protocol;
 import com.janilla.net.SSLByteChannel;
-import com.janilla.util.Util;
 
-public class Http2Protocol implements Protocol {
+public class Http2Protocol extends HttpProtocol {
 
 	int connectionNumber;
 
 	@Override
-	public String name() {
-		return "h2";
-	}
-
-	@Override
-	public Connection buildConnection(SocketChannel channel, SSLEngine engine) {
-		return new Http2Connection(++connectionNumber, channel, new SSLByteChannel(channel, engine));
+	public Connection buildConnection(SocketChannel channel) {
+		var se = sslContext.createSSLEngine();
+		se.setUseClientMode(false);
+		var pp = se.getSSLParameters();
+		pp.setApplicationProtocols(new String[] { "h2" });
+		se.setSSLParameters(pp);
+		return new Http2Connection(++connectionNumber, channel, new SSLByteChannel(channel, se));
 	}
 
 	static String CLIENT_CONNECTION_PREFACE_PREFIX = """
@@ -66,119 +62,116 @@ public class Http2Protocol implements Protocol {
 			""";
 
 	@Override
-	public Exchange buildExchange(Connection connection) {
+	public void handle(Connection connection, ByteBuffer bb1, ByteBuffer bb2) {
 		var c = (Http2Connection) connection;
-		if (c.streams().isEmpty()) {
-			var s = new Stream(0, new ArrayList<>());
-			c.streams().add(s);
-
-			var bb = new byte[CLIENT_CONNECTION_PREFACE_PREFIX.length()];
-			String iccpp;
-			try {
-				iccpp = IO.read(c.sslChannel(), bb) == bb.length ? new String(bb) : null;
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+		if (!c.p1 && bb1.remaining() >= 24) {
+			var cc = new byte[24];
+			bb1.get(cc);
+			System.out.println(c.number() + " " + new String(cc));
+			c.p1 = true;
+		}
+		if (c.p1) {
+			var ff1 = new ArrayList<Frame>();
+			var ff2 = new ArrayList<Frame>();
+			while (bb1.remaining() >= 9) {
+				var pl1 = (int) bb1.getShort(bb1.position());
+				var pl2 = (int) bb1.get(bb1.position() + Short.BYTES);
+				var pl = (pl1 << 8) | pl2;
+				var fl = 9 + pl;
+				if (bb1.remaining() < fl)
+					break;
+				var f1 = Frame.decode(bb1, c.headerDecoder());
+				System.out.println(c.number() + " f1=" + f1);
+				ff1.add(f1);
 			}
-			System.err.println("iccpp=" + iccpp);
-
-			var isf1 = (SettingsFrame) Frame.decode(c.sslChannel(), c.headerDecoder());
-			System.err.println("isf1=" + isf1);
-			s.entries().add(new Stream.Entry(isf1, false));
-
-			var osf1 = new SettingsFrame(false, Map.of(SettingName.INITIAL_WINDOW_SIZE, 65535,
-					SettingName.HEADER_TABLE_SIZE, 4096, SettingName.MAX_FRAME_SIZE, 16384));
-			System.err.println("osf1=" + osf1);
-			Frame.encode(osf1, c.sslChannel());
-			s.entries().add(new Stream.Entry(osf1, true));
-
-			var osf2 = new SettingsFrame(true, Map.of());
-			System.err.println("osf2=" + osf2);
-			Frame.encode(osf2, c.sslChannel());
-			s.entries().add(new Stream.Entry(osf2, true));
-		} else {
-			var if1 = Frame.decode(c.sslChannel(), c.headerDecoder());
-			System.err.println("if1=" + if1);
-			if (if1 instanceof GoawayFrame x)
-				System.err.println(
-						"x.additionalDebugData()=\n" + Util.toHexString(Util.toIntStream(x.additionalDebugData())));
-			var s = c.streams().stream().filter(x -> x.identifier() == if1.streamIdentifier()).findFirst()
-					.orElseGet(() -> {
-						var x = new Stream(if1.streamIdentifier(), new ArrayList<>());
-						c.streams().add(x);
-						return x;
-					});
-			s.entries().add(new Stream.Entry(if1, false));
-			var es = (if1 instanceof HeadersFrame x && x.endStream()) || (if1 instanceof DataFrame y && y.endStream());
-			if (es) {
-				var ihf = (HeadersFrame) s.entries().stream()
-						.filter(x -> !x.output() && x.frame() instanceof HeadersFrame).findFirst()
-						.map(Stream.Entry::frame).get();
-				var idff = s.entries().stream().filter(x -> !x.output() && x.frame() instanceof DataFrame)
-						.map(x -> (DataFrame) x.frame()).toList();
-				String method = null, scheme = null, authority = null, path = null;
-				var hh = new ArrayList<HeaderField>();
-				for (var f : ihf.fields()) {
-					switch (f.name()) {
-					case ":method":
-						method = f.value();
-						break;
-					case ":scheme":
-						scheme = f.value();
-						break;
-					case ":authority":
-						authority = f.value();
-						break;
-					case ":path":
-						path = f.value();
-						break;
-					default:
-						hh.add(new HeaderField(f.name(), f.value()));
+			if (!c.p2) {
+				var f2 = new Frame.Settings(false,
+						List.of(new Setting.Parameter(Setting.Name.INITIAL_WINDOW_SIZE, 65535),
+								new Setting.Parameter(Setting.Name.HEADER_TABLE_SIZE, 4096),
+								new Setting.Parameter(Setting.Name.MAX_FRAME_SIZE, 16384)));
+				System.out.println(c.number() + " f2=" + f2);
+				Frame.encode(f2, bb2);
+				f2 = new Frame.Settings(true, List.of());
+				System.out.println(c.number() + " f2=" + f2);
+				ff2.add(f2);
+				c.p2 = true;
+			}
+			for (var f1 : ff1)
+				if (f1 instanceof Frame.Headers hf1) {
+					String method = null, scheme = null, authority = null, path = null;
+					var hh = new ArrayList<HeaderField>();
+					for (var y : hf1.fields()) {
+						switch (y.name()) {
+						case ":method":
+							method = y.value();
+							break;
+						case ":scheme":
+							scheme = y.value();
+							break;
+						case ":authority":
+							authority = y.value();
+							break;
+						case ":path":
+							path = y.value();
+							break;
+						default:
+							hh.add(y);
+						}
+					}
+					var rq = new HttpRequest();
+					rq.setMethod(method);
+					rq.setUri(URI.create(scheme + "://" + authority + path));
+					rq.setHeaders(hh);
+					System.out.println(c.number() + " rq=" + rq.getMethod() + " " + rq.getUri());
+					var rs = new HttpResponse();
+					var ex = createExchange(rq);
+					ex.setRequest(rq);
+					ex.setResponse(rs);
+					var k = true;
+					Exception e;
+					try {
+						k = handler.handle(ex);
+						e = null;
+					} catch (UncheckedIOException x) {
+						e = x.getCause();
+					} catch (Exception x) {
+						e = x;
+					}
+					if (e != null)
+						try {
+							e.printStackTrace();
+							ex.setException(e);
+							k = handler.handle(ex);
+						} catch (Exception x) {
+							k = false;
+						}
+					System.out.println(c.number() + " rs=" + rs.getStatus());
+					var hf2 = new Frame.Headers(false, true, rs.getBody() == null || rs.getBody().length == 0,
+							hf1.streamIdentifier(), false, 0, 0,
+							java.util.stream.Stream.concat(
+									java.util.stream.Stream
+											.of(new HeaderField(":status", String.valueOf(rs.getStatus()))),
+									rs.getHeaders() != null ? rs.getHeaders().stream()
+											: java.util.stream.Stream.empty())
+									.toList());
+					ff2.add(hf2);
+					if (rs.getBody() != null && rs.getBody().length > 0) {
+						var n = Math.ceilDiv(rs.getBody().length, 16384);
+						IntStream.range(0, n).mapToObj(x -> {
+							var bb = new byte[Math.min(16384, rs.getBody().length - x * 16384)];
+							System.arraycopy(rs.getBody(), x * 16384, bb, 0, bb.length);
+							return new Frame.Data(false, x == n - 1, hf1.streamIdentifier(), bb);
+						}).forEach(ff2::add);
 					}
 				}
-				var rq = new HttpRequest();
-				rq.setMethod(method);
-				rq.setUri(URI.create(scheme + "://" + authority + path));
-				rq.setHeaders(hh);
-				var p = new int[1];
-				rq.setBody(
-						idff.stream().reduce(new byte[idff.stream().mapToInt(x -> x.data().length).sum()], (x, y) -> {
-							System.arraycopy(y.data(), 0, x, p[0], y.data().length);
-							p[0] += y.data().length;
-							return x;
-						}, (x1, x2) -> x1));
-				var rs = new HttpResponse();
-				var ex = createExchange(rq);
-				ex.setRequest(rq);
-				ex.setResponse(rs);
-				ex.setCloser(() -> {
-					var ohf = new HeadersFrame(false, true, false, s.identifier(), false, 0, 0, java.util.stream.Stream
-							.concat(java.util.stream.Stream
-									.of(new HeaderField(":status", String.valueOf(rs.getStatus()))),
-									rs.getHeaders().stream()
-											.map(x -> new HeaderField(x.name(), x.value())))
-							.toList());
-					System.err.println("ohf=" + ohf);
-					Frame.encode(ohf, c.sslChannel());
-					s.entries().add(new Stream.Entry(ohf, true));
-					var n = Math.ceilDiv(rs.getBody().length, 16384);
-					var odff = IntStream.range(0, n).mapToObj(x -> {
-						var bb = new byte[Math.min(16384, rs.getBody().length - x * 16384)];
-						System.arraycopy(rs.getBody(), x * 16384, bb, 0, bb.length);
-						return new DataFrame(false, x == n - 1, s.identifier(), bb);
-					}).toList();
-					for (var odf : odff) {
-						System.err.println("odf=" + odf);
-						Frame.encode(odf, c.sslChannel());
-						s.entries().add(new Stream.Entry(odf, true));
-					}
-				});
-				return ex;
+			for (var f2 : ff2) {
+				System.out.println(c.number() + " f2=" + f2);
+				Frame.encode(f2, bb2);
 			}
 		}
-		return null;
 	}
 
-	protected Http2Exchange createExchange(HttpRequest request) {
-		return new Http2Exchange();
+	protected HttpExchange createExchange(HttpRequest request) {
+		return new HttpExchange();
 	}
 }

@@ -28,16 +28,16 @@ import java.util.Iterator;
 
 import com.janilla.frontend.RenderEngine;
 import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpHandler;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.media.HeaderField;
-import com.janilla.net.Server;
 
 public class JsonHandlerFactory implements WebHandlerFactory {
 
 	@Override
-	public Server.Handler createHandler(Object object, HttpExchange exchange) {
+	public HttpHandler createHandler(Object object, HttpExchange exchange) {
 		return object instanceof RenderEngine.Entry i ? x -> {
 			render(i.getValue(), (HttpExchange) x);
 			return true;
@@ -46,7 +46,7 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 
 	protected void render(Object object, HttpExchange exchange) {
 		var rs = exchange.getResponse();
-		rs.getHeaders().add(new HeaderField("Content-Type", "application/json"));
+		rs.getHeaders().add(new HeaderField("content-type", "application/json"));
 
 		var t = Json.format(buildJsonIterator(object, exchange));
 //		System.out.println("t=" + t);
@@ -58,7 +58,7 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 //			throw new UncheckedIOException(e);
 //		}
 		var bb = t.getBytes();
-		rs.getHeaders().add(new HeaderField("Content-Length", String.valueOf(bb.length)));
+		rs.getHeaders().add(new HeaderField("content-length", String.valueOf(bb.length)));
 //		try {
 //			((OutputStream) rs.getBody()).write(bb);
 //		} catch (IOException e) {

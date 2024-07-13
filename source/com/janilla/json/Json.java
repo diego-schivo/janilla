@@ -36,8 +36,6 @@ import java.util.stream.Collector;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
-import com.janilla.json.JsonToken.Boundary;
-
 public interface Json {
 
 	public static void main(String[] args) {
@@ -105,7 +103,7 @@ public interface Json {
 			public void accept(StringBuilder a, JsonToken<?> t) {
 				switch (t.type()) {
 				case OBJECT:
-					switch ((Boundary) t.data()) {
+					switch ((JsonToken.Boundary) t.data()) {
 					case START:
 						a.append('{');
 						break;
@@ -115,7 +113,7 @@ public interface Json {
 					}
 					break;
 				case ARRAY:
-					switch ((Boundary) t.data()) {
+					switch ((JsonToken.Boundary) t.data()) {
 					case START:
 						a.append('[');
 						break;
@@ -125,7 +123,7 @@ public interface Json {
 					}
 					break;
 				case MEMBER:
-					switch ((Boundary) t.data()) {
+					switch ((JsonToken.Boundary) t.data()) {
 					case START:
 						if (Objects.equals(previous, JsonToken.MEMBER_END))
 							a.append(',');
@@ -135,7 +133,7 @@ public interface Json {
 					}
 					break;
 				case ELEMENT:
-					switch ((Boundary) t.data()) {
+					switch ((JsonToken.Boundary) t.data()) {
 					case START:
 						if (Objects.equals(previous, JsonToken.ELEMENT_END))
 							a.append(',');
@@ -165,7 +163,7 @@ public interface Json {
 //			System.out.println("t=" + t);
 			switch (t.type()) {
 			case OBJECT:
-				switch ((Boundary) t.data()) {
+				switch ((JsonToken.Boundary) t.data()) {
 				case START:
 					a.add(new HashMap<String, Object>());
 					break;
@@ -174,7 +172,7 @@ public interface Json {
 				}
 				break;
 			case ARRAY:
-				switch ((Boundary) t.data()) {
+				switch ((JsonToken.Boundary) t.data()) {
 				case START:
 					a.add(new ArrayList<Object>());
 					break;
@@ -183,7 +181,7 @@ public interface Json {
 				}
 				break;
 			case MEMBER:
-				switch ((Boundary) t.data()) {
+				switch ((JsonToken.Boundary) t.data()) {
 				case END:
 					var v = a.remove(a.size() - 1);
 					var k = (String) a.remove(a.size() - 1);
@@ -196,7 +194,7 @@ public interface Json {
 				}
 				break;
 			case ELEMENT:
-				switch ((Boundary) t.data()) {
+				switch ((JsonToken.Boundary) t.data()) {
 				case END:
 					var e = a.remove(a.size() - 1);
 					@SuppressWarnings("unchecked")
