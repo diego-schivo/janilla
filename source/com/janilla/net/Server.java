@@ -60,14 +60,14 @@ public class Server {
 
 	protected void handle(SocketChannel channel) {
 		var c = protocol.buildConnection(channel);
-		System.out.println("serve, c=" + c.number());
+//		System.out.println("serve, c=" + c.number());
 		for (;;) {
-			System.out.println("handle, c=" + c.number());
+//			System.out.println("handle, c=" + c.number());
 			try {
 				protocol.handle(c);
 			} catch (Exception e) {
 				e.printStackTrace();
-				System.out.println("handle, connection=" + c.number());
+//				System.out.println("handle, connection=" + c.number());
 				throw new RuntimeException(e);
 			}
 		}

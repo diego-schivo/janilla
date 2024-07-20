@@ -120,7 +120,7 @@ public class Http2Protocol extends HttpProtocol {
 					rq.setMethod(method);
 					rq.setUri(URI.create(scheme + "://" + authority + path));
 					rq.setHeaders(hh);
-					System.out.println(c.number() + " rq=" + rq.getMethod() + " " + rq.getUri());
+//					System.out.println(c.number() + " rq=" + rq.getMethod() + " " + rq.getUri());
 					var rs = new HttpResponse();
 					var ex = createExchange(rq);
 					ex.setRequest(rq);
@@ -143,7 +143,7 @@ public class Http2Protocol extends HttpProtocol {
 						} catch (Exception x) {
 							k = false;
 						}
-					System.out.println(c.number() + " rs=" + rs.getStatus());
+//					System.out.println(c.number() + " rs=" + rs.getStatus());
 					var hf2 = new Frame.Headers(false, true, rs.getBody() == null || rs.getBody().length == 0,
 							hf1.streamIdentifier(), false, 0, 0,
 							java.util.stream.Stream.concat(
