@@ -35,8 +35,6 @@ public abstract class Connection {
 
 	private ByteChannel applicationChannel;
 
-	int r = -1;
-
 	protected Connection(int number, SocketChannel socketChannel, ByteChannel applicationChannel) {
 		this.number = number;
 		this.socketChannel = socketChannel;

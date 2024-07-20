@@ -24,11 +24,12 @@
  */
 package com.janilla.hpack;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PrimitiveIterator;
 
 import com.janilla.media.HeaderField;
+import com.janilla.util.Util;
 
 public class HeaderDecoder {
 
@@ -56,53 +57,54 @@ public class HeaderDecoder {
 		return headerFields;
 	}
 
-	public void decode(ByteBuffer buffer) {
-		var z = Byte.toUnsignedInt(buffer.get(buffer.position()));
+	public void decode(PrimitiveIterator.OfInt bytes) {
+		var z = bytes.nextInt();
+		bytes = Util.concat(z, bytes);
 		HeaderField h;
 		if ((z & 0x80) != 0) {
 //			System.out.println("r=" + Representation.INDEXED);
-			var i = Hpack.decodeInteger(buffer, 7);
+			var i = Hpack.decodeInteger(bytes, 7);
 			h = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
 		} else if ((z & 0x40) != 0) {
 //			System.out.println("r=" + Representation.WITH_INDEXING);
-			var i = Hpack.decodeInteger(buffer, 6);
+			var i = Hpack.decodeInteger(bytes, 6);
 			if (i != 0) {
 				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
-				var v = Hpack.decodeString(buffer);
+				var v = Hpack.decodeString(bytes);
 				h = new HeaderField(h0.name(), v);
 			} else {
-				var n = Hpack.decodeString(buffer);
-				var v = Hpack.decodeString(buffer);
+				var n = Hpack.decodeString(bytes);
+				var v = Hpack.decodeString(bytes);
 				h = new HeaderField(n, v);
 			}
 			table.add(h);
 		} else if ((z & 0x20) != 0) {
-			var s = Hpack.decodeInteger(buffer, 5);
+			var s = Hpack.decodeInteger(bytes, 5);
 			table.setMaxSize(s);
 			dynamicTableMaxSizes.add(s);
 			h = null;
 		} else if ((z & 0x10) != 0) {
 //			System.out.println("r=" + Representation.NEVER_INDEXED);
-			var i = Hpack.decodeInteger(buffer, 4);
+			var i = Hpack.decodeInteger(bytes, 4);
 			if (i != 0) {
 				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
-				var v = Hpack.decodeString(buffer);
+				var v = Hpack.decodeString(bytes);
 				h = new HeaderField(h0.name(), v);
 			} else {
-				var n = Hpack.decodeString(buffer);
-				var v = Hpack.decodeString(buffer);
+				var n = Hpack.decodeString(bytes);
+				var v = Hpack.decodeString(bytes);
 				h = new HeaderField(n, v);
 			}
 		} else {
 //			System.out.println("r=" + Representation.WITHOUT_INDEXING);
-			var i = Hpack.decodeInteger(buffer, 4);
+			var i = Hpack.decodeInteger(bytes, 4);
 			if (i != 0) {
 				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
-				var v = Hpack.decodeString(buffer);
+				var v = Hpack.decodeString(bytes);
 				h = new HeaderField(h0.name(), v);
 			} else {
-				var n = Hpack.decodeString(buffer);
-				var v = Hpack.decodeString(buffer);
+				var n = Hpack.decodeString(bytes);
+				var v = Hpack.decodeString(bytes);
 				h = new HeaderField(n, v);
 			}
 		}

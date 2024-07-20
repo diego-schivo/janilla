@@ -24,7 +24,7 @@
  */
 package com.janilla.hpack;
 
-import java.nio.ByteBuffer;
+import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
 import com.janilla.media.HeaderField;
@@ -42,35 +42,35 @@ public class HeaderEncoder {
 		return table;
 	}
 
-	public void encode(HeaderField header, ByteBuffer buffer) {
-		encode(header, buffer, false);
+	public int encode(HeaderField header, IntConsumer bytes) {
+		return encode(header, bytes, false);
 	}
 
-	public void encode(HeaderField header, ByteBuffer buffer, boolean huffman) {
-		encode(header, buffer, huffman, null);
+	public int encode(HeaderField header, IntConsumer bytes, boolean huffman) {
+		return encode(header, bytes, huffman, null);
 	}
 
-	public void encode(HeaderField header, ByteBuffer buffer, boolean huffman, Representation representation) {
+	public int encode(HeaderField header, IntConsumer bytes, boolean huffman, Representation representation) {
 		var ih = indexAndHeader(header);
 		var r = ih != null && ih.header().equals(header) ? Representation.INDEXED
 				: representation != null ? representation : Representation.WITH_INDEXING;
-		if (r == Representation.INDEXED) {
-			Hpack.encodeInteger(ih.index(), buffer, r.first(), r.prefix());
-			return;
-		}
+		if (r == Representation.INDEXED)
+			return Hpack.encodeInteger(ih.index(), bytes, r.first(), r.prefix());
+		int n;
 		if (ih != null) {
-			Hpack.encodeInteger(ih.index(), buffer, r.first(), r.prefix());
+			n = Hpack.encodeInteger(ih.index(), bytes, r.first(), r.prefix());
 		} else {
-			buffer.put(r.first());
-			Hpack.encodeString(header.name(), buffer, huffman);
+			bytes.accept(Byte.toUnsignedInt(r.first()));
+			n = 1 + Hpack.encodeString(header.name(), bytes, huffman);
 		}
-		Hpack.encodeString(header.value(), buffer, huffman);
+		n += Hpack.encodeString(header.value(), bytes, huffman);
 		if (r != Representation.NEVER_INDEXED)
 			table.add(header);
+		return n;
 	}
 
-	public void encodeDynamicTableSizeUpdate(int maxSize, ByteBuffer buffer) {
-		Hpack.encodeInteger(maxSize, buffer, (byte) 0x20, 5);
+	public void encodeDynamicTableSizeUpdate(int maxSize, IntConsumer bytes) {
+		Hpack.encodeInteger(maxSize, bytes, (byte) 0x20, 5);
 	}
 
 	HeaderTable.IndexAndHeader indexAndHeader(HeaderField header) {

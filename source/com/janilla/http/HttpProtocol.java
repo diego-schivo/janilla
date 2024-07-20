@@ -24,7 +24,6 @@
  */
 package com.janilla.http;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 import javax.net.ssl.SSLContext;
@@ -53,7 +52,7 @@ public class HttpProtocol implements Protocol {
 	}
 
 	@Override
-	public void handle(Connection connection, ByteBuffer bb1, ByteBuffer bb2) {
+	public void handle(Connection connection) {
 		// TODO Auto-generated method stub
 
 	}

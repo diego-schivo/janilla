@@ -24,17 +24,11 @@
  */
 package com.janilla.net;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public interface Protocol {
 
-//	String name();
-
-// 	Connection buildConnection(SocketChannel channel, SSLEngine engine);
 	Connection buildConnection(SocketChannel channel);
 
-//	Exchange buildExchange(Connection connection);
-	
-	void handle(Connection connection, ByteBuffer bb1, ByteBuffer bb2);
+	void handle(Connection connection);
 }

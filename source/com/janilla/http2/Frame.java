@@ -24,115 +24,142 @@
  */
 package com.janilla.http2;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import com.janilla.hpack.HeaderDecoder;
 import com.janilla.hpack.HeaderEncoder;
 import com.janilla.hpack.Representation;
+import com.janilla.io.IO;
 import com.janilla.media.HeaderField;
 
 sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Ping, Frame.Priority, Frame.RstStream,
 		Frame.Settings, Frame.WindowUpdate {
 
-	static void encode(Frame frame, ByteBuffer buffer) {
-		int pl;
-		switch (frame) {
-		case Data x:
-			pl = x.data().length;
-			buffer.putShort((short) ((pl >>> 8) & 0xffff));
-			buffer.put((byte) pl);
-			buffer.put((byte) Name.DATA.type());
-			buffer.put((byte) ((x.padded() ? 0x08 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
-			buffer.putInt(x.streamIdentifier());
-			buffer.put(x.data());
-			break;
-		case Goaway x:
-			throw new RuntimeException();
-		case Headers x:
-			var p0 = buffer.position();
-			buffer.position(buffer.position() + 9);
-			var he = new HeaderEncoder();
-			for (var hf : x.fields()) {
-				switch (hf.name()) {
-				case ":method", ":scheme", ":status", "content-type":
-					he.encode(hf, buffer);
-					break;
-				case "content-length":
-					he.encode(hf, buffer, false, Representation.NEVER_INDEXED);
-					break;
-				case "date":
-					he.encode(hf, buffer, true, Representation.NEVER_INDEXED);
-					break;
-				default:
-					he.encode(hf, buffer, true, Representation.WITHOUT_INDEXING);
-					break;
+	static void encode(Frame frame, WritableByteChannel channel) {
+		try {
+			int pl;
+			var bb = ByteBuffer.allocate(9);
+			switch (frame) {
+			case Data x:
+				pl = x.data().length;
+				bb.putShort((short) ((pl >>> 8) & 0xffff));
+				bb.put((byte) pl);
+				bb.put((byte) Name.DATA.type());
+				bb.put((byte) ((x.padded() ? 0x08 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
+				bb.putInt(x.streamIdentifier());
+				bb.flip();
+				channel.write(bb);
+				channel.write(ByteBuffer.wrap(x.data()));
+				break;
+			case Goaway x:
+				throw new RuntimeException();
+			case Headers x:
+				var he = new HeaderEncoder();
+				var ii = IntStream.builder();
+				pl = 0;
+				for (var hf : x.fields()) {
+					switch (hf.name()) {
+					case ":method", ":scheme", ":status", "content-type":
+						pl += he.encode(hf, ii);
+						break;
+					case "content-length":
+						pl += he.encode(hf, ii, false, Representation.NEVER_INDEXED);
+						break;
+					case "date":
+						pl += he.encode(hf, ii, true, Representation.NEVER_INDEXED);
+						break;
+					default:
+						pl += he.encode(hf, ii, true, Representation.WITHOUT_INDEXING);
+						break;
+					}
 				}
+				var i = ii.build().iterator();
+				var bb2 = new byte[pl];
+				for (var j = 0; j < pl; j++)
+					bb2[j] = (byte) i.nextInt();
+				bb.putShort((short) ((pl >>> 8) & 0xffff));
+				bb.put((byte) pl);
+				bb.put((byte) Name.HEADERS.type());
+				bb.put((byte) ((x.endHeaders() ? 0x04 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
+				bb.putInt(x.streamIdentifier());
+				bb.flip();
+				channel.write(bb);
+				channel.write(ByteBuffer.wrap(bb2));
+				break;
+			case Ping x:
+				throw new RuntimeException();
+			case Priority x:
+				throw new RuntimeException();
+			case RstStream x:
+				throw new RuntimeException();
+			case Settings x:
+				pl = x.parameters().size() * (Short.BYTES + Integer.BYTES);
+				bb.putShort((short) ((pl >>> 8) & 0xffff));
+				bb.put((byte) pl);
+				bb.put((byte) Name.SETTINGS.type());
+				bb.put((byte) (x.ack() ? 0x01 : 0x00));
+				bb.putInt(0);
+				bb.flip();
+				channel.write(bb);
+				bb = ByteBuffer.allocate(pl);
+				for (var y : x.parameters()) {
+					bb.putShort((short) y.name().identifier());
+					bb.putInt(y.value());
+				}
+				bb.flip();
+				channel.write(bb);
+				break;
+			case WindowUpdate x:
+				throw new RuntimeException();
 			}
-			pl = buffer.position() - p0 - 9;
-			buffer.position(p0);
-			buffer.putShort((short) ((pl >>> 8) & 0xffff));
-			buffer.put((byte) pl);
-			buffer.put((byte) Name.HEADERS.type());
-			buffer.put((byte) ((x.endHeaders() ? 0x04 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
-			buffer.putInt(x.streamIdentifier());
-			buffer.position(buffer.position() + pl);
-			break;
-		case Ping x:
-			throw new RuntimeException();
-		case Priority x:
-			throw new RuntimeException();
-		case RstStream x:
-			throw new RuntimeException();
-		case Settings x:
-			pl = x.parameters().size() * (Short.BYTES + Integer.BYTES);
-			buffer.putShort((short) ((pl >>> 8) & 0xffff));
-			buffer.put((byte) pl);
-			buffer.put((byte) Name.SETTINGS.type());
-			buffer.put((byte) (x.ack() ? 0x01 : 0x00));
-			buffer.putInt(0);
-			for (var y : x.parameters()) {
-				buffer.putShort((short) y.name().identifier());
-				buffer.putInt(y.value());
-			}
-			break;
-		case WindowUpdate x:
-			throw new RuntimeException();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 
-	static Frame decode(ByteBuffer buffer, HeaderDecoder hd) {
-		var aa = buffer.position();
-		var zz = buffer.limit();
-		var pl = (Short.toUnsignedInt(buffer.getShort()) << 8) | Byte.toUnsignedInt(buffer.get());
-		buffer.limit(aa + 9 + pl);
+	static Frame decode(ReadableByteChannel channel, HeaderDecoder hd) {
+		ByteBuffer bb1, bb2;
+		try {
+			bb1 = ByteBuffer.allocate(9);
+			channel.read(bb1);
+			bb1.flip();
+			var pl = (Short.toUnsignedInt(bb1.getShort()) << 8) | Byte.toUnsignedInt(bb1.get());
+			bb2 = ByteBuffer.allocate(pl);
+			channel.read(bb2);
+			bb2.flip();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 
-//buffer.position(aa);
-//System.out.println(Util.toHexString(IO.toIntStream(buffer)));
-//buffer.position(aa + Short.BYTES + Byte.BYTES);
+//		buffer.position(aa);
+//		System.out.println(Util.toHexString(IO.toIntStream(buffer)));
+//		buffer.position(aa + Short.BYTES + Byte.BYTES);
 
-//System.out.println("pl=" + pl);
-		var t0 = Byte.toUnsignedInt(buffer.get());
+//		System.out.println("pl=" + pl);
+		var t0 = Byte.toUnsignedInt(bb1.get());
 		var t = Name.of(t0);
 		if (t == null)
 			System.out.println("t0=" + t0 + ", t=" + t);
-		var ff = Byte.toUnsignedInt(buffer.get());
-//System.out.println("ff=" + ff);
-		var si = buffer.getInt() & 0x8fffffff;
-//System.out.println("si=" + si);
+		var ff = Byte.toUnsignedInt(bb1.get());
+//		System.out.println("ff=" + ff);
+		var si = bb1.getInt() & 0x8fffffff;
+//		System.out.println("si=" + si);
 		var f = switch (t) {
 		case DATA -> {
-			var d = new byte[buffer.remaining()];
-			buffer.get(d);
-			yield new Data((ff & 0x08) != 0, (ff & 0x01) != 0, si, d);
+			yield new Data((ff & 0x08) != 0, (ff & 0x01) != 0, si, bb2.array());
 		}
 		case GOAWAY -> {
-			var lsi = buffer.getInt() & 0x8fffffff;
-			var ec = buffer.getInt();
-			var add = new byte[buffer.remaining()];
-			buffer.get(add);
+			var lsi = bb2.getInt() & 0x8fffffff;
+			var ec = bb2.getInt();
+			var add = Arrays.copyOfRange(bb2.array(), bb2.position(), bb2.limit());
 			yield new Goaway(lsi, ec, add);
 		}
 		case HEADERS -> {
@@ -140,50 +167,50 @@ sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Pi
 			boolean e;
 			int sd, w;
 			if (p) {
-				var i = buffer.getInt();
+				var i = bb2.getInt();
 				e = (i & 0x80000000) != 0;
 				sd = i & 0x7fffffff;
-				w = Byte.toUnsignedInt(buffer.get());
+				w = Byte.toUnsignedInt(bb2.get());
 			} else {
 				e = false;
 				sd = 0;
 				w = 0;
 			}
 			hd.headerFields().clear();
-			while (buffer.hasRemaining())
-				hd.decode(buffer);
-//	System.out.println("hd.headerFields=" + hd.headerFields());
+			var ii = IO.toIntStream(bb2).iterator();
+			while (ii.hasNext())
+				hd.decode(ii);
+//			System.out.println("hd.headerFields=" + hd.headerFields());
 			yield new Headers(p, (ff & 0x04) != 0, (ff & 0x01) != 0, si, e, sd, w, new ArrayList<>(hd.headerFields()));
 		}
 		case PING -> {
-			var od = buffer.getLong();
+			var od = bb2.getLong();
 			yield new Ping((ff & 0x01) != 0, si, od);
 		}
 		case PRIORITY -> {
-			var i = buffer.getInt();
+			var i = bb2.getInt();
 			var e = (i & 0xf0000000) != 0;
 			var sd = i & 0x8fffffff;
-			var w = Byte.toUnsignedInt(buffer.get());
+			var w = Byte.toUnsignedInt(bb2.get());
 			yield new Priority(si, e, sd, w);
 		}
 		case RST_STREAM -> {
-			var ec = buffer.getInt();
+			var ec = bb2.getInt();
 			yield new RstStream(si, ec);
 		}
 		case SETTINGS -> {
 			var pp = new ArrayList<Setting.Parameter>();
-			while (buffer.hasRemaining())
-				pp.add(new Setting.Parameter(Setting.Name.of(buffer.getShort()), buffer.getInt()));
+			while (bb2.hasRemaining())
+				pp.add(new Setting.Parameter(Setting.Name.of(bb2.getShort()), bb2.getInt()));
 			yield new Settings((ff & 0x01) != 0, pp);
 		}
 		case WINDOW_UPDATE -> {
-			var wsi = buffer.getInt() & 0x8fffffff;
-//	System.out.println("wsi=" + wsi);
+			var wsi = bb2.getInt() & 0x8fffffff;
+//			System.out.println("wsi=" + wsi);
 			yield new WindowUpdate(si, wsi);
 		}
 		default -> throw new RuntimeException(t.name());
 		};
-		buffer.limit(zz);
 		return f;
 	}
 

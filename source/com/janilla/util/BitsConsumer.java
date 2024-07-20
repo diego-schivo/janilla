@@ -24,23 +24,24 @@
  */
 package com.janilla.util;
 
-import java.nio.ByteBuffer;
 import java.util.function.IntConsumer;
 
 public class BitsConsumer implements IntConsumer {
-	
-	public static BitsConsumer of(ByteBuffer buffer) {
-		return new BitsConsumer(x -> buffer.put((byte) x));
-	}
 
 	IntConsumer bytes;
 
 	long current;
 
 	int currentLength;
+	
+	int length;
 
 	public BitsConsumer(IntConsumer bytes) {
 		this.bytes = bytes;
+	}
+	
+	public int length() {
+		return length;
 	}
 
 	@Override
@@ -53,6 +54,7 @@ public class BitsConsumer implements IntConsumer {
 		var l = currentLength + bitsLength;
 		for (; l >= 8; l -= 8) {
 			bytes.accept((int) (current >>> (l - 8)));
+			length++;
 			current &= (1 << (l - 8)) - 1;
 		}
 		currentLength = l;

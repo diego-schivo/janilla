@@ -24,6 +24,7 @@
  */
 package com.janilla.http2;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -62,34 +63,33 @@ public class Http2Protocol extends HttpProtocol {
 			""";
 
 	@Override
-	public void handle(Connection connection, ByteBuffer bb1, ByteBuffer bb2) {
+	public void handle(Connection connection) {
 		var c = (Http2Connection) connection;
-		if (!c.p1 && bb1.remaining() >= 24) {
-			var cc = new byte[24];
-			bb1.get(cc);
+		var ac = c.applicationChannel();
+		if (!c.p1) {
+			var bb = ByteBuffer.allocate(24);
+			try {
+				ac.read(bb);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 //			System.out.println(c.number() + " " + new String(cc));
 			c.p1 = true;
 		}
 		if (c.p1) {
 			var ff1 = new ArrayList<Frame>();
-			var ff2 = new ArrayList<Frame>();
-			while (bb1.remaining() >= 9) {
-				var pl1 = (int) bb1.getShort(bb1.position());
-				var pl2 = (int) bb1.get(bb1.position() + Short.BYTES);
-				var pl = (pl1 << 8) | pl2;
-				var fl = 9 + pl;
-				if (bb1.remaining() < fl)
-					break;
-				var f1 = Frame.decode(bb1, c.headerDecoder());
+			{
+				var f1 = Frame.decode(ac, c.headerDecoder());
 //				System.out.println(c.number() + " f1=" + f1);
 				ff1.add(f1);
 			}
+			var ff2 = new ArrayList<Frame>();
 			if (!c.p2) {
 				var f2 = new Frame.Settings(false,
 						List.of(new Setting.Parameter(Setting.Name.INITIAL_WINDOW_SIZE, 65535),
 								new Setting.Parameter(Setting.Name.HEADER_TABLE_SIZE, 4096),
 								new Setting.Parameter(Setting.Name.MAX_FRAME_SIZE, 16384)));
-				Frame.encode(f2, bb2);
+				Frame.encode(f2, ac);
 				f2 = new Frame.Settings(true, List.of());
 				ff2.add(f2);
 				c.p2 = true;
@@ -164,7 +164,7 @@ public class Http2Protocol extends HttpProtocol {
 				}
 			for (var f2 : ff2) {
 //				System.out.println(c.number() + " f2=" + f2);
-				Frame.encode(f2, bb2);
+				Frame.encode(f2, ac);
 			}
 		}
 	}

@@ -24,16 +24,9 @@
  */
 package com.janilla.util;
 
-import java.nio.ByteBuffer;
 import java.util.PrimitiveIterator;
 
-import com.janilla.io.IO;
-
 public class BitsIterator implements PrimitiveIterator.OfInt {
-
-	public static BitsIterator of(ByteBuffer buffer) {
-		return new BitsIterator(IO.toIntStream(buffer).iterator());
-	}
 
 	PrimitiveIterator.OfInt bytes;
 
