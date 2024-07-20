@@ -77,12 +77,8 @@ public class Http2Protocol extends HttpProtocol {
 			c.p1 = true;
 		}
 		if (c.p1) {
-			var ff1 = new ArrayList<Frame>();
-			{
-				var f1 = Frame.decode(ac, c.headerDecoder());
-//				System.out.println(c.number() + " f1=" + f1);
-				ff1.add(f1);
-			}
+			var f1 = Frame.decode(ac, c.headerDecoder());
+//			System.out.println(c.number() + " f1=" + f1);
 			var ff2 = new ArrayList<Frame>();
 			if (!c.p2) {
 				var f2 = new Frame.Settings(false,
@@ -94,74 +90,71 @@ public class Http2Protocol extends HttpProtocol {
 				ff2.add(f2);
 				c.p2 = true;
 			}
-			for (var f1 : ff1)
-				if (f1 instanceof Frame.Headers hf1) {
-					String method = null, scheme = null, authority = null, path = null;
-					var hh = new ArrayList<HeaderField>();
-					for (var y : hf1.fields()) {
-						switch (y.name()) {
-						case ":method":
-							method = y.value();
-							break;
-						case ":scheme":
-							scheme = y.value();
-							break;
-						case ":authority":
-							authority = y.value();
-							break;
-						case ":path":
-							path = y.value();
-							break;
-						default:
-							hh.add(y);
-						}
-					}
-					var rq = new HttpRequest();
-					rq.setMethod(method);
-					rq.setUri(URI.create(scheme + "://" + authority + path));
-					rq.setHeaders(hh);
-//					System.out.println(c.number() + " rq=" + rq.getMethod() + " " + rq.getUri());
-					var rs = new HttpResponse();
-					var ex = createExchange(rq);
-					ex.setRequest(rq);
-					ex.setResponse(rs);
-					var k = true;
-					Exception e;
-					try {
-						k = handler.handle(ex);
-						e = null;
-					} catch (UncheckedIOException x) {
-						e = x.getCause();
-					} catch (Exception x) {
-						e = x;
-					}
-					if (e != null)
-						try {
-							e.printStackTrace();
-							ex.setException(e);
-							k = handler.handle(ex);
-						} catch (Exception x) {
-							k = false;
-						}
-//					System.out.println(c.number() + " rs=" + rs.getStatus());
-					var hf2 = new Frame.Headers(false, true, rs.getBody() == null || rs.getBody().length == 0,
-							hf1.streamIdentifier(), false, 0, 0,
-							java.util.stream.Stream.concat(
-									java.util.stream.Stream
-											.of(new HeaderField(":status", String.valueOf(rs.getStatus()))),
-									rs.getHeaders() != null ? rs.getHeaders().stream()
-											: java.util.stream.Stream.empty())
-									.toList());
-					ff2.add(hf2);
-					if (rs.getBody() != null && rs.getBody().length > 0) {
-						var n = Math.ceilDiv(rs.getBody().length, 16384);
-						IntStream.range(0, n).mapToObj(x -> {
-							var bb = new byte[Math.min(16384, rs.getBody().length - x * 16384)];
-							System.arraycopy(rs.getBody(), x * 16384, bb, 0, bb.length);
-							return new Frame.Data(false, x == n - 1, hf1.streamIdentifier(), bb);
-						}).forEach(ff2::add);
+			if (f1 instanceof Frame.Headers hf1) {
+				String method = null, scheme = null, authority = null, path = null;
+				var hh = new ArrayList<HeaderField>();
+				for (var y : hf1.fields()) {
+					switch (y.name()) {
+					case ":method":
+						method = y.value();
+						break;
+					case ":scheme":
+						scheme = y.value();
+						break;
+					case ":authority":
+						authority = y.value();
+						break;
+					case ":path":
+						path = y.value();
+						break;
+					default:
+						hh.add(y);
 					}
 				}
+				var rq = new HttpRequest();
+				rq.setMethod(method);
+				rq.setUri(URI.create(scheme + "://" + authority + path));
+				rq.setHeaders(hh);
+//				System.out.println(c.number() + " rq=" + rq.getMethod() + " " + rq.getUri());
+				var rs = new HttpResponse();
+				var ex = createExchange(rq);
+				ex.setRequest(rq);
+				ex.setResponse(rs);
+				var k = true;
+				Exception e;
+				try {
+					k = handler.handle(ex);
+					e = null;
+				} catch (UncheckedIOException x) {
+					e = x.getCause();
+				} catch (Exception x) {
+					e = x;
+				}
+				if (e != null)
+					try {
+						e.printStackTrace();
+						ex.setException(e);
+						k = handler.handle(ex);
+					} catch (Exception x) {
+						k = false;
+					}
+//				System.out.println(c.number() + " rs=" + rs.getStatus());
+				var hf2 = new Frame.Headers(false, true, rs.getBody() == null || rs.getBody().length == 0,
+						hf1.streamIdentifier(), false, 0, 0,
+						java.util.stream.Stream.concat(
+								java.util.stream.Stream.of(new HeaderField(":status", String.valueOf(rs.getStatus()))),
+								rs.getHeaders() != null ? rs.getHeaders().stream() : java.util.stream.Stream.empty())
+								.toList());
+				ff2.add(hf2);
+				if (rs.getBody() != null && rs.getBody().length > 0) {
+					var n = Math.ceilDiv(rs.getBody().length, 16384);
+					IntStream.range(0, n).mapToObj(x -> {
+						var bb = new byte[Math.min(16384, rs.getBody().length - x * 16384)];
+						System.arraycopy(rs.getBody(), x * 16384, bb, 0, bb.length);
+						return new Frame.Data(false, x == n - 1, hf1.streamIdentifier(), bb);
+					}).forEach(ff2::add);
+				}
+			}
 			for (var f2 : ff2) {
 //				System.out.println(c.number() + " f2=" + f2);
 				Frame.encode(f2, ac);
