@@ -22,27 +22,46 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http;
 
-public enum Representation {
+import java.util.PrimitiveIterator;
 
-	INDEXED(7, (byte) 0x80), WITH_INDEXING(6, (byte) 0x40), WITHOUT_INDEXING(4, (byte) 0x00),
-	NEVER_INDEXED(4, (byte) 0x10);
+class PeekingIntIterator implements PrimitiveIterator.OfInt {
 
-	int prefix;
+	PrimitiveIterator.OfInt iterator;
 
-	byte first;
+	boolean hasCurrent;
 
-	Representation(int prefix, byte first) {
-		this.prefix = prefix;
-		this.first = first;
+	int current;
+
+	PeekingIntIterator(PrimitiveIterator.OfInt iterator) {
+		this.iterator = iterator;
 	}
 
-	public int prefix() {
-		return prefix;
+	public int peek() {
+		return nextInt(true);
 	}
 
-	public byte first() {
-		return first;
+	@Override
+	public boolean hasNext() {
+		return hasCurrent || iterator.hasNext();
+	}
+
+	@Override
+	public int nextInt() {
+		return nextInt(false);
+	}
+
+	private int nextInt(boolean peek) {
+		if (hasCurrent) {
+			hasCurrent = peek;
+			return current;
+		}
+		var i = iterator.nextInt();
+		if (peek) {
+			current = i;
+			hasCurrent = true;
+		}
+		return i;
 	}
 }

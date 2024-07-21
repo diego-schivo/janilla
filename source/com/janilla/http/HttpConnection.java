@@ -24,10 +24,9 @@
  */
 package com.janilla.http;
 
-import com.janilla.hpack.HeaderDecoder;
 import com.janilla.net.Connection;
 
-public class HttpConnection extends Connection {
+class HttpConnection extends Connection {
 
 	HeaderDecoder headerDecoder = new HeaderDecoder();
 

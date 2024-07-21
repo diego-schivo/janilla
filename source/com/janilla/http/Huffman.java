@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http;
 
 import java.util.PrimitiveIterator;
 import java.util.function.IntConsumer;
@@ -32,7 +32,7 @@ import com.janilla.util.BitsConsumer;
 import com.janilla.util.BitsIterator;
 import com.janilla.util.Util;
 
-public class Huffman {
+class Huffman {
 
 	static HuffmanTable table = new HuffmanTable();
 

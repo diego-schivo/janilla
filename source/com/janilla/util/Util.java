@@ -194,24 +194,24 @@ public interface Util {
 		});
 	}
 	
-	public static PrimitiveIterator.OfInt concat(int i, PrimitiveIterator.OfInt ii) {
-		return new PrimitiveIterator.OfInt() {
-			
-			boolean x;
-
-			@Override
-			public boolean hasNext() {
-				return !x || ii.hasNext();
-			}
-
-			@Override
-			public int nextInt() {
-				if (!x) {
-					x = true;
-					return i;
-				}
-				return ii.nextInt();
-			}
-		};
-	}
+//	public static PrimitiveIterator.OfInt concat(int i, PrimitiveIterator.OfInt ii) {
+//		return new PrimitiveIterator.OfInt() {
+//			
+//			boolean x;
+//
+//			@Override
+//			public boolean hasNext() {
+//				return !x || ii.hasNext();
+//			}
+//
+//			@Override
+//			public int nextInt() {
+//				if (!x) {
+//					x = true;
+//					return i;
+//				}
+//				return ii.nextInt();
+//			}
+//		};
+//	}
 }

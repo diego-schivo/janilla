@@ -43,11 +43,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.io.IO;
-import com.janilla.media.HeaderField;
 import com.janilla.util.Lazy;
 
 public class ResourceHandlerFactory implements WebHandlerFactory {

@@ -28,6 +28,9 @@ public class HttpResponse extends Message {
 
 	private int status;
 
+	// *******************
+	// Getters and Setters
+
 	public int getStatus() {
 		return status;
 	}
@@ -35,4 +38,7 @@ public class HttpResponse extends Message {
 	public void setStatus(int status) {
 		this.status = status;
 	}
+
+	// Getters and Setters
+	// *******************
 }

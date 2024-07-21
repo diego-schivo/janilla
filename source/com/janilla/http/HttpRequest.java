@@ -32,6 +32,9 @@ public class HttpRequest extends Message {
 
 	private URI uri;
 
+	// *******************
+	// Getters and Setters
+
 	public String getMethod() {
 		return method;
 	}
@@ -47,4 +50,7 @@ public class HttpRequest extends Message {
 	public void setUri(URI uri) {
 		this.uri = uri;
 	}
+
+	// Getters and Setters
+	// *******************
 }

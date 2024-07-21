@@ -35,7 +35,6 @@ import java.util.stream.IntStream;
 
 import javax.net.ssl.SSLContext;
 
-import com.janilla.media.HeaderField;
 import com.janilla.net.Connection;
 import com.janilla.net.Protocol;
 import com.janilla.net.SSLByteChannel;

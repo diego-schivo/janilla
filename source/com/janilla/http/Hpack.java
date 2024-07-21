@@ -22,17 +22,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http;
 
 import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
-import com.janilla.media.HeaderField;
 import com.janilla.util.Util;
 
-public class Hpack {
+class Hpack {
 
 	public static void main(String[] args) {
 		integerRepresentationExamples();
@@ -43,7 +42,7 @@ public class Hpack {
 		responseExamplesWithHuffmanCoding();
 	}
 
-	public static int encodeInteger(int value, IntConsumer bytes, byte first, int prefix) {
+	static int encodeInteger(int value, IntConsumer bytes, byte first, int prefix) {
 		var z = 1 << prefix;
 		if (value < z - 1) {
 			bytes.accept((Byte.toUnsignedInt(first) & (-1 ^ (z - 1))) | value);
@@ -62,7 +61,7 @@ public class Hpack {
 		return n + 1;
 	}
 
-	public static int decodeInteger(PrimitiveIterator.OfInt bytes, int prefix) {
+	static int decodeInteger(PrimitiveIterator.OfInt bytes, int prefix) {
 		var z = 1 << prefix;
 		var i = bytes.nextInt() & (z - 1);
 		if (i < z - 1)
@@ -76,7 +75,7 @@ public class Hpack {
 		return i;
 	}
 
-	public static int encodeString(String string, IntConsumer bytes, boolean huffman) {
+	static int encodeString(String string, IntConsumer bytes, boolean huffman) {
 		byte[] bb;
 		if (huffman) {
 			var ii = IntStream.builder();
@@ -93,22 +92,22 @@ public class Hpack {
 		return n + bb.length;
 	}
 
-	public static String decodeString(PrimitiveIterator.OfInt bytes) {
+	static String decodeString(PrimitiveIterator.OfInt bytes) {
+		var bb = new PeekingIntIterator(bytes);
 		boolean h;
 		{
-			var i = bytes.nextInt();
+			var i = bb.peek();
 			h = (i & 0x80) != 0;
 //		System.out.println("h=" + h);
-			bytes = Util.concat(i, bytes);
 		}
-		var l = decodeInteger(bytes, 7);
+		var l = decodeInteger(bb, 7);
 		if (h) {
-			var s = Huffman.decode(bytes, l);
+			var s = Huffman.decode(bb, l);
 			return s;
 		}
 		var cc = new char[l];
 		for (var i = 0; i < l; i++)
-			cc[i] = (char) bytes.nextInt();
+			cc[i] = (char) bb.nextInt();
 		return new String(cc);
 	}
 
@@ -169,7 +168,7 @@ public class Hpack {
 		e = new HeaderEncoder();
 		bb1 = IntStream.builder();
 		for (var h : hh1)
-			e.encode(h, bb1, false, Representation.WITHOUT_INDEXING);
+			e.encode(h, bb1, false, HeaderField.Representation.WITHOUT_INDEXING);
 		s = Util.toHexString(bb1.build());
 		System.out.println(s);
 		assert s.equals("040c 2f73 616d 706c 652f 7061 7468") : s;
@@ -189,7 +188,7 @@ public class Hpack {
 		System.out.println("hh1=" + hh1);
 		bb1 = IntStream.builder();
 		for (var h : hh1)
-			e.encode(h, bb1, false, Representation.NEVER_INDEXED);
+			e.encode(h, bb1, false, HeaderField.Representation.NEVER_INDEXED);
 		s = Util.toHexString(bb1.build());
 		System.out.println(s);
 		assert s.equals("""

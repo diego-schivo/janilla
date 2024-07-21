@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.media;
+package com.janilla.http;
 
 import java.util.Arrays;
 import java.util.List;

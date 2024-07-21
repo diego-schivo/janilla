@@ -26,13 +26,14 @@ package com.janilla.http;
 
 import java.util.List;
 
-import com.janilla.media.HeaderField;
-
 abstract class Message {
 
 	private List<HeaderField> headers;
 
 	private byte[] body;
+
+	// *******************
+	// Getters and Setters
 
 	public List<HeaderField> getHeaders() {
 		return headers;
@@ -49,4 +50,7 @@ abstract class Message {
 	public void setBody(byte[] body) {
 		this.body = body;
 	}
+
+	// Getters and Setters
+	// *******************
 }

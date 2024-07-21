@@ -33,10 +33,10 @@ import java.util.function.Supplier;
 import com.janilla.frontend.Interpolator;
 import com.janilla.frontend.RenderEngine;
 import com.janilla.frontend.TemplatesWeb;
+import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.io.IO;
-import com.janilla.media.HeaderField;
 import com.janilla.util.Lazy;
 
 public class TemplateHandlerFactory implements WebHandlerFactory {

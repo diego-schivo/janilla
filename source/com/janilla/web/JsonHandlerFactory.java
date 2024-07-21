@@ -27,12 +27,12 @@ package com.janilla.web;
 import java.util.Iterator;
 
 import com.janilla.frontend.RenderEngine;
+import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
-import com.janilla.media.HeaderField;
 
 public class JsonHandlerFactory implements WebHandlerFactory {
 

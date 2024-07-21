@@ -32,6 +32,9 @@ public class HttpExchange {
 
 	private Exception exception;
 
+	// *******************
+	// Getters and Setters
+
 	public HttpRequest getRequest() {
 		return request;
 	}
@@ -55,4 +58,7 @@ public class HttpExchange {
 	public void setException(Exception exception) {
 		this.exception = exception;
 	}
+
+	// Getters and Setters
+	// *******************
 }

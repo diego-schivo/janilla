@@ -22,14 +22,12 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.hpack;
+package com.janilla.http;
 
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
-import com.janilla.media.HeaderField;
-
-public class HeaderEncoder {
+class HeaderEncoder {
 
 	HeaderTable table = new HeaderTable();
 
@@ -50,11 +48,11 @@ public class HeaderEncoder {
 		return encode(header, bytes, huffman, null);
 	}
 
-	public int encode(HeaderField header, IntConsumer bytes, boolean huffman, Representation representation) {
+	public int encode(HeaderField header, IntConsumer bytes, boolean huffman, HeaderField.Representation representation) {
 		var ih = indexAndHeader(header);
-		var r = ih != null && ih.header().equals(header) ? Representation.INDEXED
-				: representation != null ? representation : Representation.WITH_INDEXING;
-		if (r == Representation.INDEXED)
+		var r = ih != null && ih.header().equals(header) ? HeaderField.Representation.INDEXED
+				: representation != null ? representation : HeaderField.Representation.WITH_INDEXING;
+		if (r == HeaderField.Representation.INDEXED)
 			return Hpack.encodeInteger(ih.index(), bytes, r.first(), r.prefix());
 		int n;
 		if (ih != null) {
@@ -64,7 +62,7 @@ public class HeaderEncoder {
 			n = 1 + Hpack.encodeString(header.name(), bytes, huffman);
 		}
 		n += Hpack.encodeString(header.value(), bytes, huffman);
-		if (r != Representation.NEVER_INDEXED)
+		if (r != HeaderField.Representation.NEVER_INDEXED)
 			table.add(header);
 		return n;
 	}

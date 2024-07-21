@@ -53,13 +53,13 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.RenderEngine;
+import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.json.Converter;
 import com.janilla.json.Json;
-import com.janilla.media.HeaderField;
 import com.janilla.net.Net;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;

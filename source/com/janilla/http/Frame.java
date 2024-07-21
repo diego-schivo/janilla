@@ -34,11 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import com.janilla.hpack.HeaderDecoder;
-import com.janilla.hpack.HeaderEncoder;
-import com.janilla.hpack.Representation;
 import com.janilla.io.IO;
-import com.janilla.media.HeaderField;
 
 sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Ping, Frame.Priority, Frame.RstStream,
 		Frame.Settings, Frame.WindowUpdate {
@@ -71,13 +67,13 @@ sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Pi
 						pl += he.encode(hf, ii);
 						break;
 					case "content-length":
-						pl += he.encode(hf, ii, false, Representation.NEVER_INDEXED);
+						pl += he.encode(hf, ii, false, HeaderField.Representation.NEVER_INDEXED);
 						break;
 					case "date":
-						pl += he.encode(hf, ii, true, Representation.NEVER_INDEXED);
+						pl += he.encode(hf, ii, true, HeaderField.Representation.NEVER_INDEXED);
 						break;
 					default:
-						pl += he.encode(hf, ii, true, Representation.WITHOUT_INDEXING);
+						pl += he.encode(hf, ii, true, HeaderField.Representation.WITHOUT_INDEXING);
 						break;
 					}
 				}

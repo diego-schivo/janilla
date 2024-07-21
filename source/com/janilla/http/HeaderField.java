@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.media;
+package com.janilla.http;
 
 import java.util.Arrays;
 import java.util.Properties;
@@ -55,5 +55,28 @@ public record HeaderField(String name, String value) {
 	}
 
 	public record ComplexValue(String value, Properties properties) {
+	}
+
+	enum Representation {
+
+		INDEXED(7, (byte) 0x80), WITH_INDEXING(6, (byte) 0x40), WITHOUT_INDEXING(4, (byte) 0x00),
+		NEVER_INDEXED(4, (byte) 0x10);
+
+		int prefix;
+
+		byte first;
+
+		Representation(int prefix, byte first) {
+			this.prefix = prefix;
+			this.first = first;
+		}
+
+		public int prefix() {
+			return prefix;
+		}
+
+		public byte first() {
+			return first;
+		}
 	}
 }
