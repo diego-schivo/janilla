@@ -22,12 +22,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.http;
 
-import java.util.Collection;
+import com.janilla.hpack.HeaderDecoder;
+import com.janilla.net.Connection;
 
-record Stream(int identifier, Collection<Entry> entries) {
+public class HttpConnection extends Connection {
 
-	public record Entry(Frame frame, boolean output) {
-	}
+	HeaderDecoder headerDecoder = new HeaderDecoder();
+
+	boolean prefaceReceived;
+
+	boolean prefaceSent;
 }

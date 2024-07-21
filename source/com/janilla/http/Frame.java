@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http2;
+package com.janilla.http;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -129,7 +129,8 @@ sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Pi
 		ByteBuffer bb1, bb2;
 		try {
 			bb1 = ByteBuffer.allocate(9);
-			channel.read(bb1);
+			if (channel.read(bb1) < 9)
+				return null;
 			bb1.flip();
 			var pl = (Short.toUnsignedInt(bb1.getShort()) << 8) | Byte.toUnsignedInt(bb1.get());
 			bb2 = ByteBuffer.allocate(pl);

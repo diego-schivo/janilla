@@ -28,7 +28,6 @@ module com.janilla {
 	exports com.janilla.frontend;
 	exports com.janilla.html;
 	exports com.janilla.http;
-	exports com.janilla.http2;
 	exports com.janilla.io;
 	exports com.janilla.javascript;
 	exports com.janilla.json;

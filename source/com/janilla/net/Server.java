@@ -28,54 +28,123 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Server {
 
-	protected SocketAddress address;
+	private SocketAddress address;
 
-	protected Protocol protocol;
+	private Protocol protocol;
+
+	private ServerSocketChannel channel;
+
+	private Map<Connection, Long> connectionIdleTimes = new HashMap<>();
+
+	// *******************
+	// Getters and Setters
+
+	public void serve() {
+		try {
+			channel = ServerSocketChannel.open();
+			channel.socket().bind(address);
+			Thread.startVirtualThread(() -> {
+				for (;;) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						break;
+					}
+					shutdown();
+				}
+			});
+			for (;;)
+				accept();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	public SocketAddress getAddress() {
+		return address;
+	}
 
 	public void setAddress(SocketAddress address) {
 		this.address = address;
+	}
+
+	public Protocol getProtocol() {
+		return protocol;
 	}
 
 	public void setProtocol(Protocol protocol) {
 		this.protocol = protocol;
 	}
 
-	public void serve() {
-		try {
-			var ssc = ServerSocketChannel.open();
-			ssc.socket().bind(address);
-			for (;;) {
-				var sc = ssc.accept();
-				Thread.startVirtualThread(() -> handle(sc));
-//				new Thread(() -> handle(sc)).start();
-			}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+	public ServerSocketChannel getChannel() {
+		return channel;
 	}
 
-	protected void handle(SocketChannel channel) {
-		var c = protocol.buildConnection(channel);
-//		System.out.println("serve, c=" + c.number());
-		for (;;) {
-//			System.out.println("handle, c=" + c.number());
-			try {
-				protocol.handle(c);
-			} catch (Exception e) {
-				e.printStackTrace();
-//				System.out.println("handle, connection=" + c.number());
-				throw new RuntimeException(e);
-			}
-		}
+	public void setChannel(ServerSocketChannel channel) {
+		this.channel = channel;
 	}
 
-	long start = System.currentTimeMillis();
+	public Map<Connection, Long> getConnectionIdleTimes() {
+		return connectionIdleTimes;
+	}
 
-	long millis() {
-		return System.currentTimeMillis() - start;
+	public void setConnectionIdleTimes(Map<Connection, Long> connectionIdleTimes) {
+		this.connectionIdleTimes = connectionIdleTimes;
+	}
+
+	// Getters and Setters
+	// *******************
+
+	protected void accept() throws IOException {
+		var sc = channel.accept();
+		Thread.startVirtualThread(() -> {
+			var c = protocol.buildConnection(sc);
+			System.out.println("c=" + c.getId() + ": start");
+			for (var f = true;; f = false) {
+				System.out.println("accept, c=" + c.getId());
+				synchronized (connectionIdleTimes) {
+					if (f || connectionIdleTimes.containsKey(c))
+						connectionIdleTimes.put(c, System.currentTimeMillis());
+					else
+						break;
+				}
+				try {
+					protocol.handle(c);
+				} catch (Exception e) {
+					System.out.println("accept, c=" + c.getId() + ", e=" + e);
+					e.printStackTrace();
+//					throw new RuntimeException(e);
+				}
+			}
+			System.out.println("c=" + c.getId() + ": terminate");
+		});
+	}
+
+	protected void shutdown() {
+		synchronized (connectionIdleTimes) {
+			var t1 = System.currentTimeMillis();
+			for (var ee = connectionIdleTimes.entrySet().iterator(); ee.hasNext();) {
+				var e = ee.next();
+				var t2 = e.getValue() + 10 * 1000;
+				if (t1 >= t2) {
+					var c = e.getKey();
+					System.out.println("shutdown, c=" + c.getId());
+					var sc = c.getChannel();
+					try {
+						sc.shutdownInput();
+						sc.shutdownOutput();
+						sc.close();
+					} catch (IOException f) {
+						f.printStackTrace();
+					}
+					ee.remove();
+				}
+			}
+		}
 	}
 }

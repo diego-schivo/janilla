@@ -24,32 +24,43 @@
  */
 package com.janilla.net;
 
-import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 
 public abstract class Connection {
 
-	private int number;
+	private int id;
 
-	private SocketChannel socketChannel;
+	private SocketChannel channel;
 
-	private ByteChannel applicationChannel;
+	private SSLByteChannel sslByteChannel;
 
-	protected Connection(int number, SocketChannel socketChannel, ByteChannel applicationChannel) {
-		this.number = number;
-		this.socketChannel = socketChannel;
-		this.applicationChannel = applicationChannel;
+	// *******************
+	// Getters and Setters
+
+	public int getId() {
+		return id;
 	}
 
-	public int number() {
-		return number;
+	public void setId(int id) {
+		this.id = id;
 	}
 
-	public SocketChannel socketChannel() {
-		return socketChannel;
+	public SocketChannel getChannel() {
+		return channel;
 	}
 
-	public ByteChannel applicationChannel() {
-		return applicationChannel;
+	public void setChannel(SocketChannel channel) {
+		this.channel = channel;
 	}
+
+	public SSLByteChannel getSslByteChannel() {
+		return sslByteChannel;
+	}
+
+	public void setSslByteChannel(SSLByteChannel sslByteChannel) {
+		this.sslByteChannel = sslByteChannel;
+	}
+
+	// Getters and Setters
+	// *******************
 }
