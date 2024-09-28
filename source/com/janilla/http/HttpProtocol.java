@@ -80,58 +80,75 @@ public class HttpProtocol implements Protocol {
 	public void handle(Connection connection) {
 		var c = (HttpConnection) connection;
 		var bc = c.getSslByteChannel();
-		if (!c.prefaceReceived) {
+		if (!c.isPrefaceReceived()) {
 			var bb = ByteBuffer.allocate(24);
 			try {
 				bc.read(bb);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-//			System.out.println(c.getId() + " " + new String(cc));
-			c.prefaceReceived = true;
+//			System.out.println("c=" + c.getId() + ", bb=" + new String(bb.array()));
+			c.setPrefaceReceived(true);
 		}
-		if (c.prefaceReceived) {
-			var f1 = Frame.decode(bc, c.headerDecoder);
-			if (f1 == null)
-				return;
-//			System.out.println(c.getId() + " f1=" + f1);
-			var ff2 = new ArrayList<Frame>();
-			if (!c.prefaceSent) {
-				var f2 = new Frame.Settings(false,
-						List.of(new Setting.Parameter(Setting.Name.INITIAL_WINDOW_SIZE, 65535),
-								new Setting.Parameter(Setting.Name.HEADER_TABLE_SIZE, 4096),
-								new Setting.Parameter(Setting.Name.MAX_FRAME_SIZE, 16384)));
-				Frame.encode(f2, bc);
-				f2 = new Frame.Settings(true, List.of());
-				ff2.add(f2);
-				c.prefaceSent = true;
-			}
-			if (f1 instanceof Frame.Headers hf1) {
+		var f1 = Http.decode(bc, c.getHeaderDecoder());
+		if (f1 == null)
+			return;
+//		System.out.println("c=" + c.getId() + ", f1=" + f1);
+		var ff2 = new ArrayList<Frame>();
+		if (!c.isPrefaceSent()) {
+			var f2 = new Frame.Settings(false,
+					List.of(new Setting.Parameter(Setting.Name.INITIAL_WINDOW_SIZE, 65535),
+							new Setting.Parameter(Setting.Name.HEADER_TABLE_SIZE, 4096),
+							new Setting.Parameter(Setting.Name.MAX_FRAME_SIZE, 16384)));
+//			System.out.println("c=" + c.getId() + ", f2=" + f2);
+			Http.encode(f2, bc);
+			f2 = new Frame.Settings(true, List.of());
+			ff2.add(f2);
+			c.setPrefaceSent(true);
+		}
+		if (f1 instanceof Frame.Headers || f1 instanceof Frame.Data) {
+			var si = Integer.valueOf(f1.streamIdentifier());
+			var ff1 = c.getStreams().computeIfAbsent(si, x -> new ArrayList<>());
+			ff1.add(f1);
+			var es = f1 instanceof Frame.Headers x ? x.endStream() : f1 instanceof Frame.Data x ? x.endStream() : false;
+			if (es) {
 				String method = null, scheme = null, authority = null, path = null;
+				var hf1 = (Frame.Headers) ff1.get(0);
 				var hh = new ArrayList<HeaderField>();
-				for (var y : hf1.fields()) {
-					switch (y.name()) {
+				for (var f : hf1.fields()) {
+					switch (f.name()) {
 					case ":method":
-						method = y.value();
+						method = f.value();
 						break;
 					case ":scheme":
-						scheme = y.value();
+						scheme = f.value();
 						break;
 					case ":authority":
-						authority = y.value();
+						authority = f.value();
 						break;
 					case ":path":
-						path = y.value();
+						path = f.value();
 						break;
 					default:
-						hh.add(y);
+						hh.add(f);
 					}
 				}
 				var rq = new HttpRequest();
 				rq.setMethod(method);
 				rq.setUri(URI.create(scheme + "://" + authority + path));
 				rq.setHeaders(hh);
-				System.out.println(c.getId() + " rq=" + rq.getMethod() + " " + rq.getUri());
+				if (ff1.size() > 1) {
+					var ii = new int[ff1.size()];
+					for (var i = 1; i < ii.length; i++)
+						ii[i] = ii[i - 1] + ((Frame.Data) ff1.get(i)).data().length;
+					var bb = new byte[ii[ii.length - 1]];
+					for (var i = 1; i < ii.length; i++) {
+						var d = ((Frame.Data) ff1.get(i)).data();
+						System.arraycopy(d, 0, bb, ii[i - 1], d.length);
+					}
+					rq.setBody(bb);
+				}
+//				System.out.println("c=" + c.getId() + ", rq=" + rq.getMethod() + " " + rq.getUri());
 				var rs = new HttpResponse();
 				var ex = createExchange(rq);
 				ex.setRequest(rq);
@@ -154,7 +171,7 @@ public class HttpProtocol implements Protocol {
 					} catch (Exception x) {
 						k = false;
 					}
-				System.out.println(c.getId() + " rs=" + rs.getStatus());
+//				System.out.println("c=" + c.getId() + ", rs=" + rs.getStatus() + ", k=" + k);
 				var hf2 = new Frame.Headers(false, true, rs.getBody() == null || rs.getBody().length == 0,
 						hf1.streamIdentifier(), false, 0, 0,
 						java.util.stream.Stream.concat(
@@ -170,11 +187,12 @@ public class HttpProtocol implements Protocol {
 						return new Frame.Data(false, x == n - 1, hf1.streamIdentifier(), bb);
 					}).forEach(ff2::add);
 				}
+				c.getStreams().remove(si);
 			}
-			for (var f2 : ff2) {
-//				System.out.println(c.getId() + " f2=" + f2);
-				Frame.encode(f2, bc);
-			}
+		}
+		for (var f2 : ff2) {
+//			System.out.println("c=" + c.getId() + ", f2=" + f2);
+			Http.encode(f2, bc);
 		}
 	}
 

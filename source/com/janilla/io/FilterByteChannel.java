@@ -62,6 +62,7 @@ public class FilterByteChannel extends FilterChannel<ByteChannel> implements Byt
 
 	@Override
 	public int write(ByteBuffer src) throws IOException {
+//		System.out.println("src=" + src);
 		return channel.write(src);
 	}
 }

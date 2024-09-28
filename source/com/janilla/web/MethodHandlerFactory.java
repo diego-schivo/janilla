@@ -42,6 +42,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -312,7 +313,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			if (rs.getStatus() == 0) {
 //				rs.setStatus(HttpResponse.Status.of(204));
 				rs.setStatus(204);
-				rs.getHeaders().add(new HeaderField("cache-control", "no-cache"));
+				rs.setHeaders(List.of(new HeaderField("cache-control", "no-cache")));
 			}
 		} else if (o instanceof Path f && m.isAnnotationPresent(Attachment.class)) {
 //			rs.setStatus(HttpResponse.Status.of(200));
@@ -344,6 +345,8 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 //			rs.setStatus(HttpResponse.Status.of(302));
 			rs.setStatus(302);
 			var hh = rs.getHeaders();
+			if (hh == null)
+				rs.setHeaders(hh = new ArrayList<>());
 			hh.add(new HeaderField("cache-control", "no-cache"));
 			hh.add(new HeaderField("location", v.toString()));
 		} else {
@@ -387,7 +390,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 //				} catch (IOException e) {
 //					throw new UncheckedIOException(e);
 //				}
-				return new String(rq.getBody());
+				return rq.getBody() != null ? new String(rq.getBody()) : null;
 			});
 			var t = rq.getHeaders().stream().filter(x -> x.name().equals("content-type")).map(HeaderField::value)
 					.findFirst().orElse(null);
@@ -403,7 +406,8 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 						qs.addAll(v);
 					break;
 				case "application/json":
-					var o = Json.parse(s.get());
+					var a = s.get();
+					var o = a != null ? Json.parse(a) : null;
 					if (o instanceof Map<?, ?> m && !m.isEmpty()) {
 						if (qs == null)
 							qs = new EntryList<>();
@@ -461,12 +465,13 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			switch (Objects.toString(ct, "").split(";")[0]) {
 			case "application/json": {
 //		System.out.println("body=" + body);
-				if (body == null)
+				var b = body != null ? body.get() : null;
+				if (b == null)
 					return null;
 				var d = new Converter();
 				if (resolver != null)
 					d.setResolver(resolver.get());
-				return d.convert(Json.parse(body.get()), c);
+				return d.convert(Json.parse(b), c);
 			}
 			case "application/x-www-form-urlencoded": {
 				var t = createEntryTree();

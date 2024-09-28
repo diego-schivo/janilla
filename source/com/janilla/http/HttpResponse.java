@@ -24,7 +24,7 @@
  */
 package com.janilla.http;
 
-public class HttpResponse extends Message {
+public class HttpResponse extends HttpMessage {
 
 	private int status;
 

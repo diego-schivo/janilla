@@ -26,7 +26,7 @@ package com.janilla.http;
 
 import java.net.URI;
 
-public class HttpRequest extends Message {
+public class HttpRequest extends HttpMessage {
 
 	private String method;
 

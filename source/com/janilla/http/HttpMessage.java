@@ -26,7 +26,7 @@ package com.janilla.http;
 
 import java.util.List;
 
-abstract class Message {
+public abstract class HttpMessage {
 
 	private List<HeaderField> headers;
 

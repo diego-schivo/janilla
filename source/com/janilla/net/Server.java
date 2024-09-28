@@ -29,7 +29,9 @@ import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class Server {
 
@@ -43,27 +45,6 @@ public class Server {
 
 	// *******************
 	// Getters and Setters
-
-	public void serve() {
-		try {
-			channel = ServerSocketChannel.open();
-			channel.socket().bind(address);
-			Thread.startVirtualThread(() -> {
-				for (;;) {
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						break;
-					}
-					shutdown();
-				}
-			});
-			for (;;)
-				accept();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
 
 	public SocketAddress getAddress() {
 		return address;
@@ -100,13 +81,34 @@ public class Server {
 	// Getters and Setters
 	// *******************
 
+	public void serve() {
+		try {
+			channel = ServerSocketChannel.open();
+			channel.socket().bind(address);
+			Thread.startVirtualThread(() -> {
+				for (;;) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						break;
+					}
+					shutdown();
+				}
+			});
+			for (;;)
+				accept();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
 	protected void accept() throws IOException {
 		var sc = channel.accept();
 		Thread.startVirtualThread(() -> {
 			var c = protocol.buildConnection(sc);
-			System.out.println("c=" + c.getId() + ": start");
+//			System.out.println("c=" + c.getId() + ": start");
 			for (var f = true;; f = false) {
-				System.out.println("accept, c=" + c.getId());
+//				System.out.println("accept, c=" + c.getId());
 				synchronized (connectionIdleTimes) {
 					if (f || connectionIdleTimes.containsKey(c))
 						connectionIdleTimes.put(c, System.currentTimeMillis());
@@ -116,34 +118,37 @@ public class Server {
 				try {
 					protocol.handle(c);
 				} catch (Exception e) {
-					System.out.println("accept, c=" + c.getId() + ", e=" + e);
+//					System.out.println("accept, c=" + c.getId() + ", e=" + e);
 					e.printStackTrace();
-//					throw new RuntimeException(e);
+					break;
 				}
 			}
-			System.out.println("c=" + c.getId() + ": terminate");
+//			System.out.println("c=" + c.getId() + ": terminate");
 		});
 	}
 
 	protected void shutdown() {
+		Set<Connection> cc = new HashSet<>();
 		synchronized (connectionIdleTimes) {
 			var t1 = System.currentTimeMillis();
 			for (var ee = connectionIdleTimes.entrySet().iterator(); ee.hasNext();) {
 				var e = ee.next();
 				var t2 = e.getValue() + 10 * 1000;
 				if (t1 >= t2) {
-					var c = e.getKey();
-					System.out.println("shutdown, c=" + c.getId());
-					var sc = c.getChannel();
-					try {
-						sc.shutdownInput();
-						sc.shutdownOutput();
-						sc.close();
-					} catch (IOException f) {
-						f.printStackTrace();
-					}
 					ee.remove();
+					cc.add(e.getKey());
 				}
+			}
+		}
+		for (var c : cc) {
+//			System.out.println("shutdown, c=" + c.getId());
+			var sc = c.getChannel();
+			try {
+				sc.shutdownInput();
+				sc.shutdownOutput();
+				sc.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 	}
