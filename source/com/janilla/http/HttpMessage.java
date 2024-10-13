@@ -53,4 +53,10 @@ public abstract class HttpMessage {
 
 	// Getters and Setters
 	// *******************
+
+	public String getHeaderValue(String name) {
+		return headers != null
+				? headers.stream().filter(x -> x.name().equals(name)).findFirst().map(HeaderField::value).orElse(null)
+				: null;
+	}
 }

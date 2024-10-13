@@ -98,7 +98,7 @@ class Hpack {
 		{
 			var i = bb.peek();
 			h = (i & 0x80) != 0;
-//		System.out.println("h=" + h);
+//			System.out.println("Hpack.decodeString, h=" + h);
 		}
 		var l = decodeInteger(bb, 7);
 		if (h) {

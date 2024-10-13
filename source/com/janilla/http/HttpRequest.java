@@ -24,13 +24,11 @@
  */
 package com.janilla.http;
 
-import java.net.URI;
-
 public class HttpRequest extends HttpMessage {
 
 	private String method;
 
-	private URI uri;
+	private String target;
 
 	// *******************
 	// Getters and Setters
@@ -43,14 +41,24 @@ public class HttpRequest extends HttpMessage {
 		this.method = method;
 	}
 
-	public URI getUri() {
-		return uri;
+	public String getTarget() {
+		return target;
 	}
 
-	public void setUri(URI uri) {
-		this.uri = uri;
+	public void setTarget(String target) {
+		this.target = target;
 	}
 
 	// Getters and Setters
 	// *******************
+
+	public String getPath() {
+		var i = target != null ? target.indexOf('?') : -1;
+		return i >= 0 ? target.substring(0, i) : target;
+	}
+
+	public String getQuery() {
+		var i = target != null ? target.indexOf('?') : -1;
+		return i >= 0 ? target.substring(i + 1) : null;
+	}
 }

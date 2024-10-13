@@ -231,13 +231,14 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 //				+ ", invocations2=" + j);
 
 		var b = Stream.<Map.Entry<Invocable, String[]>>builder();
-		URI u;
-		try {
-			u = request.getUri();
-		} catch (NullPointerException e) {
-			u = null;
-		}
-		var p = u != null ? u.getPath() : null;
+//		URI u;
+//		try {
+//			u = request.getUri();
+//		} catch (NullPointerException e) {
+//			u = null;
+//		}
+//		var p = u != null ? u.getPath() : null;
+		var p = request.getPath();
 		if (p != null) {
 			var i = ii.get(p);
 			if (i != null)
@@ -358,7 +359,8 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			if (hh.stream().noneMatch(x -> x.name().equals("cache-control")))
 				hh.add(new HeaderField("cache-control", "no-cache"));
 			if (hh.stream().noneMatch(x -> x.name().equals("content-type"))) {
-				var p = exchange.getRequest().getUri().getPath();
+//				var p = exchange.getRequest().getUri().getPath();
+				var p = exchange.getRequest().getPath();
 				var i = p != null ? p.lastIndexOf('.') : -1;
 				var e = i >= 0 ? p.substring(i + 1) : null;
 				if (e != null)
@@ -377,7 +379,8 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected Object[] resolveArguments(Invocation invocation, HttpExchange exchange) {
 		var rq = exchange.getRequest();
-		var qs = Net.parseQueryString(rq.getUri().getQuery());
+//		var qs = Net.parseQueryString(rq.getUri().getQuery());
+		var qs = Net.parseQueryString(rq.getQuery());
 		var mn = rq.getMethod();
 		Supplier<String> z = switch (mn) {
 		case "POST", "PUT" -> {

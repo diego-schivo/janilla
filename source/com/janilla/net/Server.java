@@ -95,6 +95,7 @@ public class Server {
 					shutdown();
 				}
 			});
+//			System.out.println("Server.serve, address=" + address);
 			for (;;)
 				accept();
 		} catch (IOException e) {
@@ -106,15 +107,14 @@ public class Server {
 		var sc = channel.accept();
 		Thread.startVirtualThread(() -> {
 			var c = protocol.buildConnection(sc);
-//			System.out.println("c=" + c.getId() + ": start");
 			for (var f = true;; f = false) {
-//				System.out.println("accept, c=" + c.getId());
 				synchronized (connectionIdleTimes) {
 					if (f || connectionIdleTimes.containsKey(c))
 						connectionIdleTimes.put(c, System.currentTimeMillis());
 					else
 						break;
 				}
+//				System.out.println("Server.accept, c=" + c.getId() + ", handle");
 				try {
 					protocol.handle(c);
 				} catch (Exception e) {
@@ -123,7 +123,7 @@ public class Server {
 					break;
 				}
 			}
-//			System.out.println("c=" + c.getId() + ": terminate");
+//			System.out.println("Server.accept, c=" + c.getId() + ", exit");
 		});
 	}
 

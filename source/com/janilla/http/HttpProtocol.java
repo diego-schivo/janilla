@@ -26,7 +26,6 @@ package com.janilla.http;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -38,6 +37,7 @@ import javax.net.ssl.SSLContext;
 import com.janilla.net.Connection;
 import com.janilla.net.Protocol;
 import com.janilla.net.SSLByteChannel;
+import com.janilla.web.HandleException;
 
 public class HttpProtocol implements Protocol {
 
@@ -45,7 +45,11 @@ public class HttpProtocol implements Protocol {
 
 	protected HttpHandler handler;
 
+	protected boolean useClientMode;
+
 	int connectionNumber;
+
+	int streamIdentifier;
 
 	public void setSslContext(SSLContext sslContext) {
 		this.sslContext = sslContext;
@@ -55,10 +59,14 @@ public class HttpProtocol implements Protocol {
 		this.handler = handler;
 	}
 
+	public void setUseClientMode(boolean useClientMode) {
+		this.useClientMode = useClientMode;
+	}
+
 	@Override
 	public Connection buildConnection(SocketChannel channel) {
 		var se = sslContext.createSSLEngine();
-		se.setUseClientMode(false);
+		se.setUseClientMode(useClientMode);
 		var pp = se.getSSLParameters();
 		pp.setApplicationProtocols(new String[] { "h2" });
 		se.setSSLParameters(pp);
@@ -69,7 +77,7 @@ public class HttpProtocol implements Protocol {
 		return hc;
 	}
 
-	static String CLIENT_CONNECTION_PREFACE_PREFIX = """
+	public static String CLIENT_CONNECTION_PREFACE_PREFIX = """
 			PRI * HTTP/2.0\r
 			\r
 			SM\r
@@ -79,6 +87,7 @@ public class HttpProtocol implements Protocol {
 	@Override
 	public void handle(Connection connection) {
 		var c = (HttpConnection) connection;
+//		System.out.println("HttpProtocol.handle, c=" + c.getId());
 		var bc = c.getSslByteChannel();
 		if (!c.isPrefaceReceived()) {
 			var bb = ByteBuffer.allocate(24);
@@ -87,20 +96,20 @@ public class HttpProtocol implements Protocol {
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-//			System.out.println("c=" + c.getId() + ", bb=" + new String(bb.array()));
+//			System.out.println("HttpProtocol.handle, c=" + c.getId() + ", bb=" + new String(bb.array()));
 			c.setPrefaceReceived(true);
 		}
 		var f1 = Http.decode(bc, c.getHeaderDecoder());
 		if (f1 == null)
 			return;
-//		System.out.println("c=" + c.getId() + ", f1=" + f1);
+//		System.out.println("HttpProtocol.handle, c=" + c.getId() + ", f1=" + f1);
 		var ff2 = new ArrayList<Frame>();
 		if (!c.isPrefaceSent()) {
 			var f2 = new Frame.Settings(false,
 					List.of(new Setting.Parameter(Setting.Name.INITIAL_WINDOW_SIZE, 65535),
 							new Setting.Parameter(Setting.Name.HEADER_TABLE_SIZE, 4096),
 							new Setting.Parameter(Setting.Name.MAX_FRAME_SIZE, 16384)));
-//			System.out.println("c=" + c.getId() + ", f2=" + f2);
+//			System.out.println("HttpProtocol.handle, c=" + c.getId() + ", f2=" + f2);
 			Http.encode(f2, bc);
 			f2 = new Frame.Settings(true, List.of());
 			ff2.add(f2);
@@ -135,7 +144,8 @@ public class HttpProtocol implements Protocol {
 				}
 				var rq = new HttpRequest();
 				rq.setMethod(method);
-				rq.setUri(URI.create(scheme + "://" + authority + path));
+//				rq.setUri(URI.create(scheme + "://" + authority + path));
+				rq.setTarget(path);
 				rq.setHeaders(hh);
 				if (ff1.size() > 1) {
 					var ii = new int[ff1.size()];
@@ -148,7 +158,8 @@ public class HttpProtocol implements Protocol {
 					}
 					rq.setBody(bb);
 				}
-//				System.out.println("c=" + c.getId() + ", rq=" + rq.getMethod() + " " + rq.getUri());
+//				System.out
+//						.println("HttpProtocol.handle, c=" + c.getId() + ", rq=" + rq.getMethod() + " " + rq.getPath());
 				var rs = new HttpResponse();
 				var ex = createExchange(rq);
 				ex.setRequest(rq);
@@ -158,6 +169,8 @@ public class HttpProtocol implements Protocol {
 				try {
 					k = handler.handle(ex);
 					e = null;
+				} catch (HandleException x) {
+					e = x.getCause();
 				} catch (UncheckedIOException x) {
 					e = x.getCause();
 				} catch (Exception x) {
@@ -171,7 +184,7 @@ public class HttpProtocol implements Protocol {
 					} catch (Exception x) {
 						k = false;
 					}
-//				System.out.println("c=" + c.getId() + ", rs=" + rs.getStatus() + ", k=" + k);
+//				System.out.println("HttpProtocol.handle, c=" + c.getId() + ", rs=" + rs.getStatus() + ", k=" + k);
 				var hf2 = new Frame.Headers(false, true, rs.getBody() == null || rs.getBody().length == 0,
 						hf1.streamIdentifier(), false, 0, 0,
 						java.util.stream.Stream.concat(
@@ -191,7 +204,7 @@ public class HttpProtocol implements Protocol {
 			}
 		}
 		for (var f2 : ff2) {
-//			System.out.println("c=" + c.getId() + ", f2=" + f2);
+//			System.out.println("HttpProtocol.handle, c=" + c.getId() + ", f2=" + f2);
 			Http.encode(f2, bc);
 		}
 	}

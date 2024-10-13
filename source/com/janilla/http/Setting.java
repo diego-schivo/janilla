@@ -26,9 +26,9 @@ package com.janilla.http;
 
 import java.util.Arrays;
 
-record Setting(Name name, int value) {
+public record Setting(Name name, int value) {
 
-	enum Name {
+	public enum Name {
 
 		HEADER_TABLE_SIZE(0x01), ENABLE_PUSH(0x02), MAX_CONCURRENT_STREAMS(0x03), INITIAL_WINDOW_SIZE(0x04),
 		MAX_FRAME_SIZE(0x05), MAX_HEADER_LIST_SIZE(0x06);
@@ -57,6 +57,6 @@ record Setting(Name name, int value) {
 		}
 	}
 
-	record Parameter(Name name, int value) {
+	public record Parameter(Name name, int value) {
 	}
 }

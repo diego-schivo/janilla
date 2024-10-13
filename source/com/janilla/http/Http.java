@@ -26,27 +26,25 @@ package com.janilla.http;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
+import java.security.GeneralSecurityException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.stream.IntStream;
 
-import com.janilla.http.Frame.Data;
-import com.janilla.http.Frame.Goaway;
-import com.janilla.http.Frame.Headers;
-import com.janilla.http.Frame.Name;
-import com.janilla.http.Frame.Ping;
-import com.janilla.http.Frame.Priority;
-import com.janilla.http.Frame.RstStream;
-import com.janilla.http.Frame.Settings;
-import com.janilla.http.Frame.WindowUpdate;
+import javax.net.ssl.SSLContext;
+
 import com.janilla.io.IO;
 import com.janilla.net.Net;
+import com.janilla.net.SSLByteChannel;
 import com.janilla.util.EntryList;
 
 public abstract class Http {
@@ -68,66 +66,140 @@ public abstract class Http {
 		return b.toString();
 	}
 
-//	public static String fetch(URI uri, HttpRequest.Method method, Map<String, String> headers, String body) {
-//		try (var c = new HttpClient()) {
-//			var p = uri.getPort();
-//			if (p == -1)
-//				p = switch (uri.getScheme()) {
-//				case "http" -> 80;
-//				case "https" -> 443;
-//				default -> throw new RuntimeException();
-//				};
-//			c.setAddress(new InetSocketAddress(uri.getHost(), p));
-//			if (uri.getScheme().equals("https"))
-//				try {
-//					var x = SSLContext.getInstance("TLSv1.2");
-//					x.init(null, null, null);
-//					c.setSslContext(x);
-//				} catch (GeneralSecurityException e) {
-//					throw new RuntimeException(e);
-//				}
-//			return c.query(e -> {
-//				try (var q = e.getRequest()) {
-//					q.setMethod(method);
-//					q.setUri(URI.create(uri.getPath()));
-//					var hh = q.getHeaders();
-//					for (var f : headers.entrySet())
-//						hh.add(new HttpHeader(f.getKey(), f.getValue()));
-//					if (hh.stream().noneMatch(x -> x.name().equals("Host")))
-//						hh.add(new HttpHeader("Host", uri.getHost()));
-//					IO.write(body.getBytes(), (WritableByteChannel) q.getBody());
-//				} catch (IOException f) {
-//					throw new UncheckedIOException(f);
-//				}
-//
-//				try (var s = e.getResponse()) {
-//					return new String(IO.readAllBytes((ReadableByteChannel) s.getBody()));
-//				} catch (IOException f) {
-//					throw new UncheckedIOException(f);
-//				}
-//			});
+	public static HttpResponse fetch(InetSocketAddress address, HttpRequest request) {
+		SocketChannel ch;
+		try {
+			ch = SocketChannel.open();
+			ch.configureBlocking(true);
+			ch.connect(address);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		SSLContext sc;
+		try {
+			sc = SSLContext.getInstance("TLSv1.3");
+			sc.init(null, null, null);
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException(e);
+		}
+//		try (var is = Net.class.getResourceAsStream("testkeys")) {
+//			sc = Net.getSSLContext("JKS", is, "passphrase".toCharArray());
+//		} catch (IOException e) {
+//			throw new UncheckedIOException(e);
 //		}
-//	}
+		var se = sc.createSSLEngine(address.getHostName(), address.getPort());
+		se.setUseClientMode(true);
+		var spp = se.getSSLParameters();
+		spp.setApplicationProtocols(new String[] { "h2" });
+		se.setSSLParameters(spp);
+		try (var sch = new SSLByteChannel(ch, se)) {
+			try {
+				sch.write(ByteBuffer.wrap(HttpProtocol.CLIENT_CONNECTION_PREFACE_PREFIX.getBytes()));
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+			{
+				var fo = new Frame.Settings(false,
+						List.of(new Setting.Parameter(Setting.Name.INITIAL_WINDOW_SIZE, 65535),
+								new Setting.Parameter(Setting.Name.HEADER_TABLE_SIZE, 4096),
+								new Setting.Parameter(Setting.Name.MAX_FRAME_SIZE, 16384)));
+//				System.out.println("Http.fetch, fo=" + fo);
+				Http.encode(fo, sch);
+			}
+			var hd = new HeaderDecoder();
+			for (;;) {
+				var fi = Http.decode(sch, hd);
+//				System.out.println("Http.fetch, fi=" + fi);
+				if (fi instanceof Frame.Settings fs && fs.ack())
+					break;
+			}
+			var ffo = new ArrayList<Frame>();
+			ffo.add(new Frame.Settings(true, List.of()));
+			ffo.add(new Frame.Headers(false, true, request.getBody() == null || request.getBody().length == 0, 1, false,
+					0, 0,
+					java.util.stream.Stream.concat(
+							java.util.stream.Stream.of(new HeaderField(":method", request.getMethod()),
+									new HeaderField(":path", request.getPath()), new HeaderField(":scheme", "https"),
+									new HeaderField(":authority", address.getHostName()),
+									new HeaderField("user-agent", "curl/7.88.1")),
+							request.getHeaders() != null ? request.getHeaders().stream()
+									: java.util.stream.Stream.empty())
+							.toList()));
+			if (request.getBody() != null && request.getBody().length > 0) {
+				var n = Math.ceilDiv(request.getBody().length, 16384);
+				IntStream.range(0, n).mapToObj(x -> {
+					var bb = new byte[Math.min(16384, request.getBody().length - x * 16384)];
+					System.arraycopy(request.getBody(), x * 16384, bb, 0, bb.length);
+					return new Frame.Data(false, x == n - 1, 1, bb);
+				}).forEach(ffo::add);
+			}
+			for (var fo : ffo) {
+//				System.out.println("Http.fetch, fo=" + fo);
+				Http.encode(fo, sch);
+			}
+			var ff1 = new ArrayList<Frame>();
+			for (;;) {
+				var f1 = Http.decode(sch, hd);
+//				System.out.println("Http.fetch, fi=" + f1);
+				if (f1 instanceof Frame.Headers || f1 instanceof Frame.Data) {
+					ff1.add(f1);
+					var es = f1 instanceof Frame.Headers x ? x.endStream()
+							: f1 instanceof Frame.Data x ? x.endStream() : false;
+					if (es)
+						break;
+				}
+			}
+			int status = 0;
+			var hf1 = (Frame.Headers) ff1.get(0);
+			var hh = new ArrayList<HeaderField>();
+			for (var f : hf1.fields()) {
+				switch (f.name()) {
+				case ":status":
+					status = Integer.parseInt(f.value());
+					break;
+				default:
+					hh.add(f);
+				}
+			}
+			var rs = new HttpResponse();
+			rs.setStatus(status);
+			rs.setHeaders(hh);
+			if (ff1.size() > 1) {
+				var ii = new int[ff1.size()];
+				for (var i = 1; i < ii.length; i++)
+					ii[i] = ii[i - 1] + ((Frame.Data) ff1.get(i)).data().length;
+				var bb = new byte[ii[ii.length - 1]];
+				for (var i = 1; i < ii.length; i++) {
+					var d = ((Frame.Data) ff1.get(i)).data();
+					System.arraycopy(d, 0, bb, ii[i - 1], d.length);
+				}
+				rs.setBody(bb);
+			}
+			return rs;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 
-	static void encode(Frame frame, WritableByteChannel channel) {
+	public static void encode(Frame frame, WritableByteChannel channel) {
 		try {
 			int pl;
 			var bb = ByteBuffer.allocate(9);
 			switch (frame) {
-			case Data x:
+			case Frame.Data x:
 				pl = x.data().length;
 				bb.putShort((short) ((pl >>> 8) & 0xffff));
 				bb.put((byte) pl);
-				bb.put((byte) Name.DATA.type());
+				bb.put((byte) Frame.Name.DATA.type());
 				bb.put((byte) ((x.padded() ? 0x08 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
 				bb.putInt(x.streamIdentifier());
 				bb.flip();
 				channel.write(bb);
 				channel.write(ByteBuffer.wrap(x.data()));
 				break;
-			case Goaway x:
+			case Frame.Goaway x:
 				throw new RuntimeException();
-			case Headers x:
+			case Frame.Headers x:
 				var he = new HeaderEncoder();
 				var ii = IntStream.builder();
 				pl = 0;
@@ -136,14 +208,16 @@ public abstract class Http {
 					case ":method", ":scheme", ":status", "content-type":
 						pl += he.encode(f, ii);
 						break;
-					case "content-length":
-						pl += he.encode(f, ii, false, HeaderField.Representation.NEVER_INDEXED);
+					case ":path", "content-length":
+//						pl += he.encode(f, ii, false, HeaderField.Representation.NEVER_INDEXED);
+						pl += he.encode(f, ii, true, HeaderField.Representation.WITHOUT_INDEXING);
 						break;
-					case "date":
+					case "date": // , "x-api-key":
 						pl += he.encode(f, ii, true, HeaderField.Representation.NEVER_INDEXED);
 						break;
 					default:
-						pl += he.encode(f, ii, true, HeaderField.Representation.WITHOUT_INDEXING);
+//						pl += he.encode(f, ii, true, HeaderField.Representation.WITHOUT_INDEXING);
+						pl += he.encode(f, ii, true, HeaderField.Representation.WITH_INDEXING);
 						break;
 					}
 				}
@@ -153,24 +227,24 @@ public abstract class Http {
 					bb2[j] = (byte) i.nextInt();
 				bb.putShort((short) ((pl >>> 8) & 0xffff));
 				bb.put((byte) pl);
-				bb.put((byte) Name.HEADERS.type());
+				bb.put((byte) Frame.Name.HEADERS.type());
 				bb.put((byte) ((x.endHeaders() ? 0x04 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
 				bb.putInt(x.streamIdentifier());
 				bb.flip();
 				channel.write(bb);
 				channel.write(ByteBuffer.wrap(bb2));
 				break;
-			case Ping x:
+			case Frame.Ping x:
 				throw new RuntimeException();
-			case Priority x:
+			case Frame.Priority x:
 				throw new RuntimeException();
-			case RstStream x:
+			case Frame.RstStream x:
 				throw new RuntimeException();
-			case Settings x:
+			case Frame.Settings x:
 				pl = x.parameters().size() * (Short.BYTES + Integer.BYTES);
 				bb.putShort((short) ((pl >>> 8) & 0xffff));
 				bb.put((byte) pl);
-				bb.put((byte) Name.SETTINGS.type());
+				bb.put((byte) Frame.Name.SETTINGS.type());
 				bb.put((byte) (x.ack() ? 0x01 : 0x00));
 				bb.putInt(0);
 				bb.flip();
@@ -183,7 +257,7 @@ public abstract class Http {
 				bb.flip();
 				channel.write(bb);
 				break;
-			case WindowUpdate x:
+			case Frame.WindowUpdate x:
 				throw new RuntimeException();
 			}
 		} catch (IOException e) {
@@ -191,7 +265,7 @@ public abstract class Http {
 		}
 	}
 
-	static Frame decode(ReadableByteChannel channel, HeaderDecoder hd) {
+	public static Frame decode(ReadableByteChannel channel, HeaderDecoder hd) {
 		ByteBuffer bb1, bb2;
 		try {
 			bb1 = ByteBuffer.allocate(9);
@@ -218,7 +292,7 @@ public abstract class Http {
 
 //		System.out.println("pl=" + pl);
 		var t0 = Byte.toUnsignedInt(bb1.get());
-		var t = Name.of(t0);
+		var t = Frame.Name.of(t0);
 		if (t == null)
 			System.out.println("t0=" + t0 + ", t=" + t);
 		var ff = Byte.toUnsignedInt(bb1.get());
@@ -227,13 +301,13 @@ public abstract class Http {
 //		System.out.println("si=" + si);
 		var f = switch (t) {
 		case DATA -> {
-			yield new Data((ff & 0x08) != 0, (ff & 0x01) != 0, si, bb2.array());
+			yield new Frame.Data((ff & 0x08) != 0, (ff & 0x01) != 0, si, bb2.array());
 		}
 		case GOAWAY -> {
 			var lsi = bb2.getInt() & 0x8fffffff;
 			var ec = bb2.getInt();
 			var add = Arrays.copyOfRange(bb2.array(), bb2.position(), bb2.limit());
-			yield new Goaway(lsi, ec, add);
+			yield new Frame.Goaway(lsi, ec, add);
 		}
 		case HEADERS -> {
 			var p = (ff & 0x20) != 0;
@@ -254,33 +328,34 @@ public abstract class Http {
 			while (ii.hasNext())
 				hd.decode(ii);
 //			System.out.println("hd.headerFields=" + hd.headerFields());
-			yield new Headers(p, (ff & 0x04) != 0, (ff & 0x01) != 0, si, e, sd, w, new ArrayList<>(hd.headerFields()));
+			yield new Frame.Headers(p, (ff & 0x04) != 0, (ff & 0x01) != 0, si, e, sd, w,
+					new ArrayList<>(hd.headerFields()));
 		}
 		case PING -> {
 			var od = bb2.getLong();
-			yield new Ping((ff & 0x01) != 0, si, od);
+			yield new Frame.Ping((ff & 0x01) != 0, si, od);
 		}
 		case PRIORITY -> {
 			var i = bb2.getInt();
 			var e = (i & 0xf0000000) != 0;
 			var sd = i & 0x8fffffff;
 			var w = Byte.toUnsignedInt(bb2.get());
-			yield new Priority(si, e, sd, w);
+			yield new Frame.Priority(si, e, sd, w);
 		}
 		case RST_STREAM -> {
 			var ec = bb2.getInt();
-			yield new RstStream(si, ec);
+			yield new Frame.RstStream(si, ec);
 		}
 		case SETTINGS -> {
 			var pp = new ArrayList<Setting.Parameter>();
 			while (bb2.hasRemaining())
 				pp.add(new Setting.Parameter(Setting.Name.of(bb2.getShort()), bb2.getInt()));
-			yield new Settings((ff & 0x01) != 0, pp);
+			yield new Frame.Settings((ff & 0x01) != 0, pp);
 		}
 		case WINDOW_UPDATE -> {
 			var wsi = bb2.getInt() & 0x8fffffff;
 //			System.out.println("wsi=" + wsi);
-			yield new WindowUpdate(si, wsi);
+			yield new Frame.WindowUpdate(si, wsi);
 		}
 		default -> throw new RuntimeException(t.name());
 		};

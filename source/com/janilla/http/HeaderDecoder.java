@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.PrimitiveIterator;
 
-class HeaderDecoder {
+public class HeaderDecoder {
 
 	HeaderTable table;
 
@@ -57,13 +57,14 @@ class HeaderDecoder {
 	public void decode(PrimitiveIterator.OfInt bytes) {
 		var bb = new PeekingIntIterator(bytes);
 		var z = bb.peek();
+		HeaderField.Representation r;
 		HeaderField h;
 		if ((z & 0x80) != 0) {
-//			System.out.println("r=" + Representation.INDEXED);
+			r = HeaderField.Representation.INDEXED;
 			var i = Hpack.decodeInteger(bb, 7);
 			h = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
 		} else if ((z & 0x40) != 0) {
-//			System.out.println("r=" + Representation.WITH_INDEXING);
+			r = HeaderField.Representation.WITH_INDEXING;
 			var i = Hpack.decodeInteger(bb, 6);
 			if (i != 0) {
 				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
@@ -76,12 +77,13 @@ class HeaderDecoder {
 			}
 			table.add(h);
 		} else if ((z & 0x20) != 0) {
+			r = null;
 			var s = Hpack.decodeInteger(bb, 5);
 			table.setMaxSize(s);
 			dynamicTableMaxSizes.add(s);
 			h = null;
 		} else if ((z & 0x10) != 0) {
-//			System.out.println("r=" + Representation.NEVER_INDEXED);
+			r = HeaderField.Representation.NEVER_INDEXED;
 			var i = Hpack.decodeInteger(bb, 4);
 			if (i != 0) {
 				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
@@ -93,7 +95,7 @@ class HeaderDecoder {
 				h = new HeaderField(n, v);
 			}
 		} else {
-//			System.out.println("r=" + Representation.WITHOUT_INDEXING);
+			r = HeaderField.Representation.WITHOUT_INDEXING;
 			var i = Hpack.decodeInteger(bb, 4);
 			if (i != 0) {
 				var h0 = (i <= HeaderTable.STATIC.maxIndex() ? HeaderTable.STATIC : table).header(i);
@@ -105,7 +107,7 @@ class HeaderDecoder {
 				h = new HeaderField(n, v);
 			}
 		}
-//		System.out.println("h=" + h);
+//		System.out.println("HeaderDecoder.decode, r=" + r + ", h=" + h);
 		if (h != null)
 			headerFields.add(h);
 	}

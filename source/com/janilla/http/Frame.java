@@ -27,7 +27,7 @@ package com.janilla.http;
 import java.util.Arrays;
 import java.util.List;
 
-sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Ping, Frame.Priority, Frame.RstStream,
+public sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Ping, Frame.Priority, Frame.RstStream,
 		Frame.Settings, Frame.WindowUpdate {
 
 	int streamIdentifier();

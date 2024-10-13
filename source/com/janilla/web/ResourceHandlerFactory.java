@@ -116,8 +116,9 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		var u = object instanceof HttpRequest q ? q.getUri() : null;
-		var p = u != null ? u.getPath() : null;
+//		var u = object instanceof HttpRequest q ? q.getUri() : null;
+//		var p = u != null ? u.getPath() : null;
+		var p = object instanceof HttpRequest q ? q.getPath() : null;
 		var r = p != null ? resources.get().get(p) : null;
 		return r != null ? c -> {
 			handle(r, (HttpExchange) c);
