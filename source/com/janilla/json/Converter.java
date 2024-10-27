@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.janilla.reflect.Reflection;
 
@@ -79,6 +80,7 @@ public class Converter {
 			return switch (input) {
 			case Double x -> BigDecimal.valueOf(x);
 			case Long x -> BigDecimal.valueOf(x);
+			case String x -> new BigDecimal(x);
 			default -> throw new RuntimeException();
 			};
 		if (r == Boolean.class || r == Boolean.TYPE)
@@ -117,6 +119,9 @@ public class Converter {
 			return Base64.getDecoder().decode((String) input);
 		if (r == long[].class)
 			return ((Collection<?>) input).stream().mapToLong(x -> (long) x).toArray();
+
+		if (r.isEnum())
+			return Stream.of(r.getEnumConstants()).filter(x -> x.toString().equals(input)).findFirst().orElseThrow();
 
 		if (r.isArray() || Collection.class.isAssignableFrom(r)) {
 			var s = switch (input) {

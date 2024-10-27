@@ -27,7 +27,6 @@ package com.janilla.util;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.PrimitiveIterator;
 import java.util.function.IntConsumer;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -193,7 +192,7 @@ public interface Util {
 			return Integer.parseInt(string.substring(i, i + 2), 16);
 		});
 	}
-	
+
 //	public static PrimitiveIterator.OfInt concat(int i, PrimitiveIterator.OfInt ii) {
 //		return new PrimitiveIterator.OfInt() {
 //			

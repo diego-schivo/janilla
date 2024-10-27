@@ -38,6 +38,7 @@ public interface Property {
 
 	static Property of(Field field) {
 		var n = name(field);
+//		System.out.println("Property.of, n=" + n);
 		VarHandle h;
 		try {
 			h = MethodHandles.publicLookup().unreflectVarHandle(field);

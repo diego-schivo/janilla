@@ -80,10 +80,7 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 //		System.out.println("t=" + t);
 
 		rs.setStatus(s);
-		var hh = rs.getHeaders();
-		if (hh == null)
-			rs.setHeaders(hh = new ArrayList<>());
-		hh.add(new HeaderField("cache-control", "no-cache"));
+		rs.getHeaders().add(new HeaderField("cache-control", "no-cache"));
 		return true;
 	}
 }

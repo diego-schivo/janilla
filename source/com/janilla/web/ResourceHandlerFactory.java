@@ -225,8 +225,6 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		rs.setStatus(200);
 
 		var hh = rs.getHeaders();
-		if (hh == null)
-			rs.setHeaders(hh = new ArrayList<>());
 		hh.add(new HeaderField("cache-control", "max-age=3600"));
 		switch (resource.path().substring(resource.path().lastIndexOf('.') + 1)) {
 		case "ico":

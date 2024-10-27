@@ -24,6 +24,8 @@
  */
 package com.janilla.http;
 
+import com.janilla.net.Net;
+
 public class HttpRequest extends HttpMessage {
 
 	private String method;
@@ -54,7 +56,7 @@ public class HttpRequest extends HttpMessage {
 
 	public String getPath() {
 		var i = target != null ? target.indexOf('?') : -1;
-		return i >= 0 ? target.substring(0, i) : target;
+		return Net.urlDecode(i >= 0 ? target.substring(0, i) : target);
 	}
 
 	public String getQuery() {

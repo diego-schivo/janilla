@@ -26,6 +26,7 @@ package com.janilla.persistence;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
@@ -163,6 +164,33 @@ public class Persistence {
 			} else if (t == UUID.class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.UUID1;
+				j.keyHelper = h;
+			} else if (t.isEnum()) {
+				@SuppressWarnings("unchecked")
+				var h = new ElementHelper<K>() {
+
+					@Override
+					public byte[] getBytes(K element) {
+						return STRING.getBytes(element.toString());
+					}
+
+					@Override
+					public int getLength(ByteBuffer buffer) {
+						return STRING.getLength(buffer);
+					}
+
+					@Override
+					public K getElement(ByteBuffer buffer) {
+						@SuppressWarnings("rawtypes")
+						var ec = (Class) t;
+						return (K) Enum.valueOf(ec, STRING.getElement(buffer));
+					}
+
+					@Override
+					public int compare(ByteBuffer buffer, K element) {
+						return STRING.compare(buffer, element.toString());
+					}
+				};
 				j.keyHelper = h;
 			} else
 				throw new RuntimeException();

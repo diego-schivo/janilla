@@ -285,6 +285,11 @@ public class Crud<E> {
 		}).skip(1 + skip).takeWhile(x -> x > 0).limit(limit).toArray(), aa.stream().mapToLong(x -> x.l).sum());
 	}
 
+	public long[] filter(String index, Predicate<Object> operation) {
+		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		return database.perform((ss, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toArray()), false);
+	}
+
 	public Page filter(String index, Predicate<Object> operation, long skip, long limit) {
 		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
 		return database.perform((ss, ii) -> ii.perform(n,

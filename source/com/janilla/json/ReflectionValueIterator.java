@@ -56,19 +56,25 @@ public class ReflectionValueIterator extends ValueIterator {
 			case Map.Entry<?, ?> x -> Map.Entry.class;
 			default -> throw new RuntimeException();
 			};
-			var s = Reflection.properties(c).map(p -> {
-				var g = Reflection.property(c, p);
-				return g != null ? Map.entry(p, g) : null;
-			}).filter(Objects::nonNull).map(e -> {
+			if (c.isEnum())
+				i = context.buildStringIterator(object.toString());
+			else {
+				var s = Reflection.properties(c).map(p -> {
+					var g = Reflection.property(c, p);
+					return g != null ? Map.entry(p, g) : null;
+				}).filter(Objects::nonNull).map(e -> {
 //				System.out.println(e.getValue() + " " + object);
-				var v = e.getValue().get(object);
-				Map.Entry<String, Object> f = new AbstractMap.SimpleEntry<>(e.getKey(), v);
-				return f;
-			});
-			if (((ReflectionJsonIterator) context).includeType)
-				s = Stream.concat(Stream.of(Map.entry("$type",
-						(Object) c.getName().substring(c.getPackageName().length() + 1).replace('$', '.'))), s);
-			i = context.buildObjectIterator(s.iterator());
+					var v = e.getValue().get(object);
+					Map.Entry<String, Object> f = new AbstractMap.SimpleEntry<>(e.getKey(), v);
+					return f;
+				});
+				if (((ReflectionJsonIterator) context).includeType)
+					s = Stream.concat(
+							Stream.of(Map.entry("$type",
+									(Object) c.getName().substring(c.getPackageName().length() + 1).replace('$', '.'))),
+							s);
+				i = context.buildObjectIterator(s.iterator());
+			}
 		}
 		return i;
 	}
