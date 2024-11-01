@@ -24,8 +24,6 @@
  */
 package com.janilla.web;
 
-import java.util.ArrayList;
-
 import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;

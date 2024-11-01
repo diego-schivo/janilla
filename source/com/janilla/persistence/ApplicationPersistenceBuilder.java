@@ -36,7 +36,6 @@ import com.janilla.database.Memory;
 import com.janilla.database.Store;
 import com.janilla.io.ElementHelper;
 import com.janilla.io.TransactionalByteChannel;
-import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Factory;
 
 public class ApplicationPersistenceBuilder {
@@ -109,8 +108,7 @@ public class ApplicationPersistenceBuilder {
 
 			p.setTypeResolver(x -> {
 				try {
-					return Class
-							.forName(getClass().getPackageName() + "." + x.replace('.', '$'));
+					return Class.forName(getClass().getPackageName() + "." + x.replace('.', '$'));
 				} catch (ClassNotFoundException f) {
 					throw new RuntimeException(f);
 				}

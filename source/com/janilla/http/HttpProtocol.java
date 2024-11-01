@@ -167,6 +167,7 @@ public class HttpProtocol implements Protocol {
 				var ex = createExchange(rq);
 				ex.setRequest(rq);
 				ex.setResponse(rs);
+				@SuppressWarnings("unused")
 				var k = true;
 				Exception e;
 				try {

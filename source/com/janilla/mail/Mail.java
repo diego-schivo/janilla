@@ -54,7 +54,6 @@ import com.janilla.smtp.ReplySmtpResponse;
 import com.janilla.smtp.SmtpClient;
 import com.janilla.smtp.SmtpRequest;
 import com.janilla.smtp.SmtpServer;
-import com.janilla.smtp.StubHandler;
 
 public class Mail {
 

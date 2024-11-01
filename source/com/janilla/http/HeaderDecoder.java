@@ -57,6 +57,7 @@ public class HeaderDecoder {
 	public void decode(PrimitiveIterator.OfInt bytes) {
 		var bb = new PeekingIntIterator(bytes);
 		var z = bb.peek();
+		@SuppressWarnings("unused")
 		HeaderField.Representation r;
 		HeaderField h;
 		if ((z & 0x80) != 0) {
