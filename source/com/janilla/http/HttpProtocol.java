@@ -144,6 +144,8 @@ public class HttpProtocol implements Protocol {
 				}
 				var rq = new HttpRequest();
 				rq.setMethod(method);
+				rq.setScheme(scheme);
+				rq.setAuthority(authority);
 //				rq.setUri(URI.create(scheme + "://" + authority + path));
 				rq.setTarget(path);
 				rq.setHeaders(hh);

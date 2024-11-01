@@ -30,6 +30,10 @@ public class HttpRequest extends HttpMessage {
 
 	private String method;
 
+	private String scheme;
+
+	private String authority;
+
 	private String target;
 
 	// *******************
@@ -41,6 +45,22 @@ public class HttpRequest extends HttpMessage {
 
 	public void setMethod(String method) {
 		this.method = method;
+	}
+
+	public String getScheme() {
+		return scheme;
+	}
+
+	public void setScheme(String scheme) {
+		this.scheme = scheme;
+	}
+
+	public String getAuthority() {
+		return authority;
+	}
+
+	public void setAuthority(String authority) {
+		this.authority = authority;
 	}
 
 	public String getTarget() {
