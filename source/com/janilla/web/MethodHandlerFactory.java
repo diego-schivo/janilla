@@ -314,7 +314,8 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			if (rs.getStatus() == 0) {
 //				rs.setStatus(HttpResponse.Status.of(204));
 				rs.setStatus(204);
-				rs.setHeaders(List.of(new HeaderField("cache-control", "no-cache")));
+				var hh = rs.getHeaders();
+				hh.add(new HeaderField("cache-control", "no-cache"));
 			}
 		} else if (o instanceof Path f && m.isAnnotationPresent(Attachment.class)) {
 //			rs.setStatus(HttpResponse.Status.of(200));

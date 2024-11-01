@@ -32,12 +32,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.security.GeneralSecurityException;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.IntStream;
 
 import javax.net.ssl.SSLContext;
@@ -51,19 +48,6 @@ public abstract class Http {
 
 	public static EntryList<String, String> parseCookieHeader(String string) {
 		return Net.parseEntryList(string, ";", "=");
-	}
-
-	public static String formatSetCookieHeader(String name, String value, ZonedDateTime expires, String path,
-			String sameSite) {
-		var b = new StringBuilder();
-		b.append(name + "=" + (value != null ? value : ""));
-		if (expires != null) {
-			b.append("; Expires="
-					+ expires.format(DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O", Locale.ENGLISH)));
-		}
-		b.append("; Path=" + path);
-		b.append("; SameSite=" + sameSite);
-		return b.toString();
 	}
 
 	public static HttpResponse fetch(InetSocketAddress address, HttpRequest request) {
