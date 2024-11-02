@@ -163,7 +163,7 @@ public class HttpProtocol implements Protocol {
 //				System.out
 //						.println("HttpProtocol.handle, c=" + c.getId() + ", rq=" + rq.getMethod() + " " + rq.getPath());
 				var rs = new HttpResponse();
-				rs.setHeaders(new ArrayList<>());
+				rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
 				var ex = createExchange(rq);
 				ex.setRequest(rq);
 				ex.setResponse(rs);
