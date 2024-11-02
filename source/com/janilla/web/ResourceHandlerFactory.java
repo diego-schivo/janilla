@@ -24,6 +24,7 @@
  */
 package com.janilla.web;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -172,12 +173,13 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 							;
 						else if (extensions.contains(e)) {
 							var f = q.relativize(file);
-							var r = new FileResource(package1, "/" + f.toString(), Files.size(file));
+							n = f.toString().replace(File.separatorChar, '/');
+							var r = new FileResource(package1, "/" + n, Files.size(file));
 //							System.out.println("r=" + r);
 							rr.add(r);
 						} else if (e.equals("zip")) {
 							var f = q.relativize(file);
-							n = f.toString();
+							n = f.toString().replace(File.separatorChar, '/');
 							var a = new FileResource(package1, "/" + n, Files.size(file));
 							URI u;
 							try {
