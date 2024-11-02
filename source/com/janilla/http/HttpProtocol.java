@@ -85,14 +85,15 @@ public class HttpProtocol implements Protocol {
 			""";
 
 	@Override
-	public void handle(Connection connection) {
+	public boolean handle(Connection connection) {
 		var c = (HttpConnection) connection;
 //		System.out.println("HttpProtocol.handle, c=" + c.getId());
 		var bc = c.getSslByteChannel();
 		if (!c.isPrefaceReceived()) {
 			var bb = ByteBuffer.allocate(24);
 			try {
-				bc.read(bb);
+				if (bc.read(bb) < 24)
+					return false;
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -101,7 +102,7 @@ public class HttpProtocol implements Protocol {
 		}
 		var f1 = Http.decode(bc, c.getHeaderDecoder());
 		if (f1 == null)
-			return;
+			return false;
 //		System.out.println("HttpProtocol.handle, c=" + c.getId() + ", f1=" + f1);
 		var ff2 = new ArrayList<Frame>();
 		if (!c.isPrefaceSent()) {
@@ -212,6 +213,7 @@ public class HttpProtocol implements Protocol {
 //			System.out.println("HttpProtocol.handle, c=" + c.getId() + ", f2=" + f2);
 			Http.encode(f2, bc);
 		}
+		return true;
 	}
 
 	protected HttpExchange createExchange(HttpRequest request) {

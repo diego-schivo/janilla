@@ -84,6 +84,7 @@ public class Server {
 	public void serve() {
 		try {
 			channel = ServerSocketChannel.open();
+//			System.out.println("Server.serve, channel=" + channel + ", channel.isBlocking()=" + channel.isBlocking());
 			channel.socket().bind(address);
 			Thread.startVirtualThread(() -> {
 				for (;;) {
@@ -96,15 +97,23 @@ public class Server {
 				}
 			});
 //			System.out.println("Server.serve, address=" + address);
-			for (;;)
+			for (;;) {
 				accept();
+//				if (bar != null)
+//					throw bar;
+			}
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
 	}
 
+//	private Map<String, Integer> foo = new ConcurrentHashMap<>();
+//
+//	private RuntimeException bar;
+
 	protected void accept() throws IOException {
 		var sc = channel.accept();
+//		System.out.println("Server.accept, sc=" + sc + ", sc.isBlocking()=" + sc.isBlocking());
 		Thread.startVirtualThread(() -> {
 			var c = protocol.buildConnection(sc);
 			for (var f = true;; f = false) {
@@ -114,9 +123,18 @@ public class Server {
 					else
 						break;
 				}
-//				System.out.println("Server.accept, c=" + c.getId() + ", handle");
+
+//				var k = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ISO_DATE_TIME);
+//				var v = (int) foo.compute(k, (x, y) -> y == null ? 1 : y + 1);
+//				if (v > 10000) {
+//					bar = new RuntimeException(k + " " + v);
+//					return;
+//				}
+//				System.out.println("Server.accept, c=" + c.getId() + ", handle " + k + " " + v);
+
 				try {
-					protocol.handle(c);
+					if (!protocol.handle(c))
+						break;
 				} catch (Exception e) {
 //					System.out.println("accept, c=" + c.getId() + ", e=" + e);
 					e.printStackTrace();

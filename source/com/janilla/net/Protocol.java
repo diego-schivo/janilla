@@ -30,5 +30,5 @@ public interface Protocol {
 
 	Connection buildConnection(SocketChannel channel);
 
-	void handle(Connection connection);
+	boolean handle(Connection connection);
 }
