@@ -34,6 +34,10 @@ public record HeaderField(String name, String value) {
 		return new HeaderField(line.substring(0, i).trim(), line.substring(i + 1).trim());
 	}
 
+	public HeaderField withValue(String value) {
+		return new HeaderField(name, value);
+	}
+
 	public String toLine() {
 		return name + ": " + value;
 	}

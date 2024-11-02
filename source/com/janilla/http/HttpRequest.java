@@ -28,59 +28,47 @@ import com.janilla.net.Net;
 
 public class HttpRequest extends HttpMessage {
 
-	private String method;
-
-	private String scheme;
-
-	private String authority;
-
-	private String target;
-
-	// *******************
-	// Getters and Setters
-
 	public String getMethod() {
-		return method;
+		return getHeaderValue(":method");
 	}
 
 	public void setMethod(String method) {
-		this.method = method;
+		setHeaderValue(":method", method);
 	}
 
 	public String getScheme() {
-		return scheme;
+		return getHeaderValue(":scheme");
 	}
 
 	public void setScheme(String scheme) {
-		this.scheme = scheme;
+		setHeaderValue(":scheme", scheme);
 	}
 
 	public String getAuthority() {
-		return authority;
+		return getHeaderValue(":authority");
 	}
 
 	public void setAuthority(String authority) {
-		this.authority = authority;
+		setHeaderValue(":authority", authority);
 	}
 
 	public String getTarget() {
-		return target;
+		return getHeaderValue(":path");
 	}
 
 	public void setTarget(String target) {
-		this.target = target;
+		setHeaderValue(":path", target);
 	}
 
-	// Getters and Setters
-	// *******************
-
 	public String getPath() {
-		var i = target != null ? target.indexOf('?') : -1;
-		return Net.urlDecode(i >= 0 ? target.substring(0, i) : target);
+		var t = getTarget();
+		var i = t != null ? t.indexOf('?') : -1;
+		return Net.urlDecode(i >= 0 ? t.substring(0, i) : t);
 	}
 
 	public String getQuery() {
-		var i = target != null ? target.indexOf('?') : -1;
-		return i >= 0 ? target.substring(i + 1) : null;
+		var t = getTarget();
+		var i = t != null ? t.indexOf('?') : -1;
+		return i >= 0 ? t.substring(i + 1) : null;
 	}
 }

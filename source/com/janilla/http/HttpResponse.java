@@ -26,19 +26,12 @@ package com.janilla.http;
 
 public class HttpResponse extends HttpMessage {
 
-	private int status;
-
-	// *******************
-	// Getters and Setters
-
 	public int getStatus() {
-		return status;
+		var v = getHeaderValue(":status");
+		return v != null ? Integer.parseInt(v) : 0;
 	}
 
 	public void setStatus(int status) {
-		this.status = status;
+		setHeaderValue(":status", String.valueOf(status));
 	}
-
-	// Getters and Setters
-	// *******************
 }

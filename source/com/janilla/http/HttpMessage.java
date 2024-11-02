@@ -59,4 +59,16 @@ public abstract class HttpMessage {
 				? headers.stream().filter(x -> x.name().equals(name)).findFirst().map(HeaderField::value).orElse(null)
 				: null;
 	}
+
+	public void setHeaderValue(String name, String value) {
+		var i = 0;
+		for (var h : headers) {
+			if (h.name().equals(name)) {
+				headers.set(i, h.withValue(value));
+				return;
+			}
+			i++;
+		}
+		headers.add(new HeaderField(name, value));
+	}
 }

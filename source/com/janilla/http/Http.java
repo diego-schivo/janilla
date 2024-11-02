@@ -99,16 +99,18 @@ public abstract class Http {
 			}
 			var ffo = new ArrayList<Frame>();
 			ffo.add(new Frame.Settings(true, List.of()));
+			request.setScheme("https");
+			request.setAuthority(address.getHostName());
+			request.setHeaderValue("user-agent", "curl/7.88.1");
 			ffo.add(new Frame.Headers(false, true, request.getBody() == null || request.getBody().length == 0, 1, false,
 					0, 0,
-					java.util.stream.Stream.concat(
-							java.util.stream.Stream.of(new HeaderField(":method", request.getMethod()),
-									new HeaderField(":path", request.getPath()), new HeaderField(":scheme", "https"),
-									new HeaderField(":authority", address.getHostName()),
-									new HeaderField("user-agent", "curl/7.88.1")),
-							request.getHeaders() != null ? request.getHeaders().stream()
-									: java.util.stream.Stream.empty())
-							.toList()));
+//					java.util.stream.Stream
+//							.concat(java.util.stream.Stream.of(new HeaderField(":method", request.getMethod()),
+//									new HeaderField(":path", request.getPath()), new HeaderField(":scheme", "https"),
+//									new HeaderField(":authority", address.getHostName()),
+//									new HeaderField("user-agent", "curl/7.88.1")),request.getHeaders().stream())
+//							.toList()));
+					request.getHeaders()));
 			if (request.getBody() != null && request.getBody().length > 0) {
 				var n = Math.ceilDiv(request.getBody().length, 16384);
 				IntStream.range(0, n).mapToObj(x -> {
@@ -133,20 +135,21 @@ public abstract class Http {
 						break;
 				}
 			}
-			int status = 0;
+//			int status = 0;
 			var hf1 = (Frame.Headers) ff1.get(0);
 			var hh = new ArrayList<HeaderField>();
 			for (var f : hf1.fields()) {
-				switch (f.name()) {
-				case ":status":
-					status = Integer.parseInt(f.value());
-					break;
-				default:
-					hh.add(f);
-				}
+//				switch (f.name()) {
+//				case ":status":
+//					status = Integer.parseInt(f.value());
+//					break;
+//				default:
+//					hh.add(f);
+//				}
+				hh.add(f);
 			}
 			var rs = new HttpResponse();
-			rs.setStatus(status);
+//			rs.setStatus(status);
 			rs.setHeaders(hh);
 			if (ff1.size() > 1) {
 				var ii = new int[ff1.size()];

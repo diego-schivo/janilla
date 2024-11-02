@@ -121,33 +121,33 @@ public class HttpProtocol implements Protocol {
 			ff1.add(f1);
 			var es = f1 instanceof Frame.Headers x ? x.endStream() : f1 instanceof Frame.Data x ? x.endStream() : false;
 			if (es) {
-				String method = null, scheme = null, authority = null, path = null;
+//				String method = null, scheme = null, authority = null, path = null;
 				var hf1 = (Frame.Headers) ff1.get(0);
 				var hh = new ArrayList<HeaderField>();
 				for (var f : hf1.fields()) {
-					switch (f.name()) {
-					case ":method":
-						method = f.value();
-						break;
-					case ":scheme":
-						scheme = f.value();
-						break;
-					case ":authority":
-						authority = f.value();
-						break;
-					case ":path":
-						path = f.value();
-						break;
-					default:
-						hh.add(f);
-					}
+//					switch (f.name()) {
+//					case ":method":
+//						method = f.value();
+//						break;
+//					case ":scheme":
+//						scheme = f.value();
+//						break;
+//					case ":authority":
+//						authority = f.value();
+//						break;
+//					case ":path":
+//						path = f.value();
+//						break;
+//					default:
+//						hh.add(f);
+//					}
+					hh.add(f);
 				}
 				var rq = new HttpRequest();
-				rq.setMethod(method);
-				rq.setScheme(scheme);
-				rq.setAuthority(authority);
-//				rq.setUri(URI.create(scheme + "://" + authority + path));
-				rq.setTarget(path);
+//				rq.setMethod(method);
+//				rq.setScheme(scheme);
+//				rq.setAuthority(authority);
+//				rq.setTarget(path);
 				rq.setHeaders(hh);
 				if (ff1.size() > 1) {
 					var ii = new int[ff1.size()];
@@ -191,10 +191,11 @@ public class HttpProtocol implements Protocol {
 //				System.out.println("HttpProtocol.handle, c=" + c.getId() + ", rs=" + rs.getStatus() + ", k=" + k);
 				var hf2 = new Frame.Headers(false, true, rs.getBody() == null || rs.getBody().length == 0,
 						hf1.streamIdentifier(), false, 0, 0,
-						java.util.stream.Stream.concat(
-								java.util.stream.Stream.of(new HeaderField(":status", String.valueOf(rs.getStatus()))),
-								rs.getHeaders() != null ? rs.getHeaders().stream() : java.util.stream.Stream.empty())
-								.toList());
+//						java.util.stream.Stream.concat(
+//								java.util.stream.Stream.of(new HeaderField(":status", String.valueOf(rs.getStatus()))),
+//								rs.getHeaders() != null ? rs.getHeaders().stream() : java.util.stream.Stream.empty())
+//								.toList());
+						rs.getHeaders());
 				ff2.add(hf2);
 				if (rs.getBody() != null && rs.getBody().length > 0) {
 					var n = Math.ceilDiv(rs.getBody().length, 16384);
