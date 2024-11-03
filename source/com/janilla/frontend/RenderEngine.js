@@ -23,12 +23,12 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 const htmlEscapes = {
-	"&": "&amp",
-	"<": "&lt",
-	">": "&gt",
-	'"': "&quot",
-	"'": "&#x27",
-	"`": "&#x60",
+	"&": "&amp;",
+	"<": "&lt;",
+	">": "&gt;",
+	'"': "&quot;",
+	"'": "&#x27;",
+	"`": "&#x60;",
 };
 const unescapedHtml = /[&<>"'`]/g;
 const hasUnescapedHtml = new RegExp(unescapedHtml.source);
@@ -83,11 +83,8 @@ class RenderEngine {
 				return await t(async (expression, escape) => {
 					try {
 						this.evaluate(expression);
-						if (expression.length === 0)
-							return this.stack.at(-1).value;
-						//const c = this.stack.pop();
-						//return await this.render(c);
-						return await this.render();
+						const w = (expression.length === 0 ? this.stack.at(-1).value : await this.render()).toString();
+						return escape ? escapeHtml(w) : w;
 					} finally {
 						while (this.stack.length > s + 1)
 							this.stack.pop();
