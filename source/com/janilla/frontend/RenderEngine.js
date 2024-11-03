@@ -112,7 +112,24 @@ class RenderEngine {
 		for (const x of pattern) {
 			if (x !== undefined) {
 				const y = this.stack[j];
-				if (x !== y.value && x !== y.key && x !== typeof y.key)
+				if (x === y.value);
+				else if (typeof x === "string" && x.startsWith("[") && x.endsWith('"]')) {
+					const i = x.indexOf('="');
+					if (i === -1)
+						return false;
+					switch (x.substring(1, i)) {
+						case "key":
+							if (x.substring(i + 2, x.length - 2) !== y.key)
+								return false;
+							break;
+						case "type":
+							if (x.substring(i + 2, x.length - 2) !== typeof y.key)
+								return false;
+							break;
+						default:
+							return false;
+					}
+				} else
 					return false;
 			}
 			j++;
