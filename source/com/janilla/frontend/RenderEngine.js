@@ -22,8 +22,6 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import templates from './templates.js';
-
 const htmlEscapes = {
 	"&": "&amp",
 	"<": "&lt",
@@ -38,9 +36,23 @@ const escapeHtml = s => s && hasUnescapedHtml.test(s) ? s.replaceAll(unescapedHt
 
 class RenderEngine {
 
-	templates = templates;
+	templates;
 
 	stack = [];
+
+	constructor(templateElements) {
+		if (templateElements) {
+			const ee = templateElements instanceof NodeList ? Array.from(templateElements) : templateElements;
+			const AsyncFunction = async function() { }.constructor;
+			this.templates = Object.fromEntries(ee.map(x => {
+				const h = Array.from(x.content.children).map(x => x.outerHTML).join("")
+					.replace(/\{(.*?)\}/g, (_, x) => "${await r('" + x + "', true)}")
+					.replace(/\<\w+ render="(.*?)"\>[^\S]*\<\/\w+\>/g, (_, x) => "${await r('" + x + "', false)}");
+				const f = new AsyncFunction("r", "return `" + h + "`");
+				return [x.id, f];
+			}));
+		}
+	}
 
 	async render(input) {
 		if (input === undefined)
@@ -114,6 +126,7 @@ class RenderEngine {
 
 	clone() {
 		const e = new RenderEngine();
+		e.templates = this.templates;
 		e.stack = [...this.stack];
 		return e;
 	}

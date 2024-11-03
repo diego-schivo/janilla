@@ -46,63 +46,63 @@ public class TemplatesWeb {
 
 	public static Pattern template = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>", Pattern.DOTALL);
 
-	protected Object application;
-
-	protected Supplier<Iterable<Template>> templates = Lazy.of(() -> {
-		var l = Thread.currentThread().getContextClassLoader();
-		var b = Stream.<Template>builder();
-		for (var nn = Stream.of(getClass().getPackageName(), application.getClass().getPackageName())
-				.flatMap(p -> IO.getPackageFiles(p).filter(f -> f.getFileName().toString().endsWith(".html")).map(f -> {
-					return p.replace('.', '/') + "/" + f.getFileName().toString();
-				})).iterator();nn.hasNext();) {
-			var n = nn.next();
-			var o = new ByteArrayOutputStream();
-			try (var t = l.getResourceAsStream(n); var w = new PrintWriter(o)) {
-				if (t == null)
-					throw new NullPointerException(n);
-				try (var r = new BufferedReader(new InputStreamReader(t))) {
-					for (var j = r.lines().iterator(); j.hasNext();)
-						w.print(expression.matcher(j.next()).replaceAll(x -> {
-							var g1 = x.group(1);
-							var g2 = x.group(2);
-							var g3 = x.group(3);
-							return "\\${await r('" + Objects.toString(g2, g3) + "', " + (g2 != null && g1 == null)
-									+ ")}";
-						}));
-				}
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-			var h = o.toString();
-			h = template.matcher(h).replaceAll(r -> {
-				b.add(new Template(r.group(1), r.group(2)));
-				return "";
-			});
-			b.add(new Template(n.substring(n.lastIndexOf('/') + 1, n.length() - ".html".length()), h));
-		}
-		return b.build().toList();
-	});
-
-	public void setApplication(Object application) {
-		this.application = application;
-	}
-
-	@Handle(method = "GET", path = "/templates.js")
-	public Script getScript() {
-		return new Script(templates.get());
-	}
-
-	@Render("""
-			export default {
-				${entries}
-			};""")
-	public record Script(Iterable<Template> entries) {
-	}
-
-	@Render("""
-				'${name}': async r => `
-			${html}
-				`,""")
-	public record Template(String name, String html) {
-	}
+//	protected Object application;
+//
+//	protected Supplier<Iterable<Template>> templates = Lazy.of(() -> {
+//		var l = Thread.currentThread().getContextClassLoader();
+//		var b = Stream.<Template>builder();
+//		for (var nn = Stream.of(getClass().getPackageName(), application.getClass().getPackageName())
+//				.flatMap(p -> IO.getPackageFiles(p).filter(f -> f.getFileName().toString().endsWith(".html")).map(f -> {
+//					return p.replace('.', '/') + "/" + f.getFileName().toString();
+//				})).iterator();nn.hasNext();) {
+//			var n = nn.next();
+//			var o = new ByteArrayOutputStream();
+//			try (var t = l.getResourceAsStream(n); var w = new PrintWriter(o)) {
+//				if (t == null)
+//					throw new NullPointerException(n);
+//				try (var r = new BufferedReader(new InputStreamReader(t))) {
+//					for (var j = r.lines().iterator(); j.hasNext();)
+//						w.print(expression.matcher(j.next()).replaceAll(x -> {
+//							var g1 = x.group(1);
+//							var g2 = x.group(2);
+//							var g3 = x.group(3);
+//							return "\\${await r('" + Objects.toString(g2, g3) + "', " + (g2 != null && g1 == null)
+//									+ ")}";
+//						}));
+//				}
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+//			var h = o.toString();
+//			h = template.matcher(h).replaceAll(r -> {
+//				b.add(new Template(r.group(1), r.group(2)));
+//				return "";
+//			});
+//			b.add(new Template(n.substring(n.lastIndexOf('/') + 1, n.length() - ".html".length()), h));
+//		}
+//		return b.build().toList();
+//	});
+//
+//	public void setApplication(Object application) {
+//		this.application = application;
+//	}
+//
+//	@Handle(method = "GET", path = "/templates.js")
+//	public Script getScript() {
+//		return new Script(templates.get());
+//	}
+//
+//	@Render("""
+//			export default {
+//				${entries}
+//			};""")
+//	public record Script(Iterable<Template> entries) {
+//	}
+//
+//	@Render("""
+//				'${name}': async r => `
+//			${html}
+//				`,""")
+//	public record Template(String name, String html) {
+//	}
 }
