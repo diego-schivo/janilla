@@ -178,7 +178,10 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	Supplier<Map<Pattern, Invocable>> regexInvocables = Lazy.of(() -> {
 		var ii = invocables.get();
 		var kk = ii.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).collect(Collectors.toSet());
-		var jj = kk.stream().collect(Collectors.toMap(k -> Pattern.compile(k), ii::get));
+		var jj = kk.stream().sorted(Comparator.comparingInt((String x) -> {
+			var i = x.indexOf('(');
+			return i >= 0 ? i : x.length();
+		}).reversed()).collect(Collectors.toMap(k -> Pattern.compile(k), ii::get, (v, w) -> v, LinkedHashMap::new));
 		ii.keySet().removeAll(kk);
 //		System.out.println("m=" + m + "\nx=" + x);
 		return jj;
