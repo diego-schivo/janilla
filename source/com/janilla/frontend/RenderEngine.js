@@ -22,6 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
+/*
 const htmlEscapes = {
 	"&": "&amp;",
 	"<": "&lt;",
@@ -33,6 +34,21 @@ const htmlEscapes = {
 const unescapedHtml = /[&<>"'`]/g;
 const hasUnescapedHtml = new RegExp(unescapedHtml.source);
 const escapeHtml = s => s && hasUnescapedHtml.test(s) ? s.replaceAll(unescapedHtml, c => htmlEscapes[c]) : s;
+*/
+
+function initDataset(el) {
+	let r = el.dataset.render;
+	if (!r) {
+		r = el.getAttributeNames().some(x => el.getAttribute(x).includes("${"));
+		r = el.dataset.render = "";
+	}
+	el.childNodes.forEach(x => {
+		if (x instanceof Element)
+			initDataset(x);
+		else if (!r && x instanceof Text && x.nodeValue.includes("${"))
+			r = el.dataset.render = "";
+	});
+}
 
 class RenderEngine {
 
@@ -40,21 +56,20 @@ class RenderEngine {
 
 	stack = [];
 
-	constructor(templateElements) {
-		if (templateElements) {
-			const ee = templateElements instanceof NodeList ? Array.from(templateElements) : templateElements;
-			const AsyncFunction = async function() { }.constructor;
-			this.templates = Object.fromEntries(ee.map(x => {
-				const h = Array.from(x.content.children).map(x => x.outerHTML).join("")
-					.replace(/\{(.*?)\}/g, (_, x) => "${await r('" + x + "', true)}")
-					.replace(/\<\w+ render="(.*?)"\>[^\S]*\<\/\w+\>/g, (_, x) => "${await r('" + x + "', false)}");
-				const f = new AsyncFunction("r", "return `" + h + "`");
-				return [x.id, f];
-			}));
+	constructor(templates) {
+		if (templates instanceof NodeList)
+			templates = Array.from(templates);
+		if (Array.isArray(templates)) {
+			templates.forEach(x => {
+				for (const y of x.content.children)
+					initDataset(y);
+			});
+			templates = Object.fromEntries(templates.map(x => [x.id, x]));
 		}
+		this.templates = templates;
 	}
 
-	async render(input) {
+	render(input) {
 		if (input === undefined)
 			input = this.stack.pop();
 		const s = this.stack.length;
@@ -63,48 +78,85 @@ class RenderEngine {
 			let v = input.value;
 			for (let i = this.stack.length - 1; i >= 0; i--) {
 				const y = this.stack[i].value;
-				if (typeof y === 'object' && y !== null && !Array.isArray(y))
-					if (Reflect.has(y, 'render') && typeof y.render === 'function')
-						if (await y.render(this))
+				if (typeof y === "object" && y !== null && !Array.isArray(y))
+					if (Reflect.has(y, "tryRender") && typeof y.tryRender === "function")
+						if (y.tryRender(this))
 							break;
 			}
 			for (; ;) {
 				let y = this.stack.at(-1).value;
 				if (y === v)
 					break;
-				if (typeof y === 'object' && y !== null && !Array.isArray(y))
-					if (Reflect.has(y, 'render') && typeof y.render === 'function')
-						await y.render(this);
+				if (typeof y === "object" && y !== null && !Array.isArray(y))
+					if (Reflect.has(y, "tryRender") && typeof y.tryRender === "function")
+						y.tryRender(this);
 				v = y;
 			}
 			const z = this.stack.at(-1);
 			if (z.template) {
 				const t = this.templates[z.template];
-				return await t(async (expression, escape) => {
+				const df = t.content.cloneNode(true);
+				for (const el of df.querySelectorAll("[data-render]")) {
 					try {
-						this.evaluate(expression);
-						const w = (expression.length === 0 ? this.stack.at(-1).value : await this.render()).toString();
-						return escape ? escapeHtml(w) : w;
+						const ex = el.dataset.render;
+						delete el.dataset.render;
+						this.evaluate(ex);
+						if (ex.length) {
+							const w = this.stack.at(-1).value;
+							const a = this.render();
+							if (a[0] instanceof Node) {
+								el.replaceWith(...a);
+								if (typeof w === "object" && w !== null && !Array.isArray(w) && Reflect.has(w, "tryRender") && typeof w.tryRender === "function")
+									w.renderedNodes = a;
+							} else
+								el.outerHTML = a.join("");
+						} else {
+							for (const n of el.getAttributeNames()) {
+								const w = el.getAttribute(n);
+								if (w.includes("${"))
+									el.setAttribute(n, w.replace(/\$\{(.*?)\}/g, (_, x) => {
+										try {
+											this.evaluate(x);
+											return !x.length ? this.stack.at(-1).value : this.render().join("");
+										} finally {
+											while (this.stack.length > s + 1)
+												this.stack.pop();
+										}
+									}));
+							}
+							for (const n of el.childNodes)
+								if (n instanceof Text && n.nodeValue.includes("${"))
+									n.nodeValue = n.nodeValue.replace(/\$\{(.*?)\}/g, (_, x) => {
+										try {
+											this.evaluate(x);
+											return !x.length ? this.stack.at(-1).value : this.render().join("");
+										} finally {
+											while (this.stack.length > s + 1)
+												this.stack.pop();
+										}
+									});
+						}
 					} finally {
 						while (this.stack.length > s + 1)
 							this.stack.pop();
 					}
-				});
+				}
+				return Array.from(df.children);
 			}
 			if (Array.isArray(z.value)) {
 				const a = [];
 				for (let i = 0; i < z.value.length; i++)
-					a.push(await this.render({ key: i, value: z.value[i] }));
-				return a.join('');
+					a.push(... this.render({ key: i, value: z.value[i] }));
+				return a;
 			}
-			return z.value ?? '';
+			return z.value != null ? [z.value] : [];
 		} finally {
 			while (this.stack.length > s)
 				this.stack.pop();
 		}
 	}
 
-	async match(pattern, callback) {
+	match(pattern, callback) {
 		const i = this.stack.length - pattern.length;
 		if (i < 0)
 			return false;
@@ -134,13 +186,12 @@ class RenderEngine {
 			}
 			j++;
 		}
-		await callback(this.stack.slice(i).map(x => x.value), this.stack.at(-1));
+		callback(this.stack.slice(i).map(x => x.value), this.stack.at(-1));
 		return true;
 	}
 
 	clone() {
-		const e = new RenderEngine();
-		e.templates = this.templates;
+		const e = new RenderEngine(this.templates);
 		e.stack = [...this.stack];
 		return e;
 	}
@@ -149,12 +200,12 @@ class RenderEngine {
 		if (expression.length === 0)
 			return;
 		let c = this.stack.at(-1);
-		const nn = expression.split('.');
+		const nn = expression.split(".");
 		for (let i = 0; i < nn.length; i++) {
 			let n = nn[i];
 			let k;
-			if (n.endsWith(']')) {
-				const j = n.lastIndexOf('[');
+			if (n.endsWith("]")) {
+				const j = n.lastIndexOf("[");
 				k = parseInt(n.substring(j + 1, n.length - 1), 10);
 				n = n.substring(0, j);
 			} else
@@ -165,7 +216,7 @@ class RenderEngine {
 				if (c.value instanceof FormData) {
 					d.value = c.value.get(n);
 					break;
-				} else if (typeof c.value === 'object' && c.value !== null) {
+				} else if (typeof c.value === "object" && c.value !== null) {
 					if (n.length) {
 						if (Reflect.has(c.value, n)) {
 							d.value = c.value[n];
