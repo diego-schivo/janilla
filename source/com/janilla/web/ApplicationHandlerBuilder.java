@@ -111,7 +111,8 @@ public class ApplicationHandlerBuilder {
 
 	protected WebHandlerFactory buildResourceHandlerFactory() {
 		var f = factory.create(ResourceHandlerFactory.class);
-		f.setPackages("com.janilla.frontend", factory.getSource().getClass().getPackageName());
+		f.setPackages(getClass().getPackageName(), "com.janilla.frontend",
+				factory.getSource().getClass().getPackageName());
 		return f;
 	}
 

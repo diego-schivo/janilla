@@ -41,4 +41,5 @@ module com.janilla {
 
 	opens com.janilla.frontend;
 	opens com.janilla.net;
+	opens com.janilla.web;
 }
