@@ -22,6 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
+/*
 const placeholder = RegExp("\\$\\{(.*?)\\}", "g");
 
 export function interpolate(target, data) {

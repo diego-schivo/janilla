@@ -126,7 +126,7 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		} : null;
 	}
 
-	static Set<String> extensions = Set.of("avif", "css", "ico", "jpg", "js", "png", "svg", "ttf", "webp", "woff",
+	static Set<String> extensions = Set.of("avif", "css", "html", "ico", "jpg", "js", "png", "svg", "ttf", "webp", "woff",
 			"woff2");
 
 	protected Stream<Resource> walk(String package1) {
@@ -228,6 +228,9 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		var hh = rs.getHeaders();
 		hh.add(new HeaderField("cache-control", "max-age=3600"));
 		switch (resource.path().substring(resource.path().lastIndexOf('.') + 1)) {
+		case "html":
+			hh.add(new HeaderField("content-type", "text/html"));
+			break;
 		case "ico":
 			hh.add(new HeaderField("content-type", "image/x-icon"));
 			break;
