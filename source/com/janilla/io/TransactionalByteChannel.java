@@ -30,36 +30,36 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TransactionalByteChannel extends FilterSeekableByteChannel {
 
 	public static void main(String[] args) throws Exception {
 		var f = Files.createTempFile("foo", "");
-		var g = Files.createTempFile("foo", ".transaction");
-		try (var c = new TransactionalByteChannel(
+		var tf = Files.createTempFile("foo", ".transaction");
+		try (var ch = new TransactionalByteChannel(
 				FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
-				FileChannel.open(g, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
-			c.startTransaction();
+				FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+			ch.startTransaction();
 			{
 				var b = ByteBuffer.wrap("foobar".getBytes());
-				IO.repeat(x -> c.write(b), b.remaining());
+				IO.repeat(x -> ch.write(b), b.remaining());
 			}
-			c.commitTransaction();
+			ch.commitTransaction();
 
-			c.startTransaction();
+			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
+
+			ch.startTransaction();
 			{
-				c.position(3);
+				ch.position(3);
 				var b = ByteBuffer.wrap("bazqux".getBytes());
-				IO.repeat(x -> c.write(b), b.remaining());
+				IO.repeat(x -> ch.write(b), b.remaining());
 
-				try {
-					new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
-					new ProcessBuilder("hexdump", "-C", g.toString()).inheritIO().start().waitFor();
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
+				new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
+				new ProcessBuilder("hexdump", "-C", tf.toString()).inheritIO().start().waitFor();
 			}
-			c.rollbackTransaction();
+			ch.rollbackTransaction();
 
 			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 		}
@@ -67,7 +67,9 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 
 	SeekableByteChannel transactionChannel;
 
-	Transaction transaction;
+	List<Range> transaction;
+
+	long size;
 
 	public TransactionalByteChannel(SeekableByteChannel channel, SeekableByteChannel transactionChannel)
 			throws IOException {
@@ -77,7 +79,8 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 	}
 
 	public void startTransaction() throws IOException {
-		transaction = new Transaction(channel.size());
+		transaction = new ArrayList<>();
+		size = channel.size();
 	}
 
 	public void commitTransaction() throws IOException {
@@ -93,14 +96,14 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 		var b = ByteBuffer.allocate((int) Math.min(s, IO.DEFAULT_BUFFER_CAPACITY));
 		transactionChannel.position(0);
 		for (var p = 0L; p < s;) {
-			if (b.position() < 8 + 4) {
+			if (b.position() < Long.BYTES + Integer.BYTES) {
 				b.limit(b.capacity());
 				var x = b;
 				IO.repeat(y -> transactionChannel.read(x), b.remaining());
 			}
 
 			var q = b.getLong(0);
-			var l = b.getInt(8);
+			var l = b.getInt(Long.BYTES);
 			if (l < 0) {
 				channel.truncate(q);
 				q += l;
@@ -108,8 +111,8 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 			}
 
 			var z = b.position();
-			b.limit(Math.min(z, 8 + 4 + l));
-			b.position(8 + 4);
+			b.limit(Math.min(z, Long.BYTES + Integer.BYTES + l));
+			b.position(Long.BYTES + Integer.BYTES);
 			channel.position(q);
 			for (var n = 0; n < l;) {
 				if (!b.hasRemaining()) {
@@ -125,7 +128,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 			}
 			b.limit(z);
 			b.compact();
-			p += 8 + 4 + l;
+			p += Long.BYTES + Integer.BYTES + l;
 		}
 		transactionChannel.truncate(0);
 	}
@@ -134,18 +137,21 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 	public int write(ByteBuffer src) throws IOException {
 		if (src.remaining() > 0) {
 			var p = channel.position();
-			var i = transaction.include(new Transaction.Range(p, p + src.remaining()));
-			if (i != null) {
-				var l = (int) (i.end() - i.start());
-				var b = ByteBuffer.allocate(8 + 4 + Math.abs(l));
-				b.putLong(i.start());
-				b.putInt(l);
-				channel.position(l >= 0 ? i.start() : i.end());
-				IO.repeat(x -> channel.read(b), b.remaining());
-				b.flip();
-				IO.repeat(x -> transactionChannel.write(b), b.remaining());
-				channel.position(p);
-			}
+			var rs = p < size ? Range.union(transaction, new Range(p, Math.min(p + src.remaining(), size))) : null;
+			if (rs != null)
+				for (var ri = rs.iterator(); ri.hasNext();) {
+					var r = ri.next();
+					var l = (int) (r.to() - r.from());
+					var b = ByteBuffer.allocate(Long.BYTES + Integer.BYTES + l);
+					var z = r.to() == size;
+					b.putLong(z ? r.to() : r.from());
+					b.putInt(z ? -l : l);
+					channel.position(r.from());
+					IO.repeat(x -> channel.read(b), b.remaining());
+					b.flip();
+					IO.repeat(x -> transactionChannel.write(b), b.remaining());
+					channel.position(p);
+				}
 		}
 		return super.write(src);
 	}

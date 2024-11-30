@@ -47,36 +47,36 @@ public class Database {
 
 	public static void main(String[] args) throws Exception {
 		var o = 3;
-		var f1 = Files.createTempFile("database", "");
-		var f2 = Files.createTempFile("database", ".transaction");
-		try (var c = new TransactionalByteChannel(
-				FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
-				FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
-			Supplier<Database> g = () -> {
+		var f = Files.createTempFile("database", "");
+		var tf = Files.createTempFile("database", ".transaction");
+		try (var ch = new TransactionalByteChannel(
+				FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
+				FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+			Supplier<Database> ds = () -> {
 				try {
-					var d = new Database();
 					var m = new Memory();
-					var u = m.getFreeBTree();
-					u.setOrder(o);
-					u.setChannel(c);
-					u.setRoot(Memory.BlockReference.read(c, 0));
-					m.setAppendPosition(Math.max(3 * Memory.BlockReference.HELPER_LENGTH, c.size()));
+					var t = m.getFreeBTree();
+					t.setChannel(ch);
+					t.setOrder(o);
+					t.setRoot(Memory.BlockReference.read(ch, 0));
+					m.setAppendPosition(Math.max(3 * Memory.BlockReference.HELPER_LENGTH, ch.size()));
 
+					var d = new Database();
 					d.setBTreeOrder(o);
-					d.setChannel(c);
+					d.setChannel(ch);
 					d.setMemory(m);
 					d.setStoresRoot(Memory.BlockReference.HELPER_LENGTH);
 					d.setIndexesRoot(2 * Memory.BlockReference.HELPER_LENGTH);
 					d.setInitializeStore((n, s) -> {
 						@SuppressWarnings("unchecked")
-						var t = (Store<String>) s;
-						t.setElementHelper(ElementHelper.STRING);
+						var s2 = (Store<String>) s;
+						s2.setElementHelper(ElementHelper.STRING);
 					});
 					d.setInitializeIndex((n, i) -> {
 						@SuppressWarnings("unchecked")
-						var k = (Index<String, Object[]>) i;
-						k.setKeyHelper(ElementHelper.STRING);
-						k.setValueHelper(ElementHelper.of(
+						var i2 = (Index<String, Object[]>) i;
+						i2.setKeyHelper(ElementHelper.STRING);
+						i2.setValueHelper(ElementHelper.of(
 								new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
 								new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
 					});
@@ -86,13 +86,13 @@ public class Database {
 				}
 			};
 
-			var i = new long[1];
 			{
-				var d = g.get();
+				var d = ds.get();
 				d.perform((ss, ii) -> {
-					ss.perform("articles", s -> {
-						i[0] = s.create(j -> Json.format(Map.of("id", j, "title", "Foo")));
-						s.update(i[0], t -> {
+					ss.create("Article");
+					ss.perform("Article", s -> {
+						var y = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
+						s.update(y, t -> {
 							@SuppressWarnings("unchecked")
 							var m = (Map<String, Object>) Json.parse((String) t);
 							m.put("title", "FooBarBazQux");
@@ -100,32 +100,35 @@ public class Database {
 						});
 						return null;
 					});
-					ii.perform("Article.tagList", j -> {
-						j.add("foo", new Object[] {
-								LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 0L });
-						j.add("foo", new Object[] {
-								LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 1L });
+
+					ii.create("Article.tagList");
+					ii.perform("Article.tagList", i -> {
+						i.add("foo", (Object) new Object[] {
+								LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 1L });
+						i.add("foo", (Object) new Object[] {
+								LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 2L });
 						return null;
 					});
 					return null;
 				}, true);
 			}
 
-			new ProcessBuilder("hexdump", "-C", f1.toString()).inheritIO().start().waitFor();
+			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 
 			{
-				var d = g.get();
+				var d = ds.get();
 				d.perform((ss, ii) -> {
-					ss.perform("articles", t -> {
-						var j = Json.parse((String) t.read(i[0]));
-						System.out.println(j);
-						assert j.equals(Map.of("id", (int) i[0], "title", "FooBarBazQux")) : j;
+					ss.perform("Article", s -> {
+						var m = Json.parse((String) s.read(1L));
+						System.out.println(m);
+						assert m.equals(Map.of("id", 1L, "title", "FooBarBazQux")) : m;
 						return null;
 					});
-					ii.perform("Article.tagList", j -> {
-						var k = j.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
-						System.out.println(Arrays.toString(k));
-						assert Arrays.equals(k, new long[] { 1, 0 }) : j;
+
+					ii.perform("Article.tagList", i -> {
+						var ll = i.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
+						System.out.println(Arrays.toString(ll));
+						assert Arrays.equals(ll, new long[] { 2, 1 }) : i;
 						return null;
 					});
 					return null;

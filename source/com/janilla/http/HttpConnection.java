@@ -24,9 +24,9 @@
  */
 package com.janilla.http;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.janilla.net.Connection;
 
@@ -38,7 +38,7 @@ public class HttpConnection extends Connection {
 
 	private boolean prefaceSent;
 
-	private Map<Integer, List<Frame>> streams = new HashMap<>();
+	private Map<Integer, List<Frame>> streams = new ConcurrentHashMap<>();
 
 	// *******************
 	// Getters and Setters

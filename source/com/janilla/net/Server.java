@@ -113,7 +113,7 @@ public class Server {
 
 	protected void accept() throws IOException {
 		var sc = channel.accept();
-//		System.out.println("Server.accept, sc=" + sc + ", sc.isBlocking()=" + sc.isBlocking());
+//		System.out.println(LocalTime.now() + ", Server.accept, sc=" + sc + ", sc.isBlocking()=" + sc.isBlocking());
 		Thread.startVirtualThread(() -> {
 			var c = protocol.buildConnection(sc);
 			for (var f = true;; f = false) {

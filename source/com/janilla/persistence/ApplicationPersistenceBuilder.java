@@ -60,30 +60,30 @@ public class ApplicationPersistenceBuilder {
 
 	public Persistence build() {
 		try {
-			TransactionalByteChannel c;
+			TransactionalByteChannel ch;
 			{
 				var d = Files.createDirectories(file.getParent());
-				var f1 = d.resolve(file.getFileName());
-				var f2 = d.resolve(file.getFileName() + ".transaction");
-				c = new TransactionalByteChannel(
-						FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ,
+				var f = d.resolve(file.getFileName());
+				var tf = d.resolve(file.getFileName() + ".transaction");
+				ch = new TransactionalByteChannel(
+						FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 								StandardOpenOption.WRITE),
-						FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ,
+						FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ,
 								StandardOpenOption.WRITE));
 			}
 
 			var m = new Memory();
 			{
 				var t = m.getFreeBTree();
-				t.setChannel(c);
+				t.setChannel(ch);
 				t.setOrder(order);
-				t.setRoot(Memory.BlockReference.read(c, 0));
-				m.setAppendPosition(Math.max(3 * Memory.BlockReference.HELPER_LENGTH, c.size()));
+				t.setRoot(Memory.BlockReference.read(ch, 0));
+				m.setAppendPosition(Math.max(3 * Memory.BlockReference.HELPER_LENGTH, ch.size()));
 			}
 
 			var d = new Database();
 			d.setBTreeOrder(order);
-			d.setChannel(c);
+			d.setChannel(ch);
 			d.setMemory(m);
 			d.setStoresRoot(Memory.BlockReference.HELPER_LENGTH);
 			d.setIndexesRoot(2 * Memory.BlockReference.HELPER_LENGTH);
@@ -96,8 +96,8 @@ public class ApplicationPersistenceBuilder {
 
 			d.setInitializeStore((n, s) -> {
 				@SuppressWarnings("unchecked")
-				var u = (Store<String>) s;
-				u.setElementHelper(ElementHelper.STRING);
+				var s2 = (Store<String>) s;
+				s2.setElementHelper(ElementHelper.STRING);
 			});
 			d.setInitializeIndex((n, i) -> {
 				if (p.initializeIndex(n, i))

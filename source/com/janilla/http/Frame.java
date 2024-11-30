@@ -27,8 +27,8 @@ package com.janilla.http;
 import java.util.Arrays;
 import java.util.List;
 
-public sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Ping, Frame.Priority, Frame.RstStream,
-		Frame.Settings, Frame.WindowUpdate {
+public sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, Frame.Ping, Frame.Priority,
+		Frame.RstStream, Frame.Settings, Frame.WindowUpdate {
 
 	int streamIdentifier();
 
@@ -73,7 +73,7 @@ public sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, F
 	}
 
 	record Headers(boolean priority, boolean endHeaders, boolean endStream, int streamIdentifier, boolean exclusive,
-			int streamDependency, int weight, Iterable<HeaderField> fields) implements Frame {
+			int streamDependency, int weight, List<HeaderField> fields) implements Frame {
 	}
 
 	record Ping(boolean ack, int streamIdentifier, Long opaqueData) implements Frame {
