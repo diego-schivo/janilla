@@ -55,18 +55,18 @@ public class Database {
 			Supplier<Database> ds = () -> {
 				try {
 					var m = new Memory();
-					var t = m.getFreeBTree();
-					t.setChannel(ch);
-					t.setOrder(o);
-					t.setRoot(Memory.BlockReference.read(ch, 0));
-					m.setAppendPosition(Math.max(3 * Memory.BlockReference.HELPER_LENGTH, ch.size()));
+					var ft = m.getFreeBTree();
+					ft.setChannel(ch);
+					ft.setOrder(o);
+					ft.setRoot(BlockReference.read(ch, 0));
+					m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, ch.size()));
 
 					var d = new Database();
 					d.setBTreeOrder(o);
 					d.setChannel(ch);
 					d.setMemory(m);
-					d.setStoresRoot(Memory.BlockReference.HELPER_LENGTH);
-					d.setIndexesRoot(2 * Memory.BlockReference.HELPER_LENGTH);
+					d.setStoresRoot(BlockReference.HELPER_LENGTH);
+					d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
 					d.setInitializeStore((n, s) -> {
 						@SuppressWarnings("unchecked")
 						var s2 = (Store<String>) s;
@@ -91,10 +91,10 @@ public class Database {
 				d.perform((ss, ii) -> {
 					ss.create("Article");
 					ss.perform("Article", s -> {
-						var y = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
-						s.update(y, t -> {
+						var id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
+						s.update(id, x -> {
 							@SuppressWarnings("unchecked")
-							var m = (Map<String, Object>) Json.parse((String) t);
+							var m = (Map<String, Object>) Json.parse((String) x);
 							m.put("title", "FooBarBazQux");
 							return Json.format(m);
 						});
@@ -103,10 +103,11 @@ public class Database {
 
 					ii.create("Article.tagList");
 					ii.perform("Article.tagList", i -> {
-						i.add("foo", (Object) new Object[] {
-								LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 1L });
-						i.add("foo", (Object) new Object[] {
-								LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 2L });
+						i.add("foo",
+								new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC),
+										1L },
+								new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC),
+										2L });
 						return null;
 					});
 					return null;
@@ -128,7 +129,7 @@ public class Database {
 					ii.perform("Article.tagList", i -> {
 						var ll = i.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
 						System.out.println(Arrays.toString(ll));
-						assert Arrays.equals(ll, new long[] { 2, 1 }) : i;
+						assert Arrays.equals(ll, new long[] { 2, 1 }) : ll;
 						return null;
 					});
 					return null;
@@ -153,12 +154,12 @@ public class Database {
 
 	private Supplier<Stores> stores = Lazy.of(() -> {
 		var s = new Stores();
-		s.setInitializeBTree(t -> {
+		s.setInitializeBTree(x -> {
 			try {
-				t.setOrder(btreeOrder);
-				t.setChannel(channel);
-				t.setMemory(memory);
-				t.setRoot(Memory.BlockReference.read(channel, storesRoot));
+				x.setOrder(btreeOrder);
+				x.setChannel(channel);
+				x.setMemory(memory);
+				x.setRoot(BlockReference.read(channel, storesRoot));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -169,12 +170,12 @@ public class Database {
 
 	private Supplier<Indexes> indexes = Lazy.of(() -> {
 		var i = new Indexes();
-		i.initializeBTree = t -> {
+		i.initializeBTree = x -> {
 			try {
-				t.setOrder(btreeOrder);
-				t.setChannel(channel);
-				t.setMemory(memory);
-				t.setRoot(Memory.BlockReference.read(channel, indexesRoot));
+				x.setOrder(btreeOrder);
+				x.setChannel(channel);
+				x.setMemory(memory);
+				x.setRoot(BlockReference.read(channel, indexesRoot));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

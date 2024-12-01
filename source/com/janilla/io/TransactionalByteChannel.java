@@ -65,11 +65,9 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 		}
 	}
 
-	SeekableByteChannel transactionChannel;
+	protected SeekableByteChannel transactionChannel;
 
-	List<Range> transaction;
-
-	long size;
+	protected Transaction transaction;
 
 	public TransactionalByteChannel(SeekableByteChannel channel, SeekableByteChannel transactionChannel)
 			throws IOException {
@@ -79,8 +77,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 	}
 
 	public void startTransaction() throws IOException {
-		transaction = new ArrayList<>();
-		size = channel.size();
+		transaction = new Transaction(new ArrayList<>(), channel.size());
 	}
 
 	public void commitTransaction() throws IOException {
@@ -137,13 +134,16 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 	public int write(ByteBuffer src) throws IOException {
 		if (src.remaining() > 0) {
 			var p = channel.position();
-			var rs = p < size ? Range.union(transaction, new Range(p, Math.min(p + src.remaining(), size))) : null;
+			var rs = p < transaction.startSize
+					? Range.union(transaction.writeRanges,
+							new Range(p, Math.min(p + src.remaining(), transaction.startSize)))
+					: null;
 			if (rs != null)
 				for (var ri = rs.iterator(); ri.hasNext();) {
 					var r = ri.next();
 					var l = (int) (r.to() - r.from());
 					var b = ByteBuffer.allocate(Long.BYTES + Integer.BYTES + l);
-					var z = r.to() == size;
+					var z = r.to() == transaction.startSize;
 					b.putLong(z ? r.to() : r.from());
 					b.putInt(z ? -l : l);
 					channel.position(r.from());
@@ -165,5 +165,8 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 	public void close() throws IOException {
 		super.close();
 		transactionChannel.close();
+	}
+
+	protected record Transaction(List<Range> writeRanges, long startSize) {
 	}
 }

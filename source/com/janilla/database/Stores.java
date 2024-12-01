@@ -26,7 +26,6 @@ package com.janilla.database;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -45,44 +44,43 @@ public class Stores {
 	public static void main(String[] args) throws Exception {
 		var o = 3;
 		var f = Files.createTempFile("stores", "");
-		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
+		try (var ch = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
-
-			Supplier<Stores> g = () -> {
-				var s = new Stores();
-				s.setInitializeBTree(t -> {
+			Supplier<Stores> sss = () -> {
+				var ss = new Stores();
+				ss.setInitializeBTree(x -> {
 					try {
 						var m = new Memory();
-						var u = m.getFreeBTree();
-						u.setOrder(o);
-						u.setChannel(c);
-						u.setRoot(Memory.BlockReference.read(c, 0));
-						m.setAppendPosition(Math.max(2 * Memory.BlockReference.HELPER_LENGTH, c.size()));
+						var ft = m.getFreeBTree();
+						ft.setOrder(o);
+						ft.setChannel(ch);
+						ft.setRoot(BlockReference.read(ch, 0));
+						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, ch.size()));
 
-						t.setOrder(o);
-						t.setChannel(c);
-						t.setMemory(m);
-						t.setRoot(Memory.BlockReference.read(c, Memory.BlockReference.HELPER_LENGTH));
+						x.setOrder(o);
+						x.setChannel(ch);
+						x.setMemory(m);
+						x.setRoot(BlockReference.read(ch, BlockReference.HELPER_LENGTH));
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
 				});
-				s.setInitializeStore((n, t) -> {
+				ss.setInitializeStore((n, s) -> {
 					@SuppressWarnings("unchecked")
-					var u = (Store<String>) t;
-					u.setElementHelper(ElementHelper.STRING);
+					var s2 = (Store<String>) s;
+					s2.setElementHelper(ElementHelper.STRING);
 				});
-				return s;
+				return ss;
 			};
 
-			var i = new long[1];
 			{
-				var s = g.get();
-				s.perform("articles", t -> {
-					i[0] = t.create(j -> Json.format(Map.of("id", j, "title", "Foo")));
-					return t.update(i[0], u -> {
+				var ss = sss.get();
+				ss.create("Article");
+				ss.perform("Article", s -> {
+					var id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
+					return s.update(id, x -> {
 						@SuppressWarnings("unchecked")
-						var m = (Map<String, Object>) Json.parse((String) u);
+						var m = (Map<String, Object>) Json.parse((String) x);
 						m.put("title", "FooBarBazQux");
 						return Json.format(m);
 					});
@@ -92,11 +90,11 @@ public class Stores {
 			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 
 			{
-				var s = g.get();
-				s.perform("articles", t -> {
-					var m = Json.parse((String) t.read(i[0]));
+				var ss = sss.get();
+				ss.perform("Article", s -> {
+					var m = Json.parse((String) s.read(1));
 					System.out.println(m);
-					assert m.equals(Map.of("id", (int) i[0], "title", "FooBarBazQux")) : m;
+					assert m.equals(Map.of("id", 1L, "title", "FooBarBazQux")) : m;
 					return m;
 				});
 			}
@@ -123,72 +121,32 @@ public class Stores {
 	}
 
 	public void create(String name) {
-		btree.get().getOrAdd(new NameAndStore(name, new Memory.BlockReference(-1, -1, 0), new Store.IdAndSize(0, 0)));
+		btree.get().getOrAdd(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)));
 	}
 
 	public <E, R> R perform(String name, Function<Store<E>, R> operation) {
-		var t = btree.get();
-		var o = new Object[1];
-		t.get(new NameAndStore(name, new Memory.BlockReference(-1, -1, 0), new Store.IdAndSize(0, 0)), n -> {
+		var bt = btree.get();
+		class A {
+
+			R r;
+		}
+		var a = new A();
+		bt.get(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)), n -> {
 			var s = new Store<E>();
-			s.setInitializeBTree(u -> {
-				u.setOrder(t.getOrder());
-				u.setChannel(t.getChannel());
-				u.setMemory(t.getMemory());
-				u.setRoot(n.root);
+			s.setInitializeBTree(x -> {
+				x.setOrder(bt.getOrder());
+				x.setChannel(bt.getChannel());
+				x.setMemory(bt.getMemory());
+				x.setRoot(n.root());
 			});
-			s.setIdAndSize(n.idAndSize);
+			s.setIdAndSize(n.idAndSize());
 			initializeStore.accept(name, s);
-			o[0] = operation.apply(s);
+			a.r = operation.apply(s);
 			var r = s.getBTree().getRoot();
 			var i = s.getIdAndSize();
-			return r.position() != n.root.position() || !i.equals(n.idAndSize) ? new NameAndStore(name, r, i) : null;
+			return r.position() != n.root().position() || !i.equals(n.idAndSize()) ? new NameAndStore(name, r, i)
+					: null;
 		});
-		@SuppressWarnings("unchecked")
-		var r = (R) o[0];
-		return r;
-	}
-
-	public record NameAndStore(String name, Memory.BlockReference root, Store.IdAndSize idAndSize) {
-
-		static ElementHelper<NameAndStore> HELPER = new ElementHelper<>() {
-
-			@Override
-			public byte[] getBytes(NameAndStore element) {
-				var b = element.name().getBytes();
-				var c = ByteBuffer.allocate(4 + b.length + Memory.BlockReference.HELPER_LENGTH + Store.IdAndSize.HELPER_LENGTH);
-				c.putInt(b.length);
-				c.put(b);
-				c.putLong(element.root.position());
-				c.putInt(element.root.capacity());
-				c.putLong(element.idAndSize.id());
-				c.putLong(element.idAndSize.size());
-				return c.array();
-			}
-
-			@Override
-			public int getLength(ByteBuffer buffer) {
-				return 4 + buffer.getInt(buffer.position()) + Memory.BlockReference.HELPER_LENGTH + Store.IdAndSize.HELPER_LENGTH;
-			}
-
-			@Override
-			public NameAndStore getElement(ByteBuffer buffer) {
-				var b = new byte[buffer.getInt()];
-				buffer.get(b);
-				var p = buffer.getLong();
-				var c = buffer.getInt();
-				var i = Math.max(buffer.getLong(), 1);
-				var s = buffer.getLong();
-				return new NameAndStore(new String(b), new Memory.BlockReference(-1, p, c), new Store.IdAndSize(i, s));
-			}
-
-			@Override
-			public int compare(ByteBuffer buffer, NameAndStore element) {
-				var p = buffer.position();
-				var b = new byte[buffer.getInt(p)];
-				buffer.get(p + 4, b);
-				return new String(b).compareTo(element.name());
-			}
-		};
+		return a.r;
 	}
 }

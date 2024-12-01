@@ -26,7 +26,6 @@ package com.janilla.database;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -49,46 +48,47 @@ public class Index<K, V> {
 	public static void main(String[] args) throws Exception {
 		var o = 3;
 		var f = Files.createTempFile("index", "");
-		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
+		try (var ch = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
-			Supplier<Index<String, Object[]>> g = () -> {
+			Supplier<Index<String, Object[]>> is = () -> {
 				var i = new Index<String, Object[]>();
-				i.setInitializeBTree(t -> {
+				i.setInitializeBTree(x -> {
 					try {
 						var m = new Memory();
-						var u = m.getFreeBTree();
-						u.setOrder(o);
-						u.setChannel(c);
-						u.setRoot(Memory.BlockReference.read(c, 0));
-						m.setAppendPosition(Math.max(2 * Memory.BlockReference.HELPER_LENGTH, c.size()));
+						var ft = m.getFreeBTree();
+						ft.setOrder(o);
+						ft.setChannel(ch);
+						ft.setRoot(BlockReference.read(ch, 0));
+						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, ch.size()));
 
-						t.setOrder(o);
-						t.setChannel(c);
-						t.setMemory(m);
-						t.setRoot(Memory.BlockReference.read(c, Memory.BlockReference.HELPER_LENGTH));
+						x.setOrder(o);
+						x.setChannel(ch);
+						x.setMemory(m);
+						x.setRoot(BlockReference.read(ch, BlockReference.HELPER_LENGTH));
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
 				});
 				i.setKeyHelper(ElementHelper.STRING);
-				i.setValueHelper(ElementHelper.of(new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
+				i.setValueHelper(ElementHelper.of(
+						new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
 						new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
 				return i;
 			};
 
 			{
-				var i = g.get();
-				i.add("foo", new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 0L });
-				i.add("foo", new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 1L });
+				var i = is.get();
+				i.add("foo", new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 1L },
+						new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 2L });
 			}
 
 			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 
 			{
-				var i = g.get();
-				var j = i.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
-				System.out.println(Arrays.toString(j));
-				assert Arrays.equals(j, new long[] { 1, 0 }) : j;
+				var i = is.get();
+				var ll = i.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
+				System.out.println(Arrays.toString(ll));
+				assert Arrays.equals(ll, new long[] { 2, 1 }) : ll;
 			}
 		}
 	}
@@ -100,10 +100,10 @@ public class Index<K, V> {
 	private ElementHelper<V> valueHelper;
 
 	private Supplier<BTree<KeyAndValues<K>>> btree = Lazy.of(() -> {
-		var t = new BTree<KeyAndValues<K>>();
-		initializeBTree.accept(t);
-		t.setHelper(KeyAndValues.getHelper(keyHelper));
-		return t;
+		var bt = new BTree<KeyAndValues<K>>();
+		initializeBTree.accept(bt);
+		bt.setHelper(KeyAndValues.getHelper(keyHelper));
+		return bt;
 	});
 
 	public void setInitializeBTree(Consumer<BTree<KeyAndValues<K>>> initializeBTree) {
@@ -160,7 +160,7 @@ public class Index<K, V> {
 	}
 
 	public long countIf(Predicate<K> operation) {
-		return btree.get().stream().filter(x -> operation.test(x.key)).mapToLong(x -> x.size).sum();
+		return btree.get().stream().filter(x -> operation.test(x.key())).mapToLong(x -> x.size()).sum();
 	}
 
 	public Stream<K> keys() {
@@ -172,8 +172,8 @@ public class Index<K, V> {
 	}
 
 	public Stream<V> valuesIf(Predicate<K> operation) {
-		return btree.get().stream().filter(x -> operation.test(x.key))
-				.flatMap(x -> apply(x.key, y -> new ResultAndSize<>(y.btree.stream(), y.size), false));
+		return btree.get().stream().filter(x -> operation.test(x.key()))
+				.flatMap(x -> apply(x.key(), y -> new ResultAndSize<>(y.btree.stream(), y.size), false));
 	}
 
 	public long count() {
@@ -185,68 +185,29 @@ public class Index<K, V> {
 
 			ResultAndSize<R> r;
 		}
-		var t = btree.get();
-		var k = new KeyAndValues<K>(key, new Memory.BlockReference(-1, -1, 0), 0);
+		var bt = btree.get();
+		var k = new KeyAndValues<K>(key, new BlockReference(-1, -1, 0), 0);
 		var a = new A();
 		UnaryOperator<KeyAndValues<K>> o = i -> {
 			var u = new BTree<V>();
-			u.setOrder(t.getOrder());
-			u.setChannel(t.getChannel());
-			u.setMemory(t.getMemory());
+			u.setOrder(bt.getOrder());
+			u.setChannel(bt.getChannel());
+			u.setMemory(bt.getMemory());
 			u.setHelper(valueHelper);
-			u.setRoot(i.root);
+			u.setRoot(i.root());
 
-			a.r = function.apply(new BTreeAndSize<>(u, i.size));
-			return u.getRoot().position() != i.root.position() || (a.r != null && a.r.size != i.size)
+			a.r = function.apply(new BTreeAndSize<>(u, i.size()));
+			return u.getRoot().position() != i.root().position() || (a.r != null && a.r.size != i.size())
 					? new KeyAndValues<K>(key, u.getRoot(), a.r.size)
 					: null;
 		};
 		if (add)
-			t.getOrAdd(k, o);
+			bt.getOrAdd(k, o);
 		else
-			t.get(k, o);
+			bt.get(k, o);
 		if (a.r != null && a.r.size == 0)
-			t.remove(k);
+			bt.remove(k);
 		return a.r != null ? a.r.result : null;
-	}
-
-	public record KeyAndValues<K>(K key, Memory.BlockReference root, long size) {
-
-		static <K> ElementHelper<KeyAndValues<K>> getHelper(ElementHelper<K> keyHelper) {
-			return new ElementHelper<>() {
-
-				@Override
-				public byte[] getBytes(KeyAndValues<K> element) {
-					var b = keyHelper.getBytes(element.key());
-					var c = ByteBuffer.allocate(b.length + Memory.BlockReference.HELPER_LENGTH + 8);
-					c.put(b);
-					var r = element.root();
-					c.putLong(r.position());
-					c.putInt(r.capacity());
-					c.putLong(element.size());
-					return c.array();
-				}
-
-				@Override
-				public int getLength(ByteBuffer buffer) {
-					return keyHelper.getLength(buffer) + Memory.BlockReference.HELPER_LENGTH + 8;
-				}
-
-				@Override
-				public KeyAndValues<K> getElement(ByteBuffer buffer) {
-					var k = keyHelper.getElement(buffer);
-					var p = buffer.getLong();
-					var c = buffer.getInt();
-					var s = buffer.getLong();
-					return new KeyAndValues<>(k, new Memory.BlockReference(-1, p, c), s);
-				}
-
-				@Override
-				public int compare(ByteBuffer buffer, KeyAndValues<K> element) {
-					return keyHelper.compare(buffer, element.key());
-				}
-			};
-		}
 	}
 
 	protected record BTreeAndSize<V>(BTree<V> btree, long size) {

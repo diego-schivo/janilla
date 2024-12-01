@@ -47,67 +47,68 @@ import com.janilla.io.TransactionalByteChannel;
 public class BTree<E> {
 
 	public static void main(String[] args) throws Exception {
+		var l = 10;
 		var o = 3;
 		var r = ThreadLocalRandom.current();
-		var a = IntStream.range(0, 10).map(x -> r.nextInt(1, 1000)).toArray();
+		var a = IntStream.range(0, l).map(x -> r.nextInt(1, l)).toArray();
 		System.out.println(Arrays.toString(a));
 		var b = IntStream.range(0, r.nextInt(1, a.length + 1)).map(x -> r.nextInt(a.length)).distinct().toArray();
 		System.out.println(Arrays.toString(b));
 
 		var f = Files.createTempFile("btree", "");
-		var g = Files.createTempFile("btree", ".transaction");
-		try (var c = new TransactionalByteChannel(
+		var tf = Files.createTempFile("btree", ".transaction");
+		try (var ch = new TransactionalByteChannel(
 				FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
-				FileChannel.open(g, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
-			Supplier<BTree<Integer>> ts = () -> {
+				FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+			Supplier<BTree<Integer>> bts = () -> {
 				try {
 					var m = new Memory();
-					var u = m.getFreeBTree();
-					u.setOrder(o);
-					u.setChannel(c);
-					u.setRoot(Memory.BlockReference.read(c, 0));
-					m.setAppendPosition(Math.max(2 * Memory.BlockReference.HELPER_LENGTH, c.size()));
+					var ft = m.getFreeBTree();
+					ft.setOrder(o);
+					ft.setChannel(ch);
+					ft.setRoot(BlockReference.read(ch, 0));
+					m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, ch.size()));
 
-					var t = new BTree<Integer>();
-					t.setOrder(o);
-					t.setChannel(c);
-					t.setMemory(m);
-					t.setHelper(ElementHelper.INTEGER);
-					t.setRoot(Memory.BlockReference.read(c, Memory.BlockReference.HELPER_LENGTH));
-					return t;
+					var bt = new BTree<Integer>();
+					bt.setOrder(o);
+					bt.setChannel(ch);
+					bt.setMemory(m);
+					bt.setHelper(ElementHelper.INTEGER);
+					bt.setRoot(BlockReference.read(ch, BlockReference.HELPER_LENGTH));
+					return bt;
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
 			};
 
-			c.startTransaction();
+			ch.startTransaction();
 			{
-				var t = ts.get();
+				var bt = bts.get();
 				for (var i : a)
-					t.add(i);
+					bt.add(i);
 			}
-			c.commitTransaction();
+			ch.commitTransaction();
 
 			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 
-			c.startTransaction();
+			ch.startTransaction();
 			int[] e;
 			{
-				var t = ts.get();
+				var bt = bts.get();
 				for (var i : b) {
-					t.remove(a[i]);
+					bt.remove(a[i]);
 					a[i] = -1;
 				}
 				e = Arrays.stream(a).filter(x -> x >= 0).toArray();
 				System.out.println(Arrays.toString(e));
 			}
-			c.commitTransaction();
+			ch.commitTransaction();
 
 			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 
 			{
-				var t = ts.get();
-				var s = t.stream().mapToInt(Integer::intValue).toArray();
+				var bt = bts.get();
+				var s = bt.stream().mapToInt(Integer::intValue).toArray();
 				System.out.println(Arrays.toString(s));
 				Arrays.sort(e);
 				assert Arrays.equals(s, e) : "\n\t" + Arrays.toString(s) + "\n\t" + Arrays.toString(e);
@@ -123,7 +124,7 @@ public class BTree<E> {
 
 	private ElementHelper<E> helper;
 
-	private Memory.BlockReference root;
+	private BlockReference root;
 
 	public int getOrder() {
 		return order;
@@ -157,11 +158,11 @@ public class BTree<E> {
 		this.helper = elementHelper;
 	}
 
-	public Memory.BlockReference getRoot() {
+	public BlockReference getRoot() {
 		return root;
 	}
 
-	public void setRoot(Memory.BlockReference root) {
+	public void setRoot(BlockReference root) {
 		this.root = root;
 	}
 
@@ -172,18 +173,18 @@ public class BTree<E> {
 	public void add(E element, UnaryOperator<E> operator) {
 //		System.out.println("add element=" + element);
 
-		Memory.BlockReference r = root;
+		var r = root;
 		var n = new Node();
-		var l = new ArrayDeque<ElementReference>();
+		var err = new ArrayDeque<ElementReference>();
 		for (;;) {
 			n.setReference(r);
 			n.read();
 			var i = n.getIndex(element);
-			var a = new ElementReference(r, i < 0 ? -i - 1 : i);
-			l.push(a);
-			r = n.getChild(a.index);
+			var er = new ElementReference(r, i < 0 ? -i - 1 : i);
+			err.push(er);
+			r = n.getChild(er.index);
 			if (r == null) {
-				add(element, operator, n, l);
+				add(element, operator, n, err);
 				return;
 			}
 		}
@@ -196,18 +197,18 @@ public class BTree<E> {
 	public E get(E element, UnaryOperator<E> operator) {
 //		System.out.println("get element=" + element);
 
-		Memory.BlockReference r = root;
+		var r = root;
 		var n = new Node();
-		var l = new ArrayDeque<ElementReference>();
+		var err = new ArrayDeque<ElementReference>();
 		for (;;) {
 			n.setReference(r);
 			n.read();
 			var i = n.getIndex(element);
-			var a = new ElementReference(r, i < 0 ? -i - 1 : i);
-			l.push(a);
+			var er = new ElementReference(r, i < 0 ? -i - 1 : i);
+			err.push(er);
 			if (i >= 0)
-				return get(operator, n, l);
-			r = n.getChild(a.index);
+				return get(operator, n, err);
+			r = n.getChild(er.index);
 			if (r == null)
 				return null;
 		}
@@ -220,20 +221,20 @@ public class BTree<E> {
 	public E getOrAdd(E element, UnaryOperator<E> operator) {
 //		System.out.println("getOrAdd element=" + element);
 
-		Memory.BlockReference r = root;
+		var r = root;
 		var n = new Node();
-		var l = new ArrayDeque<ElementReference>();
+		var err = new ArrayDeque<ElementReference>();
 		for (;;) {
 			n.setReference(r);
 			n.read();
 			var i = n.getIndex(element);
-			var a = new ElementReference(r, i < 0 ? -i - 1 : i);
-			l.push(a);
+			var er = new ElementReference(r, i < 0 ? -i - 1 : i);
+			err.push(er);
 			if (i >= 0)
-				return get(operator, n, l);
-			r = n.getChild(a.index);
+				return get(operator, n, err);
+			r = n.getChild(er.index);
 			if (r == null) {
-				add(element, operator, n, l);
+				add(element, operator, n, err);
 				return null;
 			}
 		}
@@ -242,18 +243,18 @@ public class BTree<E> {
 	public E remove(E element) {
 //		System.out.println("remove element=" + element);
 
-		Memory.BlockReference r = root;
+		var r = root;
 		var n = new Node();
-		var l = new ArrayDeque<ElementReference>();
+		var err = new ArrayDeque<ElementReference>();
 		for (;;) {
 			n.setReference(r);
 			n.read();
 			var i = n.getIndex(element);
-			var a = new ElementReference(r, i < 0 ? -i - 1 : i);
-			l.push(a);
+			var er = new ElementReference(r, i < 0 ? -i - 1 : i);
+			err.push(er);
 			if (i >= 0)
-				return remove(n, l);
-			r = n.getChild(a.index);
+				return remove(n, err);
+			r = n.getChild(er.index);
 			if (r == null)
 				return null;
 		}
@@ -264,47 +265,47 @@ public class BTree<E> {
 		var n = new Node();
 		class A {
 
-			Memory.BlockReference r;
+			BlockReference r;
 
 			int i;
 		}
-		var l = new ArrayDeque<A>();
+		var aa = new ArrayDeque<A>();
 		do {
 			n.setReference(r);
 			n.read();
 			var a = new A();
 			a.r = r;
-			l.push(a);
+			aa.push(a);
 			r = n.getChild(0);
 		} while (r != null);
 
 		class B {
 
-			boolean e;
+			boolean t;
 
-			boolean h() {
-				if (e)
+			boolean hn() {
+				if (t)
 					return false;
-				e = l.isEmpty();
+				t = aa.isEmpty();
 				return true;
 			}
 
 			E n() {
-				var a = l.peek();
+				var a = aa.peek();
 				if (a == null) {
-					e = true;
+					t = true;
 					return null;
 				}
 				var s = n.getSize();
 				if (a.i <= s) {
 					if (a.i < s) {
-						var k = n.getElement(a.i);
+						var e = n.getElement(a.i);
 						a.i++;
 						var c = n.getChild(a.i);
 						if (c != null) {
 							a = new A();
 							a.r = c;
-							l.push(a);
+							aa.push(a);
 							n.setReference(c);
 							n.read();
 							for (;;) {
@@ -313,114 +314,113 @@ public class BTree<E> {
 									break;
 								a = new A();
 								a.r = c;
-								l.push(a);
+								aa.push(a);
 								n.setReference(c);
 								n.read();
 							}
 						} else
 							while (a.i == s) {
-								l.pop();
-								a = l.peek();
+								aa.pop();
+								a = aa.peek();
 								if (a == null)
 									break;
 								n.setReference(a.r);
 								n.read();
 								s = n.getSize();
 							}
-						return k;
+						return e;
 					}
 					a.i++;
 				}
-				e = true;
+				t = true;
 				return null;
 			}
 		}
 
 		var b = new B();
-		return Stream.iterate(b.n(), x -> b.h(), x -> b.n());
+		return Stream.iterate(b.n(), x -> b.hn(), x -> b.n());
 	}
 
 	void add(E element, UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) {
 //		System.out.println("add element=" + element);
-		Memory.BlockReference r;
+		BlockReference r = null;
 		var e = element;
-		r = null;
-		E f = null;
+		E e2 = null;
 		for (;;) {
-			var a = stack.pop();
+			var er = stack.pop();
 			node.reset();
-			node.setReference(a.node);
+			node.setReference(er.node);
 			node.read();
-			var i = a.index;
+			var i = er.index;
 
 			if (node.getSize() < order - 1) {
 				node.insertElement(i, e);
 				if (r != null)
 					node.insertChild(i + 1, r);
-				if (f == null) {
-					f = operator != null ? operator.apply(e) : null;
-					if (f != null)
-						node.replaceElement(i, f);
+				if (e2 == null) {
+					e2 = operator != null ? operator.apply(e) : null;
+					if (e2 != null)
+						node.replaceElement(i, e2);
 					else
-						f = e;
+						e2 = e;
 				}
 				break;
 			} else {
 				var o = order / 2;
 
-				var u = new Node();
+				var n1 = new Node();
 				{
-					u.reset();
-					u.setReference(stack.isEmpty() ? new Memory.BlockReference(-1, -1, 0) : node.reference);
+					n1.reset();
+					n1.setReference(stack.isEmpty() ? new BlockReference(-1, -1, 0) : node.reference);
 					var s = o;
 					if (i < o)
 						s--;
 					if (s > 0)
-						u.appendElements(node, 0, s);
-					if (node.buffer.getInt(4) != 0)
-						u.appendChildren(node, 0, s + 1);
+						n1.appendElements(node, 0, s);
+					if (node.buffer.getInt(Integer.BYTES) != 0)
+						n1.appendChildren(node, 0, s + 1);
 					if (i < o) {
-						u.insertElement(i, e);
+						n1.insertElement(i, e);
 						if (r != null)
-							u.insertChild(i + 1, r);
-						if (f == null) {
-							f = operator != null ? operator.apply(e) : null;
-							if (f != null)
-								u.replaceElement(i, f);
+							n1.insertChild(i + 1, r);
+						if (e2 == null) {
+							e2 = operator != null ? operator.apply(e) : null;
+							if (e2 != null)
+								n1.replaceElement(i, e2);
 							else
-								f = e;
+								e2 = e;
 						}
 					}
-					u.write();
-					u.writeReference();
+					n1.write();
+					n1.writeReference();
 				}
 
-				var v = new Node();
+				var n2 = new Node();
 				{
-					v.reset();
-					v.setReference(new Memory.BlockReference(-1, -1, 0));
+					n2.reset();
+					n2.setReference(new BlockReference(-1, -1, 0));
 					var s = order - 1 - o;
 					if (i > o)
 						s--;
 					if (s > 0)
-						v.appendElements(node, i <= o ? o : o + 1, s);
-					if (node.buffer.getInt(4) != 0)
-						v.appendChildren(node, i < o ? o : o + 1, order - (i < o ? o : o + 1));
+						n2.appendElements(node, i <= o ? o : o + 1, s);
+					if (node.buffer.getInt(Integer.BYTES) != 0)
+						n2.appendChildren(node, i < o ? o : o + 1, order - (i < o ? o : o + 1));
 					if (i > o) {
-						v.insertElement(i - o - 1, e);
+						n2.insertElement(i - o - 1, e);
 						if (r != null)
-							v.insertChild(i - o, r);
-						if (f == null) {
-							f = operator != null ? operator.apply(e) : null;
-							if (f != null)
-								v.replaceElement(i - o - 1, f);
+							n2.insertChild(i - o, r);
+						if (e2 == null) {
+							e2 = operator != null ? operator.apply(e) : null;
+							if (e2 != null)
+								n2.replaceElement(i - o - 1, e2);
 							else
-								f = e;
+								e2 = e;
 						}
 					} else if (i == o && r != null)
-						v.insertChild(0, r);
-					v.write();
-					v.writeReference();
+						n2.insertChild(0, r);
+					n2.write();
+					n2.writeReference();
 				}
 
 				if (i != o)
@@ -428,18 +428,18 @@ public class BTree<E> {
 				if (stack.isEmpty()) {
 					node.reset();
 					node.insertElement(0, e);
-					node.insertChild(0, u.reference);
-					node.insertChild(1, v.reference);
-					if (f == null) {
-						f = operator != null ? operator.apply(e) : null;
-						if (f != null)
-							node.replaceElement(0, f);
+					node.insertChild(0, n1.reference);
+					node.insertChild(1, n2.reference);
+					if (e2 == null) {
+						e2 = operator != null ? operator.apply(e) : null;
+						if (e2 != null)
+							node.replaceElement(0, e2);
 						else
-							f = e;
+							e2 = e;
 					}
 					break;
 				} else
-					r = v.reference;
+					r = n2.reference;
 			}
 		}
 		node.write();
@@ -449,15 +449,15 @@ public class BTree<E> {
 	}
 
 	E get(UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) {
-		var a = stack.pop();
-		node.setReference(a.node);
+		var er = stack.pop();
+		node.setReference(er.node);
 		node.reset();
 		node.read();
 
-		var e = node.getElement(a.index);
-		var f = operator != null ? operator.apply(e) : null;
-		if (f != null) {
-			node.replaceElement(a.index, f);
+		var e = node.getElement(er.index);
+		var e2 = operator != null ? operator.apply(e) : null;
+		if (e2 != null) {
+			node.replaceElement(er.index, e2);
 			node.write();
 			node.writeReference();
 		}
@@ -465,32 +465,32 @@ public class BTree<E> {
 	}
 
 	E remove(Node node, Deque<ElementReference> stack) {
-		Memory.BlockReference r;
-		var a = stack.pop();
-		node.setReference(a.node);
+		BlockReference r;
+		var er = stack.pop();
+		node.setReference(er.node);
 		node.reset();
 		node.read();
 
-		var e = node.deleteElement(a.index);
+		var e = node.deleteElement(er.index);
 
-		r = node.getChild(a.index);
+		r = node.getChild(er.index);
 		if (r != null) {
-			var d = new Node();
-			stack.push(a);
+			var n = new Node();
+			stack.push(er);
 			for (;;) {
-				d.setReference(r);
-				d.read();
-				var i = d.buffer.getInt(4) - 1;
+				n.setReference(r);
+				n.read();
+				var i = n.buffer.getInt(Integer.BYTES) - 1;
 				if (i < 0)
 					break;
 				stack.push(new ElementReference(r, i));
-				r = d.getChild(i);
+				r = n.getChild(i);
 			}
-			node.insertElement(a.index, d.deleteElement(d.getSize() - 1));
+			node.insertElement(er.index, n.deleteElement(n.getSize() - 1));
 			node.write();
 			node.writeReference();
 
-			d.copyTo(node);
+			n.copyTo(node);
 		}
 
 		var o = (order - 1) / 2;
@@ -500,99 +500,99 @@ public class BTree<E> {
 			return e;
 		}
 
-		var p = new Node();
-		var s1 = new Node();
-		var s2 = new Node();
+		var pn = new Node();
+		var sn1 = new Node();
+		var sn2 = new Node();
 		for (;;) {
-			a = stack.pop();
+			er = stack.pop();
 
-			p.setReference(a.node);
-			p.reset();
-			p.read();
+			pn.setReference(er.node);
+			pn.reset();
+			pn.read();
 
-			s1.setReference(p.getChild(a.index + 1));
-			if (s1.reference != null) {
-				s1.reset();
-				s1.read();
-				if (s1.getSize() > o) {
-					node.insertElement(o - 1, p.deleteElement(a.index));
-					p.insertElement(a.index, s1.deleteElement(0));
-					if (s1.buffer.getInt(4) > 0)
-						node.insertChild(o, s1.deleteChild(0));
+			sn1.setReference(pn.getChild(er.index + 1));
+			if (sn1.reference != null) {
+				sn1.reset();
+				sn1.read();
+				if (sn1.getSize() > o) {
+					node.insertElement(o - 1, pn.deleteElement(er.index));
+					pn.insertElement(er.index, sn1.deleteElement(0));
+					if (sn1.buffer.getInt(Integer.BYTES) > 0)
+						node.insertChild(o, sn1.deleteChild(0));
 					node.write();
 					node.writeReference();
-					p.write();
-					p.writeReference();
-					s1.write();
-					s1.writeReference();
+					pn.write();
+					pn.writeReference();
+					sn1.write();
+					sn1.writeReference();
 					return e;
 				}
 			}
 
-			s2.setReference(p.getChild(a.index - 1));
-			if (s2.reference != null) {
-				s2.reset();
-				s2.read();
-				if (s2.getSize() > o) {
-					node.insertElement(0, p.deleteElement(a.index - 1));
-					p.insertElement(a.index - 1, s2.deleteElement(s2.getSize() - 1));
-					var i = s2.buffer.getInt(4) - 1;
+			sn2.setReference(pn.getChild(er.index - 1));
+			if (sn2.reference != null) {
+				sn2.reset();
+				sn2.read();
+				if (sn2.getSize() > o) {
+					node.insertElement(0, pn.deleteElement(er.index - 1));
+					pn.insertElement(er.index - 1, sn2.deleteElement(sn2.getSize() - 1));
+					var i = sn2.buffer.getInt(Integer.BYTES) - 1;
 					if (i >= 0)
-						node.insertChild(0, s2.deleteChild(i));
+						node.insertChild(0, sn2.deleteChild(i));
 					node.write();
 					node.writeReference();
-					p.write();
-					p.writeReference();
-					s2.write();
-					s2.writeReference();
+					pn.write();
+					pn.writeReference();
+					sn2.write();
+					sn2.writeReference();
 					return e;
 				}
 			}
 
-			Node m;
-			if (s1.reference != null) {
-				node.insertElement(o - 1, p.deleteElement(a.index));
-				node.appendElements(s1, 0, o);
-				if (s1.buffer.getInt(4) > 0)
-					node.appendChildren(s1, 0, o + 1);
+			Node n;
+			if (sn1.reference != null) {
+				node.insertElement(o - 1, pn.deleteElement(er.index));
+				node.appendElements(sn1, 0, o);
+				if (sn1.buffer.getInt(Integer.BYTES) > 0)
+					node.appendChildren(sn1, 0, o + 1);
 				if (node.referenceChanged)
-					p.replaceChild(a.index, node.reference);
-				p.deleteChild(a.index + 1);
-				memory.free(s1.reference);
-				m = node;
+					pn.replaceChild(er.index, node.reference);
+				pn.deleteChild(er.index + 1);
+				memory.free(sn1.reference);
+				n = node;
 			} else {
-				s2.insertElement(o, p.deleteElement(a.index - 1));
-				s2.appendElements(node, 0, o - 1);
-				if (node.buffer.getInt(4) > 0)
-					s2.appendChildren(node, 0, o);
-				if (s2.referenceChanged)
-					p.replaceChild(a.index - 1, s2.reference);
-				p.deleteChild(a.index);
+				sn2.insertElement(o, pn.deleteElement(er.index - 1));
+				sn2.appendElements(node, 0, o - 1);
+				if (node.buffer.getInt(Integer.BYTES) > 0)
+					sn2.appendChildren(node, 0, o);
+				if (sn2.referenceChanged)
+					pn.replaceChild(er.index - 1, sn2.reference);
+				pn.deleteChild(er.index);
 				memory.free(node.reference);
-				m = s2;
+				n = sn2;
 			}
 
-			var s = p.getSize();
+			var s = pn.getSize();
 			if (stack.isEmpty() && s == 0) {
-				m.reference = new Memory.BlockReference(root.self(), m.reference.position(), m.reference.capacity());
+				n.reference = new BlockReference(root.self(), n.reference.position(), n.reference.capacity());
 				memory.free(root);
-				root = m.reference;
+				root = n.reference;
 			}
 
-			m.write();
-			m.writeReference();
+			n.write();
+			n.writeReference();
 
 			if (stack.isEmpty() || s >= o) {
-				p.write();
-				p.writeReference();
+				pn.write();
+				pn.writeReference();
 				return e;
 			}
 
-			p.copyTo(node);
+			pn.copyTo(node);
 		}
 	}
 
-	record ElementReference(Memory.BlockReference node, int index) {
+	record ElementReference(BlockReference node, int index) {
 	}
 
 	class Node {
@@ -601,11 +601,11 @@ public class BTree<E> {
 
 		boolean changed;
 
-		Memory.BlockReference reference;
+		BlockReference reference;
 
 		boolean referenceChanged;
 
-		void setReference(Memory.BlockReference reference) {
+		void setReference(BlockReference reference) {
 			this.reference = reference;
 			var c = reference != null ? reference.capacity() : 0;
 			if (c > (buffer != null ? buffer.capacity() : 0))
@@ -616,7 +616,7 @@ public class BTree<E> {
 		int getSize() {
 			if (buffer == null)
 				return 0;
-			var p = 2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH;
+			var p = 2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.HELPER_LENGTH;
 			buffer.position(p);
 			var s = 0;
 			while (buffer.hasRemaining()) {
@@ -635,24 +635,24 @@ public class BTree<E> {
 		void appendChildren(Node source, int start, int length) {
 			if (length == 0)
 				return;
-			var l = (buffer != null ? buffer.limit() : 2 * 4) + length * Memory.BlockReference.HELPER_LENGTH;
+			var l = (buffer != null ? buffer.limit() : 2 * Integer.BYTES) + length * BlockReference.HELPER_LENGTH;
 			resize(l);
-			var p = 2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH;
+			var p = 2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.HELPER_LENGTH;
 			if (p < buffer.limit())
-				System.arraycopy(buffer.array(), p, buffer.array(), p + length * Memory.BlockReference.HELPER_LENGTH,
+				System.arraycopy(buffer.array(), p, buffer.array(), p + length * BlockReference.HELPER_LENGTH,
 						buffer.limit() - p);
-			System.arraycopy(source.buffer.array(), 2 * 4 + start * Memory.BlockReference.HELPER_LENGTH, buffer.array(), p,
-					length * Memory.BlockReference.HELPER_LENGTH);
+			System.arraycopy(source.buffer.array(), 2 * Integer.BYTES + start * BlockReference.HELPER_LENGTH, buffer.array(), p,
+					length * BlockReference.HELPER_LENGTH);
 			buffer.limit(l);
 			buffer.putInt(0, buffer.limit());
-			buffer.putInt(4, buffer.getInt(4) + length);
+			buffer.putInt(Integer.BYTES, buffer.getInt(Integer.BYTES) + length);
 			changed = true;
 		}
 
 		void appendElements(Node source, int start, int length) {
 			if (length == 0)
 				return;
-			source.buffer.position(2 * 4 + source.buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
+			source.buffer.position(2 * Integer.BYTES + source.buffer.getInt(Integer.BYTES) * BlockReference.HELPER_LENGTH);
 			var i = 0;
 			var p0 = source.buffer.position();
 			while (source.buffer.hasRemaining()) {
@@ -664,7 +664,7 @@ public class BTree<E> {
 				i++;
 			}
 			var p = source.buffer.position();
-			var l = (buffer != null ? buffer.limit() : 2 * 4) + p - p0;
+			var l = (buffer != null ? buffer.limit() : 2 * Integer.BYTES) + p - p0;
 			resize(l);
 
 			System.arraycopy(source.buffer.array(), p0, buffer.array(), buffer.limit(), p - p0);
@@ -673,21 +673,21 @@ public class BTree<E> {
 			changed = true;
 		}
 
-		Memory.BlockReference deleteChild(int index) {
-			var p = 2 * 4 + index * Memory.BlockReference.HELPER_LENGTH;
-			var r = new Memory.BlockReference(-1, buffer.getLong(p), buffer.getInt(p + 8));
-			var q = p + Memory.BlockReference.HELPER_LENGTH;
+		BlockReference deleteChild(int index) {
+			var p = 2 * Integer.BYTES + index * BlockReference.HELPER_LENGTH;
+			var r = new BlockReference(-1, buffer.getLong(p), buffer.getInt(p + Long.BYTES));
+			var q = p + BlockReference.HELPER_LENGTH;
 			if (q < buffer.limit())
 				System.arraycopy(buffer.array(), q, buffer.array(), p, buffer.limit() - q);
-			buffer.limit(buffer.limit() - Memory.BlockReference.HELPER_LENGTH);
+			buffer.limit(buffer.limit() - BlockReference.HELPER_LENGTH);
 			buffer.putInt(0, buffer.limit());
-			buffer.putInt(4, buffer.getInt(4) - 1);
+			buffer.putInt(Integer.BYTES, buffer.getInt(Integer.BYTES) - 1);
 			changed = true;
 			return r;
 		}
 
 		E deleteElement(int index) {
-			buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
+			buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.HELPER_LENGTH);
 			for (var i = 0; i < index; i++)
 				buffer.position(buffer.position() + helper.getLength(buffer));
 			var p = buffer.position();
@@ -701,18 +701,18 @@ public class BTree<E> {
 			return e;
 		}
 
-		Memory.BlockReference getChild(int index) {
-			if (index < 0 || index >= (buffer != null ? buffer.getInt(4) : 0))
+		BlockReference getChild(int index) {
+			if (index < 0 || index >= (buffer != null ? buffer.getInt(Integer.BYTES) : 0))
 				return null;
-			var p = 2 * 4 + index * Memory.BlockReference.HELPER_LENGTH;
-			var r = new Memory.BlockReference(reference.position() + p, buffer.getLong(p), buffer.getInt(p + 8));
+			var p = 2 * Integer.BYTES + index * BlockReference.HELPER_LENGTH;
+			var r = new BlockReference(reference.position() + p, buffer.getLong(p), buffer.getInt(p + Long.BYTES));
 			return r;
 		}
 
 		E getElement(int index) {
 			if (buffer == null)
 				return null;
-			buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
+			buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.HELPER_LENGTH);
 			var i = 0;
 			while (buffer.hasRemaining()) {
 				if (i == index)
@@ -726,7 +726,7 @@ public class BTree<E> {
 		int getIndex(E element) {
 			if (buffer == null)
 				return -1;
-			buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
+			buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.HELPER_LENGTH);
 			var i = 0;
 			while (buffer.hasRemaining()) {
 				var c = helper.compare(buffer, element);
@@ -740,34 +740,34 @@ public class BTree<E> {
 			return -i - 1;
 		}
 
-		void insertChild(int index, Memory.BlockReference child) {
-			var l = buffer.limit() + Memory.BlockReference.HELPER_LENGTH;
+		void insertChild(int index, BlockReference child) {
+			var l = buffer.limit() + BlockReference.HELPER_LENGTH;
 			resize(l);
-			var p = 2 * 4 + index * Memory.BlockReference.HELPER_LENGTH;
+			var p = 2 * Integer.BYTES + index * BlockReference.HELPER_LENGTH;
 			if (p < buffer.limit())
-				System.arraycopy(buffer.array(), p, buffer.array(), p + Memory.BlockReference.HELPER_LENGTH,
+				System.arraycopy(buffer.array(), p, buffer.array(), p + BlockReference.HELPER_LENGTH,
 						buffer.limit() - p);
 			buffer.limit(l);
 			buffer.putLong(p, child.position());
-			buffer.putInt(p + 8, child.capacity());
+			buffer.putInt(p + Long.BYTES, child.capacity());
 			buffer.putInt(0, buffer.limit());
-			buffer.putInt(4, buffer.getInt(4) + 1);
+			buffer.putInt(Integer.BYTES, buffer.getInt(Integer.BYTES) + 1);
 			changed = true;
 		}
 
 		void insertElement(int index, E element) {
 			int p;
 			if (buffer == null && index == 0)
-				p = 2 * 4;
+				p = 2 * Integer.BYTES;
 			else {
-				buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
+				buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.HELPER_LENGTH);
 				for (var i = 0; i < index; i++)
 					buffer.position(buffer.position() + helper.getLength(buffer));
 				p = buffer.position();
 			}
 
 			var b = helper.getBytes(element);
-			var l = (buffer != null ? buffer.limit() : 2 * 4) + b.length;
+			var l = (buffer != null ? buffer.limit() : 2 * Integer.BYTES) + b.length;
 			resize(l);
 
 			if (p < buffer.limit())
@@ -796,15 +796,15 @@ public class BTree<E> {
 			}
 		}
 
-		void replaceChild(int index, Memory.BlockReference child) {
-			var p = 2 * 4 + index * Memory.BlockReference.HELPER_LENGTH;
+		void replaceChild(int index, BlockReference child) {
+			var p = 2 * Integer.BYTES + index * BlockReference.HELPER_LENGTH;
 			buffer.putLong(p, child.position());
-			buffer.putInt(p + 8, child.capacity());
+			buffer.putInt(p + Long.BYTES, child.capacity());
 			changed = true;
 		}
 
 		void replaceElement(int index, E element) {
-			buffer.position(2 * 4 + buffer.getInt(4) * Memory.BlockReference.HELPER_LENGTH);
+			buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.HELPER_LENGTH);
 			for (var i = 0; i < index; i++)
 				buffer.position(buffer.position() + helper.getLength(buffer));
 			var p = buffer.position();
@@ -826,7 +826,7 @@ public class BTree<E> {
 			if (buffer == null)
 				return;
 			Arrays.fill(buffer.array(), (byte) 0);
-			buffer.limit(2 * 4);
+			buffer.limit(2 * Integer.BYTES);
 			buffer.putInt(0, buffer.limit());
 			changed = false;
 		}
@@ -837,7 +837,7 @@ public class BTree<E> {
 				if (r.capacity() > 0)
 					memory.free(r);
 				r = memory.allocate(length);
-				r = new Memory.BlockReference(reference.self(), r.position(), r.capacity());
+				r = new BlockReference(reference.self(), r.position(), r.capacity());
 				reference = r;
 				referenceChanged = true;
 			}
@@ -846,9 +846,9 @@ public class BTree<E> {
 			if (r.capacity() > (b != null ? b.capacity() : 0)) {
 				b = ByteBuffer.allocate(r.capacity());
 				if (buffer == null) {
-					b.putInt(2 * 4);
+					b.putInt(2 * Integer.BYTES);
 					b.putInt(0);
-					b.limit(2 * 4);
+					b.limit(2 * Integer.BYTES);
 				} else {
 					buffer.position(0);
 					b.put(buffer);
@@ -880,7 +880,7 @@ public class BTree<E> {
 				if (!referenceChanged)
 					return;
 				if (reference.self() >= 0)
-					Memory.BlockReference.write(reference, channel);
+					BlockReference.write(reference, channel);
 				referenceChanged = false;
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);

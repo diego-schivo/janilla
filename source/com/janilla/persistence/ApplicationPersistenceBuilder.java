@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+import com.janilla.database.BlockReference;
 import com.janilla.database.Database;
 import com.janilla.database.Memory;
 import com.janilla.database.Store;
@@ -77,16 +78,16 @@ public class ApplicationPersistenceBuilder {
 				var t = m.getFreeBTree();
 				t.setChannel(ch);
 				t.setOrder(order);
-				t.setRoot(Memory.BlockReference.read(ch, 0));
-				m.setAppendPosition(Math.max(3 * Memory.BlockReference.HELPER_LENGTH, ch.size()));
+				t.setRoot(BlockReference.read(ch, 0));
+				m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, ch.size()));
 			}
 
 			var d = new Database();
 			d.setBTreeOrder(order);
 			d.setChannel(ch);
 			d.setMemory(m);
-			d.setStoresRoot(Memory.BlockReference.HELPER_LENGTH);
-			d.setIndexesRoot(2 * Memory.BlockReference.HELPER_LENGTH);
+			d.setStoresRoot(BlockReference.HELPER_LENGTH);
+			d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
 
 			var p = factory.create(Persistence.class);
 			p.database = d;
