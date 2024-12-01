@@ -59,24 +59,30 @@ public class Database {
 					ft.setChannel(ch);
 					ft.setOrder(o);
 					ft.setRoot(BlockReference.read(ch, 0));
-					m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, ch.size()));
+					m.setAppendPosition(Math.max(3 * BlockReference.BYTES, ch.size()));
 
 					var d = new Database();
 					d.setBTreeOrder(o);
 					d.setChannel(ch);
 					d.setMemory(m);
-					d.setStoresRoot(BlockReference.HELPER_LENGTH);
-					d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
-					d.setInitializeStore((n, s) -> {
+					d.setStoresRoot(BlockReference.BYTES);
+					d.setIndexesRoot(2 * BlockReference.BYTES);
+					d.setInitializeStore((n, x) -> {
 						@SuppressWarnings("unchecked")
-						var s2 = (Store<String>) s;
-						s2.setElementHelper(ElementHelper.STRING);
+						var s = (Store<String>) x;
+						s.setElementHelper(ElementHelper.STRING);
+						s.setIdSupplier(() -> {
+							var v = x.getAttributes().get("nextId");
+							var id = v != null ? (Long) v : 1L;
+							x.getAttributes().put("nextId", id + 1);
+							return id;
+						});
 					});
-					d.setInitializeIndex((n, i) -> {
+					d.setInitializeIndex((n, x) -> {
 						@SuppressWarnings("unchecked")
-						var i2 = (Index<String, Object[]>) i;
-						i2.setKeyHelper(ElementHelper.STRING);
-						i2.setValueHelper(ElementHelper.of(
+						var i = (Index<String, Object[]>) x;
+						i.setKeyHelper(ElementHelper.STRING);
+						i.setValueHelper(ElementHelper.of(
 								new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
 								new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
 					});

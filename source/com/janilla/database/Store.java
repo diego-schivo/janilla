@@ -30,9 +30,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.LongStream;
@@ -59,30 +61,37 @@ public class Store<E> {
 						ft.setOrder(o);
 						ft.setChannel(ch);
 						ft.setRoot(BlockReference.read(ch, 0));
-						m.setAppendPosition(
-								Math.max(2 * BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH, ch.size()));
+						m.setAppendPosition(Math.max(2 * BlockReference.BYTES, ch.size()));
 
 						x.setOrder(o);
 						x.setChannel(ch);
 						x.setMemory(m);
-						x.setRoot(BlockReference.read(ch, BlockReference.HELPER_LENGTH));
+						x.setRoot(BlockReference.read(ch, BlockReference.BYTES));
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
 				});
 				s.setElementHelper(ElementHelper.STRING);
-				try {
-					s.setIdAndSize(IdAndSize.read(ch, 2 * BlockReference.HELPER_LENGTH));
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
+				s.setIdSupplier(() -> {
+					var v = s.getAttributes().get("nextId");
+					var id = v != null ? (Long) v : 1L;
+					s.getAttributes().put("nextId", id + 1);
+					return id;
+				});
 				return s;
 			};
 
+			class A {
+
+				long id;
+			}
+			var a = new A();
 			{
 				var s = ss.get();
-				var id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
-				s.update(id, x -> {
+				s.setAttributes(new LinkedHashMap<String, Object>());
+
+				a.id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
+				s.update(a.id, x -> {
 					@SuppressWarnings("unchecked")
 					var m = (Map<String, Object>) Json.parse(x);
 					m.put("title", "FooBarBazQux");
@@ -94,9 +103,11 @@ public class Store<E> {
 
 			{
 				var s = ss.get();
-				var m = Json.parse(s.delete(1));
+				s.setAttributes(new LinkedHashMap<String, Object>(Map.of("size", 1L)));
+
+				var m = Json.parse(s.delete(a.id));
 				System.out.println(m);
-				var n = Map.of("id", 1L, "title", "FooBarBazQux");
+				var n = Map.of("id", a.id, "title", "FooBarBazQux");
 				assert m.equals(n) : m;
 			}
 
@@ -104,7 +115,9 @@ public class Store<E> {
 
 			{
 				var s = ss.get();
-				var x = s.read(1);
+				s.setAttributes(new LinkedHashMap<String, Object>());
+
+				var x = s.read(a.id);
 				assert x == null : x;
 			}
 
@@ -123,7 +136,9 @@ public class Store<E> {
 		return t;
 	});
 
-	private IdAndSize idAndSize;
+	private Map<String, Object> attributes;
+
+	private LongSupplier idSupplier;
 
 	public void setInitializeBTree(Consumer<BTree<IdAndElement>> initializeBTree) {
 		this.initializeBTree = initializeBTree;
@@ -137,28 +152,32 @@ public class Store<E> {
 		return btree.get();
 	}
 
-	public IdAndSize getIdAndSize() {
-		return idAndSize;
+	public Map<String, Object> getAttributes() {
+		return attributes;
 	}
 
-	public void setIdAndSize(IdAndSize idAndSize) {
-		this.idAndSize = idAndSize;
+	public void setAttributes(Map<String, Object> attributes) {
+		this.attributes = attributes;
+	}
+
+	public void setIdSupplier(LongSupplier idSupplier) {
+		this.idSupplier = idSupplier;
 	}
 
 	public long create(LongFunction<E> element) {
 		try {
-			var t = btree.get();
-			var id = Math.max(idAndSize.id(), 1);
+			var bt = btree.get();
+			var id = idSupplier.getAsLong();
 			var e = element.apply(id);
-			var b = elementHelper.getBytes(e);
-			var a = t.getMemory().allocate(b.length);
-			t.getChannel().position(a.position());
-			var d = ByteBuffer.allocate(a.capacity());
-			d.put(0, b);
-			IO.repeat(x -> t.getChannel().write(d), d.remaining());
-			var r = new BlockReference(-1, a.position(), a.capacity());
-			t.add(new IdAndElement(id, r));
-			idAndSize = new IdAndSize(id + 1, idAndSize.size() + 1);
+			var bb = elementHelper.getBytes(e);
+			var r = bt.getMemory().allocate(bb.length);
+			bt.getChannel().position(r.position());
+			var b = ByteBuffer.allocate(r.capacity());
+			b.put(0, bb);
+			IO.repeat(x -> bt.getChannel().write(b), b.remaining());
+			r = new BlockReference(-1, r.position(), r.capacity());
+			bt.add(new IdAndElement(id, r));
+			attributes.compute("size", (k, v) -> v == null ? 1L : (Long) v + 1);
 			return id;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
@@ -174,11 +193,11 @@ public class Store<E> {
 	}
 
 	public E update(long id, UnaryOperator<E> operator) {
-		var t = btree.get();
 		class A {
 
 			E e;
 		}
+		var t = btree.get();
 		var a = new A();
 		t.get(new IdAndElement(id, new BlockReference(-1, -1, 0)), j -> {
 			try {
@@ -207,7 +226,7 @@ public class Store<E> {
 		if (i == null)
 			return null;
 		var e = readElement(i.element());
-		idAndSize = new IdAndSize(idAndSize.id(), idAndSize.size() - 1);
+		attributes.compute("size", (k, v) -> (Long) v - 1);
 		return e;
 	}
 
@@ -220,19 +239,20 @@ public class Store<E> {
 	}
 
 	public long count() {
-		return idAndSize.size();
+		var x = attributes.get("size");
+		return x != null ? (Long) x : 0;
 	}
 
-	protected E readElement(BlockReference e) {
+	protected E readElement(BlockReference reference) {
 		try {
-			var c = btree.get().getChannel();
-			c.position(e.position());
-			var b = ByteBuffer.allocate(e.capacity());
-			IO.repeat(x -> c.read(b), b.remaining());
+			var ch = btree.get().getChannel();
+			ch.position(reference.position());
+			var b = ByteBuffer.allocate(reference.capacity());
+			IO.repeat(x -> ch.read(b), b.remaining());
 			b.position(0);
 			return elementHelper.getElement(b);
-		} catch (IOException f) {
-			throw new UncheckedIOException(f);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 }

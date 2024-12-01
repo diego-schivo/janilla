@@ -30,13 +30,13 @@ import com.janilla.io.ElementHelper;
 
 public record IdAndElement(long id, BlockReference element) {
 
-	static int HELPER_LENGTH = Long.BYTES + BlockReference.HELPER_LENGTH;
+	static int BYTES = Long.BYTES + BlockReference.BYTES;
 
 	static ElementHelper<IdAndElement> HELPER = new ElementHelper<>() {
 
 		@Override
 		public byte[] getBytes(IdAndElement element) {
-			var b = ByteBuffer.allocate(HELPER_LENGTH);
+			var b = ByteBuffer.allocate(BYTES);
 			b.putLong(element.id());
 			b.putLong(element.element.position());
 			b.putInt(element.element.capacity());
@@ -45,7 +45,7 @@ public record IdAndElement(long id, BlockReference element) {
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return HELPER_LENGTH;
+			return BYTES;
 		}
 
 		@Override

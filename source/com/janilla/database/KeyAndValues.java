@@ -36,7 +36,7 @@ public record KeyAndValues<K>(K key, BlockReference root, long size) {
 			@Override
 			public byte[] getBytes(KeyAndValues<K> element) {
 				var bb = keyHelper.getBytes(element.key());
-				var b = ByteBuffer.allocate(bb.length + BlockReference.HELPER_LENGTH + Long.BYTES);
+				var b = ByteBuffer.allocate(bb.length + BlockReference.BYTES + Long.BYTES);
 				b.put(bb);
 				var r = element.root();
 				b.putLong(r.position());
@@ -47,7 +47,7 @@ public record KeyAndValues<K>(K key, BlockReference root, long size) {
 
 			@Override
 			public int getLength(ByteBuffer buffer) {
-				return keyHelper.getLength(buffer) + BlockReference.HELPER_LENGTH + Long.BYTES;
+				return keyHelper.getLength(buffer) + BlockReference.BYTES + Long.BYTES;
 			}
 
 			@Override

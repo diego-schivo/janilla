@@ -122,7 +122,7 @@ public interface ElementHelper<E> {
 						var l = i.getLength(buffer);
 						q += l;
 						if (l < 0 || q > buffer.limit()) {
-							System.out.println("l=" + l);
+//							System.out.println("l=" + l);
 							throw new RuntimeException();
 						}
 						buffer.position(q);
@@ -161,7 +161,7 @@ public interface ElementHelper<E> {
 
 		@Override
 		public byte[] getBytes(BigDecimal element) {
-			var b = ByteBuffer.allocate(8 + 2);
+			var b = ByteBuffer.allocate(Long.BYTES + Short.BYTES);
 			b.putLong(element.unscaledValue().longValue());
 			b.putShort((short) element.scale());
 			return b.array();
@@ -169,7 +169,7 @@ public interface ElementHelper<E> {
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 8 + 2;
+			return Long.BYTES + Short.BYTES;
 		}
 
 		@Override
@@ -179,7 +179,7 @@ public interface ElementHelper<E> {
 
 		@Override
 		public int compare(ByteBuffer buffer, BigDecimal element) {
-			var d = BigDecimal.valueOf(buffer.getLong(buffer.position()), buffer.getShort(buffer.position() + 8));
+			var d = BigDecimal.valueOf(buffer.getLong(buffer.position()), buffer.getShort(buffer.position() + Long.BYTES));
 			return d.compareTo(element);
 		}
 	};
@@ -213,14 +213,14 @@ public interface ElementHelper<E> {
 
 		@Override
 		public byte[] getBytes(Instant element) {
-			var b = ByteBuffer.allocate(8);
+			var b = ByteBuffer.allocate(Long.BYTES);
 			b.putLong(element.toEpochMilli());
 			return b.array();
 		}
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 8;
+			return Long.BYTES;
 		}
 
 		@Override
@@ -238,14 +238,14 @@ public interface ElementHelper<E> {
 
 		@Override
 		public byte[] getBytes(Integer element) {
-			var b = ByteBuffer.allocate(4);
+			var b = ByteBuffer.allocate(Integer.BYTES);
 			b.putInt(element);
 			return b.array();
 		}
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 4;
+			return Integer.BYTES;
 		}
 
 		@Override
@@ -263,7 +263,7 @@ public interface ElementHelper<E> {
 
 		@Override
 		public byte[] getBytes(LocalDate element) {
-			var b = ByteBuffer.allocate(4 + 2 * 1);
+			var b = ByteBuffer.allocate(Integer.BYTES + 2 * Byte.BYTES);
 			b.putInt(element.getYear());
 			b.put((byte) element.getMonthValue());
 			b.put((byte) element.getDayOfMonth());
@@ -272,7 +272,7 @@ public interface ElementHelper<E> {
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 4 + 2 * 1;
+			return Integer.BYTES + 2 * Byte.BYTES;
 		}
 
 		@Override
@@ -285,8 +285,8 @@ public interface ElementHelper<E> {
 			var c = Integer.compare(buffer.getInt(buffer.position()), element.getYear());
 			if (c != 0)
 				return c;
-			c = Byte.compare(buffer.get(buffer.position() + 4), (byte) element.getMonthValue());
-			return c != 0 ? c : Byte.compare(buffer.get(buffer.position() + 4 + 1), (byte) element.getDayOfMonth());
+			c = Byte.compare(buffer.get(buffer.position() + Integer.BYTES), (byte) element.getMonthValue());
+			return c != 0 ? c : Byte.compare(buffer.get(buffer.position() + Integer.BYTES + Byte.BYTES), (byte) element.getDayOfMonth());
 		}
 	};
 
@@ -294,14 +294,14 @@ public interface ElementHelper<E> {
 
 		@Override
 		public byte[] getBytes(Long element) {
-			var b = ByteBuffer.allocate(8);
+			var b = ByteBuffer.allocate(Long.BYTES);
 			b.putLong(element);
 			return b.array();
 		}
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 8;
+			return Long.BYTES;
 		}
 
 		@Override
@@ -343,7 +343,7 @@ public interface ElementHelper<E> {
 		@Override
 		public byte[] getBytes(String element) {
 			var b = element.getBytes();
-			var c = ByteBuffer.allocate(4 + b.length);
+			var c = ByteBuffer.allocate(Integer.BYTES + b.length);
 			c.putInt(b.length);
 			c.put(b);
 			return c.array();
@@ -351,7 +351,7 @@ public interface ElementHelper<E> {
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 4 + buffer.getInt(buffer.position());
+			return Integer.BYTES + buffer.getInt(buffer.position());
 		}
 
 		@Override
@@ -365,12 +365,12 @@ public interface ElementHelper<E> {
 		public int compare(ByteBuffer buffer, String element) {
 			var p = buffer.position();
 			var l = buffer.getInt(p);
-			if (l < 0 || p + 4 + l > buffer.limit()) {
-				System.out.println("l=" + l);
+			if (l < 0 || p + Integer.BYTES + l > buffer.limit()) {
+//				System.out.println("l=" + l);
 				throw new RuntimeException();
 			}
 			var b = new byte[l];
-			buffer.get(p + 4, b);
+			buffer.get(p + Integer.BYTES, b);
 			if (element == null)
 				throw new RuntimeException();
 			return new String(b).compareTo(element);
@@ -404,7 +404,7 @@ public interface ElementHelper<E> {
 
 		@Override
 		public byte[] getBytes(UUID element) {
-			var b = ByteBuffer.allocate(16);
+			var b = ByteBuffer.allocate(2 * Long.BYTES);
 			b.putLong(element.getMostSignificantBits());
 			b.putLong(element.getLeastSignificantBits());
 			return b.array();
@@ -412,7 +412,7 @@ public interface ElementHelper<E> {
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return 16;
+			return 2 * Long.BYTES;
 		}
 
 		@Override
@@ -423,7 +423,7 @@ public interface ElementHelper<E> {
 		@Override
 		public int compare(ByteBuffer buffer, UUID element) {
 			var c = Long.compare(buffer.getLong(buffer.position()), element.getMostSignificantBits());
-			return c != 0 ? c : Long.compare(buffer.getLong(buffer.position() + 8), element.getLeastSignificantBits());
+			return c != 0 ? c : Long.compare(buffer.getLong(buffer.position() + Long.BYTES), element.getLeastSignificantBits());
 		}
 	};
 

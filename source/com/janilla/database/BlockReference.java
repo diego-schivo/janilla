@@ -33,13 +33,13 @@ import com.janilla.io.IO;
 
 public record BlockReference(long self, long position, int capacity) {
 
-	public static int HELPER_LENGTH = Long.BYTES + Integer.BYTES;
+	public static int BYTES = Long.BYTES + Integer.BYTES;
 
 	public static ElementHelper<BlockReference> HELPER = new ElementHelper<BlockReference>() {
 
 		@Override
 		public byte[] getBytes(BlockReference element) {
-			var b = ByteBuffer.allocate(HELPER_LENGTH);
+			var b = ByteBuffer.allocate(BYTES);
 			b.putLong(element.position);
 			b.putInt(element.capacity);
 			return b.array();
@@ -47,7 +47,7 @@ public record BlockReference(long self, long position, int capacity) {
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return HELPER_LENGTH;
+			return BYTES;
 		}
 
 		@Override
@@ -72,14 +72,14 @@ public record BlockReference(long self, long position, int capacity) {
 
 	public static BlockReference read(SeekableByteChannel channel, long position) throws IOException {
 		channel.position(position);
-		var b = ByteBuffer.allocate(HELPER_LENGTH);
+		var b = ByteBuffer.allocate(BYTES);
 		IO.repeat(x -> channel.read(b), b.remaining());
 		return new BlockReference(position, b.getLong(0), b.getInt(Long.BYTES));
 	}
 
 	public static void write(BlockReference reference, SeekableByteChannel channel) throws IOException {
 		channel.position(reference.self());
-		var b = ByteBuffer.allocate(HELPER_LENGTH);
+		var b = ByteBuffer.allocate(BYTES);
 		b.putLong(0, reference.position());
 		b.putInt(Long.BYTES, reference.capacity());
 		IO.repeat(x -> channel.write(b), b.remaining());

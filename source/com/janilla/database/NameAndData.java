@@ -28,41 +28,41 @@ import java.nio.ByteBuffer;
 
 import com.janilla.io.ElementHelper;
 
-public record NameAndStore(String name, BlockReference root, IdAndSize idAndSize) {
+public record NameAndData(String name, BlockReference attributes, BlockReference btree) {
 
-	static ElementHelper<NameAndStore> HELPER = new ElementHelper<>() {
+	static ElementHelper<NameAndData> HELPER = new ElementHelper<>() {
 
 		@Override
-		public byte[] getBytes(NameAndStore element) {
+		public byte[] getBytes(NameAndData element) {
 			var bb = element.name().getBytes();
-			var b = ByteBuffer.allocate(Integer.BYTES + bb.length + BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH);
+			var b = ByteBuffer.allocate(Integer.BYTES + bb.length + 2 * BlockReference.BYTES);
 			b.putInt(bb.length);
 			b.put(bb);
-			b.putLong(element.root.position());
-			b.putInt(element.root.capacity());
-			b.putLong(element.idAndSize.id());
-			b.putLong(element.idAndSize.size());
+			b.putLong(element.attributes.position());
+			b.putInt(element.attributes.capacity());
+			b.putLong(element.btree.position());
+			b.putInt(element.btree.capacity());
 			return b.array();
 		}
 
 		@Override
 		public int getLength(ByteBuffer buffer) {
-			return Integer.BYTES + buffer.getInt(buffer.position()) + BlockReference.HELPER_LENGTH + IdAndSize.HELPER_LENGTH;
+			return Integer.BYTES + buffer.getInt(buffer.position()) + 2 * BlockReference.BYTES;
 		}
 
 		@Override
-		public NameAndStore getElement(ByteBuffer buffer) {
+		public NameAndData getElement(ByteBuffer buffer) {
 			var bb = new byte[buffer.getInt()];
 			buffer.get(bb);
-			var p = buffer.getLong();
-			var c = buffer.getInt();
-			var id = buffer.getLong();
-			var s = buffer.getLong();
-			return new NameAndStore(new String(bb), new BlockReference(-1, p, c), new IdAndSize(id, s));
+			var p1 = buffer.getLong();
+			var c1 = buffer.getInt();
+			var p2 = buffer.getLong();
+			var c2 = buffer.getInt();
+			return new NameAndData(new String(bb), new BlockReference(-1, p1, c1), new BlockReference(-1, p2, c2));
 		}
 
 		@Override
-		public int compare(ByteBuffer buffer, NameAndStore element) {
+		public int compare(ByteBuffer buffer, NameAndData element) {
 			var p = buffer.position();
 			var bb = new byte[buffer.getInt(p)];
 			buffer.get(p + Integer.BYTES, bb);

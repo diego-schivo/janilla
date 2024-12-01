@@ -25,8 +25,8 @@
 package com.janilla.json;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -165,7 +165,8 @@ public interface Json {
 			case OBJECT:
 				switch ((JsonToken.Boundary) t.data()) {
 				case START:
-					a.add(new HashMap<String, Object>());
+//					a.add(new HashMap<String, Object>());
+					a.add(new LinkedHashMap<String, Object>());
 					break;
 				default:
 					break;

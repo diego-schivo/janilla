@@ -50,7 +50,7 @@ public class Memory {
 			ft.setOrder(o);
 			ft.setChannel(c);
 			ft.setRoot(BlockReference.read(c, 0));
-			m.appendPosition = Math.max(BlockReference.HELPER_LENGTH, c.size());
+			m.appendPosition = Math.max(BlockReference.BYTES, c.size());
 
 			record Allocate(int size) {
 			}

@@ -79,15 +79,15 @@ public class ApplicationPersistenceBuilder {
 				t.setChannel(ch);
 				t.setOrder(order);
 				t.setRoot(BlockReference.read(ch, 0));
-				m.setAppendPosition(Math.max(3 * BlockReference.HELPER_LENGTH, ch.size()));
+				m.setAppendPosition(Math.max(3 * BlockReference.BYTES, ch.size()));
 			}
 
 			var d = new Database();
 			d.setBTreeOrder(order);
 			d.setChannel(ch);
 			d.setMemory(m);
-			d.setStoresRoot(BlockReference.HELPER_LENGTH);
-			d.setIndexesRoot(2 * BlockReference.HELPER_LENGTH);
+			d.setStoresRoot(BlockReference.BYTES);
+			d.setIndexesRoot(2 * BlockReference.BYTES);
 
 			var p = factory.create(Persistence.class);
 			p.database = d;
@@ -95,13 +95,19 @@ public class ApplicationPersistenceBuilder {
 			for (var t : factory.getTypes())
 				p.configure(t);
 
-			d.setInitializeStore((n, s) -> {
+			d.setInitializeStore((n, x) -> {
 				@SuppressWarnings("unchecked")
-				var s2 = (Store<String>) s;
-				s2.setElementHelper(ElementHelper.STRING);
+				var s = (Store<String>) x;
+				s.setElementHelper(ElementHelper.STRING);
+				s.setIdSupplier(() -> {
+					var v = x.getAttributes().get("nextId");
+					var id = v != null ? (Long) v : 1L;
+					x.getAttributes().put("nextId", id + 1);
+					return id;
+				});
 			});
-			d.setInitializeIndex((n, i) -> {
-				if (p.initializeIndex(n, i))
+			d.setInitializeIndex((n, x) -> {
+				if (p.initializeIndex(n, x))
 					return;
 			});
 

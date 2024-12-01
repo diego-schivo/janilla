@@ -26,9 +26,11 @@ package com.janilla.database;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -36,6 +38,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.janilla.io.ElementHelper;
+import com.janilla.io.IO;
 import com.janilla.json.Json;
 import com.janilla.util.Lazy;
 
@@ -55,30 +58,41 @@ public class Stores {
 						ft.setOrder(o);
 						ft.setChannel(ch);
 						ft.setRoot(BlockReference.read(ch, 0));
-						m.setAppendPosition(Math.max(2 * BlockReference.HELPER_LENGTH, ch.size()));
+						m.setAppendPosition(Math.max(2 * BlockReference.BYTES, ch.size()));
 
 						x.setOrder(o);
 						x.setChannel(ch);
 						x.setMemory(m);
-						x.setRoot(BlockReference.read(ch, BlockReference.HELPER_LENGTH));
+						x.setRoot(BlockReference.read(ch, BlockReference.BYTES));
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
 				});
-				ss.setInitializeStore((n, s) -> {
+				ss.setInitializeStore((n, x) -> {
 					@SuppressWarnings("unchecked")
-					var s2 = (Store<String>) s;
-					s2.setElementHelper(ElementHelper.STRING);
+					var s = (Store<String>) x;
+					s.setElementHelper(ElementHelper.STRING);
+					s.setIdSupplier(() -> {
+						var v = x.getAttributes().get("nextId");
+						var id = v != null ? (Long) v : 1L;
+						x.getAttributes().put("nextId", id + 1);
+						return id;
+					});
 				});
 				return ss;
 			};
 
+			class A {
+
+				long id;
+			}
+			var a = new A();
 			{
 				var ss = sss.get();
 				ss.create("Article");
 				ss.perform("Article", s -> {
-					var id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
-					return s.update(id, x -> {
+					a.id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
+					return s.update(a.id, x -> {
 						@SuppressWarnings("unchecked")
 						var m = (Map<String, Object>) Json.parse((String) x);
 						m.put("title", "FooBarBazQux");
@@ -92,27 +106,27 @@ public class Stores {
 			{
 				var ss = sss.get();
 				ss.perform("Article", s -> {
-					var m = Json.parse((String) s.read(1));
+					var m = Json.parse((String) s.read(a.id));
 					System.out.println(m);
-					assert m.equals(Map.of("id", 1L, "title", "FooBarBazQux")) : m;
+					assert m.equals(Map.of("id", a.id, "title", "FooBarBazQux")) : m;
 					return m;
 				});
 			}
 		}
 	}
 
-	private Consumer<BTree<NameAndStore>> initializeBTree;
+	private Consumer<BTree<NameAndData>> initializeBTree;
 
 	private BiConsumer<String, Store<?>> initializeStore;
 
-	private Supplier<BTree<NameAndStore>> btree = Lazy.of(() -> {
-		var t = new BTree<NameAndStore>();
-		initializeBTree.accept(t);
-		t.setHelper(NameAndStore.HELPER);
-		return t;
+	private Supplier<BTree<NameAndData>> btree = Lazy.of(() -> {
+		var bt = new BTree<NameAndData>();
+		initializeBTree.accept(bt);
+		bt.setHelper(NameAndData.HELPER);
+		return bt;
 	});
 
-	public void setInitializeBTree(Consumer<BTree<NameAndStore>> initializeBTree) {
+	public void setInitializeBTree(Consumer<BTree<NameAndData>> initializeBTree) {
 		this.initializeBTree = initializeBTree;
 	}
 
@@ -121,30 +135,65 @@ public class Stores {
 	}
 
 	public void create(String name) {
-		btree.get().getOrAdd(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)));
+		btree.get().getOrAdd(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
 	}
 
 	public <E, R> R perform(String name, Function<Store<E>, R> operation) {
-		var bt = btree.get();
 		class A {
 
 			R r;
 		}
+		var bt = btree.get();
 		var a = new A();
-		bt.get(new NameAndStore(name, new BlockReference(-1, -1, 0), new IdAndSize(0, 0)), n -> {
+		bt.get(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)), x -> {
 			var s = new Store<E>();
-			s.setInitializeBTree(x -> {
-				x.setOrder(bt.getOrder());
-				x.setChannel(bt.getChannel());
-				x.setMemory(bt.getMemory());
-				x.setRoot(n.root());
+			s.setInitializeBTree(y -> {
+				y.setOrder(bt.getOrder());
+				y.setChannel(bt.getChannel());
+				y.setMemory(bt.getMemory());
+				y.setRoot(x.btree());
 			});
-			s.setIdAndSize(n.idAndSize());
+			Map<String, Object> aa;
+			try {
+				if (x.attributes().capacity() == 0)
+					aa = new LinkedHashMap<>();
+				else {
+					bt.getChannel().position(x.attributes().position());
+					var b = ByteBuffer.allocate(x.attributes().capacity());
+					IO.repeat(y -> bt.getChannel().read(b), b.remaining());
+					b.position(0);
+					@SuppressWarnings("unchecked")
+					var m = (Map<String, Object>) Json.parse(ElementHelper.STRING.getElement(b));
+					aa = m;
+				}
+				s.setAttributes(new LinkedHashMap<>(aa));
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 			initializeStore.accept(name, s);
+
 			a.r = operation.apply(s);
-			var r = s.getBTree().getRoot();
-			var i = s.getIdAndSize();
-			return r.position() != n.root().position() || !i.equals(n.idAndSize()) ? new NameAndStore(name, r, i)
+
+			var aar = x.attributes();
+			if (!s.getAttributes().equals(aa)) {
+				var bb = ElementHelper.STRING.getBytes(Json.format(s.getAttributes()));
+				if (bb.length > aar.capacity()) {
+					if (aar.capacity() > 0)
+						bt.getMemory().free(aar);
+					aar = bt.getMemory().allocate(bb.length);
+				}
+				var b = ByteBuffer.allocate(aar.capacity());
+				b.put(0, bb);
+				try {
+					bt.getChannel().position(aar.position());
+					IO.repeat(y -> bt.getChannel().write(b), b.remaining());
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			}
+			var btr = s.getBTree().getRoot();
+			return aar.position() != x.attributes().position() || btr.position() != x.btree().position()
+					? new NameAndData(name, aar, btr)
 					: null;
 		});
 		return a.r;
