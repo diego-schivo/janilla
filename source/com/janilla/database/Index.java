@@ -26,6 +26,7 @@ package com.janilla.database;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -35,14 +36,16 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import com.janilla.io.ElementHelper;
+import com.janilla.io.IO;
+import com.janilla.json.Json;
 import com.janilla.util.Lazy;
 
 public class Index<K, V> {
@@ -82,8 +85,9 @@ public class Index<K, V> {
 				var i = is.get();
 				i.setAttributes(new LinkedHashMap<String, Object>());
 
-				i.add("foo", new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 1L },
-						new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 2L });
+				i.add("foo", new Object[][] {
+						new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 1L },
+						new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 2L } });
 			}
 
 			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
@@ -99,22 +103,22 @@ public class Index<K, V> {
 		}
 	}
 
-	private Consumer<BTree<KeyAndValues<K>>> initializeBTree;
+	private Consumer<BTree<KeyAndData<K>>> initializeBTree;
 
 	private ElementHelper<K> keyHelper;
 
 	private ElementHelper<V> valueHelper;
 
-	private Supplier<BTree<KeyAndValues<K>>> btree = Lazy.of(() -> {
-		var bt = new BTree<KeyAndValues<K>>();
+	private Supplier<BTree<KeyAndData<K>>> btree = Lazy.of(() -> {
+		var bt = new BTree<KeyAndData<K>>();
 		initializeBTree.accept(bt);
-		bt.setHelper(KeyAndValues.getHelper(keyHelper));
+		bt.setHelper(KeyAndData.getHelper(keyHelper));
 		return bt;
 	});
 
 	private Map<String, Object> attributes;
 
-	public void setInitializeBTree(Consumer<BTree<KeyAndValues<K>>> initializeBTree) {
+	public void setInitializeBTree(Consumer<BTree<KeyAndData<K>>> initializeBTree) {
 		this.initializeBTree = initializeBTree;
 	}
 
@@ -134,7 +138,7 @@ public class Index<K, V> {
 		this.valueHelper = valueHelper;
 	}
 
-	public BTree<KeyAndValues<K>> getBTree() {
+	public BTree<KeyAndData<K>> getBTree() {
 		return btree.get();
 	}
 
@@ -146,97 +150,135 @@ public class Index<K, V> {
 		this.attributes = attributes;
 	}
 
-	public boolean add(K key, @SuppressWarnings("unchecked") V... values) {
-		return apply(key, x -> {
-			var n = 0;
-			for (var v : values) {
-				var w = x.btree.getOrAdd(v);
-				if (w == null)
-					n++;
-			}
-			if (n == 0)
-				return null;
-			var y = n;
-			attributes.compute("size", (k, z) -> z == null ? (long) y : (Long) z + y);
-			return new ResultAndSize<>(true, x.size + n);
+	public boolean add(K key, V[] values) {
+//		System.out.println("Index.add key=" + key + ", values="
+//				+ Arrays.stream(values).map(x -> x instanceof Object[] oo ? List.of(oo) : x).toList());
+
+		return apply(key, (aa, bt) -> {
+			Boolean r = null;
+			for (var v : values)
+				if (bt.getOrAdd(v) == null) {
+					r = Boolean.TRUE;
+					aa.compute("size", (k, y) -> y == null ? 1L : (long) y + 1);
+					attributes.compute("size", (k, y) -> y == null ? 1L : (long) y + 1);
+//					if (consumer != null)
+//						consumer.accept(this);
+				}
+			return r;
 		}, true) != null;
 	}
 
-	public boolean remove(K key, V value) {
-		return apply(key, x -> {
-			var v = x.btree.remove(value);
-			if (v == null)
-				return null;
-			attributes.compute("size", (k, y) -> (Long) y - 1);
-			return new ResultAndSize<>(true, x.size - 1);
+	public boolean remove(K key, V[] values) {
+		return apply(key, (aa, bt) -> {
+			Boolean r = null;
+			for (var v : values)
+				if (bt.remove(v) != null) {
+					r = Boolean.TRUE;
+					aa.compute("size", (k, y) -> y == null ? 1L : (long) y - 1);
+					attributes.compute("size", (k, y) -> y == null ? 1L : (long) y - 1);
+				}
+			return r;
 		}, false) != null;
 	}
 
 	public Stream<V> list(K key) {
-		var s = apply(key, x -> new ResultAndSize<>(x.btree.stream(), x.size), false);
+		var s = apply(key, (aa, bt) -> bt.stream(), false);
 		return s != null ? s : Stream.empty();
 	}
 
 	public long count(K key) {
-		var c = apply(key, x -> new ResultAndSize<>(Long.valueOf(x.size), x.size), false);
+		var c = apply(key, (aa, bt) -> (Long) aa.getOrDefault("size", 0L), false);
 		return c != null ? c : 0;
 	}
 
 	public long countIf(Predicate<K> operation) {
-		return btree.get().stream().filter(x -> operation.test(x.key())).mapToLong(x -> x.size()).sum();
+//		return btree.get().stream().filter(x -> operation.test(x.key())).mapToLong(x -> x.size()).sum();
+		throw new UnsupportedOperationException();
 	}
 
 	public Stream<K> keys() {
-		return btree.get().stream().map(KeyAndValues::key);
+		return btree.get().stream().map(KeyAndData::key);
 	}
 
 	public Stream<V> values() {
 		return valuesIf(k -> true);
 	}
 
-	public Stream<V> valuesIf(Predicate<K> operation) {
-		return btree.get().stream().filter(x -> operation.test(x.key()))
-				.flatMap(x -> apply(x.key(), y -> new ResultAndSize<>(y.btree.stream(), y.size), false));
+	public Stream<V> valuesIf(Predicate<K> predicate) {
+		return btree.get().stream().filter(x -> predicate.test(x.key()))
+				.flatMap(x -> apply(x.key(), (aa, vt) -> vt.stream(), false));
 	}
 
 	public long count() {
-		var x = attributes.get("size");
-		return x != null ? (Long) x : 0;
+		return (long) attributes.getOrDefault("size", 0L);
 	}
 
-	protected <R> R apply(K key, Function<BTreeAndSize<V>, ResultAndSize<R>> function, boolean add) {
+	public <R> R apply(K key, BiFunction<Map<String, Object>, BTree<V>, R> function, boolean add) {
 		class A {
 
-			ResultAndSize<R> rs;
+			R r;
+
+			boolean x;
 		}
 		var bt = btree.get();
-		var kvv = new KeyAndValues<K>(key, new BlockReference(-1, -1, 0), 0);
+		var kd = new KeyAndData<K>(key, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0));
 		var a = new A();
-		UnaryOperator<KeyAndValues<K>> o = x -> {
+		UnaryOperator<KeyAndData<K>> op = x -> {
+			String aa1;
+			try {
+				if (x.attributes().capacity() == 0)
+					aa1 = "{}";
+				else {
+					bt.getChannel().position(x.attributes().position());
+					var b = ByteBuffer.allocate(x.attributes().capacity());
+					IO.repeat(y -> bt.getChannel().read(b), b.remaining());
+					b.position(0);
+					aa1 = ElementHelper.STRING.getElement(b);
+				}
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+			@SuppressWarnings("unchecked")
+			var aa = (Map<String, Object>) Json.parse(aa1);
+
 			var vt = new BTree<V>();
 			vt.setOrder(bt.getOrder());
 			vt.setChannel(bt.getChannel());
 			vt.setMemory(bt.getMemory());
 			vt.setHelper(valueHelper);
-			vt.setRoot(x.root());
+			vt.setRoot(x.btree());
 
-			a.rs = function.apply(new BTreeAndSize<>(vt, x.size()));
-			return vt.getRoot().position() != x.root().position() || (a.rs != null && a.rs.size != x.size())
-					? new KeyAndValues<K>(key, vt.getRoot(), a.rs.size)
+			var s1 = (long) aa.getOrDefault("size", 0L);
+			a.r = function.apply(aa, vt);
+			var s2 = (long) aa.getOrDefault("size", 0L);
+			a.x = s1 != 0 && s2 == 0;
+
+			var aa2 = Json.format(aa);
+			var aar = x.attributes();
+			if (!aa2.equals(aa1)) {
+				var bb = ElementHelper.STRING.getBytes(aa2);
+				if (bb.length > aar.capacity()) {
+					if (aar.capacity() > 0)
+						bt.getMemory().free(aar);
+					aar = bt.getMemory().allocate(bb.length);
+				}
+				var b = ByteBuffer.allocate(aar.capacity());
+				b.put(0, bb);
+				try {
+					bt.getChannel().position(aar.position());
+					IO.repeat(y -> bt.getChannel().write(b), b.remaining());
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			}
+			var vtr = vt.getRoot();
+			return aar.position() != x.attributes().position() || vtr.position() != x.btree().position()
+					? new KeyAndData<>(key, aar, vtr)
 					: null;
 		};
-		if (add)
-			bt.getOrAdd(kvv, o);
-		else
-			bt.get(kvv, o);
-		if (a.rs != null && a.rs.size == 0)
-			bt.remove(kvv);
-		return a.rs != null ? a.rs.result : null;
-	}
-
-	protected record BTreeAndSize<V>(BTree<V> btree, long size) {
-	}
-
-	protected record ResultAndSize<R>(R result, long size) {
+		kd = add ? bt.getOrAdd(kd, op) : bt.get(kd, op);
+		if (a.x)
+			bt.remove(kd);
+		return a.r;
 	}
 }

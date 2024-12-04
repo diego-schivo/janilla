@@ -28,39 +28,40 @@ import java.nio.ByteBuffer;
 
 import com.janilla.io.ElementHelper;
 
-public record KeyAndValues<K>(K key, BlockReference root, long size) {
+public record KeyAndData<K>(K key, BlockReference attributes, BlockReference btree) {
 
-	static <K> ElementHelper<KeyAndValues<K>> getHelper(ElementHelper<K> keyHelper) {
+	static <K> ElementHelper<KeyAndData<K>> getHelper(ElementHelper<K> keyHelper) {
 		return new ElementHelper<>() {
 
 			@Override
-			public byte[] getBytes(KeyAndValues<K> element) {
+			public byte[] getBytes(KeyAndData<K> element) {
 				var bb = keyHelper.getBytes(element.key());
-				var b = ByteBuffer.allocate(bb.length + BlockReference.BYTES + Long.BYTES);
+				var b = ByteBuffer.allocate(bb.length + 2 * BlockReference.BYTES);
 				b.put(bb);
-				var r = element.root();
-				b.putLong(r.position());
-				b.putInt(r.capacity());
-				b.putLong(element.size());
+				b.putLong(element.attributes.position());
+				b.putInt(element.attributes.capacity());
+				b.putLong(element.btree.position());
+				b.putInt(element.btree.capacity());
 				return b.array();
 			}
 
 			@Override
 			public int getLength(ByteBuffer buffer) {
-				return keyHelper.getLength(buffer) + BlockReference.BYTES + Long.BYTES;
+				return keyHelper.getLength(buffer) + 2 * BlockReference.BYTES;
 			}
 
 			@Override
-			public KeyAndValues<K> getElement(ByteBuffer buffer) {
+			public KeyAndData<K> getElement(ByteBuffer buffer) {
 				var k = keyHelper.getElement(buffer);
-				var p = buffer.getLong();
-				var c = buffer.getInt();
-				var s = buffer.getLong();
-				return new KeyAndValues<>(k, new BlockReference(-1, p, c), s);
+				var p1 = buffer.getLong();
+				var c1 = buffer.getInt();
+				var p2 = buffer.getLong();
+				var c2 = buffer.getInt();
+				return new KeyAndData<>(k, new BlockReference(-1, p1, c1), new BlockReference(-1, p2, c2));
 			}
 
 			@Override
-			public int compare(ByteBuffer buffer, KeyAndValues<K> element) {
+			public int compare(ByteBuffer buffer, KeyAndData<K> element) {
 				return keyHelper.compare(buffer, element.key());
 			}
 		};

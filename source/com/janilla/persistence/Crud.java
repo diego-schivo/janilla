@@ -58,6 +58,8 @@ public class Crud<E> {
 	protected boolean indexPresent;
 
 	public E create(E entity) {
+//		System.out.println("Crud.create entity=" + entity);
+
 		return database.perform((ss, ii) -> {
 			class A {
 
@@ -70,12 +72,7 @@ public class Crud<E> {
 //			System.out.println("Crud.create t=" + t);
 				return t;
 			}));
-			for (var e : getIndexMap(a.e, i).entrySet()) {
-				var n = e.getKey();
-				var f = e.getValue();
-				var m = toMap(f);
-				updateIndex(n, null, m);
-			}
+			updateIndexes(null, a.e, i);
 			return a.e;
 		}, true);
 	}
@@ -106,30 +103,19 @@ public class Crud<E> {
 		return database.perform((ss, ii) -> {
 			class A {
 
-				E e;
+				E e1;
 
-				Map<String, Map.Entry<Object, Object>> m;
+				E e2;
 			}
 			var a = new A();
 			ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
-				a.e = parser.apply(x);
-				a.m = getIndexMap(a.e, id);
-				a.e = operator.apply(a.e);
-				return formatter.apply(a.e);
+				a.e1 = parser.apply(x);
+				a.e2 = operator.apply(a.e1);
+				return formatter.apply(a.e2);
 			}));
-			if (a.e != null)
-				for (var e : getIndexMap(a.e, id).entrySet()) {
-					var f1 = a.m.get(e.getKey());
-					var f2 = e.getValue();
-					var k1 = f1 != null ? f1.getKey() : null;
-					var k2 = f2 != null ? f2.getKey() : null;
-					if (!Objects.equals(k1, k2)) {
-						var m1 = k2 instanceof Collection<?> c ? toMap(f1, k -> !c.contains(k)) : toMap(f1);
-						var m2 = k1 instanceof Collection<?> c ? toMap(f2, k -> !c.contains(k)) : toMap(f2);
-						updateIndex(e.getKey(), m1, m2);
-					}
-				}
-			return a.e;
+			if (a.e1 != null)
+				updateIndexes(a.e1, a.e2, id);
+			return a.e2;
 		}, true);
 	}
 
@@ -139,10 +125,7 @@ public class Crud<E> {
 		return database.perform((ss, ii) -> {
 			var o = ss.perform(type.getSimpleName(), s -> s.delete(id));
 			var e = parser.apply(o);
-			for (var f : getIndexMap(e, id).entrySet()) {
-				var m = toMap(f.getValue());
-				updateIndex(f.getKey(), m, null);
-			}
+			updateIndexes(e, null, id);
 			return e;
 		}, true);
 	}
@@ -177,7 +160,8 @@ public class Crud<E> {
 	}
 
 	public long count() {
-		return database.perform((ss, ii) -> ss.perform(type.getSimpleName(), s -> s.count()), false);
+		return database.perform((ss, ii) -> indexPresent ? ii.perform(type.getSimpleName(), i -> i.count())
+				: ss.perform(type.getSimpleName(), s -> s.count()), false);
 	}
 
 	public long count(String index, Object key) {
@@ -207,8 +191,7 @@ public class Crud<E> {
 
 			Object v;
 		}
-		List<A> aa;
-		aa = database.perform((ss, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
+		List<A> aa = database.perform((ss, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
 			var a = new A();
 			a.vv = i.list(k).iterator();
 			a.v = a.vv.hasNext() ? a.vv.next() : null;
@@ -380,6 +363,22 @@ public class Crud<E> {
 		}, false);
 	}
 
+	protected void updateIndexes(E entity1, E entity2, long id) {
+		var im1 = entity1 != null ? getIndexMap(entity1, id) : null;
+		var im2 = entity2 != null ? getIndexMap(entity2, id) : null;
+		for (var k : (im1 != null ? im1 : im2).keySet()) {
+			var v1 = im1 != null ? im1.get(k) : null;
+			var v2 = im2 != null ? im2.get(k) : null;
+			var k1 = v1 != null ? v1.getKey() : null;
+			var k2 = v2 != null ? v2.getKey() : null;
+			if (v1 == null || v2 == null || !Objects.equals(k1, k2)) {
+				var m1 = v1 == null ? null : k2 instanceof Collection<?> c ? toMap(v1, x -> !c.contains(x)) : toMap(v1);
+				var m2 = v2 == null ? null : k1 instanceof Collection<?> c ? toMap(v2, x -> !c.contains(x)) : toMap(v2);
+				updateIndex(k, m1, m2);
+			}
+		}
+	}
+
 	protected Map<String, Map.Entry<Object, Object>> getIndexMap(E entity, long id) {
 		var m = new HashMap<String, Map.Entry<Object, Object>>();
 		for (var e : indexEntryGetters.entrySet()) {
@@ -433,10 +432,10 @@ public class Crud<E> {
 		database.perform((ss, ii) -> ii.perform(n, i -> {
 			if (remove != null)
 				for (var e : remove.entrySet())
-					i.remove(e.getKey(), e.getValue());
+					i.remove(e.getKey(), new Object[] { e.getValue() });
 			if (add != null)
 				for (var e : add.entrySet())
-					i.add(e.getKey(), e.getValue());
+					i.add(e.getKey(), new Object[] { e.getValue() });
 			return null;
 		}), true);
 	}

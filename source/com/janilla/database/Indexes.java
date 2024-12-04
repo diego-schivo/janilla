@@ -34,7 +34,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -87,9 +86,10 @@ public class Indexes {
 				var ii = iis.get();
 				ii.create("Article.tagList");
 				ii.perform("Article.tagList", i -> {
-					i.add("foo",
+					i.add("foo", new Object[][] {
 							new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC), 1L },
-							new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC), 2L });
+							new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC),
+									2L } });
 					return null;
 				});
 			}
@@ -146,20 +146,20 @@ public class Indexes {
 				y.setMemory(bt.getMemory());
 				y.setRoot(x.btree());
 			});
-			Map<String, Object> aa;
+			String aa1;
 			try {
 				if (x.attributes().capacity() == 0)
-					aa = new LinkedHashMap<>();
+					aa1 = "{}";
 				else {
 					bt.getChannel().position(x.attributes().position());
 					var b = ByteBuffer.allocate(x.attributes().capacity());
 					IO.repeat(y -> bt.getChannel().read(b), b.remaining());
 					b.position(0);
-					@SuppressWarnings("unchecked")
-					var m = (Map<String, Object>) Json.parse(ElementHelper.STRING.getElement(b));
-					aa = m;
+					aa1 = ElementHelper.STRING.getElement(b);
 				}
-				i.setAttributes(new LinkedHashMap<>(aa));
+				@SuppressWarnings("unchecked")
+				var m = (Map<String, Object>) Json.parse(aa1);
+				i.setAttributes(m);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -167,9 +167,10 @@ public class Indexes {
 
 			a.r = operation.apply(i);
 
+			var aa2 = Json.format(i.getAttributes());
 			var aar = x.attributes();
-			if (!i.getAttributes().equals(aa)) {
-				var bb = ElementHelper.STRING.getBytes(Json.format(i.getAttributes()));
+			if (!aa2.equals(aa1)) {
+				var bb = ElementHelper.STRING.getBytes(aa2);
 				if (bb.length > aar.capacity()) {
 					if (aar.capacity() > 0)
 						bt.getMemory().free(aar);

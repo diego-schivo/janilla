@@ -102,26 +102,26 @@ public class Persistence {
 		c.type = type;
 		c.database = database;
 		if (c.formatter == null)
-			c.formatter = e -> {
-				var t = new ReflectionJsonIterator();
-				t.setObject(e);
-				t.setIncludeType(true);
-				return Json.format(t);
+			c.formatter = x -> {
+				var tt = new ReflectionJsonIterator();
+				tt.setObject(x);
+				tt.setIncludeType(true);
+				return Json.format(tt);
 			};
 		if (c.parser == null)
-			c.parser = t -> {
-				var z = new Converter();
-				z.setResolver(x -> x.map().containsKey("$type")
-						? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
+			c.parser = x -> {
+				var c2 = new Converter();
+				c2.setResolver(y -> y.map().containsKey("$type")
+						? new Converter.MapType(y.map(), typeResolver.apply((String) y.map().get("$type")))
 						: null);
 				@SuppressWarnings("unchecked")
-				var e = (E) z.convert(Json.parse((String) t), type);
+				var e = (E) c2.convert(Json.parse((String) x), type);
 				return e;
 			};
 		c.indexPresent = type.isAnnotationPresent(Index.class);
 		configuration.cruds.put(type, c);
 
-		var r = Stream.concat(Stream.of(type), Reflection.properties(type).map(n -> {
+		var ff = Stream.concat(Stream.of(type), Reflection.properties(type).map(n -> {
 			Field f;
 			try {
 				f = type.getDeclaredField(n);
@@ -132,39 +132,39 @@ public class Persistence {
 			}
 			return f;
 		}).filter(Objects::nonNull)).iterator();
-		while (r.hasNext()) {
-			var e = r.next();
-			var i = e.getAnnotation(Index.class);
+		while (ff.hasNext()) {
+			var ae = ff.next();
+			var i = ae.getAnnotation(Index.class);
 			if (i == null)
 				continue;
 
-			var n = e instanceof Field f ? f.getName() : null;
+			var n = ae instanceof Field f ? f.getName() : null;
 			var t = n != null ? Reflection.property(type, n).getType() : null;
-			var j = new IndexInitializer<K, V>();
+			var ii = new IndexInitializer<K, V>();
 			if (t == null) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.NULL;
-				j.keyHelper = h;
+				ii.keyHelper = h;
 			} else if (t == Boolean.class || t == Boolean.TYPE || t == boolean[].class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.BOOLEAN;
-				j.keyHelper = h;
+				ii.keyHelper = h;
 			} else if (t == Integer.class || t == Integer.TYPE || t == int[].class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.INTEGER;
-				j.keyHelper = h;
+				ii.keyHelper = h;
 			} else if (t == Long.class || t == Long.TYPE || t == long[].class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.LONG;
-				j.keyHelper = h;
+				ii.keyHelper = h;
 			} else if (t == String.class || t == Collection.class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.STRING;
-				j.keyHelper = h;
+				ii.keyHelper = h;
 			} else if (t == UUID.class) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<K>) ElementHelper.UUID1;
-				j.keyHelper = h;
+				ii.keyHelper = h;
 			} else if (t.isEnum()) {
 				@SuppressWarnings("unchecked")
 				var h = new ElementHelper<K>() {
@@ -191,36 +191,36 @@ public class Persistence {
 						return STRING.compare(buffer, element.toString());
 					}
 				};
-				j.keyHelper = h;
+				ii.keyHelper = h;
 			} else
 				throw new RuntimeException();
 
 			var s = i.sort();
 			if (s.startsWith("+") || s.startsWith("-"))
 				s = s.substring(1);
-			var g = !s.isEmpty() ? Reflection.property(type, s) : null;
-			if (g != null && g.getType() != null) {
+			var sp = !s.isEmpty() ? Reflection.property(type, s) : null;
+			if (sp != null && sp.getType() != null) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<V>) ElementHelper.of(type, i.sort(), "id");
-				j.valueHelper = h;
+				ii.valueHelper = h;
 			} else {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<V>) ElementHelper.of(type, "id");
-				j.valueHelper = h;
+				ii.valueHelper = h;
 			}
 			var k = type.getSimpleName() + (n != null ? "." + n : "");
-			configuration.indexInitializers.put(k, j);
+			configuration.indexInitializers.put(k, ii);
 
-			var v = new IndexEntryGetter();
-			BiFunction<Class<?>, String, Function<Object, Object>> f;
+			var ieg = new IndexEntryGetter();
+			BiFunction<Class<?>, String, Function<Object, Object>> kgf;
 			try {
-				f = i.keyGetter().getConstructor().newInstance();
-			} catch (ReflectiveOperationException x) {
-				throw new RuntimeException(x);
+				kgf = i.keyGetter().getConstructor().newInstance();
+			} catch (ReflectiveOperationException e) {
+				throw new RuntimeException(e);
 			}
-			v.keyGetter = n != null && !n.isEmpty() ? f.apply(type, n) : null;
-			v.sortGetter = g;
-			c.indexEntryGetters.put(n, v);
+			ieg.keyGetter = n != null && !n.isEmpty() ? kgf.apply(type, n) : null;
+			ieg.sortGetter = sp;
+			c.indexEntryGetters.put(n, ieg);
 		}
 	}
 

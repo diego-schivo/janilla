@@ -109,11 +109,11 @@ public class Database {
 
 					ii.create("Article.tagList");
 					ii.perform("Article.tagList", i -> {
-						i.add("foo",
+						i.add("foo", new Object[][] {
 								new Object[] { LocalDateTime.parse("2023-12-03T09:00:00").toInstant(ZoneOffset.UTC),
 										1L },
 								new Object[] { LocalDateTime.parse("2023-12-03T10:00:00").toInstant(ZoneOffset.UTC),
-										2L });
+										2L } });
 						return null;
 					});
 					return null;

@@ -166,6 +166,6 @@ public class ObjectScanner implements Scanner {
 
 	@Override
 	public boolean done() {
-		return state == 10;
+		return state == 6 || state == 10;
 	}
 }
