@@ -22,27 +22,38 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-export class SlottableElement extends HTMLElement {
+import { compileNode } from "./dom.js";
+
+export class UpdatableElement extends HTMLElement {
 
 	constructor() {
 		super();
+
+		this.interpolatorBuilders ??= loadTemplate(this.constructor.templateName).then(t => {
+			const c = t.content.cloneNode(true);
+			const cc = [...c.querySelectorAll("template")].map(x => {
+				x.remove();
+				return x.content;
+			});
+			return [compileNode(c), ...cc.map(x => compileNode(x))];
+		});
 	}
 
 	connectedCallback() {
-		// console.log("SlottableElement.connectedCallback");
+		// console.log("UpdatableElement.connectedCallback");
 
 		this.requestUpdate();
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
-		// console.log("SlottableElement.attributeChangedCallback", "name", name, "oldValue", oldValue, "newValue", newValue);
+		// console.log("UpdatableElement.attributeChangedCallback", "name", name, "oldValue", oldValue, "newValue", newValue);
 
 		if (newValue !== oldValue)
 			this.requestUpdate();
 	}
 
 	requestUpdate() {
-		// console.log("SlottableElement.requestUpdate");
+		// console.log("UpdatableElement.requestUpdate");
 
 		if (typeof this.updateTimeout === "number")
 			clearTimeout(this.updateTimeout);
@@ -54,7 +65,20 @@ export class SlottableElement extends HTMLElement {
 	}
 
 	async update() {
+		// console.log("UpdatableElement.update");
+	}
+}
+
+export class SlottableElement extends UpdatableElement {
+
+	constructor() {
+		super();
+	}
+
+	async update() {
 		// console.log("SlottableElement.update");
+
+		await super.update();
 
 		if (!this.slot)
 			this.state = undefined;
@@ -74,4 +98,15 @@ export class SlottableElement extends HTMLElement {
 	async render() {
 		// console.log("SlottableElement.render");
 	}
+}
+
+const templates = {};
+
+export async function loadTemplate(name) {
+	templates[name] ??= fetch(`/${name}.html`).then(x => x.text()).then(x => {
+		const t = document.createElement("template");
+		t.innerHTML = x;
+		return t;
+	});
+	return await templates[name];
 }

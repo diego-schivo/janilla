@@ -22,141 +22,113 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-/*
-const placeholder = RegExp("\\$\\{(.*?)\\}", "g");
+const evaluate = (expression, context) => {
+	let o = context;
+	for (const k of expression.split("."))
+		if (o != null && k)
+			o = o[k];
+		else
+			break;
+	return o;
+};
 
-export function interpolate(target, data) {
-	if (typeof target === "string") {
-		if (target.includes("${")) {
-			let a, i = 0, t = [];
-			while ((a = placeholder.exec(target)) !== null) {
-				if (a.index > i)
-					t.push(target.substring(i, a.index));
-				let o = data;
-				for (const n of a[1].split("."))
-					if (o != null && n)
-						o = o[n];
-					else
-						break;
-				if (typeof o === "number")
-					o = o.toString();
-				if (o != null)
-					Array.isArray(o) ? t.push(...o) : t.push(o);
-				i = placeholder.lastIndex;
-			}
-			if (i < target.length)
-				t.push(target.substring(i));
-			target = !t.length ? undefined : t.every(x => typeof x === "string") ? t.join("") : t;
-		}
-	} else if (target instanceof Text) {
-		if (target.nodeValue.includes("${")) {
-			const r = interpolate(target.nodeValue, data);
-			if (r == null) {
-				target.remove();
-				target = undefined;
-			} else if (typeof r === "string")
-				target.nodeValue = r;
-			else {
-				const t = r.map(x => typeof x === "string" ? new Text(x) : x);
-				target.replaceWith(...t);
-				target = t;
-			}
-		}
-	} else if (target instanceof Comment) {
-		if (target.nodeValue.includes("${")) {
-			const r = interpolate(target.nodeValue, data);
-			if (r == null) {
-				target.remove();
-				target = undefined;
-			} else if (typeof r === "string")
-				target.nodeValue = r;
-			else {
-				const t = r.map(x => typeof x === "string" ? new Comment(x) : x);
-				target.replaceWith(...t);
-				target = t;
-			}
-		}
-	} else {
-		if (target instanceof Element && target.hasAttributes())
-			for (const a of target.attributes)
-				if (a.value.includes("${")) {
-					const r = interpolate(a.value, data);
-					if (typeof r !== "undefined")
-						a.value = r;
-					else
-						target.removeAttribute(a.name);
-				}
-		if (target.hasChildNodes())
-			for (const n of target.childNodes)
-				interpolate(n, data);
-	}
-	return target;
+const findNode = (node, indexes, attribute) => {
+	return indexes.reduce((n, x, i) => (attribute && i === indexes.length - 1 ? n.attributes : n.childNodes)[x], node);
 }
-*/
 
-export function buildInterpolator(node) {
-	let n = node;
+export const compileNode = node => {
+	const ii = [];
 	const ff = [];
-	const e = (expression, context) => {
-		let r = context;
-		for (const k of expression.split("."))
-			if (r != null && k)
-				r = r[k];
-			else
-				break;
-		return r;
-	};
-	while (n) {
-		if (n instanceof Text) {
-			if (n.nodeValue.startsWith("${") && n.nodeValue.endsWith("}")) {
-				const k = n.nodeValue.substring(2, n.nodeValue.length - 1);
-				n.nodeValue = "";
-				const o = n;
-				ff.push(x => o.nodeValue = e(k, x));
-			}
-		} else if (n instanceof Comment) {
-			if (n.nodeValue.startsWith("${") && n.nodeValue.endsWith("}")) {
-				const k = n.nodeValue.substring(2, n.nodeValue.length - 1);
-				n.nodeValue = "";
-				const o = n;
-				let l = 0;
-				ff.push(x => {
-					while (l > 0) {
-						o.parentNode.removeChild(o.nextSibling);
-						l--;
-					}
-					const y = e(k, x);
-					if (y == null)
-						return;
-					const ns = o.nextSibling;
-					(Array.isArray(y) ? y : [y]).forEach(z => {
-						o.parentNode.insertBefore(z, ns);
-					});
-					for (let z = o.nextSibling; z !== ns; z = z.nextSibling)
-						l++;
+	for (let x = node; x;) {
+		if (x instanceof Text) {
+			if (x.nodeValue.startsWith("${") && x.nodeValue.endsWith("}")) {
+				const ii2 = [...ii];
+				const ex = x.nodeValue.substring(2, x.nodeValue.length - 1);
+				x.nodeValue = "";
+				ff.push(n => {
+					const n2 = findNode(n, ii2);
+					return y => {
+						const z = evaluate(ex, y);
+						if (z !== n2.nodeValue)
+							n2.nodeValue = z;
+					};
 				});
 			}
-		} else if (n instanceof Element && n.hasAttributes())
-			for (const a of n.attributes)
-				if (a.value.startsWith("${") && a.value.endsWith("}")) {
-					const k = a.value.substring(2, a.value.length - 1);
-					a.value = "";
-					ff.push(x => a.value = e(k, x));
-				}
-		if (n.firstChild) {
-			n = n.firstChild;
-			continue;
-		}
-		do {
-			if (n.nextSibling) {
-				n = n.nextSibling;
-				break;
+		} else if (x instanceof Comment) {
+			if (x.nodeValue.startsWith("${") && x.nodeValue.endsWith("}")) {
+				const ii2 = [...ii];
+				const ex = x.nodeValue.substring(2, x.nodeValue.length - 1);
+				x.nodeValue = "";
+				ff.push(n => {
+					const n2 = findNode(n, ii2);
+					const m = new Map();
+					return y => {
+						for (const e of m.entries())
+							e[0].append(...e[1]);
+						m.clear();
+						const z = evaluate(ex, y);
+						if (!z)
+							return;
+						const ns = n2.nextSibling;
+						(Array.isArray(z) ? z : [z]).forEach(n3 => {
+							const ps = ns ? ns.previousSibling : n2;
+							n2.parentNode.insertBefore(n3, ns);
+							const nn = [];
+							for (let ns2 = ps.nextSibling; ns2 !== ns; ns2 = ns2.nextSibling)
+								nn.push(ns2);
+							m.set(n3, nn);
+						});
+					};
+				});
 			}
-			n = n.parentNode;
-		} while (n);
+		} else if (x instanceof Element && x.hasAttributes()) {
+			let i = 0;
+			for (const a of x.attributes) {
+				if (a.value.startsWith("${") && a.value.endsWith("}")) {
+					const ii2 = [...ii, i];
+					const ex = a.value.substring(2, a.value.length - 1);
+					a.value = "";
+					ff.push(n => {
+						const n2 = findNode(n, ii2, true);
+						return y => {
+							const z = evaluate(ex, y);
+							if (z !== n2.value)
+								n2.value = z;
+						};
+					});
+				}
+				i++;
+			}
+		}
+
+		if (x.firstChild) {
+			x = x.firstChild;
+			ii.push(0);
+		} else
+			do
+				if (x === node)
+					x = null;
+				else if (x.nextSibling) {
+					x = x.nextSibling;
+					ii[ii.length - 1]++;
+					break;
+				} else {
+					x = x.parentNode;
+					ii.pop();
+				}
+			while (x);
 	}
-	return x => {
-		ff.forEach(f => f(x));
-		return node;
+	return () => {
+		const n = node.cloneNode(true);
+		const ff2 = ff.map(x => x(n));
+		return x => {
+			ff2.forEach(y => y(x));
+			return n;
+		};
 	};
-}
+};
+
+export const removeAllChildren = element => {
+	while (element.firstChild)
+		element.removeChild(element.lastChild);
+};
