@@ -26,6 +26,8 @@ import { compileNode } from "./dom.js";
 
 export class UpdatableElement extends HTMLElement {
 
+	#update = {};
+
 	constructor() {
 		super();
 
@@ -41,26 +43,34 @@ export class UpdatableElement extends HTMLElement {
 
 	connectedCallback() {
 		// console.log("UpdatableElement.connectedCallback");
-
 		this.requestUpdate();
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
 		// console.log("UpdatableElement.attributeChangedCallback", "name", name, "oldValue", oldValue, "newValue", newValue);
-
 		if (newValue !== oldValue)
 			this.requestUpdate();
 	}
 
 	requestUpdate() {
 		// console.log("UpdatableElement.requestUpdate");
+		if (this.#update.ongoing) {
+			this.#update.repeat = true;
+			return;
+		}
 
-		if (typeof this.updateTimeout === "number")
-			clearTimeout(this.updateTimeout);
+		if (typeof this.#update.timeoutID === "number")
+			clearTimeout(this.#update.timeoutID);
 
-		this.updateTimeout = setTimeout(async () => {
-			this.updateTimeout = undefined;
+		this.#update.timeoutID = setTimeout(async () => {
+			this.#update.timeoutID = undefined;
+			this.#update.ongoing = true;
 			await this.update();
+			this.#update.ongoing = false;
+			if (this.#update.repeat) {
+				this.#update.repeat = false;
+				this.requestUpdate();
+			}
 		}, 1);
 	}
 
@@ -77,7 +87,6 @@ export class SlottableElement extends UpdatableElement {
 
 	async update() {
 		// console.log("SlottableElement.update");
-
 		await super.update();
 
 		if (!this.slot)
