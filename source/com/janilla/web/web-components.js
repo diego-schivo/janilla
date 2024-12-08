@@ -30,15 +30,6 @@ export class UpdatableElement extends HTMLElement {
 
 	constructor() {
 		super();
-
-		this.interpolatorBuilders ??= loadTemplate(this.constructor.templateName).then(t => {
-			const c = t.content.cloneNode(true);
-			const cc = [...c.querySelectorAll("template")].map(x => {
-				x.remove();
-				return x.content;
-			});
-			return [compileNode(c), ...cc.map(x => compileNode(x))];
-		});
 	}
 
 	connectedCallback() {
@@ -65,7 +56,15 @@ export class UpdatableElement extends HTMLElement {
 		this.#update.timeoutID = setTimeout(async () => {
 			this.#update.timeoutID = undefined;
 			this.#update.ongoing = true;
-			await this.update();
+			this.interpolatorBuilders ??= await (loadTemplate(this.constructor.templateName).then(t => {
+				const c = t.content.cloneNode(true);
+				const cc = [...c.querySelectorAll("template")].map(x => {
+					x.remove();
+					return x.content;
+				});
+				return [compileNode(c), ...cc.map(x => compileNode(x))];
+			}));
+			this.update();
 			this.#update.ongoing = false;
 			if (this.#update.repeat) {
 				this.#update.repeat = false;
@@ -74,7 +73,7 @@ export class UpdatableElement extends HTMLElement {
 		}, 1);
 	}
 
-	async update() {
+	update() {
 		// console.log("UpdatableElement.update");
 	}
 }
