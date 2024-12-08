@@ -64,7 +64,7 @@ export class UpdatableElement extends HTMLElement {
 				});
 				return [compileNode(c), ...cc.map(x => compileNode(x))];
 			}));
-			this.update();
+			await this.update();
 			this.#update.ongoing = false;
 			if (this.#update.repeat) {
 				this.#update.repeat = false;
@@ -73,7 +73,7 @@ export class UpdatableElement extends HTMLElement {
 		}, 1);
 	}
 
-	update() {
+	async update() {
 		// console.log("UpdatableElement.update");
 	}
 }
@@ -86,24 +86,20 @@ export class SlottableElement extends UpdatableElement {
 
 	async update() {
 		// console.log("SlottableElement.update");
-		await super.update();
-
 		if (!this.slot)
 			this.state = undefined;
-		await this.render();
-		if (!this.slot || this.state)
-			return;
-
-		await this.computeState();
-		if (this.state)
-			await this.render();
+		this.render();
+		if (this.slot && !this.state) {
+			this.state = await this.computeState();
+			this.render();
+		}
 	}
 
 	async computeState() {
 		// console.log("SlottableElement.computeState");
 	}
 
-	async render() {
+	render() {
 		// console.log("SlottableElement.render");
 	}
 }
