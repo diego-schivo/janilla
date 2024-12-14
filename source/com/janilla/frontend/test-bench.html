@@ -1,0 +1,33 @@
+<div class="test-bench">
+	<div class="launcher">
+		<form>
+			<ul>
+				<li>
+					<label>
+						<input type="checkbox" />
+						<span>(select all)</span>
+					</label>
+				</li>
+				<!--${items}-->
+			</ul>
+			<button>Run</button>
+		</form>
+	</div>
+	<div class="runner">
+		<!--${iframe}-->
+	</div>
+</div>
+
+<template>
+	<li class="${class}" title="${title}">
+		<label>
+			<input type="checkbox" name="test" value="${value}" />
+			<span>${text}</span>
+		</label>
+	</li>
+</template>
+
+<template>
+	<iframe src="/">
+	</iframe>
+</template>

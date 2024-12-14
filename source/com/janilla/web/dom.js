@@ -48,7 +48,7 @@ export const compileNode = node => {
 				ff.push(n => {
 					const n2 = findNode(n, ii2);
 					return y => {
-						const z = evaluate(ex, y);
+						const z = evaluate(ex, y) ?? "";
 						if (z !== n2.nodeValue)
 							n2.nodeValue = z;
 					};
@@ -64,13 +64,17 @@ export const compileNode = node => {
 					const m = new Map();
 					return y => {
 						for (const e of m.entries())
-							e[0].append(...e[1]);
+							if (e[0] instanceof DocumentFragment)
+								e[0].append(...e[1]);
+							else e[1].forEach(z => z.remove());
 						m.clear();
 						const z = evaluate(ex, y);
 						if (!z)
 							return;
 						const ns = n2.nextSibling;
 						(Array.isArray(z) ? z : [z]).forEach(n3 => {
+							if (typeof n3 === "string")
+								n3 = new Text(n3);
 							const ps = ns ? ns.previousSibling : n2;
 							n2.parentNode.insertBefore(n3, ns);
 							const nn = [];
@@ -91,7 +95,7 @@ export const compileNode = node => {
 					ff.push(n => {
 						const n2 = findNode(n, ii2, true);
 						return y => {
-							const z = evaluate(ex, y);
+							const z = evaluate(ex, y) ?? "";
 							if (z !== n2.value)
 								n2.value = z;
 						};
@@ -131,4 +135,41 @@ export const compileNode = node => {
 export const removeAllChildren = element => {
 	while (element.firstChild)
 		element.removeChild(element.lastChild);
+};
+
+export const matchNode = (xpath, context, not) => {
+	const q = resolve => {
+		const n = context.ownerDocument.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+		if (not ? !n : n) {
+			console.log("matchNode", xpath, n);
+			resolve(n);
+		}
+		return n;
+	};
+	let o, t;
+	const r = resolve => {
+		return element => {
+			if (o) {
+				clearTimeout(t);
+				o.disconnect();
+				o = null;
+			}
+			setTimeout(() => resolve(element), 50);
+		};
+	};
+	return new Promise((resolve, reject) => {
+		const n = q(r(resolve));
+		if (not ? n : !n) {
+			o = new MutationObserver(() => q(r(resolve)));
+			o.observe(context, { childList: true, subtree: true });
+			t = setTimeout(() => {
+				if (o) {
+					o.disconnect();
+					o = null;
+				}
+				reject(`Timeout (xpath=${xpath})`);
+			}, 500);
+		} else if (not)
+			reject(`Not found (xpath=${xpath})`);
+	});
 };

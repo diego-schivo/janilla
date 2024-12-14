@@ -39,7 +39,7 @@ export class UpdatableElement extends HTMLElement {
 
 	attributeChangedCallback(name, oldValue, newValue) {
 		// console.log("UpdatableElement.attributeChangedCallback", "name", name, "oldValue", oldValue, "newValue", newValue);
-		if (newValue !== oldValue)
+		if (newValue !== oldValue && this.isConnected)
 			this.requestUpdate();
 	}
 
@@ -56,14 +56,6 @@ export class UpdatableElement extends HTMLElement {
 		this.#update.timeoutID = setTimeout(async () => {
 			this.#update.timeoutID = undefined;
 			this.#update.ongoing = true;
-			this.interpolatorBuilders ??= await (loadTemplate(this.constructor.templateName).then(t => {
-				const c = t.content.cloneNode(true);
-				const cc = [...c.querySelectorAll("template")].map(x => {
-					x.remove();
-					return x.content;
-				});
-				return [compileNode(c), ...cc.map(x => compileNode(x))];
-			}));
 			await this.update();
 			this.#update.ongoing = false;
 			if (this.#update.repeat) {
@@ -75,6 +67,14 @@ export class UpdatableElement extends HTMLElement {
 
 	async update() {
 		// console.log("UpdatableElement.update");
+		this.interpolatorBuilders ??= await (loadTemplate(this.constructor.templateName).then(t => {
+			const c = t.content.cloneNode(true);
+			const cc = [...c.querySelectorAll("template")].map(x => {
+				x.remove();
+				return x.content;
+			});
+			return [compileNode(c), ...cc.map(x => compileNode(x))];
+		}));
 	}
 }
 
@@ -86,6 +86,7 @@ export class SlottableElement extends UpdatableElement {
 
 	async update() {
 		// console.log("SlottableElement.update");
+		await super.update();
 		if (!this.slot)
 			this.state = undefined;
 		this.render();
