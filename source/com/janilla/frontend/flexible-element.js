@@ -157,15 +157,19 @@ export class FlexibleElement extends UpdatableElement {
 		// console.log("FlexibleElement.update");
 		this.#interpolatorBuilders ??= await (getDocumentFragment(this.constructor.templateName).then(x => {
 			const df = x.cloneNode(true);
-			const dff = [...df.querySelectorAll("template")].map(y => {
+			const tt = [...df.querySelectorAll("template")].map(y => {
 				y.remove();
-				return y.content;
+				return y;
 			});
-			return [compileNode(df), ...dff.map(compileNode)];
+			const ibb = [
+				["#0", compileNode(df)],
+				...tt.map((y, i) => [y.id !== "" ? y.id : `#${i + 1}`, compileNode(y.content)])
+			];
+			return Object.fromEntries(ibb);
 		}));
 	}
 
 	createInterpolateDom(key) {
-		return this.#interpolatorBuilders[key ?? 0]();
+		return this.#interpolatorBuilders[typeof key === "string" ? key : `#${key ?? 0}`]();
 	}
 }
