@@ -54,7 +54,7 @@ export class UpdatableElement extends HTMLElement {
 		this.#state.timeoutID = setTimeout(async () => {
 			this.#state.timeoutID = undefined;
 			this.#state.ongoing = true;
-			await this.update();
+			await this.updateDisplay();
 			this.#state.ongoing = false;
 			if (this.#state.repeat) {
 				this.#state.repeat = false;
@@ -63,7 +63,7 @@ export class UpdatableElement extends HTMLElement {
 		}, 1);
 	}
 
-	async update() {
-		// console.log("UpdatableElement.update");
+	async updateDisplay() {
+		// console.log("UpdatableElement.updateDisplay");
 	}
 }

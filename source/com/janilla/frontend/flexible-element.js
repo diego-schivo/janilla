@@ -153,8 +153,8 @@ export class FlexibleElement extends UpdatableElement {
 		super();
 	}
 
-	async update() {
-		// console.log("FlexibleElement.update");
+	async updateDisplay() {
+		// console.log("FlexibleElement.updateDisplay");
 		this.#interpolatorBuilders ??= await (getDocumentFragment(this.constructor.templateName).then(x => {
 			const df = x.cloneNode(true);
 			const tt = [...df.querySelectorAll("template")].map(y => {

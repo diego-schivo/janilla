@@ -89,9 +89,9 @@ export default class TestBench extends FlexibleElement {
 		this.requestUpdate();
 	}
 
-	async update() {
-		// console.log("TestBench.update");
-		await super.update();
+	async updateDisplay() {
+		// console.log("TestBench.updateDisplay");
+		await super.updateDisplay();
 		this.interpolate ??= this.createInterpolateDom();
 		if (this.items?.length !== this.state.length)
 			this.items = this.state.map(_ => this.createInterpolateDom(1));

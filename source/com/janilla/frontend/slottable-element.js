@@ -30,15 +30,15 @@ export class SlottableElement extends FlexibleElement {
 		super();
 	}
 
-	async update() {
-		// console.log("SlottableElement.update");
-		await super.update();
+	async updateDisplay() {
+		// console.log("SlottableElement.updateDisplay");
+		await super.updateDisplay();
 		if (!this.slot)
 			this.state = undefined;
-		this.render();
+		this.renderState();
 		if (this.slot && !this.state) {
 			this.state = await this.computeState();
-			this.render();
+			this.renderState();
 		}
 	}
 
@@ -46,7 +46,7 @@ export class SlottableElement extends FlexibleElement {
 		// console.log("SlottableElement.computeState");
 	}
 
-	render() {
-		// console.log("SlottableElement.render");
+	renderState() {
+		// console.log("SlottableElement.renderState");
 	}
 }
