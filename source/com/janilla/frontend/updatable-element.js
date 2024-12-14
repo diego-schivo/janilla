@@ -22,11 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { compileNode } from "./dom.js";
-
 export class UpdatableElement extends HTMLElement {
 
-	#update = {};
+	#state = {};
 
 	constructor() {
 		super();
@@ -45,21 +43,21 @@ export class UpdatableElement extends HTMLElement {
 
 	requestUpdate() {
 		// console.log("UpdatableElement.requestUpdate");
-		if (this.#update.ongoing) {
-			this.#update.repeat = true;
+		if (this.#state.ongoing) {
+			this.#state.repeat = true;
 			return;
 		}
 
-		if (typeof this.#update.timeoutID === "number")
-			clearTimeout(this.#update.timeoutID);
+		if (typeof this.#state.timeoutID === "number")
+			clearTimeout(this.#state.timeoutID);
 
-		this.#update.timeoutID = setTimeout(async () => {
-			this.#update.timeoutID = undefined;
-			this.#update.ongoing = true;
+		this.#state.timeoutID = setTimeout(async () => {
+			this.#state.timeoutID = undefined;
+			this.#state.ongoing = true;
 			await this.update();
-			this.#update.ongoing = false;
-			if (this.#update.repeat) {
-				this.#update.repeat = false;
+			this.#state.ongoing = false;
+			if (this.#state.repeat) {
+				this.#state.repeat = false;
 				this.requestUpdate();
 			}
 		}, 1);
@@ -67,51 +65,5 @@ export class UpdatableElement extends HTMLElement {
 
 	async update() {
 		// console.log("UpdatableElement.update");
-		this.interpolatorBuilders ??= await (loadTemplate(this.constructor.templateName).then(t => {
-			const c = t.content.cloneNode(true);
-			const cc = [...c.querySelectorAll("template")].map(x => {
-				x.remove();
-				return x.content;
-			});
-			return [compileNode(c), ...cc.map(x => compileNode(x))];
-		}));
 	}
-}
-
-export class SlottableElement extends UpdatableElement {
-
-	constructor() {
-		super();
-	}
-
-	async update() {
-		// console.log("SlottableElement.update");
-		await super.update();
-		if (!this.slot)
-			this.state = undefined;
-		this.render();
-		if (this.slot && !this.state) {
-			this.state = await this.computeState();
-			this.render();
-		}
-	}
-
-	async computeState() {
-		// console.log("SlottableElement.computeState");
-	}
-
-	render() {
-		// console.log("SlottableElement.render");
-	}
-}
-
-const templates = {};
-
-export async function loadTemplate(name) {
-	templates[name] ??= fetch(`/${name}.html`).then(x => x.text()).then(x => {
-		const t = document.createElement("template");
-		t.innerHTML = x;
-		return t;
-	});
-	return await templates[name];
 }

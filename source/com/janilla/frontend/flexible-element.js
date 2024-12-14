@@ -22,6 +22,19 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
+import { UpdatableElement } from "./updatable-element.js";
+
+const documentFragments = {};
+
+const getDocumentFragment = async name => {
+	documentFragments[name] ??= fetch(`/${name}.html`).then(x => x.text()).then(x => {
+		const t = document.createElement("template");
+		t.innerHTML = x;
+		return t.content;
+	});
+	return await documentFragments[name];
+};
+
 const evaluate = (expression, context) => {
 	let o = context;
 	for (const k of expression.split("."))
@@ -36,7 +49,7 @@ const findNode = (node, indexes, attribute) => {
 	return indexes.reduce((n, x, i) => (attribute && i === indexes.length - 1 ? n.attributes : n.childNodes)[x], node);
 }
 
-export const compileNode = node => {
+const compileNode = node => {
 	const ii = [];
 	const ff = [];
 	for (let x = node; x;) {
@@ -132,44 +145,27 @@ export const compileNode = node => {
 	};
 };
 
-export const removeAllChildren = element => {
-	while (element.firstChild)
-		element.removeChild(element.lastChild);
-};
+export class FlexibleElement extends UpdatableElement {
 
-export const matchNode = (xpath, context, not) => {
-	const q = resolve => {
-		const n = context.ownerDocument.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
-		if (not ? !n : n) {
-			console.log("matchNode", xpath, n);
-			resolve(n);
-		}
-		return n;
-	};
-	let o, t;
-	const r = resolve => {
-		return element => {
-			if (o) {
-				clearTimeout(t);
-				o.disconnect();
-				o = null;
-			}
-			setTimeout(() => resolve(element), 50);
-		};
-	};
-	return new Promise((resolve, reject) => {
-		const n = q(r(resolve));
-		if (not ? n : !n) {
-			o = new MutationObserver(() => q(r(resolve)));
-			o.observe(context, { childList: true, subtree: true });
-			t = setTimeout(() => {
-				if (o) {
-					o.disconnect();
-					o = null;
-				}
-				reject(`Timeout (xpath=${xpath})`);
-			}, 500);
-		} else if (not)
-			reject(`Not found (xpath=${xpath})`);
-	});
-};
+	#interpolatorBuilders;
+
+	constructor() {
+		super();
+	}
+
+	async update() {
+		// console.log("FlexibleElement.update");
+		this.#interpolatorBuilders ??= await (getDocumentFragment(this.constructor.templateName).then(x => {
+			const df = x.cloneNode(true);
+			const dff = [...df.querySelectorAll("template")].map(y => {
+				y.remove();
+				return y.content;
+			});
+			return [compileNode(df), ...dff.map(compileNode)];
+		}));
+	}
+
+	createInterpolateDom(key) {
+		return this.#interpolatorBuilders[key ?? 0]();
+	}
+}
