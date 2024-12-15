@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -53,6 +55,10 @@ public class SSLByteChannel extends FilterByteChannel {
 
 	protected SSLException sslException;
 
+	final Lock outboundLock = new ReentrantLock();
+
+	ByteBuffer outboundQueue;
+
 	public SSLByteChannel(ByteChannel channel, SSLEngine engine) {
 		super(channel);
 		this.engine = engine;
@@ -62,6 +68,7 @@ public class SSLByteChannel extends FilterByteChannel {
 		applicationOutput = ByteBuffer.allocate(0);
 		packetInput = ByteBuffer.allocate(s.getPacketBufferSize());
 		packetOutput = ByteBuffer.allocate(s.getPacketBufferSize());
+		outboundQueue = ByteBuffer.allocate(packetOutput.capacity());
 	}
 
 	@Override
@@ -119,10 +126,21 @@ public class SSLByteChannel extends FilterByteChannel {
 						break;
 
 					case NEED_WRAP:
-						if (packetOutput.position() == 0) {
+						if (outboundQueue.position() == 0) {
 							applicationOutput.flip();
 							try {
-								var r = engine.wrap(applicationOutput, packetOutput);
+								outboundLock.lock();
+								SSLEngineResult r;
+								try {
+									r = engine.wrap(applicationOutput, packetOutput);
+									if (packetOutput.position() > 0) {
+										packetOutput.flip();
+										outboundQueue.put(packetOutput);
+										packetOutput.clear();
+									}
+								} finally {
+									outboundLock.unlock();
+								}
 
 //								System.out.println(Thread.currentThread().getName() + " SSLByteChannel.read r\n\t"
 //										+ r.toString().replace("\n", "\n\t"));
@@ -160,13 +178,21 @@ public class SSLByteChannel extends FilterByteChannel {
 //						System.out.println(
 //								Thread.currentThread().getName() + " SSLByteChannel.read handshake=" + handshake);
 
-					if (packetOutput.position() > 0) {
-						packetOutput.flip();
+					if (outboundQueue.position() > 0) {
+						outboundLock.lock();
+						ByteBuffer b;
 						try {
-							super.write(packetOutput);
+							outboundQueue.flip();
+							b = ByteBuffer.allocate(outboundQueue.remaining());
+							b.put(outboundQueue);
+							outboundQueue.clear();
 						} finally {
-							packetOutput.compact();
+							outboundLock.unlock();
 						}
+						b.flip();
+						super.write(b);
+						if (b.hasRemaining())
+							throw new RuntimeException();
 					}
 				}
 
@@ -214,8 +240,19 @@ public class SSLByteChannel extends FilterByteChannel {
 				case FINISHED:
 				case NOT_HANDSHAKING:
 				case NEED_WRAP:
-					if (packetOutput.position() == 0) {
-						var r = engine.wrap(src, packetOutput);
+					if (outboundQueue.position() == 0) {
+						outboundLock.lock();
+						SSLEngineResult r;
+						try {
+							r = engine.wrap(src, packetOutput);
+							if (packetOutput.position() > 0) {
+								packetOutput.flip();
+								outboundQueue.put(packetOutput);
+								packetOutput.clear();
+							}
+						} finally {
+							outboundLock.unlock();
+						}
 
 //						System.out.println(Thread.currentThread().getName() + " SSLByteChannel.write r\n\t"
 //								+ r.toString().replace("\n", "\n\t"));
@@ -228,6 +265,9 @@ public class SSLByteChannel extends FilterByteChannel {
 							break;
 						case CLOSED:
 							throw new IOException("Stream closed");
+						case BUFFER_OVERFLOW:
+							throw new IOException(
+									status.toString() + ", src=" + src + ", packetOutput=" + packetOutput);
 						default:
 							throw new IOException(status.toString());
 						}
@@ -276,14 +316,21 @@ public class SSLByteChannel extends FilterByteChannel {
 //					System.out
 //							.println(Thread.currentThread().getName() + " SSLByteChannel.write handshake=" + handshake);
 
-				if (packetOutput.position() > 0) {
-					packetOutput.flip();
+				if (outboundQueue.position() > 0) {
+					outboundLock.lock();
+					ByteBuffer b;
 					try {
-						if (super.write(packetOutput) == 0)
-							break;
+						outboundQueue.flip();
+						b = ByteBuffer.allocate(outboundQueue.remaining());
+						b.put(outboundQueue);
+						outboundQueue.clear();
 					} finally {
-						packetOutput.compact();
+						outboundLock.unlock();
 					}
+					b.flip();
+					super.write(b);
+					if (b.hasRemaining())
+						throw new RuntimeException();
 				} else if (!src.hasRemaining())
 					break;
 			}
@@ -308,14 +355,21 @@ public class SSLByteChannel extends FilterByteChannel {
 		while (state < 3)
 			state = switch (state) {
 			case 0 -> {
-				if (packetOutput.position() > 0) {
-					packetOutput.flip();
+				if (outboundQueue.position() > 0) {
+					outboundLock.lock();
+					ByteBuffer b;
 					try {
-						while (packetOutput.hasRemaining() && super.write(packetOutput) > 0)
-							;
+						outboundQueue.flip();
+						b = ByteBuffer.allocate(outboundQueue.remaining());
+						b.put(outboundQueue);
+						outboundQueue.clear();
 					} finally {
-						packetOutput.compact();
+						outboundLock.unlock();
 					}
+					b.flip();
+					super.write(b);
+					if (b.hasRemaining())
+						throw new RuntimeException();
 				}
 
 				if (engine.isOutboundDone())
@@ -324,7 +378,18 @@ public class SSLByteChannel extends FilterByteChannel {
 				engine.closeOutbound();
 				applicationOutput.flip();
 				try {
-					var r = engine.wrap(applicationOutput, packetOutput);
+					outboundLock.lock();
+					SSLEngineResult r;
+					try {
+						r = engine.wrap(applicationOutput, packetOutput);
+						if (packetOutput.position() > 0) {
+							packetOutput.flip();
+							outboundQueue.put(packetOutput);
+							packetOutput.clear();
+						}
+					} finally {
+						outboundLock.unlock();
+					}
 
 //				System.out.println(Thread.currentThread().getName() + " SSLByteChannel.close r\n\t"
 //						+ r.toString().replace("\n", "\n\t"));

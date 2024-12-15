@@ -147,29 +147,31 @@ const compileNode = node => {
 
 export class FlexibleElement extends UpdatableElement {
 
-	#interpolatorBuilders;
+	#initialize;
+
+	#domInterpolation;
 
 	constructor() {
 		super();
-	}
-
-	async updateDisplay() {
-		// console.log("FlexibleElement.updateDisplay");
-		this.#interpolatorBuilders ??= await (getDocumentFragment(this.constructor.templateName).then(x => {
+		this.#initialize = getDocumentFragment(this.constructor.templateName).then(x => {
 			const df = x.cloneNode(true);
 			const tt = [...df.querySelectorAll("template")].map(y => {
 				y.remove();
 				return y;
 			});
-			const ibb = [
+			this.#domInterpolation = Object.fromEntries([
 				["#0", compileNode(df)],
 				...tt.map((y, i) => [y.id !== "" ? y.id : `#${i + 1}`, compileNode(y.content)])
-			];
-			return Object.fromEntries(ibb);
-		}));
+			]);
+		});
+	}
+
+	async updateDisplay() {
+		// console.log("FlexibleElement.updateDisplay");
+		await this.#initialize;
 	}
 
 	createInterpolateDom(key) {
-		return this.#interpolatorBuilders[typeof key === "string" ? key : `#${key ?? 0}`]();
+		return this.#domInterpolation[typeof key === "string" ? key : `#${key ?? 0}`]();
 	}
 }

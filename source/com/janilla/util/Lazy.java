@@ -24,34 +24,41 @@
  */
 package com.janilla.util;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 public class Lazy<T> implements Supplier<T> {
 
 	public static <T> Lazy<T> of(Supplier<T> supplier) {
-		var l = new Lazy<T>();
-		l.supplier = supplier;
-		return l;
+		return new Lazy<T>(supplier);
 	}
 
-	Supplier<T> supplier;
+	final Supplier<T> supplier;
 
-	boolean got;
+	final Lock lock = new ReentrantLock();
+
+	volatile boolean got;
 
 	T result;
 
-	private Lazy() {
+	private Lazy(Supplier<T> supplier) {
+		this.supplier = supplier;
 	}
 
 	@Override
 	public T get() {
-		if (!got)
-			synchronized (this) {
+		if (!got) {
+			lock.lock();
+			try {
 				if (!got) {
 					result = supplier.get();
 					got = true;
 				}
+			} finally {
+				lock.unlock();
 			}
+		}
 		return result;
 	}
 }

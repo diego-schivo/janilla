@@ -245,7 +245,7 @@ public class Database {
 			var p = performing;
 			if (!p)
 				performing = true;
-			var l = !p ? ((FileChannel) channel.getChannel()).lock() : null;
+			var l = !p ? ((FileChannel) channel.channel()).lock() : null;
 			try {
 				var s = stores.get();
 				var i = indexes.get();

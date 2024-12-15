@@ -53,7 +53,11 @@ public class ByteBufferHolder {
 	}
 
 	public ByteBuffer grow() {
-		var b = ByteBuffer.allocate(buffer.capacity() * 2);
+		return grow(0);
+	}
+
+	public ByteBuffer grow(int minCapacity) {
+		var b = ByteBuffer.allocate(Math.max(buffer.capacity() * 2, minCapacity));
 		buffer.flip();
 		try {
 			b.put(buffer);
@@ -62,5 +66,12 @@ public class ByteBufferHolder {
 		}
 		buffer = b;
 		return buffer;
+	}
+
+	public ByteBuffer put(ByteBuffer src) {
+		var o = src.remaining() - buffer.remaining();
+		if (o > 0)
+			grow(buffer.capacity() + o);
+		return buffer.put(src);
 	}
 }

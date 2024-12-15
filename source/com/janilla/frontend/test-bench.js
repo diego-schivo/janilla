@@ -23,7 +23,7 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 import { FlexibleElement } from "./flexible-element.js";
-import tests from './tests.js';
+import tests from "./tests.js";
 
 export default class TestBench extends FlexibleElement {
 
@@ -34,7 +34,7 @@ export default class TestBench extends FlexibleElement {
 	static get templateName() {
 		return "test-bench";
 	}
-	
+
 	state = Object.entries(tests).map((x, i) => ({
 		value: i,
 		text: x[0]
@@ -76,7 +76,8 @@ export default class TestBench extends FlexibleElement {
 			s.class = "failed";
 			s.title = error;
 		}).finally(async () => {
-			await fetch('/test/stop', { method: 'POST' });
+			await fetch("/test/stop", { method: "POST" });
+			this.iframe = null;
 			this.requestUpdate();
 		});
 	}
@@ -84,7 +85,7 @@ export default class TestBench extends FlexibleElement {
 	handleSubmit = event => {
 		// console.log("TestBench.handleSubmit", event);
 		event.preventDefault();
-		this.keys = new FormData(event.target).getAll('test');
+		this.keys = new FormData(event.target).getAll("test");
 		this.state.forEach(x => x.class = null);
 		this.requestUpdate();
 	}
@@ -92,17 +93,21 @@ export default class TestBench extends FlexibleElement {
 	async updateDisplay() {
 		// console.log("TestBench.updateDisplay");
 		await super.updateDisplay();
-		this.interpolate ??= this.createInterpolateDom();
-		if (this.items?.length !== this.state.length)
-			this.items = this.state.map(_ => this.createInterpolateDom(1));
-		this.iframe ??= this.createInterpolateDom(2);
 		if (this.keys?.length) {
-			await fetch('/test/start', { method: 'POST' });
-			localStorage.removeItem('jwtToken');
+			await fetch("/test/start", { method: "POST" });
+			localStorage.removeItem("jwtToken");
 		}
+		this.interpolate ??= this.createInterpolateDom();
 		this.appendChild(this.interpolate({
-			items: this.items.map((x, i) => x(this.state[i])),
-			iframe: this.keys?.length ? this.iframe() : null
+			items: (() => {
+				if (this.items?.length !== this.state.length)
+					this.items = this.state.map(_ => this.createInterpolateDom(1));
+				return this.items.map((x, i) => x(this.state[i]));
+			})(),
+			iframe: (() => {
+				this.iframe ??= this.createInterpolateDom(2);
+				return this.keys?.length ? this.iframe() : null;
+			})()
 		}));
 		this.querySelector("iframe")?.addEventListener("load", this.handleLoad);
 	}

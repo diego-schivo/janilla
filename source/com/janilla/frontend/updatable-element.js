@@ -31,18 +31,18 @@ export class UpdatableElement extends HTMLElement {
 	}
 
 	connectedCallback() {
-		// console.log("UpdatableElement.connectedCallback");
+		// console.log(`UpdatableElement(${this.constructor.name}).connectedCallback`);
 		this.requestUpdate();
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
-		// console.log("UpdatableElement.attributeChangedCallback", "name", name, "oldValue", oldValue, "newValue", newValue);
+		// console.log(`UpdatableElement(${this.constructor.name}).attributeChangedCallback`, "name", name, "oldValue", oldValue, "newValue", newValue);
 		if (newValue !== oldValue && this.isConnected)
 			this.requestUpdate();
 	}
 
 	requestUpdate() {
-		// console.log("UpdatableElement.requestUpdate");
+		// console.log(`UpdatableElement(${this.constructor.name}).requestUpdate`);
 		if (this.#state.ongoing) {
 			this.#state.repeat = true;
 			return;
@@ -56,6 +56,7 @@ export class UpdatableElement extends HTMLElement {
 			this.#state.ongoing = true;
 			await this.updateDisplay();
 			this.#state.ongoing = false;
+			// console.log(`UpdatableElement(${this.constructor.name}).requestUpdate`, "this.#state.repeat", this.#state.repeat);
 			if (this.#state.repeat) {
 				this.#state.repeat = false;
 				this.requestUpdate();
@@ -64,6 +65,6 @@ export class UpdatableElement extends HTMLElement {
 	}
 
 	async updateDisplay() {
-		// console.log("UpdatableElement.updateDisplay");
+		// console.log(`UpdatableElement(${this.constructor.name}).updateDisplay`);
 	}
 }

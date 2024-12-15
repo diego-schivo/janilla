@@ -50,6 +50,7 @@ public class ApplicationHandlerBuilder {
 	List<WebHandlerFactory> factories;
 
 	Supplier<WebHandlerFactory> handlerFactory = Lazy.of(() -> {
+//		System.out.println("ApplicationHandlerBuilder.handlerFactory, this=" + this);
 		factories = buildFactories().toList();
 		var f = new DelegatingHandlerFactory();
 		for (var g : factories) {
@@ -81,7 +82,7 @@ public class ApplicationHandlerBuilder {
 			var o = ex.getException() != null ? ex.getException() : ex.getRequest();
 			var h = handlerFactory.get().createHandler(o, ex);
 			if (h == null)
-				throw new NotFoundException();
+				throw new NotFoundException(ex.getRequest().getMethod() + " " + ex.getRequest().getTarget());
 			return h.handle(ex);
 		};
 	}

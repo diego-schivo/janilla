@@ -104,30 +104,39 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		this.packages = packages;
 	}
 
-	Supplier<Map<String, Resource>> resources = Lazy
-			.of(() -> Arrays.stream(packages).flatMap(this::walk).collect(Collectors.toMap(r -> switch (r) {
-			case FileResource x -> x.path.substring(x.package1.length() + 1);
-			case ZipEntryResource x -> {
-				var a = (FileResource) x.archive;
-				yield a.path.substring(0, a.path.length() - 4).substring(a.package1.length() + 1) + x.path;
-			}
-			default -> throw new IllegalArgumentException();
-			}, x -> x, (v, w) -> w, LinkedHashMap::new)));
+	Supplier<Map<String, Resource>> resources = Lazy.of(() -> {
+//		System.out.println("ResourceHandlerFactory.resources, this=" + this);
+		var m = Arrays.stream(packages).flatMap(this::walk).collect(Collectors.toMap(r -> switch (r) {
+		case FileResource x -> x.path.substring(x.package1.length() + 1);
+		case ZipEntryResource x -> {
+			var a = (FileResource) x.archive;
+			yield a.path.substring(0, a.path.length() - 4).substring(a.package1.length() + 1) + x.path;
+		}
+		default -> throw new IllegalArgumentException();
+		}, x -> x, (v, w) -> w, LinkedHashMap::new));
+//		System.out.println("ResourceHandlerFactory.resources, m=" + m);
+		return m;
+	});
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-//		var u = object instanceof HttpRequest q ? q.getUri() : null;
-//		var p = u != null ? u.getPath() : null;
 		var p = object instanceof HttpRequest q ? q.getPath() : null;
 		var r = p != null ? resources.get().get(p) : null;
+
+//		if (p != null && p.contains("html")) {
+//			System.out.println("ResourceHandlerFactory.createHandler, p=" + p + ", r=" + r);
+//			if (r == null)
+//				System.out.println(resources.get());
+//		}
+
 		return r != null ? c -> {
 			handle(r, (HttpExchange) c);
 			return true;
 		} : null;
 	}
 
-	static Set<String> extensions = Set.of("avif", "css", "html", "ico", "jpg", "js", "png", "svg", "ttf", "webp", "woff",
-			"woff2");
+	static Set<String> extensions = Set.of("avif", "css", "html", "ico", "jpg", "js", "png", "svg", "ttf", "webp",
+			"woff", "woff2");
 
 	protected Stream<Resource> walk(String package1) {
 		var s = package1.replace('.', '/');
@@ -222,7 +231,6 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 
 	protected void handle(Resource resource, HttpExchange exchange) {
 		var rs = exchange.getResponse();
-//		s.setStatus(HttpResponse.Status.of(200));
 		rs.setStatus(200);
 
 		var hh = rs.getHeaders();
@@ -245,7 +253,6 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 
 		var l = Thread.currentThread().getContextClassLoader();
 		try (var c = switch (resource) {
-//		case FileResource x -> Channels.newChannel(l.getResourceAsStream(x.path.substring(1)));
 		case FileResource x -> l.getResourceAsStream(x.path.substring(1));
 		case ZipEntryResource x -> {
 			URI u;
@@ -257,13 +264,10 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 			var v = u.toString();
 			if (!v.startsWith("jar:"))
 				u = URI.create("jar:" + v);
-//			yield Files.newByteChannel(IO.zipFileSystem(u).getPath(x.path));
 			yield Files.newInputStream(IO.zipFileSystem(u).getPath(x.path));
 		}
 		default -> throw new IllegalArgumentException();
 		}) {
-//			IO.transfer(c, (WritableByteChannel) s.getBody());
-//			c.transferTo((OutputStream) s.getBody());
 			rs.setBody(c.readAllBytes());
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);

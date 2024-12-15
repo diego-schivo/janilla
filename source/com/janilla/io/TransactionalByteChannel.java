@@ -76,6 +76,10 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 		rollbackTransaction();
 	}
 
+	public SeekableByteChannel transactionChannel() {
+		return transactionChannel;
+	}
+
 	public void startTransaction() throws IOException {
 		transaction = new Transaction(new ArrayList<>(), channel.size());
 	}
