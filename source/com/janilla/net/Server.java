@@ -32,6 +32,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Server {
 
@@ -41,7 +43,9 @@ public class Server {
 
 	private ServerSocketChannel channel;
 
-	private Map<Connection, Long> connectionIdleTimes = new HashMap<>();
+	private final Map<Connection, Long> connectionMap = new HashMap<>();
+
+	private final Lock connectionLock = new ReentrantLock();
 
 	// *******************
 	// Getters and Setters
@@ -62,22 +66,6 @@ public class Server {
 		this.protocol = protocol;
 	}
 
-	public ServerSocketChannel getChannel() {
-		return channel;
-	}
-
-	public void setChannel(ServerSocketChannel channel) {
-		this.channel = channel;
-	}
-
-	public Map<Connection, Long> getConnectionIdleTimes() {
-		return connectionIdleTimes;
-	}
-
-	public void setConnectionIdleTimes(Map<Connection, Long> connectionIdleTimes) {
-		this.connectionIdleTimes = connectionIdleTimes;
-	}
-
 	// Getters and Setters
 	// *******************
 
@@ -93,7 +81,7 @@ public class Server {
 					} catch (InterruptedException e) {
 						break;
 					}
-					shutdown();
+					shutdownConnections();
 				}
 			});
 //			System.out.println("Server.serve, address=" + address);
@@ -117,11 +105,15 @@ public class Server {
 		Thread.startVirtualThread(() -> {
 			var c = protocol.buildConnection(sc);
 			for (var f = true;; f = false) {
-				synchronized (connectionIdleTimes) {
-					if (f || connectionIdleTimes.containsKey(c))
-						connectionIdleTimes.put(c, System.currentTimeMillis());
+//				synchronized (connectionMap) {
+				connectionLock.lock();
+				try {
+					if (f || connectionMap.containsKey(c))
+						connectionMap.put(c, System.currentTimeMillis());
 					else
 						break;
+				} finally {
+					connectionLock.unlock();
 				}
 
 //				var k = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ISO_DATE_TIME);
@@ -145,11 +137,13 @@ public class Server {
 		});
 	}
 
-	protected void shutdown() {
+	protected void shutdownConnections() {
 		Set<Connection> cc = new HashSet<>();
-		synchronized (connectionIdleTimes) {
+//		synchronized (connectionMap) {
+		connectionLock.lock();
+		try {
 			var t1 = System.currentTimeMillis();
-			for (var ee = connectionIdleTimes.entrySet().iterator(); ee.hasNext();) {
+			for (var ee = connectionMap.entrySet().iterator(); ee.hasNext();) {
 				var e = ee.next();
 				var t2 = e.getValue() + 10 * 1000;
 				if (t1 >= t2) {
@@ -157,6 +151,8 @@ public class Server {
 					cc.add(e.getKey());
 				}
 			}
+		} finally {
+			connectionLock.unlock();
 		}
 		for (var c : cc) {
 //			System.out.println("shutdown, c=" + c.getId());

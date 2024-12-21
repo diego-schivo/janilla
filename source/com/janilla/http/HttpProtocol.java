@@ -180,8 +180,12 @@ public class HttpProtocol implements Protocol {
 					c.getStreams().remove(si);
 					for (var of : off) {
 //						System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ", of=" + of);
-						synchronized (ch) {
+//						synchronized (ch) {
+						ch.outboundLock().lock();
+						try {
 							Http.encode(of, ch);
+						} finally {
+							ch.outboundLock().unlock();
 						}
 					}
 				});

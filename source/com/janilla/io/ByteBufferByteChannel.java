@@ -71,7 +71,7 @@ public class ByteBufferByteChannel implements ByteChannel {
 		var s = source.getBuffer();
 		s.flip();
 		try {
-			return IO.put(s, dst);
+			return IO.transferSomeRemaining(s, dst);
 		} finally {
 			s.compact();
 		}
@@ -82,7 +82,7 @@ public class ByteBufferByteChannel implements ByteChannel {
 		var d = destination.getBuffer();
 		while (src.remaining() > d.remaining())
 			d = destination.grow();
-		return IO.put(src, d);
+		return IO.transferSomeRemaining(src, d);
 	}
 
 	@Override

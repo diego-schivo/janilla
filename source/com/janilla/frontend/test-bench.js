@@ -77,8 +77,10 @@ export default class TestBench extends FlexibleElement {
 			s.title = error;
 		}).finally(async () => {
 			await fetch("/test/stop", { method: "POST" });
-			this.iframe = null;
+			this.interpolateTestFrame = null;
 			this.requestUpdate();
+			if (!this.keys.length)
+				this.querySelectorAll("input, button").forEach(x => x.disabled = false);
 		});
 	}
 
@@ -86,28 +88,31 @@ export default class TestBench extends FlexibleElement {
 		// console.log("TestBench.handleSubmit", event);
 		event.preventDefault();
 		this.keys = new FormData(event.target).getAll("test");
+		this.querySelectorAll("input, button").forEach(x => x.disabled = true);
 		this.state.forEach(x => x.class = null);
 		this.requestUpdate();
 	}
 
 	async updateDisplay() {
 		// console.log("TestBench.updateDisplay");
+		this.querySelector("iframe")?.removeEventListener("load", this.handleLoad);
 		await super.updateDisplay();
 		if (this.keys?.length) {
 			await fetch("/test/start", { method: "POST" });
 			localStorage.removeItem("jwtToken");
+			this.state[this.keys[0]].class = "ongoing";
 		}
 		this.interpolate ??= this.createInterpolateDom();
 		this.appendChild(this.interpolate({
-			items: (() => {
-				if (this.items?.length !== this.state.length)
-					this.items = this.state.map(_ => this.createInterpolateDom(1));
-				return this.items.map((x, i) => x(this.state[i]));
+			testItems: (() => {
+				if (this.interpolateTestItems?.length !== this.state.length)
+					this.interpolateTestItems = this.state.map(() => this.createInterpolateDom("test-item"));
+				return this.state.map((x, i) => this.interpolateTestItems[i](x));
 			})(),
-			iframe: (() => {
-				this.iframe ??= this.createInterpolateDom(2);
-				return this.keys?.length ? this.iframe() : null;
-			})()
+			testFrame: this.keys?.length ? (() => {
+				this.interpolateTestFrame ??= this.createInterpolateDom("test-frame");
+				return this.interpolateTestFrame();
+			})() : null
 		}));
 		this.querySelector("iframe")?.addEventListener("load", this.handleLoad);
 	}

@@ -34,6 +34,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -238,14 +241,18 @@ public class Database {
 		this.initializeIndex = initializeIndex;
 	}
 
-	boolean performing;
+	final Lock performLock = new ReentrantLock();
 
-	public synchronized <T> T perform(BiFunction<Stores, Indexes, T> operation, boolean write) {
+	final AtomicBoolean performing = new AtomicBoolean();
+
+//	public synchronized <T> T perform(BiFunction<Stores, Indexes, T> operation, boolean write) {
+	public <T> T perform(BiFunction<Stores, Indexes, T> operation, boolean write) {
+		performLock.lock();
 		try {
-			var p = performing;
-			if (!p)
-				performing = true;
-			var l = !p ? ((FileChannel) channel.channel()).lock() : null;
+//			if (write)
+//				System.out.println("1 " + LocalDateTime.now());
+			var p = performing.getAndSet(true);
+			var fl = !p ? ((FileChannel) channel.channel()).lock() : null;
 			try {
 				var s = stores.get();
 				var i = indexes.get();
@@ -267,12 +274,16 @@ public class Database {
 				return t;
 			} finally {
 				if (!p) {
-					l.release();
-					performing = false;
+					fl.release();
+					performing.set(false);
 				}
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
+		} finally {
+//			if (write)
+//				System.out.println("2 " + LocalDateTime.now());
+			performLock.unlock();
 		}
 	}
 }

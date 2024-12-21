@@ -27,7 +27,12 @@ import { UpdatableElement } from "./updatable-element.js";
 const documentFragments = {};
 
 const getDocumentFragment = async name => {
-	documentFragments[name] ??= fetch(`/${name}.html`).then(x => x.text()).then(x => {
+	const r = `/${name}.html`;
+	documentFragments[name] ??= fetch(r).then(x => {
+		if (!x.ok)
+			throw new Error(`Failed to fetch ${r}: ${x.status} ${x.statusText}`);
+		return x.text();
+	}).then(x => {
 		const t = document.createElement("template");
 		t.innerHTML = x;
 		return t.content;
@@ -37,11 +42,13 @@ const getDocumentFragment = async name => {
 
 const evaluate = (expression, context) => {
 	let o = context;
-	for (const k of expression.split("."))
-		if (o != null && k)
-			o = o[k];
-		else
-			break;
+	if (expression)
+		for (const k of expression.split(".")) {
+			if (o == null)
+				break;
+			const i = k.endsWith("]") ? k.indexOf("[") : -1;
+			o = i === -1 ? o[k] : o[k.substring(0, i)]?.[parseInt(k.substring(i + 1, k.length - 1))];
+		}
 	return o;
 };
 
@@ -160,8 +167,8 @@ export class FlexibleElement extends UpdatableElement {
 				return y;
 			});
 			this.#domInterpolation = Object.fromEntries([
-				["#0", compileNode(df)],
-				...tt.map((y, i) => [y.id !== "" ? y.id : `#${i + 1}`, compileNode(y.content)])
+				["", compileNode(df)],
+				...tt.map((y, i) => [y.id, compileNode(y.content)])
 			]);
 		});
 	}
@@ -172,6 +179,6 @@ export class FlexibleElement extends UpdatableElement {
 	}
 
 	createInterpolateDom(key) {
-		return this.#domInterpolation[typeof key === "string" ? key : `#${key ?? 0}`]();
+		return this.#domInterpolation[key ?? ""]();
 	}
 }

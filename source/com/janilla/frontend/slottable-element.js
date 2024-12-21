@@ -30,15 +30,23 @@ export class SlottableElement extends FlexibleElement {
 		super();
 	}
 
+	attributeChangedCallback(name, oldValue, newValue) {
+		// console.log(`SlottableElement.attributeChangedCallback`, "name", name, "oldValue", oldValue, "newValue", newValue);
+		super.attributeChangedCallback(name, oldValue, newValue);
+		if (!this.slot)
+			this.state = null;
+	}
+
 	async updateDisplay() {
 		// console.log("SlottableElement.updateDisplay");
 		await super.updateDisplay();
-		if (!this.slot)
-			this.state = undefined;
 		this.renderState();
 		if (this.slot && !this.state) {
-			this.state = await this.computeState();
-			this.renderState();
+			const s = await this.computeState();
+			if (this.slot) {
+				this.state = s;
+				this.requestUpdate();
+			}
 		}
 	}
 

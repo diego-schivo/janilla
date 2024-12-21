@@ -1,5 +1,5 @@
 <div class="test-bench">
-	<div class="launcher">
+	<div class="test-launcher">
 		<form>
 			<ul>
 				<li>
@@ -8,17 +8,17 @@
 						<span>(select all)</span>
 					</label>
 				</li>
-				<!--${items}-->
+				<!--${testItems}-->
 			</ul>
 			<button>Run</button>
 		</form>
 	</div>
-	<div class="runner">
-		<!--${iframe}-->
+	<div class="test-runner">
+		<!--${testFrame}-->
 	</div>
 </div>
 
-<template>
+<template id="test-item">
 	<li class="${class}" title="${title}">
 		<label>
 			<input type="checkbox" name="test" value="${value}" />
@@ -27,7 +27,7 @@
 	</li>
 </template>
 
-<template>
+<template id="test-frame">
 	<iframe src="/">
 	</iframe>
 </template>

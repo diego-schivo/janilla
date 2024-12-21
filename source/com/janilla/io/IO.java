@@ -134,7 +134,24 @@ public abstract class IO {
 		}
 	}
 
-	public static int put(ByteBuffer source, ByteBuffer destination) {
+	public static int transferSomeRemaining(ByteBuffer source, ByteBuffer destination, int max) {
+		if (max < 0)
+			throw new IllegalArgumentException("max=" + max);
+		if (max == 0)
+			return 0;
+		var r = source.remaining();
+		var l = 0;
+		if (max < r) {
+			l = source.limit();
+			source.limit(source.position() + max);
+		}
+		var n = transferSomeRemaining(source, destination);
+		if (max < r)
+			source.limit(l);
+		return n;
+	}
+
+	public static int transferSomeRemaining(ByteBuffer source, ByteBuffer destination) {
 		var r1 = source.remaining();
 		var r2 = destination.remaining();
 		var n = Math.min(r1, r2);
@@ -148,21 +165,25 @@ public abstract class IO {
 		return n;
 	}
 
-	public static int put(ByteBuffer source, ByteBuffer destination, int length) {
-		if (length < 0)
-			throw new IllegalArgumentException("length=" + length);
-		if (length == 0)
-			return 0;
-		var r = source.remaining();
-		var l = 0;
-		if (length < r) {
-			l = source.limit();
-			source.limit(source.position() + length);
+	public static ByteBuffer transferAllRemaining(ByteBuffer source, ByteBuffer destination) {
+		if (destination.limit() != destination.capacity()) {
+			throw new IllegalArgumentException();
 		}
-		var n = put(source, destination);
-		if (length < r)
-			source.limit(l);
-		return n;
+		var r1 = source.remaining();
+		var r2 = destination.remaining();
+		var o = r1 - r2;
+		if (o > 0) {
+			var b = ByteBuffer.allocate(Math.max(destination.capacity() + o, destination.capacity() * 2));
+			var p = destination.position();
+			var l = destination.limit();
+			destination.flip();
+			b.put(destination);
+			destination.position(p);
+			destination.limit(l);
+			destination = b;
+		}
+		destination.put(source);
+		return destination;
 	}
 
 	public static int read(ReadableByteChannel source, byte[] destination) throws IOException {
@@ -298,7 +319,7 @@ public abstract class IO {
 				if (r == 0)
 					return -1;
 				var l = Math.min(r, dst.remaining());
-				put(buffer, dst, l);
+				transferSomeRemaining(buffer, dst, l);
 				return l;
 			}
 		};

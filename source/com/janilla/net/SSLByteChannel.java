@@ -36,6 +36,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
 import com.janilla.io.FilterByteChannel;
+import com.janilla.io.IO;
 
 public class SSLByteChannel extends FilterByteChannel {
 
@@ -55,9 +56,9 @@ public class SSLByteChannel extends FilterByteChannel {
 
 	protected SSLException sslException;
 
-	final Lock outboundLock = new ReentrantLock();
+	protected final Lock outboundLock = new ReentrantLock();
 
-	ByteBuffer outboundQueue;
+	protected ByteBuffer outboundQueue;
 
 	public SSLByteChannel(ByteChannel channel, SSLEngine engine) {
 		super(channel);
@@ -69,6 +70,10 @@ public class SSLByteChannel extends FilterByteChannel {
 		packetInput = ByteBuffer.allocate(s.getPacketBufferSize());
 		packetOutput = ByteBuffer.allocate(s.getPacketBufferSize());
 		outboundQueue = ByteBuffer.allocate(packetOutput.capacity());
+	}
+
+	public Lock outboundLock() {
+		return outboundLock;
 	}
 
 	@Override
@@ -135,7 +140,7 @@ public class SSLByteChannel extends FilterByteChannel {
 									r = engine.wrap(applicationOutput, packetOutput);
 									if (packetOutput.position() > 0) {
 										packetOutput.flip();
-										outboundQueue.put(packetOutput);
+										outboundQueue = IO.transferAllRemaining(packetOutput, outboundQueue);
 										packetOutput.clear();
 									}
 								} finally {
@@ -247,7 +252,7 @@ public class SSLByteChannel extends FilterByteChannel {
 							r = engine.wrap(src, packetOutput);
 							if (packetOutput.position() > 0) {
 								packetOutput.flip();
-								outboundQueue.put(packetOutput);
+								outboundQueue = IO.transferAllRemaining(packetOutput, outboundQueue);
 								packetOutput.clear();
 							}
 						} finally {
@@ -384,7 +389,7 @@ public class SSLByteChannel extends FilterByteChannel {
 						r = engine.wrap(applicationOutput, packetOutput);
 						if (packetOutput.position() > 0) {
 							packetOutput.flip();
-							outboundQueue.put(packetOutput);
+							outboundQueue = IO.transferAllRemaining(packetOutput, outboundQueue);
 							packetOutput.clear();
 						}
 					} finally {
