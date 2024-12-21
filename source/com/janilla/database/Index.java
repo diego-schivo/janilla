@@ -96,7 +96,7 @@ public class Index<K, V> {
 				var i = is.get();
 				i.setAttributes(new LinkedHashMap<String, Object>(Map.of("size", 2L)));
 
-				var ll = i.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
+				var ll = i.list("foo").mapToLong(x -> (long) ((Object[]) x)[1]).toArray();
 				System.out.println(Arrays.toString(ll));
 				assert Arrays.equals(ll, new long[] { 2, 1 }) : ll;
 			}
@@ -187,13 +187,12 @@ public class Index<K, V> {
 	}
 
 	public long count(K key) {
-		var c = apply(key, (aa, bt) -> (Long) aa.getOrDefault("size", 0L), false);
+		var c = apply(key, (aa, bt) -> (long) aa.getOrDefault("size", 0L), false);
 		return c != null ? c : 0;
 	}
 
 	public long countIf(Predicate<K> operation) {
-//		return btree.get().stream().filter(x -> operation.test(x.key())).mapToLong(x -> x.size()).sum();
-		throw new UnsupportedOperationException();
+		return btree.get().stream().filter(x -> operation.test(x.key())).mapToLong(x -> count(x.key())).sum();
 	}
 
 	public Stream<K> keys() {
