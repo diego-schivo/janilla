@@ -68,7 +68,7 @@ public abstract class Renderer<T> implements BiFunction<T, HttpExchange, String>
 				break;
 			}
 			var r = Renderable.of(v);
-			if (r != null)
+			if (r.renderer() != null)
 				v = r.render(null);
 			return switch (i) {
 			case 1 -> ">" + (v != null ? v : "") + "</";
