@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.RenderEngine;
 import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
@@ -344,7 +343,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 						break;
 					}
 			}
-			render(RenderEngine.Entry.of(null, o, m.getAnnotatedReturnType()), exchange);
+			render(Renderable.of(o, m.getAnnotatedReturnType()), exchange);
 		}
 	}
 

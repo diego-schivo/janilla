@@ -22,9 +22,36 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.frontend;
+package com.janilla.web;
 
-public interface RenderParticipant {
+import java.lang.reflect.AnnotatedElement;
+import java.util.stream.Stream;
 
-	boolean render(RenderEngine engine);
+import com.janilla.http.HttpExchange;
+
+public record Renderable<T>(T value, Renderer<T> renderer) {
+
+	public static <T> Renderable<T> of(T value) {
+		return of(value, null);
+	}
+
+	public static <T> Renderable<T> of(T value, AnnotatedElement annotated) {
+		return Stream.of(annotated, value != null ? value.getClass() : null)
+				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(x -> x != null).findFirst()
+				.map(x -> {
+					@SuppressWarnings("unchecked")
+					var c = (Class<Renderer<T>>) x.value();
+					Renderer<T> r;
+					try {
+						r = c.getConstructor().newInstance();
+					} catch (ReflectiveOperationException e) {
+						throw new RuntimeException(e);
+					}
+					return new Renderable<>(value, r);
+				}).orElse(null);
+	}
+
+	public String render(HttpExchange exchange) {
+		return renderer.apply(value, exchange);
+	}
 }

@@ -72,10 +72,9 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 
 	protected boolean handle(Error error, HttpExchange exchange) {
 		var rs = exchange.getResponse();
-//		var s = error != null ? new HttpResponse.Status(error.code(), error.text()) : HttpResponse.Status.of(500);
 		var s = error != null ? error.code() : 500;
 
-//		System.out.println("t=" + t);
+//		System.out.println("s=" + s);
 
 		rs.setStatus(s);
 		rs.getHeaders().add(new HeaderField("cache-control", "no-cache"));

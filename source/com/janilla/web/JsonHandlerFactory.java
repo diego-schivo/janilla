@@ -26,7 +26,6 @@ package com.janilla.web;
 
 import java.util.Iterator;
 
-import com.janilla.frontend.RenderEngine;
 import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
@@ -38,8 +37,8 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		return object instanceof RenderEngine.Entry i ? x -> {
-			render(i.getValue(), (HttpExchange) x);
+		return object instanceof Renderable r ? x -> {
+			render(r.value(), (HttpExchange) x);
 			return true;
 		} : null;
 	}
@@ -50,20 +49,8 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 
 		var t = Json.format(buildJsonIterator(object, exchange));
 //		System.out.println("t=" + t);
-//		var b = ByteBuffer.wrap(t.getBytes());
-//		var c = (WritableByteChannel) rs.getBody();
-//		try {
-//			IO.repeat(x -> c.write(b), b.remaining());
-//		} catch (IOException e) {
-//			throw new UncheckedIOException(e);
-//		}
 		var bb = t.getBytes();
 		rs.getHeaders().add(new HeaderField("content-length", String.valueOf(bb.length)));
-//		try {
-//			((OutputStream) rs.getBody()).write(bb);
-//		} catch (IOException e) {
-//			throw new UncheckedIOException(e);
-//		}
 		rs.setBody(bb);
 	}
 

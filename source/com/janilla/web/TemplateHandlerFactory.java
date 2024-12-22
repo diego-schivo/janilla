@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import com.janilla.frontend.RenderEngine;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.io.IO;
@@ -50,7 +49,7 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 				if (is == null)
 					throw new NullPointerException(k);
 				var s = new String(is.readAllBytes());
-				var v = Render.Renderer.template.matcher(s).replaceAll(y -> {
+				var v = Renderer.template.matcher(s).replaceAll(y -> {
 					m.put(y.group(1) + ".html", y.group(2));
 					return "";
 				});
@@ -68,17 +67,13 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		var e = object instanceof RenderEngine.Entry x ? x : null;
-		var v = e != null ? e.getValue() : null;
-		var t = e != null ? e.getType() : null;
-		return (v != null && v.getClass().isAnnotationPresent(Render.class))
-				|| (t != null && t.isAnnotationPresent(Render.class)) ? x -> {
-					render(e, (HttpExchange) x);
-					return true;
-				} : null;
+		return object instanceof Renderable r ? x -> {
+			render(r, (HttpExchange) x);
+			return true;
+		} : null;
 	}
 
-	protected void render(RenderEngine.Entry input, HttpExchange exchange) {
+	protected void render(Renderable input, HttpExchange exchange) {
 		var rs = exchange.getResponse();
 		if (rs.getStatus() == 0)
 			rs.setStatus(200);
@@ -86,15 +81,7 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 			rs.setHeaderValue("cache-control", "no-cache");
 		if (rs.getHeaderValue("content-type") == null)
 			rs.setHeaderValue("content-type", "text/html");
-		var r = input.getType().getAnnotation(Render.class);
-		if (r == null)
-			r = input.getValue().getClass().getAnnotation(Render.class);
-		String s;
-		try {
-			s = r.value().getConstructor().newInstance().apply(input.getValue(), exchange);
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
-		}
+		var s = input.render(exchange);
 		if (s != null) {
 			var bb = s.getBytes();
 			rs.setHeaderValue("content-length", String.valueOf(bb.length));

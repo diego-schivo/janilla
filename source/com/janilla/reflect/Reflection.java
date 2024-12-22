@@ -45,16 +45,19 @@ public class Reflection {
 	private static Map<Class<?>, Map<String, Property>> properties = new ConcurrentHashMap<>();
 
 	public static Stream<String> properties(Class<?> class1) {
+//		System.out.println("Reflection.properties, class1=" + class1);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.keySet().stream();
 	}
 
 	public static Stream<Property> properties2(Class<?> class1) {
+//		System.out.println("Reflection.properties2, class1=" + class1);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.values().stream();
 	}
 
 	public static Property property(Class<?> class1, String name) {
+//		System.out.println("Reflection.property, class1=" + class1);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.get(name);
 	}
@@ -93,6 +96,7 @@ public class Reflection {
 	}
 
 	private static Map<String, Property> compute(Class<?> class1) {
+//		System.out.println("Reflection.compute, class1=" + class1);
 		if (!Modifier.isPublic(class1.getModifiers())) {
 			if (Map.Entry.class.isAssignableFrom(class1))
 				class1 = Map.Entry.class;
