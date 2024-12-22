@@ -36,19 +36,18 @@ public record Renderable<T>(T value, Renderer<T> renderer) {
 	}
 
 	public static <T> Renderable<T> of(T value, AnnotatedElement annotated) {
-		return Stream.of(annotated, value != null ? value.getClass() : null)
+		var r = Stream.of(annotated, value != null ? value.getClass() : null)
 				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(x -> x != null).findFirst()
 				.map(x -> {
 					@SuppressWarnings("unchecked")
 					var c = (Class<Renderer<T>>) x.value();
-					Renderer<T> r;
 					try {
-						r = c.getConstructor().newInstance();
+						return c.getConstructor().newInstance();
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
-					return new Renderable<>(value, r);
 				}).orElse(null);
+		return new Renderable<>(value, r);
 	}
 
 	public String render(HttpExchange exchange) {

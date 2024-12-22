@@ -24,42 +24,12 @@
  */
 package com.janilla.web;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
-
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
-import com.janilla.io.IO;
-import com.janilla.util.Lazy;
 
 public class TemplateHandlerFactory implements WebHandlerFactory {
 
 	protected Object application;
-
-	Supplier<Map<String, String>> templateMap = Lazy.of(() -> {
-		var m = new HashMap<String, String>();
-		IO.acceptPackageFiles(application.getClass().getPackageName(), x -> {
-			var k = x.getFileName().toString();
-			if (!k.endsWith(".html"))
-				return;
-			try (var is = application.getClass().getResourceAsStream(k)) {
-				if (is == null)
-					throw new NullPointerException(k);
-				var s = new String(is.readAllBytes());
-				var v = Renderer.template.matcher(s).replaceAll(y -> {
-					m.put(y.group(1) + ".html", y.group(2));
-					return "";
-				});
-				m.put(k, v);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
-		return m;
-	});
 
 	public void setApplication(Object application) {
 		this.application = application;
@@ -67,13 +37,13 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		return object instanceof Renderable r ? x -> {
+		return object instanceof Renderable r && r.renderer() != null ? x -> {
 			render(r, (HttpExchange) x);
 			return true;
 		} : null;
 	}
 
-	protected void render(Renderable input, HttpExchange exchange) {
+	protected void render(Renderable<?> input, HttpExchange exchange) {
 		var rs = exchange.getResponse();
 		if (rs.getStatus() == 0)
 			rs.setStatus(200);
