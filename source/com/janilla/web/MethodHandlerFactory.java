@@ -343,7 +343,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 						break;
 					}
 			}
-			render(Renderable.of(o, m.getAnnotatedReturnType()), exchange);
+			render(Renderable.of(m.getAnnotatedReturnType(), o), exchange);
 		}
 	}
 

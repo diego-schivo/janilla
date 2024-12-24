@@ -24,9 +24,7 @@
  */
 package com.janilla.web;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.HashMap;
+import java.lang.reflect.AnnotatedElement;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -35,53 +33,12 @@ import java.util.regex.Pattern;
 import com.janilla.http.HttpExchange;
 import com.janilla.reflect.Reflection;
 
-public abstract class Renderer<T> implements BiFunction<T, HttpExchange, String> {
+public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
 
-	protected static Map<String, Map<String, String>> templates = new HashMap<>();
-
-	public static Pattern template = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>", Pattern.DOTALL);
-
-	protected static Pattern textCommentAttribute = Pattern.compile(
+	protected static Pattern placeholder = Pattern.compile(
 			">\\$\\{([\\w.-]*)\\}</" + "|" + "<!--\\$\\{([\\w.-]*)\\}-->" + "|" + "[\\w-]+=\"\\$\\{([\\w.-]*)\\}\"");
 
-	protected static <T> String interpolate(String template, T value) {
-		return textCommentAttribute.matcher(template).replaceAll(x -> {
-			var i = 1;
-			Object v = null;
-			for (; i <= 3; i++) {
-				var e = x.group(i);
-				if (e == null)
-					continue;
-				v = value;
-				if (!e.isEmpty())
-					for (var k : e.split("\\.")) {
-						if (v == null)
-							break;
-						v = switch (v) {
-						case Map<?, ?> z -> z.get(k);
-						default -> {
-							var p = Reflection.property(v.getClass(), k);
-							yield p != null ? p.get(v) : null;
-						}
-						};
-					}
-				break;
-			}
-			var r = Renderable.of(v);
-			if (r.renderer() != null)
-				v = r.render(null);
-			return switch (i) {
-			case 1 -> ">" + (v != null ? v : "") + "</";
-			case 2 -> v != null ? v.toString() : "";
-			case 3 -> v != null && !Boolean.FALSE.equals(v)
-					? x.group().substring(0, x.group().indexOf('=')) + "=\"" + (v != null ? v : "") + "\""
-					: "";
-			default -> throw new RuntimeException();
-			};
-		});
-	}
-
-	protected static Map<String, Object> merge(Object... objects) {
+	public static Map<String, Object> merge(Object... objects) {
 		var m = new LinkedHashMap<String, Object>();
 		for (var o : objects)
 			switch (o) {
@@ -97,23 +54,65 @@ public abstract class Renderer<T> implements BiFunction<T, HttpExchange, String>
 		return m;
 	}
 
-	protected Map<String, String> templates(String name) {
-		var tt = templates.computeIfAbsent(name, k -> {
-			var m = new HashMap<String, String>();
-			try (var is = getClass().getResourceAsStream(k)) {
-				if (is == null)
-					throw new NullPointerException();
-				var s = new String(is.readAllBytes());
-				var v = template.matcher(s).replaceAll(y -> {
-					m.put(y.group(1), y.group(2));
-					return "";
-				});
-				m.put(null, v);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+	protected Map<String, String> templates;
+
+	protected String templateName;
+
+	public void setTemplates(Map<String, String> templates) {
+		this.templates = templates;
+	}
+
+	public void setTemplateName(String templateName) {
+		this.templateName = templateName;
+	}
+
+	@Override
+	public String apply(T value, HttpExchange exchange) {
+		return interpolate(templates.get(templateName.endsWith(".html") ? null : templateName), value);
+	}
+
+	protected String interpolate(String template, Object value) {
+		return placeholder.matcher(template).replaceAll(x -> {
+			var i = 1;
+			AnnotatedElement ae = null;
+			Object v = null;
+			for (; i <= 3; i++) {
+				var e = x.group(i);
+				if (e == null)
+					continue;
+				v = value;
+				if (!e.isEmpty())
+					for (var k : e.split("\\.")) {
+						if (v == null)
+							break;
+						switch (v) {
+						case Map<?, ?> z:
+							ae = null;
+							v = z.get(k);
+							break;
+						default:
+							var p = Reflection.property(v.getClass(), k);
+							ae = p != null ? p.getAnnotatedType() : null;
+							v = p != null ? p.get(v) : null;
+							break;
+						}
+						System.out.println("k=" + k + ", ae=" + ae + ", v=" + v);
+					}
+				break;
 			}
-			return m;
+			var r = v instanceof Renderable y ? y : Renderable.of(ae, v);
+			if (r.renderer() != null) {
+				if (r.renderer().templates == null)
+					r.renderer().templates = templates;
+				v = r.render(null);
+			}
+			return switch (i) {
+			case 1 -> ">" + (v != null ? v : "") + "</";
+			case 2 -> v != null ? v.toString() : "";
+			case 3 -> Boolean.FALSE.equals(v) ? ""
+					: x.group().substring(0, x.group().indexOf('=')) + "=\"" + (v != null ? v : "") + "\"";
+			default -> throw new RuntimeException();
+			};
 		});
-		return tt;
 	}
 }

@@ -282,28 +282,26 @@ public class Crud<E> {
 	}
 
 	public Page filter(Map<String, Object[]> keys, long skip, long limit) {
-		var ee = keys.entrySet().stream().filter(e -> e.getValue() != null && e.getValue().length > 0).toList();
-		switch (ee.size()) {
-		case 0:
+		var ee = keys.entrySet().stream().filter(x -> x.getValue() != null && x.getValue().length > 0).toList();
+		if (ee.isEmpty())
 			return list(skip, limit);
-		case 1: {
+		if (ee.size() == 1) {
 			var e = ee.get(0);
 			return filter(e.getKey(), skip, limit, e.getValue());
-		}
 		}
 		return database.perform((ss, ii) -> {
 			class A {
 
-				PrimitiveIterator.OfLong ii;
+				PrimitiveIterator.OfLong lli;
 
-				long i;
+				long l;
 			}
 			var aa = new ArrayList<A>();
 			for (var e : ee) {
 				var n = type.getSimpleName() + (e.getKey() != null && !e.getKey().isEmpty() ? "." + e.getKey() : "");
 				class B {
 
-					Iterator<Object[]> vv;
+					Iterator<Object[]> vvi;
 
 					Object[] v;
 				}
@@ -311,55 +309,63 @@ public class Crud<E> {
 				ii.perform(n, i -> {
 					for (var k : e.getValue()) {
 						var b = new B();
-						b.vv = i.list(k).map(x -> (Object[]) x).iterator();
-						b.v = b.vv.hasNext() ? b.vv.next() : null;
+						b.vvi = i.list(k).map(x -> (Object[]) x).iterator();
+						b.v = b.vvi.hasNext() ? b.vvi.next() : null;
 						bb.add(b);
 					}
 					return null;
 				});
 				var a = new A();
-				a.ii = LongStream.iterate(0, l -> {
+				a.lli = LongStream.iterate(0, x -> {
 					@SuppressWarnings({ "rawtypes", "unchecked" })
 					var b = bb.stream().max((b1, b2) -> {
-						var c1 = b1.v != null ? (Comparable) b1.v[0] : null;
-						var c2 = b2.v != null ? (Comparable) b2.v[0] : null;
-						return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
+						var v1 = b1.v != null ? (Comparable) b1.v[0] : null;
+						var v2 = b2.v != null ? (Comparable) b2.v[0] : null;
+						return v1 != null ? (v2 != null ? v1.compareTo(v2) : 1) : (v2 != null ? -1 : 0);
 					}).orElse(null);
 					if (b == null || b.v == null)
 						return 0;
-					var i = (Long) b.v[b.v.length - 1];
-					b.v = b.vv.hasNext() ? b.vv.next() : null;
-					return i;
+					var l = (long) b.v[b.v.length - 1];
+					b.v = b.vvi.hasNext() ? b.vvi.next() : null;
+					return l;
 				}).skip(1).takeWhile(x -> x > 0).iterator();
-				a.i = a.ii.hasNext() ? a.ii.nextLong() : 0;
+				a.l = a.lli.hasNext() ? a.lli.nextLong() : 0;
 				aa.add(a);
 			}
-			var i = LongStream.builder();
-			var j = new long[1];
-			var t = LongStream.iterate(0, l -> {
+			var llb = LongStream.builder();
+			class C {
+
+				long l;
+			}
+			var c = new C();
+			var t = LongStream.iterate(0, x -> {
 				for (;;) {
-					var z = aa.stream().mapToLong(a -> a.i).max().getAsLong();
-					if (z == 0)
+					var ll = aa.stream().mapToLong(a -> a.l).toArray();
+//					System.out.println("ll=" + Arrays.toString(ll));
+					var l = Arrays.stream(ll).allMatch(y -> y != 0) ? Arrays.stream(ll).max().getAsLong() : 0;
+					if (l == 0)
 						return 0;
 					var e = true;
 					for (var a : aa) {
-						while (a.i > 0 && a.i < z)
-							a.i = a.ii.hasNext() ? a.ii.nextLong() : 0;
-						if (a.i > 0 && a.i != z)
+						while (a.l != 0 && a.l < l)
+							a.l = a.lli.hasNext() ? a.lli.nextLong() : 0;
+						if (a.l != l)
 							e = false;
 					}
 					if (e) {
 						for (var a : aa)
-							a.i = a.ii.hasNext() ? a.ii.nextLong() : 0;
-						return z;
+							a.l = a.lli.hasNext() ? a.lli.nextLong() : 0;
+						return l;
 					}
 				}
-			}).skip(1).takeWhile(x -> x > 0).peek(x -> {
-				var d = j[0]++ - skip;
-				if (d >= 0 && (limit < 0 || d < limit))
-					i.add(x);
+			}).skip(1).takeWhile(x -> x != 0).peek(x -> {
+				var o = c.l++ - skip;
+				if (o >= 0 && (limit < 0 || o < limit)) {
+//					System.out.println("x=" + x);
+					llb.add(x);
+				}
 			}).count();
-			return new Page(i.build().toArray(), t);
+			return new Page(llb.build().toArray(), t);
 		}, false);
 	}
 
