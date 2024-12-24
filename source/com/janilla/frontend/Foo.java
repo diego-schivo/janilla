@@ -22,39 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { FlexibleElement } from "./flexible-element.js";
+package com.janilla.frontend;
 
-export class SlottableElement extends FlexibleElement {
-
-	constructor() {
-		super();
-	}
-
-	attributeChangedCallback(name, oldValue, newValue) {
-		// console.log(`SlottableElement.attributeChangedCallback`, "name", name, "oldValue", oldValue, "newValue", newValue);
-		super.attributeChangedCallback(name, oldValue, newValue);
-		if (!this.slot)
-			this.state = null;
-	}
-
-	async updateDisplay() {
-		// console.log("SlottableElement.updateDisplay");
-		await super.updateDisplay();
-		this.renderState();
-		if (this.slot && !this.state) {
-			const s = await this.computeState();
-			if (this.slot) {
-				this.state = s;
-				this.requestUpdate();
-			}
-		}
-	}
-
-	async computeState() {
-		// console.log("SlottableElement.computeState");
-	}
-
-	renderState() {
-		// console.log("SlottableElement.renderState");
-	}
+public class Foo {
 }

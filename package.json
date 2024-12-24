@@ -1,0 +1,11 @@
+{
+  "name": "janilla-frontend",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "janillas": "^1.0.0"
+  }
+}

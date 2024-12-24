@@ -100,7 +100,7 @@ public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
 					}
 				break;
 			}
-			var r = v instanceof Renderable y ? y : Renderable.of(ae, v);
+			var r = v instanceof Renderable<?> y ? y : Renderable.of(ae, v);
 			if (r.renderer() != null) {
 				if (r.renderer().templates == null)
 					r.renderer().templates = templates;

@@ -22,44 +22,27 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-export const removeAllChildren = element => {
-	while (element.firstChild)
-		element.removeChild(element.lastChild);
+const fs = require("fs").promises;
+const path = require("path");
+
+const files = [
+	"./node_modules/janillas/dom-utils.js",
+	"./node_modules/janillas/flexible-element.js",
+	"./node_modules/janillas/markdown.js",
+	"./node_modules/janillas/slottable-element.js",
+	"./node_modules/janillas/test-bench.css",
+	"./node_modules/janillas/test-bench.html",
+	"./node_modules/janillas/test-bench.js",
+	"./node_modules/janillas/updatable-element.js"
+];
+
+const copy = async (src, dest) => {
+	await fs.copyFile(src, dest);
 };
 
-export const matchNode = (xpath, context, not) => {
-	const q = resolve => {
-		const n = context.ownerDocument.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
-		if (not ? !n : n) {
-			// console.log("matchNode", xpath, n);
-			resolve(n);
-		}
-		return n;
-	};
-	let o, t;
-	const r = resolve => {
-		return element => {
-			if (o) {
-				clearTimeout(t);
-				o.disconnect();
-				o = null;
-			}
-			setTimeout(() => resolve(element), 50);
-		};
-	};
-	return new Promise((resolve, reject) => {
-		const n = q(r(resolve));
-		if (not ? n : !n) {
-			o = new MutationObserver(() => q(r(resolve)));
-			o.observe(context, { childList: true, subtree: true });
-			t = setTimeout(() => {
-				if (o) {
-					o.disconnect();
-					o = null;
-				}
-				reject(`Timeout (xpath=${xpath})`);
-			}, 500);
-		} else if (not)
-			reject(`Not found (xpath=${xpath})`);
-	});
+const build = async () => {
+	for (const f of files)
+		await copy(f, path.join("./source/com/janilla/frontend", path.basename(f)));
 };
+
+build();
