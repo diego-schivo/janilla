@@ -96,12 +96,12 @@ public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
 							v = p != null ? p.get(v) : null;
 							break;
 						}
-						System.out.println("k=" + k + ", ae=" + ae + ", v=" + v);
+//						System.out.println("k=" + k + ", ae=" + ae + ", v=" + v);
 					}
 				break;
 			}
-			var r = v instanceof Renderable<?> y ? y : Renderable.of(ae, v);
-			if (r.renderer() != null) {
+			var r = v instanceof Renderable<?> y ? y : v != null ? Renderable.of(ae, v) : null;
+			if (r != null && r.renderer() != null) {
 				if (r.renderer().templates == null)
 					r.renderer().templates = templates;
 				v = r.render(null);
@@ -110,7 +110,8 @@ public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
 			case 1 -> ">" + (v != null ? v : "") + "</";
 			case 2 -> v != null ? v.toString() : "";
 			case 3 -> Boolean.FALSE.equals(v) ? ""
-					: x.group().substring(0, x.group().indexOf('=')) + "=\"" + (v != null ? v : "") + "\"";
+					: x.group().substring(0, x.group().indexOf('='))
+							+ (Boolean.TRUE.equals(v) ? "" : ("=\"" + (v != null ? v : "") + "\""));
 			default -> throw new RuntimeException();
 			};
 		});
