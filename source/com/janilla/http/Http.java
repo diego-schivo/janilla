@@ -169,6 +169,7 @@ public abstract class Http {
 	}
 
 	public static void encode(Frame frame, WritableByteChannel channel) {
+//		System.out.println("Http.encode, frame=" + frame);
 		try {
 			int pl;
 			var bb = ByteBuffer.allocate(9);
@@ -279,14 +280,14 @@ public abstract class Http {
 
 //		System.out.println("pl=" + pl);
 		var t0 = Byte.toUnsignedInt(bb1.get());
-		var t = Frame.Name.of(t0);
-		if (t == null)
-			System.out.println("t0=" + t0 + ", t=" + t);
+		var fn = Frame.Name.of(t0);
+//		if (fn == null)
+//			System.out.println("t0=" + t0 + ", t=" + fn);
 		var ff = Byte.toUnsignedInt(bb1.get());
 //		System.out.println("ff=" + ff);
 		var si = bb1.getInt() & 0x8fffffff;
 //		System.out.println("si=" + si);
-		var f = switch (t) {
+		var f = switch (fn) {
 		case DATA -> {
 			yield new Frame.Data((ff & 0x08) != 0, (ff & 0x01) != 0, si, bb2.array());
 		}
@@ -344,8 +345,9 @@ public abstract class Http {
 //			System.out.println("wsi=" + wsi);
 			yield new Frame.WindowUpdate(si, wsi);
 		}
-		default -> throw new RuntimeException(t.name());
+		default -> throw new RuntimeException(fn.name());
 		};
+//		System.out.println("Http.decode, f=" + f);
 		return f;
 	}
 }

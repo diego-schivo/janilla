@@ -375,9 +375,10 @@ public class Crud<E> {
 		for (var k : (im1 != null ? im1 : im2).keySet()) {
 			var v1 = im1 != null ? im1.get(k) : null;
 			var v2 = im2 != null ? im2.get(k) : null;
-			var k1 = v1 != null ? v1.getKey() : null;
-			var k2 = v2 != null ? v2.getKey() : null;
-			if (v1 == null || v2 == null || !Objects.equals(k1, k2)) {
+			if (v1 == null || v2 == null || !Objects.equals(v1.getKey(), v2.getKey())
+					|| !Arrays.equals((Object[]) v1.getValue(), (Object[]) v2.getValue())) {
+				var k1 = v1 != null ? v1.getKey() : null;
+				var k2 = v2 != null ? v2.getKey() : null;
 				var m1 = v1 == null ? null : k2 instanceof Collection<?> c ? toMap(v1, x -> !c.contains(x)) : toMap(v1);
 				var m2 = v2 == null ? null : k1 instanceof Collection<?> c ? toMap(v2, x -> !c.contains(x)) : toMap(v2);
 				updateIndex(k, m1, m2);
