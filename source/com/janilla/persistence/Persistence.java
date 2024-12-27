@@ -99,6 +99,7 @@ public class Persistence {
 		Crud<E> c = createCrud(type);
 		if (c == null)
 			return;
+		// System.out.println("Persistence.configure, type=" + type);
 		c.type = type;
 		c.database = database;
 		if (c.formatter == null)
@@ -139,6 +140,7 @@ public class Persistence {
 				continue;
 
 			var n = ae instanceof Field f ? f.getName() : null;
+			// System.out.println("Persistence.configure, n=" + n);
 			var t = n != null ? Reflection.property(type, n).getType() : null;
 			var ii = new IndexInitializer<K, V>();
 			if (t == null) {
@@ -199,6 +201,7 @@ public class Persistence {
 			if (s.startsWith("+") || s.startsWith("-"))
 				s = s.substring(1);
 			var sp = !s.isEmpty() ? Reflection.property(type, s) : null;
+			// System.out.println("Persistence.configure, sp=" + sp);
 			if (sp != null && sp.getType() != null) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<V>) ElementHelper.of(type, i.sort(), "id");

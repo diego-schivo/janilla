@@ -38,7 +38,6 @@ public interface Property {
 
 	static Property of(Field field) {
 		var n = name(field);
-//		System.out.println("Property.of, n=" + n);
 		VarHandle h;
 		try {
 			h = MethodHandles.publicLookup().unreflectVarHandle(field);
@@ -71,22 +70,17 @@ public interface Property {
 			public Object get(Object object) {
 				if (object == null)
 					return null;
-//				try {
-//					return field.get(object);
-//				} catch (ReflectiveOperationException e) {
-//					throw new RuntimeException(e);
-//				}
 				return h.get(object);
 			}
 
 			@Override
 			public void set(Object object, Object value) {
-//				try {
-//					field.set(object, value);
-//				} catch (ReflectiveOperationException e) {
-//					throw new RuntimeException(e);
-//				}
 				h.set(object, value);
+			}
+
+			@Override
+			public String toString() {
+				return n;
 			}
 		};
 	}
@@ -127,21 +121,6 @@ public interface Property {
 			public Object get(Object object) {
 				if (object == null)
 					return null;
-//				try {
-//					return Modifier.isStatic(getter.getModifiers()) ? getter.invoke(null, object)
-//							: getter.invoke(object);
-//				} catch (IllegalAccessException e) {
-//					if (object instanceof Map.Entry<?, ?>)
-//						try {
-//							return Map.Entry.class.getMethod(getter.getName()).invoke(object);
-//						} catch (ReflectiveOperationException f) {
-//							throw new RuntimeException(f);
-//						}
-//					else
-//						throw new RuntimeException(e);
-//				} catch (InvocationTargetException e) {
-//					throw new RuntimeException(e);
-//				}
 				try {
 					return g.invoke(object);
 				} catch (Throwable e) {
@@ -151,16 +130,16 @@ public interface Property {
 
 			@Override
 			public void set(Object object, Object value) {
-//				try {
-//					setter.invoke(object, value);
-//				} catch (ReflectiveOperationException e) {
-//					throw new RuntimeException(e);
-//				}
 				try {
 					s.invoke(object, value);
 				} catch (Throwable e) {
 					throw e instanceof RuntimeException re ? re : new RuntimeException(e);
 				}
+			}
+
+			@Override
+			public String toString() {
+				return n;
 			}
 		};
 	}

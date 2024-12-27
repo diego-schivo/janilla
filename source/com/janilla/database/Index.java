@@ -161,8 +161,6 @@ public class Index<K, V> {
 					r = Boolean.TRUE;
 					aa.compute("size", (k, y) -> y == null ? 1L : (long) y + 1);
 					attributes.compute("size", (k, y) -> y == null ? 1L : (long) y + 1);
-//					if (consumer != null)
-//						consumer.accept(this);
 				}
 			return r;
 		}, true) != null;
