@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 import com.janilla.reflect.Reflection;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.TYPE })
+@Target({ ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
 public @interface Index {
 
 	Class<? extends BiFunction<Class<?>, String, Function<Object, Object>>> keyGetter() default Keyword.class;

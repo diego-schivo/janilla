@@ -119,14 +119,14 @@ public class EntryTree extends LinkedHashMap<String, Object> {
 			}
 			var z = target;
 			var t = (T) z.getConstructor().newInstance();
-			for (var i = Reflection.properties(z).map(n -> {
+			for (var i = Reflection.propertyNames(z).map(n -> {
 				var s = Reflection.property(z, n);
 				return s != null ? Map.entry(n, s) : null;
 			}).filter(Objects::nonNull).iterator();i.hasNext();) {
 				var e = i.next();
 				var n = e.getKey();
 				var s = e.getValue();
-				var u = s.getGenericType();
+				var u = s.genericType();
 				var b = c.apply(n, u);
 				if (b != null)
 					s.set(t, b);

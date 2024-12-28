@@ -195,7 +195,7 @@ public class Converter {
 						continue;
 					// System.out.println("e=" + e);
 					var s = Reflection.property(target, n);
-					var v = convert(e.getValue(), s.getGenericType());
+					var v = convert(e.getValue(), s.genericType());
 					// System.out.println("s=" + s + ", i=" + i + ", v=" + v);
 					s.set(o, v);
 				}

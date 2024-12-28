@@ -24,14 +24,13 @@
  */
 package com.janilla.persistence;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -122,26 +121,18 @@ public class Persistence {
 		c.indexPresent = type.isAnnotationPresent(Index.class);
 		configuration.cruds.put(type, c);
 
-		var ff = Stream.concat(Stream.of(type), Reflection.properties(type).map(n -> {
-			Field f;
-			try {
-				f = type.getDeclaredField(n);
-			} catch (NoSuchFieldException e) {
-				f = null;
-			} catch (SecurityException e) {
-				throw new RuntimeException(e);
-			}
-			return f;
-		}).filter(Objects::nonNull)).iterator();
-		while (ff.hasNext()) {
-			var ae = ff.next();
+		var oi = Stream.concat(Stream.of(type), Reflection.properties(type)).iterator();
+		while (oi.hasNext()) {
+			var o = oi.next();
+			var p = o instanceof Property x ? x : null;
+			var ae = p != null ? p.annotatedElement() : (AnnotatedElement) o;
 			var i = ae.getAnnotation(Index.class);
 			if (i == null)
 				continue;
 
-			var n = ae instanceof Field f ? f.getName() : null;
+//			var n = p != null ? p.name() : null;
 			// System.out.println("Persistence.configure, n=" + n);
-			var t = n != null ? Reflection.property(type, n).getType() : null;
+			var t = p != null ? p.type() : null;
 			var ii = new IndexInitializer<K, V>();
 			if (t == null) {
 				@SuppressWarnings("unchecked")
@@ -202,7 +193,7 @@ public class Persistence {
 				s = s.substring(1);
 			var sp = !s.isEmpty() ? Reflection.property(type, s) : null;
 			// System.out.println("Persistence.configure, sp=" + sp);
-			if (sp != null && sp.getType() != null) {
+			if (sp != null && sp.type() != null) {
 				@SuppressWarnings("unchecked")
 				var h = (ElementHelper<V>) ElementHelper.of(type, i.sort(), "id");
 				ii.valueHelper = h;
@@ -211,7 +202,7 @@ public class Persistence {
 				var h = (ElementHelper<V>) ElementHelper.of(type, "id");
 				ii.valueHelper = h;
 			}
-			var k = type.getSimpleName() + (n != null ? "." + n : "");
+			var k = type.getSimpleName() + (p != null ? "." + p.name() : "");
 			configuration.indexInitializers.put(k, ii);
 
 			var ieg = new IndexEntryGetter();
@@ -221,9 +212,9 @@ public class Persistence {
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
-			ieg.keyGetter = n != null && !n.isEmpty() ? kgf.apply(type, n) : null;
+			ieg.keyGetter = p != null ? kgf.apply(type, p.name()) : null;
 			ieg.sortGetter = sp;
-			c.indexEntryGetters.put(n, ieg);
+			c.indexEntryGetters.put(p != null ? p.name() : null, ieg);
 		}
 	}
 

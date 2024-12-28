@@ -474,12 +474,12 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 						} catch (ReflectiveOperationException e) {
 							throw new RuntimeException(e);
 						}
-						for (var nn = Reflection.properties(c).iterator(); nn.hasNext();) {
+						for (var nn = Reflection.propertyNames(c).iterator(); nn.hasNext();) {
 							var n = nn.next();
 							var p = Reflection.property(c, n);
 							if (p == null)
 								continue;
-							var v = resolveArgument(p.getType(), exchange,
+							var v = resolveArgument(p.type(), exchange,
 									() -> entries != null
 											? entries.stream().filter(x -> x.getKey().equals(n))
 													.map(Map.Entry::getValue).toArray(String[]::new)

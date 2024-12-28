@@ -59,7 +59,7 @@ public class ReflectionValueIterator extends ValueIterator {
 			if (c.isEnum())
 				i = context.buildStringIterator(object.toString());
 			else {
-				var s = Reflection.properties(c).map(p -> {
+				var s = Reflection.propertyNames(c).map(p -> {
 					var g = Reflection.property(c, p);
 					return g != null ? Map.entry(p, g) : null;
 				}).filter(Objects::nonNull).map(e -> {

@@ -48,7 +48,7 @@ public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
 				m.putAll(y);
 				break;
 			default:
-				Reflection.properties2(o.getClass()).forEach(x -> m.put(x.getName(), x.get(o)));
+				Reflection.properties(o.getClass()).forEach(x -> m.put(x.name(), x.get(o)));
 				break;
 			}
 		return m;
@@ -92,7 +92,7 @@ public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
 							break;
 						default:
 							var p = Reflection.property(v.getClass(), k);
-							ae = p != null ? p.getAnnotatedType() : null;
+							ae = p != null ? p.annotatedType() : null;
 							v = p != null ? p.get(v) : null;
 							break;
 						}

@@ -27,6 +27,7 @@ package com.janilla.reflect;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
@@ -47,22 +48,27 @@ public interface Property {
 		return new Property() {
 
 			@Override
-			public Class<?> getType() {
+			public AnnotatedElement annotatedElement() {
+				return field;
+			}
+
+			@Override
+			public Class<?> type() {
 				return field.getType();
 			}
 
 			@Override
-			public Type getGenericType() {
+			public Type genericType() {
 				return field.getGenericType();
 			}
 
 			@Override
-			public AnnotatedType getAnnotatedType() {
+			public AnnotatedType annotatedType() {
 				return field.getAnnotatedType();
 			}
 
 			@Override
-			public String getName() {
+			public String name() {
 				return n;
 			}
 
@@ -98,22 +104,27 @@ public interface Property {
 		return new Property() {
 
 			@Override
-			public Class<?> getType() {
+			public AnnotatedElement annotatedElement() {
+				return getter != null ? getter : setter;
+			}
+
+			@Override
+			public Class<?> type() {
 				return getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
 			}
 
 			@Override
-			public Type getGenericType() {
+			public Type genericType() {
 				return getter != null ? getter.getGenericReturnType() : setter.getGenericParameterTypes()[0];
 			}
 
 			@Override
-			public AnnotatedType getAnnotatedType() {
+			public AnnotatedType annotatedType() {
 				return getter != null ? getter.getAnnotatedReturnType() : setter.getAnnotatedParameterTypes()[0];
 			}
 
 			@Override
-			public String getName() {
+			public String name() {
 				return n;
 			}
 
@@ -148,23 +159,28 @@ public interface Property {
 		return new Property() {
 
 			@Override
-			public Class<?> getType() {
-				return property2.getType();
+			public AnnotatedElement annotatedElement() {
+				return property2.annotatedElement();
 			}
 
 			@Override
-			public Type getGenericType() {
-				return property2.getGenericType();
+			public Class<?> type() {
+				return property2.type();
 			}
 
 			@Override
-			public AnnotatedType getAnnotatedType() {
-				return property2.getAnnotatedType();
+			public Type genericType() {
+				return property2.genericType();
 			}
 
 			@Override
-			public String getName() {
-				return property2.getName();
+			public AnnotatedType annotatedType() {
+				return property2.annotatedType();
+			}
+
+			@Override
+			public String name() {
+				return property2.name();
 			}
 
 			@Override
@@ -203,13 +219,15 @@ public interface Property {
 		};
 	}
 
-	Class<?> getType();
+	AnnotatedElement annotatedElement();
 
-	Type getGenericType();
+	Class<?> type();
 
-	AnnotatedType getAnnotatedType();
+	Type genericType();
 
-	String getName();
+	AnnotatedType annotatedType();
+
+	String name();
 
 	Object get(Object object);
 

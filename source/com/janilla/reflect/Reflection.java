@@ -44,13 +44,13 @@ public class Reflection {
 
 	private static Map<Class<?>, Map<String, Property>> properties = new ConcurrentHashMap<>();
 
-	public static Stream<String> properties(Class<?> class1) {
+	public static Stream<String> propertyNames(Class<?> class1) {
 //		System.out.println("Reflection.properties, class1=" + class1);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.keySet().stream();
 	}
 
-	public static Stream<Property> properties2(Class<?> class1) {
+	public static Stream<Property> properties(Class<?> class1) {
 //		System.out.println("Reflection.properties2, class1=" + class1);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.values().stream();
@@ -85,7 +85,7 @@ public class Reflection {
 				throw new RuntimeException(e);
 			}
 		}
-		for (var i = properties(c2).iterator(); i.hasNext();) {
+		for (var i = propertyNames(c2).iterator(); i.hasNext();) {
 			var n = i.next();
 			var s = filter == null || filter.test(n) ? property(c2, n) : null;
 			var g = s != null ? property(c1, n) : null;
@@ -146,23 +146,23 @@ public class Reflection {
 				.map(p -> {
 					Field f;
 					try {
-						f = c.getDeclaredField(p.getName());
+						f = c.getDeclaredField(p.name());
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}
 					var o = f != null ? f.getAnnotation(Order.class) : null;
 					return new AbstractMap.SimpleEntry<>(p,
-							o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(p.getName()) : null);
+							o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(p.name()) : null);
 				}).sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
 				.map(Map.Entry::getKey).flatMap(p -> {
 					Field f;
 					try {
-						f = c.getDeclaredField(p.getName());
+						f = c.getDeclaredField(p.name());
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}
-					return f != null && f.isAnnotationPresent(Flatten.class) ? properties2(f.getType())
-							.filter(q -> !mm.containsKey(q.getName())).map(q -> Property.of(p, q)) : Stream.of(p);
-				}).collect(Collectors.toMap(Property::getName, p -> p, (v, w) -> v, LinkedHashMap::new));
+					return f != null && f.isAnnotationPresent(Flatten.class) ? properties(f.getType())
+							.filter(q -> !mm.containsKey(q.name())).map(q -> Property.of(p, q)) : Stream.of(p);
+				}).collect(Collectors.toMap(Property::name, p -> p, (v, w) -> v, LinkedHashMap::new));
 	}
 }
