@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
@@ -350,34 +349,31 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	protected Object[] resolveArguments(Invocation invocation, HttpExchange exchange) {
 		var rq = exchange.getRequest();
 		var qs = Net.parseQueryString(rq.getQuery());
-		var mn = rq.getMethod();
-		Supplier<String> z = switch (mn) {
+		Supplier<String> bs = switch (rq.getMethod()) {
 		case "POST", "PUT" -> {
+			var ct = rq.getHeaderValue("content-type");
 			var s = Lazy.of(() -> rq.getBody() != null ? new String(rq.getBody()) : null);
-			var t = rq.getHeaders().stream().filter(x -> x.name().equals("content-type")).map(HeaderField::value)
-					.findFirst().orElse(null);
-			if (t != null)
-				switch (t.split(";")[0]) {
-				case "application/x-www-form-urlencoded":
-					var v = Net.parseQueryString(s.get());
-					if (v == null)
-						;
-					else if (qs == null)
-						qs = v;
-					else
-						qs.addAll(v);
-					break;
-				case "application/json":
-					var a = s.get();
-					var o = a != null ? Json.parse(a) : null;
-					if (o instanceof Map<?, ?> m && !m.isEmpty()) {
-						if (qs == null)
-							qs = new EntryList<>();
-						for (var e : m.entrySet())
-							qs.add(e.getKey().toString(), e.getValue().toString());
-					}
-					break;
+			switch (Objects.toString(ct, "").split(";")[0]) {
+			case "application/x-www-form-urlencoded":
+				var v = Net.parseQueryString(s.get());
+				if (v == null)
+					;
+				else if (qs == null)
+					qs = v;
+				else
+					qs.addAll(v);
+				break;
+			case "application/json":
+				var a = s.get();
+				var o = a != null ? Json.parse(a) : null;
+				if (o instanceof Map<?, ?> m && !m.isEmpty()) {
+					if (qs == null)
+						qs = new EntryList<>();
+					for (var e : m.entrySet())
+						qs.add(e.getKey().toString(), e.getValue().toString());
 				}
+				break;
+			}
 			yield s;
 		}
 		default -> null;
@@ -391,16 +387,19 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				.map(x -> Arrays.stream(x).filter(y -> y.annotationType() == Bind.class).findFirst().orElse(null))
 				.toArray(Bind[]::new);
 		var aa = new Object[ptt.length];
+		var ggl = gg != null ? gg.length : 0;
 		for (var i = 0; i < aa.length; i++) {
-			var g = gg != null && i < gg.length ? gg[i] : null;
-			var b = bb[i];
-			var p = g == null && b != null ? (!b.parameter().isEmpty() ? b.parameter() : b.value()) : null;
+			var g = i < ggl ? gg[i] : null;
+			var b = i < ggl ? null : bb[i];
+			var p = b != null ? (!b.parameter().isEmpty() ? b.parameter() : b.value()) : null;
+			var i2 = i;
 			var qs2 = p != null ? qs : null;
+			var bs2 = i < ggl ? null : bs;
 			aa[i] = resolveArgument(ptt[i], exchange,
-					() -> g != null ? new String[] { g }
+					() -> i2 < ggl ? (g != null ? new String[] { g } : null)
 							: qs2 != null ? qs2.stream().filter(x -> x.getKey().equals(p)).map(Map.Entry::getValue)
 									.toArray(String[]::new) : null,
-					qs, z, b != null && b.resolver() != Bind.NullResolver.class ? () -> {
+					qs2, bs2, b != null && b.resolver() != Bind.NullResolver.class ? () -> {
 						try {
 							return b.resolver().getConstructor().newInstance();
 						} catch (ReflectiveOperationException e) {
@@ -410,6 +409,8 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		}
 		return aa;
 	}
+
+//	static final Set<Class<?>> foo = Set.of(Boolean.class, Double.class, Integer.class, Long.class, String.class);
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, Supplier<String[]> values,
 			EntryList<String, String> entries, Supplier<String> body,
@@ -421,13 +422,15 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			return exchange.getRequest();
 		if (c != null && HttpResponse.class.isAssignableFrom(c))
 			return exchange.getResponse();
-		if (c != null && !c.getPackageName().startsWith("java.")) {
-			var ct = exchange.getRequest().getHeaders().stream().filter(x -> x.name().equals("content-type"))
-					.map(HeaderField::value).findFirst().orElse(null);
+//		if (c != null && (!c.getPackageName().startsWith("java.") || foo.contains(c))) {
+		if (c != null) {
+			var ct = exchange.getRequest().getHeaderValue("content-type");
 			switch (Objects.toString(ct, "").split(";")[0]) {
 			case "application/json": {
 //		System.out.println("body=" + body);
-				var b = body != null ? body.get() : null;
+				if (body == null)
+					break;
+				var b = body.get();
 				if (b == null)
 					return null;
 				var d = new Converter();
@@ -436,6 +439,8 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				return d.convert(Json.parse(b), c);
 			}
 			case "application/x-www-form-urlencoded": {
+				if (entries == null)
+					break;
 				var t = createEntryTree();
 				t.setTypeResolver(typeResolver);
 				entries.forEach(t::add);
@@ -460,7 +465,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
-				} else {
+				} else if (!c.getPackageName().startsWith("java.")) {
 					Constructor<?> d;
 					try {
 						d = c.getConstructor();
