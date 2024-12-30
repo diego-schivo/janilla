@@ -51,7 +51,7 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 			rs.setHeaderValue("cache-control", "no-cache");
 		if (rs.getHeaderValue("content-type") == null)
 			rs.setHeaderValue("content-type", "text/html");
-		var s = input.render(exchange);
+		var s = input.get();
 		if (s != null) {
 			var bb = s.getBytes();
 			rs.setHeaderValue("content-length", String.valueOf(bb.length));

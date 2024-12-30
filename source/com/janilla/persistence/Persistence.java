@@ -130,8 +130,6 @@ public class Persistence {
 			if (i == null)
 				continue;
 
-//			var n = p != null ? p.name() : null;
-			// System.out.println("Persistence.configure, n=" + n);
 			var t = p != null ? p.type() : null;
 			var ii = new IndexInitializer<K, V>();
 			if (t == null) {

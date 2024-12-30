@@ -32,13 +32,12 @@ import java.lang.reflect.AnnotatedType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.http.HttpExchange;
-
-public record Renderable<T>(T value, Renderer<T> renderer) {
+public record Renderable<T>(T value, Renderer<T> renderer) implements Supplier<String> {
 
 	protected static Map<String, Map<String, String>> allTemplates = new HashMap<>();
 
@@ -80,15 +79,18 @@ public record Renderable<T>(T value, Renderer<T> renderer) {
 				}).orElse(null);
 		if (r == null && value instanceof List && annotated instanceof AnnotatedParameterizedType apt) {
 			var at = apt.getAnnotatedActualTypeArguments()[0];
-			@SuppressWarnings("unchecked")
-			var r2 = (Renderer<T>) new ListRenderer<>(at);
-			r = r2;
+			if (at.isAnnotationPresent(Render.class)) {
+				@SuppressWarnings("unchecked")
+				var r2 = (Renderer<T>) new ListRenderer<>(at);
+				r = r2;
+			}
 		}
 		return new Renderable<>(value, r);
 	}
 
-	public String render(HttpExchange exchange) {
-		return renderer.apply(value, exchange);
+	@Override
+	public String get() {
+		return renderer.apply(value);
 	}
 
 	public static class ListRenderer<T> extends Renderer<List<T>> {
@@ -100,12 +102,12 @@ public record Renderable<T>(T value, Renderer<T> renderer) {
 		}
 
 		@Override
-		public String apply(List<T> value, HttpExchange exchange) {
+		public String apply(List<T> value) {
 			return value.stream().map(x -> {
 				var r = Renderable.of(annotatedType, x);
 				if (r.renderer().templates == null)
 					r.renderer().templates = templates;
-				return r.render(null);
+				return r.get();
 			}).collect(Collectors.joining());
 		}
 	}

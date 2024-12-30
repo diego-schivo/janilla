@@ -27,13 +27,12 @@ package com.janilla.web;
 import java.lang.reflect.AnnotatedElement;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import com.janilla.http.HttpExchange;
 import com.janilla.reflect.Reflection;
 
-public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
+public class Renderer<T> implements Function<T, String> {
 
 	protected static Pattern placeholder = Pattern.compile(
 			">\\$\\{([\\w.-]*)\\}</" + "|" + "<!--\\$\\{([\\w.-]*)\\}-->" + "|" + "[\\w-]+=\"\\$\\{([\\w.-]*)\\}\"");
@@ -67,7 +66,7 @@ public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
 	}
 
 	@Override
-	public String apply(T value, HttpExchange exchange) {
+	public String apply(T value) {
 		return interpolate(templates.get(templateName.endsWith(".html") ? null : templateName), value);
 	}
 
@@ -104,7 +103,7 @@ public class Renderer<T> implements BiFunction<T, HttpExchange, String> {
 			if (r != null && r.renderer() != null) {
 				if (r.renderer().templates == null)
 					r.renderer().templates = templates;
-				v = r.render(null);
+				v = r.get();
 			}
 			return switch (i) {
 			case 1 -> ">" + (v != null ? v : "") + "</";
