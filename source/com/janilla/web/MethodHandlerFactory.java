@@ -520,9 +520,9 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		return d.convert(i, c);
 	}
 
-	protected void render(Object object, HttpExchange exchange) {
-//		System.out.println("MethodHandlerFactory.render, object=" + object);
-		var h = mainFactory.createHandler(object, exchange);
+	protected void render(Renderable<?> renderable, HttpExchange exchange) {
+//		System.out.println("MethodHandlerFactory.render, renderable=" + renderable);
+		var h = mainFactory.createHandler(renderable, exchange);
 		if (h != null)
 			h.handle(exchange);
 	}

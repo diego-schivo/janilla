@@ -51,7 +51,7 @@ public class RenderableFactory {
 					var c = (Class<Renderer<T>>) x.renderer();
 					Renderer<T> i;
 					try {
-						i = c.getConstructor().newInstance();
+						i = c.getConstructor(RenderableFactory.class).newInstance(this);
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
@@ -61,7 +61,7 @@ public class RenderableFactory {
 							var m = new HashMap<String, String>();
 							try (var is = value.getClass().getResourceAsStream(k)) {
 								if (is == null)
-									throw new NullPointerException();
+									throw new NullPointerException(k);
 								var s = new String(is.readAllBytes());
 								var v = TEMPLATE_ELEMENT.matcher(s).replaceAll(y -> {
 									m.put(y.group(1), y.group(2));
@@ -74,25 +74,28 @@ public class RenderableFactory {
 							return m;
 						});
 					}
-					i.renderableOf = this::createRenderable;
+//					i.renderableOf = this::createRenderable;
 					return i;
 				}).orElse(null);
 		if (r == null && value instanceof List && annotated instanceof AnnotatedParameterizedType apt) {
 			var at = apt.getAnnotatedActualTypeArguments()[0];
-			if (at.isAnnotationPresent(Render.class)) {
-				@SuppressWarnings("unchecked")
-				var r2 = (Renderer<T>) new Renderer<List<T>>() {
+//			if (at.isAnnotationPresent(Render.class)) {
+			@SuppressWarnings("unchecked")
+			var r2 = (Renderer<T>) new Renderer<List<T>>(this) {
 
-					@Override
-					public String apply(List<T> value) {
-						return value.stream().map(x -> {
-							var r = createRenderable(at, x);
-							return r.get();
-						}).collect(Collectors.joining());
-					}
-				};
-				r = r2;
-			}
+				@Override
+				public String apply(List<T> value) {
+					return value.stream().map(x -> {
+						var r = createRenderable(at, x);
+						var r2 = r.renderer();
+						if (r2 != null && r2.templates == null)
+							r2.templates = templates;
+						return r.get();
+					}).collect(Collectors.joining());
+				}
+			};
+			r = r2;
+//			}
 		}
 		return new Renderable<>(value, r);
 	}

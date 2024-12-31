@@ -27,7 +27,6 @@ package com.janilla.web;
 import java.lang.reflect.AnnotatedElement;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -54,22 +53,16 @@ public class Renderer<T> implements Function<T, String> {
 		return m;
 	}
 
-	protected Map<String, String> templates;
+	protected final RenderableFactory factory;
 
 	protected String templateName;
 
-	protected BiFunction<AnnotatedElement, Object, Renderable<?>> renderableOf;
+	protected Map<String, String> templates;
 
-	public void setTemplates(Map<String, String> templates) {
-		this.templates = templates;
-	}
+//	protected BiFunction<AnnotatedElement, Object, Renderable<?>> renderableOf;
 
-	public void setTemplateName(String templateName) {
-		this.templateName = templateName;
-	}
-
-	public void setRenderableOf(BiFunction<AnnotatedElement, Object, Renderable<?>> renderableOf) {
-		this.renderableOf = renderableOf;
+	public Renderer(RenderableFactory factory) {
+		this.factory = factory;
 	}
 
 	@Override
@@ -106,14 +99,12 @@ public class Renderer<T> implements Function<T, String> {
 					}
 				break;
 			}
-			var r = v instanceof Renderable<?> y ? y : v != null ? renderableOf.apply(ae, v) : null;
-			if (r != null && r.renderer() != null) {
-				if (r.renderer().templates == null)
-					r.renderer().templates = templates;
-				if (r.renderer().renderableOf == null)
-					r.renderer().renderableOf = renderableOf;
+			var r = v instanceof Renderable<?> y ? y : v != null ? factory.createRenderable(ae, v) : null;
+			var r2 = r != null ? r.renderer() : null;
+			if (r2 != null && r2.templates == null)
+				r2.templates = templates;
+			if (r2 != null)
 				v = r.get();
-			}
 			return switch (i) {
 			case 1 -> ">" + (v != null ? v : "") + "</";
 			case 2 -> v != null ? v.toString() : "";
