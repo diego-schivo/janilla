@@ -26,7 +26,6 @@ package com.janilla.web;
 
 import java.util.Iterator;
 
-import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.json.Json;
@@ -45,12 +44,12 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 
 	protected void render(Object object, HttpExchange exchange) {
 		var rs = exchange.getResponse();
-		rs.getHeaders().add(new HeaderField("content-type", "application/json"));
+		rs.setHeaderValue("content-type", "application/json");
 
-		var t = Json.format(buildJsonIterator(object, exchange));
-//		System.out.println("t=" + t);
-		var bb = t.getBytes();
-		rs.getHeaders().add(new HeaderField("content-length", String.valueOf(bb.length)));
+		var s = Json.format(buildJsonIterator(object, exchange));
+//		System.out.println("JsonHandlerFactory.render, s=" + s);
+		var bb = s.getBytes();
+		rs.setHeaderValue("content-length", String.valueOf(bb.length));
 		rs.setBody(bb);
 	}
 

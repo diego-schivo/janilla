@@ -101,6 +101,8 @@ public class ApplicationHandlerBuilder {
 			var a = factory.getSource();
 			return x == a.getClass() ? a : factory.create(x);
 		});
+		if (f.renderableFactory == null)
+			f.renderableFactory = new RenderableFactory();
 		return f;
 	}
 
@@ -124,11 +126,13 @@ public class ApplicationHandlerBuilder {
 	}
 
 	protected HttpHandler createHandler(Object object, HttpExchange exchange) {
-		for (var g : factories)
-			if (g != null) {
-				var h = g.createHandler(object, exchange);
-				if (h != null)
+		for (var f : factories)
+			if (f != null) {
+				var h = f.createHandler(object, exchange);
+				if (h != null) {
+//					System.out.println("ApplicationHandlerBuilder.createHandler, f=" + f + ", h=" + h);
 					return h;
+				}
 			}
 		return null;
 	}
