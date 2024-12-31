@@ -27,6 +27,7 @@ package com.janilla.web;
 import java.lang.reflect.AnnotatedElement;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -34,7 +35,7 @@ import com.janilla.reflect.Reflection;
 
 public class Renderer<T> implements Function<T, String> {
 
-	protected static Pattern placeholder = Pattern.compile(
+	protected static final Pattern PLACEHOLDER = Pattern.compile(
 			">\\$\\{([\\w.-]*)\\}</" + "|" + "<!--\\$\\{([\\w.-]*)\\}-->" + "|" + "[\\w-]+=\"\\$\\{([\\w.-]*)\\}\"");
 
 	public static Map<String, Object> merge(Object... objects) {
@@ -57,6 +58,8 @@ public class Renderer<T> implements Function<T, String> {
 
 	protected String templateName;
 
+	protected BiFunction<AnnotatedElement, Object, Renderable<?>> renderableOf;
+
 	public void setTemplates(Map<String, String> templates) {
 		this.templates = templates;
 	}
@@ -65,13 +68,17 @@ public class Renderer<T> implements Function<T, String> {
 		this.templateName = templateName;
 	}
 
+	public void setRenderableOf(BiFunction<AnnotatedElement, Object, Renderable<?>> renderableOf) {
+		this.renderableOf = renderableOf;
+	}
+
 	@Override
 	public String apply(T value) {
 		return interpolate(templates.get(templateName.endsWith(".html") ? null : templateName), value);
 	}
 
 	protected String interpolate(String template, Object value) {
-		return placeholder.matcher(template).replaceAll(x -> {
+		return PLACEHOLDER.matcher(template).replaceAll(x -> {
 			var i = 1;
 			AnnotatedElement ae = null;
 			Object v = null;
@@ -99,10 +106,12 @@ public class Renderer<T> implements Function<T, String> {
 					}
 				break;
 			}
-			var r = v instanceof Renderable<?> y ? y : v != null ? Renderable.of(ae, v) : null;
+			var r = v instanceof Renderable<?> y ? y : v != null ? renderableOf.apply(ae, v) : null;
 			if (r != null && r.renderer() != null) {
 				if (r.renderer().templates == null)
 					r.renderer().templates = templates;
+				if (r.renderer().renderableOf == null)
+					r.renderer().renderableOf = renderableOf;
 				v = r.get();
 			}
 			return switch (i) {

@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -41,6 +43,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -279,9 +282,9 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected void handle(Invocation invocation, HttpExchange exchange) {
 		var aa = resolveArguments(invocation, exchange);
-
 		var m = invocation.method;
-//		System.out.println("m=" + m + " invocation.object()=" + invocation.object() + " a=" + Arrays.toString(aa));
+//		System.out.println("MethodHandlerFactory.handle, m=" + m + " invocation.target=" + invocation.target + " a="
+//				+ Arrays.toString(aa));
 		Object o;
 		try {
 			var bb = new Object[1 + aa.length];
@@ -342,8 +345,68 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 						break;
 					}
 			}
-			render(Renderable.of(m.getAnnotatedReturnType(), o), exchange);
+			render(renderableOf(m.getAnnotatedReturnType(), o), exchange);
 		}
+	}
+
+	protected Map<String, Map<String, String>> allTemplates = new HashMap<>();
+
+	protected static final Pattern TEMPLATE_ELEMENT = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>",
+			Pattern.DOTALL);
+
+	protected <T> Renderable<T> renderableOf(AnnotatedElement annotated, T value) {
+//		System.out.println("MethodHandlerFactory.of, annotated=" + annotated + ", value=" + value);
+		var r = Stream.of(annotated, value != null ? value.getClass() : null)
+				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(x -> x != null).findFirst()
+				.map(x -> {
+					@SuppressWarnings("unchecked")
+					var c = (Class<Renderer<T>>) x.renderer();
+					Renderer<T> i;
+					try {
+						i = c.getConstructor().newInstance();
+					} catch (ReflectiveOperationException e) {
+						throw new RuntimeException(e);
+					}
+					i.templateName = x.template();
+					if (i.templateName.endsWith(".html")) {
+						i.templates = allTemplates.computeIfAbsent(i.templateName, k -> {
+							var m = new HashMap<String, String>();
+							try (var is = value.getClass().getResourceAsStream(k)) {
+								if (is == null)
+									throw new NullPointerException();
+								var s = new String(is.readAllBytes());
+								var v = TEMPLATE_ELEMENT.matcher(s).replaceAll(y -> {
+									m.put(y.group(1), y.group(2));
+									return "";
+								});
+								m.put(null, v);
+							} catch (IOException e) {
+								throw new UncheckedIOException(e);
+							}
+							return m;
+						});
+					}
+					i.renderableOf = this::renderableOf;
+					return i;
+				}).orElse(null);
+		if (r == null && value instanceof List && annotated instanceof AnnotatedParameterizedType apt) {
+			var at = apt.getAnnotatedActualTypeArguments()[0];
+			if (at.isAnnotationPresent(Render.class)) {
+				@SuppressWarnings("unchecked")
+				var r2 = (Renderer<T>) new Renderer<List<T>>() {
+
+					@Override
+					public String apply(List<T> value) {
+						return value.stream().map(x -> {
+							var r = renderableOf(at, x);
+							return r.get();
+						}).collect(Collectors.joining());
+					}
+				};
+				r = r2;
+			}
+		}
+		return new Renderable<>(value, r);
 	}
 
 	protected Object[] resolveArguments(Invocation invocation, HttpExchange exchange) {
@@ -515,6 +578,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected void render(Object object, HttpExchange exchange) {
+//		System.out.println("MethodHandlerFactory.render, object=" + object);
 		var h = mainFactory.createHandler(object, exchange);
 		if (h != null)
 			h.handle(exchange);

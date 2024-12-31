@@ -99,9 +99,7 @@ public class ApplicationHandlerBuilder {
 				.iterator());
 		f.setTargetResolver(x -> {
 			var a = factory.getSource();
-			if (x == a.getClass())
-				return a;
-			return factory.create(x);
+			return x == a.getClass() ? a : factory.create(x);
 		});
 		return f;
 	}
