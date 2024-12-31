@@ -35,7 +35,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -151,7 +153,7 @@ public class Index<K, V> {
 	}
 
 	public boolean add(K key, V[] values) {
-//		System.out.println("Index.add key=" + key + ", values="
+//		System.out.println("Index.add, key=" + key + ", values="
 //				+ Arrays.stream(values).map(x -> x instanceof Object[] oo ? List.of(oo) : x).toList());
 
 		return apply(key, (aa, bt) -> {
@@ -211,11 +213,13 @@ public class Index<K, V> {
 	}
 
 	public <R> R apply(K key, BiFunction<Map<String, Object>, BTree<V>, R> function, boolean add) {
+//		System.out.println(
+//				"Index.apply, key=" + (key instanceof Object[] oo ? Arrays.toString(oo) : key) + ", add=" + add);
 		class A {
 
 			R r;
 
-			boolean x;
+			boolean removeKey;
 		}
 		var bt = btree.get();
 		var kd = new KeyAndData<K>(key, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0));
@@ -248,9 +252,10 @@ public class Index<K, V> {
 			var s1 = (long) aa.getOrDefault("size", 0L);
 			a.r = function.apply(aa, vt);
 			var s2 = (long) aa.getOrDefault("size", 0L);
-			a.x = s1 != 0 && s2 == 0;
+			a.removeKey = s1 != 0 && s2 == 0;
 
 			var aa2 = Json.format(aa);
+//			System.out.println("Index.apply, aa1=" + aa1 + ", aa2=" + aa2);
 			var aar = x.attributes();
 			if (!aa2.equals(aa1)) {
 				var bb = ElementHelper.STRING.getBytes(aa2);
@@ -274,8 +279,13 @@ public class Index<K, V> {
 					: null;
 		};
 		kd = add ? bt.getOrAdd(kd, op) : bt.get(kd, op);
-		if (a.x)
+		if (a.removeKey)
 			bt.remove(kd);
 		return a.r;
+	}
+
+	@Override
+	public String toString() {
+		return super.toString() + "[" + Objects.toString(attributes) + "]";
 	}
 }

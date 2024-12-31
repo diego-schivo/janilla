@@ -128,6 +128,7 @@ public class Indexes {
 	}
 
 	public void create(String name) {
+//		System.out.println("Indexes.create, name=" + name);
 		btree.get().getOrAdd(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
 	}
 
@@ -163,6 +164,7 @@ public class Indexes {
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
+//			System.out.println("Indexes.perform, name=" + name + ", i=" + i);
 			initializeIndex.accept(name, i);
 
 			a.r = operation.apply(i);

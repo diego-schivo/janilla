@@ -37,6 +37,7 @@ import java.util.PrimitiveIterator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -138,6 +139,7 @@ public class Crud<E> {
 	}
 
 	public Page list(long skip, long limit) {
+//		System.out.println("Crud.list, skip=" + skip + ", limit=" + limit);
 		return database.perform((ss, ii) -> indexPresent ? ii.perform(type.getSimpleName(), i -> {
 			var vv = i.values();
 			if (skip > 0)
@@ -165,19 +167,22 @@ public class Crud<E> {
 	}
 
 	public long count(String index, Object key) {
-		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
+				.collect(Collectors.joining("."));
 		return database.perform((ss, ii) -> ii.perform(n, i -> i.count(key)), false);
 	}
 
 	public long find(String index, Object key) {
-		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
+				.collect(Collectors.joining("."));
 		return database.perform((ss, ii) -> ii.perform(n, i -> i.list(key)
 				.mapToLong(o -> (Long) (o instanceof Object[] oo ? oo[oo.length - 1] : o)).findFirst().orElse(0)),
 				false);
 	}
 
 	public long[] filter(String index, Object... keys) {
-		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
+				.collect(Collectors.joining("."));
 //		System.out.println("n=" + n + ", keys=" + Arrays.toString(keys));
 		switch (keys.length) {
 		case 0:
@@ -214,7 +219,8 @@ public class Crud<E> {
 	}
 
 	public Page filter(String index, long skip, long limit, Object... keys) {
-		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
+				.collect(Collectors.joining("."));
 		switch (keys.length) {
 		case 0:
 			return database.perform((ss, ii) -> ii.perform(n, i -> {
@@ -269,12 +275,14 @@ public class Crud<E> {
 	}
 
 	public long[] filter(String index, Predicate<Object> operation) {
-		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
+				.collect(Collectors.joining("."));
 		return database.perform((ss, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toArray()), false);
 	}
 
 	public Page filter(String index, Predicate<Object> operation, long skip, long limit) {
-		var n = type.getSimpleName() + (index != null && !index.isEmpty() ? "." + index : "");
+		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
+				.collect(Collectors.joining("."));
 		return database.perform((ss, ii) -> ii.perform(n,
 				i -> new Page(getIndexIds(i.valuesIf(operation)).skip(skip).limit(limit).toArray(),
 						i.countIf(operation))),
@@ -298,7 +306,8 @@ public class Crud<E> {
 			}
 			var aa = new ArrayList<A>();
 			for (var e : ee) {
-				var n = type.getSimpleName() + (e.getKey() != null && !e.getKey().isEmpty() ? "." + e.getKey() : "");
+				var n = Stream.of(type.getSimpleName(), e.getKey()).filter(x -> x != null && !x.isEmpty())
+						.collect(Collectors.joining("."));
 				class B {
 
 					Iterator<Object[]> vvi;
@@ -435,7 +444,9 @@ public class Crud<E> {
 	}
 
 	protected void updateIndex(String name, Map<Object, Object> remove, Map<Object, Object> add) {
-		var n = type.getSimpleName() + (name != null && !name.isEmpty() ? "." + name : "");
+		var n = Stream.of(type.getSimpleName(), name).filter(x -> x != null && !x.isEmpty())
+				.collect(Collectors.joining("."));
+//		System.out.println("Crud.updateIndex, n=" + n + ", remove=" + remove + ", add=" + add);
 		database.perform((ss, ii) -> ii.perform(n, i -> {
 			if (remove != null)
 				for (var e : remove.entrySet())

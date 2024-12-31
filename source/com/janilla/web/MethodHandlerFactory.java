@@ -393,12 +393,12 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			var b = i < ggl ? null : bb[i];
 			var p = b != null ? (!b.parameter().isEmpty() ? b.parameter() : b.value()) : null;
 			var i2 = i;
-			var qs2 = p != null ? qs : null;
+			var qs2 = qs;
 			var bs2 = i < ggl ? null : bs;
 			aa[i] = resolveArgument(ptt[i], exchange,
 					() -> i2 < ggl ? (g != null ? new String[] { g } : null)
-							: qs2 != null ? qs2.stream().filter(x -> x.getKey().equals(p)).map(Map.Entry::getValue)
-									.toArray(String[]::new) : null,
+							: qs2 != null && p != null ? qs2.stream().filter(x -> x.getKey().equals(p))
+									.map(Map.Entry::getValue).toArray(String[]::new) : null,
 					qs2, bs2, b != null && b.resolver() != Bind.NullResolver.class ? () -> {
 						try {
 							return b.resolver().getConstructor().newInstance();
@@ -410,8 +410,6 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		return aa;
 	}
 
-//	static final Set<Class<?>> foo = Set.of(Boolean.class, Double.class, Integer.class, Long.class, String.class);
-
 	protected Object resolveArgument(Type type, HttpExchange exchange, Supplier<String[]> values,
 			EntryList<String, String> entries, Supplier<String> body,
 			Supplier<UnaryOperator<Converter.MapType>> resolver) {
@@ -422,12 +420,11 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			return exchange.getRequest();
 		if (c != null && HttpResponse.class.isAssignableFrom(c))
 			return exchange.getResponse();
-//		if (c != null && (!c.getPackageName().startsWith("java.") || foo.contains(c))) {
 		if (c != null) {
 			var ct = exchange.getRequest().getHeaderValue("content-type");
 			switch (Objects.toString(ct, "").split(";")[0]) {
 			case "application/json": {
-//		System.out.println("body=" + body);
+//				System.out.println("body=" + body);
 				if (body == null)
 					break;
 				var b = body.get();
