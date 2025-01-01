@@ -26,11 +26,16 @@ package com.janilla.web;
 
 import java.lang.reflect.AnnotatedElement;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.janilla.reflect.Reflection;
 
@@ -43,7 +48,7 @@ public class Renderer<T> implements Function<T, String> {
 
 	protected RenderableFactory factory;
 
-	protected String templateName;
+	protected Render annotation;
 
 	protected Map<String, String> templates;
 
@@ -67,13 +72,35 @@ public class Renderer<T> implements Function<T, String> {
 //						System.out.println("Renderer.interpolate, k=" + k + ", av=" + av);
 					}
 				var v = av.value;
-				var r = v instanceof Renderable<?> z ? z : v != null ? factory.createRenderable(av.annotated, v) : null;
-				var r2 = r != null ? r.renderer() : null;
-				if (r2 != null && r2.templates == null)
-					r2.templates = templates;
-				if (r2 != null)
-					v = r.get();
 				vv.add(v);
+				var r = v instanceof Renderable<?> z ? z : v != null ? factory.createRenderable(av.annotated, v) : null;
+				var iis = v instanceof Iterator || v instanceof Iterable || v instanceof Stream;
+				if (r != null && r.renderer() != null) {
+//					if (iis && av.annotated instanceof AnnotatedParameterizedType apt) {
+//						var at = apt.getAnnotatedActualTypeArguments()[0];
+//						var a = at.getAnnotation(Render.class);
+//						r2.delimiter = a != null ? a.delimiter() : null;
+//					}
+					if (r.renderer().templates == null)
+						r.renderer().templates = templates;
+					v = r.get();
+				} else if (iis) {
+					var w = switch (v) {
+					case Stream<?> z -> z;
+					case Iterable<?> z -> StreamSupport.stream(z.spliterator(), false);
+					case Iterator<?> z -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(z, 0), false);
+					default -> throw new RuntimeException();
+					};
+					var c = annotation.delimiter() != null && !annotation.delimiter().isEmpty()
+							? Collectors.joining(annotation.delimiter())
+							: Collectors.joining();
+					v = w.map(z -> {
+						var r2 = factory.createRenderable(null, z);
+						if (r2.renderer() != null && r2.renderer().templates == null)
+							r2.renderer().templates = templates;
+						return r2.get();
+					}).collect(c);
+				}
 				return Objects.toString(v, "");
 			});
 			s = switch (g) {
@@ -96,13 +123,17 @@ public class Renderer<T> implements Function<T, String> {
 	}
 
 	protected String template(T value) {
-		return templates.get(templateName.endsWith(".html") ? null : templateName);
+		return templates.get(annotation.template().endsWith(".html") ? "" : annotation.template());
 	}
 
 	protected AnnotatedValue evaluate(AnnotatedValue x, String k) {
 		switch (x.value) {
-		case Map<?, ?> z:
-			return new AnnotatedValue(null, z.get(k));
+		case Function<?, ?> y:
+			@SuppressWarnings("unchecked")
+			var f = (Function<String, ?>) y;
+			return new AnnotatedValue(null, f.apply(k));
+		case Map<?, ?> y:
+			return new AnnotatedValue(null, y.get(k));
 		default:
 			var p = Reflection.property(x.value.getClass(), k);
 			return new AnnotatedValue(p != null ? p.annotatedType() : null, p != null ? p.get(x.value) : null);
