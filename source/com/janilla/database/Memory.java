@@ -60,7 +60,7 @@ public class Memory {
 			{
 				var r = ThreadLocalRandom.current();
 				var a = new ArrayList<Allocate>();
-				p = IntStream.range(0, 10).mapToObj(x -> {
+				p = IntStream.range(0, 10).mapToObj(_ -> {
 					if (a.isEmpty() || r.nextInt(5) < 3) {
 						var s = 1 + r.nextInt(1000);
 						var b = new Allocate(s);

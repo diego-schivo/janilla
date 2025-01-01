@@ -94,7 +94,7 @@ public interface Net {
 		}).reduce(new EntryList<>(), (l, e) -> {
 			l.add(e.getKey(), e.getValue());
 			return l;
-		}, (a, b) -> a) : null;
+		}, (a, _) -> a) : null;
 	}
 
 	static EntryList<String, String> parseQueryString(String string) {

@@ -50,9 +50,9 @@ public class BTree<E> {
 		var l = 10;
 		var o = 3;
 		var r = ThreadLocalRandom.current();
-		var a = IntStream.range(0, l).map(x -> r.nextInt(1, l)).toArray();
+		var a = IntStream.range(0, l).map(_ -> r.nextInt(1, l)).toArray();
 		System.out.println(Arrays.toString(a));
-		var b = IntStream.range(0, r.nextInt(1, a.length + 1)).map(x -> r.nextInt(a.length)).distinct().toArray();
+		var b = IntStream.range(0, r.nextInt(1, a.length + 1)).map(_ -> r.nextInt(a.length)).distinct().toArray();
 		System.out.println(Arrays.toString(b));
 
 		var f = Files.createTempFile("btree", "");
@@ -338,7 +338,7 @@ public class BTree<E> {
 		}
 
 		var b = new B();
-		return Stream.iterate(b.n(), x -> b.hn(), x -> b.n());
+		return Stream.iterate(b.n(), _ -> b.hn(), _ -> b.n());
 	}
 
 	void add(E element, UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) {
@@ -788,7 +788,7 @@ public class BTree<E> {
 				channel.position(reference.position());
 				buffer.position(0);
 				buffer.limit(reference.capacity());
-				IO.repeat(x -> channel.read(buffer), buffer.remaining());
+				IO.repeat(_ -> channel.read(buffer), buffer.remaining());
 				buffer.limit(buffer.getInt(0));
 				changed = false;
 			} catch (IOException e) {
@@ -867,7 +867,7 @@ public class BTree<E> {
 				l = buffer.limit();
 				buffer.position(0);
 				buffer.limit(reference.capacity());
-				IO.repeat(x -> channel.write(buffer), buffer.remaining());
+				IO.repeat(_ -> channel.write(buffer), buffer.remaining());
 				buffer.limit(l);
 				changed = false;
 			} catch (IOException e) {

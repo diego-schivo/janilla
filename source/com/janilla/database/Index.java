@@ -35,7 +35,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -161,8 +160,8 @@ public class Index<K, V> {
 			for (var v : values)
 				if (bt.getOrAdd(v) == null) {
 					r = Boolean.TRUE;
-					aa.compute("size", (k, y) -> y == null ? 1L : (long) y + 1);
-					attributes.compute("size", (k, y) -> y == null ? 1L : (long) y + 1);
+					aa.compute("size", (_, y) -> y == null ? 1L : (long) y + 1);
+					attributes.compute("size", (_, y) -> y == null ? 1L : (long) y + 1);
 				}
 			return r;
 		}, true) != null;
@@ -174,20 +173,20 @@ public class Index<K, V> {
 			for (var v : values)
 				if (bt.remove(v) != null) {
 					r = Boolean.TRUE;
-					aa.compute("size", (k, y) -> y == null ? 1L : (long) y - 1);
-					attributes.compute("size", (k, y) -> y == null ? 1L : (long) y - 1);
+					aa.compute("size", (_, y) -> y == null ? 1L : (long) y - 1);
+					attributes.compute("size", (_, y) -> y == null ? 1L : (long) y - 1);
 				}
 			return r;
 		}, false) != null;
 	}
 
 	public Stream<V> list(K key) {
-		var s = apply(key, (aa, bt) -> bt.stream(), false);
+		var s = apply(key, (_, bt) -> bt.stream(), false);
 		return s != null ? s : Stream.empty();
 	}
 
 	public long count(K key) {
-		var c = apply(key, (aa, bt) -> (long) aa.getOrDefault("size", 0L), false);
+		var c = apply(key, (aa, _) -> (long) aa.getOrDefault("size", 0L), false);
 		return c != null ? c : 0;
 	}
 
@@ -200,12 +199,12 @@ public class Index<K, V> {
 	}
 
 	public Stream<V> values() {
-		return valuesIf(k -> true);
+		return valuesIf(_ -> true);
 	}
 
 	public Stream<V> valuesIf(Predicate<K> predicate) {
 		return btree.get().stream().filter(x -> predicate.test(x.key()))
-				.flatMap(x -> apply(x.key(), (aa, vt) -> vt.stream(), false));
+				.flatMap(x -> apply(x.key(), (_, vt) -> vt.stream(), false));
 	}
 
 	public long count() {
@@ -232,7 +231,7 @@ public class Index<K, V> {
 				else {
 					bt.getChannel().position(x.attributes().position());
 					var b = ByteBuffer.allocate(x.attributes().capacity());
-					IO.repeat(y -> bt.getChannel().read(b), b.remaining());
+					IO.repeat(_ -> bt.getChannel().read(b), b.remaining());
 					b.position(0);
 					aa1 = ElementHelper.STRING.getElement(b);
 				}
@@ -268,7 +267,7 @@ public class Index<K, V> {
 				b.put(0, bb);
 				try {
 					bt.getChannel().position(aar.position());
-					IO.repeat(y -> bt.getChannel().write(b), b.remaining());
+					IO.repeat(_ -> bt.getChannel().write(b), b.remaining());
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}

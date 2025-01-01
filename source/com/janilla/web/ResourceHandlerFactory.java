@@ -113,7 +113,7 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 			yield a.path.substring(0, a.path.length() - 4).substring(a.package1.length() + 1) + x.path;
 		}
 		default -> throw new IllegalArgumentException();
-		}, x -> x, (v, w) -> w, LinkedHashMap::new));
+		}, x -> x, (_, w) -> w, LinkedHashMap::new));
 //		System.out.println("ResourceHandlerFactory.resources, m=" + m);
 		return m;
 	});
@@ -169,7 +169,7 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 			for (var i = s3.iterator(); i.hasNext();) {
 				var p = i.next();
 //				System.out.println("p=" + p);
-				var q = Stream.iterate(p, Path::getParent).limit(c + 1).reduce((a, b) -> b).orElse(null);
+				var q = Stream.iterate(p, Path::getParent).limit(c + 1).reduce((_, b) -> b).orElse(null);
 //				System.out.println("q=" + q);
 				Files.walkFileTree(p, new SimpleFileVisitor<Path>() {
 

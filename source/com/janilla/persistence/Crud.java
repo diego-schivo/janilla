@@ -61,7 +61,7 @@ public class Crud<E> {
 	public E create(E entity) {
 //		System.out.println("Crud.create entity=" + entity);
 
-		return database.perform((ss, ii) -> {
+		return database.perform((ss, _) -> {
 			class A {
 
 				E e;
@@ -81,14 +81,14 @@ public class Crud<E> {
 	public E read(long id) {
 		if (id <= 0)
 			return null;
-		var o = database.perform((ss, ii) -> ss.perform(type.getSimpleName(), s -> s.read(id)), false);
+		var o = database.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> s.read(id)), false);
 		return o != null ? parser.apply(o) : null;
 	}
 
 	public Stream<E> read(long[] ids) {
 		if (ids == null || ids.length == 0)
 			return Stream.empty();
-		return database.perform((ss, ii) -> {
+		return database.perform((ss, _) -> {
 			var b = Stream.<E>builder();
 			for (var i : ids) {
 				var o = ss.perform(type.getSimpleName(), s -> s.read(i));
@@ -101,7 +101,7 @@ public class Crud<E> {
 	public E update(long id, UnaryOperator<E> operator) {
 		if (id <= 0)
 			return null;
-		return database.perform((ss, ii) -> {
+		return database.perform((ss, _) -> {
 			class A {
 
 				E e1;
@@ -123,7 +123,7 @@ public class Crud<E> {
 	public E delete(long id) {
 		if (id <= 0)
 			return null;
-		return database.perform((ss, ii) -> {
+		return database.perform((ss, _) -> {
 			var o = ss.perform(type.getSimpleName(), s -> s.delete(id));
 			var e = parser.apply(o);
 			updateIndexes(e, null, id);
@@ -169,13 +169,13 @@ public class Crud<E> {
 	public long count(String index, Object key) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return database.perform((ss, ii) -> ii.perform(n, i -> i.count(key)), false);
+		return database.perform((_, ii) -> ii.perform(n, i -> i.count(key)), false);
 	}
 
 	public long find(String index, Object key) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return database.perform((ss, ii) -> ii.perform(n, i -> i.list(key)
+		return database.perform((_, ii) -> ii.perform(n, i -> i.list(key)
 				.mapToLong(o -> (Long) (o instanceof Object[] oo ? oo[oo.length - 1] : o)).findFirst().orElse(0)),
 				false);
 	}
@@ -186,9 +186,9 @@ public class Crud<E> {
 //		System.out.println("n=" + n + ", keys=" + Arrays.toString(keys));
 		switch (keys.length) {
 		case 0:
-			return database.perform((ss, ii) -> ii.perform(n, i -> getIndexIds(i.values()).toArray()), false);
+			return database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.values()).toArray()), false);
 		case 1:
-			return database.perform((ss, ii) -> ii.perform(n, i -> getIndexIds(i.list(keys[0])).toArray()), false);
+			return database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.list(keys[0])).toArray()), false);
 		}
 		class A {
 
@@ -196,13 +196,13 @@ public class Crud<E> {
 
 			Object v;
 		}
-		List<A> aa = database.perform((ss, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
+		List<A> aa = database.perform((_, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
 			var a = new A();
 			a.vv = i.list(k).iterator();
 			a.v = a.vv.hasNext() ? a.vv.next() : null;
 			return a;
 		}).toList()), false);
-		return LongStream.iterate(0, l -> {
+		return LongStream.iterate(0, _ -> {
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			var a = aa.stream().max((a1, a2) -> {
 				var c1 = a1.v != null ? (Comparable) ((Object[]) a1.v)[0] : null;
@@ -223,7 +223,7 @@ public class Crud<E> {
 				.collect(Collectors.joining("."));
 		switch (keys.length) {
 		case 0:
-			return database.perform((ss, ii) -> ii.perform(n, i -> {
+			return database.perform((_, ii) -> ii.perform(n, i -> {
 				var jj = getIndexIds(i.values());
 				if (skip > 0)
 					jj = jj.skip(skip);
@@ -232,7 +232,7 @@ public class Crud<E> {
 				return new Page(jj.toArray(), i.count());
 			}), false);
 		case 1:
-			return database.perform((ss, ii) -> ii.perform(n, i -> {
+			return database.perform((_, ii) -> ii.perform(n, i -> {
 				var jj = getIndexIds(i.list(keys[0]));
 				if (skip > 0)
 					jj = jj.skip(skip);
@@ -250,7 +250,7 @@ public class Crud<E> {
 			long l;
 		}
 		List<A> aa;
-		aa = database.perform((ss, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
+		aa = database.perform((_, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
 			var a = new A();
 			a.vv = i.list(k).iterator();
 			a.v = a.vv.hasNext() ? a.vv.next() : null;
@@ -258,7 +258,7 @@ public class Crud<E> {
 			return a;
 		}).toList()), false);
 
-		return new Page(LongStream.iterate(0, l -> {
+		return new Page(LongStream.iterate(0, _ -> {
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			var a = aa.stream().max((a1, a2) -> {
 				var c1 = a1.v != null ? (Comparable) ((Object[]) a1.v)[0] : null;
@@ -277,13 +277,13 @@ public class Crud<E> {
 	public long[] filter(String index, Predicate<Object> operation) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return database.perform((ss, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toArray()), false);
+		return database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toArray()), false);
 	}
 
 	public Page filter(String index, Predicate<Object> operation, long skip, long limit) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return database.perform((ss, ii) -> ii.perform(n,
+		return database.perform((_, ii) -> ii.perform(n,
 				i -> new Page(getIndexIds(i.valuesIf(operation)).skip(skip).limit(limit).toArray(),
 						i.countIf(operation))),
 				false);
@@ -297,7 +297,7 @@ public class Crud<E> {
 			var e = ee.get(0);
 			return filter(e.getKey(), skip, limit, e.getValue());
 		}
-		return database.perform((ss, ii) -> {
+		return database.perform((_, ii) -> {
 			class A {
 
 				PrimitiveIterator.OfLong lli;
@@ -325,7 +325,7 @@ public class Crud<E> {
 					return null;
 				});
 				var a = new A();
-				a.lli = LongStream.iterate(0, x -> {
+				a.lli = LongStream.iterate(0, _ -> {
 					@SuppressWarnings({ "rawtypes", "unchecked" })
 					var b = bb.stream().max((b1, b2) -> {
 						var v1 = b1.v != null ? (Comparable) b1.v[0] : null;
@@ -347,7 +347,7 @@ public class Crud<E> {
 				long l;
 			}
 			var c = new C();
-			var t = LongStream.iterate(0, x -> {
+			var t = LongStream.iterate(0, _ -> {
 				for (;;) {
 					var ll = aa.stream().mapToLong(a -> a.l).toArray();
 //					System.out.println("ll=" + Arrays.toString(ll));
@@ -447,7 +447,7 @@ public class Crud<E> {
 		var n = Stream.of(type.getSimpleName(), name).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
 //		System.out.println("Crud.updateIndex, n=" + n + ", remove=" + remove + ", add=" + add);
-		database.perform((ss, ii) -> ii.perform(n, i -> {
+		database.perform((_, ii) -> ii.perform(n, i -> {
 			if (remove != null)
 				for (var e : remove.entrySet())
 					i.remove(e.getKey(), new Object[] { e.getValue() });

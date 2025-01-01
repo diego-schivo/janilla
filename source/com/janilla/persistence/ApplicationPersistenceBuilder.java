@@ -95,7 +95,7 @@ public class ApplicationPersistenceBuilder {
 			for (var t : factory.getTypes())
 				p.configure(t);
 
-			d.setInitializeStore((n, x) -> {
+			d.setInitializeStore((_, x) -> {
 				@SuppressWarnings("unchecked")
 				var s = (Store<String>) x;
 				s.setElementHelper(ElementHelper.STRING);

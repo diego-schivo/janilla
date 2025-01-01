@@ -53,7 +53,7 @@ public class ReflectionValueIterator extends ValueIterator {
 		}
 		if (i == null) {
 			var c = Modifier.isPublic(object.getClass().getModifiers()) ? object.getClass() : switch (object) {
-			case Map.Entry<?, ?> x -> Map.Entry.class;
+			case Map.Entry<?, ?> _ -> Map.Entry.class;
 			default -> throw new RuntimeException();
 			};
 			if (c.isEnum())

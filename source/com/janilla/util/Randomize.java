@@ -37,7 +37,7 @@ public interface Randomize {
 	static String word(int minLength, int maxLength) {
 		var r = ThreadLocalRandom.current();
 		var s = IntStream.range(0, r.nextInt(minLength, maxLength + 1))
-				.mapToObj(i -> Character.toString(r.nextInt('a', 'z' + 1))).collect(Collectors.joining());
+				.mapToObj(_ -> Character.toString(r.nextInt('a', 'z' + 1))).collect(Collectors.joining());
 		return s;
 	}
 
@@ -51,7 +51,7 @@ public interface Randomize {
 
 	static <E> Stream<E> elements(int minCount, int maxCount, Supplier<E> element) {
 		var r = ThreadLocalRandom.current();
-		var s = IntStream.range(0, r.nextInt(minCount, maxCount + 1)).mapToObj(i -> element.get());
+		var s = IntStream.range(0, r.nextInt(minCount, maxCount + 1)).mapToObj(_ -> element.get());
 		return s;
 	}
 

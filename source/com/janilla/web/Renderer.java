@@ -25,7 +25,6 @@
 package com.janilla.web;
 
 import java.lang.reflect.AnnotatedElement;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -34,32 +33,30 @@ import com.janilla.reflect.Reflection;
 
 public class Renderer<T> implements Function<T, String> {
 
-	protected static final Pattern PLACEHOLDER = Pattern.compile(
-			">\\$\\{([\\w.-]*)\\}</" + "|" + "<!--\\$\\{([\\w.-]*)\\}-->" + "|" + "[\\w-]+=\"\\$\\{([\\w.-]*)\\}\"");
+	protected static final Pattern PLACEHOLDER = Pattern.compile(">\\$\\{([\\w.-]*)\\}</" + "|"
+			+ "<!--\\$\\{([\\w.-]*)\\}-->" + "|" + "[\\w-]+=\"[^\"]*\\$\\{([\\w.-]*)\\}.*?\"");
 
-	public static Map<String, Object> merge(Object... objects) {
-		var m = new LinkedHashMap<String, Object>();
-		for (var o : objects)
-			switch (o) {
-			case Map<?, ?> x:
-				@SuppressWarnings("unchecked")
-				var y = (Map<String, Object>) x;
-				m.putAll(y);
-				break;
-			default:
-				Reflection.properties(o.getClass()).forEach(x -> m.put(x.name(), x.get(o)));
-				break;
-			}
-		return m;
-	}
+//	public static Map<String, Object> merge(Object... objects) {
+//		var m = new LinkedHashMap<String, Object>();
+//		for (var o : objects)
+//			switch (o) {
+//			case Map<?, ?> x:
+//				@SuppressWarnings("unchecked")
+//				var y = (Map<String, Object>) x;
+//				m.putAll(y);
+//				break;
+//			default:
+//				Reflection.properties(o.getClass()).forEach(x -> m.put(x.name(), x.get(o)));
+//				break;
+//			}
+//		return m;
+//	}
 
 	protected final RenderableFactory factory;
 
 	protected String templateName;
 
 	protected Map<String, String> templates;
-
-//	protected BiFunction<AnnotatedElement, Object, Renderable<?>> renderableOf;
 
 	public Renderer(RenderableFactory factory) {
 		this.factory = factory;
@@ -73,32 +70,23 @@ public class Renderer<T> implements Function<T, String> {
 	protected String interpolate(String template, Object value) {
 		return PLACEHOLDER.matcher(template).replaceAll(x -> {
 			var i = 1;
-			AnnotatedElement ae = null;
-			Object v = null;
+			AnnotatedValue f = null;
 			for (; i <= 3; i++) {
 				var e = x.group(i);
 				if (e == null)
 					continue;
-				v = value;
+				f = new AnnotatedValue(null, value);
 				if (!e.isEmpty())
 					for (var k : e.split("\\.")) {
-						if (v == null)
+						if (f.value == null)
 							break;
-						switch (v) {
-						case Map<?, ?> z:
-							ae = null;
-							v = z.get(k);
-							break;
-						default:
-							var p = Reflection.property(v.getClass(), k);
-							ae = p != null ? p.annotatedType() : null;
-							v = p != null ? p.get(v) : null;
-							break;
-						}
-//						System.out.println("k=" + k + ", ae=" + ae + ", v=" + v);
+						f = evaluate(f, k);
+//						System.out.println("k=" + k + ", f=" + f);
 					}
 				break;
 			}
+			var ae = f.annotated;
+			var v = f.value;
 			var r = v instanceof Renderable<?> y ? y : v != null ? factory.createRenderable(ae, v) : null;
 			var r2 = r != null ? r.renderer() : null;
 			if (r2 != null && r2.templates == null)
@@ -108,11 +96,26 @@ public class Renderer<T> implements Function<T, String> {
 			return switch (i) {
 			case 1 -> ">" + (v != null ? v : "") + "</";
 			case 2 -> v != null ? v.toString() : "";
-			case 3 -> Boolean.FALSE.equals(v) ? ""
-					: x.group().substring(0, x.group().indexOf('='))
-							+ (Boolean.TRUE.equals(v) ? "" : ("=\"" + (v != null ? v : "") + "\""));
+//			case 3 -> Boolean.FALSE.equals(v) ? ""
+//					: x.group().substring(0, x.group().indexOf('='))
+//							+ (Boolean.TRUE.equals(v) ? "" : ("=\"" + (v != null ? v : "") + "\""));
+			case 3 -> template.substring(x.start(), x.start(3) - 2) + (v != null ? v : "")
+					+ template.substring(x.end(3) + 1, x.end());
 			default -> throw new RuntimeException();
 			};
 		});
+	}
+
+	protected AnnotatedValue evaluate(AnnotatedValue x, String k) {
+		switch (x.value) {
+		case Map<?, ?> z:
+			return new AnnotatedValue(null, z.get(k));
+		default:
+			var p = Reflection.property(x.value.getClass(), k);
+			return new AnnotatedValue(p != null ? p.annotatedType() : null, p != null ? p.get(x.value) : null);
+		}
+	}
+
+	public record AnnotatedValue(AnnotatedElement annotated, Object value) {
 	}
 }

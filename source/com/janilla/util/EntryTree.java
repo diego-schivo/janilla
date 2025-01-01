@@ -56,7 +56,7 @@ public class EntryTree extends LinkedHashMap<String, Object> {
 				if (j < 0 || j >= 1000)
 					throw new ArrayIndexOutOfBoundsException();
 				@SuppressWarnings("unchecked")
-				var a = (List<Object>) n.computeIfAbsent(l[0], x -> new ArrayList<Object>());
+				var a = (List<Object>) n.computeIfAbsent(l[0], _ -> new ArrayList<Object>());
 				while (a.size() <= j)
 					a.add(null);
 				if (i < k.length - 1) {
@@ -71,7 +71,7 @@ public class EntryTree extends LinkedHashMap<String, Object> {
 					a.set(j, t.getValue());
 			} else if (i < k.length - 1) {
 				@SuppressWarnings("unchecked")
-				var o = (Map<String, Object>) n.computeIfAbsent(k[i], x -> new LinkedHashMap<String, Object>());
+				var o = (Map<String, Object>) n.computeIfAbsent(k[i], _ -> new LinkedHashMap<String, Object>());
 				n = o;
 			} else
 				n.put(k[i], t.getValue());

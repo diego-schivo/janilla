@@ -197,7 +197,7 @@ public interface Property {
 
 	static String name(Member member) {
 		return switch (member) {
-		case Field f -> member.getName();
+		case Field _ -> member.getName();
 		case Method n -> {
 			var g = n.getReturnType() != Void.TYPE
 					&& n.getParameterCount() == (Modifier.isStatic(n.getModifiers()) ? 1 : 0) ? n : null;

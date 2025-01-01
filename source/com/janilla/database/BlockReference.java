@@ -73,7 +73,7 @@ public record BlockReference(long self, long position, int capacity) {
 	public static BlockReference read(SeekableByteChannel channel, long position) throws IOException {
 		channel.position(position);
 		var b = ByteBuffer.allocate(BYTES);
-		IO.repeat(x -> channel.read(b), b.remaining());
+		IO.repeat(_ -> channel.read(b), b.remaining());
 		return new BlockReference(position, b.getLong(0), b.getInt(Long.BYTES));
 	}
 
@@ -82,6 +82,6 @@ public record BlockReference(long self, long position, int capacity) {
 		var b = ByteBuffer.allocate(BYTES);
 		b.putLong(0, reference.position());
 		b.putInt(Long.BYTES, reference.capacity());
-		IO.repeat(x -> channel.write(b), b.remaining());
+		IO.repeat(_ -> channel.write(b), b.remaining());
 	}
 }

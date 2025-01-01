@@ -83,7 +83,7 @@ public abstract class IO {
 
 		acceptPackagePaths(package1, p -> {
 //			System.out.println("p=" + p);
-			var r = Stream.iterate(p, Path::getParent).limit(c + 1).reduce((a, b) -> b).orElse(null);
+			var r = Stream.iterate(p, Path::getParent).limit(c + 1).reduce((_, b) -> b).orElse(null);
 			try {
 				Files.walkFileTree(p, new SimpleFileVisitor<Path>() {
 
@@ -206,12 +206,12 @@ public abstract class IO {
 
 	public static void transfer(ReadableByteChannel source, WritableByteChannel destination) throws IOException {
 		var b = ByteBuffer.allocate(IO.DEFAULT_BUFFER_CAPACITY);
-		repeat(x -> {
+		repeat(_ -> {
 			b.clear();
 			var n = source.read(b);
 			if (n > 0) {
 				b.flip();
-				repeat(y -> destination.write(b), n);
+				repeat(_ -> destination.write(b), n);
 			}
 			return n;
 		}, Integer.MAX_VALUE);
@@ -222,7 +222,7 @@ public abstract class IO {
 	}
 
 	public static int write(ByteBuffer source, WritableByteChannel destination) throws IOException {
-		return repeat(x -> destination.write(source), source.remaining());
+		return repeat(_ -> destination.write(source), source.remaining());
 	}
 
 	public static int repeat(IntUnaryOperator operation, int target) throws IOException {

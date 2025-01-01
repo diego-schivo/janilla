@@ -68,7 +68,7 @@ public class Stores {
 						throw new UncheckedIOException(e);
 					}
 				});
-				ss.setInitializeStore((n, x) -> {
+				ss.setInitializeStore((_, x) -> {
 					@SuppressWarnings("unchecked")
 					var s = (Store<String>) x;
 					s.setElementHelper(ElementHelper.STRING);
@@ -160,7 +160,7 @@ public class Stores {
 				else {
 					bt.getChannel().position(x.attributes().position());
 					var b = ByteBuffer.allocate(x.attributes().capacity());
-					IO.repeat(y -> bt.getChannel().read(b), b.remaining());
+					IO.repeat(_ -> bt.getChannel().read(b), b.remaining());
 					b.position(0);
 					@SuppressWarnings("unchecked")
 					var m = (Map<String, Object>) Json.parse(ElementHelper.STRING.getElement(b));
@@ -186,7 +186,7 @@ public class Stores {
 				b.put(0, bb);
 				try {
 					bt.getChannel().position(aar.position());
-					IO.repeat(y -> bt.getChannel().write(b), b.remaining());
+					IO.repeat(_ -> bt.getChannel().write(b), b.remaining());
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}

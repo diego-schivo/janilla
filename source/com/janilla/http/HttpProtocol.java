@@ -41,6 +41,8 @@ import com.janilla.web.HandleException;
 
 public class HttpProtocol implements Protocol {
 
+	public static final ScopedValue<HttpExchange> HTTP_EXCHANGE = ScopedValue.newInstance();
+
 	protected SSLContext sslContext;
 
 	protected HttpHandler handler;
@@ -118,7 +120,7 @@ public class HttpProtocol implements Protocol {
 		}
 		if (f instanceof Frame.Headers || f instanceof Frame.Data) {
 			var si = Integer.valueOf(f.streamIdentifier());
-			var ff = c.getStreams().computeIfAbsent(si, x -> new ArrayList<>());
+			var ff = c.getStreams().computeIfAbsent(si, _ -> new ArrayList<>());
 			ff.add(f);
 			var es = f instanceof Frame.Headers x ? x.endStream() : f instanceof Frame.Data x ? x.endStream() : false;
 			if (es) {
@@ -144,27 +146,29 @@ public class HttpProtocol implements Protocol {
 					var ex = createExchange(rq);
 					ex.setRequest(rq);
 					ex.setResponse(rs);
-					@SuppressWarnings("unused")
-					var k = true;
-					Exception e;
-					try {
-						k = handler.handle(ex);
-						e = null;
-					} catch (HandleException x) {
-						e = x.getCause();
-					} catch (UncheckedIOException x) {
-						e = x.getCause();
-					} catch (Exception x) {
-						e = x;
-					}
-					if (e != null)
+					ScopedValue.callWhere(HTTP_EXCHANGE, ex, () -> {
+						var k = true;
+						Exception e;
 						try {
-							e.printStackTrace();
-							ex.setException(e);
 							k = handler.handle(ex);
+							e = null;
+						} catch (HandleException x) {
+							e = x.getCause();
+						} catch (UncheckedIOException x) {
+							e = x.getCause();
 						} catch (Exception x) {
-							k = false;
+							e = x;
 						}
+						if (e != null)
+							try {
+								e.printStackTrace();
+								ex.setException(e);
+								k = handler.handle(ex);
+							} catch (Exception x) {
+								k = false;
+							}
+						return k;
+					});
 //					System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
 //							+ ", rs=" + rs.getStatus() + ", k=" + k);
 					var off = new ArrayList<Frame>(List.of(new Frame.Headers(false, true,

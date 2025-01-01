@@ -78,12 +78,12 @@ public class Persistence {
 
 	protected void createStoresAndIndexes() {
 		for (var t : configuration.cruds.keySet())
-			database.perform((ss, ii) -> {
+			database.perform((ss, _) -> {
 				ss.create(t.getSimpleName());
 				return null;
 			}, true);
 		for (var k : configuration.indexInitializers.keySet())
-			database.perform((ss, ii) -> {
+			database.perform((_, ii) -> {
 				ii.create(k);
 				return null;
 			}, true);

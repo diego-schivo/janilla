@@ -44,7 +44,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 			ch.startTransaction();
 			{
 				var b = ByteBuffer.wrap("foobar".getBytes());
-				IO.repeat(x -> ch.write(b), b.remaining());
+				IO.repeat(_ -> ch.write(b), b.remaining());
 			}
 			ch.commitTransaction();
 
@@ -54,7 +54,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 			{
 				ch.position(3);
 				var b = ByteBuffer.wrap("bazqux".getBytes());
-				IO.repeat(x -> ch.write(b), b.remaining());
+				IO.repeat(_ -> ch.write(b), b.remaining());
 
 				new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 				new ProcessBuilder("hexdump", "-C", tf.toString()).inheritIO().start().waitFor();
@@ -100,7 +100,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 			if (b.position() < Long.BYTES + Integer.BYTES) {
 				b.limit(b.capacity());
 				var x = b;
-				IO.repeat(y -> transactionChannel.read(x), b.remaining());
+				IO.repeat(_ -> transactionChannel.read(x), b.remaining());
 			}
 
 			var q = b.getLong(0);
@@ -119,13 +119,13 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 				if (!b.hasRemaining()) {
 					b.clear();
 					var x = b;
-					IO.repeat(y -> transactionChannel.read(x), b.remaining());
+					IO.repeat(_ -> transactionChannel.read(x), b.remaining());
 					z = b.position();
 					b.limit(Math.min(z, l - n));
 					b.position(0);
 				}
 				var x = b;
-				n += IO.repeat(y -> channel.write(x), Math.min(l - n, b.remaining()));
+				n += IO.repeat(_ -> channel.write(x), Math.min(l - n, b.remaining()));
 			}
 			b.limit(z);
 			b.compact();
@@ -151,9 +151,9 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 					b.putLong(z ? r.to() : r.from());
 					b.putInt(z ? -l : l);
 					channel.position(r.from());
-					IO.repeat(x -> channel.read(b), b.remaining());
+					IO.repeat(_ -> channel.read(b), b.remaining());
 					b.flip();
-					IO.repeat(x -> transactionChannel.write(b), b.remaining());
+					IO.repeat(_ -> transactionChannel.write(b), b.remaining());
 					channel.position(p);
 				}
 		}

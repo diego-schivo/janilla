@@ -174,10 +174,10 @@ public class Store<E> {
 			bt.getChannel().position(r.position());
 			var b = ByteBuffer.allocate(r.capacity());
 			b.put(0, bb);
-			IO.repeat(x -> bt.getChannel().write(b), b.remaining());
+			IO.repeat(_ -> bt.getChannel().write(b), b.remaining());
 			r = new BlockReference(-1, r.position(), r.capacity());
 			bt.add(new IdAndElement(id, r));
-			attributes.compute("size", (k, v) -> v == null ? 1L : (Long) v + 1);
+			attributes.compute("size", (_, v) -> v == null ? 1L : (Long) v + 1);
 			return id;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
@@ -211,7 +211,7 @@ public class Store<E> {
 				t.getChannel().position(p);
 				var d = ByteBuffer.allocate(r != null ? r.capacity() : j.element().capacity());
 				d.put(0, c);
-				IO.repeat(x -> t.getChannel().write(d), d.remaining());
+				IO.repeat(_ -> t.getChannel().write(d), d.remaining());
 				return r != null ? new IdAndElement(id, new BlockReference(-1, r.position(), r.capacity())) : null;
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
@@ -226,7 +226,7 @@ public class Store<E> {
 		if (i == null)
 			return null;
 		var e = readElement(i.element());
-		attributes.compute("size", (k, v) -> (Long) v - 1);
+		attributes.compute("size", (_, v) -> (Long) v - 1);
 		return e;
 	}
 
@@ -248,7 +248,7 @@ public class Store<E> {
 			var ch = btree.get().getChannel();
 			ch.position(reference.position());
 			var b = ByteBuffer.allocate(reference.capacity());
-			IO.repeat(x -> ch.read(b), b.remaining());
+			IO.repeat(_ -> ch.read(b), b.remaining());
 			b.position(0);
 			return elementHelper.getElement(b);
 		} catch (IOException e) {

@@ -39,9 +39,9 @@ public interface Jwt {
 
 	public static void main(String[] args) {
 		var h = Stream.of(Map.entry("alg", "HS256"), Map.entry("typ", "JWT"))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v, w) -> v, LinkedHashMap::new));
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v, _) -> v, LinkedHashMap::new));
 		var p = Stream.of(Map.entry("loggedInAs", "admin"), Map.entry("iat", 1422779638))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v, w) -> v, LinkedHashMap::new));
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v, _) -> v, LinkedHashMap::new));
 		var t = Jwt.generateToken(h, p, "secretkey");
 		System.out.println(t);
 		assert t.equals(

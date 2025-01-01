@@ -85,7 +85,7 @@ public class Converter {
 			};
 		if (r == Boolean.class || r == Boolean.TYPE)
 			return switch (input) {
-			case Boolean x -> input;
+			case Boolean _ -> input;
 			case String x -> Boolean.parseBoolean(x);
 			default -> throw new RuntimeException();
 			};
@@ -93,7 +93,7 @@ public class Converter {
 			return Instant.parse((String) input);
 		if (r == Integer.class || r == Integer.TYPE)
 			return switch (input) {
-			case Integer x -> input;
+			case Integer _ -> input;
 			case Long x -> x.intValue();
 			case String x -> Integer.parseInt(x);
 			default -> throw new RuntimeException();
@@ -105,7 +105,7 @@ public class Converter {
 		if (r == Long.class || r == Long.TYPE)
 			return switch (input) {
 			case Integer x -> x.longValue();
-			case Long x -> input;
+			case Long _ -> input;
 			case String x -> Long.parseLong(x);
 			default -> throw new RuntimeException();
 			};
@@ -179,7 +179,7 @@ public class Converter {
 		// System.out.println("d=" + d);
 		var tt = target.isRecord()
 				? Arrays.stream(target.getRecordComponents()).collect(
-						Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, y) -> x, LinkedHashMap::new))
+						Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, _) -> x, LinkedHashMap::new))
 				: null;
 		Object o;
 		try {

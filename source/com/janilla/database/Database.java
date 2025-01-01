@@ -70,7 +70,7 @@ public class Database {
 					d.setMemory(m);
 					d.setStoresRoot(BlockReference.BYTES);
 					d.setIndexesRoot(2 * BlockReference.BYTES);
-					d.setInitializeStore((n, x) -> {
+					d.setInitializeStore((_, x) -> {
 						@SuppressWarnings("unchecked")
 						var s = (Store<String>) x;
 						s.setElementHelper(ElementHelper.STRING);
@@ -81,7 +81,7 @@ public class Database {
 							return id;
 						});
 					});
-					d.setInitializeIndex((n, x) -> {
+					d.setInitializeIndex((_, x) -> {
 						@SuppressWarnings("unchecked")
 						var i = (Index<String, Object[]>) x;
 						i.setKeyHelper(ElementHelper.STRING);

@@ -71,7 +71,7 @@ public class Indexes {
 						throw new UncheckedIOException(e);
 					}
 				});
-				ii.setInitializeIndex((n, x) -> {
+				ii.setInitializeIndex((_, x) -> {
 					@SuppressWarnings("unchecked")
 					var i = (Index<String, Object[]>) x;
 					i.setKeyHelper(ElementHelper.STRING);
@@ -154,7 +154,7 @@ public class Indexes {
 				else {
 					bt.getChannel().position(x.attributes().position());
 					var b = ByteBuffer.allocate(x.attributes().capacity());
-					IO.repeat(y -> bt.getChannel().read(b), b.remaining());
+					IO.repeat(_ -> bt.getChannel().read(b), b.remaining());
 					b.position(0);
 					aa1 = ElementHelper.STRING.getElement(b);
 				}
@@ -182,7 +182,7 @@ public class Indexes {
 				b.put(0, bb);
 				try {
 					bt.getChannel().position(aar.position());
-					IO.repeat(y -> bt.getChannel().write(b), b.remaining());
+					IO.repeat(_ -> bt.getChannel().write(b), b.remaining());
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}

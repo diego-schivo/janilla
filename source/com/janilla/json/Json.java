@@ -155,7 +155,7 @@ public interface Json {
 				}
 				previous = t;
 			}
-		}, (a, b) -> a, StringBuilder::toString);
+		}, (a, _) -> a, StringBuilder::toString);
 	}
 
 	static Collector<JsonToken<?>, ?, Object> parseCollector() {
@@ -212,7 +212,7 @@ public interface Json {
 			default:
 				break;
 			}
-		}, (a, b) -> a, a -> {
+		}, (a, _) -> a, a -> {
 			if (a.size() != 1)
 				throw new RuntimeException();
 			return a.remove(0);

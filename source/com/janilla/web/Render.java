@@ -33,8 +33,8 @@ import java.lang.annotation.Target;
 @Target({ ElementType.RECORD_COMPONENT, ElementType.TYPE, ElementType.TYPE_USE })
 public @interface Render {
 
+	String template() default "";
+
 	@SuppressWarnings("rawtypes")
 	Class<? extends Renderer> renderer() default Renderer.class;
-
-	String template() default "";
 }

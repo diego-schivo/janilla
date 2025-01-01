@@ -54,7 +54,7 @@ public record HeaderField(String name, String value) {
 				v = v.substring(1, v.length() - 1);
 			x.setProperty(k, v);
 			return x;
-		}, (x1, x2) -> x1);
+		}, (x1, _) -> x1);
 		return new ComplexValue(s1, p);
 	}
 

@@ -163,7 +163,7 @@ public class HeaderTable {
 				list.add(0, header);
 			else
 				list.add(header);
-			map.compute(header.name(), (k, v) -> {
+			map.compute(header.name(), (_, v) -> {
 				if (v == null)
 					v = new ArrayList<>();
 				v.add(new IndexAndHeader(addCount, header));

@@ -185,7 +185,7 @@ public abstract class Http {
 				channel.write(bb);
 				channel.write(ByteBuffer.wrap(x.data()));
 				break;
-			case Frame.Goaway x:
+			case Frame.Goaway _:
 				throw new RuntimeException();
 			case Frame.Headers x:
 				var he = new HeaderEncoder();
@@ -222,11 +222,11 @@ public abstract class Http {
 				channel.write(bb);
 				channel.write(ByteBuffer.wrap(bb2));
 				break;
-			case Frame.Ping x:
+			case Frame.Ping _:
 				throw new RuntimeException();
-			case Frame.Priority x:
+			case Frame.Priority _:
 				throw new RuntimeException();
-			case Frame.RstStream x:
+			case Frame.RstStream _:
 				throw new RuntimeException();
 			case Frame.Settings x:
 				pl = x.parameters().size() * (Short.BYTES + Integer.BYTES);
@@ -245,7 +245,7 @@ public abstract class Http {
 				bb.flip();
 				channel.write(bb);
 				break;
-			case Frame.WindowUpdate x:
+			case Frame.WindowUpdate _:
 				throw new RuntimeException();
 			}
 		} catch (IOException e) {

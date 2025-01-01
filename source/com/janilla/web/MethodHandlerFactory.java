@@ -161,7 +161,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 				var p = o;
 				var i = ii.computeIfAbsent(m.getAnnotation(Handle.class).path(),
-						k -> new Invocable(p, new HashMap<>()));
+						_ -> new Invocable(p, new HashMap<>()));
 				MethodHandle h;
 				try {
 					h = MethodHandles.publicLookup().unreflect(m);
@@ -180,7 +180,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		var jj = kk.stream().sorted(Comparator.comparingInt((String x) -> {
 			var i = x.indexOf('(');
 			return i >= 0 ? i : x.length();
-		}).reversed()).collect(Collectors.toMap(k -> Pattern.compile(k), ii::get, (v, w) -> v, LinkedHashMap::new));
+		}).reversed()).collect(Collectors.toMap(k -> Pattern.compile(k), ii::get, (v, _) -> v, LinkedHashMap::new));
 		ii.keySet().removeAll(kk);
 //		System.out.println("m=" + m + "\nx=" + x);
 		return jj;
@@ -452,7 +452,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			default:
 				if (c.isRecord()) {
 					var tt = Arrays.stream(c.getRecordComponents()).collect(
-							Collectors.toMap(x -> x.getName(), x -> x.getType(), (v, w) -> v, LinkedHashMap::new));
+							Collectors.toMap(x -> x.getName(), x -> x.getType(), (v, _) -> v, LinkedHashMap::new));
 					var aa = tt.entrySet().stream().map(x -> {
 						var n = x.getKey();
 						var t = x.getValue();

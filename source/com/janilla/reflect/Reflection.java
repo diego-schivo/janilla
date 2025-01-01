@@ -114,7 +114,7 @@ public class Reflection {
 			var s = m.getReturnType() == Void.TYPE && m.getParameterCount() == 1 ? m : null;
 			if (g != null || s != null) {
 				var k = Property.name(m);
-				var b = mm.computeIfAbsent(k, l -> new Member[2]);
+				var b = mm.computeIfAbsent(k, _ -> new Member[2]);
 				if (g != null)
 					b[0] = g;
 				if (s != null)
@@ -124,10 +124,10 @@ public class Reflection {
 		for (var f : class1.getFields()) {
 			if (Modifier.isStatic(f.getModifiers()))
 				continue;
-			mm.computeIfAbsent(Property.name(f), l -> new Member[] { f });
+			mm.computeIfAbsent(Property.name(f), _ -> new Member[] { f });
 		}
 		if (class1.isArray())
-			mm.computeIfAbsent("length", l -> {
+			mm.computeIfAbsent("length", _ -> {
 				Method m;
 				try {
 					m = Array.class.getMethod("getLength", Object.class);
@@ -163,6 +163,6 @@ public class Reflection {
 					}
 					return f != null && f.isAnnotationPresent(Flatten.class) ? properties(f.getType())
 							.filter(q -> !mm.containsKey(q.name())).map(q -> Property.of(p, q)) : Stream.of(p);
-				}).collect(Collectors.toMap(Property::name, p -> p, (v, w) -> v, LinkedHashMap::new));
+				}).collect(Collectors.toMap(Property::name, p -> p, (v, _) -> v, LinkedHashMap::new));
 	}
 }
