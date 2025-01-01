@@ -25,32 +25,21 @@
 package com.janilla.web;
 
 import java.lang.reflect.AnnotatedElement;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import com.janilla.reflect.Reflection;
 
 public class Renderer<T> implements Function<T, String> {
 
-	protected static final Pattern PLACEHOLDER = Pattern.compile(">\\$\\{([\\w.-]*)\\}</" + "|"
-			+ "<!--\\$\\{([\\w.-]*)\\}-->" + "|" + "[\\w-]+=\"[^\"]*\\$\\{([\\w.-]*)\\}.*?\"");
+	protected static final Pattern SEARCH_HTML = Pattern.compile(">([^<]*?\\$\\{.*?\\}.*?)</" + "|"
+			+ "<!--(\\$\\{.*?\\})-->" + "|" + "[\\w-]+=\"([^\"]*?\\$\\{.*?\\}.*?)\"");
 
-//	public static Map<String, Object> merge(Object... objects) {
-//		var m = new LinkedHashMap<String, Object>();
-//		for (var o : objects)
-//			switch (o) {
-//			case Map<?, ?> x:
-//				@SuppressWarnings("unchecked")
-//				var y = (Map<String, Object>) x;
-//				m.putAll(y);
-//				break;
-//			default:
-//				Reflection.properties(o.getClass()).forEach(x -> m.put(x.name(), x.get(o)));
-//				break;
-//			}
-//		return m;
-//	}
+	protected static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{(.*?)\\}");
 
 	protected final RenderableFactory factory;
 
@@ -68,41 +57,46 @@ public class Renderer<T> implements Function<T, String> {
 	}
 
 	protected String interpolate(String template, Object value) {
-		return PLACEHOLDER.matcher(template).replaceAll(x -> {
-			var i = 1;
-			AnnotatedValue f = null;
-			for (; i <= 3; i++) {
-				var e = x.group(i);
-				if (e == null)
-					continue;
-				f = new AnnotatedValue(null, value);
+		return SEARCH_HTML.matcher(template).replaceAll(x -> {
+			var g = IntStream.rangeClosed(1, 3).filter(y -> x.group(y) != null).findFirst().getAsInt();
+			var gs = x.group(g);
+			var vv = new ArrayList<>();
+			var s = PLACEHOLDER.matcher(gs).replaceAll(y -> {
+				var e = y.group(1);
+				var av = new AnnotatedValue(null, value);
 				if (!e.isEmpty())
 					for (var k : e.split("\\.")) {
-						if (f.value == null)
+						if (av.value == null)
 							break;
-						f = evaluate(f, k);
-//						System.out.println("k=" + k + ", f=" + f);
+						av = evaluate(av, k);
+//						System.out.println("Renderer.interpolate, k=" + k + ", av=" + av);
 					}
-				break;
+				var v = av.value;
+				var r = v instanceof Renderable<?> z ? z : v != null ? factory.createRenderable(av.annotated, v) : null;
+				var r2 = r != null ? r.renderer() : null;
+				if (r2 != null && r2.templates == null)
+					r2.templates = templates;
+				if (r2 != null)
+					v = r.get();
+				vv.add(v);
+				return Objects.toString(v, "");
+			});
+			s = switch (g) {
+			case 1 -> template.substring(x.start(), x.start(g)) + s + template.substring(x.end(g), x.end());
+			case 2 -> s;
+			case 3 -> {
+				if (vv.size() == 1 && vv.get(0) instanceof Boolean b) {
+					if (!b)
+						yield "";
+					if (gs.startsWith("${") && gs.indexOf("}") == gs.length() - 1)
+						s = "";
+				}
+				yield template.substring(x.start(), x.start(g)) + s + template.substring(x.end(g), x.end());
 			}
-			var ae = f.annotated;
-			var v = f.value;
-			var r = v instanceof Renderable<?> y ? y : v != null ? factory.createRenderable(ae, v) : null;
-			var r2 = r != null ? r.renderer() : null;
-			if (r2 != null && r2.templates == null)
-				r2.templates = templates;
-			if (r2 != null)
-				v = r.get();
-			return switch (i) {
-			case 1 -> ">" + (v != null ? v : "") + "</";
-			case 2 -> v != null ? v.toString() : "";
-//			case 3 -> Boolean.FALSE.equals(v) ? ""
-//					: x.group().substring(0, x.group().indexOf('='))
-//							+ (Boolean.TRUE.equals(v) ? "" : ("=\"" + (v != null ? v : "") + "\""));
-			case 3 -> template.substring(x.start(), x.start(3) - 2) + (v != null ? v : "")
-					+ template.substring(x.end(3) + 1, x.end());
 			default -> throw new RuntimeException();
 			};
+//			System.out.println("Renderer.interpolate, s=" + s);
+			return s;
 		});
 	}
 
