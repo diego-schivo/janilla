@@ -54,7 +54,8 @@ public class EntryTree extends LinkedHashMap<String, Object> {
 				var l = k[i].split("\\[", 2);
 				var j = Integer.parseInt(l[1].substring(0, l[1].length() - 1));
 				if (j < 0 || j >= 1000)
-					throw new ArrayIndexOutOfBoundsException();
+//					throw new ArrayIndexOutOfBoundsException();
+					throw new RuntimeException();
 				@SuppressWarnings("unchecked")
 				var a = (List<Object>) n.computeIfAbsent(l[0], _ -> new ArrayList<Object>());
 				while (a.size() <= j)

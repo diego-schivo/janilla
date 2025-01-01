@@ -29,11 +29,13 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Spliterators;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class RenderableFactory {
 
@@ -51,10 +53,11 @@ public class RenderableFactory {
 					var c = (Class<Renderer<T>>) x.renderer();
 					Renderer<T> i;
 					try {
-						i = c.getConstructor(RenderableFactory.class).newInstance(this);
+						i = c.getConstructor().newInstance();
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
+					i.factory = this;
 					i.templateName = x.template();
 					if (i.templateName.endsWith(".html")) {
 						i.templates = allTemplates.computeIfAbsent(i.templateName, k -> {
@@ -74,28 +77,36 @@ public class RenderableFactory {
 							return m;
 						});
 					}
-//					i.renderableOf = this::createRenderable;
 					return i;
 				}).orElse(null);
-		if (r == null && value instanceof List && annotated instanceof AnnotatedParameterizedType apt) {
+		if (r == null && (value instanceof Iterator || value instanceof Iterable || value instanceof Stream)
+				&& annotated instanceof AnnotatedParameterizedType apt) {
 			var at = apt.getAnnotatedActualTypeArguments()[0];
-//			if (at.isAnnotationPresent(Render.class)) {
 			@SuppressWarnings("unchecked")
-			var r2 = (Renderer<T>) new Renderer<List<T>>(this) {
+			var r2 = (Renderer<T>) new Renderer<>() {
 
 				@Override
-				public String apply(List<T> value) {
-					return value.stream().map(x -> {
+				public String apply(Object value) {
+					var a = at.getAnnotation(Render.class);
+					var d = a != null ? a.delimiter() : null;
+					var c = d != null && !d.isEmpty() ? Collectors.joining(d) : Collectors.joining();
+					var s = switch (value) {
+					case Stream<?> x -> x;
+					case Iterable<?> x -> StreamSupport.stream(x.spliterator(), false);
+					case Iterator<?> x -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(x, 0), false);
+					default -> throw new RuntimeException();
+					};
+					return s.map(x -> {
 						var r = createRenderable(at, x);
 						var r2 = r.renderer();
 						if (r2 != null && r2.templates == null)
 							r2.templates = templates;
 						return r.get();
-					}).collect(Collectors.joining());
+					}).collect(c);
 				}
 			};
 			r = r2;
-//			}
+			r.factory = this;
 		}
 		return new Renderable<>(value, r);
 	}

@@ -37,4 +37,6 @@ public @interface Render {
 
 	@SuppressWarnings("rawtypes")
 	Class<? extends Renderer> renderer() default Renderer.class;
+
+	String delimiter() default "";
 }

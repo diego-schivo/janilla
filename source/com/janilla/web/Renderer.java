@@ -36,28 +36,23 @@ import com.janilla.reflect.Reflection;
 
 public class Renderer<T> implements Function<T, String> {
 
-	protected static final Pattern SEARCH_HTML = Pattern.compile(">([^<]*?\\$\\{.*?\\}.*?)</" + "|"
-			+ "<!--(\\$\\{.*?\\})-->" + "|" + "[\\w-]+=\"([^\"]*?\\$\\{.*?\\}.*?)\"");
+	protected static final Pattern SEARCH_HTML = Pattern.compile("<!--(\\$\\{.*?\\})-->" + "|"
+			+ "[\\w-]+=\"([^\"]*?\\$\\{.*?\\}.*?)\"" + "|" + "([^<>]*?\\$\\{.*?\\}[^<>]*)");
 
 	protected static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{(.*?)\\}");
 
-	protected final RenderableFactory factory;
+	protected RenderableFactory factory;
 
 	protected String templateName;
 
 	protected Map<String, String> templates;
 
-	public Renderer(RenderableFactory factory) {
-		this.factory = factory;
-	}
-
 	@Override
 	public String apply(T value) {
-		return interpolate(templates.get(templateName.endsWith(".html") ? null : templateName), value);
-	}
-
-	protected String interpolate(String template, Object value) {
-		return SEARCH_HTML.matcher(template).replaceAll(x -> {
+		var t = template(value);
+		if (t == null)
+			throw new NullPointerException(Objects.toString(value));
+		return SEARCH_HTML.matcher(t).replaceAll(x -> {
 			var g = IntStream.rangeClosed(1, 3).filter(y -> x.group(y) != null).findFirst().getAsInt();
 			var gs = x.group(g);
 			var vv = new ArrayList<>();
@@ -82,22 +77,26 @@ public class Renderer<T> implements Function<T, String> {
 				return Objects.toString(v, "");
 			});
 			s = switch (g) {
-			case 1 -> template.substring(x.start(), x.start(g)) + s + template.substring(x.end(g), x.end());
-			case 2 -> s;
-			case 3 -> {
+			case 1 -> s;
+			case 2 -> {
 				if (vv.size() == 1 && vv.get(0) instanceof Boolean b) {
 					if (!b)
 						yield "";
 					if (gs.startsWith("${") && gs.indexOf("}") == gs.length() - 1)
 						s = "";
 				}
-				yield template.substring(x.start(), x.start(g)) + s + template.substring(x.end(g), x.end());
+				yield t.substring(x.start(), x.start(g)) + s + t.substring(x.end(g), x.end());
 			}
+			case 3 -> t.substring(x.start(), x.start(g)) + s + t.substring(x.end(g), x.end());
 			default -> throw new RuntimeException();
 			};
 //			System.out.println("Renderer.interpolate, s=" + s);
 			return s;
 		});
+	}
+
+	protected String template(T value) {
+		return templates.get(templateName.endsWith(".html") ? null : templateName);
 	}
 
 	protected AnnotatedValue evaluate(AnnotatedValue x, String k) {
