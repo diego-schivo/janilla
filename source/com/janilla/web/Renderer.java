@@ -32,10 +32,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterators;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -43,8 +44,11 @@ import com.janilla.reflect.Reflection;
 
 public class Renderer<T> implements Function<T, String> {
 
-	protected static final Pattern HTML_NODE = Pattern.compile("<!--(\\$\\{.*?\\})-->" + "|"
-			+ "[\\w-]+=\"([^\"]*?\\$\\{.*?\\}.*?)\"" + "|" + "([^<>]*?\\$\\{.*?\\}[^<>]*)");
+	protected static final Pattern COMMENT = Pattern.compile("<!--(\\$\\{.*?\\})-->");
+
+	protected static final Pattern ATTRIBUTE = Pattern.compile("[\\w-]+=\"([^\"]*?\\$\\{.*?\\}.*?)\"");
+
+	protected static final Pattern TEXT = Pattern.compile("(\\$\\{.*?\\})");
 
 	protected static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{(.*?)\\}");
 
@@ -59,70 +63,83 @@ public class Renderer<T> implements Function<T, String> {
 	@Override
 	public String apply(T value) {
 		var t = Objects.toString(template(value), "${}");
-		return HTML_NODE.matcher(t).replaceAll(x -> {
-			var g = IntStream.rangeClosed(1, 3).filter(y -> x.group(y) != null).findFirst().getAsInt();
-			var gs = x.group(g);
-			var vv = new ArrayList<>();
-			var s = PLACEHOLDER.matcher(gs).replaceAll(y -> {
-				var e = y.group(1);
-				var av = new AnnotatedValue(null, value);
-				if (!e.isEmpty())
-					for (var k : e.split("\\.")) {
-						if (av.value == null)
-							break;
-						av = evaluate(av, k);
-//						System.out.println("Renderer.interpolate, k=" + k + ", av=" + av);
-//						if (k.equals("errors"))
-//							System.out.println("debugger");
-					}
-				var v = av.value;
-				vv.add(v);
-				var r = v instanceof Renderable<?> z ? z
-						: v != null && !(e.isEmpty() && av.annotated == null)
-								? factory.createRenderable(av.annotated, v)
-								: null;
-				var iis = v instanceof Iterator || v instanceof Iterable || v instanceof Stream;
-				if (r != null) {
-					if (r.renderer().templateKey1 == null)
-						r.renderer().templateKey1 = templateKey1;
-					if (iis && av.annotated instanceof AnnotatedParameterizedType apt)
-						r.renderer().elementType = apt.getAnnotatedActualTypeArguments()[0];
-					v = r.get();
-				} else if (iis) {
-					var w = switch (v) {
-					case Stream<?> z -> z;
-					case Iterable<?> z -> StreamSupport.stream(z.spliterator(), false);
-					case Iterator<?> z -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(z, 0), false);
-					default -> throw new RuntimeException();
-					};
-					var d = annotation != null ? annotation.delimiter() : null;
-					var c = d != null && !d.isEmpty() ? Collectors.joining(d) : Collectors.joining();
-					v = w.map(z -> {
-						var r2 = factory.createRenderable(elementType, z);
-						if (r2.renderer().templateKey1 == null)
-							r2.renderer().templateKey1 = templateKey1;
-						return r2.get();
-					}).collect(c);
-				}
-				return Objects.toString(v, "");
-			});
-			s = switch (g) {
-			case 1 -> s;
-			case 2 -> {
-				if (vv.size() == 1 && vv.get(0) instanceof Boolean b) {
+		for (var i = 0; i < 3; i++) {
+			var p = switch (i) {
+			case 0 -> COMMENT;
+			case 1 -> ATTRIBUTE;
+			case 2 -> TEXT;
+			default -> throw new IndexOutOfBoundsException(i);
+			};
+			record A(MatchResult mr, Object[] vv) {
+			}
+			BiFunction<String, A, String> f = switch (i) {
+			case 0, 2 -> (s, _) -> s;
+			case 1 -> (s, a) -> {
+				var g = a.mr.group();
+				var g1 = a.mr.group(1);
+				if (a.vv.length == 1 && a.vv[0] instanceof Boolean b) {
 					if (!b)
-						yield "";
-					if (gs.startsWith("${") && gs.indexOf("}") == gs.length() - 1)
+						return "";
+					if (g1.startsWith("${") && g1.indexOf("}") == g1.length() - 1)
 						s = "";
 				}
-				yield t.substring(x.start(), x.start(g)) + s + t.substring(x.end(g), x.end());
-			}
-			case 3 -> t.substring(x.start(), x.start(g)) + s + t.substring(x.end(g), x.end());
+				var o = a.mr.start(1) - a.mr.start();
+				return g.substring(0, o) + s + g.substring(o + g1.length());
+			};
 			default -> throw new RuntimeException();
 			};
-//			System.out.println("Renderer.interpolate, s=" + s);
-			return s;
-		});
+			t = p.matcher(t).replaceAll(x -> {
+				var gs = x.group(1);
+				var vv = new ArrayList<>();
+				var s = PLACEHOLDER.matcher(gs).replaceAll(y -> {
+					var e = y.group(1);
+					var av = new AnnotatedValue(null, value);
+					if (!e.isEmpty())
+						for (var k : e.split("\\.")) {
+							if (av.value == null)
+								break;
+							av = evaluate(av, k);
+//							System.out.println("Renderer.interpolate, k=" + k + ", av=" + av);
+//							if (k.equals("selected"))
+//								System.out.println("debugger");
+						}
+					var v = av.value;
+					vv.add(v);
+					var r = v instanceof Renderable<?> z ? z
+							: v != null && !(e.isEmpty() && av.annotated == null)
+									? factory.createRenderable(av.annotated, v)
+									: null;
+					var iis = v instanceof Iterator || v instanceof Iterable || v instanceof Stream;
+					if (r != null) {
+						if (r.renderer().templateKey1 == null)
+							r.renderer().templateKey1 = templateKey1;
+						if (iis && av.annotated instanceof AnnotatedParameterizedType apt)
+							r.renderer().elementType = apt.getAnnotatedActualTypeArguments()[0];
+						v = r.get();
+					} else if (iis) {
+						var w = switch (v) {
+						case Stream<?> z -> z;
+						case Iterable<?> z -> StreamSupport.stream(z.spliterator(), false);
+						case Iterator<?> z -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(z, 0), false);
+						default -> throw new RuntimeException();
+						};
+						var d = annotation != null ? annotation.delimiter() : null;
+						var c = d != null && !d.isEmpty() ? Collectors.joining(d) : Collectors.joining();
+						v = w.map(z -> {
+							var r2 = factory.createRenderable(elementType, z);
+							if (r2.renderer().templateKey1 == null)
+								r2.renderer().templateKey1 = templateKey1;
+							return r2.get();
+						}).collect(c);
+					}
+					return Objects.toString(v, "");
+				});
+				s = f.apply(s, new A(x, vv.toArray()));
+//				System.out.println("Renderer.interpolate, s=" + s);
+				return s;
+			});
+		}
+		return t;
 	}
 
 	protected String template(T value) {
@@ -144,24 +161,24 @@ public class Renderer<T> implements Function<T, String> {
 		return t;
 	}
 
-	protected AnnotatedValue evaluate(AnnotatedValue x, String k) {
+	protected AnnotatedValue evaluate(AnnotatedValue input, String key) {
 		AnnotatedElement ae;
 		Object v;
-		switch (x.value) {
+		switch (input.value) {
 		case Function<?, ?> y:
 			ae = null;
 			@SuppressWarnings("unchecked")
 			var f = (Function<String, ?>) y;
-			v = f.apply(k);
+			v = f.apply(key);
 			break;
 		case Map<?, ?> y:
 			ae = null;
-			v = y.get(k);
+			v = y.get(key);
 			break;
 		default:
-			var p = Reflection.property(x.value.getClass(), k);
+			var p = Reflection.property(input.value.getClass(), key);
 			ae = p != null ? p.annotatedType() : null;
-			v = p != null ? p.get(x.value) : null;
+			v = p != null ? p.get(input.value) : null;
 		}
 		return new AnnotatedValue(ae, v);
 	}
