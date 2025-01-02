@@ -20,17 +20,18 @@ You can add Janilla as a dependency to your project by copy/pasting the snippet 
 We provide several example applications showing how to use the library: 
 
 - [Next.js App Router Course porting](https://github.com/diego-schivo/janilla-acmedashboard)
-<!-- [Next.js Commerce (partial) porting](https://github.com/diego-schivo/janilla-acmestore) -->
 - [React Router Address Book Tutorial porting](https://github.com/diego-schivo/janilla-address-book)
 - [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla-conduit)
+- [Spring Petclinic porting](https://github.com/diego-schivo/janilla-petclinic)
+- [TodoMVC implementation](https://github.com/diego-schivo/janilla-todomvc)
+- [Janilla website](https://github.com/diego-schivo/janilla-website)
+
+<!-- [Next.js Commerce (partial) porting](https://github.com/diego-schivo/janilla-acmestore) -->
 <!-- [Microsoft eShopOnWeb porting](https://github.com/diego-schivo/janilla-eshopweb) -->
 <!-- [Strapi FoodAdvisor (partial) porting](https://github.com/diego-schivo/janilla-foodadvisor) -->
 <!-- [Medusa MyStore (partial) porting](https://github.com/diego-schivo/janilla-mystore) -->
 <!-- [Adyen Payment Examples (partial) porting](https://github.com/diego-schivo/janilla-payment) -->
-- [Spring Petclinic porting](https://github.com/diego-schivo/janilla-petclinic)
-- [TodoMVC implementation](https://github.com/diego-schivo/janilla-todomvc)
 <!-- [htmx Examples porting](https://github.com/diego-schivo/janilla-uxpatterns) -->
-- [Janilla website](https://github.com/diego-schivo/janilla-website)
 
 Video tutorials are available on our [YouTube Channel](https://www.youtube.com/@janilla).
 
