@@ -35,6 +35,7 @@ import java.util.Spliterators;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -132,11 +133,11 @@ public class Renderer<T> implements Function<T, String> {
 							return r2.get();
 						}).collect(c);
 					}
-					return Objects.toString(v, "");
+					return Matcher.quoteReplacement(Objects.toString(v, ""));
 				});
 				s = f.apply(s, new A(x, vv.toArray()));
 //				System.out.println("Renderer.interpolate, s=" + s);
-				return s;
+				return Matcher.quoteReplacement(s);
 			});
 		}
 		return t;
