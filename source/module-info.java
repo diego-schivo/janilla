@@ -25,17 +25,12 @@
 module com.janilla {
 
 	exports com.janilla.database;
-	exports com.janilla.frontend;
-	exports com.janilla.html;
 	exports com.janilla.http;
 	exports com.janilla.io;
-	exports com.janilla.javascript;
 	exports com.janilla.json;
-	exports com.janilla.mail;
 	exports com.janilla.net;
 	exports com.janilla.persistence;
 	exports com.janilla.reflect;
-	exports com.janilla.smtp;
 	exports com.janilla.util;
 	exports com.janilla.web;
 
