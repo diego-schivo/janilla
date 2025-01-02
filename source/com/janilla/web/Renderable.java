@@ -24,13 +24,12 @@
  */
 package com.janilla.web;
 
-import java.util.Objects;
 import java.util.function.Supplier;
 
 public record Renderable<T>(T value, Renderer<T> renderer) implements Supplier<String> {
 
 	@Override
 	public String get() {
-		return renderer != null ? renderer.apply(value) : Objects.toString(value);
+		return renderer.apply(value);
 	}
 }

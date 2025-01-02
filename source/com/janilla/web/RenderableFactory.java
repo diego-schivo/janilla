@@ -34,10 +34,15 @@ import java.util.stream.Stream;
 
 public class RenderableFactory {
 
-	protected Map<String, Map<String, String>> allTemplates = new ConcurrentHashMap<>();
-
 	protected static final Pattern TEMPLATE_ELEMENT = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>",
 			Pattern.DOTALL);
+
+	protected Map<String, Map<String, String>> templates = new ConcurrentHashMap<>();
+
+	public String template(String key1, String key2) {
+		var tt = templates.get(key1);
+		return tt != null ? tt.get(key2) : null;
+	}
 
 	public <T> Renderable<T> createRenderable(AnnotatedElement annotated, T value) {
 //		System.out.println("MethodHandlerFactory.of, annotated=" + annotated + ", value=" + value);
@@ -45,34 +50,33 @@ public class RenderableFactory {
 				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(x -> x != null).findFirst()
 				.orElse(null);
 		@SuppressWarnings("unchecked")
-		var rc = ra != null ? (Class<Renderer<T>>) ra.renderer() : null;
-		Renderer<T> r = null;
-		if (rc != null) {
-			try {
-				r = rc.getConstructor().newInstance();
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
-			}
-			r.factory = this;
-			r.annotation = ra;
-			if (ra.template().endsWith(".html")) {
-				r.templates = allTemplates.computeIfAbsent(ra.template(), k -> {
-					var m = new ConcurrentHashMap<String, String>();
-					try (var is = value.getClass().getResourceAsStream(k)) {
-						if (is == null)
-							throw new NullPointerException(k);
-						var s = new String(is.readAllBytes());
-						var v = TEMPLATE_ELEMENT.matcher(s).replaceAll(y -> {
-							m.put(y.group(1), y.group(2));
-							return "";
-						});
-						m.put("", v);
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
-					return m;
-				});
-			}
+		var rc = (Class<Renderer<T>>) (ra != null ? ra.renderer() : Renderer.class);
+		Renderer<T> r;
+		try {
+			r = rc.getConstructor().newInstance();
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
+		r.factory = this;
+		r.annotation = ra;
+		var t = ra != null ? ra.template() : null;
+		if (t != null && t.endsWith(".html")) {
+			templates.computeIfAbsent(t, k -> {
+				var m = new ConcurrentHashMap<String, String>();
+				try (var is = value.getClass().getResourceAsStream(k)) {
+					if (is == null)
+						throw new NullPointerException(k);
+					var s = new String(is.readAllBytes());
+					m.put("", TEMPLATE_ELEMENT.matcher(s).replaceAll(y -> {
+						m.put(y.group(1), y.group(2));
+						return "";
+					}));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+				return m;
+			});
+			r.templateKey1 = t;
 		}
 		return new Renderable<>(value, r);
 	}

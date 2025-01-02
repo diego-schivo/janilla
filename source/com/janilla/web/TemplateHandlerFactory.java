@@ -37,7 +37,7 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		return object instanceof Renderable r && r.renderer() != null ? x -> {
+		return object instanceof Renderable r ? x -> {
 			render(r, (HttpExchange) x);
 			return true;
 		} : null;

@@ -284,10 +284,9 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected void handle(Invocation invocation, HttpExchange exchange) {
+//		System.out.println("MethodHandlerFactory.handle, invocation=" + invocation);
 		var aa = resolveArguments(invocation, exchange);
-		var m = invocation.method;
-//		System.out.println("MethodHandlerFactory.handle, m=" + m + " invocation.target=" + invocation.target + " a="
-//				+ Arrays.toString(aa));
+//		System.out.println("MethodHandlerFactory.handle, aa=" + Arrays.toString(aa));
 		Object o;
 		try {
 			var bb = new Object[1 + aa.length];
@@ -307,12 +306,12 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		}
 
 		var rs = exchange.getResponse();
-		if (m.getReturnType() == Void.TYPE) {
+		if (invocation.method.getReturnType() == Void.TYPE) {
 			if (rs.getStatus() == 0) {
 				rs.setStatus(204);
 				rs.setHeaderValue("cache-control", "no-cache");
 			}
-		} else if (o instanceof Path f && m.isAnnotationPresent(Attachment.class)) {
+		} else if (o instanceof Path f && invocation.method.isAnnotationPresent(Attachment.class)) {
 			rs.setStatus(200);
 			rs.setHeaderValue("cache-control", "max-age=3600");
 			rs.setHeaderValue("Content-Disposition", "attachment; filename=\"" + f.getFileName() + "\"");
@@ -348,7 +347,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 						break;
 					}
 			}
-			render(renderableFactory.createRenderable(m.getAnnotatedReturnType(), o), exchange);
+			render(renderableFactory.createRenderable(invocation.method.getAnnotatedReturnType(), o), exchange);
 		}
 	}
 
@@ -398,14 +397,13 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			var g = i < ggl ? gg[i] : null;
 			var b = i < ggl ? null : bb[i];
 			var p = b != null ? (!b.parameter().isEmpty() ? b.parameter() : b.value()) : null;
-			var i2 = i;
 			var qs2 = qs;
 			var bs2 = i < ggl ? null : bs;
 			aa[i] = resolveArgument(ptt[i], exchange,
-					() -> i2 < ggl ? (g != null ? new String[] { g } : null)
-							: qs2 != null && p != null ? qs2.stream().filter(x -> x.getKey().equals(p))
+					i < ggl ? () -> (g != null ? new String[] { g } : null)
+							: () -> qs2 != null && p != null ? qs2.stream().filter(x -> x.getKey().equals(p))
 									.map(Map.Entry::getValue).toArray(String[]::new) : null,
-					qs2, bs2, b != null && b.resolver() != Bind.NullResolver.class ? () -> {
+					i >= ggl ? qs : null, bs2, b != null && b.resolver() != Bind.NullResolver.class ? () -> {
 						try {
 							return b.resolver().getConstructor().newInstance();
 						} catch (ReflectiveOperationException e) {
