@@ -185,19 +185,17 @@ public class SSLByteChannel extends FilterByteChannel {
 
 					if (outboundQueue.position() > 0) {
 						outboundLock.lock();
-						ByteBuffer b;
+						outboundQueue.flip();
 						try {
-							outboundQueue.flip();
-							b = ByteBuffer.allocate(outboundQueue.remaining());
-							b.put(outboundQueue);
-							outboundQueue.clear();
+							super.write(outboundQueue);
+//							if (outboundQueue.hasRemaining())
+//								System.out.println("remaining=" + outboundQueue.remaining() + ", channel=" + channel
+//										+ ", isBlocking="
+//										+ (channel instanceof SocketChannel sc ? sc.isBlocking() : "?"));
 						} finally {
+							outboundQueue.compact();
 							outboundLock.unlock();
 						}
-						b.flip();
-						super.write(b);
-						if (b.hasRemaining())
-							throw new RuntimeException();
 					}
 				}
 
@@ -323,19 +321,16 @@ public class SSLByteChannel extends FilterByteChannel {
 
 				if (outboundQueue.position() > 0) {
 					outboundLock.lock();
-					ByteBuffer b;
+					outboundQueue.flip();
 					try {
-						outboundQueue.flip();
-						b = ByteBuffer.allocate(outboundQueue.remaining());
-						b.put(outboundQueue);
-						outboundQueue.clear();
+						super.write(outboundQueue);
+//						if (outboundQueue.hasRemaining())
+//							System.out.println("remaining=" + outboundQueue.remaining() + ", channel=" + channel
+//									+ ", isBlocking=" + (channel instanceof SocketChannel sc ? sc.isBlocking() : "?"));
 					} finally {
+						outboundQueue.compact();
 						outboundLock.unlock();
 					}
-					b.flip();
-					super.write(b);
-					if (b.hasRemaining())
-						throw new RuntimeException();
 				} else if (!src.hasRemaining())
 					break;
 			}
@@ -362,19 +357,16 @@ public class SSLByteChannel extends FilterByteChannel {
 			case 0 -> {
 				if (outboundQueue.position() > 0) {
 					outboundLock.lock();
-					ByteBuffer b;
+					outboundQueue.flip();
 					try {
-						outboundQueue.flip();
-						b = ByteBuffer.allocate(outboundQueue.remaining());
-						b.put(outboundQueue);
-						outboundQueue.clear();
+						super.write(outboundQueue);
+//						if (outboundQueue.hasRemaining())
+//							System.out.println("remaining=" + outboundQueue.remaining() + ", channel=" + channel
+//									+ ", isBlocking=" + (channel instanceof SocketChannel sc ? sc.isBlocking() : "?"));
 					} finally {
+						outboundQueue.compact();
 						outboundLock.unlock();
 					}
-					b.flip();
-					super.write(b);
-					if (b.hasRemaining())
-						throw new RuntimeException();
 				}
 
 				if (engine.isOutboundDone())
