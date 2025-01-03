@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.janilla</groupId>
 	<artifactId>janilla</artifactId>
-	<version>3.0.1-SNAPSHOT</version>
+	<version>3.0.1</version>
 	<properties>
 		<maven.compiler.release>23</maven.compiler.release>
 		<maven.compiler.enablePreview>true</maven.compiler.enablePreview>
@@ -78,7 +78,7 @@
 		<developerConnection>
 			scm:git:ssh://git@github.com/diego-schivo/janilla.git</developerConnection>
 		<url>https://github.com/diego-schivo/janilla</url>
-		<tag>janilla-2.0.0</tag>
+		<tag>janilla-3.0.1</tag>
 	</scm>
 	<profiles>
 		<profile>
