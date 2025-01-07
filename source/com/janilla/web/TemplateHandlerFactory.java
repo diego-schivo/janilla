@@ -24,8 +24,13 @@
  */
 package com.janilla.web;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpWritableByteChannel;
 
 public class TemplateHandlerFactory implements WebHandlerFactory {
 
@@ -55,7 +60,11 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 		if (s != null) {
 			var bb = s.getBytes();
 			rs.setHeaderValue("content-length", String.valueOf(bb.length));
-			rs.setBody(bb);
+			try {
+				((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb), true);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		}
 	}
 }

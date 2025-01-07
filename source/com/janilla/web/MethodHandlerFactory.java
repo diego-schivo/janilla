@@ -33,6 +33,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
@@ -55,6 +58,7 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.http.HttpWritableByteChannel;
 import com.janilla.json.Converter;
 import com.janilla.json.Json;
 import com.janilla.net.Net;
@@ -321,7 +325,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				throw new UncheckedIOException(e);
 			}
 			try {
-				rs.setBody(Files.readAllBytes(f));
+				((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(Files.readAllBytes(f)), true);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -357,7 +361,15 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		Supplier<String> bs = switch (rq.getMethod()) {
 		case "POST", "PUT" -> {
 			var ct = rq.getHeaderValue("content-type");
-			var s = Lazy.of(() -> rq.getBody() != null ? new String(rq.getBody()) : null);
+			var s = Lazy.of(() -> {
+				try {
+					return rq.getBody() != null
+							? new String(Channels.newInputStream((ReadableByteChannel) rq.getBody()).readAllBytes())
+							: null;
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			});
 			switch (Objects.toString(ct, "").split(";")[0]) {
 			case "application/x-www-form-urlencoded":
 				var v = Net.parseQueryString(s.get());

@@ -24,9 +24,11 @@
  */
 package com.janilla.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,7 @@ import java.util.stream.IntStream;
 
 import javax.net.ssl.SSLContext;
 
+import com.janilla.io.IO;
 import com.janilla.net.Connection;
 import com.janilla.net.Protocol;
 import com.janilla.net.SSLByteChannel;
@@ -137,12 +140,82 @@ public class HttpProtocol implements Protocol {
 							System.arraycopy(d, 0, bb, p, d.length);
 							p += d.length;
 						}
-						rq.setBody(bb);
+						rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
 					}
 //					System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
 //							+ ", rq=" + rq.getMethod() + " " + rq.getPath());
 					var rs = new HttpResponse();
 					rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
+					rs.setBody(new HttpWritableByteChannel() {
+
+						private boolean headersWritten;
+
+						private boolean closed;
+
+						@Override
+						public boolean isOpen() {
+							return !closed;
+						}
+
+						@Override
+						public void close() throws IOException {
+							if (closed)
+								return;
+							if (!headersWritten) {
+								writeHeaders(true);
+								headersWritten = true;
+							}
+							closed = true;
+						}
+
+						@Override
+						public int write(ByteBuffer src) throws IOException {
+							return write(src, false);
+						}
+
+						@Override
+						public int write(ByteBuffer src, boolean endStream) throws IOException {
+							if (closed)
+								throw new IOException("closed");
+							var n = src.remaining();
+							if (n == 0)
+								throw new IllegalArgumentException("src");
+							var cd = Math.ceilDiv(n, 16384);
+							if (!headersWritten) {
+								writeHeaders(false);
+								headersWritten = true;
+							}
+							IntStream.range(0, cd).mapToObj(x -> {
+								var bb = new byte[Math.min(16384, n - x * 16384)];
+								IO.transferSomeRemaining(src, ByteBuffer.wrap(bb));
+								return new Frame.Data(false, endStream && x == cd - 1, si, bb);
+							}).forEach(x -> {
+								// System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ",
+								// of=" + x);
+								ch.outboundLock().lock();
+								try {
+									Http.encode(x, ch);
+								} finally {
+									ch.outboundLock().unlock();
+								}
+							});
+							return n;
+						}
+
+						private void writeHeaders(boolean endStream) {
+							if (headersWritten)
+								return;
+							var of = new Frame.Headers(false, true, endStream, si, false, 0, 0, rs.getHeaders());
+//							System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ", of=" + x);
+							ch.outboundLock().lock();
+							try {
+								Http.encode(of, ch);
+								headersWritten = true;
+							} finally {
+								ch.outboundLock().unlock();
+							}
+						}
+					});
 					var ex = createExchange(rq);
 					ex.setRequest(rq);
 					ex.setResponse(rs);
@@ -171,27 +244,7 @@ public class HttpProtocol implements Protocol {
 					});
 //					System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
 //							+ ", rs=" + rs.getStatus() + ", k=" + k);
-					var off = new ArrayList<Frame>(List.of(new Frame.Headers(false, true,
-							rs.getBody() == null || rs.getBody().length == 0, si, false, 0, 0, rs.getHeaders())));
-					if (rs.getBody() != null && rs.getBody().length > 0) {
-						var n = Math.ceilDiv(rs.getBody().length, 16384);
-						IntStream.range(0, n).mapToObj(x -> {
-							var bb = new byte[Math.min(16384, rs.getBody().length - x * 16384)];
-							System.arraycopy(rs.getBody(), x * 16384, bb, 0, bb.length);
-							return new Frame.Data(false, x == n - 1, si, bb);
-						}).forEach(off::add);
-					}
 					c.getStreams().remove(si);
-					for (var of : off) {
-//						System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ", of=" + of);
-//						synchronized (ch) {
-						ch.outboundLock().lock();
-						try {
-							Http.encode(of, ch);
-						} finally {
-							ch.outboundLock().unlock();
-						}
-					}
 				});
 			}
 		}

@@ -24,13 +24,14 @@
  */
 package com.janilla.http;
 
+import java.nio.channels.Channel;
 import java.util.List;
 
 public abstract class HttpMessage {
 
 	private List<HeaderField> headers;
 
-	private byte[] body;
+	private Channel body;
 
 	// *******************
 	// Getters and Setters
@@ -43,11 +44,11 @@ public abstract class HttpMessage {
 		this.headers = headers;
 	}
 
-	public byte[] getBody() {
+	public Channel getBody() {
 		return body;
 	}
 
-	public void setBody(byte[] body) {
+	public void setBody(Channel body) {
 		this.body = body;
 	}
 

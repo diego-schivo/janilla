@@ -24,10 +24,14 @@
  */
 package com.janilla.web;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpWritableByteChannel;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -50,7 +54,11 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 //		System.out.println("JsonHandlerFactory.render, s=" + s);
 		var bb = s.getBytes();
 		rs.setHeaderValue("content-length", String.valueOf(bb.length));
-		rs.setBody(bb);
+		try {
+			((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb), true);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	protected Iterator<JsonToken<?>> buildJsonIterator(Object object, HttpExchange exchange) {
