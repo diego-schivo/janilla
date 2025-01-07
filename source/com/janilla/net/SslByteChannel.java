@@ -38,7 +38,7 @@ import javax.net.ssl.SSLException;
 import com.janilla.io.FilterByteChannel;
 import com.janilla.io.IO;
 
-public class SSLByteChannel extends FilterByteChannel {
+public class SslByteChannel extends FilterByteChannel {
 
 	protected SSLEngine engine;
 
@@ -60,7 +60,7 @@ public class SSLByteChannel extends FilterByteChannel {
 
 	protected ByteBuffer outboundQueue;
 
-	public SSLByteChannel(ByteChannel channel, SSLEngine engine) {
+	public SslByteChannel(ByteChannel channel, SSLEngine engine) {
 		super(channel);
 		this.engine = engine;
 

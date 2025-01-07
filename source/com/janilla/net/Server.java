@@ -27,13 +27,19 @@ package com.janilla.net;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channel;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.janilla.io.FilterByteChannel;
+import com.janilla.io.FilterChannel;
 
 public class Server {
 
@@ -43,9 +49,9 @@ public class Server {
 
 	private ServerSocketChannel channel;
 
-	private final Map<Connection, Long> connectionMap = new HashMap<>();
+	private final Map<Connection, Long> lastUsed = new HashMap<>();
 
-	private final Lock connectionLock = new ReentrantLock();
+	private final Lock lastUsedLock = new ReentrantLock();
 
 	// *******************
 	// Getters and Setters
@@ -103,18 +109,30 @@ public class Server {
 		var sc = channel.accept();
 //		System.out.println(LocalTime.now() + ", Server.accept, sc=" + sc + ", sc.isBlocking()=" + sc.isBlocking());
 		Thread.startVirtualThread(() -> {
-			var c = protocol.buildConnection(sc);
-			for (var f = true;; f = false) {
-//				synchronized (connectionMap) {
-				connectionLock.lock();
-				try {
-					if (f || connectionMap.containsKey(c))
-						connectionMap.put(c, System.currentTimeMillis());
-					else
-						break;
-				} finally {
-					connectionLock.unlock();
+			class A {
+
+				Connection c;
+			}
+			var a = new A();
+			a.c = protocol.buildConnection(new FilterByteChannel(sc) {
+
+				@Override
+				public int read(ByteBuffer dst) throws IOException {
+					if (!updateLastUsed(a.c, false))
+						throw new IOException();
+					return super.read(dst);
 				}
+
+				@Override
+				public int write(ByteBuffer src) throws IOException {
+					if (!updateLastUsed(a.c, false))
+						throw new IOException();
+					return super.write(src);
+				}
+			});
+			for (var f = true;; f = false) {
+				if (!updateLastUsed(a.c, f))
+					break;
 
 //				var k = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).format(DateTimeFormatter.ISO_DATE_TIME);
 //				var v = (int) foo.compute(k, (x, y) -> y == null ? 1 : y + 1);
@@ -125,7 +143,7 @@ public class Server {
 //				System.out.println("Server.accept, c=" + c.getId() + ", handle " + k + " " + v);
 
 				try {
-					if (!protocol.handle(c))
+					if (!protocol.handle(a.c))
 						break;
 				} catch (Exception e) {
 //					System.out.println("accept, c=" + c.getId() + ", e=" + e);
@@ -137,13 +155,24 @@ public class Server {
 		});
 	}
 
+	boolean updateLastUsed(Connection connection, boolean insert) {
+		lastUsedLock.lock();
+		try {
+			var x = insert || lastUsed.containsKey(connection);
+			if (x)
+				lastUsed.put(connection, System.currentTimeMillis());
+			return x;
+		} finally {
+			lastUsedLock.unlock();
+		}
+	}
+
 	protected void shutdownConnections() {
 		Set<Connection> cc = new HashSet<>();
-//		synchronized (connectionMap) {
-		connectionLock.lock();
+		lastUsedLock.lock();
 		try {
 			var t1 = System.currentTimeMillis();
-			for (var ee = connectionMap.entrySet().iterator(); ee.hasNext();) {
+			for (var ee = lastUsed.entrySet().iterator(); ee.hasNext();) {
 				var e = ee.next();
 				var t2 = e.getValue() + 10 * 1000;
 				if (t1 >= t2) {
@@ -152,15 +181,26 @@ public class Server {
 				}
 			}
 		} finally {
-			connectionLock.unlock();
+			lastUsedLock.unlock();
 		}
 		for (var c : cc) {
 //			System.out.println("shutdown, c=" + c.getId());
-			var sc = c.getChannel();
+
+//			String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^\\d.]", "");
+//			try {
+//				Runtime.getRuntime().exec("jcmd " + pid + " Thread.dump_to_file -format=json dump.json");
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+
+			Channel ch = c.getChannel();
+			while (ch instanceof FilterChannel fch)
+				ch = fch.channel();
+			var sch = (SocketChannel) ch;
 			try {
-				sc.shutdownInput();
-				sc.shutdownOutput();
-				sc.close();
+				sch.shutdownInput();
+				sch.shutdownOutput();
+				sch.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

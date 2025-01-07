@@ -24,15 +24,13 @@
  */
 package com.janilla.net;
 
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ByteChannel;
 
 public abstract class Connection {
 
 	private int id;
 
-	private SocketChannel channel;
-
-	private SSLByteChannel sslByteChannel;
+	private ByteChannel channel;
 
 	// *******************
 	// Getters and Setters
@@ -45,20 +43,12 @@ public abstract class Connection {
 		this.id = id;
 	}
 
-	public SocketChannel getChannel() {
+	public ByteChannel getChannel() {
 		return channel;
 	}
 
-	public void setChannel(SocketChannel channel) {
+	public void setChannel(ByteChannel channel) {
 		this.channel = channel;
-	}
-
-	public SSLByteChannel getSslByteChannel() {
-		return sslByteChannel;
-	}
-
-	public void setSslByteChannel(SSLByteChannel sslByteChannel) {
-		this.sslByteChannel = sslByteChannel;
 	}
 
 	// Getters and Setters

@@ -24,11 +24,11 @@
  */
 package com.janilla.net;
 
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ByteChannel;
 
 public interface Protocol {
 
-	Connection buildConnection(SocketChannel channel);
+	Connection buildConnection(ByteChannel channel);
 
 	boolean handle(Connection connection);
 }

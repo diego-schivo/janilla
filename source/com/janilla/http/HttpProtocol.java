@@ -27,8 +27,8 @@ package com.janilla.http;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +40,7 @@ import javax.net.ssl.SSLContext;
 import com.janilla.io.IO;
 import com.janilla.net.Connection;
 import com.janilla.net.Protocol;
-import com.janilla.net.SSLByteChannel;
+import com.janilla.net.SslByteChannel;
 import com.janilla.web.HandleException;
 
 public class HttpProtocol implements Protocol {
@@ -70,7 +70,7 @@ public class HttpProtocol implements Protocol {
 	}
 
 	@Override
-	public Connection buildConnection(SocketChannel channel) {
+	public Connection buildConnection(ByteChannel channel) {
 		var se = sslContext.createSSLEngine();
 		se.setUseClientMode(useClientMode);
 		var pp = se.getSSLParameters();
@@ -78,8 +78,7 @@ public class HttpProtocol implements Protocol {
 		se.setSSLParameters(pp);
 		var hc = new HttpConnection();
 		hc.setId(++connectionNumber);
-		hc.setChannel(channel);
-		hc.setSslByteChannel(new SSLByteChannel(channel, se));
+		hc.setChannel(new SslByteChannel(channel, se));
 		return hc;
 	}
 
@@ -94,7 +93,7 @@ public class HttpProtocol implements Protocol {
 	public boolean handle(Connection connection) {
 		var c = (HttpConnection) connection;
 //		System.out.println("HttpProtocol.handle, c=" + c.getId());
-		var ch = c.getSslByteChannel();
+		var ch = (SslByteChannel) c.getChannel();
 		if (!c.isPrefaceReceived()) {
 			var b = ByteBuffer.allocate(24);
 			try {
