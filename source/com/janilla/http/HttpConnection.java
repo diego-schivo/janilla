@@ -38,7 +38,7 @@ public class HttpConnection extends Connection {
 
 	private boolean prefaceSent;
 
-	private Map<Integer, List<Frame>> streams = new ConcurrentHashMap<>();
+	private Map<Integer, List<Frame.Data>> streams = new ConcurrentHashMap<>();
 
 	// *******************
 	// Getters and Setters
@@ -67,11 +67,11 @@ public class HttpConnection extends Connection {
 		this.prefaceSent = prefaceSent;
 	}
 
-	public Map<Integer, List<Frame>> getStreams() {
+	public Map<Integer, List<Frame.Data>> getStreams() {
 		return streams;
 	}
 
-	public void setStreams(Map<Integer, List<Frame>> streams) {
+	public void setStreams(Map<Integer, List<Frame.Data>> streams) {
 		this.streams = streams;
 	}
 

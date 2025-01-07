@@ -24,14 +24,15 @@
  */
 package com.janilla.http;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
 import javax.net.ssl.SSLContext;
@@ -124,24 +125,61 @@ public class HttpProtocol implements Protocol {
 		if (f instanceof Frame.Headers || f instanceof Frame.Data) {
 			var si = Integer.valueOf(f.streamIdentifier());
 			var ff = c.getStreams().computeIfAbsent(si, _ -> new ArrayList<>());
-			ff.add(f);
-			var es = f instanceof Frame.Headers x ? x.endStream() : f instanceof Frame.Data x ? x.endStream() : false;
-			if (es) {
+			var ffl = new ReentrantLock();
+			if (f instanceof Frame.Headers hf && hf.endHeaders())
 				Thread.startVirtualThread(() -> {
 					var rq = new HttpRequest();
-					rq.setHeaders(((Frame.Headers) ff.get(0)).fields());
-					if (ff.size() > 1) {
-						var l = ff.stream().skip(1).mapToInt(x -> ((Frame.Data) x).data().length).sum();
-						var bb = new byte[l];
-						var i = ff.iterator();
-						i.next();
-						for (var p = 0; p < bb.length;) {
-							var d = ((Frame.Data) i.next()).data();
-							System.arraycopy(d, 0, bb, p, d.length);
-							p += d.length;
+					rq.setHeaders(hf.fields());
+					rq.setBody(new ReadableByteChannel() {
+
+						private ByteBuffer buffer = ByteBuffer.allocate(1024);
+
+						private boolean closed;
+
+						@Override
+						public boolean isOpen() {
+							return !closed;
 						}
-						rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
-					}
+
+						@Override
+						public void close() throws IOException {
+							if (closed)
+								return;
+							closed = true;
+						}
+
+						@Override
+						public int read(ByteBuffer dst) throws IOException {
+							if (closed)
+								throw new IOException("closed");
+							Frame[] ff2;
+							ffl.lock();
+							try {
+								ff2 = ff.toArray(Frame[]::new);
+								ff.clear();
+							} finally {
+								ffl.unlock();
+							}
+							var l = Arrays.stream(ff2).mapToInt(x -> ((Frame.Data) x).data().length).sum();
+							if (l > 0) {
+								var bb = ByteBuffer.allocate(l);
+								for (var x : ff2)
+									bb.put(((Frame.Data) x).data());
+								if (buffer == null)
+									buffer = bb;
+								else {
+									bb.flip();
+									buffer = buffer == null ? bb : IO.transferAllRemaining(bb, buffer);
+								}
+							}
+							buffer.flip();
+							try {
+								return IO.transferSomeRemaining(buffer, dst);
+							} finally {
+								buffer.compact();
+							}
+						}
+					});
 //					System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
 //							+ ", rq=" + rq.getMethod() + " " + rq.getPath());
 					var rs = new HttpResponse();
@@ -246,6 +284,13 @@ public class HttpProtocol implements Protocol {
 //							+ ", rs=" + rs.getStatus() + ", k=" + k);
 					c.getStreams().remove(si);
 				});
+			else {
+				ffl.lock();
+				try {
+					ff.add((Frame.Data) f);
+				} finally {
+					ffl.unlock();
+				}
 			}
 		}
 		return true;
