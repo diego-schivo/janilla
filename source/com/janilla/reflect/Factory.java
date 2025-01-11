@@ -27,22 +27,23 @@ package com.janilla.reflect;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class Factory {
 
-	private Iterable<Class<?>> types;
+	private Set<Class<?>> types;
 
 	private Object source;
 
 	private Map<Class<?>, Supplier<?>> suppliers = new ConcurrentHashMap<>();
 
-	public Iterable<Class<?>> getTypes() {
+	public Set<Class<?>> getTypes() {
 		return types;
 	}
 
-	public void setTypes(Iterable<Class<?>> types) {
+	public void setTypes(Set<Class<?>> types) {
 		this.types = types;
 	}
 

@@ -114,11 +114,14 @@ public class ApplicationPersistenceBuilder {
 			p.createStoresAndIndexes();
 
 			p.setTypeResolver(x -> {
-				try {
-					return Class.forName(getClass().getPackageName() + "." + x.replace('.', '$'));
-				} catch (ClassNotFoundException f) {
-					throw new RuntimeException(f);
-				}
+//				try {
+//					return Class.forName(getClass().getPackageName() + "." + x.replace('.', '$'));
+//				} catch (ClassNotFoundException f) {
+//					throw new RuntimeException(f);
+//				}
+				return factory.getTypes().stream()
+						.filter(y -> y.getName().substring(y.getPackageName().length() + 1).equals(x)).findFirst()
+						.get();
 			});
 
 			return p;

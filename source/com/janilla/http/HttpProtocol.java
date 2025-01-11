@@ -127,161 +127,171 @@ public class HttpProtocol implements Protocol {
 			var ffl = new ReentrantLock();
 			if (f instanceof Frame.Headers hf && hf.endHeaders())
 				Thread.startVirtualThread(() -> {
-					var rq = new HttpRequest();
-					rq.setHeaders(hf.fields());
-					rq.setBody(new ReadableByteChannel() {
+					try (var rq = new HttpRequest(); var rs = new HttpResponse()) {
+						rq.setHeaders(hf.fields());
+						rq.setBody(new ReadableByteChannel() {
 
-						private ByteBuffer buffer = ByteBuffer.allocate(1024);
+							private ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-						private boolean closed;
+							private boolean ended;
 
-						@Override
-						public boolean isOpen() {
-							return !closed;
-						}
+							private boolean closed;
 
-						@Override
-						public void close() throws IOException {
-							if (closed)
-								return;
-							closed = true;
-						}
-
-						@Override
-						public int read(ByteBuffer dst) throws IOException {
-							if (closed)
-								throw new IOException("closed");
-							Frame[] ff2;
-							ffl.lock();
-							try {
-								ff2 = ff.toArray(Frame[]::new);
-								ff.clear();
-							} finally {
-								ffl.unlock();
+							@Override
+							public boolean isOpen() {
+								return !closed;
 							}
-							var l = Arrays.stream(ff2).mapToInt(x -> ((Frame.Data) x).data().length).sum();
-							if (l > 0) {
-								var bb = ByteBuffer.allocate(l);
-								for (var x : ff2)
-									bb.put(((Frame.Data) x).data());
-								if (buffer == null)
-									buffer = bb;
-								else {
-									bb.flip();
-									buffer = buffer == null ? bb : IO.transferAllRemaining(bb, buffer);
+
+							@Override
+							public void close() throws IOException {
+								if (closed)
+									return;
+								closed = true;
+							}
+
+							@Override
+							public int read(ByteBuffer dst) throws IOException {
+								if (closed)
+									throw new IOException("closed");
+								Frame[] ff2;
+								ffl.lock();
+								try {
+									ff2 = ff.toArray(Frame[]::new);
+									ff.clear();
+								} finally {
+									ffl.unlock();
+								}
+								var l = Arrays.stream(ff2).mapToInt(x -> ((Frame.Data) x).data().length).sum();
+								if (l > 0) {
+									var bb = ByteBuffer.allocate(l);
+									for (var x : ff2) {
+										var d = (Frame.Data) x;
+										bb.put(d.data());
+										if (d.endStream())
+											ended = true;
+									}
+									if (buffer == null)
+										buffer = bb;
+									else {
+										bb.flip();
+										buffer = IO.transferAllRemaining(bb, buffer);
+									}
+								}
+								if (buffer.position() == 0)
+									return ended ? -1 : 0;
+								buffer.flip();
+								try {
+									return IO.transferSomeRemaining(buffer, dst);
+								} finally {
+									buffer.compact();
 								}
 							}
-							buffer.flip();
-							try {
-								return IO.transferSomeRemaining(buffer, dst);
-							} finally {
-								buffer.compact();
-							}
-						}
-					});
+						});
 //					System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
 //							+ ", rq=" + rq.getMethod() + " " + rq.getPath());
-					var rs = new HttpResponse();
-					rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
-					rs.setBody(new HttpWritableByteChannel() {
+						rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
+						rs.setBody(new HttpWritableByteChannel() {
 
-						private boolean headersWritten;
+							private boolean headersWritten;
 
-						private boolean closed;
+							private boolean closed;
 
-						@Override
-						public boolean isOpen() {
-							return !closed;
-						}
-
-						@Override
-						public void close() throws IOException {
-							if (closed)
-								return;
-							if (!headersWritten) {
-								writeHeaders(true);
-								headersWritten = true;
+							@Override
+							public boolean isOpen() {
+								return !closed;
 							}
-							closed = true;
-						}
 
-						@Override
-						public int write(ByteBuffer src) throws IOException {
-							return write(src, false);
-						}
-
-						@Override
-						public int write(ByteBuffer src, boolean endStream) throws IOException {
-							if (closed)
-								throw new IOException("closed");
-							var n = src.remaining();
-							if (n == 0)
-								throw new IllegalArgumentException("src");
-							var cd = Math.ceilDiv(n, 16384);
-							if (!headersWritten) {
-								writeHeaders(false);
-								headersWritten = true;
+							@Override
+							public void close() throws IOException {
+								if (closed)
+									return;
+								if (!headersWritten) {
+									writeHeaders(true);
+									headersWritten = true;
+								}
+								closed = true;
 							}
-							IntStream.range(0, cd).mapToObj(x -> {
-								var bb = new byte[Math.min(16384, n - x * 16384)];
-								IO.transferSomeRemaining(src, ByteBuffer.wrap(bb));
-								return new Frame.Data(false, endStream && x == cd - 1, si, bb);
-							}).forEach(x -> {
-								// System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ",
-								// of=" + x);
+
+							@Override
+							public int write(ByteBuffer src) throws IOException {
+								return write(src, false);
+							}
+
+							@Override
+							public int write(ByteBuffer src, boolean endStream) throws IOException {
+								if (closed)
+									throw new IOException("closed");
+								var n = src.remaining();
+								if (n == 0)
+									throw new IllegalArgumentException("src");
+								var cd = Math.ceilDiv(n, 16384);
+								if (!headersWritten) {
+									writeHeaders(false);
+									headersWritten = true;
+								}
+								IntStream.range(0, cd).mapToObj(x -> {
+									var bb = new byte[Math.min(16384, n - x * 16384)];
+									IO.transferSomeRemaining(src, ByteBuffer.wrap(bb));
+									return new Frame.Data(false, endStream && x == cd - 1, si, bb);
+								}).forEach(x -> {
+									// System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ",
+									// of=" + x);
+									ch.outboundLock().lock();
+									try {
+										Http.encode(x, ch);
+									} finally {
+										ch.outboundLock().unlock();
+									}
+								});
+								return n;
+							}
+
+							private void writeHeaders(boolean endStream) {
+								if (headersWritten)
+									return;
+								var of = new Frame.Headers(false, true, endStream, si, false, 0, 0, rs.getHeaders());
+//							System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ", of=" + x);
 								ch.outboundLock().lock();
 								try {
-									Http.encode(x, ch);
+									Http.encode(of, ch);
+									headersWritten = true;
 								} finally {
 									ch.outboundLock().unlock();
 								}
-							});
-							return n;
-						}
-
-						private void writeHeaders(boolean endStream) {
-							if (headersWritten)
-								return;
-							var of = new Frame.Headers(false, true, endStream, si, false, 0, 0, rs.getHeaders());
-//							System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ", of=" + x);
-							ch.outboundLock().lock();
-							try {
-								Http.encode(of, ch);
-								headersWritten = true;
-							} finally {
-								ch.outboundLock().unlock();
 							}
-						}
-					});
-					var ex = createExchange(rq);
-					ex.setRequest(rq);
-					ex.setResponse(rs);
-					ScopedValue.callWhere(HTTP_EXCHANGE, ex, () -> {
-						var k = true;
-						Exception e;
-						try {
-							k = handler.handle(ex);
-							e = null;
-						} catch (HandleException x) {
-							e = x.getCause();
-						} catch (UncheckedIOException x) {
-							e = x.getCause();
-						} catch (Exception x) {
-							e = x;
-						}
-						if (e != null)
+						});
+						var ex = createExchange(rq);
+						ex.setRequest(rq);
+						ex.setResponse(rs);
+						ScopedValue.callWhere(HTTP_EXCHANGE, ex, () -> {
+							var k = true;
+							Exception e;
 							try {
-								e.printStackTrace();
-								ex.setException(e);
 								k = handler.handle(ex);
+								e = null;
+							} catch (HandleException x) {
+								e = x.getCause();
+							} catch (UncheckedIOException x) {
+								e = x.getCause();
 							} catch (Exception x) {
-								k = false;
+								e = x;
 							}
-						return k;
-					});
+							if (e != null)
+								try {
+									e.printStackTrace();
+									ex.setException(e);
+									k = handler.handle(ex);
+								} catch (Exception x) {
+									k = false;
+								}
+							return k;
+						});
 //					System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
 //							+ ", rs=" + rs.getStatus() + ", k=" + k);
-					c.getStreams().remove(si);
+						c.getStreams().remove(si);
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 				});
 			else {
 				ffl.lock();

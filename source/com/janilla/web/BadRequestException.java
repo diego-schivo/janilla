@@ -22,62 +22,14 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http;
+package com.janilla.web;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.nio.channels.Channel;
-import java.util.List;
+@Error(code = 400, text = "Bad Request")
+public class BadRequestException extends RuntimeException {
 
-public abstract class HttpMessage implements Closeable {
+	private static final long serialVersionUID = -8828041259137567722L;
 
-	private List<HeaderField> headers;
-
-	private Channel body;
-
-	// *******************
-	// Getters and Setters
-
-	public List<HeaderField> getHeaders() {
-		return headers;
-	}
-
-	public void setHeaders(List<HeaderField> headers) {
-		this.headers = headers;
-	}
-
-	public Channel getBody() {
-		return body;
-	}
-
-	public void setBody(Channel body) {
-		this.body = body;
-	}
-
-	// Getters and Setters
-	// *******************
-
-	public String getHeaderValue(String name) {
-		return headers != null
-				? headers.stream().filter(x -> x.name().equals(name)).findFirst().map(HeaderField::value).orElse(null)
-				: null;
-	}
-
-	public void setHeaderValue(String name, String value) {
-		var i = 0;
-		for (var h : headers) {
-			if (h.name().equals(name)) {
-				headers.set(i, h.withValue(value));
-				return;
-			}
-			i++;
-		}
-		headers.add(new HeaderField(name, value));
-	}
-
-	@Override
-	public void close() throws IOException {
-		if (body != null)
-			body.close();
+	public BadRequestException(String message) {
+		super(message);
 	}
 }
