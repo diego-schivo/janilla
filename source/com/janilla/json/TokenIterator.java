@@ -25,12 +25,35 @@
 package com.janilla.json;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public abstract class TokenIterator implements Iterator<JsonToken<?>> {
 
 	protected TokenIterationContext context;
 
+	private Boolean hasNext;
+
 	public void setContext(TokenIterationContext context) {
 		this.context = context;
 	}
+
+	@Override
+	public final boolean hasNext() {
+		if (hasNext == null)
+			hasNext = computeHasNext();
+		return hasNext;
+	}
+
+	@Override
+	public final JsonToken<?> next() {
+		if (!hasNext())
+			throw new NoSuchElementException();
+		var t = computeNext();
+		hasNext = null;
+		return t;
+	}
+
+	protected abstract boolean computeHasNext();
+
+	protected abstract JsonToken<?> computeNext();
 }

@@ -31,11 +31,13 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 
 	protected Object object;
 
-	int state;
+	private Boolean hasNext;
 
-	JsonToken<?> token;
+	private int state;
 
-	Iterator<JsonToken<?>> iterator;
+	private JsonToken<?> token;
+
+	private Iterator<JsonToken<?>> iterator;
 
 	public void setObject(Object object) {
 		this.object = object;
@@ -43,6 +45,8 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 
 	@Override
 	public boolean hasNext() {
+		if (hasNext != null)
+			return hasNext;
 		while (token == null && (iterator == null || !iterator.hasNext()) && state != 3) {
 			var s = state;
 			state = switch (s) {
@@ -52,7 +56,7 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 			}
 			case 1 -> {
 				if (iterator == null)
-					iterator = buildValueIterator(object);
+					iterator = newValueIterator(object);
 				if (iterator.hasNext())
 					yield 1;
 				yield 2;
@@ -63,24 +67,19 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 			}
 			default -> s;
 			};
-
-//			System.out.println("JsonIterator.hasNext " + s + " -> " + state);
-
+//			System.out.println("JsonIterator.hasNext, " + s + " -> " + state);
 		}
-		return token != null || (iterator != null && iterator.hasNext());
+		hasNext = token != null || (iterator != null && iterator.hasNext());
+		return hasNext;
 	}
 
 	@Override
 	public JsonToken<?> next() {
-		if (hasNext()) {
-			var t = token;
-			if (t != null) {
-				token = null;
-				return t;
-			}
-			t = iterator.next();
-			return t;
-		} else
+		if (!hasNext())
 			throw new NoSuchElementException();
+		var t = token != null ? token : iterator.next();
+		hasNext = null;
+		token = null;
+		return t;
 	}
 }

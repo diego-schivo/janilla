@@ -31,9 +31,9 @@ public class StringIterator implements Iterator<JsonToken<?>> {
 
 	protected String string;
 
-	int state;
+	private int state;
 
-	JsonToken<?> token;
+	private JsonToken<?> token;
 
 	public void setString(String string) {
 		this.string = string;
@@ -71,20 +71,17 @@ public class StringIterator implements Iterator<JsonToken<?>> {
 			}
 			default -> s;
 			};
-
-//			System.out.println("StringIterator.hasNext " + s + " -> " + state);
-
+//			System.out.println("StringIterator.hasNext, " + s + " -> " + state);
 		}
 		return token != null;
 	}
 
 	@Override
 	public JsonToken<?> next() {
-		if (hasNext()) {
-			var t = token;
-			token = null;
-			return t;
-		} else
+		if (!hasNext())
 			throw new NoSuchElementException();
+		var t = token;
+		token = null;
+		return t;
 	}
 }

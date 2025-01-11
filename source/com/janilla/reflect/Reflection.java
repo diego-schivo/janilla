@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -100,6 +101,8 @@ public class Reflection {
 		if (!Modifier.isPublic(class1.getModifiers())) {
 			if (Map.Entry.class.isAssignableFrom(class1))
 				class1 = Map.Entry.class;
+			else if (Supplier.class.isAssignableFrom(class1))
+				class1 = Supplier.class;
 			else
 				throw new IllegalArgumentException();
 		}
@@ -161,8 +164,9 @@ public class Reflection {
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}
-					return f != null && f.isAnnotationPresent(Flatten.class) ? properties(f.getType())
-							.filter(q -> !mm.containsKey(q.name())).map(q -> Property.of(p, q)) : Stream.of(p);
+					return f != null && f.isAnnotationPresent(Flatten.class)
+							? properties(f.getType()).filter(q -> !mm.containsKey(q.name())).map(q -> Property.of(p, q))
+							: Stream.of(p);
 				}).collect(Collectors.toMap(Property::name, p -> p, (v, _) -> v, LinkedHashMap::new));
 	}
 }

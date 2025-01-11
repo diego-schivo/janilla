@@ -126,10 +126,10 @@ public class ReflectionJsonIterator extends JsonIterator {
 	}
 
 	@Override
-	public Iterator<JsonToken<?>> buildValueIterator(Object object) {
-		var i = new ReflectionValueIterator();
-		i.setContext(this);
-		i.setObject(object);
-		return i;
+	public Iterator<JsonToken<?>> newValueIterator(Object object) {
+		var tt = new ReflectionValueIterator();
+		tt.setContext(this);
+		tt.setObject(object);
+		return tt;
 	}
 }

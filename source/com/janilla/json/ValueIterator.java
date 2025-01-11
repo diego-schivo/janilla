@@ -25,6 +25,7 @@
 package com.janilla.json;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -33,25 +34,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 public class ValueIterator extends TokenIterator {
 
 	protected Object object;
 
-	int state;
+	private int state;
 
-	JsonToken<?> token;
+	private JsonToken<?> token;
 
-	Iterator<JsonToken<?>> iterator;
+	private Iterator<JsonToken<?>> iterator;
 
 	public void setObject(Object object) {
 		this.object = object;
 	}
 
 	@Override
-	public boolean hasNext() {
+	protected boolean computeHasNext() {
 		while (token == null && (iterator == null || !iterator.hasNext()) && state != 3) {
 			var s = state;
 			state = switch (s) {
@@ -61,9 +61,9 @@ public class ValueIterator extends TokenIterator {
 			}
 			case 1 -> {
 				if (iterator == null)
-					iterator = createIterator();
+					iterator = newIterator();
 				if (iterator.hasNext())
-					yield 1;
+					yield s;
 				yield 2;
 			}
 			case 2 -> {
@@ -72,50 +72,43 @@ public class ValueIterator extends TokenIterator {
 			}
 			default -> s;
 			};
-
-//			System.out.println("ValueIterator.hasNext " + s + " -> " + state);
-
+//			System.out.println("ValueIterator.hasNext, " + s + " -> " + state);
 		}
 		return token != null || (iterator != null && iterator.hasNext());
 	}
 
 	@Override
-	public JsonToken<?> next() {
-		if (hasNext()) {
-			var t = token;
-			if (t != null) {
-				token = null;
-				return t;
-			}
-			t = iterator.next();
-			return t;
-		} else
-			throw new NoSuchElementException();
+	protected JsonToken<?> computeNext() {
+		var t = token != null ? token : iterator.next();
+		token = null;
+		return t;
 	}
 
-	protected Iterator<JsonToken<?>> createIterator() {
-		return object == null ? context.buildNullIterator() : switch (object) {
-		case Boolean x -> context.buildBooleanIterator(x);
-		case Instant x -> context.buildStringIterator(x.toString());
-		case List<?> l -> {
+	protected Iterator<JsonToken<?>> newIterator() {
+//		System.out.println("ValueIterator.createIterator, object=" + object);
+		return object == null ? context.newNullIterator() : switch (object) {
+		case Boolean x -> context.newBooleanIterator(x);
+		case Instant x -> context.newStringIterator(x.toString());
+		case List<?> x -> {
 			@SuppressWarnings("unchecked")
-			var m = (List<Object>) l;
-			yield context.buildArrayIterator(m.iterator());
+			var l = (List<Object>) x;
+			yield context.newArrayIterator(l.iterator());
 		}
-		case Locale x -> context.buildStringIterator(x.toLanguageTag());
-		case LocalDate x -> context.buildStringIterator(x.toString());
-		case Map<?, ?> x -> context.buildObjectIterator(x.entrySet().stream().map(e -> {
+		case Locale x -> context.newStringIterator(x.toLanguageTag());
+		case LocalDate x -> context.newStringIterator(x.toString());
+		case Map<?, ?> x -> context.newObjectIterator(x.entrySet().stream().map(y -> {
 			@SuppressWarnings("unchecked")
-			var f = e.getKey() instanceof Locale l
-					? new AbstractMap.SimpleEntry<String, Object>(l.toLanguageTag(), e.getValue())
-					: (Map.Entry<String, Object>) e;
-			return f;
+			var z = y.getKey() instanceof Locale l
+					? new AbstractMap.SimpleEntry<String, Object>(l.toLanguageTag(), y.getValue())
+					: (Map.Entry<String, Object>) y;
+			return z;
 		}).iterator());
-		case Number x -> context.buildNumberIterator(x);
-		case OffsetDateTime x -> context.buildStringIterator(x.toString());
-		case String x -> context.buildStringIterator(x);
-		case URI x -> context.buildStringIterator(x.toString());
-		case UUID x -> context.buildStringIterator(x.toString());
+		case Number x -> context.newNumberIterator(x);
+		case OffsetDateTime x -> context.newStringIterator(x.toString());
+		case Path x -> context.newStringIterator(x.toString());
+		case String x -> context.newStringIterator(x);
+		case URI x -> context.newStringIterator(x.toString());
+		case UUID x -> context.newStringIterator(x.toString());
 		default -> null;
 		};
 	}

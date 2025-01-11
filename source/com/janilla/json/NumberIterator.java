@@ -31,9 +31,9 @@ public class NumberIterator implements Iterator<JsonToken<?>> {
 
 	protected Number number;
 
-	int state;
+	private int state;
 
-	JsonToken<?> token;
+	private JsonToken<?> token;
 
 	public void setNumber(Number number) {
 		this.number = number;
@@ -50,20 +50,17 @@ public class NumberIterator implements Iterator<JsonToken<?>> {
 			}
 			default -> s;
 			};
-
-//			System.out.println("NumberIterator.hasNext " + s + " -> " + state);
-
+//			System.out.println("NumberIterator.hasNext, " + s + " -> " + state);
 		}
 		return token != null;
 	}
 
 	@Override
 	public JsonToken<?> next() {
-		if (hasNext()) {
-			var t = token;
-			token = null;
-			return t;
-		} else
+		if (!hasNext())
 			throw new NoSuchElementException();
+		var t = token;
+		token = null;
+		return t;
 	}
 }

@@ -29,6 +29,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -111,6 +112,8 @@ public class Converter {
 			};
 		if (r == OffsetDateTime.class)
 			return OffsetDateTime.parse((String) input);
+		if (r == Path.class)
+			return Path.of((String) input);
 		if (r == URI.class)
 			return URI.create((String) input);
 		if (r == UUID.class)

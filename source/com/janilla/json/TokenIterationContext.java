@@ -33,50 +33,50 @@ public abstract class TokenIterationContext {
 
 	private Deque<Object> stack = new ArrayDeque<>();
 
-	public Deque<Object> getStack() {
+	public Deque<Object> stack() {
 		return stack;
 	}
 
-	public Iterator<JsonToken<?>> buildArrayIterator(Iterator<?> elements) {
-		var i = new ArrayIterator();
-		i.setContext(this);
-		i.setElements(elements);
-		return i;
+	public Iterator<JsonToken<?>> newArrayIterator(Iterator<?> elements) {
+		var tt = new ArrayIterator();
+		tt.setContext(this);
+		tt.setElements(elements);
+		return tt;
 	}
 
-	public Iterator<JsonToken<?>> buildBooleanIterator(Boolean value) {
-		var i = new BooleanIterator();
-		i.setValue(value);
-		return i;
+	public Iterator<JsonToken<?>> newBooleanIterator(Boolean value) {
+		var tt = new BooleanIterator();
+		tt.setValue(value);
+		return tt;
 	}
 
-	public Iterator<JsonToken<?>> buildNullIterator() {
+	public Iterator<JsonToken<?>> newNullIterator() {
 		return new NullIterator();
 	}
 
-	public Iterator<JsonToken<?>> buildNumberIterator(Number number) {
-		var i = new NumberIterator();
-		i.setNumber(number);
-		return i;
+	public Iterator<JsonToken<?>> newNumberIterator(Number number) {
+		var tt = new NumberIterator();
+		tt.setNumber(number);
+		return tt;
 	}
 
-	public Iterator<JsonToken<?>> buildObjectIterator(Iterator<Map.Entry<String, Object>> entries) {
-		var i = new ObjectIterator();
-		i.setContext(this);
-		i.setEntries(entries);
-		return i;
+	public Iterator<JsonToken<?>> newObjectIterator(Iterator<Map.Entry<String, Object>> entries) {
+		var tt = new ObjectIterator();
+		tt.setContext(this);
+		tt.setEntries(entries);
+		return tt;
 	}
 
-	public Iterator<JsonToken<?>> buildStringIterator(String string) {
-		var i = new StringIterator();
-		i.setString(string);
-		return i;
+	public Iterator<JsonToken<?>> newStringIterator(String string) {
+		var tt = new StringIterator();
+		tt.setString(string);
+		return tt;
 	}
 
-	public Iterator<JsonToken<?>> buildValueIterator(Object object) {
-		var i = new ValueIterator();
-		i.setContext(this);
-		i.setObject(object);
-		return i;
+	public Iterator<JsonToken<?>> newValueIterator(Object object) {
+		var tt = new ValueIterator();
+		tt.setContext(this);
+		tt.setObject(object);
+		return tt;
 	}
 }

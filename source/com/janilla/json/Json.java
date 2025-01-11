@@ -64,14 +64,13 @@ public interface Json {
 	}
 
 	static String format(Object object, boolean reflection) {
-		var t = reflection ? new ReflectionJsonIterator() : new JsonIterator();
-		t.setObject(object);
-		return format(t);
+		var tt = reflection ? new ReflectionJsonIterator() : new JsonIterator();
+		tt.setObject(object);
+		return format(tt);
 	}
 
 	static String format(Iterator<JsonToken<?>> tokens) {
-		var s = Spliterators.spliteratorUnknownSize(tokens, 0);
-		return StreamSupport.stream(s, false).collect(formatCollector());
+		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(tokens, 0), false).collect(formatCollector());
 	}
 
 	static Object parse(String string) {

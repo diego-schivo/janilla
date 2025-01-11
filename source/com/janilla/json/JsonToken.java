@@ -44,7 +44,7 @@ public record JsonToken<T>(Type type, T data) {
 		JSON, OBJECT, ARRAY, MEMBER, ELEMENT, VALUE, STRING, NUMBER, BOOLEAN, NULL
 	}
 
-	enum Boundary {
+	public enum Boundary {
 		START, END
 	}
 }

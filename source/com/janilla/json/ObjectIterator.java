@@ -26,26 +26,25 @@ package com.janilla.json;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 public class ObjectIterator extends TokenIterator {
 
 	protected Iterator<Map.Entry<String, Object>> entries;
 
-	int state;
+	private int state;
 
-	JsonToken<?> token;
+	private JsonToken<?> token;
 
-	Map.Entry<String, Object> entry;
+	private Map.Entry<String, Object> entry;
 
-	Iterator<JsonToken<?>> iterator;
+	private Iterator<JsonToken<?>> iterator;
 
 	public void setEntries(Iterator<Map.Entry<String, Object>> entries) {
 		this.entries = entries;
 	}
 
 	@Override
-	public boolean hasNext() {
+	protected boolean computeHasNext() {
 		while (token == null && (iterator == null || !iterator.hasNext()) && state != 5) {
 			var s = state;
 			state = switch (s) {
@@ -56,7 +55,7 @@ public class ObjectIterator extends TokenIterator {
 			case 1 -> {
 				if (entries.hasNext()) {
 					entry = entries.next();
-					context.getStack().push(entry);
+					context.stack().push(entry);
 					token = JsonToken.MEMBER_START;
 					yield 2;
 				}
@@ -65,45 +64,36 @@ public class ObjectIterator extends TokenIterator {
 			}
 			case 2 -> {
 				if (iterator == null)
-					iterator = context.buildStringIterator(entry.getKey());
+					iterator = context.newStringIterator(entry.getKey());
 				if (iterator.hasNext())
-					yield 2;
+					yield s;
 				iterator = null;
 				yield 3;
 			}
 			case 3 -> {
 				if (iterator == null)
-					iterator = context.buildValueIterator(entry.getValue());
+					iterator = context.newValueIterator(entry.getValue());
 				if (iterator.hasNext())
-					yield 3;
+					yield s;
 				iterator = null;
 				yield 4;
 			}
 			case 4 -> {
-				context.getStack().pop();
+				context.stack().pop();
 				token = JsonToken.MEMBER_END;
 				yield 1;
 			}
 			default -> s;
 			};
-
-//			System.out.println("ObjectIterator.hasNext " + s + " -> " + state);
-
+//			System.out.println("ObjectIterator.hasNext, " + s + " -> " + state);
 		}
 		return token != null || (iterator != null && iterator.hasNext());
 	}
 
 	@Override
-	public JsonToken<?> next() {
-		if (hasNext()) {
-			var t = token;
-			if (t != null) {
-				token = null;
-				return t;
-			}
-			t = iterator.next();
-			return t;
-		} else
-			throw new NoSuchElementException();
+	protected JsonToken<?> computeNext() {
+		var t = token != null ? token : iterator.next();
+		token = null;
+		return t;
 	}
 }

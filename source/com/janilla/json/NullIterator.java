@@ -29,9 +29,9 @@ import java.util.NoSuchElementException;
 
 public class NullIterator implements Iterator<JsonToken<?>> {
 
-	int state;
+	private int state;
 
-	JsonToken<?> token;
+	private JsonToken<?> token;
 
 	@Override
 	public boolean hasNext() {
@@ -44,20 +44,17 @@ public class NullIterator implements Iterator<JsonToken<?>> {
 			}
 			default -> s;
 			};
-
-//			System.out.println("NumberIterator.hasNext " + s + " -> " + state);
-
+//			System.out.println("NullIterator.hasNext, " + s + " -> " + state);
 		}
 		return token != null;
 	}
 
 	@Override
 	public JsonToken<?> next() {
-		if (hasNext()) {
-			var t = token;
-			token = null;
-			return t;
-		} else
+		if (!hasNext())
 			throw new NoSuchElementException();
+		var t = token;
+		token = null;
+		return t;
 	}
 }
