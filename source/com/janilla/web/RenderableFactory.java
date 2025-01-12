@@ -50,12 +50,12 @@ public class RenderableFactory {
 				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(x -> x != null).findFirst()
 				.orElse(null);
 		@SuppressWarnings("unchecked")
-		var rc = (Class<Renderer<T>>) (ra != null ? ra.renderer() : Renderer.class);
+		var rc = (Class<Renderer<T>>) (ra != null ? ra.renderer() : HtmlRenderer.class);
 		Renderer<T> r;
 		try {
 			r = rc.getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException("rc=" + rc, e);
 		}
 		r.factory = this;
 		r.annotation = ra;

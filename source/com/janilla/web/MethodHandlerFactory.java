@@ -337,20 +337,20 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			rs.setStatus(200);
 			if (rs.getHeaderValue("cache-control") == null)
 				rs.setHeaderValue("cache-control", "no-cache");
-			if (rs.getHeaderValue("content-type") == null) {
-				var p = exchange.getRequest().getPath();
-				var i = p != null ? p.lastIndexOf('.') : -1;
-				var e = i >= 0 ? p.substring(i + 1) : null;
-				if (e != null)
-					switch (e) {
-					case "html":
-						rs.setHeaderValue("content-type", "text/html");
-						break;
-					case "js":
-						rs.setHeaderValue("content-type", "text/javascript");
-						break;
-					}
-			}
+//			if (rs.getHeaderValue("content-type") == null) {
+//				var p = exchange.getRequest().getPath();
+//				var i = p != null ? p.lastIndexOf('.') : -1;
+//				var e = i >= 0 ? p.substring(i + 1) : null;
+//				if (e != null)
+//					switch (e) {
+//					case "html":
+//						rs.setHeaderValue("content-type", "text/html");
+//						break;
+//					case "js":
+//						rs.setHeaderValue("content-type", "text/javascript");
+//						break;
+//					}
+//			}
 			render(renderableFactory.createRenderable(invocation.method.getAnnotatedReturnType(), o), exchange);
 		}
 	}

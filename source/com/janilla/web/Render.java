@@ -36,7 +36,7 @@ public @interface Render {
 	String template() default "";
 
 	@SuppressWarnings("rawtypes")
-	Class<? extends Renderer> renderer() default Renderer.class;
+	Class<? extends Renderer> renderer() default HtmlRenderer.class;
 
 	String delimiter() default "";
 }

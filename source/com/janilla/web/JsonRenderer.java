@@ -22,13 +22,14 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.http;
+package com.janilla.web;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
+import com.janilla.json.Json;
 
-public interface HttpWritableByteChannel extends WritableByteChannel {
+public class JsonRenderer<T> extends Renderer<T> {
 
-	public int write(ByteBuffer src, boolean endStream) throws IOException;
+	@Override
+	public String apply(T value) {
+		return Json.format(value, true);
+	}
 }
