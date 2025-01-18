@@ -26,16 +26,16 @@ package com.janilla.database;
 
 import java.nio.ByteBuffer;
 
-import com.janilla.io.ElementHelper;
+import com.janilla.io.ByteConverter;
 
 public record IdAndElement(long id, BlockReference element) {
 
-	static int BYTES = Long.BYTES + BlockReference.BYTES;
+	public static int BYTES = Long.BYTES + BlockReference.BYTES;
 
-	static ElementHelper<IdAndElement> HELPER = new ElementHelper<>() {
+	public static ByteConverter<IdAndElement> BYTE_CONVERTER = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(IdAndElement element) {
+		public byte[] serialize(IdAndElement element) {
 			var b = ByteBuffer.allocate(BYTES);
 			b.putLong(element.id());
 			b.putLong(element.element.position());
@@ -49,7 +49,7 @@ public record IdAndElement(long id, BlockReference element) {
 		}
 
 		@Override
-		public IdAndElement getElement(ByteBuffer buffer) {
+		public IdAndElement deserialize(ByteBuffer buffer) {
 			var i = buffer.getLong();
 			var q = buffer.getLong();
 			var c = buffer.getInt();

@@ -29,9 +29,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
@@ -42,17 +40,15 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public abstract class IO {
 
-	public static int DEFAULT_BUFFER_CAPACITY = 8192;
+	public static final int DEFAULT_BUFFER_CAPACITY = 8192;
 
-	public static Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.+)!(.+)");
+	public static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.+)!(.+)");
 
 	public static void emptyDirectory(Path directory) throws IOException {
 		Files.walkFileTree(directory, new SimpleFileVisitor<>() {
@@ -204,42 +200,6 @@ public abstract class IO {
 		return n;
 	}
 
-	public static void transfer(ReadableByteChannel source, WritableByteChannel destination) throws IOException {
-		var b = ByteBuffer.allocate(IO.DEFAULT_BUFFER_CAPACITY);
-		repeat(_ -> {
-			b.clear();
-			var n = source.read(b);
-			if (n > 0) {
-				b.flip();
-				repeat(_ -> destination.write(b), n);
-			}
-			return n;
-		}, Integer.MAX_VALUE);
-	}
-
-	public static int write(byte[] source, WritableByteChannel destination) throws IOException {
-		return write(ByteBuffer.wrap(source), destination);
-	}
-
-	public static int write(ByteBuffer source, WritableByteChannel destination) throws IOException {
-		return repeat(_ -> destination.write(source), source.remaining());
-	}
-
-	public static int repeat(IntUnaryOperator operation, int target) throws IOException {
-		var n = 0;
-		while (n < target) {
-			var i = operation.applyAsInt(target - n);
-			if (i < 0)
-				break;
-			n += i;
-		}
-		return n;
-	}
-
-	public static byte[] readAllBytes(ReadableByteChannel channel) throws IOException {
-		return Channels.newInputStream(channel).readAllBytes();
-	}
-
 	static Map<String, FileSystem> zipFileSystems = new ConcurrentHashMap<>();
 
 	public static FileSystem zipFileSystem(URI uri) throws IOException {
@@ -272,30 +232,6 @@ public abstract class IO {
 				.takeWhile(x -> x != -1);
 	}
 
-	public static IntStream toIntStream(ReadableByteChannel channel) {
-		var bb = ByteBuffer.wrap(new byte[1]);
-		return IntStream.generate(() -> {
-			try {
-//				bb.position(0);
-//				for (;;) {
-//					var r = channel.read(bb);
-//					if (r > 0)
-//						return Byte.toUnsignedInt(bb.get(0));
-//					if (r < 0)
-//						return r;
-//				}
-//				return channel.read(bb) > 0 ? Byte.toUnsignedInt(bb.get(0)) : -1;
-				return switch (channel.read(bb)) {
-				case 0 -> -2;
-				case -1 -> -1;
-				default -> bb.get(0);
-				};
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		}); // .takeWhile(x -> x != -1);
-	}
-
 	public static ReadableByteChannel toReadableByteChannel(ByteBuffer buffer) {
 		return new ReadableByteChannel() {
 
@@ -323,98 +259,5 @@ public abstract class IO {
 				return l;
 			}
 		};
-	}
-
-	public interface Runnable {
-
-		void run() throws IOException;
-	}
-
-	public interface Consumer<T> {
-
-		void accept(T t) throws IOException;
-	}
-
-	public interface BiConsumer<T, U> {
-
-		void accept(T t, U u) throws IOException;
-	}
-
-	public interface Function<T, R> {
-
-		R apply(T t) throws IOException;
-	}
-
-	public interface BiFunction<T, U, R> {
-
-		R apply(T t, U u) throws IOException;
-	}
-
-	public interface Predicate<T> {
-
-		boolean test(T t) throws IOException;
-	}
-
-	public interface Supplier<T> {
-
-		T get() throws IOException;
-	}
-
-	public interface BooleanSupplier {
-
-		boolean getAsBoolean() throws IOException;
-	}
-
-	public interface IntSupplier {
-
-		int getAsInt() throws IOException;
-	}
-
-	public interface LongSupplier {
-
-		long getAsLong() throws IOException;
-	}
-
-	public interface UnaryOperator<T> extends Function<T, T> {
-	}
-
-	public interface IntUnaryOperator {
-
-		int applyAsInt(int operand) throws IOException;
-	}
-
-	public static class Lazy<T> implements Supplier<T> {
-
-		public static <T> Lazy<T> of(Supplier<T> supplier) {
-			return new Lazy<T>(supplier);
-		}
-
-		final Supplier<T> supplier;
-
-		final Lock lock = new ReentrantLock();
-
-		volatile boolean got;
-
-		T result;
-
-		private Lazy(Supplier<T> supplier) {
-			this.supplier = supplier;
-		}
-
-		@Override
-		public T get() throws IOException {
-			if (!got) {
-				lock.lock();
-				try {
-					if (!got) {
-						result = supplier.get();
-						got = true;
-					}
-				} finally {
-					lock.unlock();
-				}
-			}
-			return result;
-		}
 	}
 }

@@ -24,9 +24,7 @@
  */
 package com.janilla.web;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -34,23 +32,51 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.reflect.Factory;
 import com.janilla.reflect.Reflection;
-import com.janilla.util.Lazy;
 import com.janilla.util.Util;
 
 public class ApplicationHandlerBuilder {
 
-	Supplier<Collection<Class<?>>> frontendClasses = Lazy.of(() -> {
-		var c = Util.getPackageClasses("com.janilla.frontend").toList();
-//		System.out.println("c=" + c);
-		return c;
-	});
+//	Supplier<Collection<Class<?>>> frontendClasses = Lazy.of(() -> {
+//		var c = Util.getPackageClasses("com.janilla.frontend").toList();
+	////		System.out.println("c=" + c);
+//		return c;
+//	});
+//	protected Collection<Class<?>> frontendClasses;
 
 	protected Factory factory;
 
-	List<WebHandlerFactory> factories;
+	protected List<WebHandlerFactory> factories;
 
-	Supplier<WebHandlerFactory> handlerFactory = Lazy.of(() -> {
-//		System.out.println("ApplicationHandlerBuilder.handlerFactory, this=" + this);
+//	Supplier<WebHandlerFactory> handlerFactory = Lazy.of(() -> {
+	////		System.out.println("ApplicationHandlerBuilder.handlerFactory, this=" + this);
+
+//		factories = buildFactories().toList();
+//		var f = new DelegatingHandlerFactory();
+//		for (var g : factories) {
+//			var s = Reflection.property(g.getClass(), "mainFactory");
+//			if (s != null)
+//				s.set(g, f);
+//		}
+//		f.setToHandler((o, c) -> {
+//			var h = createHandler(o, c);
+//
+	////			System.out.println("h=" + h);
+//
+//			return h;
+//		});
+//		return f;
+//	});
+	protected WebHandlerFactory handlerFactory;
+
+	public void setFactory(Factory factory) {
+		this.factory = factory;
+	}
+
+//	public WebHandlerFactory getHandlerFactory() {
+//		return handlerFactory.get();
+//	}
+
+	public HttpHandler build() {
 		factories = buildFactories().toList();
 		var f = new DelegatingHandlerFactory();
 		for (var g : factories) {
@@ -65,22 +91,11 @@ public class ApplicationHandlerBuilder {
 
 			return h;
 		});
-		return f;
-	});
-
-	public void setFactory(Factory factory) {
-		this.factory = factory;
-	}
-
-	public WebHandlerFactory getHandlerFactory() {
-		return handlerFactory.get();
-	}
-
-	public HttpHandler build() {
+//		handlerFactory = f;
 		return x -> {
 			var ex = (HttpExchange) x;
 			var o = ex.getException() != null ? ex.getException() : ex.getRequest();
-			var h = handlerFactory.get().createHandler(o, ex);
+			var h = f.createHandler(o, ex);
 			if (h == null)
 				throw new NotFoundException(ex.getRequest().getMethod() + " " + ex.getRequest().getTarget());
 			return h.handle(ex);
@@ -94,13 +109,12 @@ public class ApplicationHandlerBuilder {
 
 	protected WebHandlerFactory buildMethodHandlerFactory() {
 		var f = factory.create(MethodHandlerFactory.class);
-		f.setTypes(() -> Stream
-				.concat(StreamSupport.stream(factory.getTypes().spliterator(), false), frontendClasses.get().stream())
-				.iterator());
-		f.setTargetResolver(x -> {
-			var a = factory.getSource();
-			return x == a.getClass() ? a : factory.create(x);
-		});
+		var fcc = Util.getPackageClasses("com.janilla.frontend").toList();
+		f.initialize(() -> Stream.concat(StreamSupport.stream(factory.getTypes().spliterator(), false), fcc.stream())
+				.iterator(), x -> {
+					var a = factory.getSource();
+					return x == a.getClass() ? a : factory.create(x);
+				});
 		if (f.renderableFactory == null)
 			f.renderableFactory = new RenderableFactory();
 		return f;
@@ -112,7 +126,7 @@ public class ApplicationHandlerBuilder {
 
 	protected WebHandlerFactory buildResourceHandlerFactory() {
 		var f = factory.create(ResourceHandlerFactory.class);
-		f.setPackages(getClass().getPackageName(), "com.janilla.frontend",
+		f.initialize(getClass().getPackageName(), "com.janilla.frontend",
 				factory.getSource().getClass().getPackageName());
 		return f;
 	}

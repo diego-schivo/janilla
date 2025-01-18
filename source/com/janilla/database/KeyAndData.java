@@ -26,33 +26,33 @@ package com.janilla.database;
 
 import java.nio.ByteBuffer;
 
-import com.janilla.io.ElementHelper;
+import com.janilla.io.ByteConverter;
 
-public record KeyAndData<K>(K key, BlockReference attributes, BlockReference btree) {
+public record KeyAndData<K>(K key, BlockReference attributes, BlockReference bTree) {
 
-	static <K> ElementHelper<KeyAndData<K>> getHelper(ElementHelper<K> keyHelper) {
-		return new ElementHelper<>() {
+	public static <K> ByteConverter<KeyAndData<K>> getByteConverter(ByteConverter<K> keyConverter) {
+		return new ByteConverter<>() {
 
 			@Override
-			public byte[] getBytes(KeyAndData<K> element) {
-				var bb = keyHelper.getBytes(element.key());
+			public byte[] serialize(KeyAndData<K> element) {
+				var bb = keyConverter.serialize(element.key());
 				var b = ByteBuffer.allocate(bb.length + 2 * BlockReference.BYTES);
 				b.put(bb);
 				b.putLong(element.attributes.position());
 				b.putInt(element.attributes.capacity());
-				b.putLong(element.btree.position());
-				b.putInt(element.btree.capacity());
+				b.putLong(element.bTree.position());
+				b.putInt(element.bTree.capacity());
 				return b.array();
 			}
 
 			@Override
 			public int getLength(ByteBuffer buffer) {
-				return keyHelper.getLength(buffer) + 2 * BlockReference.BYTES;
+				return keyConverter.getLength(buffer) + 2 * BlockReference.BYTES;
 			}
 
 			@Override
-			public KeyAndData<K> getElement(ByteBuffer buffer) {
-				var k = keyHelper.getElement(buffer);
+			public KeyAndData<K> deserialize(ByteBuffer buffer) {
+				var k = keyConverter.deserialize(buffer);
 				var p1 = buffer.getLong();
 				var c1 = buffer.getInt();
 				var p2 = buffer.getLong();
@@ -62,7 +62,7 @@ public record KeyAndData<K>(K key, BlockReference attributes, BlockReference btr
 
 			@Override
 			public int compare(ByteBuffer buffer, KeyAndData<K> element) {
-				return keyHelper.compare(buffer, element.key());
+				return keyConverter.compare(buffer, element.key());
 			}
 		};
 	}

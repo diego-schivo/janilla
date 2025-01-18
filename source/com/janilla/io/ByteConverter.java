@@ -34,54 +34,54 @@ import java.util.UUID;
 
 import com.janilla.reflect.Reflection;
 
-public interface ElementHelper<E> {
+public interface ByteConverter<E> {
 
-	byte[] getBytes(E element);
+	byte[] serialize(E element);
 
 	int getLength(ByteBuffer buffer);
 
-	E getElement(ByteBuffer buffer);
+	E deserialize(ByteBuffer buffer);
 
 	int compare(ByteBuffer buffer, E element);
 
-	static <T> ElementHelper<T> of(Class<T> type) {
+	static <T> ByteConverter<T> of(Class<T> type) {
 		if (type == BigDecimal.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) BIG_DECIMAL;
+			var h = (ByteConverter<T>) BIG_DECIMAL;
 			return h;
 		} else if (type == Instant.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) INSTANT;
+			var h = (ByteConverter<T>) INSTANT;
 			return h;
 		} else if (type == Integer.class || type == Integer.TYPE) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) INTEGER;
+			var h = (ByteConverter<T>) INTEGER;
 			return h;
 		} else if (type == LocalDate.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) LOCAL_DATE;
+			var h = (ByteConverter<T>) LOCAL_DATE;
 			return h;
 		} else if (type == Long.class || type == Long.TYPE) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) LONG;
+			var h = (ByteConverter<T>) LONG;
 			return h;
 		} else if (type == String.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) STRING;
+			var h = (ByteConverter<T>) STRING;
 			return h;
 		} else if (type == URI.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) URI1;
+			var h = (ByteConverter<T>) URI1;
 			return h;
 		} else if (type == UUID.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ElementHelper<T>) UUID1;
+			var h = (ByteConverter<T>) UUID1;
 			return h;
 		} else
 			throw new IllegalArgumentException("type=" + type);
 	}
 
-	static ElementHelper<Object[]> of(Class<?> type, String... properties) {
+	static ByteConverter<Object[]> of(Class<?> type, String... properties) {
 		return of(Arrays.stream(properties).map(n -> {
 			var d = n.startsWith("-");
 			if (n.startsWith("+") || d)
@@ -92,25 +92,25 @@ public interface ElementHelper<E> {
 		}).toArray(TypeAndOrder[]::new));
 	}
 
-	static ElementHelper<Object[]> of(TypeAndOrder... types) {
-		var hh = Arrays.stream(types).map(x -> ElementHelper.of(x.type)).toArray(ElementHelper[]::new);
+	static ByteConverter<Object[]> of(TypeAndOrder... types) {
+		var hh = Arrays.stream(types).map(x -> ByteConverter.of(x.type)).toArray(ByteConverter[]::new);
 		var oo = Arrays.stream(types).map(TypeAndOrder::order).toArray(SortOrder[]::new);
-		return new ElementHelper<>() {
+		return new ByteConverter<>() {
 
 			@Override
-			public byte[] getBytes(Object[] element) {
+			public byte[] serialize(Object[] element) {
 				var bbb = new byte[hh.length][];
 				var l = 0;
 				for (var i = 0; i < hh.length; i++) {
 					@SuppressWarnings("unchecked")
-					var bb = hh[i].getBytes(element[i]);
+					var bb = hh[i].serialize(element[i]);
 					bbb[i] = bb;
 					l += bb.length;
 				}
-				var bb = ByteBuffer.allocate(l);
-				for (var bb2 : bbb)
-					bb.put(bb2);
-				return bb.array();
+				var b = ByteBuffer.allocate(l);
+				for (var bb : bbb)
+					b.put(bb);
+				return b.array();
 			}
 
 			@Override
@@ -134,8 +134,8 @@ public interface ElementHelper<E> {
 			}
 
 			@Override
-			public Object[] getElement(ByteBuffer buffer) {
-				return Arrays.stream(hh).map(h -> h.getElement(buffer)).toArray();
+			public Object[] deserialize(ByteBuffer buffer) {
+				return Arrays.stream(hh).map(h -> h.deserialize(buffer)).toArray();
 			}
 
 			@Override
@@ -157,10 +157,10 @@ public interface ElementHelper<E> {
 		};
 	}
 
-	ElementHelper<BigDecimal> BIG_DECIMAL = new ElementHelper<>() {
+	ByteConverter<BigDecimal> BIG_DECIMAL = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(BigDecimal element) {
+		public byte[] serialize(BigDecimal element) {
 			var b = ByteBuffer.allocate(Long.BYTES + Short.BYTES);
 			b.putLong(element != null ? element.unscaledValue().longValue() : -1);
 			b.putShort((short) (element != null ? element.scale() : -1));
@@ -173,7 +173,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public BigDecimal getElement(ByteBuffer buffer) {
+		public BigDecimal deserialize(ByteBuffer buffer) {
 			var l = buffer.getLong();
 			var s = buffer.getShort();
 			return s != -1 ? BigDecimal.valueOf(l, s) : null;
@@ -191,13 +191,11 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<Boolean> BOOLEAN = new ElementHelper<>() {
+	ByteConverter<Boolean> BOOLEAN = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(Boolean element) {
-			var b = ByteBuffer.allocate(1);
-			b.put((byte) (element == null ? -1 : element ? 1 : 0));
-			return b.array();
+		public byte[] serialize(Boolean element) {
+			return new byte[] { (byte) (element == null ? -1 : element ? 1 : 0) };
 		}
 
 		@Override
@@ -206,7 +204,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public Boolean getElement(ByteBuffer buffer) {
+		public Boolean deserialize(ByteBuffer buffer) {
 			var b = buffer.get();
 			return b == -1 ? null : b == 1 ? Boolean.TRUE : Boolean.FALSE;
 		}
@@ -222,10 +220,10 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<Instant> INSTANT = new ElementHelper<>() {
+	ByteConverter<Instant> INSTANT = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(Instant element) {
+		public byte[] serialize(Instant element) {
 			var b = ByteBuffer.allocate(Long.BYTES);
 			b.putLong(element != null ? element.toEpochMilli() : -1);
 			return b.array();
@@ -237,7 +235,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public Instant getElement(ByteBuffer buffer) {
+		public Instant deserialize(ByteBuffer buffer) {
 			var l = buffer.getLong();
 			return l != -1 ? Instant.ofEpochMilli(l) : null;
 		}
@@ -251,10 +249,10 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<Integer> INTEGER = new ElementHelper<>() {
+	ByteConverter<Integer> INTEGER = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(Integer element) {
+		public byte[] serialize(Integer element) {
 			var b = ByteBuffer.allocate(Integer.BYTES);
 			b.putInt(element);
 			return b.array();
@@ -266,7 +264,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public Integer getElement(ByteBuffer buffer) {
+		public Integer deserialize(ByteBuffer buffer) {
 			return buffer.getInt();
 		}
 
@@ -276,10 +274,10 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<LocalDate> LOCAL_DATE = new ElementHelper<>() {
+	ByteConverter<LocalDate> LOCAL_DATE = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(LocalDate element) {
+		public byte[] serialize(LocalDate element) {
 			var b = ByteBuffer.allocate(Integer.BYTES + 2 * Byte.BYTES);
 			b.putInt(element != null ? element.getYear() : -1);
 			b.put((byte) (element != null ? element.getMonthValue() : -1));
@@ -293,7 +291,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public LocalDate getElement(ByteBuffer buffer) {
+		public LocalDate deserialize(ByteBuffer buffer) {
 			int y = buffer.getInt();
 			byte m = buffer.get();
 			byte d = buffer.get();
@@ -317,10 +315,10 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<Long> LONG = new ElementHelper<>() {
+	ByteConverter<Long> LONG = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(Long element) {
+		public byte[] serialize(Long element) {
 			var b = ByteBuffer.allocate(Long.BYTES);
 			b.putLong(element);
 			return b.array();
@@ -332,7 +330,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public Long getElement(ByteBuffer buffer) {
+		public Long deserialize(ByteBuffer buffer) {
 			return buffer.getLong();
 		}
 
@@ -342,10 +340,10 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<Object> NULL = new ElementHelper<>() {
+	ByteConverter<Object> NULL = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(Object element) {
+		public byte[] serialize(Object element) {
 			return new byte[0];
 		}
 
@@ -355,7 +353,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public Object getElement(ByteBuffer buffer) {
+		public Object deserialize(ByteBuffer buffer) {
 			return null;
 		}
 
@@ -365,10 +363,10 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<String> STRING = new ElementHelper<>() {
+	ByteConverter<String> STRING = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(String element) {
+		public byte[] serialize(String element) {
 			var bb = element != null ? element.getBytes() : null;
 			var b = ByteBuffer.allocate(Integer.BYTES + (bb != null ? bb.length : 0));
 			b.putInt(bb != null ? bb.length : -1);
@@ -384,7 +382,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public String getElement(ByteBuffer buffer) {
+		public String deserialize(ByteBuffer buffer) {
 			var l = buffer.getInt();
 			if (l == -1)
 				return null;
@@ -411,11 +409,11 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<URI> URI1 = new ElementHelper<>() {
+	ByteConverter<URI> URI1 = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(URI element) {
-			return STRING.getBytes(element != null ? element.toString() : null);
+		public byte[] serialize(URI element) {
+			return STRING.serialize(element != null ? element.toString() : null);
 		}
 
 		@Override
@@ -424,8 +422,8 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public URI getElement(ByteBuffer buffer) {
-			var s = STRING.getElement(buffer);
+		public URI deserialize(ByteBuffer buffer) {
+			var s = STRING.deserialize(buffer);
 			return s != null ? URI.create(s) : null;
 		}
 
@@ -435,10 +433,10 @@ public interface ElementHelper<E> {
 		}
 	};
 
-	ElementHelper<UUID> UUID1 = new ElementHelper<>() {
+	ByteConverter<UUID> UUID1 = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(UUID element) {
+		public byte[] serialize(UUID element) {
 			var b = ByteBuffer.allocate(2 * Long.BYTES);
 			b.putLong(element.getMostSignificantBits());
 			b.putLong(element.getLeastSignificantBits());
@@ -451,7 +449,7 @@ public interface ElementHelper<E> {
 		}
 
 		@Override
-		public UUID getElement(ByteBuffer buffer) {
+		public UUID deserialize(ByteBuffer buffer) {
 			return new UUID(buffer.getLong(), buffer.getLong());
 		}
 

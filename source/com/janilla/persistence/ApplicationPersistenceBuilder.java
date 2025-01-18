@@ -30,101 +30,57 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 
+import com.janilla.database.BTree;
+import com.janilla.database.BTreeMemory;
 import com.janilla.database.BlockReference;
 import com.janilla.database.Database;
-import com.janilla.database.Memory;
+import com.janilla.database.IdAndElement;
 import com.janilla.database.Store;
-import com.janilla.io.ElementHelper;
+import com.janilla.io.ByteConverter;
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.reflect.Factory;
 
 public class ApplicationPersistenceBuilder {
 
-	protected Path file;
+	protected final Path databaseFile;
 
-	protected int order = 100;
+	protected final Factory factory;
 
-	protected Factory factory;
+	protected Persistence persistence;
 
-	public void setFile(Path file) {
-		this.file = file;
-	}
-
-	public void setOrder(int order) {
-		this.order = order;
-	}
-
-	public void setFactory(Factory factory) {
+	public ApplicationPersistenceBuilder(Path databaseFile, Factory factory) {
+		this.databaseFile = databaseFile;
 		this.factory = factory;
 	}
 
 	public Persistence build() {
 		try {
+			var bto = 100;
 			TransactionalByteChannel ch;
 			{
-				var d = Files.createDirectories(file.getParent());
-				var f = d.resolve(file.getFileName());
-				var tf = d.resolve(file.getFileName() + ".transaction");
+				var d = Files.createDirectories(databaseFile.getParent());
+				var f = d.resolve(databaseFile.getFileName());
+				var tf = d.resolve(databaseFile.getFileName() + ".transaction");
 				ch = new TransactionalByteChannel(
 						FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 								StandardOpenOption.WRITE),
 						FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ,
 								StandardOpenOption.WRITE));
 			}
-
-			var m = new Memory();
-			{
-				var t = m.getFreeBTree();
-				t.setChannel(ch);
-				t.setOrder(order);
-				t.setRoot(BlockReference.read(ch, 0));
-				m.setAppendPosition(Math.max(3 * BlockReference.BYTES, ch.size()));
-			}
-
-			var d = new Database();
-			d.setBTreeOrder(order);
-			d.setChannel(ch);
-			d.setMemory(m);
-			d.setStoresRoot(BlockReference.BYTES);
-			d.setIndexesRoot(2 * BlockReference.BYTES);
-
-			var p = factory.create(Persistence.class);
-			p.database = d;
-			p.configuration = new Persistence.Configuration();
-			for (var t : factory.getTypes())
-				p.configure(t);
-
-			d.setInitializeStore((_, x) -> {
-				@SuppressWarnings("unchecked")
-				var s = (Store<String>) x;
-				s.setElementHelper(ElementHelper.STRING);
-				s.setIdSupplier(() -> {
-					var v = x.getAttributes().get("nextId");
-					var id = v != null ? (Long) v : 1L;
-					x.getAttributes().put("nextId", id + 1);
-					return id;
-				});
-			});
-			d.setInitializeIndex((n, x) -> {
-				if (p.initializeIndex(n, x))
-					return;
-			});
-
-			p.createStoresAndIndexes();
-
-			p.setTypeResolver(x -> {
-//				try {
-//					return Class.forName(getClass().getPackageName() + "." + x.replace('.', '$'));
-//				} catch (ClassNotFoundException f) {
-//					throw new RuntimeException(f);
-//				}
-				return factory.getTypes().stream()
-						.filter(y -> y.getName().substring(y.getPackageName().length() + 1).equals(x)).findFirst()
-						.get();
-			});
-
-			return p;
+			var m = new BTreeMemory(bto, ch, BlockReference.read(ch, 0), Math.max(3 * BlockReference.BYTES, ch.size()));
+			var d = new Database(bto, ch, m, BlockReference.BYTES, 2 * BlockReference.BYTES,
+					x -> new Store<String>(new BTree<>(bto, ch, m, IdAndElement.BYTE_CONVERTER, x.bTree()),
+							ByteConverter.STRING, y -> {
+								var v = y.get("nextId");
+								var id = v != null ? (long) v : 1L;
+								y.put("nextId", id + 1);
+								return id;
+							}),
+					x -> persistence.newIndex(x));
+			persistence = factory.create(Persistence.class, Map.of("database", d, "types", factory.getTypes()));
+			return persistence;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

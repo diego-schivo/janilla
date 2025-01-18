@@ -34,34 +34,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PrimitiveIterator;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import com.janilla.database.Database;
+import com.janilla.json.Converter;
+import com.janilla.json.Json;
+import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.reflect.Reflection;
 
 public class Crud<E> {
 
-	protected Class<E> type;
+	protected final Class<E> type;
 
-	protected Database database;
+	protected final Persistence persistence;
 
-	protected Function<E, Object> formatter;
-
-	protected Function<Object, E> parser;
+//	protected final boolean indexPresent;
 
 	protected Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new HashMap<>();
 
-	protected boolean indexPresent;
+	public Crud(Class<E> type, Persistence persistence) {
+		this.type = type;
+		this.persistence = persistence;
+//		indexPresent = type.isAnnotationPresent(Index.class);
+	}
 
 	public E create(E entity) {
 //		System.out.println("Crud.create entity=" + entity);
 
-		return database.perform((ss, _) -> {
+		return persistence.database.perform((ss, _) -> {
 			class A {
 
 				E e;
@@ -69,7 +72,7 @@ public class Crud<E> {
 			var a = new A();
 			var i = ss.perform(type.getSimpleName(), s -> s.create(x -> {
 				a.e = Reflection.copy(new Entity(x), entity);
-				var t = formatter.apply(a.e);
+				var t = format(a.e);
 //			System.out.println("Crud.create t=" + t);
 				return t;
 			}));
@@ -81,18 +84,18 @@ public class Crud<E> {
 	public E read(long id) {
 		if (id <= 0)
 			return null;
-		var o = database.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> s.read(id)), false);
-		return o != null ? parser.apply(o) : null;
+		var o = persistence.database.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> s.read(id)), false);
+		return o != null ? parse(o) : null;
 	}
 
 	public Stream<E> read(long[] ids) {
 		if (ids == null || ids.length == 0)
 			return Stream.empty();
-		return database.perform((ss, _) -> {
+		return persistence.database.perform((ss, _) -> {
 			var b = Stream.<E>builder();
 			for (var i : ids) {
 				var o = ss.perform(type.getSimpleName(), s -> s.read(i));
-				b.add(o != null ? parser.apply(o) : null);
+				b.add(o != null ? parse(o) : null);
 			}
 			return b.build();
 		}, false);
@@ -101,7 +104,7 @@ public class Crud<E> {
 	public E update(long id, UnaryOperator<E> operator) {
 		if (id <= 0)
 			return null;
-		return database.perform((ss, _) -> {
+		return persistence.database.perform((ss, _) -> {
 			class A {
 
 				E e1;
@@ -110,9 +113,9 @@ public class Crud<E> {
 			}
 			var a = new A();
 			ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
-				a.e1 = parser.apply(x);
+				a.e1 = parse(x);
 				a.e2 = operator.apply(a.e1);
-				return formatter.apply(a.e2);
+				return format(a.e2);
 			}));
 			if (a.e1 != null)
 				updateIndexes(a.e1, a.e2, id);
@@ -123,59 +126,61 @@ public class Crud<E> {
 	public E delete(long id) {
 		if (id <= 0)
 			return null;
-		return database.perform((ss, _) -> {
+		return persistence.database.perform((ss, _) -> {
 			var o = ss.perform(type.getSimpleName(), s -> s.delete(id));
-			var e = parser.apply(o);
+			var e = parse(o);
 			updateIndexes(e, null, id);
 			return e;
 		}, true);
 	}
 
 	public long[] list() {
-		return database.perform(
-				(ss, ii) -> indexPresent ? ii.perform(type.getSimpleName(), i -> getIndexIds(i.values()).toArray())
-						: ss.perform(type.getSimpleName(), s -> s.ids().toArray()),
-				false);
+		return persistence.database.perform((ss, ii) -> type.isAnnotationPresent(Index.class)
+				? ii.perform(type.getSimpleName(), i -> getIndexIds(i.values()).toArray())
+				: ss.perform(type.getSimpleName(), s -> s.ids().toArray()), false);
 	}
 
 	public Page list(long skip, long limit) {
 //		System.out.println("Crud.list, skip=" + skip + ", limit=" + limit);
-		return database.perform((ss, ii) -> indexPresent ? ii.perform(type.getSimpleName(), i -> {
-			var vv = i.values();
-			if (skip > 0)
-				vv = vv.skip(skip);
-			if (limit >= 0)
-				vv = vv.limit(limit);
-			var j = getIndexIds(vv).toArray();
-			var c = i.count();
-			return new Page(j, c);
-		}) : ss.perform(type.getSimpleName(), s -> {
-			var jj = s.ids();
-			if (skip > 0)
-				jj = jj.skip(skip);
-			if (limit >= 0)
-				jj = jj.limit(limit);
-			var i = jj.toArray();
-			var c = s.count();
-			return new Page(i, c);
-		}), false);
+		return persistence.database
+				.perform((ss, ii) -> type.isAnnotationPresent(Index.class) ? ii.perform(type.getSimpleName(), i -> {
+					var vv = i.values();
+					if (skip > 0)
+						vv = vv.skip(skip);
+					if (limit >= 0)
+						vv = vv.limit(limit);
+					var j = getIndexIds(vv).toArray();
+					var c = i.count();
+					return new Page(j, c);
+				}) : ss.perform(type.getSimpleName(), s -> {
+					var jj = s.ids();
+					if (skip > 0)
+						jj = jj.skip(skip);
+					if (limit >= 0)
+						jj = jj.limit(limit);
+					var i = jj.toArray();
+					var c = s.count();
+					return new Page(i, c);
+				}), false);
 	}
 
 	public long count() {
-		return database.perform((ss, ii) -> indexPresent ? ii.perform(type.getSimpleName(), i -> i.count())
-				: ss.perform(type.getSimpleName(), s -> s.count()), false);
+		return persistence.database.perform(
+				(ss, ii) -> type.isAnnotationPresent(Index.class) ? ii.perform(type.getSimpleName(), i -> i.count())
+						: ss.perform(type.getSimpleName(), s -> s.count()),
+				false);
 	}
 
 	public long count(String index, Object key) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return database.perform((_, ii) -> ii.perform(n, i -> i.count(key)), false);
+		return persistence.database.perform((_, ii) -> ii.perform(n, i -> i.count(key)), false);
 	}
 
 	public long find(String index, Object key) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return database.perform((_, ii) -> ii.perform(n, i -> i.list(key)
+		return persistence.database.perform((_, ii) -> ii.perform(n, i -> i.list(key)
 				.mapToLong(o -> (Long) (o instanceof Object[] oo ? oo[oo.length - 1] : o)).findFirst().orElse(0)),
 				false);
 	}
@@ -186,9 +191,11 @@ public class Crud<E> {
 //		System.out.println("n=" + n + ", keys=" + Arrays.toString(keys));
 		switch (keys.length) {
 		case 0:
-			return database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.values()).toArray()), false);
+			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.values()).toArray()),
+					false);
 		case 1:
-			return database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.list(keys[0])).toArray()), false);
+			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.list(keys[0])).toArray()),
+					false);
 		}
 		class A {
 
@@ -196,7 +203,7 @@ public class Crud<E> {
 
 			Object v;
 		}
-		List<A> aa = database.perform((_, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
+		List<A> aa = persistence.database.perform((_, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
 			var a = new A();
 			a.vv = i.list(k).iterator();
 			a.v = a.vv.hasNext() ? a.vv.next() : null;
@@ -223,7 +230,7 @@ public class Crud<E> {
 				.collect(Collectors.joining("."));
 		switch (keys.length) {
 		case 0:
-			return database.perform((_, ii) -> ii.perform(n, i -> {
+			return persistence.database.perform((_, ii) -> ii.perform(n, i -> {
 				var jj = getIndexIds(i.values());
 				if (skip > 0)
 					jj = jj.skip(skip);
@@ -232,7 +239,7 @@ public class Crud<E> {
 				return new Page(jj.toArray(), i.count());
 			}), false);
 		case 1:
-			return database.perform((_, ii) -> ii.perform(n, i -> {
+			return persistence.database.perform((_, ii) -> ii.perform(n, i -> {
 				var jj = getIndexIds(i.list(keys[0]));
 				if (skip > 0)
 					jj = jj.skip(skip);
@@ -250,7 +257,7 @@ public class Crud<E> {
 			long l;
 		}
 		List<A> aa;
-		aa = database.perform((_, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
+		aa = persistence.database.perform((_, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
 			var a = new A();
 			a.vv = i.list(k).iterator();
 			a.v = a.vv.hasNext() ? a.vv.next() : null;
@@ -277,13 +284,14 @@ public class Crud<E> {
 	public long[] filter(String index, Predicate<Object> operation) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toArray()), false);
+		return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toArray()),
+				false);
 	}
 
 	public Page filter(String index, Predicate<Object> operation, long skip, long limit) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return database.perform((_, ii) -> ii.perform(n,
+		return persistence.database.perform((_, ii) -> ii.perform(n,
 				i -> new Page(getIndexIds(i.valuesIf(operation)).skip(skip).limit(limit).toArray(),
 						i.countIf(operation))),
 				false);
@@ -297,7 +305,7 @@ public class Crud<E> {
 			var e = ee.get(0);
 			return filter(e.getKey(), skip, limit, e.getValue());
 		}
-		return database.perform((_, ii) -> {
+		return persistence.database.perform((_, ii) -> {
 			class A {
 
 				PrimitiveIterator.OfLong lli;
@@ -378,6 +386,23 @@ public class Crud<E> {
 		}, false);
 	}
 
+	protected Object format(E x) {
+		var tt = new ReflectionJsonIterator();
+		tt.setObject(x);
+		tt.setIncludeType(true);
+		return Json.format(tt);
+	}
+
+	protected E parse(Object x) {
+		var c2 = new Converter();
+		c2.setResolver(y -> y.map().containsKey("$type")
+				? new Converter.MapType(y.map(), persistence.resolveType((String) y.map().get("$type")))
+				: null);
+		@SuppressWarnings("unchecked")
+		var e = (E) c2.convert(Json.parse((String) x), type);
+		return e;
+	}
+
 	protected void updateIndexes(E entity1, E entity2, long id) {
 		var im1 = entity1 != null ? getIndexMap(entity1, id) : null;
 		var im2 = entity2 != null ? getIndexMap(entity2, id) : null;
@@ -447,7 +472,7 @@ public class Crud<E> {
 		var n = Stream.of(type.getSimpleName(), name).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
 //		System.out.println("Crud.updateIndex, n=" + n + ", remove=" + remove + ", add=" + add);
-		database.perform((_, ii) -> ii.perform(n, i -> {
+		persistence.database.perform((_, ii) -> ii.perform(n, i -> {
 			if (remove != null)
 				for (var e : remove.entrySet())
 					i.remove(e.getKey(), new Object[] { e.getValue() });

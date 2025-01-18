@@ -32,15 +32,11 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.janilla.io.ElementHelper;
-import com.janilla.io.IO;
+import com.janilla.io.ByteConverter;
 import com.janilla.json.Json;
-import com.janilla.util.Lazy;
 
 public class Stores {
 
@@ -50,35 +46,23 @@ public class Stores {
 		try (var ch = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
 			Supplier<Stores> sss = () -> {
-				var ss = new Stores();
-				ss.setInitializeBTree(x -> {
-					try {
-						var m = new Memory();
-						var ft = m.getFreeBTree();
-						ft.setOrder(o);
-						ft.setChannel(ch);
-						ft.setRoot(BlockReference.read(ch, 0));
-						m.setAppendPosition(Math.max(2 * BlockReference.BYTES, ch.size()));
-
-						x.setOrder(o);
-						x.setChannel(ch);
-						x.setMemory(m);
-						x.setRoot(BlockReference.read(ch, BlockReference.BYTES));
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
-				});
-				ss.setInitializeStore((_, x) -> {
-					@SuppressWarnings("unchecked")
-					var s = (Store<String>) x;
-					s.setElementHelper(ElementHelper.STRING);
-					s.setIdSupplier(() -> {
-						var v = x.getAttributes().get("nextId");
-						var id = v != null ? (Long) v : 1L;
-						x.getAttributes().put("nextId", id + 1);
-						return id;
-					});
-				});
+				Stores ss;
+				try {
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+							Math.max(2 * BlockReference.BYTES, ch.size()));
+					ss = new Stores(
+							new BTree<>(o, ch, m, NameAndData.BYTE_CONVERTER,
+									BlockReference.read(ch, BlockReference.BYTES)),
+							x -> new Store<String>(new BTree<>(o, ch, m, IdAndElement.BYTE_CONVERTER, x.bTree()),
+									ByteConverter.STRING, y -> {
+										var v = y.get("nextId");
+										var id = v != null ? (long) v : 1L;
+										y.put("nextId", id + 1);
+										return id;
+									}));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 				return ss;
 			};
 
@@ -115,27 +99,17 @@ public class Stores {
 		}
 	}
 
-	private Consumer<BTree<NameAndData>> initializeBTree;
+	protected final BTree<NameAndData> bTree;
 
-	private BiConsumer<String, Store<?>> initializeStore;
+	protected final Function<NameAndData, Store<?>> newStore;
 
-	private Supplier<BTree<NameAndData>> btree = Lazy.of(() -> {
-		var bt = new BTree<NameAndData>();
-		initializeBTree.accept(bt);
-		bt.setHelper(NameAndData.HELPER);
-		return bt;
-	});
-
-	public void setInitializeBTree(Consumer<BTree<NameAndData>> initializeBTree) {
-		this.initializeBTree = initializeBTree;
-	}
-
-	public void setInitializeStore(BiConsumer<String, Store<?>> initializeStore) {
-		this.initializeStore = initializeStore;
+	public Stores(BTree<NameAndData> bTree, Function<NameAndData, Store<?>> newStore) {
+		this.bTree = bTree;
+		this.newStore = newStore;
 	}
 
 	public void create(String name) {
-		btree.get().getOrAdd(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
+		bTree.getOrAdd(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
 	}
 
 	public <E, R> R perform(String name, Function<Store<E>, R> operation) {
@@ -143,56 +117,54 @@ public class Stores {
 
 			R r;
 		}
-		var bt = btree.get();
+		var bt = bTree;
 		var a = new A();
 		bt.get(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)), x -> {
-			var s = new Store<E>();
-			s.setInitializeBTree(y -> {
-				y.setOrder(bt.getOrder());
-				y.setChannel(bt.getChannel());
-				y.setMemory(bt.getMemory());
-				y.setRoot(x.btree());
-			});
+			@SuppressWarnings("unchecked")
+			var s = (Store<E>) newStore.apply(x);
 			Map<String, Object> aa;
 			try {
 				if (x.attributes().capacity() == 0)
 					aa = new LinkedHashMap<>();
 				else {
-					bt.getChannel().position(x.attributes().position());
+					bt.channel().position(x.attributes().position());
 					var b = ByteBuffer.allocate(x.attributes().capacity());
-					IO.repeat(_ -> bt.getChannel().read(b), b.remaining());
+					bt.channel().read(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 					b.position(0);
 					@SuppressWarnings("unchecked")
-					var m = (Map<String, Object>) Json.parse(ElementHelper.STRING.getElement(b));
+					var m = (Map<String, Object>) Json.parse(ByteConverter.STRING.deserialize(b));
 					aa = m;
 				}
 				s.setAttributes(new LinkedHashMap<>(aa));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-			initializeStore.accept(name, s);
 
 			a.r = operation.apply(s);
 
 			var aar = x.attributes();
 			if (!s.getAttributes().equals(aa)) {
-				var bb = ElementHelper.STRING.getBytes(Json.format(s.getAttributes()));
+				var bb = ByteConverter.STRING.serialize(Json.format(s.getAttributes()));
 				if (bb.length > aar.capacity()) {
 					if (aar.capacity() > 0)
-						bt.getMemory().free(aar);
-					aar = bt.getMemory().allocate(bb.length);
+						bt.memory().free(aar);
+					aar = bt.memory().allocate(bb.length);
 				}
 				var b = ByteBuffer.allocate(aar.capacity());
 				b.put(0, bb);
 				try {
-					bt.getChannel().position(aar.position());
-					IO.repeat(_ -> bt.getChannel().write(b), b.remaining());
+					bt.channel().position(aar.position());
+					bt.channel().write(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
 			}
-			var btr = s.getBTree().getRoot();
-			return aar.position() != x.attributes().position() || btr.position() != x.btree().position()
+			var btr = s.bTree.root();
+			return aar.position() != x.attributes().position() || btr.position() != x.bTree().position()
 					? new NameAndData(name, aar, btr)
 					: null;
 		});

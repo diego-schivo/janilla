@@ -75,8 +75,13 @@ public class Reflection {
 			var aa = new Object[cc.length];
 			for (var i = 0; i < cc.length; i++) {
 				var n = cc[i].getName();
-				var g = filter == null || filter.test(n) ? property(c1, n) : null;
-				aa[i] = g != null ? g.get(source) : property(c2, n).get(destination);
+				var p = filter == null || filter.test(n) ? property(c1, n) : null;
+				var o = source;
+				if (p == null) {
+					p = property(c2, n);
+					o = destination;
+				}
+				aa[i] = p.get(o);
 			}
 			try {
 				@SuppressWarnings("unchecked")
@@ -86,12 +91,11 @@ public class Reflection {
 				throw new RuntimeException(e);
 			}
 		}
-		for (var i = propertyNames(c2).iterator(); i.hasNext();) {
-			var n = i.next();
-			var s = filter == null || filter.test(n) ? property(c2, n) : null;
-			var g = s != null ? property(c1, n) : null;
-			if (g != null)
-				s.set(destination, g.get(source));
+		for (var pp = properties(c2).iterator(); pp.hasNext();) {
+			var p2 = pp.next();
+			var p1 = filter == null || filter.test(p2.name()) ? property(c1, p2.name()) : null;
+			if (p1 != null)
+				p2.set(destination, p1.get(source));
 		}
 		return destination;
 	}

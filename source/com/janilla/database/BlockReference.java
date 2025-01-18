@@ -28,17 +28,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 
-import com.janilla.io.ElementHelper;
-import com.janilla.io.IO;
+import com.janilla.io.ByteConverter;
 
 public record BlockReference(long self, long position, int capacity) {
 
 	public static int BYTES = Long.BYTES + Integer.BYTES;
 
-	public static ElementHelper<BlockReference> HELPER = new ElementHelper<BlockReference>() {
+	public static ByteConverter<BlockReference> BYTE_CONVERTER = new ByteConverter<BlockReference>() {
 
 		@Override
-		public byte[] getBytes(BlockReference element) {
+		public byte[] serialize(BlockReference element) {
 			var b = ByteBuffer.allocate(BYTES);
 			b.putLong(element.position);
 			b.putInt(element.capacity);
@@ -51,7 +50,7 @@ public record BlockReference(long self, long position, int capacity) {
 		}
 
 		@Override
-		public BlockReference getElement(ByteBuffer buffer) {
+		public BlockReference deserialize(ByteBuffer buffer) {
 			var p = buffer.getLong();
 			var c = buffer.getInt();
 			return new BlockReference(-1, p, c);
@@ -73,7 +72,9 @@ public record BlockReference(long self, long position, int capacity) {
 	public static BlockReference read(SeekableByteChannel channel, long position) throws IOException {
 		channel.position(position);
 		var b = ByteBuffer.allocate(BYTES);
-		IO.repeat(_ -> channel.read(b), b.remaining());
+		var n = channel.read(b);
+		if (n != -1 && b.remaining() != 0)
+			throw new IOException();
 		return new BlockReference(position, b.getLong(0), b.getInt(Long.BYTES));
 	}
 
@@ -82,6 +83,8 @@ public record BlockReference(long self, long position, int capacity) {
 		var b = ByteBuffer.allocate(BYTES);
 		b.putLong(0, reference.position());
 		b.putInt(Long.BYTES, reference.capacity());
-		IO.repeat(_ -> channel.write(b), b.remaining());
+		channel.write(b);
+		if (b.remaining() != 0)
+			throw new IOException();
 	}
 }

@@ -40,8 +40,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.janilla.io.ElementHelper;
-import com.janilla.io.IO;
+import com.janilla.io.ByteConverter;
 import com.janilla.io.TransactionalByteChannel;
 
 public class BTree<E> {
@@ -55,27 +54,17 @@ public class BTree<E> {
 		var b = IntStream.range(0, r.nextInt(1, a.length + 1)).map(_ -> r.nextInt(a.length)).distinct().toArray();
 		System.out.println(Arrays.toString(b));
 
-		var f = Files.createTempFile("btree", "");
-		var tf = Files.createTempFile("btree", ".transaction");
+		var f = Files.createTempFile("b-tree", "");
+		var tf = Files.createTempFile("b-tree", ".transaction");
 		try (var ch = new TransactionalByteChannel(
 				FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
 				FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
 			Supplier<BTree<Integer>> bts = () -> {
 				try {
-					var m = new Memory();
-					var ft = m.getFreeBTree();
-					ft.setOrder(o);
-					ft.setChannel(ch);
-					ft.setRoot(BlockReference.read(ch, 0));
-					m.setAppendPosition(Math.max(2 * BlockReference.BYTES, ch.size()));
-
-					var bt = new BTree<Integer>();
-					bt.setOrder(o);
-					bt.setChannel(ch);
-					bt.setMemory(m);
-					bt.setHelper(ElementHelper.INTEGER);
-					bt.setRoot(BlockReference.read(ch, BlockReference.BYTES));
-					return bt;
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+							Math.max(2 * BlockReference.BYTES, ch.size()));
+					return new BTree<Integer>(o, ch, m, ByteConverter.INTEGER,
+							BlockReference.read(ch, BlockReference.BYTES));
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
@@ -116,54 +105,43 @@ public class BTree<E> {
 		}
 	}
 
-	private int order;
+	protected final int order;
 
-	private SeekableByteChannel channel;
+	protected final SeekableByteChannel channel;
 
-	private Memory memory;
+	protected final Memory memory;
 
-	private ElementHelper<E> helper;
+	protected final ByteConverter<E> elementConverter;
 
-	private BlockReference root;
+	protected BlockReference root;
 
-	public int getOrder() {
+	public BTree(int order, SeekableByteChannel channel, Memory memory, ByteConverter<E> elementConverter,
+			BlockReference root) {
+		this.order = order;
+		this.channel = channel;
+		this.memory = memory;
+		this.elementConverter = elementConverter;
+		this.root = root;
+	}
+
+	public int order() {
 		return order;
 	}
 
-	public void setOrder(int order) {
-		this.order = order;
-	}
-
-	public SeekableByteChannel getChannel() {
+	public SeekableByteChannel channel() {
 		return channel;
 	}
 
-	public void setChannel(SeekableByteChannel channel) {
-		this.channel = channel;
-	}
-
-	public Memory getMemory() {
+	public Memory memory() {
 		return memory;
 	}
 
-	public void setMemory(Memory memory) {
-		this.memory = memory;
+	public ByteConverter<E> elementConverter() {
+		return elementConverter;
 	}
 
-	public ElementHelper<E> getHelper() {
-		return helper;
-	}
-
-	public void setHelper(ElementHelper<E> elementHelper) {
-		this.helper = elementHelper;
-	}
-
-	public BlockReference getRoot() {
+	public BlockReference root() {
 		return root;
-	}
-
-	public void setRoot(BlockReference root) {
-		this.root = root;
 	}
 
 	public void add(E element) {
@@ -620,7 +598,7 @@ public class BTree<E> {
 			buffer.position(p);
 			var s = 0;
 			while (buffer.hasRemaining()) {
-				var l = helper.getLength(buffer);
+				var l = elementConverter.getLength(buffer);
 				p += l;
 				if (l < 0 || p > buffer.limit()) {
 					System.out.println("l=" + l);
@@ -660,7 +638,7 @@ public class BTree<E> {
 					p0 = source.buffer.position();
 				else if (i == start + length)
 					break;
-				source.buffer.position(source.buffer.position() + helper.getLength(source.buffer));
+				source.buffer.position(source.buffer.position() + elementConverter.getLength(source.buffer));
 				i++;
 			}
 			var p = source.buffer.position();
@@ -689,9 +667,9 @@ public class BTree<E> {
 		E deleteElement(int index) {
 			buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.BYTES);
 			for (var i = 0; i < index; i++)
-				buffer.position(buffer.position() + helper.getLength(buffer));
+				buffer.position(buffer.position() + elementConverter.getLength(buffer));
 			var p = buffer.position();
-			var e = helper.getElement(buffer);
+			var e = elementConverter.deserialize(buffer);
 			var q = buffer.position();
 			if (q < buffer.limit())
 				System.arraycopy(buffer.array(), q, buffer.array(), p, buffer.limit() - q);
@@ -716,8 +694,8 @@ public class BTree<E> {
 			var i = 0;
 			while (buffer.hasRemaining()) {
 				if (i == index)
-					return helper.getElement(buffer);
-				buffer.position(buffer.position() + helper.getLength(buffer));
+					return elementConverter.deserialize(buffer);
+				buffer.position(buffer.position() + elementConverter.getLength(buffer));
 				i++;
 			}
 			return null;
@@ -729,12 +707,12 @@ public class BTree<E> {
 			buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.BYTES);
 			var i = 0;
 			while (buffer.hasRemaining()) {
-				var c = helper.compare(buffer, element);
+				var c = elementConverter.compare(buffer, element);
 				if (c == 0)
 					return i;
 				if (c > 0)
 					break;
-				buffer.position(buffer.position() + helper.getLength(buffer));
+				buffer.position(buffer.position() + elementConverter.getLength(buffer));
 				i++;
 			}
 			return -i - 1;
@@ -745,8 +723,7 @@ public class BTree<E> {
 			resize(l);
 			var p = 2 * Integer.BYTES + index * BlockReference.BYTES;
 			if (p < buffer.limit())
-				System.arraycopy(buffer.array(), p, buffer.array(), p + BlockReference.BYTES,
-						buffer.limit() - p);
+				System.arraycopy(buffer.array(), p, buffer.array(), p + BlockReference.BYTES, buffer.limit() - p);
 			buffer.limit(l);
 			buffer.putLong(p, child.position());
 			buffer.putInt(p + Long.BYTES, child.capacity());
@@ -762,11 +739,11 @@ public class BTree<E> {
 			else {
 				buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.BYTES);
 				for (var i = 0; i < index; i++)
-					buffer.position(buffer.position() + helper.getLength(buffer));
+					buffer.position(buffer.position() + elementConverter.getLength(buffer));
 				p = buffer.position();
 			}
 
-			var b = helper.getBytes(element);
+			var b = elementConverter.serialize(element);
 			var l = (buffer != null ? buffer.limit() : 2 * Integer.BYTES) + b.length;
 			resize(l);
 
@@ -788,7 +765,9 @@ public class BTree<E> {
 				channel.position(reference.position());
 				buffer.position(0);
 				buffer.limit(reference.capacity());
-				IO.repeat(_ -> channel.read(buffer), buffer.remaining());
+				channel.read(buffer);
+				if (buffer.remaining() != 0)
+					throw new IOException();
 				buffer.limit(buffer.getInt(0));
 				changed = false;
 			} catch (IOException e) {
@@ -806,11 +785,11 @@ public class BTree<E> {
 		void replaceElement(int index, E element) {
 			buffer.position(2 * Integer.BYTES + buffer.getInt(Integer.BYTES) * BlockReference.BYTES);
 			for (var i = 0; i < index; i++)
-				buffer.position(buffer.position() + helper.getLength(buffer));
+				buffer.position(buffer.position() + elementConverter.getLength(buffer));
 			var p = buffer.position();
 
-			var q = p + helper.getLength(buffer);
-			var b = helper.getBytes(element);
+			var q = p + elementConverter.getLength(buffer);
+			var b = elementConverter.serialize(element);
 			var d = p + b.length - q;
 			resize(buffer.limit() + d);
 
@@ -867,7 +846,9 @@ public class BTree<E> {
 				l = buffer.limit();
 				buffer.position(0);
 				buffer.limit(reference.capacity());
-				IO.repeat(_ -> channel.write(buffer), buffer.remaining());
+				channel.write(buffer);
+				if (buffer.remaining() != 0)
+					throw new IOException();
 				buffer.limit(l);
 				changed = false;
 			} catch (IOException e) {

@@ -36,38 +36,41 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import com.janilla.database.BTree;
 import com.janilla.database.Database;
-import com.janilla.io.ElementHelper;
-import com.janilla.json.Converter;
-import com.janilla.json.Json;
-import com.janilla.json.ReflectionJsonIterator;
+import com.janilla.database.KeyAndData;
+import com.janilla.database.NameAndData;
+import com.janilla.io.ByteConverter;
 import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
 
 public class Persistence {
 
-	protected Database database;
+	protected final Database database;
 
-	protected Configuration configuration;
+	protected final Collection<Class<?>> types;
 
-	Function<String, Class<?>> typeResolver;
+	protected final Configuration configuration = new Configuration();
+
+	public Persistence(Database database, Collection<Class<?>> types) {
+		this.database = database;
+		this.types = types;
+		for (var t : types)
+			configure(t);
+		createStoresAndIndexes();
+	}
 
 	public Database database() {
 		return database;
 	}
 
-	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
-		this.typeResolver = typeResolver;
-	}
-
-	public <K, V> boolean initializeIndex(String name, com.janilla.database.Index<K, V> index) {
-		var i = configuration.indexInitializers.get(name);
-		if (i == null)
-			return false;
+	public <K, V> com.janilla.database.Index<K, V> newIndex(NameAndData nameAndData) {
+		var ni = configuration.indexFactories.get(nameAndData.name());
+		if (ni == null)
+			return null;
 		@SuppressWarnings("unchecked")
-		var j = (IndexInitializer<K, V>) i;
-		j.initialize(index);
-		return true;
+		var i = (com.janilla.database.Index<K, V>) ni.newIndex(nameAndData, database);
+		return i;
 	}
 
 	public <E> Crud<E> crud(Class<E> class1) {
@@ -76,49 +79,16 @@ public class Persistence {
 		return c;
 	}
 
-	protected void createStoresAndIndexes() {
-		for (var t : configuration.cruds.keySet())
-			database.perform((ss, _) -> {
-				ss.create(t.getSimpleName());
-				return null;
-			}, true);
-		for (var k : configuration.indexInitializers.keySet())
-			database.perform((_, ii) -> {
-				ii.create(k);
-				return null;
-			}, true);
+	public Class<?> resolveType(String name) {
+		return types.stream().filter(y -> y.getName().substring(y.getPackageName().length() + 1).equals(name))
+				.findFirst().get();
 	}
 
-	protected <E> Crud<E> createCrud(Class<E> type) {
-		return Modifier.isInterface(type.getModifiers()) || Modifier.isAbstract(type.getModifiers())
-				|| !type.isAnnotationPresent(Store.class) ? null : new Crud<>();
-	}
-
-	<E, K, V> void configure(Class<E> type) {
-		Crud<E> c = createCrud(type);
+	protected <E, K, V> void configure(Class<E> type) {
+		Crud<E> c = newCrud(type);
 		if (c == null)
 			return;
 		// System.out.println("Persistence.configure, type=" + type);
-		c.type = type;
-		c.database = database;
-		if (c.formatter == null)
-			c.formatter = x -> {
-				var tt = new ReflectionJsonIterator();
-				tt.setObject(x);
-				tt.setIncludeType(true);
-				return Json.format(tt);
-			};
-		if (c.parser == null)
-			c.parser = x -> {
-				var c2 = new Converter();
-				c2.setResolver(y -> y.map().containsKey("$type")
-						? new Converter.MapType(y.map(), typeResolver.apply((String) y.map().get("$type")))
-						: null);
-				@SuppressWarnings("unchecked")
-				var e = (E) c2.convert(Json.parse((String) x), type);
-				return e;
-			};
-		c.indexPresent = type.isAnnotationPresent(Index.class);
 		configuration.cruds.put(type, c);
 
 		var oi = Stream.concat(Stream.of(type), Reflection.properties(type)).iterator();
@@ -131,38 +101,38 @@ public class Persistence {
 				continue;
 
 			var t = p != null ? p.type() : null;
-			var ii = new IndexInitializer<K, V>();
+			var ii = new IndexFactory<K, V>();
 			if (t == null) {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<K>) ElementHelper.NULL;
-				ii.keyHelper = h;
+				var h = (ByteConverter<K>) ByteConverter.NULL;
+				ii.keyConverter = h;
 			} else if (t == Boolean.class || t == Boolean.TYPE || t == boolean[].class) {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<K>) ElementHelper.BOOLEAN;
-				ii.keyHelper = h;
+				var h = (ByteConverter<K>) ByteConverter.BOOLEAN;
+				ii.keyConverter = h;
 			} else if (t == Integer.class || t == Integer.TYPE || t == int[].class) {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<K>) ElementHelper.INTEGER;
-				ii.keyHelper = h;
+				var h = (ByteConverter<K>) ByteConverter.INTEGER;
+				ii.keyConverter = h;
 			} else if (t == Long.class || t == Long.TYPE || t == long[].class) {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<K>) ElementHelper.LONG;
-				ii.keyHelper = h;
+				var h = (ByteConverter<K>) ByteConverter.LONG;
+				ii.keyConverter = h;
 			} else if (t == String.class || t == Collection.class) {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<K>) ElementHelper.STRING;
-				ii.keyHelper = h;
+				var h = (ByteConverter<K>) ByteConverter.STRING;
+				ii.keyConverter = h;
 			} else if (t == UUID.class) {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<K>) ElementHelper.UUID1;
-				ii.keyHelper = h;
+				var h = (ByteConverter<K>) ByteConverter.UUID1;
+				ii.keyConverter = h;
 			} else if (t.isEnum()) {
 				@SuppressWarnings("unchecked")
-				var h = new ElementHelper<K>() {
+				var h = new ByteConverter<K>() {
 
 					@Override
-					public byte[] getBytes(K element) {
-						return STRING.getBytes(element.toString());
+					public byte[] serialize(K element) {
+						return STRING.serialize(element.toString());
 					}
 
 					@Override
@@ -171,10 +141,10 @@ public class Persistence {
 					}
 
 					@Override
-					public K getElement(ByteBuffer buffer) {
+					public K deserialize(ByteBuffer buffer) {
 						@SuppressWarnings("rawtypes")
 						var ec = (Class) t;
-						return (K) Enum.valueOf(ec, STRING.getElement(buffer));
+						return (K) Enum.valueOf(ec, STRING.deserialize(buffer));
 					}
 
 					@Override
@@ -182,7 +152,7 @@ public class Persistence {
 						return STRING.compare(buffer, element.toString());
 					}
 				};
-				ii.keyHelper = h;
+				ii.keyConverter = h;
 			} else
 				throw new RuntimeException();
 
@@ -193,15 +163,15 @@ public class Persistence {
 			// System.out.println("Persistence.configure, sp=" + sp);
 			if (sp != null && sp.type() != null) {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<V>) ElementHelper.of(type, i.sort(), "id");
-				ii.valueHelper = h;
+				var h = (ByteConverter<V>) ByteConverter.of(type, i.sort(), "id");
+				ii.valueConverter = h;
 			} else {
 				@SuppressWarnings("unchecked")
-				var h = (ElementHelper<V>) ElementHelper.of(type, "id");
-				ii.valueHelper = h;
+				var h = (ByteConverter<V>) ByteConverter.of(type, "id");
+				ii.valueConverter = h;
 			}
 			var k = type.getSimpleName() + (p != null ? "." + p.name() : "");
-			configuration.indexInitializers.put(k, ii);
+			configuration.indexFactories.put(k, ii);
 
 			var ieg = new IndexEntryGetter();
 			BiFunction<Class<?>, String, Function<Object, Object>> kgf;
@@ -216,22 +186,40 @@ public class Persistence {
 		}
 	}
 
+	protected <E> Crud<E> newCrud(Class<E> type) {
+		return Modifier.isInterface(type.getModifiers()) || Modifier.isAbstract(type.getModifiers())
+				|| !type.isAnnotationPresent(Store.class) ? null : new Crud<>(type, this);
+	}
+
+	protected void createStoresAndIndexes() {
+		for (var t : configuration.cruds.keySet())
+			database.perform((ss, _) -> {
+				ss.create(t.getSimpleName());
+				return null;
+			}, true);
+		for (var k : configuration.indexFactories.keySet())
+			database.perform((_, ii) -> {
+				ii.create(k);
+				return null;
+			}, true);
+	}
+
 	static class Configuration {
 
-		Map<String, IndexInitializer<?, ?>> indexInitializers = new HashMap<>();
+		Map<String, IndexFactory<?, ?>> indexFactories = new HashMap<>();
 
 		Map<Class<?>, Crud<?>> cruds = new HashMap<>();
 	}
 
-	static class IndexInitializer<K, V> {
+	static class IndexFactory<K, V> {
 
-		ElementHelper<K> keyHelper;
+		ByteConverter<K> keyConverter;
 
-		ElementHelper<V> valueHelper;
+		ByteConverter<V> valueConverter;
 
-		void initialize(com.janilla.database.Index<K, V> index) {
-			index.setKeyHelper(keyHelper);
-			index.setValueHelper(valueHelper);
+		com.janilla.database.Index<K, V> newIndex(NameAndData nameAndData, Database database) {
+			return new com.janilla.database.Index<K, V>(new BTree<>(database.bTreeOrder(), database.channel(),
+					database.memory(), KeyAndData.getByteConverter(keyConverter), nameAndData.bTree()), valueConverter);
 		}
 	}
 

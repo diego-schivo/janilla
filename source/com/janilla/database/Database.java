@@ -37,14 +37,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.janilla.io.ElementHelper;
+import com.janilla.io.ByteConverter;
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.json.Json;
-import com.janilla.util.Lazy;
 
 public class Database {
 
@@ -57,39 +56,23 @@ public class Database {
 				FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
 			Supplier<Database> ds = () -> {
 				try {
-					var m = new Memory();
-					var ft = m.getFreeBTree();
-					ft.setChannel(ch);
-					ft.setOrder(o);
-					ft.setRoot(BlockReference.read(ch, 0));
-					m.setAppendPosition(Math.max(3 * BlockReference.BYTES, ch.size()));
-
-					var d = new Database();
-					d.setBTreeOrder(o);
-					d.setChannel(ch);
-					d.setMemory(m);
-					d.setStoresRoot(BlockReference.BYTES);
-					d.setIndexesRoot(2 * BlockReference.BYTES);
-					d.setInitializeStore((_, x) -> {
-						@SuppressWarnings("unchecked")
-						var s = (Store<String>) x;
-						s.setElementHelper(ElementHelper.STRING);
-						s.setIdSupplier(() -> {
-							var v = x.getAttributes().get("nextId");
-							var id = v != null ? (Long) v : 1L;
-							x.getAttributes().put("nextId", id + 1);
-							return id;
-						});
-					});
-					d.setInitializeIndex((_, x) -> {
-						@SuppressWarnings("unchecked")
-						var i = (Index<String, Object[]>) x;
-						i.setKeyHelper(ElementHelper.STRING);
-						i.setValueHelper(ElementHelper.of(
-								new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
-								new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
-					});
-					return d;
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+							Math.max(3 * BlockReference.BYTES, ch.size()));
+					return new Database(o, ch, m, BlockReference.BYTES, 2 * BlockReference.BYTES,
+							x -> new Store<String>(new BTree<>(o, ch, m, IdAndElement.BYTE_CONVERTER, x.bTree()),
+									ByteConverter.STRING, y -> {
+										var v = y.get("nextId");
+										var id = v != null ? (long) v : 1L;
+										y.put("nextId", id + 1);
+										return id;
+									}),
+							x -> new Index<String, Object[]>(
+									new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING), x.bTree()),
+									ByteConverter.of(
+											new ByteConverter.TypeAndOrder(Instant.class,
+													ByteConverter.SortOrder.DESCENDING),
+											new ByteConverter.TypeAndOrder(Long.class,
+													ByteConverter.SortOrder.DESCENDING))));
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
@@ -147,105 +130,68 @@ public class Database {
 		}
 	}
 
-	private int btreeOrder;
+	protected final int bTreeOrder;
 
-	private TransactionalByteChannel channel;
+	protected final TransactionalByteChannel channel;
 
-	private Memory memory;
+	protected final Memory memory;
 
-	private long storesRoot;
+	protected final long storesRoot;
 
-	private long indexesRoot;
+	protected final long indexesRoot;
 
-	private BiConsumer<String, Store<?>> initializeStore;
+	protected final Function<NameAndData, Store<?>> newStore;
 
-	private BiConsumer<String, Index<?, ?>> initializeIndex;
+	protected final Function<NameAndData, Index<?, ?>> newIndex;
 
-	private Supplier<Stores> stores = Lazy.of(() -> {
-		var s = new Stores();
-		s.setInitializeBTree(x -> {
-			try {
-				x.setOrder(btreeOrder);
-				x.setChannel(channel);
-				x.setMemory(memory);
-				x.setRoot(BlockReference.read(channel, storesRoot));
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
-		s.setInitializeStore(initializeStore);
-		return s;
-	});
+	protected final Stores stores;
 
-	private Supplier<Indexes> indexes = Lazy.of(() -> {
-		var i = new Indexes();
-		i.initializeBTree = x -> {
-			try {
-				x.setOrder(btreeOrder);
-				x.setChannel(channel);
-				x.setMemory(memory);
-				x.setRoot(BlockReference.read(channel, indexesRoot));
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		};
-		i.initializeIndex = initializeIndex;
-		return i;
-	});
+	protected final Indexes indexes;
 
-	public int getBTreeOrder() {
-		return btreeOrder;
+	protected final Lock performLock = new ReentrantLock();
+
+	protected final AtomicBoolean performing = new AtomicBoolean();
+
+	public Database(int bTreeOrder, TransactionalByteChannel channel, BTreeMemory memory, long storesRoot,
+			long indexesRoot, Function<NameAndData, Store<?>> newStore, Function<NameAndData, Index<?, ?>> newIndex) {
+		this.bTreeOrder = bTreeOrder;
+		this.channel = channel;
+		this.memory = memory;
+		this.storesRoot = storesRoot;
+		this.indexesRoot = indexesRoot;
+		this.newStore = newStore;
+		this.newIndex = newIndex;
+
+		try {
+			stores = new Stores(new BTree<>(bTreeOrder, channel, memory, NameAndData.BYTE_CONVERTER,
+					BlockReference.read(channel, storesRoot)), newStore);
+			indexes = new Indexes(new BTree<>(bTreeOrder, channel, memory, NameAndData.BYTE_CONVERTER,
+					BlockReference.read(channel, indexesRoot)), newIndex);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
-	public void setBTreeOrder(int btreeOrder) {
-		this.btreeOrder = btreeOrder;
+	public int bTreeOrder() {
+		return bTreeOrder;
 	}
 
-	public TransactionalByteChannel getChannel() {
+	public TransactionalByteChannel channel() {
 		return channel;
 	}
 
-	public void setChannel(TransactionalByteChannel channel) {
-		this.channel = channel;
-	}
-
-	public Memory getMemory() {
+	public Memory memory() {
 		return memory;
 	}
 
-	public void setMemory(Memory memory) {
-		this.memory = memory;
-	}
-
-	public long getStoresRoot() {
+	public long storesRoot() {
 		return storesRoot;
 	}
 
-	public void setStoresRoot(long storesRoot) {
-		this.storesRoot = storesRoot;
-	}
-
-	public long getIndexesRoot() {
+	public long indexesRoot() {
 		return indexesRoot;
 	}
 
-	public void setIndexesRoot(long indexesRoot) {
-		this.indexesRoot = indexesRoot;
-	}
-
-	public void setInitializeStore(BiConsumer<String, Store<?>> initializeStore) {
-		this.initializeStore = initializeStore;
-	}
-
-	public void setInitializeIndex(BiConsumer<String, Index<?, ?>> initializeIndex) {
-		this.initializeIndex = initializeIndex;
-	}
-
-	final Lock performLock = new ReentrantLock();
-
-	final AtomicBoolean performing = new AtomicBoolean();
-
-//	public synchronized <T> T perform(BiFunction<Stores, Indexes, T> operation, boolean write) {
 	public <T> T perform(BiFunction<Stores, Indexes, T> operation, boolean write) {
 		performLock.lock();
 		try {
@@ -254,14 +200,12 @@ public class Database {
 			var p = performing.getAndSet(true);
 			var fl = !p ? ((FileChannel) channel.channel()).lock() : null;
 			try {
-				var s = stores.get();
-				var i = indexes.get();
 				T t = null;
 				var c = false;
 				if (!p && write)
 					channel.startTransaction();
 				try {
-					t = operation.apply(s, i);
+					t = operation.apply(stores, indexes);
 					c = true;
 				} finally {
 					if (!p && write) {

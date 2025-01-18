@@ -26,22 +26,22 @@ package com.janilla.database;
 
 import java.nio.ByteBuffer;
 
-import com.janilla.io.ElementHelper;
+import com.janilla.io.ByteConverter;
 
-public record NameAndData(String name, BlockReference attributes, BlockReference btree) {
+public record NameAndData(String name, BlockReference attributes, BlockReference bTree) {
 
-	static ElementHelper<NameAndData> HELPER = new ElementHelper<>() {
+	static ByteConverter<NameAndData> BYTE_CONVERTER = new ByteConverter<>() {
 
 		@Override
-		public byte[] getBytes(NameAndData element) {
+		public byte[] serialize(NameAndData element) {
 			var bb = element.name().getBytes();
 			var b = ByteBuffer.allocate(Integer.BYTES + bb.length + 2 * BlockReference.BYTES);
 			b.putInt(bb.length);
 			b.put(bb);
 			b.putLong(element.attributes.position());
 			b.putInt(element.attributes.capacity());
-			b.putLong(element.btree.position());
-			b.putInt(element.btree.capacity());
+			b.putLong(element.bTree.position());
+			b.putInt(element.bTree.capacity());
 			return b.array();
 		}
 
@@ -51,7 +51,7 @@ public record NameAndData(String name, BlockReference attributes, BlockReference
 		}
 
 		@Override
-		public NameAndData getElement(ByteBuffer buffer) {
+		public NameAndData deserialize(ByteBuffer buffer) {
 			var bb = new byte[buffer.getInt()];
 			buffer.get(bb);
 			var p1 = buffer.getLong();

@@ -43,15 +43,20 @@ import com.janilla.io.FilterChannel;
 
 public class Server {
 
-	private SocketAddress address;
+	protected final SocketAddress address;
 
-	private Protocol protocol;
+	protected final Protocol protocol;
 
-	private ServerSocketChannel channel;
+	protected ServerSocketChannel channel;
 
-	private final Map<Connection, Long> lastUsed = new HashMap<>();
+	protected final Map<Connection, Long> lastUsed = new HashMap<>();
 
-	private final Lock lastUsedLock = new ReentrantLock();
+	protected final Lock lastUsedLock = new ReentrantLock();
+
+	public Server(SocketAddress address, Protocol protocol) {
+		this.address = address;
+		this.protocol = protocol;
+	}
 
 	// *******************
 	// Getters and Setters
@@ -60,16 +65,8 @@ public class Server {
 		return address;
 	}
 
-	public void setAddress(SocketAddress address) {
-		this.address = address;
-	}
-
 	public Protocol getProtocol() {
 		return protocol;
-	}
-
-	public void setProtocol(Protocol protocol) {
-		this.protocol = protocol;
 	}
 
 	// Getters and Setters
@@ -114,7 +111,7 @@ public class Server {
 				Connection c;
 			}
 			var a = new A();
-			a.c = protocol.buildConnection(new FilterByteChannel(sc) {
+			a.c = protocol.buildConnection(new FilterByteChannel<>(sc) {
 
 				@Override
 				public int read(ByteBuffer dst) throws IOException {

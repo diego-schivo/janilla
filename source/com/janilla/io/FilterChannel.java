@@ -29,7 +29,7 @@ import java.nio.channels.Channel;
 
 public class FilterChannel<C extends Channel> implements Channel {
 
-	protected C channel;
+	protected final C channel;
 
 	public FilterChannel(C channel) {
 		this.channel = channel;

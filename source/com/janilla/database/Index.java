@@ -38,16 +38,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import com.janilla.io.ElementHelper;
-import com.janilla.io.IO;
+import com.janilla.io.ByteConverter;
 import com.janilla.json.Json;
-import com.janilla.util.Lazy;
 
 public class Index<K, V> {
 
@@ -57,29 +54,18 @@ public class Index<K, V> {
 		try (var ch = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
 			Supplier<Index<String, Object[]>> is = () -> {
-				var i = new Index<String, Object[]>();
-				i.setInitializeBTree(x -> {
-					try {
-						var m = new Memory();
-						var ft = m.getFreeBTree();
-						ft.setOrder(o);
-						ft.setChannel(ch);
-						ft.setRoot(BlockReference.read(ch, 0));
-						m.setAppendPosition(Math.max(2 * BlockReference.BYTES, ch.size()));
-
-						x.setOrder(o);
-						x.setChannel(ch);
-						x.setMemory(m);
-						x.setRoot(BlockReference.read(ch, BlockReference.BYTES));
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
-				});
-				i.setKeyHelper(ElementHelper.STRING);
-				i.setValueHelper(ElementHelper.of(
-						new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
-						new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
-				return i;
+				try {
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+							Math.max(2 * BlockReference.BYTES, ch.size()));
+					return new Index<>(
+							new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING),
+									BlockReference.read(ch, BlockReference.BYTES)),
+							ByteConverter.of(
+									new ByteConverter.TypeAndOrder(Instant.class, ByteConverter.SortOrder.DESCENDING),
+									new ByteConverter.TypeAndOrder(Long.class, ByteConverter.SortOrder.DESCENDING)));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			};
 
 			{
@@ -104,43 +90,15 @@ public class Index<K, V> {
 		}
 	}
 
-	private Consumer<BTree<KeyAndData<K>>> initializeBTree;
+	protected final BTree<KeyAndData<K>> bTree;
 
-	private ElementHelper<K> keyHelper;
+	protected final ByteConverter<V> valueConverter;
 
-	private ElementHelper<V> valueHelper;
+	protected Map<String, Object> attributes;
 
-	private Supplier<BTree<KeyAndData<K>>> btree = Lazy.of(() -> {
-		var bt = new BTree<KeyAndData<K>>();
-		initializeBTree.accept(bt);
-		bt.setHelper(KeyAndData.getHelper(keyHelper));
-		return bt;
-	});
-
-	private Map<String, Object> attributes;
-
-	public void setInitializeBTree(Consumer<BTree<KeyAndData<K>>> initializeBTree) {
-		this.initializeBTree = initializeBTree;
-	}
-
-	public ElementHelper<?> getKeyHelper() {
-		return keyHelper;
-	}
-
-	public void setKeyHelper(ElementHelper<K> keyHelper) {
-		this.keyHelper = keyHelper;
-	}
-
-	public ElementHelper<?> getValueHelper() {
-		return valueHelper;
-	}
-
-	public void setValueHelper(ElementHelper<V> valueHelper) {
-		this.valueHelper = valueHelper;
-	}
-
-	public BTree<KeyAndData<K>> getBTree() {
-		return btree.get();
+	public Index(BTree<KeyAndData<K>> bTree, ByteConverter<V> valueConverter) {
+		this.bTree = bTree;
+		this.valueConverter = valueConverter;
 	}
 
 	public Map<String, Object> getAttributes() {
@@ -191,11 +149,11 @@ public class Index<K, V> {
 	}
 
 	public long countIf(Predicate<K> operation) {
-		return btree.get().stream().filter(x -> operation.test(x.key())).mapToLong(x -> count(x.key())).sum();
+		return bTree.stream().filter(x -> operation.test(x.key())).mapToLong(x -> count(x.key())).sum();
 	}
 
 	public Stream<K> keys() {
-		return btree.get().stream().map(KeyAndData::key);
+		return bTree.stream().map(KeyAndData::key);
 	}
 
 	public Stream<V> values() {
@@ -203,7 +161,7 @@ public class Index<K, V> {
 	}
 
 	public Stream<V> valuesIf(Predicate<K> predicate) {
-		return btree.get().stream().filter(x -> predicate.test(x.key()))
+		return bTree.stream().filter(x -> predicate.test(x.key()))
 				.flatMap(x -> apply(x.key(), (_, vt) -> vt.stream(), false));
 	}
 
@@ -220,7 +178,7 @@ public class Index<K, V> {
 
 			boolean removeKey;
 		}
-		var bt = btree.get();
+		var bt = bTree;
 		var kd = new KeyAndData<K>(key, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0));
 		var a = new A();
 		UnaryOperator<KeyAndData<K>> op = x -> {
@@ -229,25 +187,20 @@ public class Index<K, V> {
 				if (x.attributes().capacity() == 0)
 					aa1 = "{}";
 				else {
-					bt.getChannel().position(x.attributes().position());
+					bt.channel().position(x.attributes().position());
 					var b = ByteBuffer.allocate(x.attributes().capacity());
-					IO.repeat(_ -> bt.getChannel().read(b), b.remaining());
+					bt.channel().read(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 					b.position(0);
-					aa1 = ElementHelper.STRING.getElement(b);
+					aa1 = ByteConverter.STRING.deserialize(b);
 				}
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
 			@SuppressWarnings("unchecked")
 			var aa = (Map<String, Object>) Json.parse(aa1);
-
-			var vt = new BTree<V>();
-			vt.setOrder(bt.getOrder());
-			vt.setChannel(bt.getChannel());
-			vt.setMemory(bt.getMemory());
-			vt.setHelper(valueHelper);
-			vt.setRoot(x.btree());
-
+			var vt = new BTree<V>(bt.order(), bt.channel(), bt.memory(), valueConverter, x.bTree());
 			var s1 = (long) aa.getOrDefault("size", 0L);
 			a.r = function.apply(aa, vt);
 			var s2 = (long) aa.getOrDefault("size", 0L);
@@ -257,23 +210,25 @@ public class Index<K, V> {
 //			System.out.println("Index.apply, aa1=" + aa1 + ", aa2=" + aa2);
 			var aar = x.attributes();
 			if (!aa2.equals(aa1)) {
-				var bb = ElementHelper.STRING.getBytes(aa2);
+				var bb = ByteConverter.STRING.serialize(aa2);
 				if (bb.length > aar.capacity()) {
 					if (aar.capacity() > 0)
-						bt.getMemory().free(aar);
-					aar = bt.getMemory().allocate(bb.length);
+						bt.memory().free(aar);
+					aar = bt.memory().allocate(bb.length);
 				}
 				var b = ByteBuffer.allocate(aar.capacity());
 				b.put(0, bb);
 				try {
-					bt.getChannel().position(aar.position());
-					IO.repeat(_ -> bt.getChannel().write(b), b.remaining());
+					bt.channel().position(aar.position());
+					bt.channel().write(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
 			}
-			var vtr = vt.getRoot();
-			return aar.position() != x.attributes().position() || vtr.position() != x.btree().position()
+			var vtr = vt.root();
+			return aar.position() != x.attributes().position() || vtr.position() != x.bTree().position()
 					? new KeyAndData<>(key, aar, vtr)
 					: null;
 		};

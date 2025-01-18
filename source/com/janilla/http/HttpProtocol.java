@@ -47,25 +47,20 @@ public class HttpProtocol implements Protocol {
 
 	public static final ScopedValue<HttpExchange> HTTP_EXCHANGE = ScopedValue.newInstance();
 
-	protected SSLContext sslContext;
+	protected final HttpHandler handler;
 
-	protected HttpHandler handler;
+	protected final SSLContext sslContext;
 
-	protected boolean useClientMode;
+	protected final boolean useClientMode;
 
-	int connectionNumber;
+	protected int connectionNumber;
 
-	int streamIdentifier;
+	protected int streamIdentifier;
 
-	public void setSslContext(SSLContext sslContext) {
-		this.sslContext = sslContext;
-	}
-
-	public void setHandler(HttpHandler handler) {
+	public HttpProtocol(HttpHandler handler, SSLContext sslContext, boolean useClientMode) {
+		super();
 		this.handler = handler;
-	}
-
-	public void setUseClientMode(boolean useClientMode) {
+		this.sslContext = sslContext;
 		this.useClientMode = useClientMode;
 	}
 

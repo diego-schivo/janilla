@@ -28,30 +28,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 
-public class FilterByteChannel extends FilterChannel<ByteChannel> implements ByteChannel {
+public class FilterByteChannel<C extends ByteChannel> extends FilterChannel<C> implements ByteChannel {
 
-	public static void main(String[] args) throws Exception {
-		var s = new ByteBufferHolder();
-		s.setBuffer(ByteBuffer.wrap("foo".getBytes()).position(3));
-		var d = new ByteBufferHolder();
-		d.setBuffer(ByteBuffer.allocate(10));
-
-		try (var c = new FilterByteChannel(new ByteBufferByteChannel(s, d))) {
-			var a = new byte[3];
-			IO.read(c, a);
-			var t = new String(a);
-			System.out.println(t);
-			assert t.equals("foo") : t;
-
-			IO.write("bar".getBytes(), c);
-			var b = d.getBuffer();
-			t = new String(b.array(), 0, b.position());
-			System.out.println(t);
-			assert t.equals("bar") : t;
-		}
-	}
-
-	public FilterByteChannel(ByteChannel channel) {
+	public FilterByteChannel(C channel) {
 		super(channel);
 	}
 

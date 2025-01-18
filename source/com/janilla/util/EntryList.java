@@ -32,6 +32,8 @@ import java.util.Objects;
 
 public class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
 
+	private static final long serialVersionUID = 2930611377458857452L;
+
 	public static void main(String[] args) {
 		var l = new EntryList<String, String>();
 		l.add("foo", "bar");
@@ -39,8 +41,6 @@ public class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
 		System.out.println(l);
 		assert l.equals(List.of(Map.entry("foo", "baz"))) : l;
 	}
-
-	private static final long serialVersionUID = 2930611377458857452L;
 
 	public EntryList() {
 	}

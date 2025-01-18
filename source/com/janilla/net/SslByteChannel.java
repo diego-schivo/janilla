@@ -38,7 +38,7 @@ import javax.net.ssl.SSLException;
 import com.janilla.io.FilterByteChannel;
 import com.janilla.io.IO;
 
-public class SslByteChannel extends FilterByteChannel {
+public class SslByteChannel extends FilterByteChannel<ByteChannel> {
 
 	protected SSLEngine engine;
 

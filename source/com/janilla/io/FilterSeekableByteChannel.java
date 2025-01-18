@@ -25,23 +25,13 @@
 package com.janilla.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 
-public class FilterSeekableByteChannel extends FilterChannel<SeekableByteChannel> implements SeekableByteChannel {
+public class FilterSeekableByteChannel<C extends SeekableByteChannel> extends FilterByteChannel<C>
+		implements SeekableByteChannel {
 
-	public FilterSeekableByteChannel(SeekableByteChannel channel) {
+	public FilterSeekableByteChannel(C channel) {
 		super(channel);
-	}
-
-	@Override
-	public int read(ByteBuffer dst) throws IOException {
-		return channel.read(dst);
-	}
-
-	@Override
-	public int write(ByteBuffer src) throws IOException {
-		return channel.write(src);
 	}
 
 	@Override

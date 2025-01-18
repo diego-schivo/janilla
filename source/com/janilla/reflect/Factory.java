@@ -24,26 +24,26 @@
  */
 package com.janilla.reflect;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class Factory {
 
-	private Set<Class<?>> types;
+	private Collection<Class<?>> types;
 
 	private Object source;
 
 	private Map<Class<?>, Supplier<?>> suppliers = new ConcurrentHashMap<>();
 
-	public Set<Class<?>> getTypes() {
+	public Collection<Class<?>> getTypes() {
 		return types;
 	}
 
-	public void setTypes(Set<Class<?>> types) {
+	public void setTypes(Collection<Class<?>> types) {
 		this.types = types;
 	}
 
@@ -56,6 +56,10 @@ public class Factory {
 	}
 
 	public <T> T create(Class<T> type) {
+		return create(type, null);
+	}
+
+	public <T> T create(Class<T> type, Map<String, Object> arguments) {
 		@SuppressWarnings("unchecked")
 		var s = (Supplier<T>) suppliers.computeIfAbsent(type, k -> {
 			for (var t : types)
@@ -64,35 +68,31 @@ public class Factory {
 					break;
 				}
 			var c = k;
-//			System.out.println("c = " + c);
-			if (c.getEnclosingClass() == source.getClass()) {
-				var d = c.getConstructors()[0];
+			var c0 = c.getConstructors()[0];
+//			System.out.println("Factory.create, c0 = " + c0);
+			if (c.getEnclosingClass() == source.getClass())
 				return () -> {
 					try {
 						@SuppressWarnings("unchecked")
-						var t = (T) d.newInstance(source);
+						var t = (T) c0.newInstance(source);
 						return Reflection.copy(source, t);
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
 				};
-			} else {
-				Constructor<?> d;
+			return () -> {
 				try {
-					d = c.getConstructor();
-				} catch (NoSuchMethodException e) {
+					@SuppressWarnings("unchecked")
+					var t = (T) c0
+							.newInstance(Arrays.stream(c0.getParameters())
+									.map(x -> arguments.containsKey(x.getName()) ? arguments.get(x.getName())
+											: Reflection.property(source.getClass(), x.getName()).get(source))
+									.toArray());
+					return Reflection.copy(source, t);
+				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}
-				return () -> {
-					try {
-						@SuppressWarnings("unchecked")
-						var t = (T) d.newInstance();
-						return Reflection.copy(source, t);
-					} catch (ReflectiveOperationException e) {
-						throw new RuntimeException(e);
-					}
-				};
-			}
+			};
 		});
 		return s.get();
 	}

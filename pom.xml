@@ -4,8 +4,9 @@
 	<artifactId>janilla</artifactId>
 	<version>4.0.0-SNAPSHOT</version>
 	<properties>
-		<maven.compiler.release>23</maven.compiler.release>
 		<maven.compiler.enablePreview>true</maven.compiler.enablePreview>
+		<maven.compiler.parameters>true</maven.compiler.parameters>
+		<maven.compiler.release>23</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	<build>

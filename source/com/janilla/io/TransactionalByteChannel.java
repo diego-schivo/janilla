@@ -33,7 +33,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TransactionalByteChannel extends FilterSeekableByteChannel {
+public class TransactionalByteChannel extends FilterSeekableByteChannel<SeekableByteChannel> {
 
 	public static void main(String[] args) throws Exception {
 		var f = Files.createTempFile("foo", "");
@@ -44,7 +44,9 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 			ch.startTransaction();
 			{
 				var b = ByteBuffer.wrap("foobar".getBytes());
-				IO.repeat(_ -> ch.write(b), b.remaining());
+				ch.write(b);
+				if (b.remaining() != 0)
+					throw new IOException();
 			}
 			ch.commitTransaction();
 
@@ -54,7 +56,9 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 			{
 				ch.position(3);
 				var b = ByteBuffer.wrap("bazqux".getBytes());
-				IO.repeat(_ -> ch.write(b), b.remaining());
+				ch.write(b);
+				if (b.remaining() != 0)
+					throw new IOException();
 
 				new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
 				new ProcessBuilder("hexdump", "-C", tf.toString()).inheritIO().start().waitFor();
@@ -99,8 +103,9 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 		for (var p = 0L; p < s;) {
 			if (b.position() < Long.BYTES + Integer.BYTES) {
 				b.limit(b.capacity());
-				var x = b;
-				IO.repeat(_ -> transactionChannel.read(x), b.remaining());
+				transactionChannel.read(b);
+				if (b.remaining() != 0)
+					throw new IOException();
 			}
 
 			var q = b.getLong(0);
@@ -118,14 +123,18 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 			for (var n = 0; n < l;) {
 				if (!b.hasRemaining()) {
 					b.clear();
-					var x = b;
-					IO.repeat(_ -> transactionChannel.read(x), b.remaining());
+					transactionChannel.read(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 					z = b.position();
 					b.limit(Math.min(z, l - n));
 					b.position(0);
 				}
-				var x = b;
-				n += IO.repeat(_ -> channel.write(x), Math.min(l - n, b.remaining()));
+				if (l - n < b.remaining())
+					b.limit(b.position() + l - n);
+				n += channel.write(b);
+				if (b.remaining() != 0)
+					throw new IOException();
 			}
 			b.limit(z);
 			b.compact();
@@ -136,7 +145,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 
 	@Override
 	public int write(ByteBuffer src) throws IOException {
-		if (src.remaining() > 0) {
+		if (src.remaining() != 0) {
 			var p = channel.position();
 			var rs = p < transaction.startSize
 					? Range.union(transaction.writeRanges,
@@ -151,9 +160,13 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel {
 					b.putLong(z ? r.to() : r.from());
 					b.putInt(z ? -l : l);
 					channel.position(r.from());
-					IO.repeat(_ -> channel.read(b), b.remaining());
+					channel.read(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 					b.flip();
-					IO.repeat(_ -> transactionChannel.write(b), b.remaining());
+					transactionChannel.write(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 					channel.position(p);
 				}
 		}

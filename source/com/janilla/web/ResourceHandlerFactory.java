@@ -39,7 +39,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -50,7 +49,6 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpWritableByteChannel;
 import com.janilla.io.IO;
-import com.janilla.util.Lazy;
 
 public class ResourceHandlerFactory implements WebHandlerFactory {
 
@@ -100,15 +98,30 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 //				</html>""") : s;
 //	}
 
-	protected String[] packages;
+//	protected String[] packages;
+//
+//	public void setPackages(String... packages) {
+//		this.packages = packages;
+//	}
 
-	public void setPackages(String... packages) {
-		this.packages = packages;
-	}
+//	Supplier<Map<String, Resource>> resources = Lazy.of(() -> {
+	////		System.out.println("ResourceHandlerFactory.resources, this=" + this);
+//		var m = Arrays.stream(packages).flatMap(this::walk).collect(Collectors.toMap(r -> switch (r) {
+//		case FileResource x -> x.path.substring(x.package1.length() + 1);
+//		case ZipEntryResource x -> {
+//			var a = (FileResource) x.archive;
+//			yield a.path.substring(0, a.path.length() - 4).substring(a.package1.length() + 1) + x.path;
+//		}
+//		default -> throw new IllegalArgumentException();
+//		}, x -> x, (_, w) -> w, LinkedHashMap::new));
+	////		System.out.println("ResourceHandlerFactory.resources, m=" + m);
+//		return m;
+//	});
 
-	Supplier<Map<String, Resource>> resources = Lazy.of(() -> {
-//		System.out.println("ResourceHandlerFactory.resources, this=" + this);
-		var m = Arrays.stream(packages).flatMap(this::walk).collect(Collectors.toMap(r -> switch (r) {
+	protected Map<String, Resource> resources;
+
+	public void initialize(String... packages) {
+		resources = Arrays.stream(packages).flatMap(this::walk).collect(Collectors.toMap(r -> switch (r) {
 		case FileResource x -> x.path.substring(x.package1.length() + 1);
 		case ZipEntryResource x -> {
 			var a = (FileResource) x.archive;
@@ -116,14 +129,13 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		}
 		default -> throw new IllegalArgumentException();
 		}, x -> x, (_, w) -> w, LinkedHashMap::new));
-//		System.out.println("ResourceHandlerFactory.resources, m=" + m);
-		return m;
-	});
+//		System.out.println("ResourceHandlerFactory.initialize, resourcesm=" + resources);
+	}
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
 		var p = object instanceof HttpRequest q ? q.getPath() : null;
-		var r = p != null ? resources.get().get(p) : null;
+		var r = p != null ? resources.get(p) : null;
 
 //		if (p != null && p.contains("html")) {
 //			System.out.println("ResourceHandlerFactory.createHandler, p=" + p + ", r=" + r);

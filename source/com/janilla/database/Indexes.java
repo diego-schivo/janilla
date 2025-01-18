@@ -35,15 +35,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.janilla.io.ElementHelper;
-import com.janilla.io.IO;
+import com.janilla.io.ByteConverter;
 import com.janilla.json.Json;
-import com.janilla.util.Lazy;
 
 public class Indexes {
 
@@ -53,32 +49,23 @@ public class Indexes {
 		try (var ch = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
 			Supplier<Indexes> iis = () -> {
-				var ii = new Indexes();
-				ii.setInitializeBTree(x -> {
-					try {
-						var m = new Memory();
-						var ft = m.getFreeBTree();
-						ft.setOrder(o);
-						ft.setChannel(ch);
-						ft.setRoot(BlockReference.read(ch, 0));
-						m.setAppendPosition(Math.max(2 * BlockReference.BYTES, ch.size()));
-
-						x.setOrder(o);
-						x.setChannel(ch);
-						x.setMemory(m);
-						x.setRoot(BlockReference.read(ch, BlockReference.BYTES));
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
-				});
-				ii.setInitializeIndex((_, x) -> {
-					@SuppressWarnings("unchecked")
-					var i = (Index<String, Object[]>) x;
-					i.setKeyHelper(ElementHelper.STRING);
-					i.setValueHelper(ElementHelper.of(
-							new ElementHelper.TypeAndOrder(Instant.class, ElementHelper.SortOrder.DESCENDING),
-							new ElementHelper.TypeAndOrder(Long.class, ElementHelper.SortOrder.DESCENDING)));
-				});
+				Indexes ii;
+				try {
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+							Math.max(2 * BlockReference.BYTES, ch.size()));
+					ii = new Indexes(
+							new BTree<>(o, ch, m, NameAndData.BYTE_CONVERTER,
+									BlockReference.read(ch, BlockReference.BYTES)),
+							x -> new Index<String, Object[]>(
+									new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING), x.bTree()),
+									ByteConverter.of(
+											new ByteConverter.TypeAndOrder(Instant.class,
+													ByteConverter.SortOrder.DESCENDING),
+											new ByteConverter.TypeAndOrder(Long.class,
+													ByteConverter.SortOrder.DESCENDING))));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 				return ii;
 			};
 
@@ -108,28 +95,18 @@ public class Indexes {
 		}
 	}
 
-	Consumer<BTree<NameAndData>> initializeBTree;
+	protected final BTree<NameAndData> bTree;
 
-	BiConsumer<String, Index<?, ?>> initializeIndex;
+	protected final Function<NameAndData, Index<?, ?>> newIndex;
 
-	Supplier<BTree<NameAndData>> btree = Lazy.of(() -> {
-		var bt = new BTree<NameAndData>();
-		initializeBTree.accept(bt);
-		bt.setHelper(NameAndData.HELPER);
-		return bt;
-	});
-
-	public void setInitializeBTree(Consumer<BTree<NameAndData>> initializeBTree) {
-		this.initializeBTree = initializeBTree;
-	}
-
-	public void setInitializeIndex(BiConsumer<String, Index<?, ?>> initializeIndex) {
-		this.initializeIndex = initializeIndex;
+	public Indexes(BTree<NameAndData> bTree, Function<NameAndData, Index<?, ?>> newIndex) {
+		this.bTree = bTree;
+		this.newIndex = newIndex;
 	}
 
 	public void create(String name) {
 //		System.out.println("Indexes.create, name=" + name);
-		btree.get().getOrAdd(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
+		bTree.getOrAdd(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
 	}
 
 	public <K, V, R> R perform(String name, Function<Index<K, V>, R> operation) {
@@ -137,26 +114,23 @@ public class Indexes {
 
 			R r;
 		}
-		var bt = btree.get();
+		var bt = bTree;
 		var a = new A();
 		bt.get(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)), x -> {
-			var i = new Index<K, V>();
-			i.setInitializeBTree(y -> {
-				y.setOrder(bt.getOrder());
-				y.setChannel(bt.getChannel());
-				y.setMemory(bt.getMemory());
-				y.setRoot(x.btree());
-			});
+			@SuppressWarnings("unchecked")
+			var i = (Index<K, V>) newIndex.apply(x);
 			String aa1;
 			try {
 				if (x.attributes().capacity() == 0)
 					aa1 = "{}";
 				else {
-					bt.getChannel().position(x.attributes().position());
+					bt.channel().position(x.attributes().position());
 					var b = ByteBuffer.allocate(x.attributes().capacity());
-					IO.repeat(_ -> bt.getChannel().read(b), b.remaining());
+					bt.channel().read(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 					b.position(0);
-					aa1 = ElementHelper.STRING.getElement(b);
+					aa1 = ByteConverter.STRING.deserialize(b);
 				}
 				@SuppressWarnings("unchecked")
 				var m = (Map<String, Object>) Json.parse(aa1);
@@ -165,30 +139,31 @@ public class Indexes {
 				throw new UncheckedIOException(e);
 			}
 //			System.out.println("Indexes.perform, name=" + name + ", i=" + i);
-			initializeIndex.accept(name, i);
 
 			a.r = operation.apply(i);
 
 			var aa2 = Json.format(i.getAttributes());
 			var aar = x.attributes();
 			if (!aa2.equals(aa1)) {
-				var bb = ElementHelper.STRING.getBytes(aa2);
+				var bb = ByteConverter.STRING.serialize(aa2);
 				if (bb.length > aar.capacity()) {
 					if (aar.capacity() > 0)
-						bt.getMemory().free(aar);
-					aar = bt.getMemory().allocate(bb.length);
+						bt.memory().free(aar);
+					aar = bt.memory().allocate(bb.length);
 				}
 				var b = ByteBuffer.allocate(aar.capacity());
 				b.put(0, bb);
 				try {
-					bt.getChannel().position(aar.position());
-					IO.repeat(_ -> bt.getChannel().write(b), b.remaining());
+					bt.channel().position(aar.position());
+					bt.channel().write(b);
+					if (b.remaining() != 0)
+						throw new IOException();
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
 			}
-			var btr = i.getBTree().getRoot();
-			return aar.position() != x.attributes().position() || btr.position() != x.btree().position()
+			var btr = i.bTree.root();
+			return aar.position() != x.attributes().position() || btr.position() != x.bTree().position()
 					? new NameAndData(name, aar, btr)
 					: null;
 		});
