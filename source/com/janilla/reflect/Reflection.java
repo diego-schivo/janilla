@@ -58,7 +58,7 @@ public class Reflection {
 	}
 
 	public static Property property(Class<?> class1, String name) {
-//		System.out.println("Reflection.property, class1=" + class1);
+//		System.out.println("Reflection.property, class1=" + class1 + ", name=" + name);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.get(name);
 	}
