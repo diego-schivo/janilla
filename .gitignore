@@ -30,6 +30,6 @@ bin/
 target/
 node/
 node_modules/
-source/com/janilla/frontend/*.css
-source/com/janilla/frontend/*.html
-source/com/janilla/frontend/*.js
+#source/com/janilla/frontend/*.css
+#source/com/janilla/frontend/*.html
+#source/com/janilla/frontend/*.js
