@@ -218,7 +218,8 @@ public class HttpProtocol implements Protocol {
 									throw new IOException("closed");
 								var n = src.remaining();
 								if (n == 0)
-									throw new IllegalArgumentException("src");
+//									throw new IllegalArgumentException("src");
+									return 0;
 								var cd = Math.ceilDiv(n, 16384);
 								if (!headersWritten) {
 									writeHeaders(false);

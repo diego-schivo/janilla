@@ -28,8 +28,10 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.AbstractMap;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -88,6 +90,7 @@ public class ValueIterator extends TokenIterator {
 //		System.out.println("ValueIterator.createIterator, object=" + object);
 		return object == null ? context.newNullIterator() : switch (object) {
 		case Boolean x -> context.newBooleanIterator(x);
+		case Date x -> context.newStringIterator(x.toString());
 		case Instant x -> context.newStringIterator(x.toString());
 		case List<?> x -> {
 			@SuppressWarnings("unchecked")
@@ -96,6 +99,7 @@ public class ValueIterator extends TokenIterator {
 		}
 		case Locale x -> context.newStringIterator(x.toLanguageTag());
 		case LocalDate x -> context.newStringIterator(x.toString());
+		case LocalDateTime x -> context.newStringIterator(x.toString());
 		case Map<?, ?> x -> context.newObjectIterator(x.entrySet().stream().map(y -> {
 			@SuppressWarnings("unchecked")
 			var z = y.getKey() instanceof Locale l
