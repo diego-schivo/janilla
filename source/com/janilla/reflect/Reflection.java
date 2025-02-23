@@ -52,7 +52,7 @@ public class Reflection {
 	}
 
 	public static Stream<Property> properties(Class<?> class1) {
-//		System.out.println("Reflection.properties2, class1=" + class1);
+//		System.out.println("Reflection.properties, class1=" + class1);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.values().stream();
 	}

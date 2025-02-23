@@ -98,26 +98,6 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 //				</html>""") : s;
 //	}
 
-//	protected String[] packages;
-//
-//	public void setPackages(String... packages) {
-//		this.packages = packages;
-//	}
-
-//	Supplier<Map<String, Resource>> resources = Lazy.of(() -> {
-	////		System.out.println("ResourceHandlerFactory.resources, this=" + this);
-//		var m = Arrays.stream(packages).flatMap(this::walk).collect(Collectors.toMap(r -> switch (r) {
-//		case FileResource x -> x.path.substring(x.package1.length() + 1);
-//		case ZipEntryResource x -> {
-//			var a = (FileResource) x.archive;
-//			yield a.path.substring(0, a.path.length() - 4).substring(a.package1.length() + 1) + x.path;
-//		}
-//		default -> throw new IllegalArgumentException();
-//		}, x -> x, (_, w) -> w, LinkedHashMap::new));
-	////		System.out.println("ResourceHandlerFactory.resources, m=" + m);
-//		return m;
-//	});
-
 	protected Map<String, Resource> resources;
 
 	public void initialize(String... packages) {
@@ -134,7 +114,7 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		var p = object instanceof HttpRequest q ? q.getPath() : null;
+		var p = object instanceof HttpRequest x ? x.getPath() : null;
 		var r = p != null ? resources.get(p) : null;
 
 //		if (p != null && p.contains("html")) {
@@ -143,14 +123,14 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 //				System.out.println(resources.get());
 //		}
 
-		return r != null ? c -> {
-			handle(r, (HttpExchange) c);
+		return r != null ? ex -> {
+			handle(r, (HttpExchange) ex);
 			return true;
 		} : null;
 	}
 
-	static Set<String> extensions = Set.of("avif", "css", "html", "ico", "jpg", "js", "png", "svg", "ttf", "webp",
-			"woff", "woff2");
+	protected static Set<String> extensions = Set.of("avif", "css", "html", "ico", "jpg", "js", "png", "svg", "ttf",
+			"webp", "woff", "woff2");
 
 	protected Stream<Resource> walk(String package1) {
 		var s = package1.replace('.', '/');
@@ -266,7 +246,7 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		hh.add(new HeaderField("content-length", String.valueOf(resource.size())));
 
 		var l = Thread.currentThread().getContextClassLoader();
-		try (var c = switch (resource) {
+		try (var is = switch (resource) {
 		case FileResource x -> l.getResourceAsStream(x.path.substring(1));
 		case ZipEntryResource x -> {
 			URI u;
@@ -282,11 +262,7 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		}
 		default -> throw new IllegalArgumentException();
 		}) {
-			try {
-				((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(c.readAllBytes()), true);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+			((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(is.readAllBytes()), true);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

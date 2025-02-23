@@ -81,7 +81,7 @@ public class Persistence {
 
 	public Class<?> resolveType(String name) {
 		return types.stream().filter(y -> y.getName().substring(y.getPackageName().length() + 1).equals(name))
-				.findFirst().get();
+				.findFirst().orElse(null);
 	}
 
 	protected <E, K, V> void configure(Class<E> type) {

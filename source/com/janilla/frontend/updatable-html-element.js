@@ -232,6 +232,11 @@ const compileNode = node => {
 										}
 								return j3.originalChildNodes;
 							}
+							if (typeof n3 === "string") {
+								const t = document.createElement("template");
+								t.innerHTML = n3;
+								return [...t.content.childNodes];
+							}
 							return n3;
 						});
 						for (const n3 of nn1)

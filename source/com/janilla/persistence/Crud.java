@@ -394,12 +394,14 @@ public class Crud<E> {
 	}
 
 	protected E parse(Object x) {
-		var c2 = new Converter();
-		c2.setResolver(y -> y.map().containsKey("$type")
-				? new Converter.MapType(y.map(), persistence.resolveType((String) y.map().get("$type")))
-				: null);
+		var c = new Converter();
+		c.setResolver(y -> {
+			var n = (String) y.map().get("$type");
+			var t = n != null ? persistence.resolveType(n) : null;
+			return t != null ? new Converter.MapType(y.map(), t) : null;
+		});
 		@SuppressWarnings("unchecked")
-		var e = (E) c2.convert(Json.parse((String) x), type);
+		var e = (E) c.convert(Json.parse((String) x), type);
 		return e;
 	}
 

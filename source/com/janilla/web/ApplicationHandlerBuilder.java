@@ -36,45 +36,15 @@ import com.janilla.util.Util;
 
 public class ApplicationHandlerBuilder {
 
-//	Supplier<Collection<Class<?>>> frontendClasses = Lazy.of(() -> {
-//		var c = Util.getPackageClasses("com.janilla.frontend").toList();
-	////		System.out.println("c=" + c);
-//		return c;
-//	});
-//	protected Collection<Class<?>> frontendClasses;
-
 	protected Factory factory;
 
 	protected List<WebHandlerFactory> factories;
-
-//	Supplier<WebHandlerFactory> handlerFactory = Lazy.of(() -> {
-	////		System.out.println("ApplicationHandlerBuilder.handlerFactory, this=" + this);
-
-//		factories = buildFactories().toList();
-//		var f = new DelegatingHandlerFactory();
-//		for (var g : factories) {
-//			var s = Reflection.property(g.getClass(), "mainFactory");
-//			if (s != null)
-//				s.set(g, f);
-//		}
-//		f.setToHandler((o, c) -> {
-//			var h = createHandler(o, c);
-//
-	////			System.out.println("h=" + h);
-//
-//			return h;
-//		});
-//		return f;
-//	});
+	
 	protected WebHandlerFactory handlerFactory;
 
 	public void setFactory(Factory factory) {
 		this.factory = factory;
 	}
-
-//	public WebHandlerFactory getHandlerFactory() {
-//		return handlerFactory.get();
-//	}
 
 	public HttpHandler build() {
 		factories = buildFactories().toList();
@@ -86,9 +56,7 @@ public class ApplicationHandlerBuilder {
 		}
 		f.setToHandler((o, c) -> {
 			var h = createHandler(o, c);
-
 //			System.out.println("h=" + h);
-
 			return h;
 		});
 //		handlerFactory = f;
