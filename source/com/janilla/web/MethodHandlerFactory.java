@@ -136,8 +136,6 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 //				""") : s;
 //	}
 
-//	protected Iterable<Class<?>> types;
-
 	protected Comparator<Invocation> invocationComparator;
 
 	protected Function<String, Class<?>> typeResolver;
@@ -148,54 +146,9 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected RenderableFactory renderableFactory;
 
-//	Supplier<Map<String, Invocable>> invocables = Lazy.of(() -> {
-//		Map<String, Invocable> ii = new HashMap<>();
-//		for (var t : types) {
-//			if (Modifier.isInterface(t.getModifiers()) || Modifier.isAbstract(t.getModifiers()))
-//				continue;
-//
-//			Object o = null;
-//			for (var m : t.getMethods()) {
-//				if (!m.isAnnotationPresent(Handle.class))
-//					continue;
-//
-//				if (o == null)
-//					o = resolveTarget(t);
-//
-//				var p = o;
-//				var i = ii.computeIfAbsent(m.getAnnotation(Handle.class).path(),
-//						_ -> new Invocable(p, new HashMap<>()));
-//				MethodHandle h;
-//				try {
-//					h = MethodHandles.publicLookup().unreflect(m);
-//				} catch (IllegalAccessException e) {
-//					throw new RuntimeException(e);
-//				}
-//				i.methodHandles.put(m, h);
-//			}
-//		}
-//		return ii;
-//	});
-
 	protected Map<String, Invocable> invocables;
 
-//	Supplier<Map<Pattern, Invocable>> regexInvocables = Lazy.of(() -> {
-//		var ii = invocables.get();
-//		var kk = ii.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).collect(Collectors.toSet());
-//		var jj = kk.stream().sorted(Comparator.comparingInt((String x) -> {
-//			var i = x.indexOf('(');
-//			return i >= 0 ? i : x.length();
-//		}).reversed()).collect(Collectors.toMap(k -> Pattern.compile(k), ii::get, (v, _) -> v, LinkedHashMap::new));
-//		ii.keySet().removeAll(kk);
-	////		System.out.println("m=" + m + "\nx=" + x);
-//		return jj;
-//	});
-
 	protected Map<Pattern, Invocable> regexInvocables;
-
-//	public void setTypes(Iterable<Class<?>> types) {
-//		this.types = types;
-//	}
 
 	public void setInvocationComparator(Comparator<Invocation> comparator) {
 		this.invocationComparator = comparator;
@@ -204,10 +157,6 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
 		this.typeResolver = typeResolver;
 	}
-
-//	public void setTargetResolver(Function<Class<?>, Object> targetResolver) {
-//		this.targetResolver = targetResolver;
-//	}
 
 	public void setMainFactory(WebHandlerFactory mainFactory) {
 		this.mainFactory = mainFactory;
@@ -223,25 +172,27 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		for (var t : types) {
 			if (Modifier.isInterface(t.getModifiers()) || Modifier.isAbstract(t.getModifiers()))
 				continue;
-
+			var h0 = t.getAnnotation(Handle.class);
+			var p0 = h0 != null ? h0.path() : null;
 			Object o = null;
 			for (var m : t.getMethods()) {
-				if (!m.isAnnotationPresent(Handle.class))
+				var h = m.getAnnotation(Handle.class);
+				var p = h != null ? h.path() : null;
+				if (p == null)
 					continue;
-
+				if (p0 != null && !p0.isEmpty())
+					p = !p.isEmpty() ? p0 + '/' + p : p0;
 				if (o == null)
 					o = resolveTarget(t);
-
-				var p = o;
-				var i = invocables.computeIfAbsent(m.getAnnotation(Handle.class).path(),
-						_ -> new Invocable(p, new HashMap<>()));
-				MethodHandle h;
+				var o2 = o;
+				var i = invocables.computeIfAbsent(p, _ -> new Invocable(o2, new HashMap<>()));
+				MethodHandle mh;
 				try {
-					h = MethodHandles.publicLookup().unreflect(m);
+					mh = MethodHandles.publicLookup().unreflect(m);
 				} catch (IllegalAccessException e) {
 					throw new RuntimeException(e);
 				}
-				i.methodHandles.put(m, h);
+				i.methodHandles.put(m, mh);
 			}
 		}
 		var kk = invocables.keySet().stream().filter(k -> k.contains("(") && k.contains(")"))
@@ -402,15 +353,6 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		Supplier<String> bs = switch (rq.getMethod()) {
 		case "POST", "PUT" -> {
 			var ct = rq.getHeaderValue("content-type");
-//			var s = Lazy.of(() -> {
-//				try {
-//					return rq.getBody() != null
-//							? new String(Channels.newInputStream((ReadableByteChannel) rq.getBody()).readAllBytes())
-//							: null;
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
-//			});
 			var s = new Supplier<String>() {
 
 				private String[] x;
