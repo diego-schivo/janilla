@@ -177,9 +177,9 @@ public class Converter {
 			input = r.map;
 		}
 
-//		System.out.println("target=" + target);
+//		System.out.println("Converter.convert, target=" + target);
 		var d = target.getConstructors()[0];
-		// System.out.println("d=" + d);
+//		System.out.println("Converter.convert, d=" + d);
 		var tt = target.isRecord()
 				? Arrays.stream(target.getRecordComponents()).collect(
 						Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, _) -> x, LinkedHashMap::new))
@@ -196,10 +196,10 @@ public class Converter {
 					var n = (String) e.getKey();
 					if (n.startsWith("$"))
 						continue;
-					// System.out.println("e=" + e);
+//					System.out.println("Converter.convert, e=" + e);
 					var s = Reflection.property(target, n);
 					var v = convert(e.getValue(), s.genericType());
-					// System.out.println("s=" + s + ", i=" + i + ", v=" + v);
+//					System.out.println("Converter.convert, s=" + s + ", v=" + v);
 					s.set(o, v);
 				}
 			}

@@ -78,7 +78,7 @@ public interface Json {
 	}
 
 	static <T> T parse(String string, Collector<JsonToken<?>, ?, T> collector) {
-//		System.out.println("string=" + string);
+//		System.out.println("Json.parse, string=" + string);
 		var s = new JsonScanner();
 		var l = new ArrayList<JsonToken<?>>();
 		return IntStream.concat(string.chars(), IntStream.of(-1)).boxed().flatMap(i -> {

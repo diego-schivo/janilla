@@ -231,8 +231,7 @@ const compileNode = node => {
 											break;
 										}
 								return j3.originalChildNodes;
-							}
-							if (typeof n3 === "string") {
+							} else if (n3 != null) {
 								const t = document.createElement("template");
 								t.innerHTML = n3;
 								return [...t.content.childNodes];

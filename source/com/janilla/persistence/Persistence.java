@@ -31,7 +31,9 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -50,11 +52,16 @@ public class Persistence {
 
 	protected final Collection<Class<?>> types;
 
+	protected final Collection<String> packageNames;
+
+	protected final Map<String, Class<?>> resolveMap = new ConcurrentHashMap<>();
+
 	protected final Configuration configuration = new Configuration();
 
 	public Persistence(Database database, Collection<Class<?>> types) {
 		this.database = database;
 		this.types = types;
+		packageNames = types.stream().map(Class::getPackageName).distinct().toList();
 		for (var t : types)
 			configure(t);
 		createStoresAndIndexes();
@@ -80,8 +87,16 @@ public class Persistence {
 	}
 
 	public Class<?> resolveType(String name) {
-		return types.stream().filter(y -> y.getName().substring(y.getPackageName().length() + 1).equals(name))
-				.findFirst().orElse(null);
+		return resolveMap.computeIfAbsent(name,
+				k -> Stream.concat(
+						types.stream().filter(x -> x.getName().substring(x.getPackageName().length() + 1).equals(name)),
+						packageNames.stream().map(x -> {
+							try {
+								return Class.forName(x + "." + k.replace('.', '$'));
+							} catch (ClassNotFoundException e) {
+								return null;
+							}
+						})).filter(Objects::nonNull).findFirst().orElse(null));
 	}
 
 	protected <E, K, V> void configure(Class<E> type) {
