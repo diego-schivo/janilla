@@ -440,10 +440,10 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			var ct = exchange.getRequest().getHeaderValue("content-type");
 			switch (Objects.toString(ct, "").split(";")[0]) {
 			case "application/json": {
-//				System.out.println("body=" + body);
 				if (body == null)
 					break;
 				var b = body.get();
+//				System.out.println("MethodHandlerFactory.resolveArgument, b=" + b);
 				if (b == null)
 					return null;
 				var d = new Converter();

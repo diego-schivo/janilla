@@ -242,7 +242,7 @@ const compileNode = node => {
 							if (!nn2.includes(n3))
 								n2.parentNode.removeChild(n3);
 						for (const n3 of nn2.reverse()) {
-							if (rn.previousSibling !== n3)
+							if (rn?.previousSibling !== n3)
 								n2.parentNode.insertBefore(n3, rn);
 							rn = n3;
 						}
@@ -274,13 +274,19 @@ const compileNode = node => {
 								a2.ownerElement?.removeAttributeNode(a2);
 							else if (!a2.ownerElement)
 								oe.setAttributeNode(a2);
-							if (v2 === a2.value)
-								return;
-							a2.value = z === true ? "" : v2;
-							if (a2.name === "value"
-								&& (oe instanceof HTMLInputElement || oe instanceof HTMLSelectElement || oe instanceof HTMLTextAreaElement)
-								&& a2.value !== oe.value)
-								oe.value = a2.value;
+							if (v2 !== a2.value)
+								a2.value = z === true ? "" : v2;
+							switch (a2.name) {
+								case "checked":
+									if (oe instanceof HTMLInputElement && z !== oe.checked)
+										oe.checked = z;
+									break;
+								case "value":
+									if ((oe instanceof HTMLInputElement || oe instanceof HTMLSelectElement || oe instanceof HTMLTextAreaElement)
+										&& a2.value !== oe.value)
+										oe.value = a2.value;
+									break;
+							}
 						};
 					});
 				}
