@@ -28,7 +28,7 @@ import java.util.Iterator;
 
 public class ArrayIterator extends TokenIterator {
 
-	protected Iterator<?> elements;
+	protected final Iterator<?> elements;
 
 	private int state;
 
@@ -38,7 +38,8 @@ public class ArrayIterator extends TokenIterator {
 
 	private Iterator<JsonToken<?>> iterator;
 
-	public void setElements(Iterator<?> elements) {
+	public ArrayIterator(TokenIterationContext context, Iterator<?> elements) {
+		super(context);
 		this.elements = elements;
 	}
 

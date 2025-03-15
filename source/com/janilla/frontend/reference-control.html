@@ -1,0 +1,17 @@
+<collection-list data-name="${collection}" data-ids="${ids}"></collection-list>
+<div>
+  <button type="button" name="choose">choose</button>
+</div>
+<!--${input}-->
+<template id="input">
+  <input type="hidden" name="${name}" value="${value}" />
+</template>
+<!--${dialog}-->
+<template id="dialog">
+  <dialog>
+    <button type="button" name="close">
+      <lucide-icon data-name="x"></lucide-icon>
+    </button>
+    <collection-list data-name="${collection}"></collection-list>
+  </dialog>
+</template>

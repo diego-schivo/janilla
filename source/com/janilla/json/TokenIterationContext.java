@@ -38,10 +38,7 @@ public abstract class TokenIterationContext {
 	}
 
 	public Iterator<JsonToken<?>> newArrayIterator(Iterator<?> elements) {
-		var tt = new ArrayIterator();
-		tt.setContext(this);
-		tt.setElements(elements);
-		return tt;
+		return new ArrayIterator(this, elements);
 	}
 
 	public Iterator<JsonToken<?>> newBooleanIterator(Boolean value) {
@@ -61,10 +58,7 @@ public abstract class TokenIterationContext {
 	}
 
 	public Iterator<JsonToken<?>> newObjectIterator(Iterator<Map.Entry<String, Object>> entries) {
-		var tt = new ObjectIterator();
-		tt.setContext(this);
-		tt.setEntries(entries);
-		return tt;
+		return new ObjectIterator(this, entries);
 	}
 
 	public Iterator<JsonToken<?>> newStringIterator(String string) {
@@ -74,9 +68,6 @@ public abstract class TokenIterationContext {
 	}
 
 	public Iterator<JsonToken<?>> newValueIterator(Object object) {
-		var tt = new ValueIterator();
-		tt.setContext(this);
-		tt.setObject(object);
-		return tt;
+		return new ValueIterator(this, object);
 	}
 }

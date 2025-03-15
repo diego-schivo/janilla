@@ -1,0 +1,18 @@
+reference-list-control {
+  dialog {
+    position: relative;
+
+    > button[name="close"] {
+      background: transparent;
+      border: none;
+      margin-left: auto;
+      padding: 0;
+      position: absolute;
+      right: 1rem;
+
+      lucide-icon {
+        width: 2rem;
+      }
+    }
+  }
+}

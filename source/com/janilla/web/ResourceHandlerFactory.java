@@ -193,8 +193,8 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 							var v = u.toString();
 							if (!v.startsWith("jar:"))
 								u = URI.create("jar:" + v);
-							var t = IO.zipFileSystem(u);
-							Files.walkFileTree(t.getPath("/"), new SimpleFileVisitor<>() {
+							var fs = IO.zipFileSystem(u);
+							Files.walkFileTree(fs.getPath("/"), new SimpleFileVisitor<>() {
 
 								@Override
 								public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)

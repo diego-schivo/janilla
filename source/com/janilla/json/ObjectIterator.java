@@ -26,10 +26,11 @@ package com.janilla.json;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class ObjectIterator extends TokenIterator {
 
-	protected Iterator<Map.Entry<String, Object>> entries;
+	protected final Iterator<Map.Entry<String, Object>> entries;
 
 	private int state;
 
@@ -39,7 +40,8 @@ public class ObjectIterator extends TokenIterator {
 
 	private Iterator<JsonToken<?>> iterator;
 
-	public void setEntries(Iterator<Map.Entry<String, Object>> entries) {
+	public ObjectIterator(TokenIterationContext context, Iterator<Entry<String, Object>> entries) {
+		super(context);
 		this.entries = entries;
 	}
 

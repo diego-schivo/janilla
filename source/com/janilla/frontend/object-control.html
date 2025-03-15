@@ -1,0 +1,81 @@
+<ul>
+  <!--${items}-->
+</ul>
+<template id="item">
+  <li>
+    <!--${field}-->
+  </li>
+</template>
+<template id="label-field">
+  <div>
+    <label>${label}</label>
+    <!--${control}-->
+  </div>
+</template>
+<template id="label-nest-field">
+  <label>
+    ${label}
+    <!--${control}-->
+  </label>
+</template>
+<template id="no-label-field">
+  <div>
+    <!--${control}-->
+  </div>
+</template>
+<template id="checkbox-control">
+  <checkbox-control data-path="${path}" data-key="${key}"></checkbox-control>
+</template>
+<template id="file-control">
+  <file-control data-path="${path}" data-key="${key}"></file-control>
+</template>
+<template id="list-control">
+  <list-control data-path="${path}" data-key="${key}"></list-control>
+</template>
+<template id="object-control">
+  <object-control data-path="${path}" data-key="${key}"></object-control>
+</template>
+<template id="radio-group-control">
+  <radio-group-control data-path="${path}" data-key="${key}"></radio-group-control>
+</template>
+<template id="reference-control">
+  <reference-control data-path="${path}" data-key="${key}" data-type="${referenceType}"></reference-control>
+</template>
+<template id="reference-list-control">
+  <reference-list-control data-path="${path}" data-key="${key}" data-type="${referenceType}"></reference-list-control>
+</template>
+<template id="rich-text-control">
+  <rich-text-control data-path="${path}" data-key="${key}"></rich-text-control>
+</template>
+<template id="select-control">
+  <select-control data-path="${path}" data-key="${key}"></select-control>
+</template>
+<template id="slug-control">
+  <slug-control data-path="${path}" data-key="${key}"></slug-control>
+</template>
+<template id="textarea-control">
+  <textarea-control data-path="${path}" data-key="${key}"></textarea-control>
+</template>
+<template id="text-control">
+  <text-control data-path="${path}" data-key="${key}"></text-control>
+</template>
+
+<template id="tabs">
+  <tabs-field data-key="${key}">
+    <div role="tablist">
+      <!--${buttons}-->
+    </div>
+    <!--${panels}-->
+  </tabs-field>
+</template>
+<template id="tabs-button">
+  <button type="button" role="tab" aria-selected="${selected}" aria-controls="panel-${index}">${label}</button>
+</template>
+<template id="tabs-panel">
+  <div id="panel-${index}" role="tabpanel" hidden="${hidden}">
+    <ul>
+      <!--${items}-->
+    </ul>
+  </div>
+</template>
+<input type="hidden" name="${path}.$type" value="${type}" />

@@ -1,0 +1,40 @@
+tabs-field {
+  flex-direction: column;
+
+  &,
+  [role="tablist"] {
+    display: flex;
+    gap: 1rem;
+  }
+
+  [role="tablist"] {
+    border-bottom: 1px solid rgb(47, 47, 47);
+    margin: 0 -1rem;
+    padding: 0 1rem;
+
+    button {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      font-size: 1rem;
+      line-height: 1.25rem;
+      padding-bottom: 0.5rem;
+    }
+
+    [aria-selected="false"] {
+      opacity: 0.5;
+    }
+
+    [aria-selected="true"] {
+      border-bottom: 1px solid rgb(255, 255, 255);
+    }
+  }
+
+  [role="tabpanel"] {
+    > ul {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+}

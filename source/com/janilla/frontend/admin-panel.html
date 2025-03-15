@@ -1,0 +1,121 @@
+<article>
+  <!--${header}-->
+  <!--${content}-->
+  <!--${dialog}-->
+</article>
+
+<template id="header">
+  <header>
+    <button type="button" name="open-menu">
+      <lucide-icon data-name="menu"></lucide-icon>
+    </button>
+    <nav>
+      <ol>
+        <!--${items}-->
+      </ol>
+    </nav>
+    <a href="/admin/account">
+      <lucide-icon data-name="circle-user-round"></lucide-icon>
+    </a>
+  </header>
+</template>
+
+<template id="link-item">
+  <li>
+    <a href="${href}">
+      <!--${content}-->
+    </a>
+  </li>
+</template>
+
+<template id="item">
+  <li>
+    <!--${content}-->
+  </li>
+</template>
+
+<template id="icon">
+  <lucide-icon data-name="${name}"></lucide-icon>
+</template>
+
+<template id="dashboard">
+  <dashboard-view></dashboard-view>
+</template>
+
+<template id="create-first-user">
+  <create-first-user></create-first-user>
+</template>
+
+<template id="login">
+  <login-element></login-element>
+</template>
+
+<template id="collection">
+  <collection-list data-name="${name}"></collection-list>
+</template>
+
+<template id="object">
+  <h1>${title}</h1>
+  <tabs-element></tabs-element>
+</template>
+
+<template id="edit">
+  <form autocomplete="off">
+    <div>
+      <!--${preview}-->
+      <button>save</button>
+      <select>
+        <option>&vellip;</option>
+        <option value="delete">Delete</option>
+      </select>
+    </div>
+    <object-control></object-control>
+  </form>
+</template>
+
+<template id="preview">
+  <a href="${href}" target="_blank">
+    <lucide-icon data-name="link-2"></lucide-icon>
+    preview
+  </a>
+</template>
+
+<template id="versions">
+  <div>TODO</div>
+</template>
+
+<template id="dialog">
+  <dialog>
+    <button type="button" name="close-menu">
+      <lucide-icon data-name="x"></lucide-icon>
+    </button>
+    <nav>
+      <ul>
+        <!--${groups}-->
+      </ul>
+    </nav>
+    <button type="button" name="logout">
+      <lucide-icon data-name="log-out"></lucide-icon>
+    </button>
+  </dialog>
+</template>
+
+<template id="group">
+  <li>
+    <label>
+      ${name}
+      <input type="checkbox" checked="${checked}" />
+      <lucide-icon data-name="chevron-down"></lucide-icon>
+      <lucide-icon data-name="chevron-up"></lucide-icon>
+    </label>
+    <ul>
+      <!--${links}-->
+    </ul>
+  </li>
+</template>
+
+<template id="link">
+  <li>
+    <a href="${href}">${name}</a>
+  </li>
+</template>

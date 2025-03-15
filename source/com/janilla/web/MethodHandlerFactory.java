@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -61,6 +60,7 @@ import com.janilla.http.HttpResponse;
 import com.janilla.http.HttpWritableByteChannel;
 import com.janilla.json.Converter;
 import com.janilla.json.Json;
+import com.janilla.json.MapAndType;
 import com.janilla.net.Net;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;
@@ -138,7 +138,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected Comparator<Invocation> invocationComparator;
 
-	protected Function<String, Class<?>> typeResolver;
+//	protected Function<String, Class<?>> typeResolver;
 
 	protected Function<Class<?>, Object> targetResolver;
 
@@ -154,9 +154,9 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		this.invocationComparator = comparator;
 	}
 
-	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
-		this.typeResolver = typeResolver;
-	}
+//	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
+//		this.typeResolver = typeResolver;
+//	}
 
 	public void setMainFactory(WebHandlerFactory mainFactory) {
 		this.mainFactory = mainFactory;
@@ -302,11 +302,11 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		}
 
 		var rs = exchange.getResponse();
-		if (invocation.method.getReturnType() == Void.TYPE) {
-			if (rs.getStatus() == 0) {
-				rs.setStatus(204);
-				rs.setHeaderValue("cache-control", "no-cache");
-			}
+		if (rs.getStatus() != 0)
+			;
+		else if (invocation.method.getReturnType() == Void.TYPE) {
+			rs.setStatus(204);
+			rs.setHeaderValue("cache-control", "no-cache");
 		} else if (o instanceof Path f && invocation.method.isAnnotationPresent(Attachment.class)) {
 			rs.setStatus(200);
 			rs.setHeaderValue("cache-control", "max-age=3600");
@@ -386,8 +386,10 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				if (o instanceof Map<?, ?> m && !m.isEmpty()) {
 					if (qs == null)
 						qs = new EntryList<>();
-					for (var e : m.entrySet())
-						qs.add(e.getKey().toString(), e.getValue().toString());
+					for (var kv : m.entrySet())
+						if (kv.getValue() instanceof Boolean || kv.getValue() instanceof Number
+								|| kv.getValue() instanceof String)
+							qs.add(kv.getKey().toString(), kv.getValue().toString());
 				}
 				break;
 			}
@@ -415,20 +417,15 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 					i < ggl ? () -> (g != null ? new String[] { g } : null)
 							: () -> qs2 != null && p != null ? qs2.stream().filter(x -> x.getKey().equals(p))
 									.map(Map.Entry::getValue).toArray(String[]::new) : null,
-					i >= ggl ? qs : null, bs2, b != null && b.resolver() != Bind.NullResolver.class ? () -> {
-						try {
-							return b.resolver().getConstructor().newInstance();
-						} catch (ReflectiveOperationException e) {
-							throw new RuntimeException(e);
-						}
-					} : null);
+					i >= ggl ? qs : null, bs2,
+					b != null && b.resolver() != MapAndType.NullTypeResolver.class ? () -> resolver(b.resolver())
+							: null);
 		}
 		return aa;
 	}
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, Supplier<String[]> values,
-			EntryList<String, String> entries, Supplier<String> body,
-			Supplier<UnaryOperator<Converter.MapType>> resolver) {
+			EntryList<String, String> entries, Supplier<String> body, Supplier<MapAndType.TypeResolver> resolver) {
 		var c = type instanceof Class<?> x ? x : null;
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
 			return exchange;
@@ -446,16 +443,14 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 //				System.out.println("MethodHandlerFactory.resolveArgument, b=" + b);
 				if (b == null)
 					return null;
-				var d = new Converter();
-				if (resolver != null)
-					d.setResolver(resolver.get());
+				var d = new Converter(resolver != null ? resolver.get() : null);
 				return d.convert(Json.parse(b), c);
 			}
 			case "application/x-www-form-urlencoded": {
 				if (entries == null)
 					break;
 				var t = createEntryTree();
-				t.setTypeResolver(typeResolver);
+//				t.setTypeResolver(typeResolver);
 				entries.forEach(t::add);
 				return t.convert(c);
 			}
@@ -516,18 +511,27 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected EntryTree createEntryTree() {
-		return new EntryTree();
+//		return new EntryTree();
+		return null;
 	}
 
 	protected Object parseParameter(String[] strings, Type type) {
 		var c = (Class<?>) type;
 		var i = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
-		var d = new Converter();
-		d.setResolver(x -> x.map().containsKey("$type")
-				? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
-				: null);
+//		var d = new Converter(x -> x.map().containsKey("$type")
+//				? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
+//				: null);
+		var d = new Converter(null);
 		return d.convert(i, c);
+	}
+
+	protected MapAndType.TypeResolver resolver(Class<? extends MapAndType.TypeResolver> class0) {
+		try {
+			return class0.getConstructor().newInstance();
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	protected void render(Renderable<?> renderable, HttpExchange exchange) {

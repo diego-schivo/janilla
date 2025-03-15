@@ -1,0 +1,14 @@
+<div>
+  <div role="tablist">
+    <!--${buttons}-->
+  </div>
+  <!--${panels}-->
+</div>
+
+<template id="tabs-button">
+  <button type="button" role="tab" aria-controls="${panel}-${index}" aria-selected="${selected}">${label}</button>
+</template>
+
+<template id="tabs-panel">
+  <div id="${panel}-${index}" role="tabpanel" hidden="${hidden}"></div>
+</template>

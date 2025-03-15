@@ -40,7 +40,7 @@ import java.util.UUID;
 
 public class ValueIterator extends TokenIterator {
 
-	protected Object object;
+	protected final Object object;
 
 	private int state;
 
@@ -48,7 +48,8 @@ public class ValueIterator extends TokenIterator {
 
 	private Iterator<JsonToken<?>> iterator;
 
-	public void setObject(Object object) {
+	public ValueIterator(TokenIterationContext context, Object object) {
+		super(context);
 		this.object = object;
 	}
 

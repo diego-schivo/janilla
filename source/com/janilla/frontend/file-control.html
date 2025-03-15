@@ -1,0 +1,13 @@
+<template id="null">
+  <input id="${name}" type="file" name="${name}" class="visually-hidden" />
+  <label for="${name}">Select a file</label>
+</template>
+<template id="non-null">
+  <div class="thumbnail">
+    <img src="/api/media/file/${data.name}" loading="lazy" />
+  </div>
+  <p>${data.name}</p>
+  <button>
+    <lucide-icon data-name="x"></lucide-icon>
+  </button>
+</template>

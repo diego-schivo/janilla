@@ -1,0 +1,12 @@
+label:has(textarea-control) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+textarea-control {
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+  }
+}

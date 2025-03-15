@@ -29,11 +29,11 @@ import java.util.NoSuchElementException;
 
 public abstract class TokenIterator implements Iterator<JsonToken<?>> {
 
-	protected TokenIterationContext context;
+	protected final TokenIterationContext context;
 
 	private Boolean hasNext;
 
-	public void setContext(TokenIterationContext context) {
+	public TokenIterator(TokenIterationContext context) {
 		this.context = context;
 	}
 

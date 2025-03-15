@@ -31,9 +31,7 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -43,6 +41,7 @@ import com.janilla.database.Database;
 import com.janilla.database.KeyAndData;
 import com.janilla.database.NameAndData;
 import com.janilla.io.ByteConverter;
+import com.janilla.json.MapAndType;
 import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
 
@@ -50,18 +49,16 @@ public class Persistence {
 
 	protected final Database database;
 
-	protected final Collection<Class<?>> types;
+	protected final Iterable<Class<?>> types;
 
-	protected final Collection<String> packageNames;
-
-	protected final Map<String, Class<?>> resolveMap = new ConcurrentHashMap<>();
+	protected final MapAndType.TypeResolver typeResolver;
 
 	protected final Configuration configuration = new Configuration();
 
-	public Persistence(Database database, Collection<Class<?>> types) {
+	public Persistence(Database database, Iterable<Class<?>> types, MapAndType.TypeResolver typeResolver) {
 		this.database = database;
 		this.types = types;
-		packageNames = types.stream().map(Class::getPackageName).distinct().toList();
+		this.typeResolver = typeResolver;
 		for (var t : types)
 			configure(t);
 		createStoresAndIndexes();
@@ -86,19 +83,6 @@ public class Persistence {
 		return c;
 	}
 
-	public Class<?> resolveType(String name) {
-		return resolveMap.computeIfAbsent(name,
-				k -> Stream.concat(
-						types.stream().filter(x -> x.getName().substring(x.getPackageName().length() + 1).equals(name)),
-						packageNames.stream().map(x -> {
-							try {
-								return Class.forName(x + "." + k.replace('.', '$'));
-							} catch (ClassNotFoundException e) {
-								return null;
-							}
-						})).filter(Objects::nonNull).findFirst().orElse(null));
-	}
-
 	protected <E, K, V> void configure(Class<E> type) {
 		Crud<E> c = newCrud(type);
 		if (c == null)
@@ -106,9 +90,8 @@ public class Persistence {
 		// System.out.println("Persistence.configure, type=" + type);
 		configuration.cruds.put(type, c);
 
-		var oi = Stream.concat(Stream.of(type), Reflection.properties(type)).iterator();
-		while (oi.hasNext()) {
-			var o = oi.next();
+		for (var oo = Stream.concat(Stream.of(type), Reflection.properties(type)).iterator(); oo.hasNext();) {
+			var o = oo.next();
 			var p = o instanceof Property x ? x : null;
 			var ae = p != null ? p.annotatedElement() : (AnnotatedElement) o;
 			var i = ae.getAnnotation(Index.class);

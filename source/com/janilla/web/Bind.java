@@ -28,9 +28,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.function.UnaryOperator;
 
-import com.janilla.json.Converter;
+import com.janilla.json.MapAndType;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.PARAMETER })
@@ -40,13 +39,5 @@ public @interface Bind {
 
 	String value() default "";
 
-	Class<? extends UnaryOperator<Converter.MapType>> resolver() default NullResolver.class;
-
-	public static class NullResolver implements UnaryOperator<Converter.MapType> {
-
-		@Override
-		public Converter.MapType apply(Converter.MapType mt) {
-			return null;
-		}
-	}
+	Class<? extends MapAndType.TypeResolver> resolver() default MapAndType.NullTypeResolver.class;
 }

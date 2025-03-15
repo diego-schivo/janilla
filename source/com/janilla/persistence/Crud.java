@@ -51,14 +51,11 @@ public class Crud<E> {
 
 	protected final Persistence persistence;
 
-//	protected final boolean indexPresent;
-
-	protected Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new HashMap<>();
+	protected final Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new HashMap<>();
 
 	public Crud(Class<E> type, Persistence persistence) {
 		this.type = type;
 		this.persistence = persistence;
-//		indexPresent = type.isAnnotationPresent(Index.class);
 	}
 
 	public E create(E entity) {
@@ -140,7 +137,7 @@ public class Crud<E> {
 				: ss.perform(type.getSimpleName(), s -> s.ids().toArray()), false);
 	}
 
-	public Page list(long skip, long limit) {
+	public IdPage list(long skip, long limit) {
 //		System.out.println("Crud.list, skip=" + skip + ", limit=" + limit);
 		return persistence.database
 				.perform((ss, ii) -> type.isAnnotationPresent(Index.class) ? ii.perform(type.getSimpleName(), i -> {
@@ -151,7 +148,7 @@ public class Crud<E> {
 						vv = vv.limit(limit);
 					var j = getIndexIds(vv).toArray();
 					var c = i.count();
-					return new Page(j, c);
+					return new IdPage(j, c);
 				}) : ss.perform(type.getSimpleName(), s -> {
 					var jj = s.ids();
 					if (skip > 0)
@@ -160,7 +157,7 @@ public class Crud<E> {
 						jj = jj.limit(limit);
 					var i = jj.toArray();
 					var c = s.count();
-					return new Page(i, c);
+					return new IdPage(i, c);
 				}), false);
 	}
 
@@ -225,7 +222,7 @@ public class Crud<E> {
 		}).skip(1).takeWhile(x -> x > 0).toArray();
 	}
 
-	public Page filter(String index, long skip, long limit, Object... keys) {
+	public IdPage filter(String index, long skip, long limit, Object... keys) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
 		switch (keys.length) {
@@ -236,7 +233,7 @@ public class Crud<E> {
 					jj = jj.skip(skip);
 				if (limit >= 0)
 					jj = jj.limit(limit);
-				return new Page(jj.toArray(), i.count());
+				return new IdPage(jj.toArray(), i.count());
 			}), false);
 		case 1:
 			return persistence.database.perform((_, ii) -> ii.perform(n, i -> {
@@ -245,7 +242,7 @@ public class Crud<E> {
 					jj = jj.skip(skip);
 				if (limit >= 0)
 					jj = jj.limit(limit);
-				return new Page(jj.toArray(), i.count(keys[0]));
+				return new IdPage(jj.toArray(), i.count(keys[0]));
 			}), false);
 		}
 		class A {
@@ -265,7 +262,7 @@ public class Crud<E> {
 			return a;
 		}).toList()), false);
 
-		return new Page(LongStream.iterate(0, _ -> {
+		return new IdPage(LongStream.iterate(0, _ -> {
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			var a = aa.stream().max((a1, a2) -> {
 				var c1 = a1.v != null ? (Comparable) ((Object[]) a1.v)[0] : null;
@@ -288,16 +285,16 @@ public class Crud<E> {
 				false);
 	}
 
-	public Page filter(String index, Predicate<Object> operation, long skip, long limit) {
+	public IdPage filter(String index, Predicate<Object> operation, long skip, long limit) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
 		return persistence.database.perform((_, ii) -> ii.perform(n,
-				i -> new Page(getIndexIds(i.valuesIf(operation)).skip(skip).limit(limit).toArray(),
+				i -> new IdPage(getIndexIds(i.valuesIf(operation)).skip(skip).limit(limit).toArray(),
 						i.countIf(operation))),
 				false);
 	}
 
-	public Page filter(Map<String, Object[]> keys, long skip, long limit) {
+	public IdPage filter(Map<String, Object[]> keys, long skip, long limit) {
 		var ee = keys.entrySet().stream().filter(x -> x.getValue() != null && x.getValue().length > 0).toList();
 		if (ee.isEmpty())
 			return list(skip, limit);
@@ -382,26 +379,21 @@ public class Crud<E> {
 					llb.add(x);
 				}
 			}).count();
-			return new Page(llb.build().toArray(), t);
+			return new IdPage(llb.build().toArray(), t);
 		}, false);
 	}
 
-	protected Object format(E x) {
+	protected String format(Object object) {
 		var tt = new ReflectionJsonIterator();
-		tt.setObject(x);
+		tt.setObject(object);
 		tt.setIncludeType(true);
 		return Json.format(tt);
 	}
 
-	protected E parse(Object x) {
-		var c = new Converter();
-		c.setResolver(y -> {
-			var n = (String) y.map().get("$type");
-			var t = n != null ? persistence.resolveType(n) : null;
-			return t != null ? new Converter.MapType(y.map(), t) : null;
-		});
+	protected E parse(Object object) {
+		var c = new Converter(persistence.typeResolver);
 		@SuppressWarnings("unchecked")
-		var e = (E) c.convert(Json.parse((String) x), type);
+		var e = (E) c.convert(Json.parse((String) object), type);
 		return e;
 	}
 
@@ -499,11 +491,11 @@ public class Crud<E> {
 	public record Entity(long id) {
 	}
 
-	public record Page(long[] ids, long total) {
+	public record IdPage(long[] ids, long total) {
 
-		static Page EMPTY = new Page(new long[0], 0);
+		static IdPage EMPTY = new IdPage(new long[0], 0);
 
-		public static Page empty() {
+		public static IdPage empty() {
 			return EMPTY;
 		}
 	}

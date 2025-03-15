@@ -1,0 +1,12 @@
+label:has(text-control) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+text-control {
+  input {
+    box-sizing: border-box;
+    width: 100%;
+  }
+}

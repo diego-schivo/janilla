@@ -118,18 +118,15 @@ public class ReflectionJsonIterator extends JsonIterator {
 
 	public record D(int i) {
 	}
-	
+
 	protected boolean includeType;
-	
+
 	public void setIncludeType(boolean includeType) {
 		this.includeType = includeType;
 	}
 
 	@Override
 	public Iterator<JsonToken<?>> newValueIterator(Object object) {
-		var tt = new ReflectionValueIterator();
-		tt.setContext(this);
-		tt.setObject(object);
-		return tt;
+		return new ReflectionValueIterator(this, object);
 	}
 }

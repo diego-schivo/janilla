@@ -31,18 +31,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import com.janilla.json.Converter;
+import com.janilla.json.MapAndType;
 import com.janilla.reflect.Reflection;
 
 public class EntryTree extends LinkedHashMap<String, Object> {
 
 	private static final long serialVersionUID = 2351446498774467936L;
 
-	Function<String, Class<?>> typeResolver;
+	protected final MapAndType.TypeResolver typeResolver;
 
-	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
+	public EntryTree(MapAndType.TypeResolver typeResolver) {
 		this.typeResolver = typeResolver;
 	}
 
@@ -97,10 +97,7 @@ public class EntryTree extends LinkedHashMap<String, Object> {
 
 		BiFunction<String, Type, Object> c = (name, type) -> {
 			var i = tree.get(name);
-			var z = new Converter();
-			z.setResolver(x -> x.map().containsKey("$type")
-					? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
-					: null);
+			var z = new Converter(typeResolver);
 			var o = z.convert(i, type);
 			return o;
 		};

@@ -39,7 +39,7 @@ public class ApplicationHandlerBuilder {
 	protected Factory factory;
 
 	protected List<WebHandlerFactory> factories;
-	
+
 	protected WebHandlerFactory handlerFactory;
 
 	public void setFactory(Factory factory) {
@@ -78,10 +78,10 @@ public class ApplicationHandlerBuilder {
 	protected WebHandlerFactory buildMethodHandlerFactory() {
 		var f = factory.create(MethodHandlerFactory.class);
 		var fcc = Util.getPackageClasses("com.janilla.frontend").toList();
-		f.initialize(() -> Stream.concat(StreamSupport.stream(factory.getTypes().spliterator(), false), fcc.stream())
+		f.initialize(() -> Stream.concat(StreamSupport.stream(factory.types().spliterator(), false), fcc.stream())
 				.iterator(), x -> {
-					var a = factory.getSource();
-					return x == a.getClass() ? a : factory.create(x);
+					var s = factory.source();
+					return x == s.getClass() ? s : factory.create(x);
 				});
 		if (f.renderableFactory == null)
 			f.renderableFactory = new RenderableFactory();
@@ -94,8 +94,7 @@ public class ApplicationHandlerBuilder {
 
 	protected WebHandlerFactory buildResourceHandlerFactory() {
 		var f = factory.create(ResourceHandlerFactory.class);
-		f.initialize(getClass().getPackageName(), "com.janilla.frontend",
-				factory.getSource().getClass().getPackageName());
+		f.initialize(getClass().getPackageName(), "com.janilla.frontend", factory.source().getClass().getPackageName());
 		return f;
 	}
 

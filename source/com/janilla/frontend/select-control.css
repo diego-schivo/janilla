@@ -1,0 +1,25 @@
+label:has(select-control) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+select-control {
+  div {
+    position: relative;
+  }
+
+  select {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  lucide-icon {
+    color: rgb(235, 235, 235);
+    pointer-events: none;
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}

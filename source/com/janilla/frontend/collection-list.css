@@ -1,0 +1,26 @@
+collection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  header {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+  }
+
+  th,
+  td {
+    padding: 1rem;
+  }
+
+  th {
+    color: rgb(141, 141, 141);
+  }
+
+  a {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+  }
+}

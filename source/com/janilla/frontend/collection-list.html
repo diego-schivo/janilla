@@ -1,0 +1,43 @@
+<!--${header}-->
+<template id="header">
+  <header>
+    <h1>${title}</h1>
+    <button type="button" name="create">Create New</button>
+  </header>
+</template>
+<table>
+  <thead>
+    <tr>
+      <!--${heads}-->
+      <template id="head">
+        <th>${text}</th>
+      </template>
+    </tr>
+  </thead>
+  <tbody>
+    <!--${rows}-->
+    <template id="row">
+      <tr>
+        <!--${cells}-->
+      </tr>
+    </template>
+    <template id="link-cell">
+      <td>
+        <a href="${href}">
+          <!--${content}-->
+        </a>
+      </td>
+    </template>
+    <template id="cell">
+      <td>
+        <!--${content}-->
+      </td>
+    </template>
+    <template id="media">
+      <div class="thumbnail">
+        <img src="${url}" loading="lazy" />
+      </div>
+      <p>${file.name}</p>
+    </template>
+  </tbody>
+</table>

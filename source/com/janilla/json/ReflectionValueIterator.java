@@ -37,6 +37,10 @@ import com.janilla.reflect.Reflection;
 
 public class ReflectionValueIterator extends ValueIterator {
 
+	public ReflectionValueIterator(TokenIterationContext context, Object object) {
+		super(context, object);
+	}
+
 	@Override
 	protected Iterator<JsonToken<?>> newIterator() {
 		var tt = super.newIterator();
@@ -58,19 +62,23 @@ public class ReflectionValueIterator extends ValueIterator {
 			if (c.isEnum())
 				tt = context.newStringIterator(object.toString());
 			else {
-				var s = Reflection.properties(c).map(x -> {
-//					System.out.println("ReflectionValueIterator.newIterator, x=" + x + ", object=" + object);
-					Map.Entry<String, Object> y = new AbstractMap.SimpleEntry<>(x.name(), x.get(object));
-					return y;
-				});
-				if (((ReflectionJsonIterator) context).includeType)
-					s = Stream.concat(
-							Stream.of(Map.entry("$type",
-									(Object) c.getName().substring(c.getPackageName().length() + 1).replace('$', '.'))),
-							s);
+				var s = entries(c);
 				tt = context.newObjectIterator(s.iterator());
 			}
 		}
 		return tt;
+	}
+
+	protected Stream<Map.Entry<String, Object>> entries(Class<?> class0) {
+		var kkvv = Reflection.properties(class0).map(x -> {
+//			System.out.println("ReflectionValueIterator.newIterator, x=" + x + ", object=" + object);
+			Map.Entry<String, Object> kv = new AbstractMap.SimpleEntry<>(x.name(), x.get(object));
+			return kv;
+		});
+		if (((ReflectionJsonIterator) context).includeType) {
+			var t = class0.getName().substring(class0.getPackageName().length() + 1).replace('$', '.');
+			kkvv = Stream.concat(Stream.of(Map.entry("$type", (Object) t)), kkvv);
+		}
+		return kkvv;
 	}
 }

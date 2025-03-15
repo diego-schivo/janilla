@@ -1,0 +1,56 @@
+admin-panel:has(login-element) {
+  box-sizing: border-box;
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+  
+}
+
+login-element {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  gap: 2.5rem;
+
+  img {
+    width: 12rem;
+  }
+
+  form,
+  label {
+    display: flex;
+    flex-direction: column;
+  }
+
+  form {
+    gap: 1rem;
+    width: 100%;
+  }
+
+  label {
+    gap: 5px;
+  }
+  
+  input,
+  button {
+    border-radius: 3px;
+	box-sizing: border-box;
+	height: 40px;	
+    padding: 0.5rem 1rem;
+  }
+  
+  input {
+    background: rgb(34, 34, 34);
+    border: 1px solid rgb(60, 60, 60);
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  button {
+    background: rgb(235, 235, 235);
+    color: rgb(20, 20, 20);
+  }
+}

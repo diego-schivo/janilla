@@ -1,0 +1,37 @@
+<ol>
+  <!--${items}-->
+  <li>
+    <button type="button">add</button>
+  </li>
+</ol>
+<template id="item">
+  <li>
+    <article>
+      <header>
+        <h4>${type}</h4>
+        <select>
+          <option>&hellip;</option>
+          <option value="remove">Remove</option>
+        </select>
+        <label>
+          <input type="checkbox" class="visually-hidden" />
+          <lucide-icon data-name="chevron-down"></lucide-icon>
+          <lucide-icon data-name="chevron-up"></lucide-icon>
+        </label>
+      </header>
+      <!--${field}-->
+    </article>
+  </li>
+</template>
+<template id="object">
+  <object-control data-path="${path}" data-key="${key}"></object-control>
+</template>
+<dialog>
+  <!--${types}-->
+  <template id="type">
+    <label>
+      <input type="radio" name="type" value="${name}" checked="${checked}" />
+      ${name}
+    </label>
+  </template>
+</dialog>

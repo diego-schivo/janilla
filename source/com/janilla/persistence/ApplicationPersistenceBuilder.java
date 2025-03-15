@@ -79,7 +79,8 @@ public class ApplicationPersistenceBuilder {
 								return id;
 							}),
 					x -> persistence.newIndex(x));
-			persistence = factory.create(Persistence.class, Map.of("database", d, "types", factory.getTypes()));
+//			persistence = factory.create(Persistence.class, Map.of("database", d, "types", factory.types()));
+			persistence = factory.create(Persistence.class, Map.of("database", d));
 			return persistence;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);

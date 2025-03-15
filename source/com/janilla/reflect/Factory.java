@@ -26,33 +26,29 @@ package com.janilla.reflect;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class Factory {
 
-	private Collection<Class<?>> types;
+	protected final Iterable<Class<?>> types;
 
-	private Object source;
+	protected final Object source;
 
-	private Map<Class<?>, Supplier<?>> suppliers = new ConcurrentHashMap<>();
+	protected final Map<Class<?>, Supplier<?>> suppliers = new ConcurrentHashMap<>();
 
-	public Collection<Class<?>> getTypes() {
+	public Factory(Iterable<Class<?>> types, Object source) {
+		this.types = types;
+		this.source = source;
+	}
+
+	public Iterable<Class<?>> types() {
 		return types;
 	}
 
-	public void setTypes(Collection<Class<?>> types) {
-		this.types = types;
-	}
-
-	public Object getSource() {
+	public Object source() {
 		return source;
-	}
-
-	public void setSource(Object source) {
-		this.source = source;
 	}
 
 	public <T> T create(Class<T> type) {
@@ -62,12 +58,12 @@ public class Factory {
 	public <T> T create(Class<T> type, Map<String, Object> arguments) {
 		@SuppressWarnings("unchecked")
 		var s = (Supplier<T>) suppliers.computeIfAbsent(type, k -> {
-			for (var t : types)
-				if (type.isAssignableFrom(t) && !Modifier.isAbstract(t.getModifiers())) {
-					k = t;
+			var c = k;
+			for (var x : types)
+				if (type.isAssignableFrom(x) && !Modifier.isAbstract(x.getModifiers())) {
+					c = x;
 					break;
 				}
-			var c = k;
 			var c0 = c.getConstructors()[0];
 //			System.out.println("Factory.create, c0 = " + c0);
 			if (c.getEnclosingClass() == source.getClass())
@@ -83,11 +79,11 @@ public class Factory {
 			return () -> {
 				try {
 					@SuppressWarnings("unchecked")
-					var t = (T) c0
-							.newInstance(Arrays.stream(c0.getParameters())
-									.map(x -> arguments.containsKey(x.getName()) ? arguments.get(x.getName())
-											: Reflection.property(source.getClass(), x.getName()).get(source))
-									.toArray());
+					var t = (T) c0.newInstance(Arrays.stream(c0.getParameters()).map(x -> {
+//						System.out.println("Factory.create, x = " + x);
+						return arguments != null && arguments.containsKey(x.getName()) ? arguments.get(x.getName())
+								: Reflection.property(source.getClass(), x.getName()).get(source);
+					}).toArray());
 					return Reflection.copy(source, t);
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);

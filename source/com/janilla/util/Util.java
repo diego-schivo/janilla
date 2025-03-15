@@ -37,22 +37,21 @@ import com.janilla.io.IO;
 
 public interface Util {
 
-	static Class<?> getClass(Path p) {
-		var t = !Files.isDirectory(p) ? p.toString().replace(File.separatorChar, '/') : null;
-		t = t != null && t.endsWith(".class") ? t : null;
-		t = t != null ? t.substring(0, t.length() - ".class".length()).replace('/', '.') : null;
-		Class<?> c;
+	static Class<?> getClass(Path path) {
+		var cn = !Files.isDirectory(path) ? path.toString().replace(File.separatorChar, '/') : null;
+		cn = cn != null && cn.endsWith(".class") ? cn.substring(0, cn.length() - ".class".length()) : null;
+		cn = cn != null ? cn.replace('/', '.') : null;
 		try {
-			c = t != null ? Class.forName(t) : null;
+			return cn != null ? Class.forName(cn) : null;
 		} catch (ClassNotFoundException e) {
-			c = null;
+			return null;
 		}
-		return c;
 	}
 
 	static Stream<Class<?>> getPackageClasses(String package1) {
 		var b = Stream.<Class<?>>builder();
 		IO.acceptPackageFiles(package1, f -> {
+//			System.out.println("Util.getPackageClasses, f = " + f);
 			var c = Util.getClass(f);
 			if (c != null)
 				b.add(c);
