@@ -1,14 +1,17 @@
-<div>
-  <div role="tablist">
-    <!--${buttons}-->
-  </div>
-  <!--${panels}-->
+<link href="/admin.css" rel="stylesheet" />
+<div role="tablist">
+  <!--${buttons}-->
 </div>
+<!--${panels}-->
 
 <template id="tabs-button">
-  <button type="button" role="tab" aria-controls="${panel}-${index}" aria-selected="${selected}">${label}</button>
+  <button type="button" role="tab" aria-controls="${panel}-${tab}" aria-selected="${selected}">
+    <slot name="button-${tab}"></slot>
+  </button>
 </template>
 
 <template id="tabs-panel">
-  <div id="${panel}-${index}" role="tabpanel" hidden="${hidden}"></div>
+  <div id="${panel}-${tab}" role="tabpanel" hidden="${hidden}">
+    <slot name="panel-${tab}"></slot>
+  </div>
 </template>

@@ -1,0 +1,105 @@
+a,
+button,
+input,
+select,
+textarea {
+  color: inherit;
+}
+
+button,
+ol,
+ul {
+  padding: 0;
+}
+
+button {
+  background: rgb(60, 60, 60);
+  border: 1px solid rgb(60, 60, 60);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  height: auto;
+  padding: 0.25rem;
+}
+
+dd,
+dialog[open],
+h1,
+h2,
+h3,
+h4,
+ol,
+p,
+ul {
+  margin: 0;
+}
+
+dialog[open] {
+  border: none;
+  box-sizing: border-box;
+  height: 100vh;
+  max-height: none;
+  max-width: none;
+  padding: 1rem;
+  width: 100vw;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 500;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+
+input:not([type]),
+select,
+textarea {
+  background: rgb(34, 34, 34);
+  border: 1px solid rgb(60, 60, 60);
+  border-radius: 0.1875rem;
+  outline: none;
+  padding: 0.5rem 1rem;
+}
+
+input:not([type]),
+select {
+  font-family: inherit;
+}
+
+label {
+  font-size: 0.75rem;
+}
+
+ol,
+ul {
+  list-style: none;
+}
+
+select {
+  appearance: none;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+tbody > tr:nth-child(odd) {
+  background: rgb(34, 34, 34);
+}
+
+textarea {
+  font-family: "SF Mono", Menlo, Consolas, Monaco, monospace;
+  overflow-wrap: normal;
+  overflow-x: scroll;
+  resize: none;
+  white-space: pre;
+}
+
+th {
+  font-weight: inherit;
+  text-align: left;
+}

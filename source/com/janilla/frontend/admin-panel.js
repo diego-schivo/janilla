@@ -26,7 +26,7 @@ import { UpdatableHTMLElement } from "./updatable-html-element.js";
 export default class AdminPanel extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
-		return ["data-path"];
+		return ["data-document-view", "data-path"];
 	}
 
 	static get templateName() {
@@ -41,6 +41,7 @@ export default class AdminPanel extends UpdatableHTMLElement {
 		super.connectedCallback();
 		this.addEventListener("change", this.handleChange);
 		this.addEventListener("click", this.handleClick);
+		this.addEventListener("select-tab", this.handleSelectTab);
 		this.addEventListener("submit", this.handleSubmit);
 	}
 
@@ -48,6 +49,7 @@ export default class AdminPanel extends UpdatableHTMLElement {
 		super.disconnectedCallback();
 		this.removeEventListener("change", this.handleChange);
 		this.removeEventListener("click", this.handleClick);
+		this.removeEventListener("select-tab", this.handleSelectTab);
 		this.removeEventListener("submit", this.handleSubmit);
 	}
 
@@ -79,6 +81,16 @@ export default class AdminPanel extends UpdatableHTMLElement {
 				location.href = "/admin";
 				break;
 		}
+	}
+
+	handleSelectTab = event => {
+		event.preventDefault();
+		const t = event.detail.tab;
+		const nn = this.dataset.path.split(".");
+		if (t !== "edit")
+			nn.push(t);
+		history.pushState(undefined, "", `/admin/${nn.join("/")}`);
+		dispatchEvent(new CustomEvent("popstate"));
 	}
 
 	handleSubmit = async event => {
@@ -137,7 +149,9 @@ export default class AdminPanel extends UpdatableHTMLElement {
 			s.schema = await (await fetch("/api/schema")).json();
 			if (nn.length === 3 && nn[0] === "collections") {
 				s.type = s.schema["Collections"][nn[1]].elementTypes[0];
-				s.data = await (await fetch(`/api/${nn[1].split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${nn[2]}`)).json();
+				const cs = nn[1].split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-");
+				s.data = await (await fetch(`/api/${cs}/${nn[2]}`)).json();
+				s.versions = await (await fetch(`/api/${cs}/${s.data.id}/versions`)).json();
 			} else if (nn.length === 2 && nn[0] === "globals") {
 				s.type = s.schema["Globals"][nn[1]].type;
 				s.data = await (await fetch(`/api/${nn[1]}`)).json();
@@ -205,13 +219,32 @@ export default class AdminPanel extends UpdatableHTMLElement {
 										return nn[1];
 								}
 							})(),
-							preview: (() => {
-								const h = this.preview(s.data);
-								return h ? {
-									$template: "preview",
-									href: h
-								} : null;
-							})()
+							activeTab: this.dataset.documentView,
+							edit: {
+								$template: "edit",
+								previewLink: (() => {
+									const h = this.preview(s.data);
+									return h ? {
+										$template: "preview-link",
+										href: h
+									} : null;
+								})()
+							},
+							preview: {
+								$template: "preview"
+							},
+							versions: {
+								$template: "versions",
+								versionCount: this.state.data.versionCount,
+								versions: s.versions.map(x => ({
+									$template: "version",
+									...x
+								}))
+							},
+							api: {
+								$template: "api",
+								json: JSON.stringify(s.data, null, "  ")
+							}
 						};
 					case "globals":
 						return { $template: "object" };
@@ -233,15 +266,6 @@ export default class AdminPanel extends UpdatableHTMLElement {
 				}))
 			} : null
 		}));
-	}
-
-	tabsPanel(tab) {
-		switch (tab) {
-			case "edit":
-				return this.interpolateDom({ $template: "edit" });
-			case "versions":
-				return this.interpolateDom({ $template: "versions" });
-		}
 	}
 
 	field(path, parent) {

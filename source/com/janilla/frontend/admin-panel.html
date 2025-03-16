@@ -1,8 +1,6 @@
-<article>
-  <!--${header}-->
-  <!--${content}-->
-  <!--${dialog}-->
-</article>
+<!--${header}-->
+<!--${content}-->
+<!--${dialog}-->
 
 <template id="header">
   <header>
@@ -56,13 +54,19 @@
 
 <template id="object">
   <h1>${title}</h1>
-  <tabs-element></tabs-element>
+  <tabs-element data-name="document-view" data-tabs="edit,preview,versions,api" data-active-tab="${activeTab}">
+    <!--${edit}-->
+    <!--${preview}-->
+    <!--${versions}-->
+    <!--${api}-->
+  </tabs-element>
 </template>
 
 <template id="edit">
-  <form autocomplete="off">
+  <span slot="button-edit">edit</span>
+  <form autocomplete="off" slot="panel-edit">
     <div>
-      <!--${preview}-->
+      <!--${previewLink}-->
       <button>save</button>
       <select>
         <option>&vellip;</option>
@@ -73,15 +77,36 @@
   </form>
 </template>
 
-<template id="preview">
+<template id="preview-link">
   <a href="${href}" target="_blank">
     <lucide-icon data-name="link-2"></lucide-icon>
     preview
   </a>
 </template>
 
+<template id="preview">
+  <span slot="button-preview">live preview</span>
+  <div slot="panel-preview">TODO</div>
+</template>
+
 <template id="versions">
-  <div>TODO</div>
+  <span slot="button-versions">
+    versions <em>${versionCount}</em>
+  </span>
+  <div slot="panel-versions">
+    <!--${versions}-->
+  </div>
+</template>
+
+<template id="version">
+  <p>${id}</p>
+</template>
+
+<template id="api">
+  <span slot="button-api">api</span>
+  <div slot="panel-api">
+    <textarea rows="20" readonly>${json}</textarea>
+  </div>
 </template>
 
 <template id="dialog">

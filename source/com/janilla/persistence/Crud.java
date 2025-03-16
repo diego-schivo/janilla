@@ -88,14 +88,11 @@ public class Crud<E> {
 	public Stream<E> read(long[] ids) {
 		if (ids == null || ids.length == 0)
 			return Stream.empty();
-		return persistence.database.perform((ss, _) -> {
-			var b = Stream.<E>builder();
-			for (var i : ids) {
-				var o = ss.perform(type.getSimpleName(), s -> s.read(i));
-				b.add(o != null ? parse(o) : null);
-			}
-			return b.build();
-		}, false);
+		return persistence.database
+				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
+					var o = s.read(x);
+					return o != null ? parse(o) : null;
+				})), false);
 	}
 
 	public E update(long id, UnaryOperator<E> operator) {

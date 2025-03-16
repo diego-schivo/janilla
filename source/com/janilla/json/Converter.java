@@ -27,6 +27,7 @@ package com.janilla.json;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
@@ -72,7 +73,7 @@ public class Converter {
 			return null;
 		}
 
-		if (c != Object.class && c.isAssignableFrom(object.getClass()) && !c.isArray()
+		if (c != Object.class && c != null && c.isAssignableFrom(object.getClass()) && !c.isArray()
 				&& !Collection.class.isAssignableFrom(c) && !Map.class.isAssignableFrom(c))
 			return object;
 
@@ -122,10 +123,10 @@ public class Converter {
 		if (c == long[].class)
 			return ((Collection<?>) object).stream().mapToLong(x -> (long) x).toArray();
 
-		if (c.isEnum())
+		if (c != null && c.isEnum())
 			return Stream.of(c.getEnumConstants()).filter(x -> x.toString().equals(object)).findFirst().orElseThrow();
 
-		if (c.isArray() || Collection.class.isAssignableFrom(c)) {
+		if (c != null && (c.isArray() || Collection.class.isAssignableFrom(c))) {
 			var s = switch (object) {
 			case Object[] x -> Arrays.stream(x);
 			case Collection<?> x -> x.stream();
@@ -171,7 +172,7 @@ public class Converter {
 //		System.out.println("Converter.convert, input=" + input + ", target=" + target);
 		var mt = typeResolver != null ? typeResolver.apply(new MapAndType(map, target)) : null;
 		if (mt != null) {
-			if (!target.isAssignableFrom(mt.type()))
+			if (target != null && !target.isAssignableFrom(mt.type()))
 				throw new RuntimeException();
 			target = mt.type();
 			map = mt.map();
@@ -209,9 +210,11 @@ public class Converter {
 	}
 
 	static Class<?> getRawType(Type type) {
+//		System.out.println("Converter.getRawType, type=" + type);
 		return switch (type) {
 		case Class<?> x -> x;
 		case ParameterizedType x -> (Class<?>) x.getRawType();
+		case TypeVariable<?> _ -> null;
 		default -> throw new IllegalArgumentException();
 		};
 	}

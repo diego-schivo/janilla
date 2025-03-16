@@ -25,12 +25,17 @@ import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
 export default class Tabs extends UpdatableHTMLElement {
 
+	static get observedAttributes() {
+		return ["data-active-tab", "data-name", "data-tab"];
+	}
+
 	static get templateName() {
 		return "tabs";
 	}
 
 	constructor() {
 		super();
+		this.attachShadow({ mode: "open" });
 	}
 
 	connectedCallback() {
@@ -44,41 +49,41 @@ export default class Tabs extends UpdatableHTMLElement {
 	}
 
 	handleClick = async event => {
-		const b = event.target.closest("button");
+		const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
 		if (!b)
 			return;
 		event.stopPropagation();
-		this.state.index = parseInt(b.getAttribute("aria-controls").substring("foo-".length));
-		this.requestUpdate();
+		const s = this.state;
+		const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
+		const t = s.tabs[i];
+		if (this.dispatchEvent(new CustomEvent("select-tab", {
+			bubbles: true,
+			cancelable: true,
+			detail: { tab: t }
+		}))) {
+			s.activeTab = t;
+			this.requestUpdate();
+		}
 	}
 
 	async updateDisplay() {
-		const tt = ["edit", "versions"];
 		const s = this.state;
-		s.index ??= 0;
-		const el = this.interpolateDom({
+		s.tabs = this.dataset.tabs.split(",");
+		s.activeTab = this.dataset.activeTab ?? s.tabs[0];
+		this.shadowRoot.appendChild(this.interpolateDom({
 			$template: "",
-			buttons: tt.map((x, i) => ({
+			buttons: s.tabs.map(x => ({
 				$template: "tabs-button",
-				panel: "foo",
-				index: i,
-				selected: `${i === s.index}`,
-				label: x
+				panel: this.dataset.name,
+				tab: x,
+				selected: `${x === s.activeTab}`
 			})),
-			panels: tt.map((_, i) => ({
+			panels: s.tabs.map(x => ({
 				$template: "tabs-panel",
-				panel: "foo",
-				index: i,
-				hidden: i !== s.index
+				panel: this.dataset.name,
+				tab: x,
+				hidden: x !== s.activeTab
 			}))
-		});
-		const nn = el.janillas?.originalChildNodes;
-		if (nn)
-			el.append(...el.janillas.originalChildNodes);
-		Array.prototype.forEach.call(el.firstElementChild.children, (x, i) => {
-			if (i > 0)
-				x.appendChild(this.closest("admin-panel").tabsPanel(tt[i - 1]));
-		});
-		this.appendChild(el);
+		}));
 	}
 }
