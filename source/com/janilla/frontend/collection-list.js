@@ -104,7 +104,7 @@ export default class CollectionList extends UpdatableHTMLElement {
 							content: typeof z === "object" && z?.$type === "File" ? {
 								$template: "media",
 								...x
-							} : z
+							} : y === "updatedAt" ? ap.dateTimeFormat.format(new Date(z)) : z
 						};
 					});
 					cc[0].href = `/admin/collections/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${x.id}`;

@@ -169,7 +169,7 @@ public class Converter {
 	}
 
 	protected Object convert(Map<?, ?> map, Class<?> target) {
-//		System.out.println("Converter.convert, input=" + input + ", target=" + target);
+//		System.out.println("Converter.convert, map=" + map + ", target=" + target);
 		var mt = typeResolver != null ? typeResolver.apply(new MapAndType(map, target)) : null;
 		if (mt != null) {
 			if (target != null && !target.isAssignableFrom(mt.type()))

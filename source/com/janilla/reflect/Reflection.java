@@ -30,11 +30,14 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -67,36 +70,46 @@ public class Reflection {
 		return copy(source, destination, null);
 	}
 
+	protected static final Object SKIP_COPY = new Object();
+
 	public static <T> T copy(Object source, T destination, Predicate<String> filter) {
-		var c1 = source.getClass();
-		var c2 = destination.getClass();
-		if (c2.isRecord()) {
-			var cc = c2.getRecordComponents();
-			var aa = new Object[cc.length];
-			for (var i = 0; i < cc.length; i++) {
-				var n = cc[i].getName();
-				var p = filter == null || filter.test(n) ? property(c1, n) : null;
-				var o = source;
-				if (p == null) {
-					p = property(c2, n);
-					o = destination;
-				}
-				aa[i] = p.get(o);
-			}
+		if (source instanceof Map<?, ?> m)
+			return copy(x -> m.containsKey(x) ? m.get(x) : SKIP_COPY, destination, filter);
+		var c = source.getClass();
+		return copy(x -> {
+			var p = property(c, x);
+			return p != null ? p.get(source) : SKIP_COPY;
+		}, destination, filter);
+	}
+
+	protected static <T> T copy(Function<String, Object> source, T destination, Predicate<String> filter) {
+		var c = destination.getClass();
+		var s = propertyNames(c);
+		if (filter != null)
+			s = s.filter(filter);
+		var kk = s.toList();
+		if (kk == null || kk.isEmpty())
+			return destination;
+		var vv = kk.stream().map(k -> {
+			var v = source.apply(k);
+			return v != SKIP_COPY ? new AbstractMap.SimpleEntry<>(k, v) : null;
+		}).filter(Objects::nonNull).collect(HashMap::new, (m, kv) -> m.put(kv.getKey(), kv.getValue()), Map::putAll);
+		if (vv.isEmpty())
+			return destination;
+		if (c.isRecord()) {
+			var aa = Arrays.stream(c.getRecordComponents()).map(
+					x -> vv.containsKey(x.getName()) ? vv.get(x.getName()) : property(c, x.getName()).get(destination))
+					.toArray();
 			try {
 				@SuppressWarnings("unchecked")
-				var t = (T) c2.getConstructors()[0].newInstance(aa);
+				var t = (T) c.getConstructors()[0].newInstance(aa);
 				return t;
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
 		}
-		for (var pp = properties(c2).iterator(); pp.hasNext();) {
-			var p2 = pp.next();
-			var p1 = filter == null || filter.test(p2.name()) ? property(c1, p2.name()) : null;
-			if (p1 != null)
-				p2.set(destination, p1.get(source));
-		}
+		properties(c).filter(x -> vv.containsKey(x.name()) && x.canSet())
+				.forEach(x -> x.set(destination, vv.get(x.name())));
 		return destination;
 	}
 

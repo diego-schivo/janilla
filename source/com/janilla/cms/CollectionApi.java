@@ -23,17 +23,16 @@
  */
 package com.janilla.cms;
 
-import java.util.Set;
+import java.util.stream.Stream;
 
 import com.janilla.json.MapAndType;
 import com.janilla.persistence.Crud;
 import com.janilla.persistence.Persistence;
-import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
 
-public abstract class CollectionApi<E> {
+public abstract class CollectionApi<E extends Entity> {
 
 	protected final Class<E> type;
 
@@ -56,9 +55,20 @@ public abstract class CollectionApi<E> {
 		return e;
 	}
 
+//	@Handle(method = "PUT", path = "(\\d+)")
+//	public E update(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
+//		var e = crud().update(id, x -> Reflection.copy(entity, x, y -> !Set.of("id").contains(y)));
+//		if (e == null)
+//			throw new NotFoundException("entity " + id);
+//		return e;
+//	}
+
 	@Handle(method = "PUT", path = "(\\d+)")
-	public E update(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
-		var e = crud().update(id, x -> Reflection.copy(entity, x, y -> !Set.of("id").contains(y)));
+	public E update(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft,
+			Boolean autosave) {
+		var e = ((VersionCrud<E>) crud()).update(id, entity,
+				Boolean.TRUE.equals(draft) ? Entity.Status.DRAFT : Entity.Status.PUBLISHED,
+				!Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
 		return e;
@@ -70,6 +80,22 @@ public abstract class CollectionApi<E> {
 		if (e == null)
 			throw new NotFoundException("entity " + id);
 		return e;
+	}
+
+	@Handle(method = "GET", path = "(\\d+)/versions")
+	public Stream<Version<E>> readVersions(long id) {
+		return ((VersionCrud<E>) crud()).readVersions(id);
+	}
+
+	@Handle(method = "GET", path = "versions/(\\d+)")
+	public Version<E> readVersion(long versionId) {
+		return ((VersionCrud<E>) crud()).readVersion(versionId);
+	}
+
+	@Handle(method = "POST", path = "versions/(\\d+)")
+	public E restoreVersion(long versionId, Boolean draft) {
+		return ((VersionCrud<E>) crud()).restoreVersion(versionId,
+				Boolean.TRUE.equals(draft) ? Entity.Status.DRAFT : Entity.Status.PUBLISHED);
 	}
 
 	protected Crud<E> crud() {

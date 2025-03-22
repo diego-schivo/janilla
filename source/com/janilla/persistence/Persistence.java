@@ -68,6 +68,10 @@ public class Persistence {
 		return database;
 	}
 
+	public MapAndType.TypeResolver typeResolver() {
+		return typeResolver;
+	}
+
 	public <K, V> com.janilla.database.Index<K, V> newIndex(NameAndData nameAndData) {
 		var ni = configuration.indexFactories.get(nameAndData.name());
 		if (ni == null)

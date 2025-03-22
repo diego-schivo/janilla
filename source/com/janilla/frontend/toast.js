@@ -23,66 +23,33 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class Tabs extends UpdatableHTMLElement {
-
-	static get observedAttributes() {
-		return ["data-active-tab", "data-name", "data-tab"];
-	}
+export default class ToastContainer extends UpdatableHTMLElement {
 
 	static get templateName() {
-		return "tabs";
+		return "toast";
 	}
 
 	constructor() {
 		super();
-		this.attachShadow({ mode: "open" });
 	}
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("click", this.handleClick);
-	}
-
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("click", this.handleClick);
-	}
-
-	handleClick = async event => {
-		const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
-		if (b?.role !== "tab")
-			return;
-		event.stopPropagation();
+	renderToast(text) {
 		const s = this.state;
-		const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
-		const t = s.tabs[i];
-		if (this.dispatchEvent(new CustomEvent("select-tab", {
-			bubbles: true,
-			cancelable: true,
-			detail: { tab: t }
-		}))) {
-			s.activeTab = t;
+		const o = { text };
+		(s.items ??= []).push(o);
+		this.requestUpdate();
+		setTimeout(() => {
+			s.items.splice(s.items.findIndex(x => x === o), 1);
 			this.requestUpdate();
-		}
+		}, 4000);
 	}
 
 	async updateDisplay() {
-		const s = this.state;
-		s.tabs = this.dataset.tabs.split(",");
-		s.activeTab = this.dataset.activeTab ?? s.tabs[0];
-		this.shadowRoot.appendChild(this.interpolateDom({
+		this.appendChild(this.interpolateDom({
 			$template: "",
-			buttons: s.tabs.map(x => ({
-				$template: "tabs-button",
-				panel: this.dataset.name,
-				tab: x,
-				selected: `${x === s.activeTab}`
-			})),
-			panels: s.tabs.map(x => ({
-				$template: "tabs-panel",
-				panel: this.dataset.name,
-				tab: x,
-				hidden: x !== s.activeTab
+			items: this.state.items?.map(x => ({
+				$template: "item",
+				...x
 			}))
 		}));
 	}

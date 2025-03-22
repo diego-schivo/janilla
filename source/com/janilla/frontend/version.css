@@ -1,0 +1,55 @@
+version-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  > p {
+    color: rgb(128, 128, 128);
+  }
+
+  h2 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  button {
+    align-self: start;
+  }
+
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  dialog[open] {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    justify-content: center;
+    padding: 1rem 2.5rem;
+    
+    p {
+      line-height: 1.25rem;
+    }
+
+    div {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    button {
+      line-height: 1.5rem;
+      padding: 0.5rem 1rem;
+      
+      &[name="cancel"] {
+        background: rgb(0, 0, 0);
+        color: rgb(181, 181, 181);
+      }
+      
+      &[name="confirm"] {
+        background: rgb(235, 235, 235);
+        color: rgb(20, 20, 20);
+      }
+    }
+  }
+}

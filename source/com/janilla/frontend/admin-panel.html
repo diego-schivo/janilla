@@ -1,6 +1,7 @@
 <!--${header}-->
 <!--${content}-->
 <!--${dialog}-->
+<toast-container></toast-container>
 
 <template id="header">
   <header>
@@ -36,6 +37,10 @@
   <lucide-icon data-name="${name}"></lucide-icon>
 </template>
 
+<template id="loading">
+  <p>loading...</p>
+</template>
+
 <template id="dashboard">
   <dashboard-view></dashboard-view>
 </template>
@@ -52,61 +57,8 @@
   <collection-list data-name="${name}"></collection-list>
 </template>
 
-<template id="object">
-  <h1>${title}</h1>
-  <tabs-element data-name="document-view" data-tabs="edit,preview,versions,api" data-active-tab="${activeTab}">
-    <!--${edit}-->
-    <!--${preview}-->
-    <!--${versions}-->
-    <!--${api}-->
-  </tabs-element>
-</template>
-
-<template id="edit">
-  <span slot="button-edit">edit</span>
-  <form autocomplete="off" slot="panel-edit">
-    <div>
-      <!--${previewLink}-->
-      <button>save</button>
-      <select>
-        <option>&vellip;</option>
-        <option value="delete">Delete</option>
-      </select>
-    </div>
-    <object-control></object-control>
-  </form>
-</template>
-
-<template id="preview-link">
-  <a href="${href}" target="_blank">
-    <lucide-icon data-name="link-2"></lucide-icon>
-    preview
-  </a>
-</template>
-
-<template id="preview">
-  <span slot="button-preview">live preview</span>
-  <div slot="panel-preview">TODO</div>
-</template>
-
-<template id="versions">
-  <span slot="button-versions">
-    versions <em>${versionCount}</em>
-  </span>
-  <div slot="panel-versions">
-    <!--${versions}-->
-  </div>
-</template>
-
-<template id="version">
-  <p>${id}</p>
-</template>
-
-<template id="api">
-  <span slot="button-api">api</span>
-  <div slot="panel-api">
-    <textarea rows="20" readonly>${json}</textarea>
-  </div>
+<template id="document">
+  <document-view data-subview="${subview}" data-updated-at="${updatedAt}"></document-view>
 </template>
 
 <template id="dialog">

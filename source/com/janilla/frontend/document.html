@@ -1,0 +1,64 @@
+<h1>${title}</h1>
+<tabs-element data-name="document-view" data-tabs="edit,preview,versions,api" data-active-tab="${activeTab}">
+  <!--${edit}-->
+  <!--${preview}-->
+  <!--${versions}-->
+  <!--${api}-->
+</tabs-element>
+
+<template id="edit">
+  <span slot="button-edit">edit</span>
+  <!--${panel}-->
+</template>
+
+<template id="edit-panel">
+  <div slot="panel-edit">
+    <edit-view></edit-view>
+  </div>
+</template>
+
+<template id="preview">
+  <span slot="button-preview">live preview</span>
+  <!--${panel}-->
+</template>
+
+<template id="preview-panel">
+  <div slot="panel-preview">TODO</div>
+</template>
+
+<template id="versions">
+  <span slot="button-versions">
+    versions <!--${count}-->
+  </span>
+  <!--${panel}-->
+</template>
+
+<template id="versions-count">
+  <em>${text}</em>
+</template>
+
+<template id="versions-panel">
+  <div slot="panel-versions">
+    <!--${versionsView}-->
+    <!--${versionView}-->
+  </div>
+</template>
+
+<template id="versions-view">
+  <versions-view></versions-view>
+</template>
+
+<template id="version-view">
+  <version-view></version-view>
+</template>
+
+<template id="api">
+  <span slot="button-api">api</span>
+  <!--${panel}-->
+</template>
+
+<template id="api-panel">
+  <div slot="panel-api">
+    <textarea rows="20" readonly>${json}</textarea>
+  </div>
+</template>

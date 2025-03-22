@@ -35,9 +35,9 @@ import com.janilla.json.MapAndType;
 @Target({ ElementType.PARAMETER })
 public @interface Bind {
 
-	String parameter() default "";
-
 	String value() default "";
+
+	String parameter() default "";
 
 	Class<? extends MapAndType.TypeResolver> resolver() default MapAndType.NullTypeResolver.class;
 }

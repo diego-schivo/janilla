@@ -1,14 +1,4 @@
-collection-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-
-  header {
-    align-items: center;
-    display: flex;
-    gap: 1rem;
-  }
-
+versions-view {
   div:has(> table) {
     overflow: auto;
   }

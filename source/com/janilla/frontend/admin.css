@@ -5,6 +5,8 @@
 @import "collection-list.css";
 @import "create-first-user.css";
 @import "dashboard-view.css";
+@import "document.css";
+@import "edit.css";
 @import "file-control.css";
 @import "list-control.css";
 @import "login.css";
@@ -20,3 +22,6 @@
 @import "tabs-field.css";
 @import "textarea-control.css";
 @import "text-control.css";
+@import "toast.css";
+@import "version.css";
+@import "versions.css";

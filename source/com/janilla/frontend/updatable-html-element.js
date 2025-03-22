@@ -119,7 +119,7 @@ export class UpdatableHTMLElement extends HTMLElement {
 	}
 
 	interpolateDom(input) {
-		// console.log("FlexibleElement(${this.constructor.name}).interpolateDom");
+		// console.log("UpdatableHTMLElement(${this.constructor.name}).interpolateDom");
 		const getInterpolate = (template, index) => {
 			const x = this.janillas.templates[template];
 			if (!x)
@@ -136,10 +136,15 @@ export class UpdatableHTMLElement extends HTMLElement {
 				return x.map(interpolate);
 			if (!Object.hasOwn(x, "$template"))
 				return x;
-			const y = Object.fromEntries(Object.entries(x).filter(([k, _]) => k !== "$template").map(([k, v]) => [k, interpolate(v)]));
-			var k = x.$template;
-			indexes[k] ??= 0;
-			const i = getInterpolate(k, indexes[k]++);
+			const y = Object.fromEntries(Object.entries(x).filter(([k, _]) => k !== "$template").map(([k, v]) => {
+				const v2 = interpolate(v);
+				return [k, v2];
+			}));
+			const t = x.$template;
+			//if (t === "object")
+			//debugger;
+			indexes[t] ??= 0;
+			const i = getInterpolate(t, indexes[t]++);
 			return i(y);
 		};
 		return interpolate(input);
@@ -180,111 +185,120 @@ const findNode = (node, indexes, attribute) => {
 
 const expressionRegex = /\$\{(.*?)\}/g;
 
-const compileNode = node => {
-	const ii = [];
-	const ff = [];
-	for (let x = node; x;) {
-		if (x instanceof Text) {
-			const nv = x.nodeValue;
-			if (nv.includes("${") && nv.includes("}")) {
-				const ii2 = [...ii];
-				x.nodeValue = "";
-				const ta = x.parentElement instanceof HTMLTextAreaElement;
-				ff.push(n => {
-					const n2 = findNode(n, ii2);
-					return y => {
-						const z = nv.replace(expressionRegex, (_, ex) => evaluate(ex, y) ?? "");
-						if (ta) {
-							const pe = n2.parentElement;
-							if (z !== pe.value)
-								pe.value = z;
-						} else if (z !== n2.nodeValue)
-							n2.nodeValue = z;
+const compileNode = rootNode => {
+	const path = [];
+	const interpolatorBuilders = [];
+	for (let node = rootNode; node;) {
+		if (node instanceof Text) {
+			const text = node.nodeValue;
+			if (text.includes("${") && text.includes("}")) {
+				const pathCopy = [...path];
+				//node.nodeValue = "";
+				const isTextAreaChild = node.parentElement instanceof HTMLTextAreaElement;
+				interpolatorBuilders.push(rootNodeCopy => {
+					const nodeCopy = findNode(rootNodeCopy, pathCopy);
+					return context => {
+						const value = text.replace(expressionRegex, (_, expression) => evaluate(expression, context) ?? "");
+						if (isTextAreaChild) {
+							const textArea = nodeCopy.parentElement;
+							if (value !== textArea.value)
+								textArea.value = value;
+						} else if (value !== nodeCopy.nodeValue)
+							nodeCopy.nodeValue = value;
 					};
 				});
 			}
-		} else if (x instanceof Comment) {
-			if (x.nodeValue.startsWith("${") && x.nodeValue.indexOf("}") === x.nodeValue.length - 1) {
-				const ii2 = [...ii];
-				const ex = x.nodeValue.substring(2, x.nodeValue.length - 1);
-				x.nodeValue = "";
-				ff.push(n => {
-					const n2 = findNode(n, ii2);
-					return y => {
-						const j2 = (n2.janillas ??= {});
-						let rn = n2.nextSibling;
-						const nn1 = [];
-						for (let i = j2.insertedNodesLength; i > 0; i--) {
-							nn1.push(rn);
-							rn = rn.nextSibling;
-						}
-						const z = evaluate(ex, y);
-						const zz = Array.isArray(z) ? z : z != null ? [z] : [];
-						const nn2 = zz.flatMap(n3 => {
-							if (n3 instanceof DocumentFragment) {
-								const j3 = (n3.janillas ??= {});
-								j3.originalChildNodes ??= [...n3.childNodes];
-								if (!n3.firstChild && j3.originalChildNodes.length)
-									for (let ps = j3.originalChildNodes[0].previousSibling; ps; ps = ps.previousSibling)
+		} else if (node instanceof Comment) {
+			const text = node.nodeValue;
+			if (text.startsWith("${") && text.indexOf("}") === text.length - 1) {
+				const pathCopy = [...path];
+				const expression = text.substring(2, text.length - 1);
+				//node.nodeValue = "";
+				interpolatorBuilders.push(rootNodeCopy => {
+					const nodeCopy = findNode(rootNodeCopy, pathCopy);
+					return context => {
+						nodeCopy.janillas ??= {};
+						const nodes1 = nodeCopy.janillas.insertedNodes ?? [];
+						let referenceNode;
+						for (let i = nodes1.length - 1; i >= 0; i--)
+							if (nodes1[i].parentNode === nodeCopy.parentNode) {
+								referenceNode = nodes1[i];
+								break;
+							}
+						referenceNode = (referenceNode ?? nodeCopy).nextSibling;
+						const value = evaluate(expression, context);
+						const values = Array.isArray(value) ? value : value != null ? [value] : [];
+						const nodes2 = values.flatMap(v => {
+							if (v instanceof DocumentFragment) {
+								v.janillas ??= {};
+								const nodes0 = (v.janillas.originalChildNodes ??= [...v.childNodes]);
+								if (!v.firstChild && nodes0.length) {
+									for (let ps = nodes0[0].previousSibling; ps; ps = ps.previousSibling)
 										if (ps instanceof Comment) {
-											ps.janillas.insertedNodesLength -= j3.originalChildNodes.length;
-											break;
+											const nn1 = ps.janillas.insertedNodes;
+											const nn2 = nn1.filter(x => !nodes0.includes(x));
+											if (nn2.length < nn1.length)
+												ps.janillas.insertedNodes = nn2;
 										}
-								return j3.originalChildNodes;
-							} else if (n3 != null) {
+									return nodes0;
+								}
+								return [...v.childNodes];
+							}
+							if (v != null) {
 								const t = document.createElement("template");
-								t.innerHTML = n3;
+								t.innerHTML = v;
 								return [...t.content.childNodes];
 							}
-							return n3;
+							return v;
 						});
-						for (const n3 of nn1)
-							if (!nn2.includes(n3))
-								n2.parentNode.removeChild(n3);
-						for (const n3 of nn2.reverse()) {
-							if (rn?.previousSibling !== n3)
-								n2.parentNode.insertBefore(n3, rn);
-							rn = n3;
+						for (const n of nodes1)
+							if (!nodes2.includes(n) && n.parentNode === nodeCopy.parentNode)
+								n.parentNode.removeChild(n);
+						for (let i = nodes2.length - 1; i >= 0; i--) {
+							const n = nodes2[i];
+							if (n !== referenceNode?.previousSibling)
+								nodeCopy.parentNode.insertBefore(n, referenceNode);
+							referenceNode = n;
 						}
-						j2.insertedNodesLength = nn2.length;
+						nodeCopy.janillas.insertedNodes = nodes2;
 					};
 				});
 			}
-		} else if (x instanceof Element && x.hasAttributes()) {
+		} else if (node instanceof Element && node.hasAttributes()) {
 			let i = 0;
-			for (const a of x.attributes) {
-				const v = a.value;
-				if (v.includes("${") && v.includes("}")) {
-					const ii2 = [...ii, i];
-					a.value = "";
-					const s = v.startsWith("${") && v.indexOf("}") === v.length - 1;
-					ff.push(n => {
-						const a2 = findNode(n, ii2, true);
-						const oe = a2.ownerElement;
-						return y => {
-							let z;
-							const v2 = v.replace(expressionRegex, (_, ex) => {
-								z = evaluate(ex, y);
-								return z ?? "";
+			for (const attribute of node.attributes) {
+				const text = attribute.value;
+				if (text.includes("${") && text.includes("}")) {
+					const pathCopy = [...path, i];
+					//a.value = "";
+					const isExpression = text.startsWith("${") && text.indexOf("}") === text.length - 1;
+					interpolatorBuilders.push(rootNodeCopy => {
+						const attributeCopy = findNode(rootNodeCopy, pathCopy, true);
+						const element = attributeCopy.ownerElement;
+						return context => {
+							let value;
+							const stringValue = text.replace(expressionRegex, (_, expression) => {
+								value = evaluate(expression, context);
+								return value ?? "";
 							});
 							// console.log("v", v, "v2", v2, "z", z, "s", s);
-							if (!s)
+							if (!isExpression)
 								;
-							else if (z == null || z === false)
-								a2.ownerElement?.removeAttributeNode(a2);
-							else if (!a2.ownerElement)
-								oe.setAttributeNode(a2);
-							if (v2 !== a2.value)
-								a2.value = z === true ? "" : v2;
-							switch (a2.name) {
+							else if (value == null || value === false)
+								attributeCopy.ownerElement?.removeAttributeNode(attributeCopy);
+							else if (!attributeCopy.ownerElement)
+								element.setAttributeNode(attributeCopy);
+							if (stringValue !== attributeCopy.value)
+								attributeCopy.value = value === true ? "" : stringValue;
+							switch (attributeCopy.name) {
 								case "checked":
-									if (oe instanceof HTMLInputElement && z !== oe.checked)
-										oe.checked = z;
+									if (element instanceof HTMLInputElement && value !== element.checked)
+										element.checked = value;
 									break;
 								case "value":
-									if ((oe instanceof HTMLInputElement || oe instanceof HTMLSelectElement || oe instanceof HTMLTextAreaElement)
-										&& a2.value !== oe.value)
-										oe.value = a2.value;
+									if ((element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement)
+										&& attributeCopy.value !== element.value)
+										element.value = attributeCopy.value;
 									break;
 							}
 						};
@@ -294,31 +308,31 @@ const compileNode = node => {
 			}
 		}
 
-		if (x.firstChild) {
-			x = x.firstChild;
-			ii.push(0);
+		if (node.firstChild) {
+			node = node.firstChild;
+			path.push(0);
 		} else
 			do
-				if (x === node)
-					x = null;
-				else if (x.nextSibling) {
-					x = x.nextSibling;
-					ii[ii.length - 1]++;
+				if (node === rootNode)
+					node = null;
+				else if (node.nextSibling) {
+					node = node.nextSibling;
+					path[path.length - 1]++;
 					break;
 				} else {
-					x = x.parentNode;
-					ii.pop();
+					node = node.parentNode;
+					path.pop();
 				}
-			while (x);
+			while (node);
 	}
 	return () => {
-		const n = node.cloneNode(true);
-		if (n instanceof DocumentFragment)
-			(n.janillas = {}).originalChildNodes = [...n.childNodes];
-		const ff2 = ff.map(x => x(n));
-		return x => {
-			ff2.forEach(y => y(x));
-			return n;
+		const rootNodeCopy = rootNode.cloneNode(true);
+		if (rootNodeCopy instanceof DocumentFragment)
+			(rootNodeCopy.janillas = {}).originalChildNodes = [...rootNodeCopy.childNodes];
+		const interpolators = interpolatorBuilders.map(build => build(rootNodeCopy));
+		return context => {
+			interpolators.forEach(interpolate => interpolate(context));
+			return rootNodeCopy;
 		};
 	};
 };

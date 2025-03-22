@@ -85,6 +85,12 @@ public interface Property {
 			}
 
 			@Override
+			public boolean canSet() {
+//				return Modifier.isFinal(field.getModifiers());
+				return true;
+			}
+
+			@Override
 			public String toString() {
 				return n;
 			}
@@ -149,6 +155,11 @@ public interface Property {
 			}
 
 			@Override
+			public boolean canSet() {
+				return s != null;
+			}
+
+			@Override
 			public String toString() {
 				return n;
 			}
@@ -192,6 +203,11 @@ public interface Property {
 			public void set(Object object, Object value) {
 				property2.set(property1.get(object), value);
 			}
+
+			@Override
+			public boolean canSet() {
+				return property2.canSet();
+			}
 		};
 	}
 
@@ -232,4 +248,6 @@ public interface Property {
 	Object get(Object object);
 
 	void set(Object object, Object value);
+
+	boolean canSet();
 }

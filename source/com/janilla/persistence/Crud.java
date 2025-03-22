@@ -67,13 +67,13 @@ public class Crud<E> {
 				E e;
 			}
 			var a = new A();
-			var i = ss.perform(type.getSimpleName(), s -> s.create(x -> {
-				a.e = Reflection.copy(new Entity(x), entity);
+			var l = ss.perform(type.getSimpleName(), s -> s.create(x -> {
+				a.e = beforeCreate(entity, x);
 				var t = format(a.e);
-//			System.out.println("Crud.create t=" + t);
+//				System.out.println("Crud.create t=" + t);
 				return t;
 			}));
-			updateIndexes(null, a.e, i);
+			updateIndexes(null, a.e, l);
 			return a.e;
 		}, true);
 	}
@@ -108,7 +108,7 @@ public class Crud<E> {
 			var a = new A();
 			ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
 				a.e1 = parse(x);
-				a.e2 = operator.apply(a.e1);
+				a.e2 = beforeUpdate(operator.apply(a.e1));
 				return format(a.e2);
 			}));
 			if (a.e1 != null)
@@ -380,6 +380,14 @@ public class Crud<E> {
 		}, false);
 	}
 
+	protected E beforeCreate(E entity, long x) {
+		return Reflection.copy(Map.of("id", x), entity);
+	}
+
+	protected E beforeUpdate(E entity) {
+		return entity;
+	}
+
 	protected String format(Object object) {
 		var tt = new ReflectionJsonIterator();
 		tt.setObject(object);
@@ -485,8 +493,8 @@ public class Crud<E> {
 		});
 	}
 
-	public record Entity(long id) {
-	}
+//	public record Entity(long id) {
+//	}
 
 	public record IdPage(long[] ids, long total) {
 

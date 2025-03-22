@@ -352,7 +352,6 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		var qs = Net.parseQueryString(rq.getQuery());
 		Supplier<String> bs = switch (rq.getMethod()) {
 		case "POST", "PUT" -> {
-			var ct = rq.getHeaderValue("content-type");
 			var s = new Supplier<String>() {
 
 				private String[] x;
@@ -370,19 +369,20 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 					return x[0];
 				}
 			};
-			switch (Objects.toString(ct, "").split(";")[0]) {
+			var ct = Objects.toString(rq.getHeaderValue("content-type"), "").split(";")[0];
+			switch (ct) {
 			case "application/x-www-form-urlencoded":
-				var v = Net.parseQueryString(s.get());
-				if (v == null)
+				var qs2 = Net.parseQueryString(s.get());
+				if (qs2 == null)
 					;
 				else if (qs == null)
-					qs = v;
+					qs = qs2;
 				else
-					qs.addAll(v);
+					qs.addAll(qs2);
 				break;
 			case "application/json":
-				var a = s.get();
-				var o = a != null ? Json.parse(a) : null;
+				var s2 = s.get();
+				var o = s2 != null ? Json.parse(s2) : null;
 				if (o instanceof Map<?, ?> m && !m.isEmpty()) {
 					if (qs == null)
 						qs = new EntryList<>();
@@ -400,6 +400,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 		var m = invocation.method;
 		var gg = invocation.regexGroups;
+		var pp = m.getParameters();
 		var ptt = m.getParameterTypes();
 		var paa = m.getParameterAnnotations();
 		var bb = Arrays.stream(paa)
@@ -410,13 +411,13 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		for (var i = 0; i < aa.length; i++) {
 			var g = i < ggl ? gg[i] : null;
 			var b = i < ggl ? null : bb[i];
-			var p = b != null ? (!b.parameter().isEmpty() ? b.parameter() : b.value()) : null;
+			var n = Stream.of(b != null ? b.parameter() : null, b != null ? b.value() : null, pp[i].getName())
+					.filter(x -> x != null && !x.isEmpty()).findFirst().orElse(null);
 			var qs2 = qs;
-			var bs2 = i < ggl ? null : bs;
+			var bs2 = i == ggl ? bs : null;
 			aa[i] = resolveArgument(ptt[i], exchange,
-					i < ggl ? () -> (g != null ? new String[] { g } : null)
-							: () -> qs2 != null && p != null ? qs2.stream().filter(x -> x.getKey().equals(p))
-									.map(Map.Entry::getValue).toArray(String[]::new) : null,
+					i < ggl ? (g != null ? new String[] { g } : null)
+							: qs2 != null && n != null ? qs2.stream(n).toArray(String[]::new) : null,
 					i >= ggl ? qs : null, bs2,
 					b != null && b.resolver() != MapAndType.NullTypeResolver.class ? () -> resolver(b.resolver())
 							: null);
@@ -424,7 +425,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		return aa;
 	}
 
-	protected Object resolveArgument(Type type, HttpExchange exchange, Supplier<String[]> values,
+	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values,
 			EntryList<String, String> entries, Supplier<String> body, Supplier<MapAndType.TypeResolver> resolver) {
 		var c = type instanceof Class<?> x ? x : null;
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
@@ -433,6 +434,8 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			return exchange.getRequest();
 		if (c != null && HttpResponse.class.isAssignableFrom(c))
 			return exchange.getResponse();
+		if (values != null && values.length > 0)
+			return parseParameter(values, type);
 		if (c != null) {
 			var ct = exchange.getRequest().getHeaderValue("content-type");
 			switch (Objects.toString(ct, "").split(";")[0]) {
@@ -462,7 +465,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 						var n = x.getKey();
 						var t = x.getValue();
 						return resolveArgument(t, exchange,
-								() -> entries != null
+								entries != null
 										? entries.stream().filter(y -> y.getKey().equals(n)).map(Map.Entry::getValue)
 												.toArray(String[]::new)
 										: null,
@@ -493,7 +496,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 							if (p == null)
 								continue;
 							var v = resolveArgument(p.type(), exchange,
-									() -> entries != null
+									entries != null
 											? entries.stream().filter(x -> x.getKey().equals(n))
 													.map(Map.Entry::getValue).toArray(String[]::new)
 											: null,
@@ -506,8 +509,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				break;
 			}
 		}
-		var vv = values.get();
-		return parseParameter(vv, type);
+		return null;
 	}
 
 	protected EntryTree createEntryTree() {

@@ -1,13 +1,11 @@
 :host(tabs-element) {
-  flex-direction: column;
-
-  &,
   [role="tablist"] {
+    border-bottom: 1px solid rgb(47, 47, 47);
     display: flex;
     gap: 1rem;
-  }
+    margin: 0 -1rem 1rem;
+    padding: 0 1rem 1rem;
 
-  [role="tablist"] {
     button {
       padding: 0.25rem 0.5rem;
     }

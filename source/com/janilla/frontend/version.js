@@ -23,19 +23,14 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class Tabs extends UpdatableHTMLElement {
-
-	static get observedAttributes() {
-		return ["data-active-tab", "data-name", "data-tab"];
-	}
+export default class VersionView extends UpdatableHTMLElement {
 
 	static get templateName() {
-		return "tabs";
+		return "version";
 	}
 
 	constructor() {
 		super();
-		this.attachShadow({ mode: "open" });
 	}
 
 	connectedCallback() {
@@ -49,41 +44,40 @@ export default class Tabs extends UpdatableHTMLElement {
 	}
 
 	handleClick = async event => {
-		const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
-		if (b?.role !== "tab")
+		const b = event.target.closest("button");
+		if (!b?.name)
 			return;
 		event.stopPropagation();
-		const s = this.state;
-		const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
-		const t = s.tabs[i];
-		if (this.dispatchEvent(new CustomEvent("select-tab", {
-			bubbles: true,
-			cancelable: true,
-			detail: { tab: t }
-		}))) {
-			s.activeTab = t;
-			this.requestUpdate();
+		switch (b.name) {
+			case "cancel":
+				this.querySelector("dialog").close();
+				break;
+			case "confirm":
+				const ap = this.closest("admin-panel");
+				const s = ap.state;
+				s.entity = await (await fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.version.id}`, { method: "POST" })).json();
+				ap.querySelector("toast-container").renderToast("Restored successfully.");
+				history.pushState(undefined, "", `/admin/${ap.dataset.entityPath.replaceAll(".", "/")}`);
+				dispatchEvent(new CustomEvent("popstate"));
+				break;
+			case "restore":
+				this.querySelector("dialog").showModal();
+				break;
 		}
 	}
 
 	async updateDisplay() {
-		const s = this.state;
-		s.tabs = this.dataset.tabs.split(",");
-		s.activeTab = this.dataset.activeTab ?? s.tabs[0];
-		this.shadowRoot.appendChild(this.interpolateDom({
+		const ap = this.closest("admin-panel");
+		const s = ap.state;
+		const ua = ap.dateTimeFormat.format(new Date(s.version.updatedAt));
+		this.appendChild(this.interpolateDom({
 			$template: "",
-			buttons: s.tabs.map(x => ({
-				$template: "tabs-button",
-				panel: this.dataset.name,
-				tab: x,
-				selected: `${x === s.activeTab}`
-			})),
-			panels: s.tabs.map(x => ({
-				$template: "tabs-panel",
-				panel: this.dataset.name,
-				tab: x,
-				hidden: x !== s.activeTab
-			}))
+			title: ua,
+			json: JSON.stringify(s.version.entity, null, "  "),
+			dialog: {
+				$template: "dialog",
+				dateTime: ua
+			}
 		}));
 	}
 }

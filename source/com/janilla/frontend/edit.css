@@ -1,0 +1,36 @@
+edit-view {
+  form {
+    > div {
+      align-items: center;
+      background: rgb(20, 20, 20);
+      border-bottom: 1px solid rgb(47, 47, 47);
+      display: flex;
+      gap: 1rem;
+      margin: 0 -1rem;
+      padding: 0.5rem 1rem;
+      position: sticky;
+      top: 0;
+
+      a,
+      button {
+        line-height: 1.5rem;
+        padding: 0.25rem 0.5rem;
+      }
+
+      a {
+        border: 1px solid rgb(255, 255, 255);
+        border-radius: 0.1875rem;
+        display: flex;
+        gap: 0.5rem;
+        text-decoration: none;
+      }
+
+      select {
+        margin-left: auto;
+        padding: 0.5rem;
+        text-align: center;
+        width: 2rem;
+      }
+    }
+  }
+}

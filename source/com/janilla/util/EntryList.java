@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
 
@@ -46,8 +47,7 @@ public class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
 	}
 
 	public EntryList(EntryList<K, V> l) {
-		for (var e : l)
-			add(e.getKey(), e.getValue());
+		l.forEach(x -> add(x.getKey(), x.getValue()));
 	}
 
 	public void add(K key, V value) {
@@ -55,18 +55,15 @@ public class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
 	}
 
 	public V get(Object key) {
-		for (var e : this)
-			if (Objects.equals(e.getKey(), key))
-				return e.getValue();
-		return null;
+		return stream().filter(x -> Objects.equals(x.getKey(), key)).findFirst().map(Map.Entry::getValue).orElse(null);
+	}
+
+	public Stream<V> stream(Object key) {
+		return stream().filter(x -> Objects.equals(x.getKey(), key)).map(Map.Entry::getValue);
 	}
 
 	public void set(K key, V value) {
-		for (var e : this)
-			if (Objects.equals(e.getKey(), key)) {
-				e.setValue(value);
-				return;
-			}
-		add(key, value);
+		stream().filter(x -> Objects.equals(x.getKey(), key)).findFirst().ifPresentOrElse(x -> x.setValue(value),
+				() -> add(key, value));
 	}
 }

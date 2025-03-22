@@ -26,12 +26,17 @@ import { UpdatableHTMLElement } from "./updatable-html-element.js";
 export default class AdminPanel extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
-		return ["data-document-view", "data-path"];
+		return ["data-path"];
 	}
 
 	static get templateName() {
 		return "admin-panel";
 	}
+
+	dateTimeFormat = new Intl.DateTimeFormat("en-US", {
+		dateStyle: "medium",
+		timeStyle: "medium"
+	});
 
 	constructor() {
 		super();
@@ -39,33 +44,26 @@ export default class AdminPanel extends UpdatableHTMLElement {
 
 	connectedCallback() {
 		super.connectedCallback();
-		this.addEventListener("change", this.handleChange);
 		this.addEventListener("click", this.handleClick);
 		this.addEventListener("select-tab", this.handleSelectTab);
-		this.addEventListener("submit", this.handleSubmit);
 	}
 
 	disconnectedCallback() {
 		super.disconnectedCallback();
-		this.removeEventListener("change", this.handleChange);
 		this.removeEventListener("click", this.handleClick);
 		this.removeEventListener("select-tab", this.handleSelectTab);
-		this.removeEventListener("submit", this.handleSubmit);
 	}
 
-	handleChange = async event => {
-		const el = event.target;
-		if (el.matches("select:not([name])")) {
-			event.stopPropagation();
-			const p = this.dataset.path;
-			const nn = p ? p.split(".") : [];
-			await (await fetch(`/api/${nn[1]}/${nn[2]}`, { method: "DELETE" })).json();
-		}
+	attributeChangedCallback(name, oldValue, newValue) {
+		const s = this.state;
+		if (newValue !== oldValue && s)
+			delete s.computeState;
+		super.attributeChangedCallback(name, oldValue, newValue);
 	}
 
 	handleClick = async event => {
 		const b = event.target.closest("button");
-		if (!b)
+		if (!b?.name)
 			return;
 		event.stopPropagation();
 		switch (b.name) {
@@ -86,77 +84,77 @@ export default class AdminPanel extends UpdatableHTMLElement {
 	handleSelectTab = event => {
 		event.preventDefault();
 		const t = event.detail.tab;
-		const nn = this.dataset.path.split(".");
+		const s = this.state;
+		const nn = s.pathSegments.slice(0, 3);
 		if (t !== "edit")
 			nn.push(t);
 		history.pushState(undefined, "", `/admin/${nn.join("/")}`);
 		dispatchEvent(new CustomEvent("popstate"));
 	}
 
-	handleSubmit = async event => {
-		event.preventDefault();
-		const p = this.dataset.path;
-		const nn = p ? p.split(".") : [];
+	async computeState() {
 		const s = this.state;
-		let r;
-		switch (nn[0]) {
-			case "collections":
-				r = `/api/${nn[1]}/${nn[2]}`;
-				break;
-			case "globals":
-				r = `/api/${nn[1]}`;
-				break;
+		[
+			"pathSegments",
+			"collectionSlug",
+			"globalSlug",
+			"entityType",
+			"entityUrl",
+			"documentSubview",
+			"versionId",
+			"entity",
+			"versions",
+			"version"
+		].forEach(x => delete s[x]);
+		s.me ??= await (await fetch("/api/users/me")).json();
+		let p = this.dataset.path;
+		if (p === "/account")
+			p = `/collections/users/${s.me.id}`;
+		s.pathSegments = p.length > 1 ? p.substring(1).split("/") : [];
+		if (!s.me) {
+			if (!["/login", "/create-first-user"].includes(p)) {
+				history.pushState(undefined, "", "/admin/login");
+				dispatchEvent(new CustomEvent("popstate"));
+				return;
+			}
+		} else {
+			if (["/login", "/create-first-user"].includes(p)) {
+				history.pushState(undefined, "", "/admin");
+				dispatchEvent(new CustomEvent("popstate"));
+				return;
+			}
+
+			s.schema ??= await (await fetch("/api/schema")).json();
+
+			if (s.pathSegments[0] === "collections") {
+				s.collectionSlug = s.pathSegments[1];
+				s.entityType = s.schema["Collections"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].elementTypes[0];
+				s.entityUrl = s.pathSegments.length >= 3 ? `/api/${s.collectionSlug}/${s.pathSegments[2]}` : null;
+			}
+			if (s.pathSegments[0] === "globals") {
+				s.globalSlug = s.pathSegments[1];
+				s.entityType = s.schema["Globals"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].type;
+				s.entityUrl = s.pathSegments.length >= 2 ? `/api/${s.globalSlug}` : null;
+			}
+
+			s.documentSubview = s.entityUrl ? s.pathSegments[s.collectionSlug ? 3 : 2] ?? "default" : null;
+			s.versionId = s.documentSubview === "versions" ? s.pathSegments[s.collectionSlug ? 4 : 3] : null;
+			if (s.versionId) {
+				s.documentSubview = "version";
+				s.versionId = parseInt(s.versionId);
+			}
+			await Promise.all([
+				s.entityUrl ? fetch(s.entityUrl).then(async x => s.entity = await x.json()) : null,
+				s.documentSubview === "versions" ? fetch(`${s.entityUrl}/versions`).then(async x => s.versions = await x.json()) : null,
+				s.documentSubview === "version" ? fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
+			]);
 		}
-		const kkvv = [...new FormData(event.target).entries()];
-		for (const [k, v] of kkvv.filter(([_, x]) => x instanceof File)) {
-			const fd = new FormData();
-			fd.append(k, v);
-			const xhr = new XMLHttpRequest();
-			xhr.open("POST", "/api/upload", true);
-			xhr.send(fd);
-		}
-		for (const [k, v] of kkvv) {
-			const i = k.lastIndexOf(".");
-			let f = this.field(k.substring(0, i));
-			if (!f.data)
-				f.parent.data[f.name] = f.data = {};
-			f.data[k.substring(i + 1)] = v instanceof File ? { name: v.name } : v;
-		}
-		s.data = await (await fetch(r, {
-			method: "PUT",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify(s.data)
-		})).json();
+		this.requestUpdate();
 	}
 
 	async updateDisplay() {
 		const s = this.state;
-		s.me = await (await fetch("/api/users/me")).json();
-		let p = this.dataset.path;
-		if (location.pathname === "/admin/account")
-			p = `collections.users.${s.me.id}`;
-		const nn = p ? p.split(".") : [];
-		if (!s.me) {
-			if (!["/admin/login", "/admin/create-first-user"].includes(location.pathname)) {
-				location.href = "/admin/login";
-				return;
-			}
-		} else {
-			if (["/admin/login", "/admin/create-first-user"].includes(location.pathname)) {
-				location.href = "/admin";
-				return;
-			}
-			s.schema = await (await fetch("/api/schema")).json();
-			if (nn.length === 3 && nn[0] === "collections") {
-				s.type = s.schema["Collections"][nn[1]].elementTypes[0];
-				const cs = nn[1].split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-");
-				s.data = await (await fetch(`/api/${cs}/${nn[2]}`)).json();
-				s.versions = await (await fetch(`/api/${cs}/${s.data.id}/versions`)).json();
-			} else if (nn.length === 2 && nn[0] === "globals") {
-				s.type = s.schema["Globals"][nn[1]].type;
-				s.data = await (await fetch(`/api/${nn[1]}`)).json();
-			}
-		}
+		s.computeState ??= this.computeState();
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			header: s.me ? {
@@ -167,22 +165,34 @@ export default class AdminPanel extends UpdatableHTMLElement {
 						href: "/admin",
 						icon: "house"
 					});
-					switch (nn[0]) {
+					switch (s.pathSegments[0]) {
 						case "collections":
 							xx.push({
-								href: `/admin/collections/${nn[1]}`,
-								text: nn[1]
+								href: `/admin/collections/${s.pathSegments[1]}`,
+								text: s.pathSegments[1]
 							});
-							if (nn[2])
+							if (s.pathSegments[2]) {
+								const h = `/admin/collections/${s.pathSegments[1]}/${s.pathSegments[2]}`;
 								xx.push({
-									href: `/admin/collections/${nn[1]}/${nn[2]}`,
-									text: this.title(s.data) ?? s.data.id
+									href: h,
+									text: (s.entity ? this.title(s.entity) : null) ?? s.pathSegments[2]
 								});
+								if (s.documentSubview !== "default")
+									xx.push({
+										href: `${h}/${s.documentSubview === "version" ? "versions" : s.documentSubview}`,
+										text: s.documentSubview === "version" ? "versions" : s.documentSubview
+									});
+								if (s.versionId)
+									xx.push({
+										href: `${h}/versions/${s.versionId}`,
+										text: s.version?.updatedAt ? this.dateTimeFormat.format(new Date(s.version.updatedAt)) : s.versionId
+									});
+							}
 							break;
 						case "globals":
 							xx.push({
-								href: `/admin/globals/${nn[1]}`,
-								text: nn[1]
+								href: `/admin/globals/${s.pathSegments[1]}`,
+								text: s.pathSegments[1]
 							});
 							break;
 					}
@@ -198,61 +208,35 @@ export default class AdminPanel extends UpdatableHTMLElement {
 				}))
 			} : null,
 			content: (() => {
-				switch (location.pathname) {
-					case "/admin/login":
-						return { $template: "login" };
-					case "/admin/create-first-user":
+				switch (this.dataset.path) {
+					case "/create-first-user":
 						return { $template: "create-first-user" };
+					case "/login":
+						return { $template: "login" };
 				}
-				switch (nn[0]) {
+				if (!s.pathSegments)
+					return { $template: "loading" };
+				switch (s.pathSegments[0]) {
 					case "collections":
-						return nn.length === 2 ? {
+						return s.pathSegments.length === 2 ? {
 							$template: "collection",
-							name: nn[1]
-						} : {
-							$template: "object",
-							title: (() => {
-								switch (nn[0]) {
-									case "collections":
-										return this.title(s.data) ?? s.data.id;
-									case "globals":
-										return nn[1];
-								}
-							})(),
-							activeTab: this.dataset.documentView,
-							edit: {
-								$template: "edit",
-								previewLink: (() => {
-									const h = this.preview(s.data);
-									return h ? {
-										$template: "preview-link",
-										href: h
-									} : null;
-								})()
-							},
-							preview: {
-								$template: "preview"
-							},
-							versions: {
-								$template: "versions",
-								versionCount: this.state.data.versionCount,
-								versions: s.versions.map(x => ({
-									$template: "version",
-									...x
-								}))
-							},
-							api: {
-								$template: "api",
-								json: JSON.stringify(s.data, null, "  ")
-							}
-						};
+							name: s.pathSegments[1]
+						} : s.entity ? {
+							$template: "document",
+							subview: s.documentSubview,
+							updatedAt: s.entity.updatedAt
+						} : { $template: "loading" };
 					case "globals":
-						return { $template: "object" };
+						return s.entity ? {
+							$template: "document",
+							subview: s.documentSubview,
+							updatedAt: s.entity.updatedAt
+						} : { $template: "loading" };
 					default:
 						return { $template: "dashboard" };
 				}
 			})(),
-			dialog: s.me ? {
+			dialog: s.me && s.schema ? {
 				$template: "dialog",
 				groups: Object.entries(s.schema["Data"]).map(([k, v]) => ({
 					$template: "group",
@@ -271,9 +255,9 @@ export default class AdminPanel extends UpdatableHTMLElement {
 	field(path, parent) {
 		const s = this.state;
 		let f = parent ?? {
-			type: s.type,
-			properties: s.schema[s.type],
-			data: s.data
+			type: s.entityType,
+			properties: s.schema[s.entityType],
+			data: s.entity
 		};
 		if (path)
 			for (const n of path.split("."))
