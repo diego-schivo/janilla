@@ -1,25 +1,26 @@
 /*
- * MIT License
+ * Copyright (c) 2024, 2025, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * Copyright (c) 2024-2025 Diego Schivo
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
@@ -57,12 +58,13 @@ export default class EditView extends UpdatableHTMLElement {
 			return;
 		}
 
-		if (el.matches("select"))
+		if (el.matches("select") && this.state.drafts)
 			this.requestAutoSave();
 	}
 
 	handleInput = () => {
-		this.requestAutoSave();
+		if (this.state.drafts)
+			this.requestAutoSave();
 	}
 
 	handleSubmit = async event => {
@@ -131,13 +133,15 @@ export default class EditView extends UpdatableHTMLElement {
 	async updateDisplay() {
 		const ap = this.closest("admin-panel");
 		const s = ap.state;
+		this.state.versions = Object.hasOwn(s.entity, "versionCount");
+		this.state.drafts = Object.hasOwn(s.entity, "status");
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			loading: !Object.hasOwn(s, "entity") ? { $template: "loading" } : null,
 			form: s.entity ? {
 				$template: "form",
-				saveButton: null,
-				publishButton: { $template: "publish-button" },
+				saveButton: !this.state.drafts ? { $template: "save-button" } : null,
+				publishButton: this.state.drafts ? { $template: "publish-button" } : null,
 				previewLink: (() => {
 					const h = ap.preview(s.entity);
 					return h ? {

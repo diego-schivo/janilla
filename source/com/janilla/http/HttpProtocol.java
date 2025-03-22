@@ -259,7 +259,7 @@ public class HttpProtocol implements Protocol {
 						var ex = createExchange(rq);
 						ex.setRequest(rq);
 						ex.setResponse(rs);
-						ScopedValue.callWhere(HTTP_EXCHANGE, ex, () -> {
+						ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> {
 							var k = true;
 							Exception e;
 							try {

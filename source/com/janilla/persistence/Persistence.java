@@ -189,8 +189,8 @@ public class Persistence {
 	}
 
 	protected <E> Crud<E> newCrud(Class<E> type) {
-		return Modifier.isInterface(type.getModifiers()) || Modifier.isAbstract(type.getModifiers())
-				|| !type.isAnnotationPresent(Store.class) ? null : new Crud<>(type, this);
+		return !Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
+				&& type.isAnnotationPresent(Store.class) ? new Crud<>(type, this) : null;
 	}
 
 	protected void createStoresAndIndexes() {
@@ -206,32 +206,36 @@ public class Persistence {
 			}, true);
 	}
 
-	static class Configuration {
+	protected static class Configuration {
 
-		Map<String, IndexFactory<?, ?>> indexFactories = new HashMap<>();
+		protected Map<String, IndexFactory<?, ?>> indexFactories = new HashMap<>();
 
-		Map<Class<?>, Crud<?>> cruds = new HashMap<>();
+		protected Map<Class<?>, Crud<?>> cruds = new HashMap<>();
+
+		public Map<Class<?>, Crud<?>> cruds() {
+			return cruds;
+		}
 	}
 
-	static class IndexFactory<K, V> {
+	protected static class IndexFactory<K, V> {
 
-		ByteConverter<K> keyConverter;
+		protected ByteConverter<K> keyConverter;
 
-		ByteConverter<V> valueConverter;
+		protected ByteConverter<V> valueConverter;
 
-		com.janilla.database.Index<K, V> newIndex(NameAndData nameAndData, Database database) {
+		protected com.janilla.database.Index<K, V> newIndex(NameAndData nameAndData, Database database) {
 			return new com.janilla.database.Index<K, V>(new BTree<>(database.bTreeOrder(), database.channel(),
 					database.memory(), KeyAndData.getByteConverter(keyConverter), nameAndData.bTree()), valueConverter);
 		}
 	}
 
-	static class IndexEntryGetter {
+	protected static class IndexEntryGetter {
 
-		Function<Object, Object> keyGetter;
+		protected Function<Object, Object> keyGetter;
 
-		Property sortGetter;
+		protected Property sortGetter;
 
-		Map.Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
+		protected Map.Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
 			var k = keyGetter != null ? keyGetter.apply(entity) : null;
 			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
 			return keyGetter == null || k != null ? new AbstractMap.SimpleEntry<>(k, v) : null;

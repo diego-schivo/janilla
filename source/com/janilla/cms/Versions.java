@@ -22,36 +22,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+package com.janilla.cms;
 
-export default class ToastContainer extends UpdatableHTMLElement {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-	static get templateName() {
-		return "toast";
-	}
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.TYPE })
+public @interface Versions {
 
-	constructor() {
-		super();
-	}
-
-	renderToast(text) {
-		const s = this.state;
-		const o = { text };
-		(s.items ??= []).push(o);
-		this.requestUpdate();
-		setTimeout(() => {
-			s.items.splice(s.items.findIndex(x => x === o), 1);
-			this.requestUpdate();
-		}, 4000);
-	}
-
-	async updateDisplay() {
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			items: this.state.items?.map(x => ({
-				$template: "item",
-				...x
-			}))
-		}));
-	}
+	boolean drafts() default false;
 }

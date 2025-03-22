@@ -38,69 +38,69 @@ import java.util.stream.IntStream;
 
 public class BTreeMemory implements Memory {
 
-	public static void main(String[] args) throws Exception {
-		var o = 3;
-		var f = Files.createTempFile("memory", "");
-		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
-				StandardOpenOption.WRITE)) {
-			var m = new BTreeMemory(o, c, BlockReference.read(c, 0), Math.max(BlockReference.BYTES, c.size()));
-
-			record Allocate(int size) {
-			}
-			record Free(int index) {
-			}
-			Object[] p;
-			{
-				var r = ThreadLocalRandom.current();
-				var a = new ArrayList<Allocate>();
-				p = IntStream.range(0, 10).mapToObj(_ -> {
-					if (a.isEmpty() || r.nextInt(5) < 3) {
-						var s = 1 + r.nextInt(1000);
-						var b = new Allocate(s);
-						a.add(b);
-						return b;
-					} else {
-						var i = r.nextInt(a.size());
-						a.remove(i);
-						return new Free(i);
-					}
-				}).toArray();
-			}
-
+//	public static void main(String[] args) throws Exception {
+//		var o = 3;
+//		var f = Files.createTempFile("memory", "");
+//		try (var c = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
+//				StandardOpenOption.WRITE)) {
+//			var m = new BTreeMemory(o, c, BlockReference.read(c, 0), Math.max(BlockReference.BYTES, c.size()));
+//
+//			record Allocate(int size) {
+//			}
+//			record Free(int index) {
+//			}
+//			Object[] p;
 //			{
-//				var s = "[Allocate[size=58], Allocate[size=46], Free[index=1], Allocate[size=20], Free[index=0], Free[index=0], Allocate[size=26]]";
-//				p = Arrays.stream(s.substring(1, s.length() - 1).split(", ")).map(x -> {
-//					var i = Integer.parseInt(x.substring(x.indexOf('=') + 1, x.length() - 1));
-//					return switch (x.substring(0, x.indexOf('['))) {
-//					case "Allocate" -> new Allocate(i);
-//					case "Free" -> new Free(i);
-//					default -> throw new RuntimeException();
-//					};
+//				var r = ThreadLocalRandom.current();
+//				var a = new ArrayList<Allocate>();
+//				p = IntStream.range(0, 10).mapToObj(_ -> {
+//					if (a.isEmpty() || r.nextInt(5) < 3) {
+//						var s = 1 + r.nextInt(1000);
+//						var b = new Allocate(s);
+//						a.add(b);
+//						return b;
+//					} else {
+//						var i = r.nextInt(a.size());
+//						a.remove(i);
+//						return new Free(i);
+//					}
 //				}).toArray();
 //			}
-
-			System.out.println(Arrays.toString(p));
-
-			var b = new ArrayList<BlockReference>();
-			for (var q : p) {
-				System.out.println(q);
-				BlockReference r;
-				switch (q) {
-				case Allocate a:
-					r = m.allocate(a.size);
-					b.add(r);
-					break;
-				case Free g:
-					r = b.remove(g.index);
-					m.free(r);
-					break;
-				default:
-					throw new RuntimeException();
-				}
-				System.out.println("\t" + r);
-			}
-		}
-	}
+//
+////			{
+////				var s = "[Allocate[size=58], Allocate[size=46], Free[index=1], Allocate[size=20], Free[index=0], Free[index=0], Allocate[size=26]]";
+////				p = Arrays.stream(s.substring(1, s.length() - 1).split(", ")).map(x -> {
+////					var i = Integer.parseInt(x.substring(x.indexOf('=') + 1, x.length() - 1));
+////					return switch (x.substring(0, x.indexOf('['))) {
+////					case "Allocate" -> new Allocate(i);
+////					case "Free" -> new Free(i);
+////					default -> throw new RuntimeException();
+////					};
+////				}).toArray();
+////			}
+//
+//			System.out.println(Arrays.toString(p));
+//
+//			var b = new ArrayList<BlockReference>();
+//			for (var q : p) {
+//				System.out.println(q);
+//				BlockReference r;
+//				switch (q) {
+//				case Allocate a:
+//					r = m.allocate(a.size);
+//					b.add(r);
+//					break;
+//				case Free g:
+//					r = b.remove(g.index);
+//					m.free(r);
+//					break;
+//				default:
+//					throw new RuntimeException();
+//				}
+//				System.out.println("\t" + r);
+//			}
+//		}
+//	}
 
 	protected final FreeBTree freeBTree;
 
