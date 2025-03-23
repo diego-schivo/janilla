@@ -24,14 +24,14 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class ReferenceListControl extends UpdatableHTMLElement {
+export default class CmsReference extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
 		return ["data-key", "data-path"];
 	}
 
 	static get templateName() {
-		return "reference-list-control";
+		return "cms-reference";
 	}
 
 	constructor() {
@@ -50,54 +50,58 @@ export default class ReferenceListControl extends UpdatableHTMLElement {
 
 	handleClick = async event => {
 		const s = this.state;
-		const b = event.target.closest("button");
-		if (b) {
+		let el = event.target.closest("button");
+		if (el) {
 			event.stopPropagation();
-			switch (b.name) {
-				case "add":
+			switch (el.name) {
+				case "choose":
 					s.dialog = true;
 					await this.updateDisplay();
 					this.querySelector("dialog").showModal();
 					break;
 				case "close":
-					b.closest("dialog").close();
+					el.closest("dialog").close();
 					s.dialog = false;
 					break;
 			}
 		}
-		const a = event.target.closest("a");
-		if (a) {
+		el = event.target.closest("a");
+		if (el) {
 			event.preventDefault();
-			const id = parseInt(a.getAttribute("href").split("/").at(-1));
+			const id = parseInt(el.getAttribute("href").split("/").at(-1));
+			if (s.field.data)
+				for (const x of Object.getOwnPropertyNames(s.field.data))
+					delete s.field.data[x];
 			if (s.dialog) {
-				const cl = this.querySelector("dialog cms-collection");
-				s.field.data.push(cl.state.data.find(x => x.id === id));
-				cl.closest("dialog").close();
+				const a = this.closest("cms-admin");
+				a.initField(s.field);
+				const c = this.querySelector("dialog cms-collection");
+				Object.assign(s.field.data, c.state.data.find(x => x.id === id));
+				c.closest("dialog").close();
 				s.dialog = false;
-			} else
-				s.field.data.splice(s.field.data.findIndex(x => x.id === id), 1);
+			}
 			this.requestUpdate();
 		}
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("cms-admin");
+		const a = this.closest("cms-admin");
 		const p = this.dataset.path;
 		const s = this.state;
-		s.field ??= ap.field(p);
-		const cc = ap.state.schema["Collections"];
+		s.field ??= a.field(p);
+		const cc = a.state.schema["Collections"];
 		const cn = Object.entries(cc).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			...this.dataset,
 			name: p,
 			collection: cn,
-			ids: s.field.data?.map(x => x.id).join(),
-			inputs: s.field.data?.map((x, i) => ({
+			ids: s.field.data?.id ? [s.field.data.id] : [],
+			input: {
 				$template: "input",
-				name: `${p}.${i}`,
-				value: x.id
-			})),
+				name: p,
+				value: s.field.data?.id
+			},
 			dialog: s.dialog ? {
 				$template: "dialog",
 				collection: cn

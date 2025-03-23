@@ -39,7 +39,7 @@ export default class RadioGroupControl extends UpdatableHTMLElement {
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("admin-panel");
+		const ap = this.closest("cms-admin");
 		const p = this.dataset.path;
 		const f = ap.field(p);
 		this.appendChild(this.interpolateDom({

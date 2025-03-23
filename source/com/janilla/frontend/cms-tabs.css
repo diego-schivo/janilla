@@ -1,0 +1,47 @@
+:host(cms-tabs) {
+  [role="tablist"] {
+    border-bottom: 1px solid rgb(47, 47, 47);
+    display: flex;
+    gap: 1rem;
+    margin: 0 -1rem;
+    padding: 0 1rem 1rem;
+  }
+}
+
+:host(cms-tabs[data-name="document-subview"]) {
+  [role="tablist"] {
+    button {
+      padding: 0.25rem 0.5rem;
+    }
+
+    [aria-selected="false"] {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+    }
+  }
+}
+
+:host(cms-tabs:not([data-name="document-subview"])) {
+  [role="tablist"] {
+    margin-bottom: 1rem;
+    padding-bottom: 0;
+
+    button {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      font-size: 1rem;
+      line-height: 1.25rem;
+      padding-bottom: 0.5rem;
+    }
+
+    [aria-selected="false"] {
+      opacity: 0.5;
+    }
+
+    [aria-selected="true"] {
+      border-bottom: 1px solid rgb(255, 255, 255);
+    }
+  }
+}

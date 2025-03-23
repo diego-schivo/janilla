@@ -1,0 +1,79 @@
+<ul>
+  <!--${items}-->
+</ul>
+<template id="item">
+  <li>
+    <!--${field}-->
+  </li>
+</template>
+<template id="label-field">
+  <div>
+    <label>${label}</label>
+    <!--${control}-->
+  </div>
+</template>
+<template id="label-nest-field">
+  <label>
+    ${label}
+    <!--${control}-->
+  </label>
+</template>
+<template id="no-label-field">
+  <div>
+    <!--${control}-->
+  </div>
+</template>
+<template id="checkbox-control">
+  <checkbox-control data-path="${path}" data-key="${key}"></checkbox-control>
+</template>
+<template id="cms-file">
+  <cms-file data-path="${path}" data-key="${key}"></cms-file>
+</template>
+<template id="cms-array">
+  <cms-array data-path="${path}" data-key="${key}"></cms-array>
+</template>
+<template id="cms-object">
+  <cms-object data-path="${path}" data-key="${key}"></cms-object>
+</template>
+<template id="radio-group-control">
+  <radio-group-control data-path="${path}" data-key="${key}"></radio-group-control>
+</template>
+<template id="cms-reference">
+  <cms-reference data-path="${path}" data-key="${key}" data-type="${referenceType}"></cms-reference>
+</template>
+<template id="reference-list-control">
+  <reference-list-control data-path="${path}" data-key="${key}" data-type="${referenceType}"></reference-list-control>
+</template>
+<template id="cms-rich-text">
+  <cms-rich-text data-path="${path}" data-key="${key}"></cms-rich-text>
+</template>
+<template id="cms-select">
+  <cms-select data-path="${path}" data-key="${key}"></cms-select>
+</template>
+<template id="cms-slug">
+  <cms-slug data-path="${path}" data-key="${key}"></cms-slug>
+</template>
+<template id="textarea-control">
+  <textarea-control data-path="${path}" data-key="${key}"></textarea-control>
+</template>
+<template id="cms-text">
+  <cms-text data-path="${path}" data-key="${key}"></cms-text>
+</template>
+
+<template id="tabs">
+  <cms-tabs data-name="foo" data-tabs="${tabs}" data-active-tab="${activeTab}">
+    <!--${bars}-->
+  </cms-tabs>
+</template>
+<template id="bar">
+  <span slot="button-${tab}">${tab}</span>
+  <!--${panel}-->
+</template>
+<template id="bar-panel">
+  <div slot="panel-${tab}">
+    <ul>
+      <!--${items}-->
+    </ul>
+  </div>
+</template>
+<input type="hidden" name="${path}.$type" value="${type}" />

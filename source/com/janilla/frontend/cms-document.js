@@ -24,14 +24,14 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class CheckboxControl extends UpdatableHTMLElement {
+export default class CmsDocument extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-subview", "data-updated-at"];
 	}
 
 	static get templateName() {
-		return "checkbox-control";
+		return "cms-document";
 	}
 
 	constructor() {
@@ -39,14 +39,51 @@ export default class CheckboxControl extends UpdatableHTMLElement {
 	}
 
 	async updateDisplay() {
-		const af = this.closest("cms-admin");
-		const p = this.dataset.path;
-		const f = af.field(p);
+		const ap = this.closest("cms-admin");
+		const s = ap.state;
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			label: p.substring(p.lastIndexOf(".") + 1),
-			name: p,
-			checked: f.data
+			title: (() => {
+				let t = ap.title(s.entity);
+				if (!t?.length)
+					t = s.pathSegments[2];
+				return t;
+			})(),
+			tabs: [
+				"edit",
+				Object.hasOwn(s.entity, "versionCount") ? "versions" : null,
+				"api"
+			].filter(x => x).join(),
+			activeTab: (() => {
+				switch (this.dataset.subview) {
+					case "default":
+						return "edit";
+					case "version":
+						return "versions";
+					default:
+						return this.dataset.subview;
+				}
+			})(),
+			edit: {
+				$template: "edit",
+				panel: this.dataset.subview === "default" ? { $template: "edit-panel" } : null
+			},
+			versions: Object.hasOwn(s.entity, "versionCount") ? {
+				$template: "versions",
+				count: s.entity.versionCount,
+				panel: ["versions", "version"].includes(this.dataset.subview) ? {
+					$template: "versions-panel",
+					versionsView: this.dataset.subview === "versions" ? { $template: "versions-view" } : null,
+					versionView: this.dataset.subview === "version" ? { $template: "version-view" } : null
+				} : null
+			} : null,
+			api: {
+				$template: "api",
+				panel: this.dataset.subview === "api" ? {
+					$template: "api-panel",
+					json: JSON.stringify(s.entity, null, "  ")
+				} : null
+			}
 		}));
 	}
 }

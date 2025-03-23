@@ -1,0 +1,74 @@
+cms-array {
+  > ol {
+    gap: 1rem;
+
+    &,
+    > li > article {
+      display: flex;
+      flex-direction: column;
+    }
+
+    > li {
+      article {
+        border: 1px solid rgb(74, 74, 74);
+        border-radius: 0.25rem;
+        overflow: hidden;
+    
+        > header {
+          align-items: center;
+          background: rgb(34, 34, 34);
+          display: flex;
+          gap: 1rem;
+          padding: 0.5rem 1rem;
+    
+          &:has(input:checked) {
+            lucide-icon:first-of-type {
+              display: none;
+            }
+          }
+    
+          &:has(input:not(:checked)) {
+            lucide-icon:last-of-type,
+            + cms-object {
+              display: none;
+            }
+          }
+    
+          h4 {
+            flex: 1;
+          }
+    
+          select {
+            background: transparent;
+            border: none;
+            padding: 0;
+            width: 1rem;
+          }
+    
+          label {
+            cursor: pointer;
+          }
+        }
+  
+        > cms-object {
+          padding: 1rem;
+        }
+      }
+
+      button {
+        align-items: center;
+        background: transparent;
+        border: none;
+        display: flex;
+        gap: 0.5rem;
+        padding: 0;
+
+        lucide-icon {
+          border: 1px solid rgb(141, 141, 141);
+          border-radius: 100%;
+          padding: 0.125rem;
+        }
+      }
+    }
+  }
+}

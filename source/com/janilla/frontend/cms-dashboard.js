@@ -24,29 +24,59 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class CheckboxControl extends UpdatableHTMLElement {
-
-	static get observedAttributes() {
-		return ["data-key", "data-path"];
-	}
+export default class CmsDashboard extends UpdatableHTMLElement {
 
 	static get templateName() {
-		return "checkbox-control";
+		return "cms-dashboard";
 	}
 
 	constructor() {
 		super();
 	}
 
+	connectedCallback() {
+		super.connectedCallback();
+		this.addEventListener("click", this.handleClick);
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.removeEventListener("click", this.handleClick);
+	}
+
+	handleClick = async event => {
+		const b = event.target.closest("button");
+		if (!b)
+			return;
+		event.stopPropagation();
+		const a = b.previousElementSibling;
+		const t = a.getAttribute("href").split("/").at(-1);
+		const e = await (await fetch(`/api/${t}`, {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({})
+		})).json();
+		history.pushState(undefined, "", `/admin/collections/${t}/${e.id}`);
+		dispatchEvent(new CustomEvent("popstate"));
+	}
+
 	async updateDisplay() {
-		const af = this.closest("cms-admin");
-		const p = this.dataset.path;
-		const f = af.field(p);
+		const s = this.closest("cms-admin").state;
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			label: p.substring(p.lastIndexOf(".") + 1),
-			name: p,
-			checked: f.data
+			items: Object.entries(s.schema["Data"]).map(([k, v]) => ({
+				$template: "group",
+				name: k,
+				items: Object.keys(s.schema[v.type]).map(x => {
+					const nn = x.split(/(?=[A-Z])/).map(x => x.toLowerCase());
+					return {
+						$template: "card",
+						href: `/admin/${k}/${nn.join("-")}`,
+						name: nn.join(" "),
+						button: k === "collections" ? { $template: "button" } : null
+					};
+				})
+			}))
 		}));
 	}
 }

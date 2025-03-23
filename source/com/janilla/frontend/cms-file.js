@@ -24,29 +24,59 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class CheckboxControl extends UpdatableHTMLElement {
+export default class CmsFile extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
 		return ["data-key", "data-path"];
 	}
 
 	static get templateName() {
-		return "checkbox-control";
+		return "cms-file";
 	}
 
 	constructor() {
 		super();
 	}
 
+	connectedCallback() {
+		super.connectedCallback();
+		this.addEventListener("change", this.handleChange);
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.removeEventListener("change", this.handleChange);
+	}
+
+	handleChange = event => {
+		console.log("event", event);
+		const el = event.target.closest('[type="file"]');
+		if (el) {
+			const s = this.state;
+			s.file = el.files[0];
+			this.requestUpdate();
+		}
+	}
+
 	async updateDisplay() {
-		const af = this.closest("cms-admin");
+		const a = this.closest("cms-admin");
 		const p = this.dataset.path;
-		const f = af.field(p);
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			label: p.substring(p.lastIndexOf(".") + 1),
+		const f = a.field(p);
+		const s = this.state;
+		this.appendChild(this.interpolateDom(f.data ? {
+			$template: "update",
+			data: f.data
+		} : {
+			$template: "create",
 			name: p,
-			checked: f.data
+			label: !s.file ? {
+				$template: "label",
+				name: p
+			} : null,
+			input: s.file ? {
+				$template: "input",
+				value: s.file.name
+			} : null
 		}));
 	}
 }

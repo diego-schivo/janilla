@@ -24,14 +24,14 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class CheckboxControl extends UpdatableHTMLElement {
+export default class CmsSelect extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
 		return ["data-key", "data-path"];
 	}
 
 	static get templateName() {
-		return "checkbox-control";
+		return "cms-select";
 	}
 
 	constructor() {
@@ -39,14 +39,18 @@ export default class CheckboxControl extends UpdatableHTMLElement {
 	}
 
 	async updateDisplay() {
-		const af = this.closest("cms-admin");
+		const ap = this.closest("cms-admin");
 		const p = this.dataset.path;
-		const f = af.field(p);
+		const f = ap.field(p);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			label: p.substring(p.lastIndexOf(".") + 1),
 			name: p,
-			checked: f.data
+			options: ["", ...ap.options(f)].map(x => ({
+				$template: "option",
+				value: x,
+				selected: x == (f.data ?? ""),
+				text: x
+			}))
 		}));
 	}
 }

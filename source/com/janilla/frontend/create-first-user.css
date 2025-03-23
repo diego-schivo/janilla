@@ -1,4 +1,4 @@
-admin-panel:has(create-first-user) {
+cms-admin:has(create-first-user) {
   box-sizing: border-box;
   display: flex;
   height: 100vh;

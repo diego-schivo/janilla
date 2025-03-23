@@ -1,4 +1,4 @@
-admin-panel:has(login-element) {
+cms-admin:has(login-element) {
   box-sizing: border-box;
   display: flex;
   height: 100vh;

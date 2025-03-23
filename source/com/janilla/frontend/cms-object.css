@@ -1,0 +1,16 @@
+cms-object {
+  > ul {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    > li {
+      > div,
+      > label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+<ol>
+  <!--${items}-->
+  <li>
+    <button type="button">
+      <lucide-icon data-name="plus"></lucide-icon>
+      add
+    </button>
+  </li>
+</ol>
+<template id="item">
+  <li>
+    <article>
+      <header>
+        <h4>${title}</h4>
+        <select>
+          <option>&hellip;</option>
+          <option value="remove">Remove</option>
+        </select>
+        <label>
+          <input type="checkbox" class="visually-hidden" checked="${checked}" />
+          <lucide-icon data-name="chevron-down"></lucide-icon>
+          <lucide-icon data-name="chevron-up"></lucide-icon>
+        </label>
+      </header>
+      <!--${field}-->
+    </article>
+  </li>
+</template>
+<template id="object">
+  <cms-object data-path="${path}" data-key="${key}"></cms-object>
+</template>
+<dialog>
+  <!--${types}-->
+  <template id="type">
+    <label>
+      <input type="radio" name="type" value="${name}" checked="${checked}" />
+      ${name}
+    </label>
+  </template>
+</dialog>

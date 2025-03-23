@@ -24,29 +24,49 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class CheckboxControl extends UpdatableHTMLElement {
+export default class CmsSlug extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
 		return ["data-key", "data-path"];
 	}
 
 	static get templateName() {
-		return "checkbox-control";
+		return "cms-slug";
 	}
 
 	constructor() {
 		super();
 	}
 
+	connectedCallback() {
+		super.connectedCallback();
+		this.state.adminPanel = this.closest("cms-admin");
+		this.state.adminPanel.addEventListener("input", this.handleInput);
+	}
+
+	disconnectedCallback() {
+		this.state.adminPanel.removeEventListener("input", this.handleInput);
+		super.disconnectedCallback();
+	}
+
+	handleInput = event => {
+		const el = event.target.closest('input[name="title"]');
+		if (!el)
+			return;
+		const s = this.state;
+		s.field.parent.data[s.field.name] = el.value.split(/\W+/).filter(x => x).map(x => x.toLowerCase()).join("-");
+		s.field = s.adminPanel.field(s.field.name, s.field.parent);
+		this.requestUpdate();
+	}
+
 	async updateDisplay() {
-		const af = this.closest("cms-admin");
 		const p = this.dataset.path;
-		const f = af.field(p);
+		const s = this.state;
+		s.field ??= s.adminPanel.field(p);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			label: p.substring(p.lastIndexOf(".") + 1),
 			name: p,
-			checked: f.data
+			value: s.field.data
 		}));
 	}
 }

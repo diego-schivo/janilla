@@ -1,27 +1,29 @@
 @import "admin-base.css";
 
-@import "admin-panel.css";
+@import "cms-admin.css";
 @import "checkbox-control.css";
-@import "collection-list.css";
+@import "cms-collection.css";
 @import "create-first-user.css";
-@import "dashboard-view.css";
-@import "document.css";
-@import "edit.css";
-@import "file-control.css";
-@import "list-control.css";
+@import "cms-dashboard.css";
+@import "cms-document.css";
+@import "cms-edit.css";
+@import "cms-file.css";
+@import "cms-array.css";
 @import "login.css";
 @import "lucide-icon.css";
-@import "object-control.css";
+@import "cms-object.css";
 @import "radio-group-control.css";
-@import "reference-control.css";
+@import "cms-reference.css";
 @import "reference-list-control.css";
-@import "rich-text-control.css";
-@import "select-control.css";
-@import "slug-control.css";
-@import "tabs.css";
+@import "cms-rich-text.css";
+@import "cms-select.css";
+@import "cms-slug.css";
+@import "cms-tabs.css";
+/*
 @import "tabs-field.css";
+*/
 @import "textarea-control.css";
-@import "text-control.css";
-@import "toast.css";
+@import "cms-text.css";
+@import "cms-toasts.css";
 @import "version.css";
 @import "versions.css";

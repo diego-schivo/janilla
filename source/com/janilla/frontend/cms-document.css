@@ -1,0 +1,20 @@
+cms-document {
+  cms-tabs {
+    [slot^="button-"] {
+      display: flex;
+      gap: 0.25rem;
+
+      em {
+        background: rgb(47, 47, 47);
+        border-radius: 0.25rem;
+        font-style: normal;
+        padding: 0 0.2rem;
+      }
+    }
+
+    textarea {
+      box-sizing: border-box;
+      width: 100%;
+    }
+  }
+}

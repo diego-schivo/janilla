@@ -24,29 +24,34 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class CheckboxControl extends UpdatableHTMLElement {
-
-	static get observedAttributes() {
-		return ["data-key", "data-path"];
-	}
+export default class CmsToasts extends UpdatableHTMLElement {
 
 	static get templateName() {
-		return "checkbox-control";
+		return "cms-toasts";
 	}
 
 	constructor() {
 		super();
 	}
 
+	renderToast(text) {
+		const s = this.state;
+		const o = { text };
+		(s.items ??= []).push(o);
+		this.requestUpdate();
+		setTimeout(() => {
+			s.items.splice(s.items.findIndex(x => x === o), 1);
+			this.requestUpdate();
+		}, 4000);
+	}
+
 	async updateDisplay() {
-		const af = this.closest("cms-admin");
-		const p = this.dataset.path;
-		const f = af.field(p);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			label: p.substring(p.lastIndexOf(".") + 1),
-			name: p,
-			checked: f.data
+			items: this.state.items?.map(x => ({
+				$template: "item",
+				...x
+			}))
 		}));
 	}
 }

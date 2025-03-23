@@ -24,10 +24,14 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class VersionView extends UpdatableHTMLElement {
+export default class CmsCollection extends UpdatableHTMLElement {
+
+	static get observedAttributes() {
+		return ["data-ids", "data-name"];
+	}
 
 	static get templateName() {
-		return "version";
+		return "cms-collection";
 	}
 
 	constructor() {
@@ -46,39 +50,73 @@ export default class VersionView extends UpdatableHTMLElement {
 
 	handleClick = async event => {
 		const b = event.target.closest("button");
-		if (!b?.name)
+		if (!b)
 			return;
 		event.stopPropagation();
 		switch (b.name) {
-			case "cancel":
-				this.querySelector("dialog").close();
-				break;
-			case "confirm":
-				const ap = this.closest("cms-admin");
-				const s = ap.state;
-				s.entity = await (await fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.version.id}`, { method: "POST" })).json();
-				ap.querySelector("cms-toasts").renderToast("Restored successfully.");
-				history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 3).join("/")}`);
+			case "create":
+				const n = this.dataset.name;
+				const e = await (await fetch(`/api/${n}`, {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ $type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0] })
+				})).json();
+				history.pushState(undefined, "", `/admin/collections/${n}/${e.id}`);
 				dispatchEvent(new CustomEvent("popstate"));
-				break;
-			case "restore":
-				this.querySelector("dialog").showModal();
 				break;
 		}
 	}
 
 	async updateDisplay() {
+		const s = this.state;
+		const pe = this.parentElement;
+		const pen = pe.tagName.toLowerCase();
+		s.dialog ??= pen === "dialog";
+		const n = this.dataset.name;
+		switch (pen) {
+			case "cms-reference":
+				s.data = pe.state.field.data?.id ? [pe.state.field.data] : [];
+				break;
+			case "reference-list-control":
+				s.data ??= pe.state.field.data;
+				break;
+			default:
+				s.data ??= await (await fetch(`/api/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
+				break;
+		}
 		const ap = this.closest("cms-admin");
-		const s = ap.state;
-		const ua = ap.dateTimeFormat.format(new Date(s.version.updatedAt));
+		const hh = ap.headers(n);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			title: ua,
-			json: JSON.stringify(s.version.entity, null, "  "),
-			dialog: {
-				$template: "dialog",
-				dateTime: ua
-			}
+			header: !["cms-reference", "reference-list-control"].includes(pen) ? {
+				$template: "header",
+				title: n
+			} : null,
+			heads: hh.map(x => ({
+				$template: "head",
+				text: x
+			})),
+			rows: s.data?.map(x => ({
+				$template: "row",
+				cells: (() => {
+					const cc = hh.map(y => {
+						const z = x[y];
+						return {
+							content: typeof z === "object" && z?.$type === "File" ? {
+								$template: "media",
+								...x
+							} : y === "updatedAt" ? ap.dateTimeFormat.format(new Date(z)) : z
+						};
+					});
+					cc[0].href = `/admin/collections/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${x.id}`;
+					if (!cc[0].content)
+						cc[0].content = x.id;
+					return cc;
+				})().map(y => ({
+					$template: y.href ? "link-cell" : "cell",
+					...y
+				}))
+			}))
 		}));
 	}
 }

@@ -35,7 +35,7 @@ export default class VersionsView extends UpdatableHTMLElement {
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("admin-panel");
+		const ap = this.closest("cms-admin");
 		const hh = ["updatedAt", "id", "status"];
 		this.appendChild(this.interpolateDom({
 			$template: "",
