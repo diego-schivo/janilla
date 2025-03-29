@@ -70,4 +70,15 @@ cms-edit {
       margin-top: 0.5rem;
     }
   }
+
+  @media (min-width: 1441px) {
+    form {
+      display: grid;
+      grid-template: auto 1fr / 1fr auto;
+  
+      > cms-object {
+        grid-column: 1 / span 2;
+      }
+    }
+  }
 }

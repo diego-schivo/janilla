@@ -208,12 +208,16 @@ public class Persistence {
 
 	protected static class Configuration {
 
-		protected Map<String, IndexFactory<?, ?>> indexFactories = new HashMap<>();
-
 		protected Map<Class<?>, Crud<?>> cruds = new HashMap<>();
+
+		protected Map<String, IndexFactory<?, ?>> indexFactories = new HashMap<>();
 
 		public Map<Class<?>, Crud<?>> cruds() {
 			return cruds;
+		}
+
+		public Map<String, IndexFactory<?, ?>> indexFactories() {
+			return indexFactories;
 		}
 	}
 

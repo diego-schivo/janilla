@@ -24,10 +24,14 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class VersionView extends UpdatableHTMLElement {
+export default class CmsResetPassword extends UpdatableHTMLElement {
+
+	static get observedAttributes() {
+		return ["data-token"];
+	}
 
 	static get templateName() {
-		return "version";
+		return "cms-reset-password";
 	}
 
 	constructor() {
@@ -36,49 +40,30 @@ export default class VersionView extends UpdatableHTMLElement {
 
 	connectedCallback() {
 		super.connectedCallback();
-		this.addEventListener("click", this.handleClick);
+		this.addEventListener("submit", this.handleSubmit);
 	}
 
 	disconnectedCallback() {
 		super.disconnectedCallback();
-		this.removeEventListener("click", this.handleClick);
+		this.removeEventListener("submit", this.handleSubmit);
 	}
 
-	handleClick = async event => {
-		const b = event.target.closest("button");
-		if (!b?.name)
-			return;
+	handleSubmit = async event => {
+		event.preventDefault();
 		event.stopPropagation();
-		switch (b.name) {
-			case "cancel":
-				this.querySelector("dialog").close();
-				break;
-			case "confirm":
-				const a = this.closest("cms-admin");
-				const s = a.state;
-				s.entity = await (await fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.version.id}`, { method: "POST" })).json();
-				a.querySelector("cms-toasts").renderToast("Restored successfully.");
-				history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 3).join("/")}`);
-				dispatchEvent(new CustomEvent("popstate"));
-				break;
-			case "restore":
-				this.querySelector("dialog").showModal();
-				break;
-		}
+		await (await fetch("/api/users/reset-password", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
+		})).json();
+		history.pushState(undefined, "", "/admin");
+		dispatchEvent(new CustomEvent("popstate"));
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("cms-admin");
-		const s = ap.state;
-		const ua = ap.dateTimeFormat.format(new Date(s.version.updatedAt));
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			title: ua,
-			json: JSON.stringify(s.version.document, null, "  "),
-			dialog: {
-				$template: "dialog",
-				dateTime: ua
-			}
+			token: this.dataset.token
 		}));
 	}
 }

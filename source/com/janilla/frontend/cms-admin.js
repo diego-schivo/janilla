@@ -27,7 +27,7 @@ import { UpdatableHTMLElement } from "./updatable-html-element.js";
 export default class CmsAdmin extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
-		return ["data-path"];
+		return ["data-email", "data-path"];
 	}
 
 	static get templateName() {
@@ -76,7 +76,9 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 			case "logout":
 				await fetch("/api/users/logout", { method: "POST" });
 				//b.closest("dialog").close();
-				location.href = "/admin";
+				delete this.state.me;
+				history.pushState(undefined, "", "/admin");
+				dispatchEvent(new CustomEvent("popstate"));
 				break;
 		}
 	}
@@ -109,18 +111,22 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 			"version"
 		].forEach(x => delete s[x]);
 		s.me ??= await (await fetch("/api/users/me")).json();
+		if (this.dataset.email !== s.me?.email) {
+			this.closest("root-element").requestUpdate();
+			return;
+		}
 		let p = this.dataset.path;
-		if (p === "/account")
+		if (s.me && p === "/account")
 			p = `/collections/users/${s.me.id}`;
 		s.pathSegments = p.length > 1 ? p.substring(1).split("/") : [];
 		if (!s.me) {
-			if (!["/login", "/create-first-user"].includes(p)) {
+			if (!["/create-first-user", "/login", "/forgot", "/reset"].includes(p) && !p.startsWith("/reset/")) {
 				history.pushState(undefined, "", "/admin/login");
 				dispatchEvent(new CustomEvent("popstate"));
 				return;
 			}
 		} else {
-			if (["/login", "/create-first-user"].includes(p)) {
+			if (["/create-first-user", "/login", "/forgot"].includes(p) || p.startsWith("/reset/")) {
 				history.pushState(undefined, "", "/admin");
 				dispatchEvent(new CustomEvent("popstate"));
 				return;
@@ -159,6 +165,19 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 		s.computeState ??= this.computeState();
 		this.appendChild(this.interpolateDom({
 			$template: "",
+			aside: s.me && s.schema ? {
+				$template: "aside",
+				groups: Object.entries(s.schema["Data"]).map(([k, v]) => ({
+					$template: "group",
+					name: k,
+					checked: true,
+					links: Object.keys(s.schema[v.type]).map(x => ({
+						$template: "link",
+						href: `/admin/${k}/${x}`,
+						name: x
+					}))
+				}))
+			} : null,
 			header: s.me ? {
 				$template: "header",
 				items: (() => {
@@ -215,10 +234,17 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 			content: (() => {
 				switch (this.dataset.path) {
 					case "/create-first-user":
-						return { $template: "create-first-user" };
+						return { $template: "first-user" };
 					case "/login":
 						return { $template: "login" };
+					case "/forgot":
+						return { $template: "forgot-password" };
 				}
+				if (this.dataset.path.startsWith("/reset/"))
+					return {
+						$template: "reset-password",
+						token: this.dataset.path.substring("/reset/".length)
+					};
 				if (!s.pathSegments)
 					return { $template: "loading" };
 				switch (s.pathSegments[0]) {
@@ -238,7 +264,7 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 							updatedAt: s.entity.updatedAt
 						} : { $template: "loading" };
 					default:
-						return { $template: "dashboard" };
+						return { $template: s.schema ? "dashboard" : "loading" };
 				}
 			})(),
 			dialog: s.me && s.schema ? {
@@ -268,8 +294,8 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 			for (const n of path.split("."))
 				if (f.type === "List") {
 					const i = parseInt(n);
-					const d = f.data[i] ??= {};
-					const t = d.$type ?? f.elementTypes[0];
+					const d = f.data?.[i];
+					const t = d?.$type; // ?? f.elementTypes[0];
 					f = {
 						parent: f,
 						index: i,
@@ -284,18 +310,6 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 						name: n,
 						...p,
 						properties: p.type !== "List" && p.type !== "String" ? s.schema[p.type] : null,
-						/*
-						data: f.data[n] ??= (() => {
-							switch (p.type) {
-								case "List":
-									return [];
-								case "Long":
-									return p.referenceType ? {} : null;
-								default:
-									return null;
-							}
-						})()
-						*/
 						data: f.data?.[n]
 					};
 				}
@@ -306,7 +320,7 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 		if (field.data)
 			return;
 		this.initField(field.parent);
-		field.parent.data[field.name] = field.data = field.type === "List" ? [] : {};
+		field.parent.data[Array.isArray(field.parent.data) ? field.index : field.name] = field.data = field.type === "List" ? [] : {};
 	}
 
 	label(path) {
@@ -365,6 +379,10 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 	}
 
 	preview(entity) {
+		return null;
+	}
+
+	sidebar(type) {
 		return null;
 	}
 }

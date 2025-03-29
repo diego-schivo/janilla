@@ -65,25 +65,25 @@ export default class CmsDocument extends UpdatableHTMLElement {
 				}
 			})(),
 			edit: {
-				$template: "edit",
-				panel: this.dataset.subview === "default" ? { $template: "edit-panel" } : null
+				$template: "edit"
 			},
 			versions: Object.hasOwn(s.entity, "versionCount") ? {
 				$template: "versions",
-				count: s.entity.versionCount,
-				panel: ["versions", "version"].includes(this.dataset.subview) ? {
-					$template: "versions-panel",
-					versionsView: this.dataset.subview === "versions" ? { $template: "versions-view" } : null,
-					versionView: this.dataset.subview === "version" ? { $template: "version-view" } : null
-				} : null
+				count: s.entity.versionCount
 			} : null,
 			api: {
-				$template: "api",
-				panel: this.dataset.subview === "api" ? {
-					$template: "api-panel",
-					json: JSON.stringify(s.entity, null, "  ")
-				} : null
-			}
+				$template: "api"
+			},
+			editPanel: this.dataset.subview === "default" ? { $template: "edit-panel" } : null,
+			versionsPanel: ["versions", "version"].includes(this.dataset.subview) ? {
+				$template: "versions-panel",
+				versionsView: this.dataset.subview === "versions" ? { $template: "versions-view" } : null,
+				versionView: this.dataset.subview === "version" ? { $template: "version-view" } : null
+			} : null,
+			apiPanel: this.dataset.subview === "api" ? {
+				$template: "api-panel",
+				json: JSON.stringify(s.entity, null, "  ")
+			} : null
 		}));
 	}
 }

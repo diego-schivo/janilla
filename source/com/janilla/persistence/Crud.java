@@ -82,7 +82,7 @@ public class Crud<E> {
 		if (id <= 0)
 			return null;
 		var o = persistence.database.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> s.read(id)), false);
-		return o != null ? parse(o) : null;
+		return o != null ? parse((String) o) : null;
 	}
 
 	public Stream<E> read(long[] ids) {
@@ -91,7 +91,7 @@ public class Crud<E> {
 		return persistence.database
 				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
 					var o = s.read(x);
-					return o != null ? parse(o) : null;
+					return o != null ? parse((String) o) : null;
 				})), false);
 	}
 
@@ -107,7 +107,7 @@ public class Crud<E> {
 			}
 			var a = new A();
 			ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
-				a.e1 = parse(x);
+				a.e1 = parse((String) x);
 				a.e2 = beforeUpdate(operator.apply(a.e1));
 				return format(a.e2);
 			}));
@@ -122,7 +122,7 @@ public class Crud<E> {
 			return null;
 		return persistence.database.perform((ss, _) -> {
 			var o = ss.perform(type.getSimpleName(), s -> s.delete(id));
-			var e = parse(o);
+			var e = parse((String) o);
 			updateIndexes(e, null, id);
 			return e;
 		}, true);
@@ -395,14 +395,22 @@ public class Crud<E> {
 		return Json.format(tt);
 	}
 
-	protected E parse(Object object) {
+	protected E parse(String string) {
+		return parse(string, type);
+	}
+
+	protected <T> T parse(String string, Class<T> target) {
 		var c = new Converter(persistence.typeResolver);
 		@SuppressWarnings("unchecked")
-		var e = (E) c.convert(Json.parse((String) object), type);
-		return e;
+		var t = (T) c.convert(Json.parse(string), target);
+		return t;
 	}
 
 	protected void updateIndexes(E entity1, E entity2, long id) {
+		updateIndexes(entity1, entity2, id, this::getIndexName);
+	}
+
+	protected void updateIndexes(E entity1, E entity2, long id, UnaryOperator<String> indexName) {
 		var im1 = entity1 != null ? getIndexMap(entity1, id) : null;
 		var im2 = entity2 != null ? getIndexMap(entity2, id) : null;
 		for (var k : (im1 != null ? im1 : im2).keySet()) {
@@ -414,9 +422,14 @@ public class Crud<E> {
 				var k2 = v2 != null ? v2.getKey() : null;
 				var m1 = v1 == null ? null : k2 instanceof Collection<?> c ? toMap(v1, x -> !c.contains(x)) : toMap(v1);
 				var m2 = v2 == null ? null : k1 instanceof Collection<?> c ? toMap(v2, x -> !c.contains(x)) : toMap(v2);
-				updateIndex(k, m1, m2);
+				updateIndex(indexName.apply(k), m1, m2);
 			}
 		}
+	}
+
+	protected String getIndexName(String key) {
+		return Stream.of(type.getSimpleName(), key).filter(x -> x != null && !x.isEmpty())
+				.collect(Collectors.joining("."));
 	}
 
 	protected Map<String, Map.Entry<Object, Object>> getIndexMap(E entity, long id) {
@@ -467,9 +480,9 @@ public class Crud<E> {
 		return m;
 	}
 
-	protected void updateIndex(String name, Map<Object, Object> remove, Map<Object, Object> add) {
-		var n = Stream.of(type.getSimpleName(), name).filter(x -> x != null && !x.isEmpty())
-				.collect(Collectors.joining("."));
+	protected void updateIndex(String n, Map<Object, Object> remove, Map<Object, Object> add) {
+//		var n = Stream.of(type.getSimpleName(), name).filter(x -> x != null && !x.isEmpty())
+//				.collect(Collectors.joining("."));
 //		System.out.println("Crud.updateIndex, n=" + n + ", remove=" + remove + ", add=" + add);
 		persistence.database.perform((_, ii) -> ii.perform(n, i -> {
 			if (remove != null)
@@ -488,13 +501,9 @@ public class Crud<E> {
 			case Object[] oo -> (Long) oo[oo.length - 1];
 			default -> (Long) x;
 			};
-//			System.out.println("y=" + y);
 			return y;
 		});
 	}
-
-//	public record Entity(long id) {
-//	}
 
 	public record IdPage(long[] ids, long total) {
 

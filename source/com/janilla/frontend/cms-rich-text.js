@@ -103,6 +103,8 @@ export default class CmsRichText extends UpdatableHTMLElement {
 		const p = this.dataset.path;
 		const f = ap.field(p);
 		const ce = this.querySelector("[contenteditable]");
+		const h = this.querySelector('[type="hidden"]');
+		const v = h?.value;
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			items: ["type", "heading-1", "heading-2", "heading-3", "heading-4", "bold", "italic", "underline", "link"].map(x => ({
@@ -115,5 +117,11 @@ export default class CmsRichText extends UpdatableHTMLElement {
 		}));
 		if (!ce)
 			this.querySelector("[contenteditable]").innerHTML = f.data ?? "";
+		if (h && h.value !== v)
+			h.dispatchEvent(new InputEvent("input", {
+				view: window,
+				bubbles: true,
+				cancelable: true,
+			}));
 	}
 }

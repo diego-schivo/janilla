@@ -13,4 +13,21 @@ cms-object {
       }
     }
   }
+
+  @media (min-width: 1441px) {
+    display: flex;
+
+    > ul {
+      &:first-child {
+        flex: 1;
+      }
+
+      &:nth-child(2) {
+        border-left: 1px solid rgb(47, 47, 47);
+        flex: 0.5;
+        margin-left: 2.5rem;
+        padding-left: 2.5rem;
+      }
+    }
+  }
 }

@@ -62,11 +62,15 @@ export default class CmsArray extends UpdatableHTMLElement {
 		} else if (event.target.matches('[type="radio"]')) {
 			event.stopPropagation();
 			event.target.closest("dialog").close();
+			const a = this.closest("cms-admin");
+			a.initField(s.field);
 			s.field.data.push({ $type: event.target.value });
+			console.log("x", s.field.data);
 			s.items.push({
 				key: s.nextKey++,
 				expand: true
 			});
+			console.log("x", JSON.stringify(a.state.entity));
 			this.requestUpdate();
 		} else if (event.target.matches('[type="checkbox"]')) {
 			event.stopPropagation();

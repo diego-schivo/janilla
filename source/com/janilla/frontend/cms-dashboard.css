@@ -39,4 +39,12 @@ cms-dashboard {
     border-radius: 9999px;
     padding: 0.15rem;
   }
+
+  @media (min-width: 1441px) {
+    li ul {
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
 }

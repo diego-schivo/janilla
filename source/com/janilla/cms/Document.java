@@ -22,42 +22,24 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+package com.janilla.cms;
 
-export default class Login extends UpdatableHTMLElement {
+import java.time.Instant;
 
-	static get templateName() {
-		return "login";
-	}
+public interface Document {
 
-	constructor() {
-		super();
-	}
+	Long id();
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("submit", this.handleSubmit);
-	}
+	Instant createdAt();
 
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("submit", this.handleSubmit);
-	}
+	Instant updatedAt();
 
-	handleSubmit = async event => {
-		event.preventDefault();
-		event.stopPropagation();
-		await (await fetch("/api/users/login", {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
-		})).json();
-		location.href = "/admin";
-	}
+	Status status();
 
-	async updateDisplay() {
-		this.appendChild(this.interpolateDom({
-			$template: ""
-		}));
+	Instant publishedAt();
+
+	public enum Status {
+
+		DRAFT, PUBLISHED
 	}
 }

@@ -24,10 +24,10 @@
  */
 import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-export default class CreateFirstUser extends UpdatableHTMLElement {
+export default class CmsLogin extends UpdatableHTMLElement {
 
 	static get templateName() {
-		return "create-first-user";
+		return "cms-login";
 	}
 
 	constructor() {
@@ -47,12 +47,16 @@ export default class CreateFirstUser extends UpdatableHTMLElement {
 	handleSubmit = async event => {
 		event.preventDefault();
 		event.stopPropagation();
-		await (await fetch("/api/users/first-register", {
+		const r = await fetch("/api/users/login", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
-		})).json();
-		location.href = "/admin";
+		});
+		if (r.ok) {
+			history.pushState(undefined, "", "/admin");
+			dispatchEvent(new CustomEvent("popstate"));
+		} else
+			this.closest("cms-admin").querySelector("cms-toasts").renderToast(await r.json(), "error");
 	}
 
 	async updateDisplay() {

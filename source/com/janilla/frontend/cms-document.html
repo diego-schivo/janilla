@@ -4,10 +4,14 @@
   <!--${versions}-->
   <!--${api}-->
 </cms-tabs>
+<cms-tabs data-name="document-subview" data-tabs="${tabs}" data-active-tab="${activeTab}" data-no-tab-list>
+  <!--${editPanel}-->
+  <!--${versionsPanel}-->
+  <!--${apiPanel}-->
+</cms-tabs>
 
 <template id="edit">
   <span slot="button-edit">edit</span>
-  <!--${panel}-->
 </template>
 
 <template id="edit-panel">
@@ -20,7 +24,6 @@
   <span slot="button-versions">
     versions <em>${count}</em>
   </span>
-  <!--${panel}-->
 </template>
 
 <template id="versions-panel">
@@ -40,7 +43,6 @@
 
 <template id="api">
   <span slot="button-api">api</span>
-  <!--${panel}-->
 </template>
 
 <template id="api-panel">

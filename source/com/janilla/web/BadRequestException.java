@@ -29,6 +29,9 @@ public class BadRequestException extends RuntimeException {
 
 	private static final long serialVersionUID = -8828041259137567722L;
 
+	public BadRequestException() {
+	}
+
 	public BadRequestException(String message) {
 		super(message);
 	}

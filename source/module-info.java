@@ -32,6 +32,7 @@ module com.janilla {
 	exports com.janilla.net;
 	exports com.janilla.persistence;
 	exports com.janilla.reflect;
+	exports com.janilla.smtp;
 	exports com.janilla.util;
 	exports com.janilla.web;
 

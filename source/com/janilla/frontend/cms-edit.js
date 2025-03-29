@@ -50,20 +50,23 @@ export default class CmsEdit extends UpdatableHTMLElement {
 
 	handleChange = async event => {
 		const el = event.target;
-		if (el.matches("select:not([name])")) {
+		//if (el.matches("[name]") && this.state.drafts)
+			//this.requestAutoSave();
+		if (el.matches(":not([name])")) {
 			event.stopPropagation();
-			const p = this.dataset.entityPath;
-			const nn = p ? p.split(".") : [];
-			await (await fetch(`/api/${nn[1]}/${nn[2]}`, { method: "DELETE" })).json();
-			return;
+			if (el.value === "delete") {
+				const a = this.closest("cms-admin");
+				const s = a.state;
+				await (await fetch(s.entityUrl, { method: "DELETE" })).json();
+				history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 2).join("/")}`);
+				dispatchEvent(new CustomEvent("popstate"));
+			}
 		}
-
-		if (el.matches("select") && this.state.drafts)
-			this.requestAutoSave();
 	}
 
-	handleInput = () => {
-		if (this.state.drafts)
+	handleInput = event => {
+		const el = event.target;
+		if (el.matches("[name]") && this.state.drafts)
 			this.requestAutoSave();
 	}
 
@@ -99,8 +102,7 @@ export default class CmsEdit extends UpdatableHTMLElement {
 	}
 
 	async saveEntity(auto) {
-		const f = this.querySelector("form");
-		const kkvv = [...new FormData(f).entries()];
+		const kkvv = [...new FormData(this.querySelector("form")).entries()];
 		const kkvv2 = kkvv.filter(([_, x]) => x instanceof File);
 		if (kkvv2.length) {
 			const fd = new FormData();
@@ -114,17 +116,21 @@ export default class CmsEdit extends UpdatableHTMLElement {
 		for (const [k, v] of kkvv) {
 			const i = k.lastIndexOf(".");
 			let f = a.field(k.substring(0, i));
-			if (!f.data)
-				f.parent.data[f.name] = f.data = {};
+			//if (!f.data)
+			//f.parent.data[f.name] = f.data = {};
+			a.initField(f);
 			f.data[k.substring(i + 1)] = v instanceof File ? { name: v.name } : v;
+			console.log(k, v, f);
 		}
 		const s = a.state;
+		console.log("s", s);
 		const u = new URL(s.entityUrl, location.href);
 		if (auto) {
 			u.searchParams.append("draft", true);
 			u.searchParams.append("autosave", true);
 		}
-		s.entity = await (await fetch(u, {
+		//s.entity = await (await fetch(u, {
+		await (await fetch(u, {
 			method: "PUT",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(s.entity)

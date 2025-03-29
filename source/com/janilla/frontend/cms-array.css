@@ -55,7 +55,7 @@ cms-array {
         }
       }
 
-      button {
+      > button {
         align-items: center;
         background: transparent;
         border: none;

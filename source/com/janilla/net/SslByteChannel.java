@@ -214,6 +214,7 @@ public class SslByteChannel extends FilterByteChannel<ByteChannel> {
 						applicationInput.limit(p);
 					applicationInput.compact();
 					z += n;
+					break;
 				}
 			} while (dst.hasRemaining());
 			return z;
@@ -420,7 +421,7 @@ public class SslByteChannel extends FilterByteChannel<ByteChannel> {
 						packetInput.compact();
 					}
 				}
-				yield 1;
+				yield engine.isInboundDone() ? 2 : 1;
 			}
 			case 2 -> {
 //					engine.closeInbound();

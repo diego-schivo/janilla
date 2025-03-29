@@ -1,14 +1,39 @@
 cms-toasts {
-  color: rgb(235, 235, 235);
-  bottom: 1rem;
-  left: 1rem;
-  position: fixed;
-  right: 1rem;
+  ol {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: fixed;
+  }
 
   li {
     background: rgb(47, 47, 47);
     border: 1px solid rgb(87, 87, 87);
     border-radius: 0.25rem;
+    color: rgb(235, 235, 235);
+    font-weight: 600;
     padding: 1rem;
+  }
+
+  .error {
+    background: rgb(64, 32, 29);
+    border: 1px solid rgb(123, 41, 39);
+    color: rgb(254, 193, 188);
+  }
+
+  @media (max-width: 1440px) {
+    ol {
+      bottom: 1rem;
+      left: 1rem;
+      right: 1rem;
+    }
+  }
+
+  @media (min-width: 1441px) {
+    ol {
+      bottom: 1.875rem;
+      right: 1.875rem;
+      width: 22.25rem;
+    }
   }
 }

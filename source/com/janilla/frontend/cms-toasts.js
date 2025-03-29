@@ -34,9 +34,12 @@ export default class CmsToasts extends UpdatableHTMLElement {
 		super();
 	}
 
-	renderToast(text) {
+	renderToast(message, level) {
 		const s = this.state;
-		const o = { text };
+		const o = {
+			message,
+			level
+		};
 		(s.items ??= []).push(o);
 		this.requestUpdate();
 		setTimeout(() => {

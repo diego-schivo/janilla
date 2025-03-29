@@ -27,7 +27,7 @@ import { UpdatableHTMLElement } from "./updatable-html-element.js";
 export default class CmsTabs extends UpdatableHTMLElement {
 
 	static get observedAttributes() {
-		return ["data-active-tab", "data-name", "data-tab"];
+		return ["data-active-tab", "data-name", "data-no-tab-list", "data-tab"];
 	}
 
 	static get templateName() {
@@ -82,12 +82,15 @@ export default class CmsTabs extends UpdatableHTMLElement {
 		s.activeTab ??= this.dataset.activeTab ?? s.tabs[0];
 		this.shadowRoot.appendChild(this.interpolateDom({
 			$template: "",
-			buttons: s.tabs.map(x => ({
-				$template: "tabs-button",
-				panel: this.dataset.name,
-				tab: x,
-				selected: `${x === s.activeTab}`
-			})),
+			tablist: this.dataset.noTabList === undefined ? {
+				$template: "tablist",
+				buttons: s.tabs.map(x => ({
+					$template: "tabs-button",
+					panel: this.dataset.name,
+					tab: x,
+					selected: `${x === s.activeTab}`
+				}))
+			} : null,
 			panels: s.tabs.map(x => ({
 				$template: "tabs-panel",
 				panel: this.dataset.name,

@@ -26,14 +26,14 @@ package com.janilla.cms;
 
 import java.util.stream.Stream;
 
+import com.janilla.http.HttpExchange;
 import com.janilla.json.MapAndType;
-import com.janilla.persistence.Crud;
 import com.janilla.persistence.Persistence;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
 
-public abstract class CollectionApi<E extends Entity> {
+public abstract class CollectionApi<E extends Document> {
 
 	protected final Class<E> type;
 
@@ -49,26 +49,18 @@ public abstract class CollectionApi<E extends Entity> {
 	}
 
 	@Handle(method = "GET", path = "(\\d+)")
-	public E read(long id) {
-		var e = crud().read(id);
+	public E read(long id, HttpExchange exchange) {
+		var e = crud().read(id, drafts(exchange));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
 		return e;
 	}
 
-//	@Handle(method = "PUT", path = "(\\d+)")
-//	public E update(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
-//		var e = crud().update(id, x -> Reflection.copy(entity, x, y -> !Set.of("id").contains(y)));
-//		if (e == null)
-//			throw new NotFoundException("entity " + id);
-//		return e;
-//	}
-
 	@Handle(method = "PUT", path = "(\\d+)")
 	public E update(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft,
 			Boolean autosave) {
-		var e = ((EntityCrud<E>) crud()).update(id, entity,
-				Boolean.TRUE.equals(draft) ? Entity.Status.DRAFT : Entity.Status.PUBLISHED,
+		var e = crud().update(id, entity,
+				Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED,
 				!Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
@@ -85,21 +77,23 @@ public abstract class CollectionApi<E extends Entity> {
 
 	@Handle(method = "GET", path = "(\\d+)/versions")
 	public Stream<Version<E>> readVersions(long id) {
-		return ((EntityCrud<E>) crud()).readVersions(id);
+		return crud().readVersions(id);
 	}
 
 	@Handle(method = "GET", path = "versions/(\\d+)")
 	public Version<E> readVersion(long versionId) {
-		return ((EntityCrud<E>) crud()).readVersion(versionId);
+		return crud().readVersion(versionId);
 	}
 
 	@Handle(method = "POST", path = "versions/(\\d+)")
 	public E restoreVersion(long versionId, Boolean draft) {
-		return ((EntityCrud<E>) crud()).restoreVersion(versionId,
-				Boolean.TRUE.equals(draft) ? Entity.Status.DRAFT : Entity.Status.PUBLISHED);
+		return crud().restoreVersion(versionId,
+				Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED);
 	}
 
-	protected Crud<E> crud() {
-		return persistence.crud(type);
+	protected DocumentCrud<E> crud() {
+		return (DocumentCrud<E>) persistence.crud(type);
 	}
+
+	protected abstract boolean drafts(HttpExchange exchange);
 }

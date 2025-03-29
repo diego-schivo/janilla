@@ -1,22 +1,14 @@
-cms-admin:has(login-element) {
-  box-sizing: border-box;
-  display: flex;
-  height: 100vh;
-  justify-content: center;
-  
-}
-
-login-element {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
+cms-first-register,
+cms-forgot-password,
+cms-login,
+cms-reset-password {
   font-size: 0.75rem;
-  gap: 2.5rem;
+  gap: 1rem;
+  justify-content: center;
+  max-width: 30rem;
+  width: 100%;
 
-  img {
-    width: 12rem;
-  }
-
+  &,
   form,
   label {
     display: flex;
@@ -25,7 +17,6 @@ login-element {
 
   form {
     gap: 1rem;
-    width: 100%;
   }
 
   label {
@@ -52,5 +43,12 @@ login-element {
   button {
     background: rgb(235, 235, 235);
     color: rgb(20, 20, 20);
+  }
+}
+
+cms-login {
+  img {
+    margin: 0 auto;
+    width: 12rem;
   }
 }

@@ -22,17 +22,17 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.cms;
+package com.janilla.web;
 
-import java.time.Instant;
+@Error(code = 409, text = "Conflict")
+public class ConflictException extends RuntimeException {
 
-public record Version<E extends Document>(Long id, E document) {
+	private static final long serialVersionUID = 4826804065023512917L;
 
-	public Instant updatedAt() {
-		return document.updatedAt();
+	public ConflictException() {
 	}
 
-	public Document.Status status() {
-		return document.status();
+	public ConflictException(String message) {
+		super(message);
 	}
 }

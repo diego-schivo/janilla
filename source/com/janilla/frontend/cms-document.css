@@ -1,5 +1,5 @@
 cms-document {
-  cms-tabs {
+  > cms-tabs {
     [slot^="button-"] {
       display: flex;
       gap: 0.25rem;
@@ -12,9 +12,21 @@ cms-document {
       }
     }
 
+    /*
     textarea {
       box-sizing: border-box;
       width: 100%;
+    }
+    */
+  }
+
+  @media (min-width: 1441px) {
+    display: grid;
+    grid-template: auto 1fr / 1fr auto;
+
+    > cms-tabs[data-no-tab-list] {
+      border-top: 1px solid rgb(47, 47, 47);
+      grid-column: 1 / span 2;
     }
   }
 }

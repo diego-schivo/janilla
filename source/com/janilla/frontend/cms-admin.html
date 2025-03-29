@@ -1,7 +1,41 @@
+<!--${aside}-->
 <!--${header}-->
 <!--${content}-->
 <!--${dialog}-->
 <cms-toasts></cms-toasts>
+
+<template id="aside">
+  <aside>
+    <nav>
+      <ul>
+        <!--${groups}-->
+      </ul>
+    </nav>
+    <button type="button" name="logout">
+      <lucide-icon data-name="log-out"></lucide-icon>
+    </button>
+  </aside>
+</template>
+
+<template id="group">
+  <li>
+    <label>
+      ${name}
+      <input type="checkbox" checked="${checked}" />
+      <lucide-icon data-name="chevron-down"></lucide-icon>
+      <lucide-icon data-name="chevron-up"></lucide-icon>
+    </label>
+    <ul>
+      <!--${links}-->
+    </ul>
+  </li>
+</template>
+
+<template id="link">
+  <li>
+    <a href="${href}">${name}</a>
+  </li>
+</template>
 
 <template id="header">
   <header>
@@ -45,12 +79,20 @@
   <cms-dashboard></cms-dashboard>
 </template>
 
-<template id="create-first-user">
-  <create-first-user></create-first-user>
+<template id="first-user">
+  <cms-first-register></cms-first-register>
 </template>
 
 <template id="login">
-  <login-element></login-element>
+  <cms-login></cms-login>
+</template>
+
+<template id="forgot-password">
+  <cms-forgot-password></cms-forgot-password>
+</template>
+
+<template id="reset-password">
+  <cms-reset-password data-token="${token}"></cms-reset-password>
 </template>
 
 <template id="collection">
@@ -75,24 +117,4 @@
       <lucide-icon data-name="log-out"></lucide-icon>
     </button>
   </dialog>
-</template>
-
-<template id="group">
-  <li>
-    <label>
-      ${name}
-      <input type="checkbox" checked="${checked}" />
-      <lucide-icon data-name="chevron-down"></lucide-icon>
-      <lucide-icon data-name="chevron-up"></lucide-icon>
-    </label>
-    <ul>
-      <!--${links}-->
-    </ul>
-  </li>
-</template>
-
-<template id="link">
-  <li>
-    <a href="${href}">${name}</a>
-  </li>
 </template>

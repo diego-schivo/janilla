@@ -22,22 +22,46 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.cms;
+import { UpdatableHTMLElement } from "./updatable-html-element.js";
 
-import java.time.Instant;
+export default class CmsFirstRegister extends UpdatableHTMLElement {
 
-public interface Entity {
+	static get templateName() {
+		return "cms-first-register";
+	}
 
-	Long id();
+	constructor() {
+		super();
+	}
 
-	Instant createdAt();
+	connectedCallback() {
+		super.connectedCallback();
+		this.addEventListener("submit", this.handleSubmit);
+	}
 
-	Instant updatedAt();
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.removeEventListener("submit", this.handleSubmit);
+	}
 
-	Status status();
+	handleSubmit = async event => {
+		event.preventDefault();
+		event.stopPropagation();
+		const r = await fetch("/api/users/first-register", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
+		});
+		if (r.ok) {
+			history.pushState(undefined, "", "/admin");
+			dispatchEvent(new CustomEvent("popstate"));
+		} else
+			this.closest("cms-admin").querySelector("cms-toasts").renderToast(await r.json(), "error");
+	}
 
-	public enum Status {
-
-		DRAFT, PUBLISHED
+	async updateDisplay() {
+		this.appendChild(this.interpolateDom({
+			$template: ""
+		}));
 	}
 }

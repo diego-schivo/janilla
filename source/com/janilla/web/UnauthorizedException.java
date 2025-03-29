@@ -25,7 +25,14 @@
 package com.janilla.web;
 
 @Error(code = 401, text = "Unauthorized")
-public class UnauthenticatedException extends RuntimeException {
+public class UnauthorizedException extends RuntimeException {
 
-	private static final long serialVersionUID = -6338876288354751331L;
+	private static final long serialVersionUID = -595868579102081973L;
+
+	public UnauthorizedException() {
+	}
+
+	public UnauthorizedException(String message) {
+		super(message);
+	}
 }

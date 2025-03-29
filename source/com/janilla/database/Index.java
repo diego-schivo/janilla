@@ -126,6 +126,9 @@ public class Index<K, V> {
 	}
 
 	public boolean remove(K key, V[] values) {
+//		System.out.println("Index.remove, key=" + key + ", values="
+//				+ Arrays.stream(values).map(x -> x instanceof Object[] oo ? List.of(oo) : x).toList());
+
 		return apply(key, (aa, bt) -> {
 			Boolean r = null;
 			for (var v : values)
