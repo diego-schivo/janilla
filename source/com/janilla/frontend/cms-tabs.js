@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsTabs extends UpdatableHTMLElement {
+export default class CmsTabs extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-active-tab", "data-name", "data-no-tab-list", "data-tab"];
@@ -72,7 +72,7 @@ export default class CmsTabs extends UpdatableHTMLElement {
 			}
 		}))) {
 			s.activeTab = t;
-			this.requestUpdate();
+			this.requestDisplay();
 		}
 	}
 

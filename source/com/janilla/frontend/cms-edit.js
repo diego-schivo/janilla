@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsEdit extends UpdatableHTMLElement {
+export default class CmsEdit extends WebComponent {
 
 	static get templateName() {
 		return "cms-edit";
@@ -135,7 +135,7 @@ export default class CmsEdit extends UpdatableHTMLElement {
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(s.entity)
 		})).json();
-		a.requestUpdate();
+		a.requestDisplay();
 	}
 
 	async updateDisplay() {

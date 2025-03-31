@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsFile extends UpdatableHTMLElement {
+export default class CmsFile extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-key", "data-path"];
@@ -54,7 +54,7 @@ export default class CmsFile extends UpdatableHTMLElement {
 		if (el) {
 			const s = this.state;
 			s.file = el.files[0];
-			this.requestUpdate();
+			this.requestDisplay();
 		}
 	}
 

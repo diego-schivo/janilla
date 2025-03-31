@@ -1,45 +1,80 @@
 <!--${header}-->
-<template id="header">
-  <header>
-    <h1>${title}</h1>
-    <button type="button" name="create">Create New</button>
-  </header>
-</template>
 <div>
   <table>
     <thead>
       <tr>
         <!--${heads}-->
-        <template id="head">
-          <th>${text}</th>
-        </template>
       </tr>
     </thead>
     <tbody>
       <!--${rows}-->
-      <template id="row">
-        <tr>
-          <!--${cells}-->
-        </tr>
-      </template>
-      <template id="link-cell">
-        <td>
-          <a href="${href}">
-            <!--${content}-->
-          </a>
-        </td>
-      </template>
-      <template id="cell">
-        <td>
-          <!--${content}-->
-        </td>
-      </template>
-      <template id="media">
-        <div class="thumbnail">
-          <img src="${url}" loading="lazy" />
-        </div>
-        <p>${file.name}</p>
-      </template>
     </tbody>
   </table>
 </div>
+<!--${dialog}-->
+
+<template id="header">
+  <header>
+    <h1>${title}</h1>
+    <button name="create">Create New</button>
+    <!--${selection}-->
+  </header>
+</template>
+
+<template id="selection">
+  <div>
+    ${count} selected —
+    <button name="delete">delete</button>
+  </div>
+</template>
+
+<template id="head">
+  <th>
+    <!--${content}-->
+  </th>
+</template>
+
+<template id="row">
+  <tr>
+    <!--${cells}-->
+  </tr>
+</template>
+
+<template id="cell">
+  <td>
+    <!--${content}-->
+  </td>
+</template>
+
+<template id="checkbox">
+  <label>
+    <input type="checkbox" value="${value}" checked="${checked}" class="visually-hidden" />
+    <lucide-icon data-name="check"></lucide-icon>
+  </label>
+</template>
+
+<template id="link">
+  <a href="${href}">
+    <!--${content}-->
+  </a>
+</template>
+
+<template id="media">
+  <div class="thumbnail">
+    <img src="${url}" loading="lazy" />
+  </div>
+  <p>${file.name}</p>
+</template>
+
+<template id="dialog">
+  <dialog>
+    <article>
+      <h1>Confirm deletion</h1>
+      <p>You are about to delete ${count} ${name}</p>
+      <div>
+        <button name="cancel">Cancel</button>
+        <button name="confirm">Confirm</button>
+      </div>
+    </article>
+  </dialog>
+</template>

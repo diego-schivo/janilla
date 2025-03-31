@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsDashboard extends UpdatableHTMLElement {
+export default class CmsDashboard extends WebComponent {
 
 	static get templateName() {
 		return "cms-dashboard";
@@ -49,15 +49,22 @@ export default class CmsDashboard extends UpdatableHTMLElement {
 		if (!b)
 			return;
 		event.stopPropagation();
-		const a = b.previousElementSibling;
-		const t = a.getAttribute("href").split("/").at(-1);
-		const e = await (await fetch(`/api/${t}`, {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({})
-		})).json();
-		history.pushState(undefined, "", `/admin/collections/${t}/${e.id}`);
-		dispatchEvent(new CustomEvent("popstate"));
+		switch (b.name) {
+			case "seed":
+				await fetch("/api/seed", { method: "POST" });
+				break;
+			case "create":
+				const a = b.previousElementSibling;
+				const t = a.getAttribute("href").split("/").at(-1);
+				const d = await (await fetch(`/api/${t}`, {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({})
+				})).json();
+				history.pushState(undefined, "", `/admin/collections/${t}/${d.id}`);
+				dispatchEvent(new CustomEvent("popstate"));
+				break;
+		}
 	}
 
 	async updateDisplay() {

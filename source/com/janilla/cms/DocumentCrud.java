@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -82,12 +83,13 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 		}, false);
 	}
 
-	public Stream<E> read(long[] ids, boolean drafts) {
+	public List<E> read(long[] ids, boolean drafts) {
 		if (!versions || !drafts)
 			return read(ids);
 		if (ids == null || ids.length == 0)
-			return Stream.empty();
-		return Arrays.stream(ids).mapToObj(x -> read(x, true));
+			return List.of();
+		return persistence.database().perform((_, _) -> Arrays.stream(ids).mapToObj(x -> read(x, true)).toList(),
+				false);
 	}
 
 	public E update(long id, E entity, Document.Status status, boolean newVersion) {
@@ -163,6 +165,15 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 			updateVersionIndexes(vv, null, id);
 			return e;
 		}, true);
+	}
+
+	@Override
+	public List<E> delete(long[] ids) {
+		if (!versions)
+			return super.delete(ids);
+		if (ids == null || ids.length == 0)
+			return List.of();
+		return persistence.database().perform((_, _) -> Arrays.stream(ids).mapToObj(this::delete).toList(), true);
 	}
 
 	public Stream<Version<E>> readVersions(long id) {

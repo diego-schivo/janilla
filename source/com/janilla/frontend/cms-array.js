@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsArray extends UpdatableHTMLElement {
+export default class CmsArray extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-key", "data-path"];
@@ -58,7 +58,7 @@ export default class CmsArray extends UpdatableHTMLElement {
 			const i = Array.prototype.indexOf.call(li.parentElement.children, li);
 			s.field.data.splice(i, 1);
 			s.items.splice(i, 1);
-			this.requestUpdate();
+			this.requestDisplay();
 		} else if (event.target.matches('[type="radio"]')) {
 			event.stopPropagation();
 			event.target.closest("dialog").close();
@@ -71,7 +71,7 @@ export default class CmsArray extends UpdatableHTMLElement {
 				expand: true
 			});
 			console.log("x", JSON.stringify(a.state.entity));
-			this.requestUpdate();
+			this.requestDisplay();
 		} else if (event.target.matches('[type="checkbox"]')) {
 			event.stopPropagation();
 			const li = event.target.closest("li");
@@ -93,7 +93,7 @@ export default class CmsArray extends UpdatableHTMLElement {
 					key: s.nextKey++,
 					expand: true
 				});
-				this.requestUpdate();
+				this.requestDisplay();
 			} else
 				this.querySelector(":scope > dialog").showModal();
 		}

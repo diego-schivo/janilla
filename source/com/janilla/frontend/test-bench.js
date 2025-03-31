@@ -22,10 +22,10 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 import tests from "./tests.js";
 
-export default class TestBench extends UpdatableHTMLElement {
+export default class TestBench extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-values"];
@@ -78,7 +78,7 @@ export default class TestBench extends UpdatableHTMLElement {
 		}).finally(async () => {
 			await fetch("/test/stop", { method: "POST" });
 			this.interpolateTestFrame = null;
-			this.requestUpdate();
+			this.requestDisplay();
 			if (!this.keys.length)
 				this.querySelectorAll("input, button").forEach(x => x.disabled = false);
 		});
@@ -90,7 +90,7 @@ export default class TestBench extends UpdatableHTMLElement {
 		this.keys = new FormData(event.target).getAll("test");
 		this.querySelectorAll("input, button").forEach(x => x.disabled = true);
 		this.state.tests.forEach(x => x.class = null);
-		this.requestUpdate();
+		this.requestDisplay();
 	}
 
 	async updateDisplay() {

@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsResetPassword extends UpdatableHTMLElement {
+export default class CmsResetPassword extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-token"];

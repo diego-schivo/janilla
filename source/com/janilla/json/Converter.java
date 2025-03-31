@@ -120,8 +120,8 @@ public class Converter {
 			return UUID.fromString((String) object);
 		if (c == byte[].class)
 			return Base64.getDecoder().decode((String) object);
-		if (c == long[].class)
-			return ((Collection<?>) object).stream().mapToLong(x -> (long) x).toArray();
+//		if (c == long[].class)
+//			return ((Collection<?>) object).stream().mapToLong(x -> (long) x).toArray();
 
 		if (c != null && c.isEnum())
 			return Stream.of(c.getEnumConstants()).filter(x -> x.toString().equals(object)).findFirst().orElseThrow();
@@ -138,6 +138,8 @@ public class Converter {
 			if (c.isArray()) {
 				if (c.componentType() == Integer.TYPE)
 					return s.mapToInt(x -> (Integer) x).toArray();
+				else if (c.componentType() == Long.TYPE)
+					return s.mapToLong(x -> (Long) x).toArray();
 				else
 					return s.toArray(l -> (Object[]) Array.newInstance(getRawType(t), l));
 			}

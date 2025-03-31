@@ -118,6 +118,10 @@ cms-admin {
       }
     }
 
+    a {
+      text-decoration: none;
+    }
+
     button {
       align-self: start;
 

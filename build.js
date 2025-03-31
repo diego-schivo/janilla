@@ -31,7 +31,7 @@ const files = [
 	"./node_modules/janillas/test-bench.css",
 	"./node_modules/janillas/test-bench.html",
 	"./node_modules/janillas/test-bench.js",
-	"./node_modules/janillas/updatable-html-element.js"
+	"./node_modules/janillas/web-component.js"
 ];
 
 const copy = async (src, dest) => {

@@ -22,13 +22,13 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 import { removeAllChildren } from "./dom-utils.js";
 
 const documents = {};
 const parser = new DOMParser();
 
-export default class LucideIcon extends UpdatableHTMLElement {
+export default class LucideIcon extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-name"];

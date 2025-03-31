@@ -24,6 +24,7 @@
  */
 package com.janilla.cms;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import com.janilla.http.HttpExchange;
@@ -73,6 +74,11 @@ public abstract class CollectionApi<E extends Document> {
 		if (e == null)
 			throw new NotFoundException("entity " + id);
 		return e;
+	}
+
+	@Handle(method = "DELETE")
+	public List<E> delete(@Bind("id") long[] ids) {
+		return crud().delete(ids);
 	}
 
 	@Handle(method = "GET", path = "(\\d+)/versions")

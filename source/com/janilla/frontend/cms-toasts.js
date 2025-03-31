@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsToasts extends UpdatableHTMLElement {
+export default class CmsToasts extends WebComponent {
 
 	static get templateName() {
 		return "cms-toasts";
@@ -41,10 +41,10 @@ export default class CmsToasts extends UpdatableHTMLElement {
 			level
 		};
 		(s.items ??= []).push(o);
-		this.requestUpdate();
+		this.requestDisplay();
 		setTimeout(() => {
 			s.items.splice(s.items.findIndex(x => x === o), 1);
-			this.requestUpdate();
+			this.requestDisplay();
 		}, 4000);
 	}
 

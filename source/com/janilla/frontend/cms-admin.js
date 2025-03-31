@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsAdmin extends UpdatableHTMLElement {
+export default class CmsAdmin extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-email", "data-path"];
@@ -112,7 +112,7 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 		].forEach(x => delete s[x]);
 		s.me ??= await (await fetch("/api/users/me")).json();
 		if (this.dataset.email !== s.me?.email) {
-			this.closest("root-element").requestUpdate();
+			this.closest("root-element").requestDisplay();
 			return;
 		}
 		let p = this.dataset.path;
@@ -157,7 +157,7 @@ export default class CmsAdmin extends UpdatableHTMLElement {
 				s.documentSubview === "version" ? fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
 			]);
 		}
-		this.requestUpdate();
+		this.requestDisplay();
 	}
 
 	async updateDisplay() {

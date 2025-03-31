@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { UpdatableHTMLElement } from "./updatable-html-element.js";
+import { WebComponent } from "./web-component.js";
 
-export default class CmsRichText extends UpdatableHTMLElement {
+export default class CmsRichText extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-key", "data-path"];
@@ -80,14 +80,14 @@ export default class CmsRichText extends UpdatableHTMLElement {
 			}
 		} else if (!ce)
 			return;
-		this.requestUpdate();
+		this.requestDisplay();
 	}
 
 	handleKeyUp = event => {
 		const ce = event.target.closest("[contenteditable]");
 		if (!ce)
 			return;
-		this.requestUpdate();
+		this.requestDisplay();
 	}
 
 	handleInput = event => {

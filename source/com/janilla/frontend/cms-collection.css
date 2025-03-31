@@ -7,6 +7,23 @@ cms-collection {
     align-items: center;
     display: flex;
     gap: 1rem;
+
+    div {
+      button {
+        background: transparent;
+        border: none;
+        text-decoration: underline;
+      }
+
+      @media (max-width: 1440px) {
+        bottom: 1rem;
+        position: fixed;
+      }
+
+      @media (min-width: 1441px) {
+        margin-left: auto;
+      }
+    }
   }
 
   h1 {
@@ -19,7 +36,12 @@ cms-collection {
 
   th,
   td {
+    min-width: 9.375rem;
     padding: 1rem;
+
+    &:has([type="checkbox"]) {
+      min-width: unset;
+    }
   }
 
   th {
@@ -30,5 +52,45 @@ cms-collection {
     align-items: center;
     display: flex;
     gap: 1rem;
+  }
+
+  dialog[open] {
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2.5rem;
+
+    &,
+    article {
+      display: flex;
+      flex-direction: column;
+    }
+
+    article {
+      gap: 1rem;
+    }
+
+    p {
+      line-height: 1.25rem;
+    }
+
+    div {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    button {
+      line-height: 1.5rem;
+      padding: 0.5rem 1rem;
+
+      &[name="cancel"] {
+        background: rgb(0, 0, 0);
+        color: rgb(181, 181, 181);
+      }
+
+      &[name="confirm"] {
+        background: rgb(235, 235, 235);
+        color: rgb(20, 20, 20);
+      }
+    }
   }
 }

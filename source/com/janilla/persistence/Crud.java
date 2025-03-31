@@ -85,14 +85,14 @@ public class Crud<E> {
 		return o != null ? parse((String) o) : null;
 	}
 
-	public Stream<E> read(long[] ids) {
+	public List<E> read(long[] ids) {
 		if (ids == null || ids.length == 0)
-			return Stream.empty();
+			return List.of();
 		return persistence.database
 				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
 					var o = s.read(x);
 					return o != null ? parse((String) o) : null;
-				})), false);
+				}).toList()), false);
 	}
 
 	public E update(long id, UnaryOperator<E> operator) {
@@ -126,6 +126,16 @@ public class Crud<E> {
 			updateIndexes(e, null, id);
 			return e;
 		}, true);
+	}
+
+	public List<E> delete(long[] ids) {
+		if (ids == null || ids.length == 0)
+			return List.of();
+		return persistence.database
+				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
+					var o = s.delete(x);
+					return o != null ? parse((String) o) : null;
+				}).toList()), true);
 	}
 
 	public long[] list() {
