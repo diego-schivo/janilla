@@ -42,7 +42,10 @@ import java.util.stream.Stream;
 
 import com.janilla.json.Converter;
 import com.janilla.json.Json;
+import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
+import com.janilla.json.ReflectionValueIterator;
+import com.janilla.json.TokenIterationContext;
 import com.janilla.reflect.Reflection;
 
 public class Crud<E> {
@@ -407,7 +410,7 @@ public class Crud<E> {
 	}
 
 	protected String format(Object object) {
-		var tt = new ReflectionJsonIterator();
+		var tt = new CustomReflectionJsonIterator();
 		tt.setObject(object);
 		tt.setIncludeType(true);
 		return Json.format(tt);
@@ -549,6 +552,27 @@ public class Crud<E> {
 		}
 
 		default <E> void afterDelete(E entity) {
+		}
+	}
+
+	protected class CustomReflectionJsonIterator extends ReflectionJsonIterator {
+
+		@Override
+		public Iterator<JsonToken<?>> newValueIterator(Object object) {
+			return new CustomReflectionValueIterator(this, object);
+		}
+	}
+
+	protected class CustomReflectionValueIterator extends ReflectionValueIterator {
+
+		public CustomReflectionValueIterator(TokenIterationContext context, Object object) {
+			super(context, object);
+		}
+
+		@Override
+		protected Iterator<JsonToken<?>> newIterator() {
+			return object instanceof Class<?> c ? context.newStringIterator(persistence.typeResolver.format(c))
+					: super.newIterator();
 		}
 	}
 }

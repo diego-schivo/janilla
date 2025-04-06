@@ -290,7 +290,7 @@ export default class CmsAdmin extends WebComponent {
 				if (f.type === "List") {
 					const i = parseInt(n);
 					const d = f.data?.[i];
-					const t = d?.$type; // ?? f.elementTypes[0];
+					const t = d?.$type;
 					f = {
 						parent: f,
 						index: i,
@@ -360,6 +360,8 @@ export default class CmsAdmin extends WebComponent {
 				return field.referenceType ? "reference-list-control" : "array";
 			case "Long":
 				return field.referenceType ? "cms-reference" : "cms-text";
+			case "Document.Reference":
+				return "cms-document-reference";
 			default:
 				return "cms-object";
 		}
@@ -385,7 +387,7 @@ export default class CmsAdmin extends WebComponent {
 		const el = this.querySelector("cms-toasts");
 		el.renderToast.apply(el, arguments);
 	}
-	
+
 	isReadOnly(type) {
 		return false;
 	}

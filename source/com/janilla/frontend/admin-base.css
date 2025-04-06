@@ -36,6 +36,9 @@ dialog[open] {
   max-width: none;
   padding: 1rem;
   width: 100vw;
+  position: absolute;
+  top: 0;
+  z-index: 101;
 }
 
 h1,

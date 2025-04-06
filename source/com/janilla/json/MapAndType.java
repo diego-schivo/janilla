@@ -31,12 +31,26 @@ import java.util.function.UnaryOperator;
 public record MapAndType(Map<?, ?> map, Class<?> type) {
 
 	public interface TypeResolver extends UnaryOperator<MapAndType> {
+
+		Class<?> parse(String string);
+
+		String format(Class<?> class1);
 	}
 
 	public static class NullTypeResolver implements TypeResolver {
 
 		@Override
-		public MapAndType apply(MapAndType mt) {
+		public MapAndType apply(MapAndType t) {
+			return null;
+		}
+
+		@Override
+		public Class<?> parse(String string) {
+			return null;
+		}
+
+		@Override
+		public String format(Class<?> class1) {
 			return null;
 		}
 	}
@@ -53,21 +67,31 @@ public record MapAndType(Map<?, ?> map, Class<?> type) {
 
 		@Override
 		public MapAndType apply(MapAndType mt) {
-			var t = (String) mt.map().get("$type");
-//			System.out.println("TypeResolver.apply, t = " + t);
+			var c = parse((String) mt.map().get("$type"));
+			return c != null ? new MapAndType(mt.map(), c) : null;
+		}
+
+		@Override
+		public Class<?> parse(String t) {
+//			System.out.println("TypeResolver.parse, t = " + t);
 			if (t == null)
 				return null;
 			var c = resolveMap.computeIfAbsent(t, k -> {
 				for (var x : types) {
 					var n = x.getName().substring(x.getPackageName().length() + 1).replace('$', '.');
-//					System.out.println("TypeResolver.apply, n = " + n);
+//					System.out.println("TypeResolver.parse, n = " + n);
 					if (n.equals(k))
 						return x;
 				}
 				return null;
 			});
-//			System.out.println("TypeResolver.apply, c = " + c);
-			return c != null ? new MapAndType(mt.map(), c) : null;
+//			System.out.println("TypeResolver.parse, c = " + c);
+			return c;
+		}
+
+		@Override
+		public String format(Class<?> class1) {
+			return class1.getName().substring(class1.getPackageName().length() + 1);
 		}
 	}
 }

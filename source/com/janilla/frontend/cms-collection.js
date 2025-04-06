@@ -163,11 +163,12 @@ export default class CmsCollection extends WebComponent {
 		].forEach(x => delete s[x]);
 		const pe = this.parentElement;
 		const pen = pe.tagName.toLowerCase();
-		s.dialog = pen === "dialog";
+		//s.dialog = pen === "dialog";
 		s.selectionIds = [];
 		const n = this.dataset.name;
 		switch (pen) {
 			case "cms-reference":
+			case "cms-document-reference":
 				s.data = pe.state.field.data?.id ? [pe.state.field.data] : [];
 				break;
 			case "reference-list-control":
@@ -190,7 +191,7 @@ export default class CmsCollection extends WebComponent {
 		const hh = a.headers(n);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			header: !["cms-reference", "reference-list-control"].includes(pen) ? {
+			header: !["cms-reference", "cms-document-reference", "reference-list-control"].includes(pen) ? {
 				$template: "header",
 				title: n.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
 				selection: s.selectionIds?.length ? {
@@ -206,7 +207,7 @@ export default class CmsCollection extends WebComponent {
 				$template: "table",
 				heads: (() => {
 					const cc = hh.map(x => x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" "));
-					if (!["cms-reference", "reference-list-control"].includes(pen))
+					if (!["cms-reference", "cms-document-reference", "dialog", "reference-list-control"].includes(pen))
 						cc.unshift({
 							$template: "checkbox",
 							checked: s.selectionIds.length === s.data.length
@@ -233,7 +234,7 @@ export default class CmsCollection extends WebComponent {
 							href: `/admin/collections/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${x.id}`,
 							content: cc[0]
 						};
-						if (!["cms-reference", "reference-list-control"].includes(pen))
+						if (!["cms-reference", "cms-document-reference", "dialog", "reference-list-control"].includes(pen))
 							cc.unshift({
 								$template: "checkbox",
 								value: x.id,
