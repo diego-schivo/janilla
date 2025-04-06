@@ -53,9 +53,15 @@ public class Crud<E> {
 
 	protected final Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new HashMap<>();
 
+	protected final List<Observer> observers = new ArrayList<>();
+
 	public Crud(Class<E> type, Persistence persistence) {
 		this.type = type;
 		this.persistence = persistence;
+	}
+
+	public List<Observer> observers() {
+		return observers;
 	}
 
 	public E create(E entity) {
@@ -68,12 +74,16 @@ public class Crud<E> {
 			}
 			var a = new A();
 			var l = ss.perform(type.getSimpleName(), s -> s.create(x -> {
-				a.e = beforeCreate(entity, x);
+				a.e = Reflection.copy(Map.of("id", x), entity);
+				for (var y : observers)
+					a.e = y.beforeCreate(a.e);
 				var t = format(a.e);
 //				System.out.println("Crud.create t=" + t);
 				return t;
 			}));
 			updateIndexes(null, a.e, l);
+			for (var x : observers)
+				x.afterCreate(a.e);
 			return a.e;
 		}, true);
 	}
@@ -108,11 +118,14 @@ public class Crud<E> {
 			var a = new A();
 			ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
 				a.e1 = parse((String) x);
-				a.e2 = beforeUpdate(operator.apply(a.e1));
+				a.e2 = operator.apply(a.e1);
+				for (var y : observers)
+					a.e2 = y.beforeUpdate(a.e2);
 				return format(a.e2);
 			}));
-			if (a.e1 != null)
-				updateIndexes(a.e1, a.e2, id);
+			updateIndexes(a.e1, a.e2, id);
+			for (var x : observers)
+				x.afterUpdate(a.e1, a.e2);
 			return a.e2;
 		}, true);
 	}
@@ -124,6 +137,8 @@ public class Crud<E> {
 			var o = ss.perform(type.getSimpleName(), s -> s.delete(id));
 			var e = parse((String) o);
 			updateIndexes(e, null, id);
+			for (var x : observers)
+				x.afterDelete(e);
 			return e;
 		}, true);
 	}
@@ -131,11 +146,12 @@ public class Crud<E> {
 	public List<E> delete(long[] ids) {
 		if (ids == null || ids.length == 0)
 			return List.of();
-		return persistence.database
-				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
-					var o = s.delete(x);
-					return o != null ? parse((String) o) : null;
-				}).toList()), true);
+//		return persistence.database
+//				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
+//					var o = s.delete(x);
+//					return o != null ? parse((String) o) : null;
+//				}).toList()), true);
+		return persistence.database().perform((_, _) -> Arrays.stream(ids).mapToObj(this::delete).toList(), true);
 	}
 
 	public long[] list() {
@@ -390,14 +406,6 @@ public class Crud<E> {
 		}, false);
 	}
 
-	protected E beforeCreate(E entity, long x) {
-		return Reflection.copy(Map.of("id", x), entity);
-	}
-
-	protected E beforeUpdate(E entity) {
-		return entity;
-	}
-
 	protected String format(Object object) {
 		var tt = new ReflectionJsonIterator();
 		tt.setObject(object);
@@ -521,6 +529,26 @@ public class Crud<E> {
 
 		public static IdPage empty() {
 			return EMPTY;
+		}
+	}
+
+	public interface Observer {
+
+		default <E> E beforeCreate(E entity) {
+			return entity;
+		}
+
+		default <E> void afterCreate(E entity) {
+		}
+
+		default <E> E beforeUpdate(E entity) {
+			return entity;
+		}
+
+		default <E> void afterUpdate(E entity1, E entity2) {
+		}
+
+		default <E> void afterDelete(E entity) {
 		}
 	}
 }

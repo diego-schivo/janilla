@@ -1,17 +1,21 @@
 <form>
-  <img src="/images/janilla-logo-light.svg" loading="lazy" />
-  <p>
-    <strong>Welcome to your dashboard!</strong>
-    This is where site admins will log in to manage your website.
-  </p>
+  <div>
+    <img src="/images/janilla-logo-light.svg" loading="lazy" />
+    <p>
+      <strong>Welcome to your dashboard!</strong>
+      This is where site admins will log in to manage your website.
+    </p>
+  </div>
   <label>
-    Email
-    <input name="email" />
+    <span>Email</span>
+    <input type="email" name="email" required />
   </label>
-  <label>
-    Password
-    <input type="password" name="password" />
-  </label>
-  <a href="/admin/forgot">Forgot password?</a>
+  <div>
+    <label>
+      <span>Password</span>
+      <input type="password" name="password" required />
+      <a href="/admin/forgot">Forgot password?</a>
+    </label>
+  </div>
   <button>Login</button>
 </form>

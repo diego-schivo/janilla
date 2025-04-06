@@ -58,15 +58,17 @@ export default class CmsObject extends WebComponent {
 						const ff = pp.map(([k, v]) => {
 							const ct = a.controlTemplate(a.field(k, f));
 							const p2 = p ? `${p}.${k}` : k;
+							const l = a.label(p2);
 							return {
-								$template: ["cms-select", "cms-text", "textarea-control"].includes(ct) ? "label-nest-field"
-									: ["checkbox-control"].includes(ct) ? "no-label-field"
-										: "label-field",
-								label: a.label(p2),
+								$template: ["cms-select", "cms-text", "textarea-control"].includes(ct) ? "label-nest"
+									: ["array", "checkbox-control"].includes(ct) ? "no-label"
+										: "label",
+								label: l,
 								name: k,
 								control: {
 									$template: ct,
 									path: p2,
+									label: l,
 									key: this.dataset.key,
 									...v
 								}

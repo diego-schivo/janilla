@@ -104,59 +104,9 @@ public class Persistence {
 
 			var t = p != null ? p.type() : null;
 			var ii = new IndexFactory<K, V>();
-			if (t == null) {
-				@SuppressWarnings("unchecked")
-				var h = (ByteConverter<K>) ByteConverter.NULL;
-				ii.keyConverter = h;
-			} else if (t == Boolean.class || t == Boolean.TYPE || t == boolean[].class) {
-				@SuppressWarnings("unchecked")
-				var h = (ByteConverter<K>) ByteConverter.BOOLEAN;
-				ii.keyConverter = h;
-			} else if (t == Integer.class || t == Integer.TYPE || t == int[].class) {
-				@SuppressWarnings("unchecked")
-				var h = (ByteConverter<K>) ByteConverter.INTEGER;
-				ii.keyConverter = h;
-			} else if (t == Long.class || t == Long.TYPE || t == long[].class) {
-				@SuppressWarnings("unchecked")
-				var h = (ByteConverter<K>) ByteConverter.LONG;
-				ii.keyConverter = h;
-			} else if (t == String.class || t == Collection.class) {
-				@SuppressWarnings("unchecked")
-				var h = (ByteConverter<K>) ByteConverter.STRING;
-				ii.keyConverter = h;
-			} else if (t == UUID.class) {
-				@SuppressWarnings("unchecked")
-				var h = (ByteConverter<K>) ByteConverter.UUID1;
-				ii.keyConverter = h;
-			} else if (t.isEnum()) {
-				@SuppressWarnings("unchecked")
-				var h = new ByteConverter<K>() {
-
-					@Override
-					public byte[] serialize(K element) {
-						return STRING.serialize(element.toString());
-					}
-
-					@Override
-					public int getLength(ByteBuffer buffer) {
-						return STRING.getLength(buffer);
-					}
-
-					@Override
-					public K deserialize(ByteBuffer buffer) {
-						@SuppressWarnings("rawtypes")
-						var ec = (Class) t;
-						return (K) Enum.valueOf(ec, STRING.deserialize(buffer));
-					}
-
-					@Override
-					public int compare(ByteBuffer buffer, K element) {
-						return STRING.compare(buffer, element.toString());
-					}
-				};
-				ii.keyConverter = h;
-			} else
-				throw new RuntimeException();
+			ii.keyConverter = keyConverter(t);
+			if (ii.keyConverter == null)
+				throw new NullPointerException("No keyConverter for index on " + p + " (" + t + ")");
 
 			var s = i.sort();
 			if (s.startsWith("+") || s.startsWith("-"))
@@ -204,6 +154,68 @@ public class Persistence {
 				ii.create(k);
 				return null;
 			}, true);
+	}
+
+	protected <K> ByteConverter<K> keyConverter(Class<?> type) {
+		if (type == null) {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<K>) ByteConverter.NULL;
+			return h;
+		}
+		if (type == Boolean.class || type == Boolean.TYPE || type == boolean[].class) {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<K>) ByteConverter.BOOLEAN;
+			return h;
+		}
+		if (type == Integer.class || type == Integer.TYPE || type == int[].class) {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<K>) ByteConverter.INTEGER;
+			return h;
+		}
+		if (type == Long.class || type == Long.TYPE || type == long[].class) {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<K>) ByteConverter.LONG;
+			return h;
+		}
+		if (type == String.class || type == Collection.class) {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<K>) ByteConverter.STRING;
+			return h;
+		}
+		if (type == UUID.class) {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<K>) ByteConverter.UUID1;
+			return h;
+		}
+		if (type.isEnum()) {
+			@SuppressWarnings("unchecked")
+			var h = new ByteConverter<K>() {
+
+				@Override
+				public byte[] serialize(K element) {
+					return STRING.serialize(element.toString());
+				}
+
+				@Override
+				public int getLength(ByteBuffer buffer) {
+					return STRING.getLength(buffer);
+				}
+
+				@Override
+				public K deserialize(ByteBuffer buffer) {
+					@SuppressWarnings("rawtypes")
+					var ec = (Class) type;
+					return (K) Enum.valueOf(ec, STRING.deserialize(buffer));
+				}
+
+				@Override
+				public int compare(ByteBuffer buffer, K element) {
+					return STRING.compare(buffer, element.toString());
+				}
+			};
+			return h;
+		}
+		return null;
 	}
 
 	protected static class Configuration {

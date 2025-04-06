@@ -13,24 +13,28 @@
   </li>
 </template>
 
-<template id="label-field">
+<template id="label">
   <div>
     <label>${label}</label>
     <!--${control}-->
   </div>
 </template>
 
-<template id="label-nest-field">
+<template id="label-nest">
   <label>
     ${label}
     <!--${control}-->
   </label>
 </template>
 
-<template id="no-label-field">
+<template id="no-label">
   <div>
     <!--${control}-->
   </div>
+</template>
+
+<template id="array">
+  <cms-array data-path="${path}" data-key="${key}" data-label="${label}"></cms-array>
 </template>
 
 <template id="checkbox-control">
@@ -39,10 +43,6 @@
 
 <template id="cms-file">
   <cms-file data-path="${path}" data-key="${key}"></cms-file>
-</template>
-
-<template id="cms-array">
-  <cms-array data-path="${path}" data-key="${key}"></cms-array>
 </template>
 
 <template id="cms-object">

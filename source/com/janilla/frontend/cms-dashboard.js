@@ -49,38 +49,47 @@ export default class CmsDashboard extends WebComponent {
 		if (!b)
 			return;
 		event.stopPropagation();
+		event.preventDefault();
+		const a = this.closest("cms-admin");
 		switch (b.name) {
 			case "seed":
 				await fetch("/api/seed", { method: "POST" });
+				a.renderToast("Database seeded!", "success");
 				break;
 			case "create":
-				const a = b.previousElementSibling;
-				const t = a.getAttribute("href").split("/").at(-1);
-				const d = await (await fetch(`/api/${t}`, {
+				const t = b.closest("a").getAttribute("href").split("/").at(-1);
+				const r = await fetch(`/api/${t}`, {
 					method: "POST",
 					headers: { "content-type": "application/json" },
-					body: JSON.stringify({})
-				})).json();
-				history.pushState(undefined, "", `/admin/collections/${t}/${d.id}`);
-				dispatchEvent(new CustomEvent("popstate"));
+					body: JSON.stringify({ $type: b.dataset.type })
+				});
+				const j = await r.json();
+				if (r.ok) {
+					history.pushState(undefined, "", `/admin/collections/${t}/${j.id}`);
+					dispatchEvent(new CustomEvent("popstate"));
+				} else
+					a.renderToast(j, "error");
 				break;
 		}
 	}
 
 	async updateDisplay() {
-		const s = this.closest("cms-admin").state;
+		const a = this.closest("cms-admin");
+		const s = a.state;
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			items: Object.entries(s.schema["Data"]).map(([k, v]) => ({
+			groups: Object.entries(s.schema["Data"]).map(([k, v]) => ({
 				$template: "group",
-				name: k,
-				items: Object.keys(s.schema[v.type]).map(x => {
-					const nn = x.split(/(?=[A-Z])/).map(x => x.toLowerCase());
+				name: k.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
+				cards: Object.entries(s.schema[v.type]).map(([k2, v2]) => {
 					return {
 						$template: "card",
-						href: `/admin/${k}/${nn.join("-")}`,
-						name: nn.join(" "),
-						button: k === "collections" ? { $template: "button" } : null
+						href: `/admin/${k}/${k2.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`,
+						name: k2.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
+						button: k === "collections" && !a.isReadOnly(v2.elementTypes[0]) ? {
+							$template: "button",
+							type: v2.elementTypes[0]
+						} : null
 					};
 				})
 			}))

@@ -50,6 +50,12 @@ export default class CmsCollection extends WebComponent {
 		this.removeEventListener("click", this.handleClick);
 	}
 
+	attributeChangedCallback(name, oldValue, newValue) {
+		if (newValue !== oldValue && this.state)
+			delete this.state.computeState;
+		super.attributeChangedCallback(name, oldValue, newValue);
+	}
+
 	handleChange = event => {
 		const el = event.target.closest('[type="checkbox"]');
 		if (!el)
@@ -74,20 +80,59 @@ export default class CmsCollection extends WebComponent {
 		if (!b)
 			return;
 		event.stopPropagation();
+		const n = this.dataset.name;
+		const s = this.state;
+		let u;
 		switch (b.name) {
-			case "cancel":
-				this.querySelector("dialog").close();
+			case "cancel-delete":
+				delete s.deleteDialog;
+				this.requestDisplay();
 				break;
-			case "confirm":
-				const u = new URL(`/api/${this.dataset.name}`, location.href);
+			case "cancel-publish":
+				delete s.publishDialog;
+				this.requestDisplay();
+				break;
+			case "cancel-unpublish":
+				delete s.unpublishDialog;
+				this.requestDisplay();
+				break;
+			case "confirm-delete":
+				u = new URL(`/api/${n}`, location.href);
 				Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
 				await (await fetch(u, { method: "DELETE" })).json();
-				this.querySelector("dialog").close();
-				delete this.state.data;
+				delete s.deleteDialog;
+				delete s.data;
+				this.requestDisplay();
+				break;
+			case "confirm-publish":
+				u = new URL(`/api/${n}`, location.href);
+				Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
+				await (await fetch(u, {
+					method: "PATCH",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						$type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0],
+						status: "PUBLISHED"
+					})
+				})).json();
+				delete s.publishDialog;
+				this.requestDisplay();
+				break;
+			case "confirm-unpublish":
+				u = new URL(`/api/${n}`, location.href);
+				Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
+				await (await fetch(u, {
+					method: "PATCH",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						$type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0],
+						status: "DRAFT"
+					})
+				})).json();
+				delete s.unpublishDialog;
 				this.requestDisplay();
 				break;
 			case "create":
-				const n = this.dataset.name;
 				const d = await (await fetch(`/api/${n}`, {
 					method: "POST",
 					headers: { "content-type": "application/json" },
@@ -97,82 +142,122 @@ export default class CmsCollection extends WebComponent {
 				dispatchEvent(new CustomEvent("popstate"));
 				break;
 			case "delete":
-				this.querySelector("dialog").showModal();
+				s.deleteDialog = true;
+				this.requestDisplay();
+				break;
+			case "publish":
+				s.publishDialog = true;
+				this.requestDisplay();
+				break;
+			case "unpublish":
+				s.unpublishDialog = true;
+				this.requestDisplay();
 				break;
 		}
 	}
 
-	async updateDisplay() {
+	async computeState() {
 		const s = this.state;
+		[
+			"data"
+		].forEach(x => delete s[x]);
 		const pe = this.parentElement;
 		const pen = pe.tagName.toLowerCase();
-		s.dialog ??= pen === "dialog";
-		s.selectionIds ??= [];
+		s.dialog = pen === "dialog";
+		s.selectionIds = [];
 		const n = this.dataset.name;
 		switch (pen) {
 			case "cms-reference":
 				s.data = pe.state.field.data?.id ? [pe.state.field.data] : [];
 				break;
 			case "reference-list-control":
-				s.data ??= pe.state.field.data;
+				s.data = pe.state.field.data;
 				break;
 			default:
-				s.data ??= await (await fetch(`/api/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
+				s.data = await (await fetch(`/api/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
+				this.requestDisplay();
 				break;
 		}
-		const ap = this.closest("cms-admin");
-		const hh = ap.headers(n);
+	}
+
+	async updateDisplay() {
+		const s = this.state;
+		s.computeState ??= this.computeState();
+		const pe = this.parentElement;
+		const pen = pe.tagName.toLowerCase();
+		const a = this.closest("cms-admin");
+		const n = this.dataset.name;
+		const hh = a.headers(n);
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			header: !["cms-reference", "reference-list-control"].includes(pen) ? {
 				$template: "header",
-				title: n,
+				title: n.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
 				selection: s.selectionIds?.length ? {
 					$template: "selection",
 					count: s.selectionIds.length
 				} : null
 			} : null,
-			heads: (() => {
-				const cc = [...hh];
-				cc.unshift({
-					$template: "checkbox",
-					checked: s.selectionIds.length === s.data.length
-				});
-				return cc;
-			})().map(x => ({
-				$template: "head",
-				content: x
-			})),
-			rows: s.data?.map(x => ({
-				$template: "row",
-				cells: (() => {
-					const cc = hh.map(y => {
-						const z = x[y];
-						return typeof z === "object" && z?.$type === "File" ? {
-							$template: "media",
-							...x
-						} : y === "updatedAt" ? ap.dateTimeFormat.format(new Date(z)) : z;
-					});
-					if (!cc[0])
-						cc[0] = x.id;
-					cc[0] = {
-						$template: "link",
-						href: `/admin/collections/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${x.id}`,
-						content: cc[0]
-					};
-					cc.unshift({
-						$template: "checkbox",
-						value: x.id,
-						checked: s.selectionIds.includes(x.id)
-					});
+			noResults: !s.data?.length ? {
+				$template: "no-results",
+				name: n
+			} : null,
+			table: s.data?.length ? {
+				$template: "table",
+				heads: (() => {
+					const cc = hh.map(x => x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" "));
+					if (!["cms-reference", "reference-list-control"].includes(pen))
+						cc.unshift({
+							$template: "checkbox",
+							checked: s.selectionIds.length === s.data.length
+						});
 					return cc;
-				})().map(y => ({
-					$template: "cell",
-					content: y
+				})().map(x => ({
+					$template: "head",
+					content: x
+				})),
+				rows: s.data.map(x => ({
+					$template: "row",
+					cells: (() => {
+						const cc = hh.map(y => {
+							const z = x[y];
+							return typeof z === "object" && z?.$type === "File" ? {
+								$template: "media",
+								...x
+							} : y === "updatedAt" ? a.dateTimeFormat.format(new Date(z)) : z;
+						});
+						if (!cc[0])
+							cc[0] = x.id;
+						cc[0] = {
+							$template: "link",
+							href: `/admin/collections/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${x.id}`,
+							content: cc[0]
+						};
+						if (!["cms-reference", "reference-list-control"].includes(pen))
+							cc.unshift({
+								$template: "checkbox",
+								value: x.id,
+								checked: s.selectionIds.includes(x.id)
+							});
+						return cc;
+					})().map(y => ({
+						$template: "cell",
+						content: y
+					}))
 				}))
-			})),
-			dialog: s.selectionIds?.length ? {
-				$template: "dialog",
+			} : null,
+			publishDialog: s.publishDialog ? {
+				$template: "publish-dialog",
+				count: s.selectionIds.length,
+				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
+			} : null,
+			unpublishDialog: s.unpublishDialog ? {
+				$template: "unpublish-dialog",
+				count: s.selectionIds.length,
+				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
+			} : null,
+			deleteDialog: s.deleteDialog ? {
+				$template: "delete-dialog",
 				count: s.selectionIds.length,
 				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
 			} : null

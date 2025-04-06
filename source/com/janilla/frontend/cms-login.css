@@ -2,7 +2,6 @@ cms-first-register,
 cms-forgot-password,
 cms-login,
 cms-reset-password {
-  font-size: 0.75rem;
   gap: 1rem;
   justify-content: center;
   max-width: 30rem;
@@ -17,6 +16,10 @@ cms-reset-password {
 
   form {
     gap: 1rem;
+
+    @media (min-width: 1441px) {
+      gap: 1.25rem;
+    }
   }
 
   img {
@@ -26,11 +29,15 @@ cms-reset-password {
 
   h1 {
     font-size: 2rem;
-    margin: 0;
   }
 
   label {
     gap: 5px;
+
+    &:has([required]) span::after {
+      color: rgb(218, 75, 72);
+      content: " *";
+    }
   }
   
   input,
@@ -53,5 +60,13 @@ cms-reset-password {
   button {
     background: rgb(235, 235, 235);
     color: rgb(20, 20, 20);
+
+    &:hover {
+      background: rgb(181, 181, 181);
+    }
+
+    @media (min-width: 1441px) {
+      margin-bottom: 1.5rem;
+    }
   }
 }

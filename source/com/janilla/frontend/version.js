@@ -57,7 +57,7 @@ export default class VersionView extends WebComponent {
 				const a = this.closest("cms-admin");
 				const s = a.state;
 				s.entity = await (await fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.version.id}`, { method: "POST" })).json();
-				a.querySelector("cms-toasts").renderToast("Restored successfully.");
+				a.renderToast("Restored successfully.");
 				history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 3).join("/")}`);
 				dispatchEvent(new CustomEvent("popstate"));
 				break;

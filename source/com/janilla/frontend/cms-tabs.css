@@ -1,10 +1,22 @@
 :host(cms-tabs) {
   [role="tablist"] {
-    border-bottom: 1px solid rgb(47, 47, 47);
     display: flex;
     gap: 1rem;
     margin: 0 -1rem;
     padding: 0 1rem 1rem;
+
+    @media (min-width: 1441px) {
+      margin-left: -3.75rem;
+      margin-right: -2.5rem;
+      padding-left: 3.75rem;
+      padding-right: 2.5rem;
+    }
+  }
+}
+
+:host(cms-tabs:not([data-no-tab-panels])) {
+  [role="tablist"] {
+    border-bottom: 1px solid rgb(47, 47, 47);
   }
 }
 

@@ -25,6 +25,10 @@
 package com.janilla.cms;
 
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.janilla.database.BTree;
 import com.janilla.database.Database;
@@ -32,14 +36,44 @@ import com.janilla.database.Index;
 import com.janilla.database.KeyAndData;
 import com.janilla.database.NameAndData;
 import com.janilla.io.ByteConverter;
+import com.janilla.json.MapAndType;
 import com.janilla.json.MapAndType.TypeResolver;
 import com.janilla.persistence.Crud;
 import com.janilla.persistence.Persistence;
 import com.janilla.persistence.Store;
+import com.janilla.reflect.Reflection;
 
-public class VersionsPersistence extends Persistence {
+public class CmsPersistence extends Persistence {
 
-	public VersionsPersistence(Database database, Iterable<Class<?>> types, TypeResolver typeResolver) {
+	protected static final Crud.Observer DOCUMENT_OBSERVER = new Crud.Observer() {
+
+		@Override
+		public <E> E beforeCreate(E entity) {
+			var d = (Document) entity;
+			var i = Instant.now();
+			var v = d.getClass().getAnnotation(Versions.class);
+			var m = Map.<String, Object>of("createdAt", i, "updatedAt", i);
+			if (d.status() == null) {
+				m = new HashMap<>(m);
+				m.put("status", v != null && v.drafts() ? Document.Status.DRAFT : Document.Status.PUBLISHED);
+			}
+			return Reflection.copy(m, entity);
+		}
+
+		@Override
+		public <E> E beforeUpdate(E entity) {
+			var d = (Document) entity;
+			var i = Instant.now();
+			var m = Map.<String, Object>of("updatedAt", i);
+			if (d.status() == Document.Status.PUBLISHED) {
+				m = new HashMap<>(m);
+				m.put("publishedAt", i);
+			}
+			return Reflection.copy(m, entity);
+		}
+	};
+
+	public CmsPersistence(Database database, Iterable<Class<?>> types, TypeResolver typeResolver) {
 		super(database, types, typeResolver);
 	}
 
@@ -74,7 +108,8 @@ public class VersionsPersistence extends Persistence {
 			@SuppressWarnings("unchecked")
 			var t = (Class<? extends Document>) type;
 			@SuppressWarnings({ "unchecked", "rawtypes" })
-			var c = (Crud<E>) new DocumentCrud(t, this, type.isAnnotationPresent(Versions.class));
+			var c = (Crud<E>) new DocumentCrud(t, this);
+			c.observers().add(DOCUMENT_OBSERVER);
 			return c;
 		}
 		return null;
@@ -83,28 +118,73 @@ public class VersionsPersistence extends Persistence {
 	@Override
 	protected void createStoresAndIndexes() {
 		super.createStoresAndIndexes();
-//		var nn = new HashSet<String>();
-		for (var t : configuration.cruds().keySet()) {
-//			var v = t.getAnnotation(Versions.class);
-			if (t.isAnnotationPresent(Versions.class)) {
+		for (var t : configuration.cruds().keySet())
+			if (t.isAnnotationPresent(Versions.class))
 				database.perform((ss, ii) -> {
 					var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">";
 					ss.create(n);
 					ii.create(n + ".document");
 					return null;
 				}, true);
-//				if (v.drafts())
-//					nn.add(t.getSimpleName());
-			}
+	}
+
+	protected ByteConverter<Document.Reference<?>> documentReferenceConverter;
+
+	public ByteConverter<Document.Reference<?>> documentReferenceConverter() {
+		if (documentReferenceConverter == null)
+			documentReferenceConverter = new ByteConverter<>() {
+
+				@Override
+				public byte[] serialize(Document.Reference<?> element) {
+					var s = element.type().getSimpleName();
+					var l = element.id();
+					var bb = s.getBytes();
+					var b = ByteBuffer.allocate(Integer.BYTES + bb.length + Long.BYTES);
+					b.putInt(bb.length);
+					b.put(bb);
+					b.putLong(l);
+					return b.array();
+				}
+
+				@Override
+				public int getLength(ByteBuffer buffer) {
+					var i = buffer.getInt(buffer.position());
+					return Integer.BYTES + i + Long.BYTES;
+				}
+
+				@Override
+				public Document.Reference<?> deserialize(ByteBuffer buffer) {
+					var i = buffer.getInt();
+					var bb = new byte[i];
+					buffer.get(bb);
+					var l = buffer.getLong();
+					var s = new String(bb);
+					var t = typeResolver.apply(new MapAndType(Map.of("$type", s), null)).type();
+					@SuppressWarnings({ "rawtypes", "unchecked" })
+					var r = new Document.Reference(t, l);
+					return r;
+				}
+
+				@Override
+				public int compare(ByteBuffer buffer, Document.Reference<?> element) {
+					var p = buffer.position();
+					var i = buffer.getInt(p);
+					var bb = new byte[i];
+					buffer.get(p + Integer.BYTES, bb);
+					var c = new String(bb).compareTo(element.type().getSimpleName());
+					return c != 0 ? c : Long.compare(buffer.getLong(p + Integer.BYTES + i), element.id());
+				}
+			};
+		return documentReferenceConverter;
+	}
+
+	@Override
+	protected <K> ByteConverter<K> keyConverter(Class<?> type) {
+		if (type == Document.Reference.class) {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<K>) documentReferenceConverter();
+			return h;
 		}
-//		for (var k : configuration.indexFactories().keySet()) {
-//			var i = k.indexOf('.');
-//			var n = i != -1 ? k.substring(0, i) : k;
-//			if (nn.contains(n))
-//				database.perform((_, ii) -> {
-//					ii.create(k + "Draft");
-//					return null;
-//				}, true);
-//		}
+		return super.keyConverter(type);
 	}
 }

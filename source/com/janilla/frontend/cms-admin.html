@@ -1,8 +1,21 @@
-<!--${aside}-->
-<!--${header}-->
-<!--${content}-->
+<!--${p}-->
+<div>
+  <!--${aside}-->
+  <!--${header}-->
+  <!--${content}-->
+</div>
 <!--${dialog}-->
 <cms-toasts></cms-toasts>
+
+<template id="p">
+  <p>
+    <label class="button toggler">
+      <input type="checkbox" checked="${checked}" class="visually-hidden" />
+      <lucide-icon data-name="menu"></lucide-icon>
+      <lucide-icon data-name="chevron-left"></lucide-icon>
+    </label>
+  </p>
+</template>
 
 <template id="aside">
   <aside>
@@ -11,7 +24,7 @@
         <!--${groups}-->
       </ul>
     </nav>
-    <button type="button" name="logout">
+    <button name="logout">
       <lucide-icon data-name="log-out"></lucide-icon>
     </button>
   </aside>
@@ -19,9 +32,9 @@
 
 <template id="group">
   <li>
-    <label>
-      ${name}
-      <input type="checkbox" checked="${checked}" />
+    <label class="toggler">
+      ${label}
+      <input type="checkbox" checked="${checked}" class="visually-hidden" />
       <lucide-icon data-name="chevron-down"></lucide-icon>
       <lucide-icon data-name="chevron-up"></lucide-icon>
     </label>
@@ -33,13 +46,13 @@
 
 <template id="link">
   <li>
-    <a href="${href}">${name}</a>
+    <a href="${href}">${text}</a>
   </li>
 </template>
 
 <template id="header">
   <header>
-    <button type="button" name="open-menu">
+    <button name="open-menu">
       <lucide-icon data-name="menu"></lucide-icon>
     </button>
     <nav>
@@ -105,7 +118,7 @@
 
 <template id="dialog">
   <dialog>
-    <button type="button" name="close-menu">
+    <button name="close-menu">
       <lucide-icon data-name="x"></lucide-icon>
     </button>
     <nav>
@@ -113,7 +126,7 @@
         <!--${groups}-->
       </ul>
     </nav>
-    <button type="button" name="logout">
+    <button name="logout">
       <lucide-icon data-name="log-out"></lucide-icon>
     </button>
   </dialog>

@@ -1,12 +1,23 @@
+<label>${label}</label>
+<ul>
+  <li>
+    <button type="button" name="collapse-all">Collapse All</button>
+  </li>
+  <li>
+    <button type="button" name="show-all">Show All</button>
+  </li>
+</ul>
 <ol>
   <!--${items}-->
   <li>
-    <button type="button">
+    <button type="button" name="add">
       <lucide-icon data-name="plus"></lucide-icon>
       add
     </button>
   </li>
 </ol>
+<!--${dialog}-->
+
 <template id="item">
   <li>
     <article>
@@ -26,15 +37,20 @@
     </article>
   </li>
 </template>
+
 <template id="object">
   <cms-object data-path="${path}" data-key="${key}"></cms-object>
 </template>
-<dialog>
-  <!--${types}-->
-  <template id="type">
-    <label>
-      <input type="radio" name="type" value="${name}" checked="${checked}" />
-      ${name}
-    </label>
-  </template>
-</dialog>
+
+<template id="dialog">
+  <dialog open>
+    <!--${types}-->
+  </dialog>
+</template>
+
+<template id="type">
+  <label>
+    <input type="radio" name="type" value="${name}" checked="${checked}" />
+    ${name}
+  </label>
+</template>

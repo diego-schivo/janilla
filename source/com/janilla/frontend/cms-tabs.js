@@ -27,7 +27,7 @@ import { WebComponent } from "./web-component.js";
 export default class CmsTabs extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-active-tab", "data-name", "data-no-tab-list", "data-tab"];
+		return ["data-active-tab", "data-name", "data-no-tab-list", "data-no-tab-panels", "data-tab"];
 	}
 
 	static get templateName() {
@@ -91,12 +91,12 @@ export default class CmsTabs extends WebComponent {
 					selected: `${x === s.activeTab}`
 				}))
 			} : null,
-			panels: s.tabs.map(x => ({
+			panels: this.dataset.noTabPanels === undefined ? s.tabs.map(x => ({
 				$template: "tabs-panel",
 				panel: this.dataset.name,
 				tab: x,
 				hidden: x !== s.activeTab
-			}))
+			})) : null
 		}));
 	}
 }

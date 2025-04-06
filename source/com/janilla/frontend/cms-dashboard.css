@@ -1,8 +1,5 @@
 cms-dashboard {
-  h2 {
-    font-size: 17px;
-  }
-
+  &,
   ul,
   li {
     display: flex;
@@ -10,34 +7,48 @@ cms-dashboard {
     gap: 1rem;
   }
 
+  h4 {
+    background: rgb(19, 44, 58);
+    border-radius: 0.25rem;
+    color: rgb(36, 164, 223);
+    letter-spacing: -0.375px;
+    padding: 0.625rem;
+  }
+
+  p button {
+    background: transparent;
+    border: none;
+    text-decoration: underline;
+  }
+
   li ul {
     gap: 0.5rem;
   }
 
-  article {
+  a {
+    align-items: flex-start;
     background: rgb(34, 34, 34);
     border: 1px solid rgb(60, 60, 60);
     border-radius: 0.25rem;
     box-sizing: border-box;
+    display: flex;
     font-size: 13px;
     font-weight: 600;
+    justify-content: space-between;
     min-height: 5rem;
     padding: 1rem;
-  }
-
-  div {
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-  }
-  
-  a {
+    position: relative;
     text-decoration: none;
-  }
 
-  button {
-    border-radius: 9999px;
-    padding: 0.15rem;
+    &:hover {
+      border-color: rgb(87, 87, 87);
+    }
+
+    button {
+      background: transparent;
+      border-radius: 100%;
+      padding: 0.15rem;
+    }
   }
 
   @media (min-width: 1441px) {

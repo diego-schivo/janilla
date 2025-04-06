@@ -56,14 +56,12 @@ export default class CmsReference extends WebComponent {
 			switch (el.name) {
 				case "choose":
 					s.dialog = true;
-					await this.updateDisplay();
-					this.querySelector("dialog").showModal();
 					break;
 				case "close":
-					el.closest("dialog").close();
 					s.dialog = false;
 					break;
 			}
+			this.requestDisplay();
 		}
 		el = event.target.closest("a");
 		if (el) {
@@ -93,10 +91,14 @@ export default class CmsReference extends WebComponent {
 		const cn = Object.entries(cc).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			...this.dataset,
-			name: p,
-			collection: cn,
-			ids: s.field.data?.id ? [s.field.data.id] : [],
+			p: !s.field.data?.id ? {
+				$template: "p"
+			} : null,
+			collection: s.field.data?.id ? {
+				$template: "collection",
+				name: cn,
+				ids: [s.field.data.id],
+			} : null,
 			input: {
 				$template: "input",
 				name: p,

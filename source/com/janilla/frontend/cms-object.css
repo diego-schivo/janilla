@@ -22,11 +22,15 @@ cms-object {
         flex: 1;
       }
 
-      &:nth-child(2) {
-        border-left: 1px solid rgb(47, 47, 47);
+      &:not(:last-of-type) {
+        border-right: 1px solid rgb(47, 47, 47);
         flex: 0.5;
-        margin-left: 2.5rem;
-        padding-left: 2.5rem;
+        margin-right: 2.5rem;
+        padding-right: 2.5rem;
+      }
+
+      &:nth-child(2) {
+        flex: 0.5;
       }
     }
   }

@@ -56,7 +56,7 @@ export default class CmsLogin extends WebComponent {
 			history.pushState(undefined, "", "/admin");
 			dispatchEvent(new CustomEvent("popstate"));
 		} else
-			this.closest("cms-admin").querySelector("cms-toasts").renderToast(await r.json(), "error");
+			this.closest("cms-admin").renderToast(await r.json(), "error");
 	}
 
 	async updateDisplay() {

@@ -50,16 +50,18 @@ export default class CmsEdit extends WebComponent {
 
 	handleChange = async event => {
 		const el = event.target;
-		//if (el.matches("[name]") && this.state.drafts)
-			//this.requestAutoSave();
 		if (el.matches(":not([name])")) {
 			event.stopPropagation();
 			if (el.value === "delete") {
 				const a = this.closest("cms-admin");
 				const s = a.state;
-				await (await fetch(s.entityUrl, { method: "DELETE" })).json();
-				history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 2).join("/")}`);
-				dispatchEvent(new CustomEvent("popstate"));
+				const r = await fetch(s.entityUrl, { method: "DELETE" });
+				const j = await r.json();
+				if (r.ok) {
+					history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 2).join("/")}`);
+					dispatchEvent(new CustomEvent("popstate"));
+				} else
+					a.renderToast(j, "error");
 			}
 		}
 	}
@@ -76,7 +78,7 @@ export default class CmsEdit extends WebComponent {
 	}
 
 	requestAutoSave(delay = 1000) {
-		const as = (this.janillas.autoSave ??= {});
+		const as = (this.autoSave ??= {});
 		if (as.ongoing) {
 			as.repeat = true;
 			return;
@@ -87,7 +89,7 @@ export default class CmsEdit extends WebComponent {
 	}
 
 	async autoSaveTimeout() {
-		const as = this.janillas.autoSave;
+		const as = this.autoSave;
 		as.timeoutID = undefined;
 		as.ongoing = true;
 		try {
@@ -129,13 +131,16 @@ export default class CmsEdit extends WebComponent {
 			u.searchParams.append("draft", true);
 			u.searchParams.append("autosave", true);
 		}
-		//s.entity = await (await fetch(u, {
-		await (await fetch(u, {
+		const r = await fetch(u, {
 			method: "PUT",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(s.entity)
-		})).json();
-		a.requestDisplay();
+		});
+		const j = await r.json();
+		if (r.ok)
+			a.requestDisplay();
+		else
+			a.renderToast(j, "error");
 	}
 
 	async updateDisplay() {

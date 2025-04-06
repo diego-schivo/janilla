@@ -27,11 +27,9 @@ package com.janilla.cms;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import com.janilla.persistence.Crud;
 import com.janilla.persistence.Persistence;
@@ -39,19 +37,16 @@ import com.janilla.reflect.Reflection;
 
 public class DocumentCrud<E extends Document> extends Crud<E> {
 
-	protected final boolean versions;
-
 	protected final String versionStore;
 
-	public DocumentCrud(Class<E> type, Persistence persistence, boolean versions) {
+	public DocumentCrud(Class<E> type, Persistence persistence) {
 		super(type, persistence);
-		this.versions = versions;
 		versionStore = Version.class.getSimpleName() + "<" + type.getSimpleName() + ">";
 	}
 
 	@Override
 	public E create(E entity) {
-		if (!versions)
+		if (!type.isAnnotationPresent(Versions.class))
 			return super.create(entity);
 		return persistence.database().perform((ss, _) -> {
 			var e = super.create(entity);
@@ -67,7 +62,7 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 	}
 
 	public E read(long id, boolean drafts) {
-		if (!versions || !drafts)
+		if (!type.isAnnotationPresent(Versions.class) || !drafts)
 			return read(id);
 		if (id <= 0)
 			return null;
@@ -84,7 +79,7 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 	}
 
 	public List<E> read(long[] ids, boolean drafts) {
-		if (!versions || !drafts)
+		if (!type.isAnnotationPresent(Versions.class) || !drafts)
 			return read(ids);
 		if (ids == null || ids.length == 0)
 			return List.of();
@@ -92,32 +87,33 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 				false);
 	}
 
-	public E update(long id, E entity, Document.Status status, boolean newVersion) {
-		var z = Set.of("id", "createdAt", "updatedAt", "status", "publishedAt");
-		if (!versions)
-			return super.update(id, x -> Reflection.copy(entity, x, y -> !z.contains(y)));
+	public E update(long id, E entity, Set<String> include, boolean newVersion) {
+		var exclude = Set.of("id", "createdAt", "updatedAt", "publishedAt");
+		if (!type.isAnnotationPresent(Versions.class))
+			return super.update(id, x -> Reflection.copy(entity, x,
+					y -> (include == null || include.contains(y)) && !exclude.contains(y)));
 		return persistence.database().perform((ss, ii) -> {
+			var e1 = read(id, true);
 			E e2;
 			class A {
 
 				boolean nv = newVersion;
 			}
 			var a = new A();
-			switch (status) {
+			switch (entity.status()) {
 			case DRAFT:
-				var e1 = super.read(id);
-				e2 = Reflection.copy(Map.of("updatedAt", Instant.now()),
-						Reflection.copy(entity, e1, y -> !z.contains(y)));
-				if (status != e1.status())
+				e2 = Reflection.copy(Map.of("updatedAt", Instant.now()), Reflection.copy(entity, e1,
+						y -> (include == null || include.contains(y)) && !exclude.contains(y)));
+				if (e2.status() != e1.status())
 					a.nv = true;
 				break;
 			case PUBLISHED:
 				e2 = super.update(id, x -> {
-					x = Reflection.copy(entity, x, y -> !z.contains(y));
-					if (status != x.status()) {
-						x = Reflection.copy(Map.of("status", status), x);
+					var s1 = x.status();
+					x = Reflection.copy(entity, e1,
+							y -> (include == null || include.contains(y)) && !exclude.contains(y));
+					if (x.status() != s1)
 						a.nv = true;
-					}
 					return x;
 				});
 				break;
@@ -150,7 +146,7 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 
 	@Override
 	public E delete(long id) {
-		if (!versions)
+		if (!type.isAnnotationPresent(Versions.class))
 			return super.delete(id);
 		return persistence.database().perform((ss, ii) -> {
 			var e = super.delete(id);
@@ -167,16 +163,25 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 		}, true);
 	}
 
-	@Override
-	public List<E> delete(long[] ids) {
-		if (!versions)
-			return super.delete(ids);
+//	@Override
+//	public List<E> delete(long[] ids) {
+//		if (!type.isAnnotationPresent(Versions.class))
+//			return super.delete(ids);
+//		if (ids == null || ids.length == 0)
+//			return List.of();
+//		return persistence.database().perform((_, _) -> Arrays.stream(ids).mapToObj(this::delete).toList(), true);
+//	}
+
+	public List<E> patch(long[] ids, E entity, Set<String> include) {
+		if (!type.isAnnotationPresent(Versions.class))
+			throw new UnsupportedOperationException();
 		if (ids == null || ids.length == 0)
 			return List.of();
-		return persistence.database().perform((_, _) -> Arrays.stream(ids).mapToObj(this::delete).toList(), true);
+		return persistence.database()
+				.perform((_, _) -> Arrays.stream(ids).mapToObj(x -> update(x, entity, include, true)).toList(), true);
 	}
 
-	public Stream<Version<E>> readVersions(long id) {
+	public List<Version<E>> readVersions(long id) {
 		return persistence.database().perform((ss, ii) -> {
 			var ll = ii.perform(versionStore + ".document",
 					i -> i.list(id).mapToLong(x -> (long) ((Object[]) x)[1]).toArray());
@@ -185,7 +190,7 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 				@SuppressWarnings("unchecked")
 				var v = (Version<E>) parse((String) o, Version.class);
 				return v;
-			}));
+			})).toList();
 			return vv;
 		}, false);
 	}
@@ -225,28 +230,28 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 		}, true);
 	}
 
-	@Override
-	protected E beforeCreate(E entity, long x) {
-		var i = Instant.now();
-		var v = entity.getClass().getAnnotation(Versions.class);
-		var m = Map.of("id", x, "createdAt", i, "updatedAt", i);
-		if (entity.status() == null) {
-			m = new HashMap<>(m);
-			m.put("status", v != null && v.drafts() ? Document.Status.DRAFT : Document.Status.PUBLISHED);
-		}
-		return Reflection.copy(m, entity);
-	}
-
-	@Override
-	protected E beforeUpdate(E entity) {
-		var i = Instant.now();
-		Map<String, Instant> m = Map.of("updatedAt", i);
-		if (entity.status() == Document.Status.PUBLISHED) {
-			m = new HashMap<>(m);
-			m.put("publishedAt", i);
-		}
-		return Reflection.copy(m, entity);
-	}
+//	@Override
+//	protected E beforeCreate(E entity, long x) {
+//		var i = Instant.now();
+//		var v = type.getAnnotation(Versions.class);
+//		var m = Map.of("id", x, "createdAt", i, "updatedAt", i);
+//		if (entity.status() == null) {
+//			m = new HashMap<>(m);
+//			m.put("status", v != null && v.drafts() ? Document.Status.DRAFT : Document.Status.PUBLISHED);
+//		}
+//		return Reflection.copy(m, entity);
+//	}
+//
+//	@Override
+//	protected E beforeUpdate(E entity) {
+//		var i = Instant.now();
+//		Map<String, Instant> m = Map.of("updatedAt", i);
+//		if (entity.status() == Document.Status.PUBLISHED) {
+//			m = new HashMap<>(m);
+//			m.put("publishedAt", i);
+//		}
+//		return Reflection.copy(m, entity);
+//	}
 
 	protected void updateVersionIndexes(Iterable<Version<E>> vv1, Iterable<Version<E>> vv2, long id) {
 		class A {

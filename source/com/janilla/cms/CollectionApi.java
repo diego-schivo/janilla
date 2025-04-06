@@ -25,23 +25,29 @@
 package com.janilla.cms;
 
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.function.Predicate;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.json.MapAndType;
 import com.janilla.persistence.Persistence;
+import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
+import com.janilla.web.MethodHandlerFactory;
 import com.janilla.web.NotFoundException;
 
 public abstract class CollectionApi<E extends Document> {
 
 	protected final Class<E> type;
 
+	protected final Predicate<HttpExchange> drafts;
+
 	public Persistence persistence;
 
-	protected CollectionApi(Class<E> type) {
+	protected CollectionApi(Class<E> type, Predicate<HttpExchange> drafts) {
 		this.type = type;
+		this.drafts = drafts;
 	}
 
 	@Handle(method = "POST")
@@ -51,7 +57,7 @@ public abstract class CollectionApi<E extends Document> {
 
 	@Handle(method = "GET", path = "(\\d+)")
 	public E read(long id, HttpExchange exchange) {
-		var e = crud().read(id, drafts(exchange));
+		var e = crud().read(id, drafts.test(exchange));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
 		return e;
@@ -60,9 +66,10 @@ public abstract class CollectionApi<E extends Document> {
 	@Handle(method = "PUT", path = "(\\d+)")
 	public E update(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft,
 			Boolean autosave) {
-		var e = crud().update(id, entity,
-				Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED,
-				!Boolean.TRUE.equals(autosave));
+		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
+		if (s != entity.status())
+			entity = Reflection.copy(Map.of("status", s), entity);
+		var e = crud().update(id, entity, null, !Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
 		return e;
@@ -81,8 +88,13 @@ public abstract class CollectionApi<E extends Document> {
 		return crud().delete(ids);
 	}
 
+	@Handle(method = "PATCH")
+	public List<E> patch(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, @Bind("id") long[] ids) {
+		return crud().patch(ids, entity, MethodHandlerFactory.JSON_KEYS.get());
+	}
+
 	@Handle(method = "GET", path = "(\\d+)/versions")
-	public Stream<Version<E>> readVersions(long id) {
+	public List<Version<E>> readVersions(long id) {
 		return crud().readVersions(id);
 	}
 
@@ -101,5 +113,5 @@ public abstract class CollectionApi<E extends Document> {
 		return (DocumentCrud<E>) persistence.crud(type);
 	}
 
-	protected abstract boolean drafts(HttpExchange exchange);
+//	protected abstract boolean drafts(HttpExchange exchange);
 }

@@ -7,12 +7,7 @@ textarea {
 }
 
 button,
-ol,
-ul {
-  padding: 0;
-}
-
-button {
+.button {
   background: rgb(60, 60, 60);
   border: 1px solid rgb(60, 60, 60);
   border-radius: 0.25rem;
@@ -53,6 +48,22 @@ h4 {
 h1 {
   font-size: 1.5rem;
   margin-bottom: 0.75rem;
+
+  @media (min-width: 1441px) {
+    font-size: 2rem;
+  }
+}
+
+h2 {
+  font-size: 1.625rem;
+}
+
+h4 {
+  font-size: 1rem;
+}
+
+img {
+  display: block;
 }
 
 input:not([type]),
@@ -71,9 +82,7 @@ select {
 }
 
 label {
-  font-size: 0.75rem;
-
-  &:has([type="checkbox"]) {
+  &.checkbox {
     align-items: center;
     display: flex;
     gap: 0.5rem;
@@ -90,11 +99,29 @@ label {
       border-radius: 0.1875rem;
     }
   }
+
+  &.toggler {
+    cursor: pointer;
+
+    &:has(input:checked) {
+      lucide-icon:first-of-type {
+        display: none;
+      }
+    }
+
+    &:has(input:not(:checked)) {
+      lucide-icon:last-of-type,
+      + ul {
+        display: none;
+      }
+    }
+  }
 }
 
 ol,
 ul {
   list-style: none;
+  padding: 0;
 }
 
 select {

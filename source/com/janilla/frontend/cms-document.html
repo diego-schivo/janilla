@@ -1,5 +1,5 @@
 <h1>${title}</h1>
-<cms-tabs data-name="document-subview" data-tabs="${tabs}" data-active-tab="${activeTab}">
+<cms-tabs data-name="document-subview" data-tabs="${tabs}" data-active-tab="${activeTab}" data-no-tab-panels>
   <!--${edit}-->
   <!--${versions}-->
   <!--${api}-->
@@ -11,7 +11,7 @@
 </cms-tabs>
 
 <template id="edit">
-  <span slot="button-edit">edit</span>
+  <span slot="button-edit">Edit</span>
 </template>
 
 <template id="edit-panel">
@@ -22,7 +22,7 @@
 
 <template id="versions">
   <span slot="button-versions">
-    versions <em>${count}</em>
+    Versions <em>${count}</em>
   </span>
 </template>
 
@@ -42,7 +42,7 @@
 </template>
 
 <template id="api">
-  <span slot="button-api">api</span>
+  <span slot="button-api">API</span>
 </template>
 
 <template id="api-panel">

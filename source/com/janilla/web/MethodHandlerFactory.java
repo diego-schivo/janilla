@@ -43,9 +43,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -279,27 +281,31 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		return jj.findFirst().orElse(null);
 	}
 
+	public static final ScopedValue<Set<String>> JSON_KEYS = ScopedValue.newInstance();
+
 	protected void handle(Invocation invocation, HttpExchange exchange) {
 //		System.out.println("MethodHandlerFactory.handle, invocation=" + invocation);
-		var aa = resolveArguments(invocation, exchange);
+
+		var o = ScopedValue.where(JSON_KEYS, new HashSet<>()).call(() -> {
+			var aa = resolveArguments(invocation, exchange);
 //		System.out.println("MethodHandlerFactory.handle, aa=" + Arrays.toString(aa));
-		Object o;
-		try {
-			var bb = new Object[1 + aa.length];
-			bb[0] = invocation.target;
-			if (aa.length > 0)
-				System.arraycopy(aa, 0, bb, 1, aa.length);
-			o = invocation.methodHandle.invokeWithArguments(bb);
-		} catch (Throwable e) {
-			switch (e) {
-			case RuntimeException x:
-				throw x;
-			case Exception x:
-				throw new HandleException(x);
-			default:
-				throw new RuntimeException(e);
+			try {
+				var bb = new Object[1 + aa.length];
+				bb[0] = invocation.target;
+				if (aa.length > 0)
+					System.arraycopy(aa, 0, bb, 1, aa.length);
+				return invocation.methodHandle.invokeWithArguments(bb);
+			} catch (Throwable e) {
+				switch (e) {
+				case RuntimeException x:
+					throw x;
+				case Exception x:
+					throw new HandleException(x);
+				default:
+					throw new RuntimeException(e);
+				}
 			}
-		}
+		});
 
 		var rs = exchange.getResponse();
 		if (rs.getStatus() != 0)
@@ -351,7 +357,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		var rq = exchange.getRequest();
 		var qs = Net.parseQueryString(rq.getQuery());
 		Supplier<String> bs = switch (rq.getMethod()) {
-		case "POST", "PUT" -> {
+		case "PATCH", "POST", "PUT" -> {
 			var s = new Supplier<String>() {
 
 				private String[] x;
@@ -446,8 +452,13 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 //				System.out.println("MethodHandlerFactory.resolveArgument, b=" + b);
 				if (b == null)
 					return null;
-				var d = new Converter(resolver != null ? resolver.get() : null);
-				return d.convert(Json.parse(b), c);
+				var o = Json.parse(b);
+				if (o instanceof Map<?, ?> m) {
+					@SuppressWarnings("unchecked")
+					var kk = (Collection<String>) m.keySet();
+					JSON_KEYS.get().addAll(kk);
+				}
+				return new Converter(resolver != null ? resolver.get() : null).convert(o, c);
 			}
 			case "application/x-www-form-urlencoded": {
 				if (entries == null)

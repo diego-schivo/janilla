@@ -52,16 +52,19 @@ export default class CmsArray extends WebComponent {
 
 	handleChange = event => {
 		const s = this.state;
-		if (event.target.matches("select")) {
+		if (event.target.matches("select:not([name])")) {
 			event.stopPropagation();
-			const li = event.target.closest("li");
-			const i = Array.prototype.indexOf.call(li.parentElement.children, li);
-			s.field.data.splice(i, 1);
-			s.items.splice(i, 1);
-			this.requestDisplay();
+			if (event.target.value === "remove") {
+				const li = event.target.closest("li");
+				const i = Array.prototype.indexOf.call(li.parentElement.children, li);
+				s.field.data.splice(i, 1);
+				s.items.splice(i, 1);
+				this.requestDisplay();
+			}
 		} else if (event.target.matches('[type="radio"]')) {
 			event.stopPropagation();
-			event.target.closest("dialog").close();
+			//event.target.closest("dialog").close();
+			a.dialog = false;
 			const a = this.closest("cms-admin");
 			a.initField(s.field);
 			s.field.data.push({ $type: event.target.value });
@@ -70,7 +73,7 @@ export default class CmsArray extends WebComponent {
 				key: s.nextKey++,
 				expand: true
 			});
-			console.log("x", JSON.stringify(a.state.entity));
+			//console.log("x", JSON.stringify(a.state.entity));
 			this.requestDisplay();
 		} else if (event.target.matches('[type="checkbox"]')) {
 			event.stopPropagation();
@@ -85,17 +88,28 @@ export default class CmsArray extends WebComponent {
 		if (b) {
 			event.stopPropagation();
 			const s = this.state;
-			if (s.field.elementTypes.length === 1) {
-				const a = this.closest("cms-admin");
-				a.initField(s.field);
-				s.field.data.push({ $type: s.field.elementTypes[0] });
-				s.items.push({
-					key: s.nextKey++,
-					expand: true
-				});
-				this.requestDisplay();
-			} else
-				this.querySelector(":scope > dialog").showModal();
+			switch (b.name) {
+				case "add":
+					if (s.field.elementTypes.length === 1) {
+						const a = this.closest("cms-admin");
+						a.initField(s.field);
+						s.field.data.push({ $type: s.field.elementTypes[0] });
+						s.items.push({
+							key: s.nextKey++,
+							expand: true
+						});
+					} else
+						//this.querySelector(":scope > dialog").showModal();
+						s.dialog = true;
+					break;
+				case "collapse-all":
+					s.items.forEach(x => x.expand = false);
+					break;
+				case "show-all":
+					s.items.forEach(x => x.expand = true);
+					break;
+			}
+			this.requestDisplay();
 		}
 	}
 
@@ -113,6 +127,7 @@ export default class CmsArray extends WebComponent {
 		}));
 		this.appendChild(this.interpolateDom({
 			$template: "",
+			label: this.dataset.label,
 			items: s.field.data?.map((x, i) => ({
 				$template: "item",
 				title: x.$type,
@@ -123,11 +138,14 @@ export default class CmsArray extends WebComponent {
 					key: s.items[i].key
 				}
 			})),
-			types: s.field.elementTypes.map(x => ({
-				$template: "type",
-				name: x,
-				expand: false
-			}))
+			dialog: s.dialog ? {
+				$template: "dialog",
+				types: s.field.elementTypes.map(x => ({
+					$template: "type",
+					name: x,
+					expand: false
+				}))
+			} : null
 		}));
 	}
 }

@@ -1,22 +1,43 @@
 cms-edit {
   form {
+    @media (min-width: 1441px) {
+      display: grid;
+      grid-template: auto 1fr / 1fr auto;
+    }
+
     > div {
       align-items: center;
-      background: rgb(20, 20, 20);
+      backdrop-filter: blur(8px);
+      background: rgba(20, 20, 20, 0.3);
       border-bottom: 1px solid rgb(47, 47, 47);
       display: flex;
       gap: 1rem;
       margin: 0 -1rem;
       position: sticky;
       top: 0;
+      z-index: 5;
 
       &:has(dl) {
         overflow: auto;
         padding: 1rem;
+
+        @media (min-width: 1441px) {
+          margin-left: -3.75rem;
+          margin-right: 0;
+          padding-left: 3.75rem;
+          padding-right: 0;
+        }
       }
 
       &:has(button) {
         padding: 0.5rem 1rem;
+
+        @media (min-width: 1441px) {
+          margin-left: 0;
+          margin-right: -3.75rem;
+          padding-left: 0;
+          padding-right: 3.75rem;
+        }
       }
 
       dl {
@@ -67,16 +88,24 @@ cms-edit {
     }
 
     > cms-object {
-      margin-top: 0.5rem;
-    }
-  }
+      align-items: flex-start;
+      /*margin-top: 0.5rem;*/
 
-  @media (min-width: 1441px) {
-    form {
-      display: grid;
-      grid-template: auto 1fr / 1fr auto;
-  
-      > cms-object {
+      > ul {
+        @media (min-width: 1441px) {
+          padding-top: 1.875rem;
+          padding-bottom: 3.75rem;
+        }
+
+        &:nth-child(2) {
+          @media (min-width: 1441px) {
+            position: sticky;
+            top: 3.5rem;
+          }
+        }
+      }
+
+      @media (min-width: 1441px) {
         grid-column: 1 / span 2;
       }
     }

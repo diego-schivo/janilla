@@ -120,11 +120,9 @@ public class Converter {
 			return UUID.fromString((String) object);
 		if (c == byte[].class)
 			return Base64.getDecoder().decode((String) object);
-//		if (c == long[].class)
-//			return ((Collection<?>) object).stream().mapToLong(x -> (long) x).toArray();
 
 		if (c != null && c.isEnum())
-			return Stream.of(c.getEnumConstants()).filter(x -> x.toString().equals(object)).findFirst().orElseThrow();
+			return Stream.of(c.getEnumConstants()).filter(x -> x.toString().equals(object)).findFirst().orElse(null); // .orElseThrow();
 
 		if (c != null && (c.isArray() || Collection.class.isAssignableFrom(c))) {
 			var s = switch (object) {

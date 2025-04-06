@@ -60,6 +60,8 @@ export class WebComponent extends HTMLElement {
 	disconnectedCallback() {
 		// console.log(`WebComponent(${this.constructor.name}).disconnectedCallback`);
 		delete this.state;
+		//while (this.firstChild)
+		//	this.removeChild(this.lastChild);
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
@@ -142,7 +144,10 @@ export class WebComponent extends HTMLElement {
 			const i = getInterpolate(t, indexes[t]++);
 			return i(y);
 		};
-		return interpolate(input);
+		const n = interpolate(input);
+		//if (n instanceof DocumentFragment && !n.firstChild && n.originalChildNodes?.length)
+		//	n.append(...n.originalChildNodes);
+		return n;
 	}
 }
 

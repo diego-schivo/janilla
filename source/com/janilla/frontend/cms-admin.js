@@ -123,7 +123,6 @@ export default class CmsAdmin extends WebComponent {
 			if (!["/create-first-user", "/login", "/forgot", "/reset"].includes(p) && !p.startsWith("/reset/")) {
 				history.pushState(undefined, "", "/admin/login");
 				dispatchEvent(new CustomEvent("popstate"));
-				return;
 			}
 		} else {
 			if (["/create-first-user", "/login", "/forgot"].includes(p) || p.startsWith("/reset/")) {
@@ -156,27 +155,32 @@ export default class CmsAdmin extends WebComponent {
 				s.documentSubview === "versions" ? fetch(`${s.entityUrl}/versions`).then(async x => s.versions = await x.json()) : null,
 				s.documentSubview === "version" ? fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
 			]);
+			this.requestDisplay();
 		}
-		this.requestDisplay();
 	}
 
 	async updateDisplay() {
 		const s = this.state;
 		s.computeState ??= this.computeState();
+		const gg = s.me && s.schema ? Object.entries(s.schema["Data"]).map(([k, v]) => ({
+			$template: "group",
+			label: k.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
+			checked: true,
+			links: Object.keys(s.schema[v.type]).map(x => ({
+				$template: "link",
+				href: `/admin/${k}/${x}`,
+				text: x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" ")
+			}))
+		})) : null;
 		this.appendChild(this.interpolateDom({
 			$template: "",
+			p: s.me ? {
+				$template: "p",
+				checked: true
+			} : null,
 			aside: s.me && s.schema ? {
 				$template: "aside",
-				groups: Object.entries(s.schema["Data"]).map(([k, v]) => ({
-					$template: "group",
-					name: k,
-					checked: true,
-					links: Object.keys(s.schema[v.type]).map(x => ({
-						$template: "link",
-						href: `/admin/${k}/${x}`,
-						name: x
-					}))
-				}))
+				groups: gg
 			} : null,
 			header: s.me ? {
 				$template: "header",
@@ -190,7 +194,7 @@ export default class CmsAdmin extends WebComponent {
 						case "collections":
 							xx.push({
 								href: `/admin/collections/${s.pathSegments[1]}`,
-								text: s.pathSegments[1]
+								text: s.pathSegments[1].split("-").map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ")
 							});
 							if (s.pathSegments[2]) {
 								const h = `/admin/collections/${s.pathSegments[1]}/${s.pathSegments[2]}`;
@@ -269,16 +273,7 @@ export default class CmsAdmin extends WebComponent {
 			})(),
 			dialog: s.me && s.schema ? {
 				$template: "dialog",
-				groups: Object.entries(s.schema["Data"]).map(([k, v]) => ({
-					$template: "group",
-					name: k,
-					checked: true,
-					links: Object.keys(s.schema[v.type]).map(x => ({
-						$template: "link",
-						href: `/admin/${k}/${x}`,
-						name: x
-					}))
-				}))
+				groups: gg
 			} : null
 		}));
 	}
@@ -324,7 +319,7 @@ export default class CmsAdmin extends WebComponent {
 	}
 
 	label(path) {
-		return path.split(".").at(-1).split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ");
+		return path.split(".").at(-1).split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ");
 	}
 
 	title(entity) {
@@ -359,10 +354,10 @@ export default class CmsAdmin extends WebComponent {
 			case "Integer":
 				return "cms-text";
 			case "String":
-				return field.options ? "radio-group-control"
+				return field.options ? "cms-select"
 					: field.name === "slug" ? "cms-slug" : "cms-text";
 			case "List":
-				return field.referenceType ? "reference-list-control" : "cms-array";
+				return field.referenceType ? "reference-list-control" : "array";
 			case "Long":
 				return field.referenceType ? "cms-reference" : "cms-text";
 			default:
@@ -384,5 +379,14 @@ export default class CmsAdmin extends WebComponent {
 
 	sidebar(type) {
 		return null;
+	}
+
+	renderToast() {
+		const el = this.querySelector("cms-toasts");
+		el.renderToast.apply(el, arguments);
+	}
+	
+	isReadOnly(type) {
+		return false;
 	}
 }

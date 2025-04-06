@@ -42,4 +42,7 @@ public interface Document {
 
 		DRAFT, PUBLISHED
 	}
+
+	public record Reference<T extends Document>(Class<T> type, long id) {
+	}
 }

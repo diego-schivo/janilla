@@ -1,6 +1,23 @@
 cms-array {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  row-gap: 0.5rem;
+
+  > ul {
+    display: flex;
+    gap: 0.5rem;
+
+    button {
+      background: transparent;
+      border: none;
+      text-decoration: underline;
+    }
+  }
+
   > ol {
     gap: 1rem;
+    grid-column: 1 / span 2;
 
     &,
     > li > article {
