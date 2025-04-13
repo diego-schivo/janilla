@@ -44,6 +44,11 @@ public abstract class GlobalApi<E> {
 		this.type = type;
 	}
 
+	@Handle(method = "POST")
+	public E create(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
+		return crud().create(entity);
+	}
+
 	@Handle(method = "GET")
 	public E read() {
 		var e = crud().read(1);

@@ -1,7 +1,15 @@
 cms-document {
   @media (min-width: 1441px) {
+    align-items: center;
     display: grid;
+    gap: 1.5rem;
     grid-template: auto 1fr / 1fr auto;
+  }
+
+  h1 {
+    @media (min-width: 1441px) {
+      margin: 0;
+    }
   }
 
   > cms-tabs {
@@ -9,8 +17,7 @@ cms-document {
       @media (min-width: 1441px) {
         border-top: 1px solid rgb(47, 47, 47);
         grid-column: 1 / span 2;
-        margin-left: -3.75rem;
-        margin-right: -3.75rem;
+        margin: 0 -3.75rem auto;
         padding-left: 3.75rem;
         padding-right: 3.75rem;
       }
@@ -34,5 +41,11 @@ cms-document {
       width: 100%;
     }
     */
+
+    [slot^="panel-"] {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
   }
 }

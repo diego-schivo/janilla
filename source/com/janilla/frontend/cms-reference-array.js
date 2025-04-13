@@ -24,10 +24,14 @@
  */
 import { WebComponent } from "./web-component.js";
 
-export default class VersionView extends WebComponent {
+export default class CmsReferenceArray extends WebComponent {
+
+	static get observedAttributes() {
+		return ["data-array-key", "data-path", "data-updated-at"];
+	}
 
 	static get templateName() {
-		return "version";
+		return "cms-reference-array";
 	}
 
 	constructor() {
@@ -45,40 +49,59 @@ export default class VersionView extends WebComponent {
 	}
 
 	handleClick = async event => {
-		const b = event.target.closest("button");
-		if (!b?.name)
-			return;
-		event.stopPropagation();
-		switch (b.name) {
-			case "cancel":
-				this.querySelector("dialog").close();
-				break;
-			case "confirm":
+		const s = this.state;
+		let el = event.target.closest("button");
+		if (el) {
+			event.stopPropagation();
+			switch (el.name) {
+				case "add":
+					s.dialog = true;
+					break;
+				case "close":
+					delete s.dialog;
+					break;
+			}
+			this.requestDisplay();
+		}
+		el = event.target.closest("a");
+		if (el) {
+			event.preventDefault();
+			const id = parseInt(el.getAttribute("href").split("/").at(-1));
+			if (s.dialog) {
 				const a = this.closest("cms-admin");
-				const s = a.state;
-				s.entity = await (await fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.version.id}`, { method: "POST" })).json();
-				a.renderToast("Restored successfully.");
-				history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 3).join("/")}`);
-				dispatchEvent(new CustomEvent("popstate"));
-				break;
-			case "restore":
-				this.querySelector("dialog").showModal();
-				break;
+				a.initField(s.field);
+				const c = this.querySelector("dialog cms-collection");
+				s.field.data.push(c.state.data.find(x => x.id === id));
+				delete s.dialog;
+			} else
+				s.field.data.splice(s.field.data.findIndex(x => x.id === id), 1);
+			this.requestDisplay();
+			this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
 		}
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("cms-admin");
-		const s = ap.state;
-		const ua = ap.dateTimeFormat.format(new Date(s.version.updatedAt));
+		const a = this.closest("cms-admin");
+		const p = this.dataset.path;
+		const s = this.state;
+		s.field ??= a.field(p);
+		const cc = a.state.schema["Collections"];
+		const cn = Object.entries(cc).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			title: ua,
-			json: JSON.stringify(s.version.document, null, "  "),
-			dialog: {
+			...this.dataset,
+			name: p,
+			collection: cn,
+			ids: s.field.data?.map(x => x.id).join(),
+			inputs: s.field.data?.map((x, i) => ({
+				$template: "input",
+				name: `${p}.${i}`,
+				value: x.id
+			})),
+			dialog: s.dialog ? {
 				$template: "dialog",
-				dateTime: ua
-			}
+				collection: cn
+			} : null
 		}));
 	}
 }

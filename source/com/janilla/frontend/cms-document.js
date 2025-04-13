@@ -39,19 +39,19 @@ export default class CmsDocument extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("cms-admin");
-		const s = ap.state;
+		const a = this.closest("cms-admin");
+		const s = a.state;
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			title: (() => {
-				let t = ap.title(s.entity);
+				let t = a.title(s.document);
 				if (!t?.length)
 					t = s.pathSegments[2];
 				return t;
 			})(),
 			tabs: [
 				"edit",
-				Object.hasOwn(s.entity, "versionCount") ? "versions" : null,
+				Object.hasOwn(s.document, "versionCount") ? "versions" : null,
 				"api"
 			].filter(x => x).join(),
 			activeTab: (() => {
@@ -67,22 +67,25 @@ export default class CmsDocument extends WebComponent {
 			edit: {
 				$template: "edit"
 			},
-			versions: Object.hasOwn(s.entity, "versionCount") ? {
+			versions: Object.hasOwn(s.document, "versionCount") ? {
 				$template: "versions",
-				count: s.entity.versionCount
+				count: s.document.versionCount
 			} : null,
 			api: {
 				$template: "api"
 			},
-			editPanel: this.dataset.subview === "default" ? { $template: "edit-panel" } : null,
+			editPanel: this.dataset.subview === "default" ? {
+				$template: "edit-panel",
+				updatedAt: this.dataset.updatedAt
+			} : null,
 			versionsPanel: ["versions", "version"].includes(this.dataset.subview) ? {
 				$template: "versions-panel",
-				versionsView: this.dataset.subview === "versions" ? { $template: "versions-view" } : null,
-				versionView: this.dataset.subview === "version" ? { $template: "version-view" } : null
+				versionsView: this.dataset.subview === "versions" ? { $template: "cms-versions" } : null,
+				versionView: this.dataset.subview === "version" ? { $template: "cms-version" } : null
 			} : null,
 			apiPanel: this.dataset.subview === "api" ? {
 				$template: "api-panel",
-				json: JSON.stringify(s.entity, null, "  ")
+				json: JSON.stringify(s.document, null, "  ")
 			} : null
 		}));
 	}

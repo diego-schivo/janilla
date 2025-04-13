@@ -1,7 +1,11 @@
 cms-reference {
-  dialog {
-    position: relative;
+  .no-value {
+    border: 1px dotted rgb(141, 141, 141);
+    border-radius: 0.25rem;
+    padding: 1.25rem;
+  }
 
+  dialog {
     > button[name="close"] {
       background: transparent;
       border: none;

@@ -45,31 +45,31 @@ export default class CmsDashboard extends WebComponent {
 	}
 
 	handleClick = async event => {
-		const b = event.target.closest("button");
-		if (!b)
-			return;
-		event.stopPropagation();
-		event.preventDefault();
-		const a = this.closest("cms-admin");
-		switch (b.name) {
-			case "seed":
-				await fetch("/api/seed", { method: "POST" });
-				a.renderToast("Database seeded!", "success");
-				break;
-			case "create":
-				const t = b.closest("a").getAttribute("href").split("/").at(-1);
-				const r = await fetch(`/api/${t}`, {
-					method: "POST",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({ $type: b.dataset.type })
-				});
-				const j = await r.json();
-				if (r.ok) {
-					history.pushState(undefined, "", `/admin/collections/${t}/${j.id}`);
-					dispatchEvent(new CustomEvent("popstate"));
-				} else
-					a.renderToast(j, "error");
-				break;
+		const el = event.target.closest("button");
+		if (el) {
+			event.stopPropagation();
+			event.preventDefault();
+			const a = this.closest("cms-admin");
+			switch (el.name) {
+				case "seed":
+					await fetch("/api/seed", { method: "POST" });
+					a.renderToast("Database seeded!", "success");
+					break;
+				case "create":
+					const t = el.closest("a").getAttribute("href").split("/").at(-1);
+					const r = await fetch(`/api/${t}`, {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({ $type: el.dataset.type })
+					});
+					const j = await r.json();
+					if (r.ok) {
+						history.pushState(undefined, "", `/admin/collections/${t}/${j.id}`);
+						dispatchEvent(new CustomEvent("popstate"));
+					} else
+						a.renderToast(j, "error");
+					break;
+			}
 		}
 	}
 

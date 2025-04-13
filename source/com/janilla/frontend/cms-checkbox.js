@@ -24,14 +24,14 @@
  */
 import { WebComponent } from "./web-component.js";
 
-export default class CheckboxControl extends WebComponent {
+export default class CmsCheckbox extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
-		return "checkbox-control";
+		return "cms-checkbox";
 	}
 
 	constructor() {

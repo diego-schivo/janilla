@@ -1,11 +1,13 @@
 @charset "UTF-8";
+
 @import "admin-base.css";
 
 @import "cms-admin.css";
-@import "checkbox-control.css";
+@import "cms-checkbox.css";
 @import "cms-collection.css";
 @import "cms-first-register.css";
 @import "cms-dashboard.css";
+@import "cms-datetime.css";
 @import "cms-document.css";
 @import "cms-document-reference.css";
 @import "cms-edit.css";
@@ -15,16 +17,16 @@
 @import "cms-login.css";
 @import "lucide-icon.css";
 @import "cms-object.css";
-@import "radio-group-control.css";
+@import "cms-radio.css";
 @import "cms-reference.css";
-@import "reference-list-control.css";
+@import "cms-reference-array.css";
 @import "cms-reset-password.css";
 @import "cms-rich-text.css";
 @import "cms-select.css";
 @import "cms-slug.css";
 @import "cms-tabs.css";
-@import "textarea-control.css";
+@import "cms-textarea.css";
 @import "cms-text.css";
 @import "cms-toasts.css";
-@import "version.css";
-@import "versions.css";
+@import "cms-version.css";
+@import "cms-versions.css";

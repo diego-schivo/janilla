@@ -1,14 +1,19 @@
 <cms-collection data-name="${collection}" data-ids="${ids}"></cms-collection>
 <div>
-  <button type="button" name="add">add</button>
+  <button type="button" name="add">
+    <lucide-icon data-name="plus"></lucide-icon>
+    Add
+  </button>
 </div>
 <!--${inputs}-->
+<!--${dialog}-->
+
 <template id="input">
   <input type="hidden" name="${name}" value="${value}" />
 </template>
-<!--${dialog}-->
+
 <template id="dialog">
-  <dialog>
+  <dialog open>
     <button type="button" name="close">
       <lucide-icon data-name="x"></lucide-icon>
     </button>

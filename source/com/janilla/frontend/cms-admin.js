@@ -56,30 +56,30 @@ export default class CmsAdmin extends WebComponent {
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
-		if (newValue !== oldValue && this.state)
-			delete this.state.computeState;
+		const s = this.state;
+		if (newValue !== oldValue && s?.computeState)
+			delete s.computeState;
 		super.attributeChangedCallback(name, oldValue, newValue);
 	}
 
 	handleClick = async event => {
-		const b = event.target.closest("button");
-		if (!b?.name)
-			return;
-		event.stopPropagation();
-		switch (b.name) {
-			case "open-menu":
-				this.querySelector("dialog").showModal();
-				break;
-			case "close-menu":
-				this.querySelector("dialog").close();
-				break;
-			case "logout":
-				await fetch("/api/users/logout", { method: "POST" });
-				//b.closest("dialog").close();
-				delete this.state.me;
-				history.pushState(undefined, "", "/admin");
-				dispatchEvent(new CustomEvent("popstate"));
-				break;
+		const el = event.target.closest("button");
+		if (el?.name) {
+			event.stopPropagation();
+			switch (el.name) {
+				case "open-menu":
+					this.querySelector("dialog").showModal();
+					break;
+				case "close-menu":
+					this.querySelector("dialog").close();
+					break;
+				case "logout":
+					await fetch("/api/users/logout", { method: "POST" });
+					delete this.state.me;
+					history.pushState(undefined, "", "/admin");
+					dispatchEvent(new CustomEvent("popstate"));
+					break;
+			}
 		}
 	}
 
@@ -102,11 +102,11 @@ export default class CmsAdmin extends WebComponent {
 			"pathSegments",
 			"collectionSlug",
 			"globalSlug",
-			"entityType",
-			"entityUrl",
+			"documentType",
+			"documentUrl",
 			"documentSubview",
 			"versionId",
-			"entity",
+			"document",
 			"versions",
 			"version"
 		].forEach(x => delete s[x]);
@@ -135,25 +135,25 @@ export default class CmsAdmin extends WebComponent {
 
 			if (s.pathSegments[0] === "collections") {
 				s.collectionSlug = s.pathSegments[1];
-				s.entityType = s.schema["Collections"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].elementTypes[0];
-				s.entityUrl = s.pathSegments.length >= 3 ? `/api/${s.collectionSlug}/${s.pathSegments[2]}` : null;
+				s.documentType = s.schema["Collections"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].elementTypes[0];
+				s.documentUrl = s.pathSegments.length >= 3 ? `/api/${s.collectionSlug}/${s.pathSegments[2]}` : null;
 			}
 			if (s.pathSegments[0] === "globals") {
 				s.globalSlug = s.pathSegments[1];
-				s.entityType = s.schema["Globals"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].type;
-				s.entityUrl = s.pathSegments.length >= 2 ? `/api/${s.globalSlug}` : null;
+				s.documentType = s.schema["Globals"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].type;
+				s.documentUrl = s.pathSegments.length >= 2 ? `/api/${s.globalSlug}` : null;
 			}
 
-			s.documentSubview = s.entityUrl ? s.pathSegments[s.collectionSlug ? 3 : 2] ?? "default" : null;
+			s.documentSubview = s.documentUrl ? s.pathSegments[s.collectionSlug ? 3 : 2] ?? "default" : null;
 			s.versionId = s.documentSubview === "versions" ? s.pathSegments[s.collectionSlug ? 4 : 3] : null;
 			if (s.versionId) {
 				s.documentSubview = "version";
 				s.versionId = parseInt(s.versionId);
 			}
 			await Promise.all([
-				s.entityUrl ? fetch(s.entityUrl).then(async x => s.entity = await x.json()) : null,
-				s.documentSubview === "versions" ? fetch(`${s.entityUrl}/versions`).then(async x => s.versions = await x.json()) : null,
-				s.documentSubview === "version" ? fetch(`${s.entityUrl.substring(0, s.entityUrl.lastIndexOf("/"))}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
+				s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : { $type: s.documentType }) : null,
+				s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`).then(async x => s.versions = await x.json()) : null,
+				s.documentSubview === "version" ? fetch(`${s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/"))}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
 			]);
 			this.requestDisplay();
 		}
@@ -198,17 +198,17 @@ export default class CmsAdmin extends WebComponent {
 							});
 							if (s.pathSegments[2]) {
 								const h = `/admin/collections/${s.pathSegments[1]}/${s.pathSegments[2]}`;
-								let t = s.entity ? this.title(s.entity) : null;
+								let t = s.document ? this.title(s.document) : null;
 								if (!t?.length)
 									t = s.pathSegments[2];
 								xx.push({
 									href: h,
 									text: t
 								});
-								if (s.documentSubview !== "default")
+								if (s.documentSubview && s.documentSubview !== "default")
 									xx.push({
 										href: `${h}/${s.documentSubview === "version" ? "versions" : s.documentSubview}`,
-										text: s.documentSubview === "version" ? "versions" : s.documentSubview
+										text: s.documentSubview === "version" ? "Versions" : s.documentSubview.split("-").map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ")
 									});
 								if (s.versionId)
 									xx.push({
@@ -256,16 +256,16 @@ export default class CmsAdmin extends WebComponent {
 						return s.pathSegments.length === 2 ? {
 							$template: "collection",
 							name: s.pathSegments[1]
-						} : s.entity ? {
+						} : s.document ? {
 							$template: "document",
 							subview: s.documentSubview,
-							updatedAt: s.entity.updatedAt
+							document: s.document
 						} : { $template: "loading" };
 					case "globals":
-						return s.entity ? {
+						return s.document ? {
 							$template: "document",
 							subview: s.documentSubview,
-							updatedAt: s.entity.updatedAt
+							document: s.document
 						} : { $template: "loading" };
 					default:
 						return { $template: s.schema ? "dashboard" : "loading" };
@@ -281,9 +281,9 @@ export default class CmsAdmin extends WebComponent {
 	field(path, parent) {
 		const s = this.state;
 		let f = parent ?? {
-			type: s.entityType,
-			properties: s.schema[s.entityType],
-			data: s.entity
+			type: s.documentType,
+			properties: s.schema[s.documentType],
+			data: s.document
 		};
 		if (path)
 			for (const n of path.split("."))
@@ -322,19 +322,21 @@ export default class CmsAdmin extends WebComponent {
 		return path.split(".").at(-1).split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ");
 	}
 
-	title(entity) {
-		switch (entity.$type) {
+	title(document) {
+		if (Object.values(this.state.schema.Globals).some(x => x.type === document.$type))
+			return document.$type.split(/(?=[A-Z])/).join(" ");
+		switch (document.$type) {
 			case "Media":
-				return entity.file?.name;
+				return document.file?.name;
 			case "User":
-				return entity.name;
+				return document.name;
 			default:
-				return entity.title;
+				return document.title;
 		}
 	}
 
-	headers(entitySlug) {
-		switch (entitySlug) {
+	headers(documentSlug) {
+		switch (documentSlug) {
 			case "media":
 				return ["file", "alt", "caption", "updatedAt"];
 			case "users":
@@ -347,17 +349,21 @@ export default class CmsAdmin extends WebComponent {
 	controlTemplate(field) {
 		switch (field.type) {
 			case "Boolean":
-				return "checkbox-control";
+				return "checkbox";
+			case "Instant":
+				return "datetime";
 			case "File":
 				return "cms-file";
-			case "Instant":
 			case "Integer":
 				return "cms-text";
 			case "String":
-				return field.options ? "cms-select"
-					: field.name === "slug" ? "cms-slug" : "cms-text";
+				return field.options
+					? "select"
+					: field.name === "slug"
+						? "cms-slug"
+						: "cms-text";
 			case "List":
-				return field.referenceType ? "reference-list-control" : "array";
+				return field.referenceType ? "cms-reference-array" : "array";
 			case "Long":
 				return field.referenceType ? "cms-reference" : "cms-text";
 			case "Document.Reference":
@@ -375,7 +381,7 @@ export default class CmsAdmin extends WebComponent {
 		return null;
 	}
 
-	preview(entity) {
+	preview(document) {
 		return null;
 	}
 

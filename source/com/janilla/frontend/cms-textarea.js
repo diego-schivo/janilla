@@ -24,49 +24,28 @@
  */
 import { WebComponent } from "./web-component.js";
 
-export default class CmsSlug extends WebComponent {
+export default class CmsTextarea extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
-		return "cms-slug";
+		return "cms-textarea";
 	}
 
 	constructor() {
 		super();
 	}
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.state.adminPanel = this.closest("cms-admin");
-		this.state.adminPanel.addEventListener("input", this.handleInput);
-	}
-
-	disconnectedCallback() {
-		this.state.adminPanel.removeEventListener("input", this.handleInput);
-		super.disconnectedCallback();
-	}
-
-	handleInput = event => {
-		const el = event.target.closest('input[name="title"]');
-		if (!el)
-			return;
-		const s = this.state;
-		s.field.parent.data[s.field.name] = el.value.split(/\W+/).filter(x => x).map(x => x.toLowerCase()).join("-");
-		s.field = s.adminPanel.field(s.field.name, s.field.parent);
-		this.requestDisplay();
-	}
-
 	async updateDisplay() {
+		const ap = this.closest("cms-admin");
 		const p = this.dataset.path;
-		const s = this.state;
-		s.field ??= s.adminPanel.field(p);
+		const f = ap.field(p);
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			name: p,
-			value: s.field.data
+			value: f.data
 		}));
 	}
 }

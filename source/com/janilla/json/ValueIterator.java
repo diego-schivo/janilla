@@ -59,6 +59,7 @@ public class ValueIterator extends TokenIterator {
 			var s = state;
 			state = switch (s) {
 			case 0 -> {
+				context.stack().push(object);
 				token = JsonToken.VALUE_START;
 				yield 1;
 			}
@@ -70,6 +71,7 @@ public class ValueIterator extends TokenIterator {
 				yield 2;
 			}
 			case 2 -> {
+				context.stack().pop();
 				token = JsonToken.VALUE_END;
 				yield 3;
 			}

@@ -26,6 +26,10 @@ import { WebComponent } from "./web-component.js";
 
 export default class CmsEdit extends WebComponent {
 
+	static get observedAttributes() {
+		return ["data-updated-at"];
+	}
+
 	static get templateName() {
 		return "cms-edit";
 	}
@@ -37,6 +41,7 @@ export default class CmsEdit extends WebComponent {
 	connectedCallback() {
 		super.connectedCallback();
 		this.addEventListener("change", this.handleChange);
+		this.addEventListener("document-change", this.handleDocumentChange);
 		this.addEventListener("input", this.handleInput);
 		this.addEventListener("submit", this.handleSubmit);
 	}
@@ -44,32 +49,85 @@ export default class CmsEdit extends WebComponent {
 	disconnectedCallback() {
 		super.disconnectedCallback();
 		this.removeEventListener("change", this.handleChange);
+		this.removeEventListener("document-change", this.handleDocumentChange);
 		this.removeEventListener("input", this.handleInput);
 		this.removeEventListener("submit", this.handleSubmit);
 	}
 
 	handleChange = async event => {
 		const el = event.target;
-		if (el.matches(":not([name])")) {
+		if (el.matches("select:not([name])")) {
 			event.stopPropagation();
-			if (el.value === "delete") {
-				const a = this.closest("cms-admin");
-				const s = a.state;
-				const r = await fetch(s.entityUrl, { method: "DELETE" });
-				const j = await r.json();
-				if (r.ok) {
-					history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 2).join("/")}`);
-					dispatchEvent(new CustomEvent("popstate"));
-				} else
-					a.renderToast(j, "error");
+			const a = this.closest("cms-admin");
+			const s = a.state;
+			let r, j;
+			switch (el.value) {
+				case "create":
+					r = await fetch(`/api/${s.collectionSlug}`, {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({ $type: s.documentType })
+					});
+					j = await r.json();
+					if (r.ok) {
+						history.pushState(undefined, "", `/admin/collections/${s.collectionSlug}/${j.id}`);
+						dispatchEvent(new CustomEvent("popstate"));
+					} else
+						a.renderToast(j, "error");
+					break;
+				case "duplicate":
+					for (const [k, v] of [...new FormData(this.querySelector("form")).entries()]) {
+						const i = k.lastIndexOf(".");
+						let f = a.field(k.substring(0, i));
+						a.initField(f);
+						f.data[k.substring(i + 1)] = v;
+					}
+					r = await fetch(`/api/${s.collectionSlug}`, {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify(s.document)
+					});
+					j = await r.json();
+					if (r.ok) {
+						history.pushState(undefined, "", `/admin/collections/${s.collectionSlug}/${j.id}`);
+						dispatchEvent(new CustomEvent("popstate"));
+					} else
+						a.renderToast(j, "error");
+					break;
+				case "delete":
+					r = await fetch(s.documentUrl, { method: "DELETE" });
+					j = await r.json();
+					if (r.ok) {
+						history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 2).join("/")}`);
+						dispatchEvent(new CustomEvent("popstate"));
+					} else
+						a.renderToast(j, "error");
+					break;
 			}
 		}
 	}
 
+	handleDocumentChange = () => {
+		const s = this.state;
+		if (!s.changed) {
+			s.changed = true;
+			this.requestDisplay();
+		}
+		if (s.drafts)
+			this.requestAutoSave();
+	}
+
 	handleInput = event => {
 		const el = event.target;
-		if (el.matches("[name]") && this.state.drafts)
-			this.requestAutoSave();
+		const s = this.state;
+		if (el.matches("[name]")) {
+			if (!s.changed) {
+				s.changed = true;
+				this.requestDisplay();
+			}
+			if (s.drafts)
+				this.requestAutoSave();
+		}
 	}
 
 	handleSubmit = async event => {
@@ -122,49 +180,105 @@ export default class CmsEdit extends WebComponent {
 			//f.parent.data[f.name] = f.data = {};
 			a.initField(f);
 			f.data[k.substring(i + 1)] = v instanceof File ? { name: v.name } : v;
-			console.log(k, v, f);
+			//console.log(k, v, f);
 		}
 		const s = a.state;
-		console.log("s", s);
-		const u = new URL(s.entityUrl, location.href);
+		//console.log("s", s);
+		const u = new URL(s.documentUrl, location.href);
 		if (auto) {
 			u.searchParams.append("draft", true);
 			u.searchParams.append("autosave", true);
 		}
 		const r = await fetch(u, {
-			method: "PUT",
+			method: s.document.id ? "PUT" : "POST",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify(s.entity)
+			body: JSON.stringify(s.document)
 		});
 		const j = await r.json();
-		if (r.ok)
+		if (r.ok) {
+			delete this.state.changed;
+			if (!auto)
+				a.renderToast("Updated successfully.", "success");
+			const copy = (x, y) => {
+				//console.log("x", JSON.stringify(x, null, "\t"), "y", JSON.stringify(y, null, "\t"));
+				for (const [k, v] of Object.entries(x))
+					if (Array.isArray(v))
+						for (let i = 0; i < v.length; i++)
+							if (typeof v[i] === "object" && v[i] !== null)
+								copy(v[i], y[k][i]);
+							else
+								y[k][i] = v[i];
+					else if (typeof v === "object" && v !== null)
+						copy(v, y[k]);
+					else
+						y[k] = v;
+			};
+			copy(j, s.document);
+			//console.log(s.document);
 			a.requestDisplay();
-		else
+		} else
 			a.renderToast(j, "error");
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("cms-admin");
-		const s = ap.state;
-		this.state.versions = Object.hasOwn(s.entity, "versionCount");
-		this.state.drafts = Object.hasOwn(s.entity, "status");
+		const a = this.closest("cms-admin");
+		const s = a.state;
+		this.state.versions = Object.hasOwn(s.document, "versionCount");
+		this.state.drafts = Object.hasOwn(s.document, "status");
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			status: this.state.drafts ? {
-				$template: "status",
-				text: s.entity.status,
-			} : null,
-			updatedAt: ap.dateTimeFormat.format(new Date(s.entity.updatedAt)),
-			createdAt: ap.dateTimeFormat.format(new Date(s.entity.createdAt)),
-			saveButton: !this.state.drafts ? { $template: "save-button" } : null,
-			publishButton: this.state.drafts ? { $template: "publish-button" } : null,
+			entries: (() => {
+				const kkvv = [];
+				if (this.state.drafts)
+					kkvv.push(["Status", s.document.status]);
+				if (s.document.updatedAt)
+					kkvv.push(["Last Modified", a.dateTimeFormat.format(new Date(s.document.updatedAt))]);
+				if (s.document.createdAt)
+					kkvv.push(["Created", a.dateTimeFormat.format(new Date(s.document.createdAt))]);
+				return kkvv;
+			})().map(x => ({
+				$template: "entry",
+				key: x[0],
+				value: x[1]
+			})),
 			previewLink: (() => {
-				const h = ap.preview(s.entity);
+				const h = a.preview(s.document);
 				return h ? {
 					$template: "preview-link",
 					href: h
 				} : null;
-			})()
+			})(),
+			button: {
+				$template: "button",
+				...(this.state.drafts ? {
+					name: "publish",
+					disabled: s.document.status === "PUBLISHED" && !this.state.changed,
+					text: "Publish Changes"
+				} : {
+					name: "save",
+					disabled: !this.state.changed,
+					text: "Save"
+				})
+			},
+			select: s.collectionSlug ? {
+				$template: "select",
+				options: [{
+					text: "\u22ee"
+				}, {
+					value: "create",
+					text: "Create New"
+				}, {
+					value: "duplicate",
+					text: "Duplicate"
+				}, {
+					value: "delete",
+					text: "Delete"
+				}].map((x, i) => ({
+					$template: "option",
+					...x,
+					selected: i === 0
+				}))
+			} : null
 		}));
 	}
 }

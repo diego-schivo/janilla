@@ -24,14 +24,10 @@
  */
 import { WebComponent } from "./web-component.js";
 
-export default class TextareaControl extends WebComponent {
-
-	static get observedAttributes() {
-		return ["data-key", "data-path"];
-	}
+export default class CmsVersions extends WebComponent {
 
 	static get templateName() {
-		return "textarea-control";
+		return "cms-versions";
 	}
 
 	constructor() {
@@ -40,12 +36,31 @@ export default class TextareaControl extends WebComponent {
 
 	async updateDisplay() {
 		const ap = this.closest("cms-admin");
-		const p = this.dataset.path;
-		const f = ap.field(p);
+		const hh = ["updatedAt", "id", "status"];
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			name: p,
-			value: f.data
+			heads: hh.map(x => ({
+				$template: "head",
+				text: x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" ")
+			})),
+			rows: ap.state.versions.map(x => ({
+				$template: "row",
+				cells: (() => {
+					const cc = hh.map(y => ({
+						content: (() => {
+							let v = (["id", "updatedAt"].includes(y) ? x : x.document)[y];
+							if (y === "updatedAt")
+								v = ap.dateTimeFormat.format(new Date(v))
+							return v;
+						})()
+					}));
+					cc[0].href = `/admin${ap.dataset.path}/${x.id}`;
+					return cc;
+				})().map(y => ({
+					$template: y.href ? "link-cell" : "cell",
+					...y
+				}))
+			}))
 		}));
 	}
 }

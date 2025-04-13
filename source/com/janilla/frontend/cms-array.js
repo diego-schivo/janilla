@@ -27,7 +27,7 @@ import { WebComponent } from "./web-component.js";
 export default class CmsArray extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
@@ -51,44 +51,56 @@ export default class CmsArray extends WebComponent {
 	}
 
 	handleChange = event => {
+		const el = event.target;
 		const s = this.state;
-		if (event.target.matches("select:not([name])")) {
+		if (el.matches("select:not([name])")) {
 			event.stopPropagation();
-			if (event.target.value === "remove") {
-				const li = event.target.closest("li");
-				const i = Array.prototype.indexOf.call(li.parentElement.children, li);
-				s.field.data.splice(i, 1);
-				s.items.splice(i, 1);
-				this.requestDisplay();
+			const li = el.closest("li");
+			const i = Array.prototype.indexOf.call(li.parentElement.children, li);
+			const swap = (oo, i1, i2) => [oo[i1], oo[i2]] = [oo[i2], oo[i1]];
+			switch (el.value) {
+				case "move-down":
+					swap(s.field.data, i, i + 1);
+					swap(s.items, i, i + 1);
+					break;
+				case "move-up":
+					swap(s.field.data, i, i - 1);
+					swap(s.items, i, i - 1);
+					break;
+				case "remove":
+					s.field.data.splice(i, 1);
+					s.items.splice(i, 1);
+					break;
 			}
-		} else if (event.target.matches('[type="radio"]')) {
+			this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
+			this.requestDisplay();
+		} else if (s.dialog && el.matches('[type="radio"]')) {
 			event.stopPropagation();
-			//event.target.closest("dialog").close();
-			a.dialog = false;
+			delete s.dialog;
 			const a = this.closest("cms-admin");
 			a.initField(s.field);
-			s.field.data.push({ $type: event.target.value });
-			console.log("x", s.field.data);
+			s.field.data.push({ $type: el.value });
+			//console.log("x", s.field.data);
 			s.items.push({
 				key: s.nextKey++,
 				expand: true
 			});
-			//console.log("x", JSON.stringify(a.state.entity));
+			this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
 			this.requestDisplay();
-		} else if (event.target.matches('[type="checkbox"]')) {
+		} else if (el.matches('[type="checkbox"]')) {
 			event.stopPropagation();
-			const li = event.target.closest("li");
+			const li = el.closest("li");
 			const i = Array.prototype.indexOf.call(li.parentElement.children, li);
-			s.items[i].expand = event.target.checked;
+			s.items[i].expand = el.checked;
 		}
 	}
 
 	handleClick = event => {
-		const b = event.target.closest("button");
-		if (b) {
+		const el = event.target.closest("button");
+		if (el) {
 			event.stopPropagation();
 			const s = this.state;
-			switch (b.name) {
+			switch (el.name) {
 				case "add":
 					if (s.field.elementTypes.length === 1) {
 						const a = this.closest("cms-admin");
@@ -98,9 +110,12 @@ export default class CmsArray extends WebComponent {
 							key: s.nextKey++,
 							expand: true
 						});
+						this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
 					} else
-						//this.querySelector(":scope > dialog").showModal();
 						s.dialog = true;
+					break;
+				case "close":
+					delete s.dialog;
 					break;
 				case "collapse-all":
 					s.items.forEach(x => x.expand = false);
@@ -128,22 +143,46 @@ export default class CmsArray extends WebComponent {
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			label: this.dataset.label,
-			items: s.field.data?.map((x, i) => ({
+			items: s.field.data?.map((x, i, xx) => ({
 				$template: "item",
-				title: x.$type,
+				title: x.$type.split(/(?=[A-Z])/).join(" "),
+				options: (() => {
+					const oo = [];
+					oo.push({ text: "\u2026" });
+					if (i > 0)
+						oo.push({
+							value: "move-up",
+							text: "Move Up"
+						});
+					if (i < xx.length - 1)
+						oo.push({
+							value: "move-down",
+							text: "Move Down"
+						});
+					oo.push({
+						value: "remove",
+						text: "Remove"
+					});
+					return oo;
+				})().map((y, j) => ({
+					$template: "option",
+					...y,
+					selected: j === 0
+				})),
 				checked: s.items[i].expand,
 				field: {
 					$template: "object",
 					path: `${p}.${i}`,
-					key: s.items[i].key
+					updatedAt: this.dataset.updatedAt,
+					arrayKey: s.items[i].key
 				}
 			})),
 			dialog: s.dialog ? {
 				$template: "dialog",
 				types: s.field.elementTypes.map(x => ({
 					$template: "type",
-					name: x,
-					expand: false
+					label: x.split(/(?=[A-Z])/).join(" "),
+					value: x
 				}))
 			} : null
 		}));

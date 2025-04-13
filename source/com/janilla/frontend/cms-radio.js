@@ -24,10 +24,14 @@
  */
 import { WebComponent } from "./web-component.js";
 
-export default class VersionsView extends WebComponent {
+export default class CmsRadio extends WebComponent {
+
+	static get observedAttributes() {
+		return ["data-array-key", "data-path", "data-updated-at"];
+	}
 
 	static get templateName() {
-		return "versions";
+		return "cms-radio";
 	}
 
 	constructor() {
@@ -36,30 +40,16 @@ export default class VersionsView extends WebComponent {
 
 	async updateDisplay() {
 		const ap = this.closest("cms-admin");
-		const hh = ["updatedAt", "id", "status"];
+		const p = this.dataset.path;
+		const f = ap.field(p);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			heads: hh.map(x => ({
-				$template: "head",
+			options: ap.options(f).map(x => ({
+				$template: "option",
+				name: p,
+				value: x,
+				checked: x == f.data,
 				text: x
-			})),
-			rows: ap.state.versions.map(x => ({
-				$template: "row",
-				cells: (() => {
-					const cc = hh.map(y => ({
-						content: (() => {
-							let v = x[y];
-							if (y === "updatedAt")
-								v = ap.dateTimeFormat.format(new Date(v))
-							return v;
-						})()
-					}));
-					cc[0].href = `/admin${ap.dataset.path}/${x.id}`;
-					return cc;
-				})().map(y => ({
-					$template: y.href ? "link-cell" : "cell",
-					...y
-				}))
 			}))
 		}));
 	}

@@ -88,7 +88,7 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 	}
 
 	public E update(long id, E entity, Set<String> include, boolean newVersion) {
-		var exclude = Set.of("id", "createdAt", "updatedAt", "publishedAt");
+		var exclude = Set.of("id", "createdAt", "updatedAt");
 		if (!type.isAnnotationPresent(Versions.class))
 			return super.update(id, x -> Reflection.copy(entity, x,
 					y -> (include == null || include.contains(y)) && !exclude.contains(y)));

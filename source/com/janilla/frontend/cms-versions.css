@@ -1,4 +1,4 @@
-versions-view {
+cms-versions {
   div:has(> table) {
     overflow: auto;
   }

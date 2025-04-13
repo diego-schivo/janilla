@@ -27,7 +27,7 @@ import { WebComponent } from "./web-component.js";
 export default class CmsObject extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
@@ -45,7 +45,6 @@ export default class CmsObject extends WebComponent {
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			...this.dataset,
-			...f,
 			lists: (() => {
 				const pp0 = Object.entries(f.properties).filter(([k, _]) => k !== "id");
 				let snn = a.sidebar(f.type);
@@ -60,8 +59,8 @@ export default class CmsObject extends WebComponent {
 							const p2 = p ? `${p}.${k}` : k;
 							const l = a.label(p2);
 							return {
-								$template: ["cms-select", "cms-text", "textarea-control"].includes(ct) ? "label-nest"
-									: ["array", "checkbox-control"].includes(ct) ? "no-label"
+								$template: ["cms-select", "cms-text", "cms-textarea"].includes(ct) ? "label-nest"
+									: ["array", "cms-checkbox"].includes(ct) ? "no-label"
 										: "label",
 								label: l,
 								name: k,
@@ -69,7 +68,8 @@ export default class CmsObject extends WebComponent {
 									$template: ct,
 									path: p2,
 									label: l,
-									key: this.dataset.key,
+									updatedAt: this.dataset.updatedAt,
+									arrayKey: this.dataset.arrayKey,
 									...v
 								}
 							};
@@ -113,7 +113,12 @@ export default class CmsObject extends WebComponent {
 						return jj;
 					})()
 				}));
-			})()
+			})(),
+			hidden: {
+				$template: "hidden",
+				name: p ? `${p}.$type` : "$type",
+				value: f.type
+			}
 		}));
 	}
 }

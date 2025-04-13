@@ -51,6 +51,7 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 			var s = state;
 			state = switch (s) {
 			case 0 -> {
+				stack().push(object);
 				token = JsonToken.JSON_START;
 				yield 1;
 			}
@@ -62,6 +63,7 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 				yield 2;
 			}
 			case 2 -> {
+				stack().pop();
 				token = JsonToken.JSON_END;
 				yield 3;
 			}

@@ -12,7 +12,7 @@
   <li>
     <button type="button" name="add">
       <lucide-icon data-name="plus"></lucide-icon>
-      add
+      Add
     </button>
   </li>
 </ol>
@@ -24,11 +24,10 @@
       <header>
         <h4>${title}</h4>
         <select>
-          <option>&hellip;</option>
-          <option value="remove">Remove</option>
+          <!--${options}-->
         </select>
         <label>
-          <input type="checkbox" class="visually-hidden" checked="${checked}" />
+          <input type="checkbox" checked="${checked}" class="visually-hidden" />
           <lucide-icon data-name="chevron-down"></lucide-icon>
           <lucide-icon data-name="chevron-up"></lucide-icon>
         </label>
@@ -38,19 +37,30 @@
   </li>
 </template>
 
+<template id="option">
+  <option value="${value}" selected="${selected}">${text}</option>
+</template>
+
 <template id="object">
-  <cms-object data-path="${path}" data-key="${key}"></cms-object>
+  <cms-object data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-object>
 </template>
 
 <template id="dialog">
   <dialog open>
-    <!--${types}-->
+    <button type="button" name="close">
+      <lucide-icon data-name="x"></lucide-icon>
+    </button>
+    <ul>
+      <!--${types}-->
+    </ul>
   </dialog>
 </template>
 
 <template id="type">
-  <label>
-    <input type="radio" name="type" value="${name}" checked="${checked}" />
-    ${name}
-  </label>
+  <li>
+    <label>
+      <input type="radio" name="type" value="${value}" checked="${checked}" class="visually-hidden" />
+      ${label}
+    </label>
+  </li>
 </template>

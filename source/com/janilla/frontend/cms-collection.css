@@ -30,8 +30,13 @@ cms-collection {
     margin: 0;
   }
 
-  div:has(> table) {
+  .results {
     overflow: auto;
+
+    > p {
+      color: rgb(141, 141, 141);
+      padding: 1rem;
+    }
   }
 
   th,

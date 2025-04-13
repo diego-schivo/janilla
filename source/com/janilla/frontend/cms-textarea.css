@@ -1,10 +1,10 @@
-label:has(textarea-control) {
+label:has(cms-textarea) {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-textarea-control {
+cms-textarea {
   textarea {
     box-sizing: border-box;
     width: 100%;

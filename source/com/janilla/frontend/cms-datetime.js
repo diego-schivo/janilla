@@ -24,33 +24,53 @@
  */
 import { WebComponent } from "./web-component.js";
 
-export default class RadioGroupControl extends WebComponent {
+export default class CmsDatetime extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
-		return "radio-group-control";
+		return "cms-datetime";
 	}
 
 	constructor() {
 		super();
 	}
 
+	connectedCallback() {
+		super.connectedCallback();
+		this.addEventListener("input", this.handleInput);
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.removeEventListener("input", this.handleInput);
+	}
+
+	handleInput = event => {
+		const el = event.target.closest("input");
+		if (!el?.name) {
+			this.querySelector('[type="hidden"]').value = (new Date(el.value)).toISOString();
+			this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
+		}
+	}
+
 	async updateDisplay() {
-		const ap = this.closest("cms-admin");
+		const a = this.closest("cms-admin");
 		const p = this.dataset.path;
-		const f = ap.field(p);
+		const f = a.field(p);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			options: ap.options(f).map(x => ({
-				$template: "option",
-				name: p,
-				value: x,
-				checked: x == f.data,
-				text: x
-			}))
+			name: p,
+			value: f.data,
+			localValue: f.data ? (() => {
+				const d = new Date(f.data);
+				const s1 = [d.getFullYear(), 1 + d.getMonth(), d.getDate()].map(x => x.toString().padStart(2, "0")).join("-");
+				const s2 = [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => x.toString().padStart(2, "0")).join(":");
+				const s3 = d.getMilliseconds().toString().padStart(3, "0");
+				return `${s1}T${s2}.${s3}`;
+			})() : null
 		}));
 	}
 }

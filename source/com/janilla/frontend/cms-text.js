@@ -27,7 +27,7 @@ import { WebComponent } from "./web-component.js";
 export default class CmsText extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
@@ -39,9 +39,9 @@ export default class CmsText extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("cms-admin");
+		const a = this.closest("cms-admin");
 		const p = this.dataset.path;
-		const f = ap.field(p);
+		const f = a.field(p);
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			name: p,

@@ -1,5 +1,5 @@
 <!--${lists}-->
-<input type="hidden" name="${path}.$type" value="${type}" />
+<!--${hidden}-->
 
 <template id="list">
   <ul>
@@ -8,7 +8,7 @@
 </template>
 
 <template id="item">
-  <li>
+  <li class="field">
     <!--${field}-->
   </li>
 </template>
@@ -34,55 +34,59 @@
 </template>
 
 <template id="array">
-  <cms-array data-path="${path}" data-key="${key}" data-label="${label}"></cms-array>
+  <cms-array data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}" data-label="${label}"></cms-array>
 </template>
 
-<template id="checkbox-control">
-  <checkbox-control data-path="${path}" data-key="${key}"></checkbox-control>
+<template id="checkbox">
+  <cms-checkbox data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-checkbox>
 </template>
 
 <template id="cms-file">
-  <cms-file data-path="${path}" data-key="${key}"></cms-file>
+  <cms-file data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-file>
 </template>
 
 <template id="cms-object">
-  <cms-object data-path="${path}" data-key="${key}"></cms-object>
-</template>
-
-<template id="radio-group-control">
-  <radio-group-control data-path="${path}" data-key="${key}"></radio-group-control>
+  <cms-object data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-object>
 </template>
 
 <template id="cms-reference">
-  <cms-reference data-path="${path}" data-key="${key}" data-type="${referenceType}"></cms-reference>
+  <cms-reference data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}" data-type="${referenceType}"></cms-reference>
 </template>
 
 <template id="cms-document-reference">
-  <cms-document-reference data-path="${path}" data-key="${key}" data-types="${referenceTypes}"></cms-reference>
+  <cms-document-reference data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}" data-types="${referenceTypes}"></cms-document-reference>
 </template>
 
-<template id="reference-list-control">
-  <reference-list-control data-path="${path}" data-key="${key}" data-type="${referenceType}"></reference-list-control>
+<template id="cms-reference-array">
+  <cms-reference-array data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}" data-type="${referenceType}"></cms-reference-array>
 </template>
 
 <template id="cms-rich-text">
-  <cms-rich-text data-path="${path}" data-key="${key}"></cms-rich-text>
+  <cms-rich-text data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-rich-text>
 </template>
 
-<template id="cms-select">
-  <cms-select data-path="${path}" data-key="${key}"></cms-select>
+<template id="select">
+  <cms-select data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-select>
 </template>
 
 <template id="cms-slug">
-  <cms-slug data-path="${path}" data-key="${key}"></cms-slug>
+  <cms-slug data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-slug>
 </template>
 
-<template id="textarea-control">
-  <textarea-control data-path="${path}" data-key="${key}"></textarea-control>
+<template id="cms-textarea">
+  <cms-textarea data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-textarea>
 </template>
 
 <template id="cms-text">
-  <cms-text data-path="${path}" data-key="${key}"></cms-text>
+  <cms-text data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-text>
+</template>
+
+<template id="datetime">
+  <cms-datetime data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-datetime>
+</template>
+
+<template id="radio">
+  <cms-radio data-path="${path}" data-updated-at="${updatedAt}" data-array-key="${arrayKey}"></cms-radio>
 </template>
 
 <template id="tabs">
@@ -102,4 +106,8 @@
       <!--${items}-->
     </ul>
   </div>
+</template>
+
+<template id="hidden">
+  <input type="hidden" name="${name}" value="${value}" />
 </template>

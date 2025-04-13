@@ -27,7 +27,7 @@ import { WebComponent } from "./web-component.js";
 export default class CmsDocumentReference extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
@@ -48,6 +48,13 @@ export default class CmsDocumentReference extends WebComponent {
 		super.disconnectedCallback();
 		this.removeEventListener("change", this.handleChange);
 		this.removeEventListener("click", this.handleClick);
+	}
+
+	attributeChangedCallback(name, oldValue, newValue) {
+		const s = this.state;
+		if (newValue !== oldValue && s?.field)
+			delete s.field;
+		super.attributeChangedCallback(name, oldValue, newValue);
 	}
 
 	handleChange = async event => {
@@ -84,7 +91,6 @@ export default class CmsDocumentReference extends WebComponent {
 				a.initField(s.field);
 				const c = event.target.closest("cms-collection");
 				Object.assign(s.field.data, c.state.data.find(x => x.id === id));
-				c.closest("dialog").close();
 				delete s.dialog;
 			} else if (s.field.data)
 				for (const x of Object.keys(s.field.data))

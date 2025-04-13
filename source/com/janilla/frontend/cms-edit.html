@@ -1,28 +1,20 @@
 <form autocomplete="off">
   <div>
     <dl>
-      <!--${status}-->
-      <dt>Last Modified</dt>
-      <dd>${updatedAt}</dd>
-      <dt>Created</dt>
-      <dd>${createdAt}</dd>
+      <!--${entries}-->
     </dl>
   </div>
   <div>
     <!--${previewLink}-->
-    <!--${saveButton}-->
-    <!--${publishButton}-->
-    <select>
-      <option>&vellip;</option>
-      <option value="delete">Delete</option>
-    </select>
+    <!--${button}-->
+    <!--${select}-->
   </div>
-  <cms-object></cms-object>
+  <cms-object data-updated-at="${updatedAt}"></cms-object>
 </form>
 
-<template id="status">
-  <dt>Status</dt>
-  <dd>${text}</dd>
+<template id="entry">
+  <dt>${key}</dt>
+  <dd>${value}</dd>
 </template>
 
 <template id="preview-link">
@@ -32,10 +24,16 @@
   </a>
 </template>
 
-<template id="save-button">
-  <button name="save">Save</button>
+<template id="button">
+  <button name="${name}" disabled="${disabled}">${text}</button>
 </template>
 
-<template id="publish-button">
-  <button name="publish">Publish Changes</button>
+<template id="select">
+  <select>
+    <!--${options}-->
+  </select>
+</template>
+
+<template id="option">
+  <option value="${value}" selected="${selected}">${text}</option>
 </template>

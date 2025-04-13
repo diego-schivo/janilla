@@ -24,14 +24,15 @@
  */
 package com.janilla.json;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 
 public abstract class TokenIterationContext {
 
-	private Deque<Object> stack = new ArrayDeque<>();
+//	private Deque<Object> stack = new ArrayDeque<>();
+	private Deque<Object> stack = new LinkedList<>();
 
 	public Deque<Object> stack() {
 		return stack;

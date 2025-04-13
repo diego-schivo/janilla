@@ -55,6 +55,7 @@ public class ArrayIterator extends TokenIterator {
 			case 1 -> {
 				if (elements.hasNext()) {
 					element = elements.next();
+					context.stack().push(element);
 					token = JsonToken.ELEMENT_START;
 					yield 2;
 				}
@@ -70,6 +71,7 @@ public class ArrayIterator extends TokenIterator {
 				yield 3;
 			}
 			case 3 -> {
+				context.stack().pop();
 				token = JsonToken.ELEMENT_END;
 				yield 1;
 			}

@@ -16,7 +16,7 @@
 
 <template id="edit-panel">
   <div slot="panel-edit">
-    <cms-edit></cms-edit>
+    <cms-edit data-updated-at="${updatedAt}"></cms-edit>
   </div>
 </template>
 
@@ -33,12 +33,12 @@
   </div>
 </template>
 
-<template id="versions-view">
-  <versions-view></versions-view>
+<template id="cms-versions">
+  <cms-versions></cms-versions>
 </template>
 
-<template id="version-view">
-  <version-view></version-view>
+<template id="cms-version">
+  <cms-version></cms-version>
 </template>
 
 <template id="api">

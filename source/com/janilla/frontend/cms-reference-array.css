@@ -1,0 +1,35 @@
+cms-reference-array {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  > div > button {
+    align-items: center;
+    background: transparent;
+    border: none;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0;
+
+    lucide-icon {
+      border: 1px solid rgb(141, 141, 141);
+      border-radius: 100%;
+      padding: 0.125rem;
+    }
+  }
+
+  dialog {
+    > button[name="close"] {
+      background: transparent;
+      border: none;
+      margin-left: auto;
+      padding: 0;
+      position: absolute;
+      right: 1rem;
+
+      lucide-icon {
+        width: 2rem;
+      }
+    }
+  }
+}

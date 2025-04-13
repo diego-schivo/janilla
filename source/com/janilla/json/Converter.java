@@ -200,9 +200,11 @@ public class Converter {
 						continue;
 //					System.out.println("Converter.convert, kv=" + kv);
 					var p = Reflection.property(target, n);
-					var v = convert(kv.getValue(), p.genericType());
-//					System.out.println("Converter.convert, s=" + p + ", v=" + v);
-					p.set(o, v);
+					if (p != null) {
+						var v = convert(kv.getValue(), p.genericType());
+//						System.out.println("Converter.convert, s=" + p + ", v=" + v);
+						p.set(o, v);
+					}
 				}
 			}
 		} catch (ReflectiveOperationException e) {

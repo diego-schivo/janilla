@@ -27,7 +27,7 @@ import { WebComponent } from "./web-component.js";
 export default class CmsReference extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
@@ -58,7 +58,7 @@ export default class CmsReference extends WebComponent {
 					s.dialog = true;
 					break;
 				case "close":
-					s.dialog = false;
+					delete s.dialog;
 					break;
 			}
 			this.requestDisplay();
@@ -75,8 +75,7 @@ export default class CmsReference extends WebComponent {
 				a.initField(s.field);
 				const c = this.querySelector("dialog cms-collection");
 				Object.assign(s.field.data, c.state.data.find(x => x.id === id));
-				c.closest("dialog").close();
-				s.dialog = false;
+				delete s.dialog;
 			}
 			this.requestDisplay();
 		}
@@ -91,8 +90,8 @@ export default class CmsReference extends WebComponent {
 		const cn = Object.entries(cc).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			p: !s.field.data?.id ? {
-				$template: "p"
+			noValue: !s.field.data?.id ? {
+				$template: "no-value"
 			} : null,
 			collection: s.field.data?.id ? {
 				$template: "collection",

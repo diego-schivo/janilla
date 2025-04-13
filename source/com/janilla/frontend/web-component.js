@@ -147,6 +147,11 @@ export class WebComponent extends HTMLElement {
 		const n = interpolate(input);
 		//if (n instanceof DocumentFragment && !n.firstChild && n.originalChildNodes?.length)
 		//	n.append(...n.originalChildNodes);
+		for (const [k, v] of Object.entries(this.#templating)) {
+			const l = indexes[k] ?? 0;
+			if (v.functions.length > l)
+				v.functions.length = l;
+		}
 		return n;
 	}
 }
@@ -217,6 +222,9 @@ const compileNode = rootNode => {
 				interpolatorBuilders.push(rootNodeCopy => {
 					const nodeCopy = findNode(rootNodeCopy, pathCopy);
 					return context => {
+						//if (!nodeCopy.parentNode)
+						//if (text === "${panel}")
+						//console.log("x");
 						const nodes1 = nodeCopy.insertedNodes ?? [];
 						let referenceNode;
 						for (let i = nodes1.length - 1; i >= 0; i--)
@@ -250,8 +258,11 @@ const compileNode = rootNode => {
 							return v;
 						});
 						for (const n of nodes1)
-							if (!nodes2.includes(n) && n.parentNode === nodeCopy.parentNode)
+							if (!nodes2.includes(n) && n.parentNode === nodeCopy.parentNode) {
+								//if (n instanceof Comment && n.nodeValue === "${panel}")
+								//console.log("x");
 								n.parentNode.removeChild(n);
+							}
 						for (let i = nodes2.length - 1; i >= 0; i--) {
 							const n = nodes2[i];
 							if (n !== referenceNode?.previousSibling)
@@ -293,6 +304,13 @@ const compileNode = rootNode => {
 									if (element instanceof HTMLInputElement) {
 										if (element.checked !== value)
 											element.checked = value;
+									}
+									break;
+								case "selected":
+									if (element instanceof HTMLOptionElement && value) {
+										const pe = element.parentElement;
+										if (pe instanceof HTMLSelectElement && pe.value !== element.value)
+											pe.value = element.value;
 									}
 									break;
 								case "value":

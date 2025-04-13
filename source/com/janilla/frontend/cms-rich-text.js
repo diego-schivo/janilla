@@ -27,7 +27,7 @@ import { WebComponent } from "./web-component.js";
 export default class CmsRichText extends WebComponent {
 
 	static get observedAttributes() {
-		return ["data-key", "data-path"];
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
@@ -121,7 +121,7 @@ export default class CmsRichText extends WebComponent {
 			h.dispatchEvent(new InputEvent("input", {
 				view: window,
 				bubbles: true,
-				cancelable: true,
+				cancelable: true
 			}));
 	}
 }

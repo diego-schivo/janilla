@@ -55,6 +55,11 @@ public abstract class CollectionApi<E extends Document> {
 		return crud().create(entity);
 	}
 
+	@Handle(method = "GET")
+	public List<E> read() {
+		return crud().read(crud().list());
+	}
+
 	@Handle(method = "GET", path = "(\\d+)")
 	public E read(long id, HttpExchange exchange) {
 		var e = crud().read(id, drafts.test(exchange));
@@ -112,6 +117,4 @@ public abstract class CollectionApi<E extends Document> {
 	protected DocumentCrud<E> crud() {
 		return (DocumentCrud<E>) persistence.crud(type);
 	}
-
-//	protected abstract boolean drafts(HttpExchange exchange);
 }

@@ -1,4 +1,11 @@
 cms-edit {
+  &,
+  form {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
   form {
     @media (min-width: 1441px) {
       display: grid;
@@ -20,6 +27,7 @@ cms-edit {
       &:has(dl) {
         overflow: auto;
         padding: 1rem;
+        scrollbar-width: none;
 
         @media (min-width: 1441px) {
           margin-left: -3.75rem;
@@ -74,9 +82,15 @@ cms-edit {
         text-decoration: none;
       }
 
-      button[name="publish"] {
-        background: rgb(181, 181, 181);
-        color: rgb(20, 20, 20);
+      button {
+        &:disabled {
+          cursor: not-allowed;
+        }
+
+        &[name="publish"] {
+          background: rgb(181, 181, 181);
+          color: rgb(20, 20, 20);
+        }
       }
 
       select {
@@ -88,8 +102,17 @@ cms-edit {
     }
 
     > cms-object {
-      align-items: flex-start;
-      /*margin-top: 0.5rem;*/
+      /*align-items: flex-start;*/
+      @media (max-width: 1440px) {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      @media (min-width: 1441px) {
+        align-items: stretch;
+      }
 
       > ul {
         @media (min-width: 1441px) {
