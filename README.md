@@ -5,7 +5,7 @@
 
 ### What it does
 
-This Java library provides a [solution stack](https://en.wikipedia.org/wiki/Solution_stack) to develop web applications and more.
+This zero-dependencies Java library provides a [solution stack](https://en.wikipedia.org/wiki/Solution_stack) to develop web applications and more.
 
 ### Why it is useful
 
@@ -20,6 +20,8 @@ You can add Janilla as a dependency to your project by copy/pasting the snippet 
 We provide several example applications showing how to use the library: 
 
 - [Next.js App Router Course porting](https://github.com/diego-schivo/janilla-acmedashboard)
+- [Payload Blank Template porting](https://github.com/diego-schivo/janilla-templates/tree/main/blank)
+- [Payload Website Template porting](https://github.com/diego-schivo/janilla-templates/tree/main/website)
 - [React Router Address Book Tutorial porting](https://github.com/diego-schivo/janilla-address-book)
 - [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla-conduit)
 - [Spring Petclinic porting](https://github.com/diego-schivo/janilla-petclinic)
