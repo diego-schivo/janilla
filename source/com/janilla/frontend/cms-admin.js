@@ -323,7 +323,7 @@ export default class CmsAdmin extends WebComponent {
 	}
 
 	title(document) {
-		if (Object.values(this.state.schema.Globals).some(x => x.type === document.$type))
+		if (Object.values(this.state.schema.Globals ?? {}).some(x => x.type === document.$type))
 			return document.$type.split(/(?=[A-Z])/).join(" ");
 		switch (document.$type) {
 			case "Media":

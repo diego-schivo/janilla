@@ -72,6 +72,10 @@ public class SslByteChannel extends FilterByteChannel<ByteChannel> {
 		outboundQueue = ByteBuffer.allocate(packetOutput.capacity());
 	}
 
+	public SSLEngine engine() {
+		return engine;
+	}
+
 	public Lock outboundLock() {
 		return outboundLock;
 	}
@@ -353,7 +357,9 @@ public class SslByteChannel extends FilterByteChannel<ByteChannel> {
 
 	@Override
 	public void close() throws IOException {
-		while (state < 3)
+		while (state < 3) {
+//			System.out.println("SslByteChannel.close, engine.getUseClientMode()=" + engine.getUseClientMode()
+//					+ ", state=" + state);
 			state = switch (state) {
 			case 0 -> {
 				if (outboundQueue.position() > 0) {
@@ -430,5 +436,6 @@ public class SslByteChannel extends FilterByteChannel<ByteChannel> {
 			}
 			default -> throw new IllegalStateException();
 			};
+		}
 	}
 }

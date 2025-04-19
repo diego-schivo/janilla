@@ -60,8 +60,6 @@ export class WebComponent extends HTMLElement {
 	disconnectedCallback() {
 		// console.log(`WebComponent(${this.constructor.name}).disconnectedCallback`);
 		delete this.state;
-		//while (this.firstChild)
-		//	this.removeChild(this.lastChild);
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
@@ -70,7 +68,7 @@ export class WebComponent extends HTMLElement {
 			this.requestDisplay();
 	}
 
-	requestDisplay(delay = 10) {
+	requestDisplay(delay = 1) {
 		// console.log(`WebComponent(${this.constructor.name}).requestUpdate`);
 		const u = this.#displayUpdate;
 		if (u.ongoing) {
@@ -147,10 +145,14 @@ export class WebComponent extends HTMLElement {
 		const n = interpolate(input);
 		//if (n instanceof DocumentFragment && !n.firstChild && n.originalChildNodes?.length)
 		//	n.append(...n.originalChildNodes);
+		// console.log("this.#templating", this.#templating);
+		// console.log("indexes", indexes);
 		for (const [k, v] of Object.entries(this.#templating)) {
 			const l = indexes[k] ?? 0;
-			if (v.functions.length > l)
+			if (v.functions.length > l) {
+				// console.log("k", k, "l", l);
 				v.functions.length = l;
+			}
 		}
 		return n;
 	}

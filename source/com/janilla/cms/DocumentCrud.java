@@ -163,15 +163,6 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 		}, true);
 	}
 
-//	@Override
-//	public List<E> delete(long[] ids) {
-//		if (!type.isAnnotationPresent(Versions.class))
-//			return super.delete(ids);
-//		if (ids == null || ids.length == 0)
-//			return List.of();
-//		return persistence.database().perform((_, _) -> Arrays.stream(ids).mapToObj(this::delete).toList(), true);
-//	}
-
 	public List<E> patch(long[] ids, E entity, Set<String> include) {
 		if (!type.isAnnotationPresent(Versions.class))
 			throw new UnsupportedOperationException();
@@ -229,29 +220,6 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 			return e;
 		}, true);
 	}
-
-//	@Override
-//	protected E beforeCreate(E entity, long x) {
-//		var i = Instant.now();
-//		var v = type.getAnnotation(Versions.class);
-//		var m = Map.of("id", x, "createdAt", i, "updatedAt", i);
-//		if (entity.status() == null) {
-//			m = new HashMap<>(m);
-//			m.put("status", v != null && v.drafts() ? Document.Status.DRAFT : Document.Status.PUBLISHED);
-//		}
-//		return Reflection.copy(m, entity);
-//	}
-//
-//	@Override
-//	protected E beforeUpdate(E entity) {
-//		var i = Instant.now();
-//		Map<String, Instant> m = Map.of("updatedAt", i);
-//		if (entity.status() == Document.Status.PUBLISHED) {
-//			m = new HashMap<>(m);
-//			m.put("publishedAt", i);
-//		}
-//		return Reflection.copy(m, entity);
-//	}
 
 	protected void updateVersionIndexes(Iterable<Version<E>> vv1, Iterable<Version<E>> vv2, long id) {
 		class A {

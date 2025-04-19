@@ -29,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -182,8 +183,8 @@ public class HttpProtocol implements Protocol {
 								}
 							}
 						});
-//					System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
-//							+ ", rq=" + rq.getMethod() + " " + rq.getPath());
+//						System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
+//								+ ", rq=" + rq.getMethod() + " " + rq.getPath());
 						rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
 						rs.setBody(new HttpWritableByteChannel() {
 
@@ -218,7 +219,6 @@ public class HttpProtocol implements Protocol {
 									throw new IOException("closed");
 								var n = src.remaining();
 								if (n == 0)
-//									throw new IllegalArgumentException("src");
 									return 0;
 								var cd = Math.ceilDiv(n, 16384);
 								if (!headersWritten) {
@@ -230,8 +230,8 @@ public class HttpProtocol implements Protocol {
 									IO.transferSomeRemaining(src, ByteBuffer.wrap(bb));
 									return new Frame.Data(false, endStream && x == cd - 1, si, bb);
 								}).forEach(x -> {
-									// System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ",
-									// of=" + x);
+//									System.out.println(
+//											"HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ", of=" + x);
 									ch.outboundLock().lock();
 									try {
 										Http.encode(x, ch);
@@ -245,11 +245,11 @@ public class HttpProtocol implements Protocol {
 							private void writeHeaders(boolean endStream) {
 								if (headersWritten)
 									return;
-								var of = new Frame.Headers(false, true, endStream, si, false, 0, 0, rs.getHeaders());
-//							System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ", of=" + x);
+								var x = new Frame.Headers(false, true, endStream, si, false, 0, 0, rs.getHeaders());
+//								System.out.println("HttpProtocol.handle, c=" + c.getId() + ", si=" + si + ", of=" + x);
 								ch.outboundLock().lock();
 								try {
-									Http.encode(of, ch);
+									Http.encode(x, ch);
 									headersWritten = true;
 								} finally {
 									ch.outboundLock().unlock();
@@ -282,8 +282,8 @@ public class HttpProtocol implements Protocol {
 								}
 							return k;
 						});
-//					System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
-//							+ ", rs=" + rs.getStatus() + ", k=" + k);
+//						System.out.println(LocalTime.now() + ", HttpProtocol.handle, c=" + c.getId() + ", si=" + si
+//								+ ", rs=" + rs.getStatus()); // + ", k=" + k);
 						c.getStreams().remove(si);
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);

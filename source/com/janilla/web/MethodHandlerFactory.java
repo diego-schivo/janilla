@@ -524,8 +524,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected EntryTree createEntryTree() {
-//		return new EntryTree();
-		return null;
+		return new EntryTree();
 	}
 
 	protected Object parseParameter(String[] strings, Type type) {

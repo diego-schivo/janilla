@@ -49,7 +49,7 @@ export default class CmsFile extends WebComponent {
 	}
 
 	handleChange = event => {
-		console.log("event", event);
+		// console.log("event", event);
 		const el = event.target.closest('[type="file"]');
 		if (el) {
 			const s = this.state;
