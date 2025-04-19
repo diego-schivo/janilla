@@ -1,4 +1,4 @@
-[![Maven_Central 4.0.0](https://img.shields.io/badge/Maven_Central-4.0.0-blue)](https://central.sonatype.com/artifact/com.janilla/janilla)
+[![Maven Central Version](https://img.shields.io/maven-central/v/com.janilla/janilla)](https://central.sonatype.com/artifact/com.janilla/janilla)
 [![Java CI with Maven](https://github.com/diego-schivo/janilla/actions/workflows/maven.yml/badge.svg)](https://github.com/diego-schivo/janilla/actions/workflows/maven.yml)
 
 # Janilla

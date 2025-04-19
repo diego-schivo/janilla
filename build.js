@@ -26,11 +26,6 @@ const fs = require("fs").promises;
 const path = require("path");
 
 const files = [
-	"./node_modules/janillas/dom-utils.js",
-	"./node_modules/janillas/markdown.js",
-	"./node_modules/janillas/test-bench.css",
-	"./node_modules/janillas/test-bench.html",
-	"./node_modules/janillas/test-bench.js",
 	"./node_modules/janillas/web-component.js"
 ];
 

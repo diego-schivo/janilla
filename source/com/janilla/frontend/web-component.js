@@ -28,22 +28,25 @@ export class WebComponent extends HTMLElement {
 
 	#templating;
 
-	#displayUpdate = {};
+	#displayUpdate = {
+		ongoing: false,
+		repeat: false,
+		timeoutID: undefined
+	};
 
 	constructor() {
 		super();
-		const tn = this.constructor.templateName;
-		if (!tn)
+		if (!this.constructor.templateName)
 			return;
-		this.#initializeTemplating = getDocumentFragment(tn).then(x => {
-			const df = x.cloneNode(true);
-			const tt = [...df.querySelectorAll("template")].map(y => {
+		this.#initializeTemplating = getDocumentFragment(this.constructor.templateName).then(x => {
+			const documentFragment = x.cloneNode(true);
+			const templates = [...documentFragment.querySelectorAll("template")].map(y => {
 				y.remove();
 				return y;
 			});
 			this.#templating = Object.fromEntries([
-				["", compileNode(df)],
-				...tt.map(y => [y.id, compileNode(y.content)])
+				["", compileNode(documentFragment)],
+				...templates.map(y => [y.id, compileNode(y.content)])
 			].map(([k, v]) => [k, {
 				factory: v,
 				functions: []
@@ -69,37 +72,33 @@ export class WebComponent extends HTMLElement {
 	}
 
 	requestDisplay(delay = 1) {
-		// console.log(`WebComponent(${this.constructor.name}).requestUpdate`);
-		const u = this.#displayUpdate;
-		if (u.ongoing) {
-			u.repeat = true;
+		// console.log(`WebComponent(${this.constructor.name}).requestDisplay`);
+		if (this.#displayUpdate.ongoing) {
+			this.#displayUpdate.repeat = true;
 			return;
 		}
 
-		if (typeof u.timeoutID === "number")
-			clearTimeout(u.timeoutID);
+		if (typeof this.#displayUpdate.timeoutID === "number")
+			clearTimeout(this.#displayUpdate.timeoutID);
 
-		u.timeoutID = setTimeout(async () => await this.displayTimeout(), delay);
+		this.#displayUpdate.timeoutID = setTimeout(async () => await this.displayTimeout(), delay);
 	}
 
 	async displayTimeout() {
 		// console.log(`WebComponent(${this.constructor.name}).displayTimeout`);
-		const i = this.#initializeTemplating;
-		if (i)
-			await i;
-		const u = this.#displayUpdate;
-		u.timeoutID = undefined;
+		if (this.#initializeTemplating)
+			await this.#initializeTemplating;
+		this.#displayUpdate.timeoutID = undefined;
 		if (!this.isConnected)
 			return;
-		u.ongoing = true;
+		this.#displayUpdate.ongoing = true;
 		try {
 			await this.updateDisplay();
 		} finally {
-			u.ongoing = false;
+			this.#displayUpdate.ongoing = false;
 		}
-		// console.log(`WebComponent(${this.constructor.name}).displayTimeout`, "u.repeat", u.repeat);
-		if (u.repeat) {
-			u.repeat = false;
+		if (this.#displayUpdate.repeat) {
+			this.#displayUpdate.repeat = false;
 			this.requestDisplay(0);
 		}
 	}
@@ -135,55 +134,44 @@ export class WebComponent extends HTMLElement {
 				const v2 = interpolate(v);
 				return [k, v2];
 			}));
-			const t = x.$template;
-			//if (t === "object")
-			//debugger;
-			indexes[t] ??= 0;
-			const i = getInterpolate(t, indexes[t]++);
-			return i(y);
+			indexes[x.$template] ??= 0;
+			return getInterpolate(x.$template, indexes[x.$template]++)(y);
 		};
-		const n = interpolate(input);
-		//if (n instanceof DocumentFragment && !n.firstChild && n.originalChildNodes?.length)
-		//	n.append(...n.originalChildNodes);
-		// console.log("this.#templating", this.#templating);
-		// console.log("indexes", indexes);
+		const node = interpolate(input);
 		for (const [k, v] of Object.entries(this.#templating)) {
-			const l = indexes[k] ?? 0;
-			if (v.functions.length > l) {
-				// console.log("k", k, "l", l);
-				v.functions.length = l;
-			}
+			const length = indexes[k] ?? 0;
+			if (v.functions.length > length)
+				v.functions.length = length;
 		}
-		return n;
+		return node;
 	}
 }
 
 const documentFragments = {};
 
 const getDocumentFragment = async name => {
-	const r = `/${name}.html`;
-	documentFragments[name] ??= fetch(r).then(x => {
+	documentFragments[name] ??= fetch(`/${name}.html`).then(x => {
 		if (!x.ok)
-			throw new Error(`Failed to fetch ${r}: ${x.status} ${x.statusText}`);
+			throw new Error(`Failed to fetch /${name}.html: ${x.status} ${x.statusText}`);
 		return x.text();
 	}).then(x => {
-		const t = document.createElement("template");
-		t.innerHTML = x;
-		return t.content;
+		const template = document.createElement("template");
+		template.innerHTML = x;
+		return template.content;
 	});
 	return await documentFragments[name];
 };
 
 const evaluate = (expression, context) => {
-	let o = context;
+	let value = context;
 	if (expression)
-		for (const k of expression.split(".")) {
-			if (o == null)
+		for (const subexpr of expression.split(".")) {
+			if (value == null)
 				break;
-			const i = k.endsWith("]") ? k.indexOf("[") : -1;
-			o = i === -1 ? o[k] : o[k.substring(0, i)]?.[parseInt(k.substring(i + 1, k.length - 1))];
+			const index = subexpr.endsWith("]") ? subexpr.indexOf("[") : -1;
+			value = index === -1 ? value[subexpr] : value[subexpr.substring(0, index)]?.[parseInt(subexpr.substring(index + 1, subexpr.length - 1))];
 		}
-	return o;
+	return value;
 };
 
 const findNode = (node, indexes, attribute) => {
@@ -200,7 +188,6 @@ const compileNode = rootNode => {
 			const text = node.nodeValue;
 			if (text.includes("${") && text.includes("}")) {
 				const pathCopy = [...path];
-				//node.nodeValue = "";
 				const isTextAreaChild = node.parentElement instanceof HTMLTextAreaElement;
 				interpolatorBuilders.push(rootNodeCopy => {
 					const nodeCopy = findNode(rootNodeCopy, pathCopy);
@@ -220,13 +207,9 @@ const compileNode = rootNode => {
 			if (text.startsWith("${") && text.indexOf("}") === text.length - 1) {
 				const pathCopy = [...path];
 				const expression = text.substring(2, text.length - 1);
-				//node.nodeValue = "";
 				interpolatorBuilders.push(rootNodeCopy => {
 					const nodeCopy = findNode(rootNodeCopy, pathCopy);
 					return context => {
-						//if (!nodeCopy.parentNode)
-						//if (text === "${panel}")
-						//console.log("x");
 						const nodes1 = nodeCopy.insertedNodes ?? [];
 						let referenceNode;
 						for (let i = nodes1.length - 1; i >= 0; i--)
@@ -260,11 +243,8 @@ const compileNode = rootNode => {
 							return v;
 						});
 						for (const n of nodes1)
-							if (!nodes2.includes(n) && n.parentNode === nodeCopy.parentNode) {
-								//if (n instanceof Comment && n.nodeValue === "${panel}")
-								//console.log("x");
+							if (!nodes2.includes(n) && n.parentNode === nodeCopy.parentNode)
 								n.parentNode.removeChild(n);
-							}
 						for (let i = nodes2.length - 1; i >= 0; i--) {
 							const n = nodes2[i];
 							if (n !== referenceNode?.previousSibling)
@@ -281,7 +261,6 @@ const compileNode = rootNode => {
 				const text = attribute.value;
 				if (text.includes("${") && text.includes("}")) {
 					const pathCopy = [...path, i];
-					//a.value = "";
 					const isExpression = text.startsWith("${") && text.indexOf("}") === text.length - 1;
 					interpolatorBuilders.push(rootNodeCopy => {
 						const attributeCopy = findNode(rootNodeCopy, pathCopy, true);
