@@ -32,7 +32,7 @@ jobs:
       uses: s4u/setup-maven-action@v1.18.0
       with:
         checkout-fetch-depth: 0
-        java-version: 23
+        java-version: 24
         java-distribution: temurin
         maven-version: 3.9.9
     - name: Build with Maven
