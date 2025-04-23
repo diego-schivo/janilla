@@ -69,11 +69,14 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 		return persistence.database().perform((_, ii) -> {
 			var e = read(id);
 //			System.out.println("e=" + e);
-			var l = (long) ii.perform(versionStore + ".document", i -> ((Object[]) i.list(id).findFirst().get())[1]);
-			var v = readVersion(l);
+			if (e != null) {
+				var l = (long) ii.perform(versionStore + ".document",
+						i -> ((Object[]) i.list(id).findFirst().get())[1]);
+				var v = readVersion(l);
 //			System.out.println("v=" + v);
-			if (v.document().updatedAt().isAfter(e.updatedAt()))
-				e = v.document();
+				if (v.document().updatedAt().isAfter(e.updatedAt()))
+					e = v.document();
+			}
 			return e;
 		}, false);
 	}

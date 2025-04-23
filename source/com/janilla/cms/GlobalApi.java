@@ -24,24 +24,29 @@
  */
 package com.janilla.cms;
 
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 
+import com.janilla.http.HttpExchange;
 import com.janilla.json.MapAndType;
-import com.janilla.persistence.Crud;
 import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
 
-public abstract class GlobalApi<E> {
+public abstract class GlobalApi<E extends Document> {
 
 	protected final Class<E> type;
 
+	protected final Predicate<HttpExchange> drafts;
+
 	public Persistence persistence;
 
-	protected GlobalApi(Class<E> type) {
+	protected GlobalApi(Class<E> type, Predicate<HttpExchange> drafts) {
 		this.type = type;
+		this.drafts = drafts;
 	}
 
 	@Handle(method = "POST")
@@ -50,22 +55,49 @@ public abstract class GlobalApi<E> {
 	}
 
 	@Handle(method = "GET")
-	public E read() {
-		var e = crud().read(1);
+	public E read(HttpExchange exchange) {
+		var e = crud().read(1, drafts.test(exchange));
 		if (e == null)
 			throw new NotFoundException("entity " + 1);
 		return e;
 	}
 
 	@Handle(method = "PUT")
-	public E update(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
-		var e = crud().update(1, x -> Reflection.copy(entity, x, y -> !Set.of("id").contains(y)));
+	public E update(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
+		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
+		if (s != entity.status())
+			entity = Reflection.copy(Map.of("status", s), entity);
+		var e = crud().update(1, entity, null, !Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + 1);
 		return e;
 	}
 
-	protected Crud<E> crud() {
-		return persistence.crud(type);
+	@Handle(method = "DELETE")
+	public E delete() {
+		var e = crud().delete(1);
+		if (e == null)
+			throw new NotFoundException("entity " + 1);
+		return e;
+	}
+
+	@Handle(method = "GET", path = "versions")
+	public List<Version<E>> readVersions() {
+		return crud().readVersions(1);
+	}
+
+	@Handle(method = "GET", path = "versions/(\\d+)")
+	public Version<E> readVersion(long versionId) {
+		return crud().readVersion(versionId);
+	}
+
+	@Handle(method = "POST", path = "versions/(\\d+)")
+	public E restoreVersion(long versionId, Boolean draft) {
+		return crud().restoreVersion(versionId,
+				Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED);
+	}
+
+	protected DocumentCrud<E> crud() {
+		return (DocumentCrud<E>) persistence.crud(type);
 	}
 }

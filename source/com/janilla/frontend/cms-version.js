@@ -56,7 +56,7 @@ export default class CmsVersion extends WebComponent {
 			case "confirm":
 				const a = this.closest("cms-admin");
 				const s = a.state;
-				s.document = await (await fetch(`${s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/"))}/versions/${s.version.id}`, { method: "POST" })).json();
+				s.document = await (await fetch(`${s.collectionSlug ? s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/")) : s.documentUrl}/versions/${s.version.id}`, { method: "POST" })).json();
 				a.renderToast("Restored successfully.");
 				history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 3).join("/")}`);
 				dispatchEvent(new CustomEvent("popstate"));
