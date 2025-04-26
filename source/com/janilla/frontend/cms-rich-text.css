@@ -20,6 +20,6 @@ cms-rich-text {
   }
 
   a {
-    color: rgb(125, 204, 248);
+    color: light-dark(rgb(130, 51, 7), rgb(125, 204, 248));
   }
 }

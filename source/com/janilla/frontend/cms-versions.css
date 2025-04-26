@@ -9,7 +9,7 @@ cms-versions {
   }
 
   th {
-    color: rgb(141, 141, 141);
+    color: light-dark(rgb(114, 114, 114), rgb(141, 141, 141));
   }
 
   a {

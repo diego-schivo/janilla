@@ -6,7 +6,7 @@ cms-checkbox {
   }
 
   lucide-icon {
-    background: rgb(34, 34, 34);
+    background: light-dark(rgb(221, 221, 221), rgb(34, 34, 34));
     border: 1px solid rgb(60, 60, 60);
     border-radius: 0.1875rem;
   }

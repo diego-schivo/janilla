@@ -4,7 +4,7 @@ cms-version {
   gap: 1rem;
 
   > p {
-    color: rgb(128, 128, 128);
+    color: light-dark(rgb(127, 127, 127), rgb(128, 128, 128));
   }
 
   h2 {
@@ -42,13 +42,13 @@ cms-version {
       padding: 0.5rem 1rem;
 
       &[name="cancel"] {
-        background: rgb(0, 0, 0);
-        color: rgb(181, 181, 181);
+        background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+        color: light-dark(rgb(74, 74, 74), rgb(181, 181, 181));
       }
 
       &[name="confirm"] {
-        background: rgb(235, 235, 235);
-        color: rgb(20, 20, 20);
+        background: light-dark(rgb(20, 20, 20), rgb(235, 235, 235));
+        color: light-dark(rgb(235, 235, 235), rgb(20, 20, 20));
       }
     }
   }

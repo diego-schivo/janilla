@@ -7,8 +7,8 @@ html:has(cms-admin) {
 }
 
 body:has(cms-admin) {
-  background: rgb(20, 20, 20);
-  color: rgb(235, 235, 235);
+  background: light-dark(rgb(235, 235, 235), rgb(20, 20, 20));
+  color: light-dark(rgb(20, 20, 20), rgb(235, 235, 235));
   margin: 0;
 
   &,
@@ -31,7 +31,7 @@ cms-admin {
     z-index: 30;
 
     .button {
-      background: rgb(20, 20, 20);
+      background: light-dark(rgb(235, 235, 235), rgb(20, 20, 20));
       display: inline-flex;
       margin: 1rem 0 0 1rem;
       width: 1rem;
@@ -134,7 +134,7 @@ cms-admin {
         margin-left: auto;
   
         lucide-icon {
-          background: #0d74b6;
+          background: light-dark(#f28b49, #0d74b6);
           border-radius: 9999px;
           padding: 0.25rem;
         }
@@ -157,7 +157,7 @@ cms-admin {
     }
 
     label {
-      color: rgb(141, 141, 141);
+      color: light-dark(rgb(114, 114, 114), rgb(141, 141, 141));
       display: flex;
       justify-content: space-between;
       margin: 0.25rem 0;

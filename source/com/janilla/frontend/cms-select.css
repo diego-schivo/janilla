@@ -15,7 +15,7 @@ cms-select {
   }
 
   lucide-icon {
-    color: rgb(235, 235, 235);
+    color: light-dark(rgb(20, 20, 20), rgb(235, 235, 235));
     pointer-events: none;
     position: absolute;
     right: 0.5rem;

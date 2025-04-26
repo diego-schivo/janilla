@@ -8,9 +8,9 @@ cms-dashboard {
   }
 
   h4 {
-    background: rgb(19, 44, 58);
+    background: light-dark(rgb(236, 211, 197), rgb(19, 44, 58));
     border-radius: 0.25rem;
-    color: rgb(36, 164, 223);
+    color: light-dark(rgb(219, 91, 32), rgb(36, 164, 223));
     letter-spacing: -0.375px;
     padding: 0.625rem;
   }
@@ -27,7 +27,7 @@ cms-dashboard {
 
   a {
     align-items: flex-start;
-    background: rgb(34, 34, 34);
+    background: light-dark(rgb(221, 221, 221), rgb(34, 34, 34));
     border: 1px solid rgb(60, 60, 60);
     border-radius: 0.25rem;
     box-sizing: border-box;
@@ -41,7 +41,7 @@ cms-dashboard {
     text-decoration: none;
 
     &:hover {
-      border-color: rgb(87, 87, 87);
+      border-color: light-dark(rgb(168, 168, 168), rgb(87, 87, 87));
     }
 
     button {

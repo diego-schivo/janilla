@@ -12,7 +12,7 @@ body:has(dialog[open]) {
 
 button,
 .button {
-  background: rgb(60, 60, 60);
+  background: light-dark(rgb(195, 195, 195), rgb(60, 60, 60));
   border: 1px solid rgb(60, 60, 60);
   border-radius: 0.25rem;
   cursor: pointer;
@@ -80,7 +80,7 @@ img {
 input,
 select,
 textarea {
-  background: rgb(34, 34, 34);
+  background: light-dark(rgb(221, 221, 221), rgb(34, 34, 34));
   border: 1px solid rgb(60, 60, 60);
   border-radius: 0.1875rem;
   outline: none;
@@ -105,7 +105,7 @@ label {
     }
 
     lucide-icon {
-      background: rgb(34, 34, 34);
+      background: light-dark(rgb(221, 221, 221), rgb(34, 34, 34));
       border: 1px solid rgb(60, 60, 60);
       border-radius: 0.1875rem;
     }
@@ -145,7 +145,7 @@ table {
 }
 
 tbody > tr:nth-child(odd) {
-  background: rgb(34, 34, 34);
+  background: light-dark(rgb(221, 221, 221), rgb(34, 34, 34));
 }
 
 textarea {

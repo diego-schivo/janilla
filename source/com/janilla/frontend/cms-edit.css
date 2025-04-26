@@ -56,7 +56,7 @@ cms-edit {
       }
 
       dt {
-        color: rgb(128, 128, 128);
+        color: light-dark(rgb(127, 127, 127), rgb(128, 128, 128));
 
         &::after {
           content: ":";
@@ -64,7 +64,7 @@ cms-edit {
       }
 
       dd {
-        color: rgb(255, 255, 255);
+        color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
         font-weight: 600;
       }
 
@@ -88,8 +88,8 @@ cms-edit {
         }
 
         &[name="publish"] {
-          background: rgb(181, 181, 181);
-          color: rgb(20, 20, 20);
+          background: light-dark(rgb(74, 74, 74), rgb(181, 181, 181));
+          color: light-dark(rgb(235, 235, 235), rgb(20, 20, 20));
         }
       }
 

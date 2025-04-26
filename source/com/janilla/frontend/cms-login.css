@@ -35,7 +35,7 @@ cms-reset-password {
     gap: 5px;
 
     &:has([required]) span::after {
-      color: rgb(218, 75, 72);
+      color: light-dark(rgb(37, 180, 183), rgb(218, 75, 72));
       content: " *";
     }
   }
@@ -49,7 +49,7 @@ cms-reset-password {
   }
   
   input {
-    background: rgb(34, 34, 34);
+    background: light-dark(rgb(221, 221, 221), rgb(34, 34, 34));
     border: 1px solid rgb(60, 60, 60);
   }
 
@@ -58,11 +58,11 @@ cms-reset-password {
   }
 
   button {
-    background: rgb(235, 235, 235);
-    color: rgb(20, 20, 20);
+    background: light-dark(rgb(20, 20, 20), rgb(235, 235, 235));
+    color: light-dark(rgb(235, 235, 235), rgb(20, 20, 20));
 
     &:hover {
-      background: rgb(181, 181, 181);
+      background: light-dark(rgb(74, 74, 74), rgb(181, 181, 181));
     }
 
     @media (min-width: 1441px) {

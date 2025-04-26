@@ -28,7 +28,7 @@ cms-document {
       gap: 0.25rem;
 
       em {
-        background: rgb(47, 47, 47);
+        background: light-dark(rgb(208, 208, 208), rgb(47, 47, 47));
         border-radius: 0.25rem;
         font-style: normal;
         padding: 0 0.2rem;
