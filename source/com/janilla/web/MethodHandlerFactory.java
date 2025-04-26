@@ -140,8 +140,6 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected Comparator<Invocation> invocationComparator;
 
-//	protected Function<String, Class<?>> typeResolver;
-
 	protected Function<Class<?>, Object> targetResolver;
 
 	protected WebHandlerFactory mainFactory;
@@ -155,10 +153,6 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	public void setInvocationComparator(Comparator<Invocation> comparator) {
 		this.invocationComparator = comparator;
 	}
-
-//	public void setTypeResolver(Function<String, Class<?>> typeResolver) {
-//		this.typeResolver = typeResolver;
-//	}
 
 	public void setMainFactory(WebHandlerFactory mainFactory) {
 		this.mainFactory = mainFactory;
@@ -420,7 +414,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			var n = Stream.of(b != null ? b.parameter() : null, b != null ? b.value() : null, pp[i].getName())
 					.filter(x -> x != null && !x.isEmpty()).findFirst().orElse(null);
 			var qs2 = qs;
-			var bs2 = i == ggl ? bs : null;
+			var bs2 = i == ggl || (ptt[i] instanceof Class<?> x && x.isRecord()) ? bs : null;
 			aa[i] = resolveArgument(ptt[i], exchange,
 					i < ggl ? (g != null ? new String[] { g } : null)
 							: qs2 != null && n != null ? qs2.stream(n).toArray(String[]::new) : null,
