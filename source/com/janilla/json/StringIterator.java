@@ -58,6 +58,9 @@ public class StringIterator implements Iterator<JsonToken<?>> {
 					case '\n':
 						b.append("\\n");
 						break;
+					case '\r':
+						b.append("\\r");
+						break;
 					case '\t':
 						b.append("\\t");
 						break;

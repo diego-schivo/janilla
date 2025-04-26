@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -112,7 +113,7 @@ public class ValueIterator extends TokenIterator {
 		}).iterator());
 		case Number x -> context.newNumberIterator(x);
 		case OffsetDateTime x -> context.newStringIterator(x.toString());
-		case Path x -> context.newStringIterator(x.toString());
+		case Path x -> context.newStringIterator(x.toString().replace(File.separatorChar, '/'));
 		case String x -> context.newStringIterator(x);
 		case URI x -> context.newStringIterator(x.toString());
 		case UUID x -> context.newStringIterator(x.toString());

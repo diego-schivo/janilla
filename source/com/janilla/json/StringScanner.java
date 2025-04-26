@@ -90,6 +90,10 @@ public class StringScanner implements Scanner {
 					buffer.append('\n');
 					a = true;
 					yield 1;
+				case 'r':
+					buffer.append('\r');
+					a = true;
+					yield 1;
 				case 't':
 					buffer.append('\t');
 					a = true;
