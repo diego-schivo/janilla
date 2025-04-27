@@ -35,7 +35,7 @@ We provide several example applications showing how to use the library:
 <!-- [Adyen Payment Examples (partial) porting](https://github.com/diego-schivo/janilla-payment) -->
 <!-- [htmx Examples porting](https://github.com/diego-schivo/janilla-uxpatterns) -->
 
-Video tutorials are available on our [YouTube Channel](https://www.youtube.com/@janilla).
+Video tutorials are available on [Janilla YouTube Channel](https://www.youtube.com/@janilla).
 
 ### Where you can get help
 
