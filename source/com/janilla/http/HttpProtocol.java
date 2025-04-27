@@ -161,6 +161,7 @@ public class HttpProtocol implements Protocol {
 									var bb = ByteBuffer.allocate(l);
 									for (var x : ff2) {
 										var d = (Frame.Data) x;
+//										System.out.println("HttpProtocol.handle, c=" + c.getId() + ", d=" + d);
 										bb.put(d.data());
 										if (d.endStream())
 											ended = true;
