@@ -33,26 +33,26 @@ public record Setting(Name name, int value) {
 		HEADER_TABLE_SIZE(0x01), ENABLE_PUSH(0x02), MAX_CONCURRENT_STREAMS(0x03), INITIAL_WINDOW_SIZE(0x04),
 		MAX_FRAME_SIZE(0x05), MAX_HEADER_LIST_SIZE(0x06);
 
-		static Name[] array;
+		private static final Name[] ALL;
 
 		static {
 			var i = Arrays.stream(values()).mapToInt(Name::identifier).max().getAsInt();
-			array = new Name[i + 1];
+			ALL = new Name[i + 1];
 			for (var s : values())
-				array[s.identifier()] = s;
+				ALL[s.identifier()] = s;
 		}
 
-		static Name of(int identifier) {
-			return 0 <= identifier && identifier < array.length ? array[identifier] : null;
+		public static Name of(int identifier) {
+			return 0 <= identifier && identifier < ALL.length ? ALL[identifier] : null;
 		}
 
-		int identifier;
+		private final int identifier;
 
-		Name(int identifier) {
+		private Name(int identifier) {
 			this.identifier = identifier;
 		}
 
-		int identifier() {
+		public int identifier() {
 			return identifier;
 		}
 	}

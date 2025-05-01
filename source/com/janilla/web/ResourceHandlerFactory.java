@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,7 +48,6 @@ import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpWritableByteChannel;
 import com.janilla.io.IO;
 
 public class ResourceHandlerFactory implements WebHandlerFactory {
@@ -262,7 +262,8 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		}
 		default -> throw new IllegalArgumentException();
 		}) {
-			((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(is.readAllBytes()), true);
+//			((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(is.readAllBytes()), true);
+			((WritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(is.readAllBytes()));
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

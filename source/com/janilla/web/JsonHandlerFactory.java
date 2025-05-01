@@ -27,11 +27,11 @@ package com.janilla.web;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpWritableByteChannel;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -55,7 +55,8 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 		var bb = s.getBytes();
 		rs.setHeaderValue("content-length", String.valueOf(bb.length));
 		try {
-			((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb), true);
+//			((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb), true);
+			((WritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb));
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

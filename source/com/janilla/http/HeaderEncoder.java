@@ -27,9 +27,9 @@ package com.janilla.http;
 import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 
-class HeaderEncoder {
+public class HeaderEncoder {
 
-	HeaderTable table = new HeaderTable();
+	protected final HeaderTable table = new HeaderTable();
 
 	{
 		table.setDynamic(true);
@@ -48,7 +48,8 @@ class HeaderEncoder {
 		return encode(header, bytes, huffman, null);
 	}
 
-	public int encode(HeaderField header, IntConsumer bytes, boolean huffman, HeaderField.Representation representation) {
+	public int encode(HeaderField header, IntConsumer bytes, boolean huffman,
+			HeaderField.Representation representation) {
 		var ih = indexAndHeader(header);
 		var r = ih != null && ih.header().equals(header) ? HeaderField.Representation.INDEXED
 				: representation != null ? representation : HeaderField.Representation.WITH_INDEXING;

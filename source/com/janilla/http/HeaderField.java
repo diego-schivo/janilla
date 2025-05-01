@@ -61,16 +61,16 @@ public record HeaderField(String name, String value) {
 	public record ComplexValue(String value, Properties properties) {
 	}
 
-	enum Representation {
+	public enum Representation {
 
 		INDEXED(7, (byte) 0x80), WITH_INDEXING(6, (byte) 0x40), WITHOUT_INDEXING(4, (byte) 0x00),
 		NEVER_INDEXED(4, (byte) 0x10);
 
-		int prefix;
+		private final int prefix;
 
-		byte first;
+		private final byte first;
 
-		Representation(int prefix, byte first) {
+		private Representation(int prefix, byte first) {
 			this.prefix = prefix;
 			this.first = first;
 		}

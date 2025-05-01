@@ -32,39 +32,39 @@ public sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, F
 
 	int streamIdentifier();
 
-	enum Name {
+	public enum Name {
 
 		DATA(0x00), HEADERS(0x01), PRIORITY(0x02), RST_STREAM(0x03), SETTINGS(0x04), PUSH_PROMISE(0x05), PING(0x06),
 		GOAWAY(0x07), WINDOW_UPDATE(0x08), CONTINUATION(0x09);
 
-		static Name[] array;
+		private static final Name[] ALL;
 
 		static {
 			var t = Arrays.stream(values()).mapToInt(Name::type).max().getAsInt();
-			array = new Name[t + 1];
+			ALL = new Name[t + 1];
 			for (var f : values())
-				array[f.type()] = f;
+				ALL[f.type()] = f;
 		}
 
-		static Name of(int type) {
-			return 0 <= type && type < array.length ? array[type] : null;
+		public static Name of(int type) {
+			return 0 <= type && type < ALL.length ? ALL[type] : null;
 		}
 
-		int type;
+		private final int type;
 
-		Name(int type) {
+		private Name(int type) {
 			this.type = type;
 		}
 
-		int type() {
+		public int type() {
 			return type;
 		}
 	}
 
-	record Data(boolean padded, boolean endStream, int streamIdentifier, byte[] data) implements Frame {
+	public record Data(boolean padded, boolean endStream, int streamIdentifier, byte[] data) implements Frame {
 	}
 
-	record Goaway(int lastStreamId, int errorCode, byte[] additionalDebugData) implements Frame {
+	public record Goaway(int lastStreamId, int errorCode, byte[] additionalDebugData) implements Frame {
 
 		@Override
 		public int streamIdentifier() {
@@ -72,20 +72,20 @@ public sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, F
 		}
 	}
 
-	record Headers(boolean priority, boolean endHeaders, boolean endStream, int streamIdentifier, boolean exclusive,
+	public record Headers(boolean priority, boolean endHeaders, boolean endStream, int streamIdentifier, boolean exclusive,
 			int streamDependency, int weight, List<HeaderField> fields) implements Frame {
 	}
 
-	record Ping(boolean ack, int streamIdentifier, Long opaqueData) implements Frame {
+	public record Ping(boolean ack, int streamIdentifier, Long opaqueData) implements Frame {
 	}
 
-	record Priority(int streamIdentifier, boolean exclusive, int streamDependency, int weight) implements Frame {
+	public record Priority(int streamIdentifier, boolean exclusive, int streamDependency, int weight) implements Frame {
 	}
 
-	record RstStream(int streamIdentifier, int errorCode) implements Frame {
+	public record RstStream(int streamIdentifier, int errorCode) implements Frame {
 	}
 
-	record Settings(boolean ack, List<Setting.Parameter> parameters) implements Frame {
+	public record Settings(boolean ack, List<Setting.Parameter> parameters) implements Frame {
 
 		@Override
 		public int streamIdentifier() {
@@ -93,6 +93,6 @@ public sealed interface Frame permits Frame.Data, Frame.Goaway, Frame.Headers, F
 		}
 	}
 
-	record WindowUpdate(int streamIdentifier, int windowSizeIncrement) implements Frame {
+	public record WindowUpdate(int streamIdentifier, int windowSizeIncrement) implements Frame {
 	}
 }
