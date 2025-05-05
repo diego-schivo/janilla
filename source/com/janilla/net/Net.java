@@ -69,15 +69,15 @@ public interface Net {
 
 	static SSLContext getSSLContext(String type, InputStream stream, char[] password) {
 		try {
-			var s = KeyStore.getInstance(type);
-			s.load(stream, password);
-			var k = KeyManagerFactory.getInstance("SunX509");
-			k.init(s, password);
-			var t = TrustManagerFactory.getInstance("SunX509");
-			t.init(s);
-			var c = SSLContext.getInstance("TLSv1.3");
-			c.init(k.getKeyManagers(), t.getTrustManagers(), null);
-			return c;
+			var ks = KeyStore.getInstance(type);
+			ks.load(stream, password);
+			var kmf = KeyManagerFactory.getInstance("SunX509");
+			kmf.init(ks, password);
+			var tmf = TrustManagerFactory.getInstance("SunX509");
+			tmf.init(ks);
+			var sc = SSLContext.getInstance("TLSv1.3");
+			sc.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+			return sc;
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(e);
 		} catch (IOException e) {

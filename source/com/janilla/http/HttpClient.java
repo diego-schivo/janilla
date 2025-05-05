@@ -49,8 +49,8 @@ public class HttpClient {
 		try (var sc = SocketChannel.open()) {
 			var a = rq.getHeaderValue(":authority");
 			var i = a.indexOf(':');
-			var hn = a.substring(0, i);
-			var p = Integer.parseInt(a.substring(i + 1));
+			var hn = i != -1 ? a.substring(0, i) : a;
+			var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : 443;
 			sc.connect(new InetSocketAddress(hn, p));
 
 			var se = sslContext.createSSLEngine();
@@ -116,9 +116,10 @@ public class HttpClient {
 				case Frame.Settings _:
 				case Frame.Ping _:
 //				case Frame.Goaway _:
+				case Frame.WindowUpdate _:
 					break;
 				default:
-					throw new RuntimeException();
+					throw new RuntimeException(f.toString());
 				}
 			}
 
@@ -142,17 +143,23 @@ public class HttpClient {
 			for (st.out().flip(); st.out().hasRemaining();)
 				st.write();
 
-//			System.out.println("C: closeOutbound");
+			System.out.println("C: closeOutbound");
 			se.closeOutbound();
 			do
 				st.write();
 			while (!se.isOutboundDone());
 
+			var ci = true;
 			do
-				st.read();
+				if (st.read() == -1) {
+					ci = false;
+					break;
+				}
 			while (!se.isInboundDone());
-//			System.out.println("C: closeInbound");
-			se.closeInbound();
+			if (ci) {
+				System.out.println("C: closeInbound");
+				se.closeInbound();
+			}
 		}
 	}
 }

@@ -31,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
 public class SecureTransfer {
@@ -76,16 +77,19 @@ public class SecureTransfer {
 		return outLock;
 	}
 
-	public void read() throws IOException {
+	public int read() throws IOException {
 		inLock.lock();
 		try {
 			var p = in.position();
 			while (!engine.isInboundDone()) {
 				handshake();
 				if (!in.hasRemaining() || in.position() > p)
-					break;
-				read0();
+					return in.position() - p;
+				var n = read0();
+				if (n == -1)
+					return -1;
 			}
+			return -1;
 		} finally {
 			inLock.unlock();
 		}
@@ -107,11 +111,11 @@ public class SecureTransfer {
 	}
 
 	protected void handshake() throws IOException {
-//		var t = se.getUseClientMode() ? "C" : "S";
+		var t = engine.getUseClientMode() ? "C" : "S";
 		while (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
 			switch (engine.getHandshakeStatus()) {
 			case NEED_TASK:
-//				System.out.println(t + ": task");
+				System.out.println(t + ": task");
 				engine.getDelegatedTask().run();
 				break;
 			case NEED_UNWRAP:
@@ -126,22 +130,29 @@ public class SecureTransfer {
 		}
 	}
 
-	protected void read0() throws IOException {
+	protected int read0() throws IOException {
 		inLock.lock();
 		try {
-//			var t = se.getUseClientMode() ? "C" : "S";
-			if (in0.position() == 0) {
-//				System.out.println(t + ": read");
+			var t = engine.getUseClientMode() ? "C" : "S";
+			for (var r = in0.position() == 0;;) {
+				if (r) {
+					System.out.println(t + ": read");
+					@SuppressWarnings("unused")
+					var n = channel.read(in0);
+					System.out.println(t + ": read " + n);
+					if (n == -1)
+						return -1;
+				}
+				in0.flip();
+				System.out.println(t + ": unwrap");
 				@SuppressWarnings("unused")
-				var n = channel.read(in0);
-//				System.out.println(t + ": read " + n);
+				var ser = engine.unwrap(in0, in);
+				System.out.println(t + ": unwrap " + ser);
+				in0.compact();
+				r = ser.getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW;
+				if (!r)
+					return ser.bytesConsumed();
 			}
-			in0.flip();
-//			System.out.println(t + ": unwrap");
-			@SuppressWarnings("unused")
-			var r = engine.unwrap(in0, in);
-//			System.out.println(t + ": unwrap " + r);
-			in0.compact();
 		} finally {
 			inLock.unlock();
 		}
@@ -150,18 +161,18 @@ public class SecureTransfer {
 	protected void write0() throws IOException {
 		outLock.lock();
 		try {
-//			var t = se.getUseClientMode() ? "C" : "S";
+			var t = engine.getUseClientMode() ? "C" : "S";
 			out0.clear();
-//			System.out.println(t + ": wrap");
+			System.out.println(t + ": wrap");
 			@SuppressWarnings("unused")
 			var r = engine.wrap(out, out0);
-//			System.out.println(t + ": wrap " + r);
+			System.out.println(t + ": wrap " + r);
 			out0.flip();
 			while (out0.hasRemaining()) {
-//				System.out.println(t + ": write");
+				System.out.println(t + ": write");
 				@SuppressWarnings("unused")
 				var n = channel.write(out0);
-//				System.out.println(t + ": write " + n);
+				System.out.println(t + ": write " + n);
 			}
 		} finally {
 			outLock.unlock();

@@ -27,6 +27,7 @@ package com.janilla.http;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.Channel;
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class HttpMessage implements Closeable {
@@ -64,6 +65,8 @@ public abstract class HttpMessage implements Closeable {
 	}
 
 	public void setHeaderValue(String name, String value) {
+		if (headers == null)
+			headers = new ArrayList<>();
 		var i = 0;
 		for (var h : headers) {
 			if (h.name().equals(name)) {
