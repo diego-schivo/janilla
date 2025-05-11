@@ -79,10 +79,11 @@ public abstract class SecureServer {
 						var st = new SecureTransfer(sc, se) {
 
 							@Override
-							public void read() throws IOException {
+							public int read() throws IOException {
 								updateLastUsed();
-								super.read();
+								var n = super.read();
 								updateLastUsed();
+								return n;
 							}
 
 							@Override

@@ -80,6 +80,12 @@ public class Cms {
 										: c2.isInterface() ? Arrays.asList(c2.getPermittedSubclasses()) : List.of(c2);
 								m3.put("elementTypes", cc.stream().map(f).toList());
 							}
+						} else if (x.type() == Set.class) {
+							var c2 = (Class<?>) ((ParameterizedType) x.genericType()).getActualTypeArguments()[0];
+							m3.put("elementTypes", List.of(f.apply(String.class)));
+							m3.put("options",
+									Arrays.stream(c2.getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
+							cc = List.of();
 						} else if (x.type().getPackageName().startsWith("java.")) {
 							if (x.type() == Long.class) {
 								var ta = x.annotatedType().getAnnotation(Types.class);

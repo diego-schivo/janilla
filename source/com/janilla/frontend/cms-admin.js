@@ -350,26 +350,28 @@ export default class CmsAdmin extends WebComponent {
 		switch (field.type) {
 			case "Boolean":
 				return "checkbox";
+			case "Document.Reference":
+				return "document-reference";
+			case "File":
+				return "file";
 			case "Instant":
 				return "datetime";
-			case "File":
-				return "cms-file";
 			case "Integer":
-				return "cms-text";
+				return "text";
+			case "List":
+				return field.referenceType ? "reference-array" : "array";
+			case "Long":
+				return field.referenceType ? "reference" : "text";
+			case "Set":
+				return "checkbox2";
 			case "String":
 				return field.options
 					? "select"
 					: field.name === "slug"
-						? "cms-slug"
-						: "cms-text";
-			case "List":
-				return field.referenceType ? "cms-reference-array" : "array";
-			case "Long":
-				return field.referenceType ? "cms-reference" : "cms-text";
-			case "Document.Reference":
-				return "cms-document-reference";
+						? "slug"
+						: "text";
 			default:
-				return "cms-object";
+				return "object";
 		}
 	}
 

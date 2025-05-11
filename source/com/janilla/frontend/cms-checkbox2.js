@@ -24,14 +24,14 @@
  */
 import { WebComponent } from "./web-component.js";
 
-export default class CmsRadio extends WebComponent {
+export default class CmsCheckbox2 extends WebComponent {
 
 	static get observedAttributes() {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	static get templateName() {
-		return "cms-radio";
+		return "cms-checkbox2";
 	}
 
 	constructor() {
@@ -48,7 +48,7 @@ export default class CmsRadio extends WebComponent {
 				$template: "option",
 				name: p,
 				value: x,
-				checked: x == f.data,
+				checked: f.data.includes(x),
 				text: x
 			}))
 		}));

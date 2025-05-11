@@ -111,11 +111,11 @@ public class SecureTransfer {
 	}
 
 	protected void handshake() throws IOException {
-		var t = engine.getUseClientMode() ? "C" : "S";
+//		var t = engine.getUseClientMode() ? "C" : "S";
 		while (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
 			switch (engine.getHandshakeStatus()) {
 			case NEED_TASK:
-				System.out.println(t + ": task");
+//				System.out.println(t + ": task");
 				engine.getDelegatedTask().run();
 				break;
 			case NEED_UNWRAP:
@@ -133,21 +133,21 @@ public class SecureTransfer {
 	protected int read0() throws IOException {
 		inLock.lock();
 		try {
-			var t = engine.getUseClientMode() ? "C" : "S";
+//			var t = engine.getUseClientMode() ? "C" : "S";
 			for (var r = in0.position() == 0;;) {
 				if (r) {
-					System.out.println(t + ": read");
+//					System.out.println(t + ": read");
 					@SuppressWarnings("unused")
 					var n = channel.read(in0);
-					System.out.println(t + ": read " + n);
+//					System.out.println(t + ": read " + n);
 					if (n == -1)
 						return -1;
 				}
 				in0.flip();
-				System.out.println(t + ": unwrap");
+//				System.out.println(t + ": unwrap");
 				@SuppressWarnings("unused")
 				var ser = engine.unwrap(in0, in);
-				System.out.println(t + ": unwrap " + ser);
+//				System.out.println(t + ": unwrap " + ser);
 				in0.compact();
 				r = ser.getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW;
 				if (!r)
@@ -161,18 +161,18 @@ public class SecureTransfer {
 	protected void write0() throws IOException {
 		outLock.lock();
 		try {
-			var t = engine.getUseClientMode() ? "C" : "S";
+//			var t = engine.getUseClientMode() ? "C" : "S";
 			out0.clear();
-			System.out.println(t + ": wrap");
+//			System.out.println(t + ": wrap");
 			@SuppressWarnings("unused")
 			var r = engine.wrap(out, out0);
-			System.out.println(t + ": wrap " + r);
+//			System.out.println(t + ": wrap " + r);
 			out0.flip();
 			while (out0.hasRemaining()) {
-				System.out.println(t + ": write");
+//				System.out.println(t + ": write");
 				@SuppressWarnings("unused")
 				var n = channel.write(out0);
-				System.out.println(t + ": write " + n);
+//				System.out.println(t + ": write " + n);
 			}
 		} finally {
 			outLock.unlock();

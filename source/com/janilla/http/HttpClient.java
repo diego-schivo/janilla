@@ -27,8 +27,11 @@ package com.janilla.http;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -45,9 +48,9 @@ public class HttpClient {
 		this.sslContext = sslContext;
 	}
 
-	public void send(HttpRequest rq, Consumer<HttpResponse> consumer) throws IOException {
+	public void send(HttpRequest request, Consumer<HttpResponse> consumer) throws IOException {
 		try (var sc = SocketChannel.open()) {
-			var a = rq.getHeaderValue(":authority");
+			var a = request.getHeaderValue(":authority");
 			var i = a.indexOf(':');
 			var hn = i != -1 ? a.substring(0, i) : a;
 			var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : 443;
@@ -80,12 +83,22 @@ public class HttpClient {
 			for (st.out().flip(); st.out().hasRemaining();)
 				st.write();
 
-			st.out().clear();
-			st.out().put(he.encodeFrame(new Frame.Headers(false, true, true, 1, false, 0, 0, rq.getHeaders())));
-			for (st.out().flip(); st.out().hasRemaining();)
-				st.write();
-
 			var ff = new ArrayList<Frame>();
+			var bb = Channels.newInputStream((ReadableByteChannel) request.getBody()).readAllBytes();
+			ff.add(new Frame.Headers(false, true, bb.length == 0, 1, false, 0, 0, request.getHeaders()));
+			for (var o = 0; o < bb.length;) {
+				var l = Math.min(bb.length - o, 16384);
+				ff.add(new Frame.Data(false, o + l == bb.length, 1, Arrays.copyOfRange(bb, o, o + l)));
+				o += l;
+			}
+			for (var f : ff) {
+				st.out().clear();
+				st.out().put(he.encodeFrame(f));
+				for (st.out().flip(); st.out().hasRemaining();)
+					st.write();
+			}
+
+			ff.clear();
 			for (var es = false; !es;) {
 				while (st.in().position() < 3)
 					st.read();
@@ -93,7 +106,7 @@ public class HttpClient {
 				if (pl > 16384)
 					throw new RuntimeException();
 
-				var bb = new byte[9 + pl];
+				bb = new byte[9 + pl];
 				while (st.in().position() < bb.length)
 					st.read();
 				st.in().flip();
