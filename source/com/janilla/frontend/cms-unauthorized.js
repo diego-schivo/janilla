@@ -24,46 +24,13 @@
  */
 import WebComponent from "./web-component.js";
 
-export default class CmsResetPassword extends WebComponent {
-
-	static get observedAttributes() {
-		return ["data-token"];
-	}
+export default class CmsUnauthorized extends WebComponent {
 
 	static get templateName() {
-		return "cms-reset-password";
+		return "cms-unauthorized";
 	}
 
 	constructor() {
 		super();
-	}
-
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("submit", this.handleSubmit);
-	}
-
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("submit", this.handleSubmit);
-	}
-
-	handleSubmit = async event => {
-		event.preventDefault();
-		event.stopPropagation();
-		await (await fetch("/api/users/reset-password", {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
-		})).json();
-		history.pushState(undefined, "", "/admin");
-		dispatchEvent(new CustomEvent("popstate"));
-	}
-
-	async updateDisplay() {
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			token: this.dataset.token
-		}));
 	}
 }

@@ -33,9 +33,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
@@ -59,7 +59,6 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpWritableByteChannel;
 import com.janilla.json.Converter;
 import com.janilla.json.Json;
 import com.janilla.json.MapAndType;
@@ -316,8 +315,9 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-			try {
-				((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(Files.readAllBytes(f)), true);
+			try (var in = Files.newInputStream(f);
+					var out = Channels.newOutputStream((WritableByteChannel) rs.getBody())) {
+				in.transferTo(out);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

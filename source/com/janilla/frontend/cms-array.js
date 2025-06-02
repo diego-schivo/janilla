@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { WebComponent } from "./web-component.js";
+import WebComponent from "./web-component.js";
 
 export default class CmsArray extends WebComponent {
 
@@ -53,6 +53,7 @@ export default class CmsArray extends WebComponent {
 	handleChange = event => {
 		const el = event.target;
 		const s = this.state;
+		//if (el.matches("[name]"))
 		if (el.matches("select:not([name])")) {
 			event.stopPropagation();
 			const li = el.closest("li");
@@ -87,7 +88,7 @@ export default class CmsArray extends WebComponent {
 			});
 			this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
 			this.requestDisplay();
-		} else if (el.matches('[type="checkbox"]')) {
+		} else if (el.matches('[type="checkbox"]:not([name])')) {
 			event.stopPropagation();
 			const li = el.closest("li");
 			const i = Array.prototype.indexOf.call(li.parentElement.children, li);
@@ -182,7 +183,8 @@ export default class CmsArray extends WebComponent {
 				types: s.field.elementTypes.map(x => ({
 					$template: "type",
 					label: x.split(/(?=[A-Z])/).join(" "),
-					value: x
+					value: x,
+					checked: false
 				}))
 			} : null
 		}));

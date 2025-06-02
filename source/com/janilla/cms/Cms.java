@@ -82,9 +82,11 @@ public class Cms {
 							}
 						} else if (x.type() == Set.class) {
 							var c2 = (Class<?>) ((ParameterizedType) x.genericType()).getActualTypeArguments()[0];
-							m3.put("elementTypes", List.of(f.apply(String.class)));
-							m3.put("options",
-									Arrays.stream(c2.getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
+							if (c2.isEnum()) {
+								m3.put("elementTypes", List.of(f.apply(String.class)));
+								m3.put("options",
+										Arrays.stream(c2.getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
+							}
 							cc = List.of();
 						} else if (x.type().getPackageName().startsWith("java.")) {
 							if (x.type() == Long.class) {

@@ -39,9 +39,9 @@ dialog {
   max-height: none;
   max-width: none;
   padding: 1rem;
-  width: 100vw;
   position: fixed;
   top: 0;
+  width: 100vw;
   z-index: 101;
 }
 

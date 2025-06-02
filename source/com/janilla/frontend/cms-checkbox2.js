@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { WebComponent } from "./web-component.js";
+import WebComponent from "./web-component.js";
 
 export default class CmsCheckbox2 extends WebComponent {
 
@@ -42,13 +42,15 @@ export default class CmsCheckbox2 extends WebComponent {
 		const a = this.closest("cms-admin");
 		const p = this.dataset.path;
 		const f = a.field(p);
+		const vv1 = a.options(f);
+		const vv2 = f.data?.map(x => x.name);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			options: a.options(f).map(x => ({
+			options: vv1.map(x => ({
 				$template: "option",
 				name: p,
 				value: x,
-				checked: f.data.includes(x),
+				checked: vv2?.includes(x),
 				text: x
 			}))
 		}));

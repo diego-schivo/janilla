@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { WebComponent } from "./web-component.js";
+import WebComponent from "./web-component.js";
 
 export default class CmsObject extends WebComponent {
 
@@ -46,7 +46,7 @@ export default class CmsObject extends WebComponent {
 			$template: "",
 			...this.dataset,
 			lists: (() => {
-				const pp0 = Object.entries(f.properties).filter(([k, _]) => k !== "id");
+				const pp0 = this.foo(f);
 				let snn = a.sidebar(f.type);
 				return (snn?.length ? [
 					pp0.filter(([k, _]) => !snn.includes(k)),
@@ -120,5 +120,9 @@ export default class CmsObject extends WebComponent {
 				value: f.type
 			}
 		}));
+	}
+
+	foo(f) {
+		return f.properties ? Object.entries(f.properties).filter(([k, _]) => k !== "id") : [];
 	}
 }

@@ -37,6 +37,7 @@ public class HttpEncoder {
 		switch (frame) {
 		case Frame.Data x:
 			pl = x.data().length;
+//			System.out.println("pl=" + pl);
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
 			bb1.put((byte) pl);
 			bb1.put((byte) Frame.Name.DATA.type());

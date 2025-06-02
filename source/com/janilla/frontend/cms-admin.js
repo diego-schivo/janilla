@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { WebComponent } from "./web-component.js";
+import WebComponent from "./web-component.js";
 
 export default class CmsAdmin extends WebComponent {
 
@@ -56,9 +56,11 @@ export default class CmsAdmin extends WebComponent {
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
-		const s = this.state;
-		if (newValue !== oldValue && s?.computeState)
-			delete s.computeState;
+		if (newValue !== oldValue) {
+			const s = this.state;
+			if (s?.computeState)
+				delete s.computeState;
+		}
 		super.attributeChangedCallback(name, oldValue, newValue);
 	}
 
@@ -110,23 +112,34 @@ export default class CmsAdmin extends WebComponent {
 			"versions",
 			"version"
 		].forEach(x => delete s[x]);
-		s.me ??= await (await fetch("/api/users/me")).json();
+		const u = this.closest("root-element").state.user;
+		/*
 		if (this.dataset.email !== s.me?.email) {
 			this.closest("root-element").requestDisplay();
 			return;
 		}
+		*/
 		let p = this.dataset.path;
-		if (s.me && p === "/account")
-			p = `/collections/users/${s.me.id}`;
+		if (u && p === "/account")
+			p = `/collections/users/${u.id}`;
 		s.pathSegments = p.length > 1 ? p.substring(1).split("/") : [];
-		if (!s.me) {
-			if (!["/create-first-user", "/login", "/forgot", "/reset"].includes(p) && !p.startsWith("/reset/")) {
-				history.pushState(undefined, "", "/admin/login");
-				dispatchEvent(new CustomEvent("popstate"));
-			}
-		} else {
+		if (u) {
 			if (["/create-first-user", "/login", "/forgot"].includes(p) || p.startsWith("/reset/")) {
 				history.pushState(undefined, "", "/admin");
+				dispatchEvent(new CustomEvent("popstate"));
+				return;
+			}
+
+			if (p === "/logout") {
+				await fetch("/api/users/logout", { method: "POST" });
+				delete s.me;
+				history.pushState(undefined, "", "/admin");
+				dispatchEvent(new CustomEvent("popstate"));
+				return;
+			}
+
+			if (p !== "/unauthorized" && !u.roles?.some(x => x.name === "ADMIN")) {
+				history.pushState(undefined, "", "/admin/unauthorized");
 				dispatchEvent(new CustomEvent("popstate"));
 				return;
 			}
@@ -155,14 +168,19 @@ export default class CmsAdmin extends WebComponent {
 				s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`).then(async x => s.versions = await x.json()) : null,
 				s.documentSubview === "version" ? fetch(`${s.collectionSlug ? s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/")) : s.documentUrl}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
 			]);
+			console.log("s.document", s.document);
 			this.requestDisplay();
+		} else if (!["/create-first-user", "/login", "/forgot", "/reset"].includes(p) && !p.startsWith("/reset/")) {
+			history.pushState(undefined, "", "/admin/login");
+			dispatchEvent(new CustomEvent("popstate"));
 		}
 	}
 
 	async updateDisplay() {
 		const s = this.state;
 		s.computeState ??= this.computeState();
-		const gg = s.me && s.schema ? Object.entries(s.schema["Data"]).map(([k, v]) => ({
+		const u = this.closest("root-element").state.user;
+		const gg = u && s.schema ? Object.entries(s.schema["Data"]).map(([k, v]) => ({
 			$template: "group",
 			label: k.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
 			checked: true,
@@ -174,15 +192,15 @@ export default class CmsAdmin extends WebComponent {
 		})) : null;
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			p: s.me ? {
+			p: u ? {
 				$template: "p",
 				checked: true
 			} : null,
-			aside: s.me && s.schema ? {
+			aside: u && s.schema ? {
 				$template: "aside",
 				groups: gg
 			} : null,
-			header: s.me ? {
+			header: u ? {
 				$template: "header",
 				items: (() => {
 					const xx = [];
@@ -239,10 +257,12 @@ export default class CmsAdmin extends WebComponent {
 				switch (this.dataset.path) {
 					case "/create-first-user":
 						return { $template: "first-user" };
-					case "/login":
-						return { $template: "login" };
 					case "/forgot":
 						return { $template: "forgot-password" };
+					case "/login":
+						return { $template: "login" };
+					case "/unauthorized":
+						return { $template: "unauthorized" };
 				}
 				if (this.dataset.path.startsWith("/reset/"))
 					return {
@@ -271,7 +291,7 @@ export default class CmsAdmin extends WebComponent {
 						return { $template: s.schema ? "dashboard" : "loading" };
 				}
 			})(),
-			dialog: s.me && s.schema ? {
+			dialog: u && s.schema ? {
 				$template: "dialog",
 				groups: gg
 			} : null
@@ -304,10 +324,11 @@ export default class CmsAdmin extends WebComponent {
 						parent: f,
 						name: n,
 						...p,
-						properties: p.type !== "List" && p.type !== "String" ? s.schema[p.type] : null,
+						properties: p && !["List", "String"].includes(p.type) ? s.schema[p.type] : null,
 						data: f.data?.[n]
 					};
 				}
+		console.log("CmsAdmin.field", path, f);
 		return f;
 	}
 

@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { WebComponent } from "./web-component.js";
+import WebComponent from "./web-component.js";
 
 export default class CmsLogin extends WebComponent {
 
@@ -57,11 +57,5 @@ export default class CmsLogin extends WebComponent {
 			dispatchEvent(new CustomEvent("popstate"));
 		} else
 			this.closest("cms-admin").renderToast(await r.json(), "error");
-	}
-
-	async updateDisplay() {
-		this.appendChild(this.interpolateDom({
-			$template: ""
-		}));
 	}
 }

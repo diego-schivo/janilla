@@ -217,4 +217,10 @@ public interface Json {
 			return a.remove(0);
 		});
 	}
+
+	static Map<String, Object> asMap(Object object) {
+		@SuppressWarnings("unchecked")
+		var m = (Map<String, Object>) object;
+		return m;
+	}
 }

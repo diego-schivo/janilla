@@ -24,15 +24,18 @@
  */
 package com.janilla.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -57,13 +60,138 @@ public class HttpServer extends SecureServer {
 	protected SSLEngine createSslEngine() {
 		var se = super.createSslEngine();
 		var spp = se.getSSLParameters();
-		spp.setApplicationProtocols(new String[] { "h2" });
+		spp.setApplicationProtocols(new String[] { "h2", "http/1.1" });
 		se.setSSLParameters(spp);
 		return se;
 	}
 
 	@Override
 	protected void handleConnection(SecureTransfer st) throws IOException {
+		do
+			st.read();
+		while (st.in().position() < 16);
+//		System.out.println("bb=" + new String(st.in().array(), 0, 16));
+
+		var ap = st.engine().getApplicationProtocol();
+//		System.out.println("ap=" + ap);
+		if (ap.equals("h2"))
+			handleConnection2(st);
+		else
+			handleConnection1(st);
+	}
+
+	protected void handleConnection1(SecureTransfer st) throws IOException {
+		for (;;) {
+//			System.out.println("st.in().position()=" + st.in().position());
+			var sb = Stream.<String>builder();
+			for (;;) {
+				int i = 0, b1 = -1, b2;
+				for (;; i++, b1 = b2) {
+					if (i == st.in().position()) {
+						var n = st.read();
+						System.out.println("n=" + n);
+						if (n == -1)
+							return;
+					}
+					b2 = st.in().get(i);
+					if (b1 == '\r' && b2 == '\n')
+						break;
+				}
+//				System.out.println("i=" + i);
+				st.in().flip();
+				var bb = new byte[i + 1];
+				st.in().get(bb);
+				st.in().compact();
+				var s = new String(bb, 0, i - 1);
+//				System.out.println("s=" + s);
+				if (!s.isEmpty())
+					sb.add(s);
+				else
+					break;
+			}
+			try (var rq = new HttpRequest()) {
+				{
+					var i = 0;
+					for (var s : sb.build().toList()) {
+						if (i == 0) {
+							var ss = s.split(" ", 3);
+							rq.setMethod(ss[0].trim());
+							rq.setTarget(ss[1].trim());
+						} else {
+							if (rq.getHeaders() == null)
+								rq.setHeaders(new ArrayList<>());
+							rq.getHeaders().add(HeaderField.fromLine(s));
+						}
+						i++;
+					}
+				}
+				var cl = rq.getHeaderValue("Content-Length");
+				if (cl != null) {
+					var bb = new byte[Integer.parseInt(cl)];
+					for (var i = 0; i < bb.length;) {
+						if (st.in().position() == 0)
+							st.read();
+						st.in().flip();
+						var n = Math.min(st.in().remaining(), bb.length - i);
+						st.in().get(bb, i, n);
+						st.in().compact();
+						i += n;
+					}
+					rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
+				}
+				try (var rs = new HttpResponse()) {
+					rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
+					var baos = new ByteArrayOutputStream();
+					rs.setBody(Channels.newChannel(baos));
+					var ex = createExchange(rq);
+					ex.setRequest(rq);
+					ex.setResponse(rs);
+					ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
+					sb = Stream.<String>builder();
+					sb.add("HTTP/1.1 " + rs.getHeaderValue(":status") + " OK");
+					for (var h : rs.getHeaders())
+						if (!h.name().startsWith(":"))
+							sb.add(h.toLine());
+					sb.add("");
+					for (var s : sb.build().toList()) {
+						st.out().put((s + "\r\n").getBytes());
+						st.out().flip();
+						do
+							st.write();
+						while (st.out().hasRemaining());
+						st.out().clear();
+					}
+					var bb = baos.toByteArray();
+					for (var i = 0; i < bb.length;) {
+						var n = Math.min(st.out().remaining(), bb.length - i);
+						st.out().put(bb, i, n);
+						st.out().flip();
+						do
+							st.write();
+						while (st.out().hasRemaining());
+						st.out().clear();
+						i += n;
+					}
+				}
+			}
+		}
+	}
+
+	protected void handleConnection2(SecureTransfer st) throws IOException {
+		while (st.in().position() < 24)
+			st.read();
+		st.in().flip();
+		var cp = new byte[24];
+		st.in().get(cp);
+//		System.out.println("cp=" + new String(cp));
+		if (!Arrays.equals(cp, """
+				PRI * HTTP/2.0\r
+				\r
+				SM\r
+				\r
+				""".getBytes()))
+			throw new RuntimeException();
+
 		var he = new HttpEncoder();
 		var hd = new HttpDecoder();
 
@@ -78,27 +206,6 @@ public class HttpServer extends SecureServer {
 		} finally {
 			st.outLock().unlock();
 		}
-
-		byte[] cp;
-		st.inLock().lock();
-		try {
-			do
-				st.read();
-			while (st.in().position() < 24);
-			st.in().flip();
-			cp = new byte[24];
-			st.in().get(cp);
-		} finally {
-			st.inLock().unlock();
-		}
-//		System.out.println("cp=" + new String(cp));
-		if (!Arrays.equals(cp, """
-				PRI * HTTP/2.0\r
-				\r
-				SM\r
-				\r
-				""".getBytes()))
-			throw new RuntimeException();
 
 		var streams = new HashMap<Integer, List<Frame>>();
 		for (;;) {
@@ -181,28 +288,74 @@ public class HttpServer extends SecureServer {
 					dbb.put(((Frame.Data) f).data());
 			rq.setHeaders(hff);
 			rq.setBody(IO.toReadableByteChannel(dbb.flip()));
-//			System.out.println("rq=" + rq);
-			ff.clear();
+//			System.out.println("HttpServer.handleStream, rq=" + rq.getTarget());
+//			ff.clear();
 			try (var rs = new HttpResponse()) {
 				rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
-				var baos = new ByteArrayOutputStream();
-				rs.setBody(Channels.newChannel(baos));
+//				var baos = new ByteArrayOutputStream();
+//				rs.setBody(Channels.newChannel(baos));
+				rs.setBody(new WritableByteChannel() {
+
+					private boolean closed;
+
+					private long written;
+
+					@Override
+					public boolean isOpen() {
+						return !closed;
+					}
+
+					@Override
+					public void close() throws IOException {
+//						System.out.println("HttpServer.handleStream, close");
+						if (closed)
+							return;
+						var f = written == 0 ? new Frame.Headers(false, true, true, si, false, 0, 0, rs.getHeaders())
+								: new Frame.Data(false, true, si, new byte[0]);
+						var bb = he.encodeFrame(f);
+						writeFrame(st, bb);
+						closed = true;
+					}
+
+					@Override
+					public int write(ByteBuffer src) throws IOException {
+//						System.out.println("HttpServer.handleStream, write");
+						if (closed)
+							throw new IOException("closed");
+						var w = written;
+						while (src.hasRemaining()) {
+							var n = Math.min(src.remaining(), 16384);
+							if (written == 0) {
+								var f = new Frame.Headers(false, true, false, si, false, 0, 0, rs.getHeaders());
+								var bb = he.encodeFrame(f);
+								writeFrame(st, bb);
+							}
+							var bb = new byte[n];
+							src.get(bb);
+							var f = new Frame.Data(false, false, si, bb);
+							bb = he.encodeFrame(f);
+							writeFrame(st, bb);
+							written += n;
+						}
+						return (int) (written - w);
+					}
+				});
 				var ex = createExchange(rq);
 				ex.setRequest(rq);
 				ex.setResponse(rs);
 				ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
-				var bb = baos.toByteArray();
-				ff.add(new Frame.Headers(false, true, bb.length == 0, si, false, 0, 0, rs.getHeaders()));
-				for (var o = 0; o < bb.length;) {
-					var l = Math.min(bb.length - o, 16384);
-					ff.add(new Frame.Data(false, o + l == bb.length, si, Arrays.copyOfRange(bb, o, o + l)));
-					o += l;
-				}
+//				var bb = baos.toByteArray();
+//				ff.add(new Frame.Headers(false, true, bb.length == 0, si, false, 0, 0, rs.getHeaders()));
+//				for (var o = 0; o < bb.length;) {
+//					var l = Math.min(bb.length - o, 16384);
+//					ff.add(new Frame.Data(false, o + l == bb.length, si, Arrays.copyOfRange(bb, o, o + l)));
+//					o += l;
+//				}
 			}
-			for (var f : ff) {
-				var bb = he.encodeFrame(f);
-				writeFrame(st, bb);
-			}
+//			for (var f : ff) {
+//				var bb = he.encodeFrame(f);
+//				writeFrame(st, bb);
+//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

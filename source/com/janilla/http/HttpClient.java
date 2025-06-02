@@ -84,13 +84,15 @@ public class HttpClient {
 				st.write();
 
 			var ff = new ArrayList<Frame>();
-			var bb = Channels.newInputStream((ReadableByteChannel) request.getBody()).readAllBytes();
-			ff.add(new Frame.Headers(false, true, bb.length == 0, 1, false, 0, 0, request.getHeaders()));
-			for (var o = 0; o < bb.length;) {
-				var l = Math.min(bb.length - o, 16384);
-				ff.add(new Frame.Data(false, o + l == bb.length, 1, Arrays.copyOfRange(bb, o, o + l)));
-				o += l;
-			}
+			var b = request.getBody();
+			var bb = b != null ? Channels.newInputStream((ReadableByteChannel) b).readAllBytes() : null;
+			ff.add(new Frame.Headers(false, true, b == null || bb.length == 0, 1, false, 0, 0, request.getHeaders()));
+			if (bb != null)
+				for (var o = 0; o < bb.length;) {
+					var l = Math.min(bb.length - o, 16384);
+					ff.add(new Frame.Data(false, o + l == bb.length, 1, Arrays.copyOfRange(bb, o, o + l)));
+					o += l;
+				}
 			for (var f : ff) {
 				st.out().clear();
 				st.out().put(he.encodeFrame(f));

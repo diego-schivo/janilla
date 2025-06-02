@@ -77,6 +77,10 @@ public class SecureTransfer {
 		return outLock;
 	}
 
+	public SSLEngine engine() {
+		return engine;
+	}
+
 	public int read() throws IOException {
 		inLock.lock();
 		try {
@@ -111,6 +115,7 @@ public class SecureTransfer {
 	}
 
 	protected void handshake() throws IOException {
+//		System.out.println("engine.getApplicationProtocol()=" + engine.getApplicationProtocol());
 //		var t = engine.getUseClientMode() ? "C" : "S";
 		while (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
 			switch (engine.getHandshakeStatus()) {
@@ -128,6 +133,7 @@ public class SecureTransfer {
 				throw new IOException(engine.getHandshakeStatus().toString());
 			}
 		}
+//		System.out.println("engine.getApplicationProtocol()=" + engine.getApplicationProtocol());
 	}
 
 	protected int read0() throws IOException {
@@ -137,7 +143,7 @@ public class SecureTransfer {
 			for (var r = in0.position() == 0;;) {
 				if (r) {
 //					System.out.println(t + ": read");
-					@SuppressWarnings("unused")
+//					@SuppressWarnings("unused")
 					var n = channel.read(in0);
 //					System.out.println(t + ": read " + n);
 					if (n == -1)
@@ -145,7 +151,7 @@ public class SecureTransfer {
 				}
 				in0.flip();
 //				System.out.println(t + ": unwrap");
-				@SuppressWarnings("unused")
+//				@SuppressWarnings("unused")
 				var ser = engine.unwrap(in0, in);
 //				System.out.println(t + ": unwrap " + ser);
 				in0.compact();

@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import { WebComponent } from "./web-component.js";
+import WebComponent from "./web-component.js";
 
 export default class CmsEdit extends WebComponent {
 
@@ -162,7 +162,9 @@ export default class CmsEdit extends WebComponent {
 	}
 
 	async saveEntity(auto) {
+		//console.log('this.closest("cms-admin").state.document', this.closest("cms-admin").state.document);
 		const kkvv = [...new FormData(this.querySelector("form")).entries()];
+		//console.log("kkvv", kkvv);
 		const kkvv2 = kkvv.filter(([_, x]) => x instanceof File);
 		if (kkvv2.length) {
 			const fd = new FormData();
@@ -173,14 +175,17 @@ export default class CmsEdit extends WebComponent {
 			xhr.send(fd);
 		}
 		const a = this.closest("cms-admin");
-		for (const [k, v] of kkvv) {
+		const o = {};
+		for (const [k, v] of kkvv.filter(([k, _]) => k.split(".").at(-1) !== "$type")) {
+			//console.log("k", k, "v", v);
+			this.foo(k, v, o, a.field(k));
+		}
+		for (const [k, v] of Object.entries(o)) {
+			//console.log("k", k, "v", v);
+			const f = a.field(k);
+			a.initField(f.parent);
 			const i = k.lastIndexOf(".");
-			let f = a.field(k.substring(0, i));
-			//if (!f.data)
-			//f.parent.data[f.name] = f.data = {};
-			a.initField(f);
-			f.data[k.substring(i + 1)] = v instanceof File ? { name: v.name } : v;
-			//console.log(k, v, f);
+			f.parent.data[k.substring(i + 1)] = v;
 		}
 		const s = a.state;
 		//console.log("s", s);
@@ -199,25 +204,36 @@ export default class CmsEdit extends WebComponent {
 			delete this.state.changed;
 			if (!auto)
 				a.renderToast("Updated successfully.", "success");
-			const copy = (x, y) => {
+			const f = (x, y) => {
 				//console.log("x", JSON.stringify(x, null, "\t"), "y", JSON.stringify(y, null, "\t"));
 				for (const [k, v] of Object.entries(x))
 					if (Array.isArray(v))
 						for (let i = 0; i < v.length; i++)
-							if (typeof v[i] === "object" && v[i] !== null)
-								copy(v[i], y[k][i]);
+							if (typeof v[i] === "object" && v[i] !== null && typeof y[k][i] === "object" && y[k][i] !== null)
+								f(v[i], y[k][i]);
 							else
 								y[k][i] = v[i];
-					else if (typeof v === "object" && v !== null)
-						copy(v, y[k]);
+					else if (typeof v === "object" && v !== null && typeof y[k] === "object" && y[k] !== null)
+						f(v, y[k]);
 					else
 						y[k] = v;
 			};
-			copy(j, s.document);
-			//console.log(s.document);
+			//console.log("s.document", s.document);
+			f(j, s.document);
+			//console.log("s.document", s.document);
 			a.requestDisplay();
 		} else
 			a.renderToast(j, "error");
+	}
+
+	foo(k, v, o, f) {
+		if (f.type === "Set") {
+			if (Object.hasOwn(o, k))
+				o[k].push(v);
+			else
+				o[k] = [v];
+		} else
+			o[k] = v instanceof File ? { name: v.name } : v;
 	}
 
 	async updateDisplay() {
@@ -230,7 +246,7 @@ export default class CmsEdit extends WebComponent {
 			entries: (() => {
 				const kkvv = [];
 				if (this.state.drafts)
-					kkvv.push(["Status", s.document.status]);
+					kkvv.push(["Status", s.document.status.name]);
 				if (s.document.updatedAt)
 					kkvv.push(["Last Modified", a.dateTimeFormat.format(new Date(s.document.updatedAt))]);
 				if (s.document.createdAt)

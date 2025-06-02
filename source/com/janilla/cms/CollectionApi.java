@@ -26,6 +26,7 @@ package com.janilla.cms;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import com.janilla.http.HttpExchange;
@@ -74,7 +75,7 @@ public abstract class CollectionApi<E extends Document> {
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
 		if (s != entity.status())
 			entity = Reflection.copy(Map.of("status", s), entity);
-		var e = crud().update(id, entity, null, !Boolean.TRUE.equals(autosave));
+		var e = crud().update(id, entity, foo(entity), !Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
 		return e;
@@ -116,5 +117,9 @@ public abstract class CollectionApi<E extends Document> {
 
 	protected DocumentCrud<E> crud() {
 		return (DocumentCrud<E>) persistence.crud(type);
+	}
+
+	protected Set<String> foo(E entity) {
+		return null;
 	}
 }

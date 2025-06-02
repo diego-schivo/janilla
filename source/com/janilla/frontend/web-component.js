@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-export class WebComponent extends HTMLElement {
+export default class WebComponent extends HTMLElement {
 
 	#initializeTemplating;
 

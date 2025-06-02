@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -246,7 +246,7 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		hh.add(new HeaderField("content-length", String.valueOf(resource.size())));
 
 		var l = Thread.currentThread().getContextClassLoader();
-		try (var is = switch (resource) {
+		try (var in = switch (resource) {
 		case FileResource x -> l.getResourceAsStream(x.path.substring(1));
 		case ZipEntryResource x -> {
 			URI u;
@@ -261,9 +261,8 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 			yield Files.newInputStream(IO.zipFileSystem(u).getPath(x.path));
 		}
 		default -> throw new IllegalArgumentException();
-		}) {
-//			((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(is.readAllBytes()), true);
-			((WritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(is.readAllBytes()));
+		}; var out = Channels.newOutputStream((WritableByteChannel) rs.getBody())) {
+			in.transferTo(out);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

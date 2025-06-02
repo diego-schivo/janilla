@@ -46,6 +46,7 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 
 	@Override
 	public E create(E entity) {
+//		System.out.println("entity=" + entity);
 		if (!type.isAnnotationPresent(Versions.class))
 			return super.create(entity);
 		return persistence.database().perform((ss, _) -> {
@@ -73,7 +74,7 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 				var l = (long) ii.perform(versionStore + ".document",
 						i -> ((Object[]) i.list(id).findFirst().get())[1]);
 				var v = readVersion(l);
-//			System.out.println("v=" + v);
+//				System.out.println("v=" + v);
 				if (v.document().updatedAt().isAfter(e.updatedAt()))
 					e = v.document();
 			}

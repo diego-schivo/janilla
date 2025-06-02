@@ -46,7 +46,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.janilla.reflect.Reflection;
 
@@ -59,6 +58,7 @@ public class Converter {
 	}
 
 	public Object convert(Object object, Type target) {
+//		System.out.println("Converter.convert, object=" + object + ", target=" + target);
 		var c = getRawType(target);
 
 		if (object == null || (object instanceof String x && x.isEmpty())) {
@@ -123,8 +123,23 @@ public class Converter {
 		if (c == Class.class)
 			return typeResolver.parse((String) object);
 
-		if (c != null && c.isEnum())
-			return Stream.of(c.getEnumConstants()).filter(x -> x.toString().equals(object)).findFirst().orElse(null); // .orElseThrow();
+//		if (c != null && c.isEnum())
+//			return Stream.of(c.getEnumConstants()).filter(x -> x.toString().equals(object)).findFirst().orElse(null); // .orElseThrow();
+
+		if (c != null && c.isEnum()) {
+			var n = switch (object) {
+			case String x -> x;
+			default -> {
+				@SuppressWarnings("unchecked")
+				var m = (Map<String, Object>) object;
+				yield (String) m.get("name");
+			}
+			};
+//			return Stream.of(c.getEnumConstants()).filter(x -> ((Enum<?>) x).name().equals(n)).findFirst().orElse(null);
+			@SuppressWarnings({ "rawtypes", "unchecked" })
+			var e = Enum.valueOf((Class) c, n);
+			return e;
+		}
 
 		if (c != null && (c.isArray() || Collection.class.isAssignableFrom(c))) {
 			var s = switch (object) {
@@ -180,35 +195,46 @@ public class Converter {
 			map = mt.map();
 		}
 
-		var c0 = target.getConstructors()[0];
-//		System.out.println("Converter.convert, c0=" + c0);
-		var tt = target.isRecord()
-				? Arrays.stream(target.getRecordComponents()).collect(
-						Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, _) -> x, LinkedHashMap::new))
-				: null;
 		Object o;
-		try {
-			if (tt != null) {
-				var m = map;
-				var oo = tt.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue())).toArray();
-				o = c0.newInstance(oo);
-			} else {
-				o = c0.newInstance();
-				for (var kv : map.entrySet()) {
-					var n = (String) kv.getKey();
-					if (n.startsWith("$"))
-						continue;
+		if (target.isEnum()) {
+			var n = (String) map.get("name");
+//			o = Arrays.stream(target.getEnumConstants()).filter(x -> ((Enum<?>) x).name().equals(n)).findFirst()
+//					.orElseThrow();
+			if (n != null && !n.isEmpty()) {
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				var e = Enum.valueOf((Class) target, n);
+				o = e;
+			} else
+				o = null;
+		} else {
+			var c0 = target.getConstructors()[0];
+//		System.out.println("Converter.convert, c0=" + c0);
+			var tt = target.isRecord() ? Arrays.stream(target.getRecordComponents()).collect(
+					Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, _) -> x, LinkedHashMap::new))
+					: null;
+			try {
+				if (tt != null) {
+					var m = map;
+					var oo = tt.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue())).toArray();
+					o = c0.newInstance(oo);
+				} else {
+					o = c0.newInstance();
+					for (var kv : map.entrySet()) {
+						var n = (String) kv.getKey();
+						if (n.startsWith("$"))
+							continue;
 //					System.out.println("Converter.convert, kv=" + kv);
-					var p = Reflection.property(target, n);
-					if (p != null) {
-						var v = convert(kv.getValue(), p.genericType());
+						var p = Reflection.property(target, n);
+						if (p != null) {
+							var v = convert(kv.getValue(), p.genericType());
 //						System.out.println("Converter.convert, s=" + p + ", v=" + v);
-						p.set(o, v);
+							p.set(o, v);
+						}
 					}
 				}
+			} catch (ReflectiveOperationException e) {
+				throw new RuntimeException(e);
 			}
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
 		}
 		return o;
 	}

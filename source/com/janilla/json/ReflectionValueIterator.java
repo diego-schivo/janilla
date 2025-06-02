@@ -59,22 +59,23 @@ public class ReflectionValueIterator extends ValueIterator {
 			case Map.Entry<?, ?> _ -> Map.Entry.class;
 			default -> throw new RuntimeException();
 			};
-			if (c.isEnum())
-				tt = context.newStringIterator(object.toString());
-			else {
-				var s = entries(c);
-				tt = context.newObjectIterator(s.iterator());
-			}
+//			if (c.isEnum())
+//				tt = context.newStringIterator(object.toString());
+//			else {
+			var s = entries(c);
+			tt = context.newObjectIterator(s.iterator());
+//			}
 		}
 		return tt;
 	}
 
 	protected Stream<Map.Entry<String, Object>> entries(Class<?> class0) {
-		var kkvv = Reflection.properties(class0).map(x -> {
+		var kkvv = class0.isEnum() ? Stream.of(Map.<String, Object>entry("name", ((Enum<?>) object).name()))
+				: Reflection.properties(class0).map(x -> {
 //			System.out.println("ReflectionValueIterator.newIterator, x=" + x + ", object=" + object);
-			Map.Entry<String, Object> kv = new AbstractMap.SimpleEntry<>(x.name(), x.get(object));
-			return kv;
-		});
+					Map.Entry<String, Object> kv = new AbstractMap.SimpleEntry<>(x.name(), x.get(object));
+					return kv;
+				});
 		if (((ReflectionJsonIterator) context).includeType) {
 			var t = class0.getName().substring(class0.getPackageName().length() + 1).replace('$', '.');
 			kkvv = Stream.concat(Stream.of(Map.entry("$type", (Object) t)), kkvv);
