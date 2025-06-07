@@ -77,7 +77,7 @@ export default class CmsAdmin extends WebComponent {
 					break;
 				case "logout":
 					await fetch("/api/users/logout", { method: "POST" });
-					delete this.state.me;
+					delete this.closest("root-element").state.user;
 					history.pushState(undefined, "", "/admin");
 					dispatchEvent(new CustomEvent("popstate"));
 					break;
@@ -132,7 +132,7 @@ export default class CmsAdmin extends WebComponent {
 
 			if (p === "/logout") {
 				await fetch("/api/users/logout", { method: "POST" });
-				delete s.me;
+				delete this.closest("root-element").state.user;
 				history.pushState(undefined, "", "/admin");
 				dispatchEvent(new CustomEvent("popstate"));
 				return;
@@ -168,7 +168,7 @@ export default class CmsAdmin extends WebComponent {
 				s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`).then(async x => s.versions = await x.json()) : null,
 				s.documentSubview === "version" ? fetch(`${s.collectionSlug ? s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/")) : s.documentUrl}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
 			]);
-			console.log("s.document", s.document);
+			//console.log("s.document", s.document);
 			this.requestDisplay();
 		} else if (!["/create-first-user", "/login", "/forgot", "/reset"].includes(p) && !p.startsWith("/reset/")) {
 			history.pushState(undefined, "", "/admin/login");
@@ -328,7 +328,7 @@ export default class CmsAdmin extends WebComponent {
 						data: f.data?.[n]
 					};
 				}
-		console.log("CmsAdmin.field", path, f);
+		//console.log("CmsAdmin.field", path, f);
 		return f;
 	}
 
@@ -378,6 +378,7 @@ export default class CmsAdmin extends WebComponent {
 			case "Instant":
 				return "datetime";
 			case "Integer":
+			case "UUID":
 				return "text";
 			case "List":
 				return field.referenceType ? "reference-array" : "array";

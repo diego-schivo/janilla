@@ -112,7 +112,7 @@ export default class CmsCollection extends WebComponent {
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
 						$type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0],
-						status: "PUBLISHED"
+						documentStatus: "PUBLISHED"
 					})
 				})).json();
 				delete s.publishDialog;
@@ -126,7 +126,7 @@ export default class CmsCollection extends WebComponent {
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
 						$type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0],
-						status: "DRAFT"
+						documentStatus: "DRAFT"
 					})
 				})).json();
 				delete s.unpublishDialog;

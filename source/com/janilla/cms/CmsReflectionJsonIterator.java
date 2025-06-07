@@ -97,7 +97,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 			var kkvv = super.entries(class0);
 			var v = class0.getAnnotation(Versions.class);
 			if (v == null || !v.drafts())
-				kkvv = kkvv.filter(kv -> kv.getKey() != "status");
+				kkvv = kkvv.filter(kv -> kv.getKey() != "documentStatus");
 			if (v != null) {
 				var n = Version.class.getSimpleName() + "<" + class0.getSimpleName() + ">.document";
 				var vc = persistence.database()

@@ -104,19 +104,19 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 				boolean nv = newVersion;
 			}
 			var a = new A();
-			switch (entity.status()) {
+			switch (entity.documentStatus()) {
 			case DRAFT:
 				e2 = Reflection.copy(Map.of("updatedAt", Instant.now()), Reflection.copy(entity, e1,
 						y -> (include == null || include.contains(y)) && !exclude.contains(y)));
-				if (e2.status() != e1.status())
+				if (e2.documentStatus() != e1.documentStatus())
 					a.nv = true;
 				break;
 			case PUBLISHED:
 				e2 = super.update(id, x -> {
-					var s1 = x.status();
+					var s1 = x.documentStatus();
 					x = Reflection.copy(entity, e1,
 							y -> (include == null || include.contains(y)) && !exclude.contains(y));
-					if (x.status() != s1)
+					if (x.documentStatus() != s1)
 						a.nv = true;
 					return x;
 				});
@@ -168,12 +168,14 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 	}
 
 	public List<E> patch(long[] ids, E entity, Set<String> include) {
-		if (!type.isAnnotationPresent(Versions.class))
-			throw new UnsupportedOperationException();
+//		if (!type.isAnnotationPresent(Versions.class))
+//			throw new UnsupportedOperationException();
 		if (ids == null || ids.length == 0)
 			return List.of();
 		return persistence.database()
-				.perform((_, _) -> Arrays.stream(ids).mapToObj(x -> update(x, entity, include, true)).toList(), true);
+				.perform((_, _) -> Arrays.stream(ids)
+						.mapToObj(x -> update(x, entity, include, type.isAnnotationPresent(Versions.class))).toList(),
+						true);
 	}
 
 	public List<Version<E>> readVersions(long id) {
@@ -209,8 +211,8 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 			});
 			var e = super.update(v1.document().id(), x -> {
 				x = v1.document();
-				if (status != x.status())
-					x = Reflection.copy(Map.of("status", status), x);
+				if (status != x.documentStatus())
+					x = Reflection.copy(Map.of("documentStatus", status), x);
 				return x;
 			});
 			var l = ss.perform(versionStore, s -> s.create(x -> {

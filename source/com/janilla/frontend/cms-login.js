@@ -53,6 +53,7 @@ export default class CmsLogin extends WebComponent {
 			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
 		});
 		if (r.ok) {
+			this.closest("root-element").state.user = await r.json();
 			history.pushState(undefined, "", "/admin");
 			dispatchEvent(new CustomEvent("popstate"));
 		} else

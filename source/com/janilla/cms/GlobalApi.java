@@ -65,8 +65,8 @@ public abstract class GlobalApi<E extends Document> {
 	@Handle(method = "PUT")
 	public E update(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
-		if (s != entity.status())
-			entity = Reflection.copy(Map.of("status", s), entity);
+		if (s != entity.documentStatus())
+			entity = Reflection.copy(Map.of("documentStatus", s), entity);
 		var e = crud().update(1, entity, null, !Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + 1);

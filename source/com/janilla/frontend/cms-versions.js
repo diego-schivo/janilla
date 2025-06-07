@@ -36,7 +36,7 @@ export default class CmsVersions extends WebComponent {
 
 	async updateDisplay() {
 		const ap = this.closest("cms-admin");
-		const hh = ["updatedAt", "id", "status"];
+		const hh = ["updatedAt", "id", "documentStatus"];
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			heads: hh.map(x => ({

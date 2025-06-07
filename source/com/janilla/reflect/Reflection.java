@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -123,15 +124,29 @@ public class Reflection {
 			else
 				throw new IllegalArgumentException();
 		}
+		var c = class1;
+		var rcc = c.getRecordComponents();
 		var mm = new HashMap<String, Member[]>();
-		for (var m : class1.getMethods()) {
-			if (Modifier.isStatic(m.getModifiers()) || m.getDeclaringClass() == Object.class || switch (m.getName()) {
-			case "hashCode", "toString" -> true;
-			default -> false;
-			})
+		if (rcc != null)
+			for (var x : rcc) {
+				mm.computeIfAbsent(x.getName(), k -> {
+					Method g;
+					try {
+						g = c.getMethod(k);
+					} catch (NoSuchMethodException e) {
+						throw new RuntimeException(e);
+					}
+					return new Member[] { g, null };
+				});
+			}
+		for (var m : c.getMethods()) {
+			if (mm.containsKey(m.getName()) || Modifier.isStatic(m.getModifiers())
+					|| m.getDeclaringClass() == Object.class || Set.of("hashCode", "toString").contains(m.getName()))
 				continue;
 			var g = m.getReturnType() != Void.TYPE && m.getParameterCount() == 0 ? m : null;
 			var s = m.getReturnType() == Void.TYPE && m.getParameterCount() == 1 ? m : null;
+			if (g != null && g.getName().startsWith("with") && g.getReturnType() == c)
+				g = null;
 			if (g != null || s != null) {
 				var k = Property.name(m);
 				var b = mm.computeIfAbsent(k, _ -> new Member[2]);
@@ -141,12 +156,12 @@ public class Reflection {
 					b[1] = s;
 			}
 		}
-		for (var f : class1.getFields()) {
+		for (var f : c.getFields()) {
 			if (Modifier.isStatic(f.getModifiers()))
 				continue;
 			mm.computeIfAbsent(Property.name(f), _ -> new Member[] { f });
 		}
-		if (class1.isArray())
+		if (c.isArray())
 			mm.computeIfAbsent("length", _ -> {
 				Method m;
 				try {
@@ -156,11 +171,9 @@ public class Reflection {
 				}
 				return new Member[] { m, null };
 			});
-		var cc = class1.isRecord() ? class1.getRecordComponents() : null;
-		var oo = cc != null
-				? IntStream.range(0, cc.length).boxed().collect(Collectors.toMap(i -> cc[i].getName(), i -> i + 1))
+		var oo = rcc != null
+				? IntStream.range(0, rcc.length).boxed().collect(Collectors.toMap(i -> rcc[i].getName(), i -> i + 1))
 				: null;
-		var c = class1;
 		return mm.values().stream()
 				.map(x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of((Method) x[0], (Method) x[1]))
 				.map(p -> {

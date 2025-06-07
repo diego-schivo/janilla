@@ -91,7 +91,7 @@ public class ValueIterator extends TokenIterator {
 	}
 
 	protected Iterator<JsonToken<?>> newIterator() {
-//		System.out.println("ValueIterator.createIterator, object=" + object);
+//		System.out.println("ValueIterator.newIterator, object=" + object);
 		return object == null ? context.newNullIterator() : switch (object) {
 		case Boolean x -> context.newBooleanIterator(x);
 		case Date x -> context.newStringIterator(x.toString());

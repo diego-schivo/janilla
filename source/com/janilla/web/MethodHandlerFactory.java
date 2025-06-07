@@ -167,6 +167,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		for (var t : types) {
 			if (Modifier.isInterface(t.getModifiers()) || Modifier.isAbstract(t.getModifiers()))
 				continue;
+//			System.out.println("MethodHandlerFactory.initialize, t=" + t);
 			var h0 = t.getAnnotation(Handle.class);
 			var p0 = h0 != null ? h0.path() : null;
 			Object o = null;
@@ -175,6 +176,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				var p = h != null ? h.path() : null;
 				if (p == null)
 					continue;
+//				System.out.println("MethodHandlerFactory.initialize, m=" + m);
 				if (p0 != null && !p0.isEmpty())
 					p = !p.isEmpty() ? p0 + '/' + p : p0;
 				if (o == null)

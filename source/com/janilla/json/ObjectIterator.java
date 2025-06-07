@@ -57,6 +57,7 @@ public class ObjectIterator extends TokenIterator {
 			case 1 -> {
 				if (entries.hasNext()) {
 					entry = entries.next();
+//					System.out.println("ObjectIterator.computeHasNext, entry=" + entry);
 					context.stack().push(entry);
 					token = JsonToken.MEMBER_START;
 					yield 2;

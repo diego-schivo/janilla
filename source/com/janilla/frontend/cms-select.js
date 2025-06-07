@@ -39,16 +39,18 @@ export default class CmsSelect extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const ap = this.closest("cms-admin");
+		const a = this.closest("cms-admin");
 		const p = this.dataset.path;
-		const f = ap.field(p);
+		const f = a.field(p);
+		const oo = a.options(f);
+		console.log("f", f, "oo", oo);
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			name: p,
-			options: ["", ...ap.options(f)].map(x => ({
+			options: ["", ...oo].map(x => ({
 				$template: "option",
 				value: x,
-				selected: x == (f.data ?? ""),
+				selected: x == (f.data?.name ?? ""),
 				text: x
 			}))
 		}));

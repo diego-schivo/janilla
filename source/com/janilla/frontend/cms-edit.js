@@ -240,13 +240,13 @@ export default class CmsEdit extends WebComponent {
 		const a = this.closest("cms-admin");
 		const s = a.state;
 		this.state.versions = Object.hasOwn(s.document, "versionCount");
-		this.state.drafts = Object.hasOwn(s.document, "status");
+		this.state.drafts = Object.hasOwn(s.document, "documentStatus");
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			entries: (() => {
 				const kkvv = [];
 				if (this.state.drafts)
-					kkvv.push(["Status", s.document.status.name]);
+					kkvv.push(["Status", s.document.documentStatus.name]);
 				if (s.document.updatedAt)
 					kkvv.push(["Last Modified", a.dateTimeFormat.format(new Date(s.document.updatedAt))]);
 				if (s.document.createdAt)
@@ -268,7 +268,7 @@ export default class CmsEdit extends WebComponent {
 				$template: "button",
 				...(this.state.drafts ? {
 					name: "publish",
-					disabled: s.document.status === "PUBLISHED" && !this.state.changed,
+					disabled: s.document.documentStatus === "PUBLISHED" && !this.state.changed,
 					text: "Publish Changes"
 				} : {
 					name: "save",

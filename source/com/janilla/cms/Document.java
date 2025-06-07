@@ -34,7 +34,7 @@ public interface Document {
 
 	Instant updatedAt();
 
-	Status status();
+	Status documentStatus();
 
 	Instant publishedAt();
 

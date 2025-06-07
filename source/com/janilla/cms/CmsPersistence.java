@@ -53,9 +53,9 @@ public class CmsPersistence extends Persistence {
 			var i = Instant.now();
 			var v = d.getClass().getAnnotation(Versions.class);
 			var m = Map.<String, Object>of("createdAt", i, "updatedAt", i);
-			if (d.status() == null) {
+			if (d.documentStatus() == null) {
 				m = new HashMap<>(m);
-				m.put("status", v != null && v.drafts() ? Document.Status.DRAFT : Document.Status.PUBLISHED);
+				m.put("documentStatus", v != null && v.drafts() ? Document.Status.DRAFT : Document.Status.PUBLISHED);
 			}
 			return Reflection.copy(m, entity);
 		}
@@ -65,7 +65,7 @@ public class CmsPersistence extends Persistence {
 			var d = (Document) entity;
 			var i = Instant.now();
 			var m = Map.<String, Object>of("updatedAt", i);
-			if (d.status() == Document.Status.PUBLISHED) {
+			if (d.documentStatus() == Document.Status.PUBLISHED) {
 				m = new HashMap<>(m);
 				m.put("publishedAt", i);
 			}

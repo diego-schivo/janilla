@@ -32,7 +32,7 @@ public record Version<E extends Document>(Long id, E document) {
 		return document.updatedAt();
 	}
 
-	public Document.Status status() {
-		return document.status();
+	public Document.Status documentStatus() {
+		return document.documentStatus();
 	}
 }

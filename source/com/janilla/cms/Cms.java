@@ -52,7 +52,7 @@ public class Cms {
 		var q = new ArrayDeque<Class<?>>();
 		q.add(dataClass);
 		Function<Class<?>, String> f = x -> x.getName().substring(x.getPackageName().length() + 1).replace('$', '.');
-		var skip = Set.of("createdAt", "updatedAt", "status");
+		var skip = Set.of("createdAt", "updatedAt", "documentStatus");
 		do {
 			var c = q.remove();
 //			System.out.println("WebsiteTemplate.schema, c=" + c);

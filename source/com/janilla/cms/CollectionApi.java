@@ -73,8 +73,8 @@ public abstract class CollectionApi<E extends Document> {
 	public E update(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft,
 			Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
-		if (s != entity.status())
-			entity = Reflection.copy(Map.of("status", s), entity);
+		if (s != entity.documentStatus())
+			entity = Reflection.copy(Map.of("documentStatus", s), entity);
 		var e = crud().update(id, entity, foo(entity), !Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
@@ -92,6 +92,11 @@ public abstract class CollectionApi<E extends Document> {
 	@Handle(method = "DELETE")
 	public List<E> delete(@Bind("id") long[] ids) {
 		return crud().delete(ids);
+	}
+
+	@Handle(method = "PATCH", path = "(\\d+)")
+	public E patch(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
+		return patch(entity, new long[] { id }).getFirst();
 	}
 
 	@Handle(method = "PATCH")
