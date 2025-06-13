@@ -220,13 +220,7 @@ export default class CmsCollection extends WebComponent {
 				rows: s.data.map(x => ({
 					$template: "row",
 					cells: (() => {
-						const cc = hh.map(y => {
-							const z = x[y];
-							return typeof z === "object" && z?.$type === "File" ? {
-								$template: "media",
-								...x
-							} : y === "updatedAt" ? a.dateTimeFormat.format(new Date(z)) : z;
-						});
+						const cc = hh.map(y => a.cell(x, y));
 						if (!cc[0])
 							cc[0] = x.id;
 						cc[0] = {

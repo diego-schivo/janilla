@@ -26,6 +26,8 @@ package com.janilla.persistence;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Collection;
@@ -102,7 +104,7 @@ public class Persistence {
 			if (i == null)
 				continue;
 
-			var t = p != null ? p.type() : null;
+			var t = p != null ? p.genericType() : null;
 			var ii = new IndexFactory<K, V>();
 			ii.keyConverter = keyConverter(t);
 			if (ii.keyConverter == null)
@@ -156,38 +158,41 @@ public class Persistence {
 			}, true);
 	}
 
-	protected <K> ByteConverter<K> keyConverter(Class<?> type) {
+	protected <K> ByteConverter<K> keyConverter(Type type) {
 		if (type == null) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<K>) ByteConverter.NULL;
 			return h;
 		}
-		if (type == Boolean.class || type == Boolean.TYPE || type == boolean[].class) {
+		var t = type instanceof ParameterizedType pt && Collection.class.isAssignableFrom((Class<?>) pt.getRawType())
+				? pt.getActualTypeArguments()[0]
+				: null;
+		if (type == Boolean.class || type == Boolean.TYPE || type == boolean[].class || t == Boolean.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<K>) ByteConverter.BOOLEAN;
 			return h;
 		}
-		if (type == Integer.class || type == Integer.TYPE || type == int[].class) {
+		if (type == Integer.class || type == Integer.TYPE || type == int[].class || t == Integer.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<K>) ByteConverter.INTEGER;
 			return h;
 		}
-		if (type == Long.class || type == Long.TYPE || type == long[].class) {
+		if (type == Long.class || type == Long.TYPE || type == long[].class || t == Long.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<K>) ByteConverter.LONG;
 			return h;
 		}
-		if (type == String.class || type == Collection.class) {
+		if (type == String.class || t == String.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<K>) ByteConverter.STRING;
 			return h;
 		}
-		if (type == UUID.class) {
+		if (type == UUID.class || t == UUID.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<K>) ByteConverter.UUID1;
 			return h;
 		}
-		if (type.isEnum()) {
+		if ((type instanceof Class<?> c1 && c1.isEnum()) || (t instanceof Class<?> c2 && c2.isEnum())) {
 			@SuppressWarnings("unchecked")
 			var h = new ByteConverter<K>() {
 

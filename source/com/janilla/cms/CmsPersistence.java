@@ -25,6 +25,7 @@
 package com.janilla.cms;
 
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.HashMap;
@@ -179,7 +180,7 @@ public class CmsPersistence extends Persistence {
 	}
 
 	@Override
-	protected <K> ByteConverter<K> keyConverter(Class<?> type) {
+	protected <K> ByteConverter<K> keyConverter(Type type) {
 		if (type == Document.Reference.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<K>) documentReferenceConverter();

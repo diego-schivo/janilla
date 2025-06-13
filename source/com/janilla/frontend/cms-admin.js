@@ -367,8 +367,24 @@ export default class CmsAdmin extends WebComponent {
 		}
 	}
 
+	cell(object, key) {
+		const x = object[key];
+		if (key === "updatedAt")
+			return this.dateTimeFormat.format(new Date(x));
+		if (typeof x === "object" && x?.$type === "File")
+			return {
+				$template: "media",
+				...object
+			};
+		return x;
+	}
+
 	controlTemplate(field) {
 		switch (field.type) {
+			case "BigDecimal":
+			case "Integer":
+			case "UUID":
+				return "text";
 			case "Boolean":
 				return "checkbox";
 			case "Document.Reference":
@@ -377,9 +393,6 @@ export default class CmsAdmin extends WebComponent {
 				return "file";
 			case "Instant":
 				return "datetime";
-			case "Integer":
-			case "UUID":
-				return "text";
 			case "List":
 				return field.referenceType ? "reference-array" : "array";
 			case "Long":
