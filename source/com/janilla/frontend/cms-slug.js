@@ -30,8 +30,8 @@ export default class CmsSlug extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-slug";
+	static get templateNames() {
+		return ["cms-slug"];
 	}
 
 	constructor() {

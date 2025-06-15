@@ -38,7 +38,7 @@ import com.janilla.web.Handle;
 import com.janilla.web.MethodHandlerFactory;
 import com.janilla.web.NotFoundException;
 
-public abstract class CollectionApi<E extends Document> {
+public abstract class CollectionApi<ID extends Comparable<ID>, E extends Document<ID>> {
 
 	protected final Class<E> type;
 
@@ -62,7 +62,7 @@ public abstract class CollectionApi<E extends Document> {
 	}
 
 	@Handle(method = "GET", path = "(\\d+)")
-	public E read(long id, HttpExchange exchange) {
+	public E read(ID id, HttpExchange exchange) {
 		var e = crud().read(id, drafts.test(exchange));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
@@ -70,19 +70,19 @@ public abstract class CollectionApi<E extends Document> {
 	}
 
 	@Handle(method = "PUT", path = "(\\d+)")
-	public E update(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft,
+	public E update(ID id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft,
 			Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);
-		var e = crud().update(id, entity, foo(entity), !Boolean.TRUE.equals(autosave));
+		var e = crud().update(id, entity, updateInclude(entity), !Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + id);
 		return e;
 	}
 
 	@Handle(method = "DELETE", path = "(\\d+)")
-	public E delete(long id) {
+	public E delete(ID id) {
 		var e = crud().delete(id);
 		if (e == null)
 			throw new NotFoundException("entity " + id);
@@ -90,41 +90,41 @@ public abstract class CollectionApi<E extends Document> {
 	}
 
 	@Handle(method = "DELETE")
-	public List<E> delete(@Bind("id") long[] ids) {
+	public List<E> delete(@Bind("id") List<ID> ids) {
 		return crud().delete(ids);
 	}
 
 	@Handle(method = "PATCH", path = "(\\d+)")
-	public E patch(long id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
-		return patch(entity, new long[] { id }).getFirst();
+	public E patch(ID id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
+		return patch(entity, List.of(id)).getFirst();
 	}
 
 	@Handle(method = "PATCH")
-	public List<E> patch(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, @Bind("id") long[] ids) {
+	public List<E> patch(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, @Bind("id") List<ID> ids) {
 		return crud().patch(ids, entity, MethodHandlerFactory.JSON_KEYS.get());
 	}
 
 	@Handle(method = "GET", path = "(\\d+)/versions")
-	public List<Version<E>> readVersions(long id) {
+	public List<Version<ID, E>> readVersions(ID id) {
 		return crud().readVersions(id);
 	}
 
 	@Handle(method = "GET", path = "versions/(\\d+)")
-	public Version<E> readVersion(long versionId) {
+	public Version<ID, E> readVersion(ID versionId) {
 		return crud().readVersion(versionId);
 	}
 
 	@Handle(method = "POST", path = "versions/(\\d+)")
-	public E restoreVersion(long versionId, Boolean draft) {
+	public E restoreVersion(ID versionId, Boolean draft) {
 		return crud().restoreVersion(versionId,
 				Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED);
 	}
 
-	protected DocumentCrud<E> crud() {
-		return (DocumentCrud<E>) persistence.crud(type);
+	protected DocumentCrud<ID, E> crud() {
+		return (DocumentCrud<ID, E>) persistence.crud(type);
 	}
 
-	protected Set<String> foo(E entity) {
+	protected Set<String> updateInclude(E entity) {
 		return null;
 	}
 }

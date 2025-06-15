@@ -30,8 +30,8 @@ export default class CmsDatetime extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-datetime";
+	static get templateNames() {
+		return ["cms-datetime"];
 	}
 
 	constructor() {

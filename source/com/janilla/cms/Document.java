@@ -26,9 +26,9 @@ package com.janilla.cms;
 
 import java.time.Instant;
 
-public interface Document {
+import com.janilla.persistence.Entity;
 
-	Long id();
+public interface Document<ID extends Comparable<ID>> extends Entity<ID> {
 
 	Instant createdAt();
 
@@ -43,6 +43,6 @@ public interface Document {
 		DRAFT, PUBLISHED
 	}
 
-	public record Reference<T extends Document>(Class<T> type, Long id) {
+	public record Reference<ID extends Comparable<ID>, T extends Document<ID>>(Class<T> type, ID id) {
 	}
 }

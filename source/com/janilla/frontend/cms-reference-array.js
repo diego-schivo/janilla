@@ -30,8 +30,8 @@ export default class CmsReferenceArray extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-reference-array";
+	static get templateNames() {
+		return ["cms-reference-array"];
 	}
 
 	constructor() {

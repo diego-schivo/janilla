@@ -30,8 +30,8 @@ export default class CmsSelect extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-select";
+	static get templateNames() {
+		return ["cms-select"];
 	}
 
 	constructor() {

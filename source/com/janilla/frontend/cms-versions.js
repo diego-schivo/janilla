@@ -26,8 +26,8 @@ import WebComponent from "./web-component.js";
 
 export default class CmsVersions extends WebComponent {
 
-	static get templateName() {
-		return "cms-versions";
+	static get templateNames() {
+		return ["cms-versions"];
 	}
 
 	constructor() {

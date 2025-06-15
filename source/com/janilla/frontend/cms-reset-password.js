@@ -30,8 +30,8 @@ export default class CmsResetPassword extends WebComponent {
 		return ["data-token"];
 	}
 
-	static get templateName() {
-		return "cms-reset-password";
+	static get templateNames() {
+		return ["cms-reset-password"];
 	}
 
 	constructor() {

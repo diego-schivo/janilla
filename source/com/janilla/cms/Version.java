@@ -26,7 +26,7 @@ package com.janilla.cms;
 
 import java.time.Instant;
 
-public record Version<E extends Document>(Long id, E document) {
+public record Version<ID extends Comparable<ID>, E extends Document<ID>>(ID id, E document) {
 
 	public Instant updatedAt() {
 		return document.updatedAt();

@@ -30,8 +30,8 @@ export default class CmsCollection extends WebComponent {
 		return ["data-ids", "data-name"];
 	}
 
-	static get templateName() {
-		return "cms-collection";
+	static get templateNames() {
+		return ["cms-collection"];
 	}
 
 	constructor() {

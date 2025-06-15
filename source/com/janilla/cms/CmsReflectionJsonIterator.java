@@ -56,19 +56,27 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 				var p = Reflection.property(stack().peek().getClass(), n);
 				var ta = p != null ? p.annotatedType().getAnnotation(Types.class) : null;
 				var t = ta != null ? ta.value()[0] : null;
-				if (t != null)
-					object = o = persistence.crud(t).read(l);
+				if (t != null) {
+					@SuppressWarnings({ "rawtypes", "unchecked" })
+					var x = persistence.crud((Class) t).read(l);
+					object = o = x;
+				}
 				stack().push(o);
-			} else if (object instanceof Document.Reference<?> r) {
-				object = persistence.crud(r.type()).read(r.id());
+			} else if (object instanceof Document.Reference<?, ?> r) {
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				var x = persistence.crud((Class) r.type()).read(r.id());
+				object = x;
 			} else if (object instanceof List<?> oo && !oo.isEmpty() && oo.getFirst() instanceof Long) {
 				o = stack().pop();
 				var p = Reflection.property(stack().peek().getClass(), n);
 				var apt = p != null && p.annotatedType() instanceof AnnotatedParameterizedType x ? x : null;
 				var ta = apt != null ? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class) : null;
 				var t = ta != null ? ta.value()[0] : null;
-				if (t != null)
-					object = o = list(persistence.crud(t).read(oo.stream().mapToLong(x -> (long) x).toArray()));
+				if (t != null) {
+					@SuppressWarnings({ "rawtypes", "unchecked" })
+					var x = persistence.crud((Class) t).read(oo.stream().toList());
+					object = o = list(x);
+				}
 				stack().push(o);
 			}
 		}
@@ -101,7 +109,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 			if (v != null) {
 				var n = Version.class.getSimpleName() + "<" + class0.getSimpleName() + ">.document";
 				var vc = persistence.database()
-						.perform((_, ii) -> ii.perform(n, i -> i.count(((Document) object).id())), false);
+						.perform((_, ii) -> ii.perform(n, i -> i.count(((Document<?>) object).id())), false);
 				var kv = Map.entry("versionCount", (Object) vc);
 				kkvv = Stream.concat(kkvv, Stream.of(kv));
 			}

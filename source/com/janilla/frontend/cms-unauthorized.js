@@ -26,8 +26,8 @@ import WebComponent from "./web-component.js";
 
 export default class CmsUnauthorized extends WebComponent {
 
-	static get templateName() {
-		return "cms-unauthorized";
+	static get templateNames() {
+		return ["cms-unauthorized"];
 	}
 
 	constructor() {

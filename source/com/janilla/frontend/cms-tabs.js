@@ -30,8 +30,8 @@ export default class CmsTabs extends WebComponent {
 		return ["data-active-tab", "data-name", "data-no-tab-list", "data-no-tab-panels", "data-tab"];
 	}
 
-	static get templateName() {
-		return "cms-tabs";
+	static get templateNames() {
+		return ["cms-tabs"];
 	}
 
 	constructor() {

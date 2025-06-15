@@ -30,8 +30,8 @@ export default class CmsEdit extends WebComponent {
 		return ["data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-edit";
+	static get templateNames() {
+		return ["cms-edit"];
 	}
 
 	constructor() {
@@ -178,7 +178,7 @@ export default class CmsEdit extends WebComponent {
 		const o = {};
 		for (const [k, v] of kkvv.filter(([k, _]) => k.split(".").at(-1) !== "$type")) {
 			//console.log("k", k, "v", v);
-			this.foo(k, v, o, a.field(k));
+			a.setValue(o, k, v, a.field(k));
 		}
 		for (const [k, v] of Object.entries(o)) {
 			//console.log("k", k, "v", v);
@@ -224,16 +224,6 @@ export default class CmsEdit extends WebComponent {
 			a.requestDisplay();
 		} else
 			a.renderToast(j, "error");
-	}
-
-	foo(k, v, o, f) {
-		if (f.type === "Set") {
-			if (Object.hasOwn(o, k))
-				o[k].push(v);
-			else
-				o[k] = [v];
-		} else
-			o[k] = v instanceof File ? { name: v.name } : v;
 	}
 
 	async updateDisplay() {

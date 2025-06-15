@@ -30,8 +30,8 @@ export default class CmsTextarea extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-textarea";
+	static get templateNames() {
+		return ["cms-textarea"];
 	}
 
 	constructor() {

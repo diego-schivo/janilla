@@ -31,8 +31,8 @@ export default class TestBench extends WebComponent {
 		return ["data-values"];
 	}
 
-	static get templateName() {
-		return "test-bench";
+	static get templateNames() {
+		return ["test-bench"];
 	}
 
 	constructor() {

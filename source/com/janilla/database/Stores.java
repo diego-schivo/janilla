@@ -50,10 +50,11 @@ public class Stores {
 				try {
 					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
 							Math.max(2 * BlockReference.BYTES, ch.size()));
-					ss = new Stores(
-							new BTree<>(o, ch, m, NameAndData.BYTE_CONVERTER,
-									BlockReference.read(ch, BlockReference.BYTES)),
-							x -> new Store<String>(new BTree<>(o, ch, m, IdAndElement.BYTE_CONVERTER, x.bTree()),
+					var t = new BTree<>(o, ch, m, NameAndData.BYTE_CONVERTER,
+							BlockReference.read(ch, BlockReference.BYTES));
+					ss = new Stores(t,
+							x -> new Store<>(
+									new BTree<>(o, ch, m, IdAndElement.byteConverter(ByteConverter.LONG), x.bTree()),
 									ByteConverter.STRING, y -> {
 										var v = y.get("nextId");
 										var id = v != null ? (long) v : 1L;
@@ -74,14 +75,17 @@ public class Stores {
 			{
 				var ss = sss.get();
 				ss.create("Article");
-				ss.perform("Article", s -> {
+				ss.perform("Article", s0 -> {
+					@SuppressWarnings("unchecked")
+					var s = (Store<Long, String>) s0;
 					a.id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
-					return s.update(a.id, x -> {
+					s.update(a.id, x -> {
 						@SuppressWarnings("unchecked")
 						var m = (Map<String, Object>) Json.parse((String) x);
 						m.put("title", "FooBarBazQux");
 						return Json.format(m);
 					});
+					return null;
 				});
 			}
 
@@ -89,11 +93,13 @@ public class Stores {
 
 			{
 				var ss = sss.get();
-				ss.perform("Article", s -> {
+				ss.perform("Article", s0 -> {
+					@SuppressWarnings("unchecked")
+					var s = (Store<Long, String>) s0;
 					var m = Json.parse((String) s.read(a.id));
 					System.out.println(m);
 					assert m.equals(Map.of("id", a.id, "title", "FooBarBazQux")) : m;
-					return m;
+					return null;
 				});
 			}
 		}
@@ -101,9 +107,9 @@ public class Stores {
 
 	protected final BTree<NameAndData> bTree;
 
-	protected final Function<NameAndData, Store<?>> newStore;
+	protected final Function<NameAndData, Store<?, ?>> newStore;
 
-	public Stores(BTree<NameAndData> bTree, Function<NameAndData, Store<?>> newStore) {
+	public Stores(BTree<NameAndData> bTree, Function<NameAndData, Store<?, ?>> newStore) {
 		this.bTree = bTree;
 		this.newStore = newStore;
 	}
@@ -112,7 +118,7 @@ public class Stores {
 		bTree.getOrAdd(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
 	}
 
-	public <E, R> R perform(String name, Function<Store<E>, R> operation) {
+	public <R> R perform(String name, @SuppressWarnings("rawtypes") Function<Store, R> operation) {
 		class A {
 
 			R r;
@@ -120,8 +126,7 @@ public class Stores {
 		var bt = bTree;
 		var a = new A();
 		bt.get(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)), x -> {
-			@SuppressWarnings("unchecked")
-			var s = (Store<E>) newStore.apply(x);
+			var s = newStore.apply(x);
 			Map<String, Object> aa;
 			try {
 				if (x.attributes().capacity() == 0)

@@ -36,10 +36,13 @@ export default class WebComponent extends HTMLElement {
 
 	constructor() {
 		super();
-		if (!this.constructor.templateName)
+		if (!this.constructor.templateNames?.length)
 			return;
-		this.#initializeTemplating = getDocumentFragment(this.constructor.templateName).then(x => {
-			const documentFragment = x.cloneNode(true);
+		this.#initializeTemplating = Promise.all(this.constructor.templateNames.map(x => getDocumentFragment(x))).then(x => {
+			const documentFragment = x.reduce((y, z) => {
+				y.appendChild(z.cloneNode(true));
+				return y;
+			}, new DocumentFragment());
 			const templates = [...documentFragment.querySelectorAll("template")].map(y => {
 				y.remove();
 				return y;

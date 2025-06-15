@@ -30,8 +30,8 @@ export default class CmsRadio extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-radio";
+	static get templateNames() {
+		return ["cms-radio"];
 	}
 
 	constructor() {

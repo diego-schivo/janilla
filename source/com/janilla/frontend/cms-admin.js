@@ -30,8 +30,8 @@ export default class CmsAdmin extends WebComponent {
 		return ["data-email", "data-path"];
 	}
 
-	static get templateName() {
-		return "cms-admin";
+	static get templateNames() {
+		return ["cms-admin"];
 	}
 
 	dateTimeFormat = new Intl.DateTimeFormat("en-US", {
@@ -433,5 +433,19 @@ export default class CmsAdmin extends WebComponent {
 
 	isReadOnly(type) {
 		return false;
+	}
+
+	setValue(object, key, value, field) {
+		if (field.type === "Set") {
+			if (Object.hasOwn(object, key))
+				object[key].push(value);
+			else
+				object[key] = [value];
+		} else
+			object[key] = value instanceof File ? { name: value.name } : value;
+	}
+
+	formProperties(field) {
+		return field.properties ? Object.entries(field.properties).filter(([k, _]) => k !== "id") : [];
 	}
 }

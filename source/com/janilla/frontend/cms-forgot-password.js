@@ -26,8 +26,8 @@ import WebComponent from "./web-component.js";
 
 export default class CmsLogin extends WebComponent {
 
-	static get templateName() {
-		return "cms-forgot-password";
+	static get templateNames() {
+		return ["cms-forgot-password"];
 	}
 
 	constructor() {

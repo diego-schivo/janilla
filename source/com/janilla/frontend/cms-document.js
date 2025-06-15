@@ -30,8 +30,8 @@ export default class CmsDocument extends WebComponent {
 		return ["data-subview", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-document";
+	static get templateNames() {
+		return ["cms-document"];
 	}
 
 	constructor() {

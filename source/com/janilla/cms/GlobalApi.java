@@ -36,7 +36,7 @@ import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
 
-public abstract class GlobalApi<E extends Document> {
+public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID>> {
 
 	protected final Class<E> type;
 
@@ -56,7 +56,7 @@ public abstract class GlobalApi<E extends Document> {
 
 	@Handle(method = "GET")
 	public E read(HttpExchange exchange) {
-		var e = crud().read(1, drafts.test(exchange));
+		var e = crud().read(id(), drafts.test(exchange));
 		if (e == null)
 			throw new NotFoundException("entity " + 1);
 		return e;
@@ -67,7 +67,7 @@ public abstract class GlobalApi<E extends Document> {
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);
-		var e = crud().update(1, entity, null, !Boolean.TRUE.equals(autosave));
+		var e = crud().update(id(), entity, null, !Boolean.TRUE.equals(autosave));
 		if (e == null)
 			throw new NotFoundException("entity " + 1);
 		return e;
@@ -75,29 +75,31 @@ public abstract class GlobalApi<E extends Document> {
 
 	@Handle(method = "DELETE")
 	public E delete() {
-		var e = crud().delete(1);
+		var e = crud().delete(id());
 		if (e == null)
 			throw new NotFoundException("entity " + 1);
 		return e;
 	}
 
 	@Handle(method = "GET", path = "versions")
-	public List<Version<E>> readVersions() {
-		return crud().readVersions(1);
+	public List<Version<ID, E>> readVersions() {
+		return crud().readVersions(id());
 	}
 
 	@Handle(method = "GET", path = "versions/(\\d+)")
-	public Version<E> readVersion(long versionId) {
+	public Version<ID, E> readVersion(ID versionId) {
 		return crud().readVersion(versionId);
 	}
 
 	@Handle(method = "POST", path = "versions/(\\d+)")
-	public E restoreVersion(long versionId, Boolean draft) {
+	public E restoreVersion(ID versionId, Boolean draft) {
 		return crud().restoreVersion(versionId,
 				Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED);
 	}
 
-	protected DocumentCrud<E> crud() {
-		return (DocumentCrud<E>) persistence.crud(type);
+	protected DocumentCrud<ID, E> crud() {
+		return (DocumentCrud<ID, E>) persistence.crud(type);
 	}
+
+	protected abstract ID id();
 }

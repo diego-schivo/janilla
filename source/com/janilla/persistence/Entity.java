@@ -22,61 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "./web-component.js";
+package com.janilla.persistence;
 
-export default class CmsFile extends WebComponent {
+public interface Entity<ID extends Comparable<ID>> {
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
-
-	static get templateNames() {
-		return ["cms-file"];
-	}
-
-	constructor() {
-		super();
-	}
-
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("change", this.handleChange);
-	}
-
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("change", this.handleChange);
-	}
-
-	handleChange = event => {
-		// console.log("event", event);
-		const el = event.target.closest('[type="file"]');
-		if (el) {
-			const s = this.state;
-			s.file = el.files[0];
-			this.requestDisplay();
-		}
-	}
-
-	async updateDisplay() {
-		const a = this.closest("cms-admin");
-		const p = this.dataset.path;
-		const f = a.field(p);
-		const s = this.state;
-		this.appendChild(this.interpolateDom(f.data ? {
-			$template: "update",
-			data: f.data
-		} : {
-			$template: "create",
-			name: p,
-			label: !s.file ? {
-				$template: "label",
-				name: p
-			} : null,
-			input: s.file ? {
-				$template: "input",
-				value: s.file.name
-			} : null
-		}));
-	}
+	ID id();
 }

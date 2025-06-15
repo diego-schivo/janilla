@@ -26,8 +26,8 @@ import WebComponent from "./web-component.js";
 
 export default class CmsFirstRegister extends WebComponent {
 
-	static get templateName() {
-		return "cms-first-register";
+	static get templateNames() {
+		return ["cms-first-register"];
 	}
 
 	constructor() {

@@ -59,7 +59,8 @@ public class Database {
 					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
 							Math.max(3 * BlockReference.BYTES, ch.size()));
 					return new Database(o, ch, m, BlockReference.BYTES, 2 * BlockReference.BYTES,
-							x -> new Store<String>(new BTree<>(o, ch, m, IdAndElement.BYTE_CONVERTER, x.bTree()),
+							x -> new Store<>(
+									new BTree<>(o, ch, m, IdAndElement.byteConverter(ByteConverter.LONG), x.bTree()),
 									ByteConverter.STRING, y -> {
 										var v = y.get("nextId");
 										var id = v != null ? (long) v : 1L;
@@ -82,7 +83,9 @@ public class Database {
 				var d = ds.get();
 				d.perform((ss, ii) -> {
 					ss.create("Article");
-					ss.perform("Article", s -> {
+					ss.perform("Article", s0 -> {
+						@SuppressWarnings("unchecked")
+						var s = (Store<Long, String>) s0;
 						var id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
 						s.update(id, x -> {
 							@SuppressWarnings("unchecked")
@@ -111,7 +114,9 @@ public class Database {
 			{
 				var d = ds.get();
 				d.perform((ss, ii) -> {
-					ss.perform("Article", s -> {
+					ss.perform("Article", s0 -> {
+						@SuppressWarnings("unchecked")
+						var s = (Store<Long, String>) s0;
 						var m = Json.parse((String) s.read(1L));
 						System.out.println(m);
 						assert m.equals(Map.of("id", 1L, "title", "FooBarBazQux")) : m;
@@ -140,7 +145,7 @@ public class Database {
 
 	protected final long indexesRoot;
 
-	protected final Function<NameAndData, Store<?>> newStore;
+	protected final Function<NameAndData, Store<?, ?>> newStore;
 
 	protected final Function<NameAndData, Index<?, ?>> newIndex;
 
@@ -153,7 +158,8 @@ public class Database {
 	protected final AtomicBoolean performing = new AtomicBoolean();
 
 	public Database(int bTreeOrder, TransactionalByteChannel channel, BTreeMemory memory, long storesRoot,
-			long indexesRoot, Function<NameAndData, Store<?>> newStore, Function<NameAndData, Index<?, ?>> newIndex) {
+			long indexesRoot, Function<NameAndData, Store<?, ?>> newStore,
+			Function<NameAndData, Index<?, ?>> newIndex) {
 		this.bTreeOrder = bTreeOrder;
 		this.channel = channel;
 		this.memory = memory;

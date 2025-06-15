@@ -30,8 +30,8 @@ export default class CmsText extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-text";
+	static get templateNames() {
+		return ["cms-text"];
 	}
 
 	constructor() {

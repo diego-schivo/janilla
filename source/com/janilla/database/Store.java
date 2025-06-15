@@ -32,35 +32,34 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.LongFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.ToLongFunction;
 import java.util.function.UnaryOperator;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.janilla.io.ByteConverter;
 import com.janilla.json.Json;
 
-public class Store<E> {
+public class Store<ID extends Comparable<ID>, E> {
 
 	public static void main(String[] args) throws Exception {
 		var o = 3;
 		var f = Files.createTempFile("store", "");
 		try (var ch = FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
 				StandardOpenOption.WRITE)) {
-			Supplier<Store<String>> ss = () -> {
-				Store<String> s;
+			Supplier<Store<Long, String>> ss = () -> {
+				Store<Long, String> s;
 				try {
 					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
 							Math.max(2 * BlockReference.BYTES, ch.size()));
-					s = new Store<>(new BTree<>(o, ch, m, IdAndElement.BYTE_CONVERTER,
-							BlockReference.read(ch, BlockReference.BYTES)), ByteConverter.STRING, x -> {
-								var v = x.get("nextId");
-								var id = v != null ? (long) v : 1L;
-								x.put("nextId", id + 1);
-								return id;
-							});
+					var t = new BTree<>(o, ch, m, IdAndElement.byteConverter(ByteConverter.LONG),
+							BlockReference.read(ch, BlockReference.BYTES));
+					s = new Store<>(t, ByteConverter.STRING, x -> {
+						var v = x.get("nextId");
+						var id = v != null ? (long) v : 1L;
+						x.put("nextId", id + 1);
+						return id;
+					});
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
@@ -111,16 +110,16 @@ public class Store<E> {
 		}
 	}
 
-	protected final BTree<IdAndElement> bTree;
+	protected final BTree<IdAndElement<ID>> bTree;
 
 	protected final ByteConverter<E> elementConverter;
 
-	protected final ToLongFunction<Map<String, Object>> newId;
+	protected final Function<Map<String, Object>, ID> newId;
 
 	protected Map<String, Object> attributes;
 
-	public Store(BTree<IdAndElement> bTree, ByteConverter<E> elementConverter,
-			ToLongFunction<Map<String, Object>> newId) {
+	public Store(BTree<IdAndElement<ID>> bTree, ByteConverter<E> elementConverter,
+			Function<Map<String, Object>, ID> newId) {
 		this.bTree = bTree;
 		this.elementConverter = elementConverter;
 		this.newId = newId;
@@ -134,10 +133,10 @@ public class Store<E> {
 		this.attributes = attributes;
 	}
 
-	public long create(LongFunction<E> element) {
+	public ID create(Function<ID, E> element) {
 		try {
 			var bt = bTree;
-			var id = newId.applyAsLong(attributes);
+			var id = newId.apply(attributes);
 			var e = element.apply(id);
 			var bb = elementConverter.serialize(e);
 			var r = bt.memory().allocate(bb.length);
@@ -148,7 +147,7 @@ public class Store<E> {
 			if (b.remaining() != 0)
 				throw new IOException();
 			r = new BlockReference(-1, r.position(), r.capacity());
-			bt.add(new IdAndElement(id, r));
+			bt.add(new IdAndElement<>(id, r));
 			attributes.compute("size", (_, v) -> v == null ? 1L : (Long) v + 1);
 			return id;
 		} catch (IOException e) {
@@ -156,22 +155,22 @@ public class Store<E> {
 		}
 	}
 
-	public E read(long id) {
+	public E read(ID id) {
 		var t = bTree;
-		var i = t.get(new IdAndElement(id, new BlockReference(-1, -1, 0)));
+		var i = t.get(new IdAndElement<>(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
 			return null;
 		return readElement(i.element());
 	}
 
-	public E update(long id, UnaryOperator<E> operator) {
+	public E update(ID id, UnaryOperator<E> operator) {
 		class A {
 
 			E e;
 		}
 		var t = bTree;
 		var a = new A();
-		t.get(new IdAndElement(id, new BlockReference(-1, -1, 0)), j -> {
+		t.get(new IdAndElement<>(id, new BlockReference(-1, -1, 0)), j -> {
 			try {
 				if (j == null)
 					return null;
@@ -186,7 +185,7 @@ public class Store<E> {
 				t.channel().write(d);
 				if (d.remaining() != 0)
 					throw new IOException();
-				return r != null ? new IdAndElement(id, new BlockReference(-1, r.position(), r.capacity())) : null;
+				return r != null ? new IdAndElement<>(id, new BlockReference(-1, r.position(), r.capacity())) : null;
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -194,9 +193,9 @@ public class Store<E> {
 		return a.e;
 	}
 
-	public E delete(long id) {
+	public E delete(ID id) {
 		var t = bTree;
-		var i = t.remove(new IdAndElement(id, new BlockReference(-1, -1, 0)));
+		var i = t.remove(new IdAndElement<>(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
 			return null;
 		var e = readElement(i.element());
@@ -204,8 +203,8 @@ public class Store<E> {
 		return e;
 	}
 
-	public LongStream ids() {
-		return bTree.stream().mapToLong(IdAndElement::id);
+	public Stream<ID> ids() {
+		return bTree.stream().map(IdAndElement::id);
 	}
 
 	public Stream<E> elements() {

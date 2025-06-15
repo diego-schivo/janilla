@@ -30,8 +30,8 @@ export default class CmsDocumentReference extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-document-reference";
+	static get templateNames() {
+		return ["cms-document-reference"];
 	}
 
 	constructor() {

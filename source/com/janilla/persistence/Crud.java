@@ -27,17 +27,16 @@ package com.janilla.persistence;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.PrimitiveIterator;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.janilla.json.Converter;
@@ -48,7 +47,7 @@ import com.janilla.json.ReflectionValueIterator;
 import com.janilla.json.TokenIterationContext;
 import com.janilla.reflect.Reflection;
 
-public class Crud<E> {
+public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected final Class<E> type;
 
@@ -76,14 +75,18 @@ public class Crud<E> {
 				E e;
 			}
 			var a = new A();
-			var l = ss.perform(type.getSimpleName(), s -> s.create(x -> {
-				a.e = Reflection.copy(Map.of("id", x), entity);
-				for (var y : observers)
-					a.e = y.beforeCreate(a.e);
-				var t = format(a.e);
+			var l = ss.perform(type.getSimpleName(), s0 -> {
+				@SuppressWarnings("unchecked")
+				var s = (com.janilla.database.Store<ID, String>) s0;
+				return s.create(x -> {
+					a.e = Reflection.copy(Map.of("id", x), entity);
+					for (var y : observers)
+						a.e = y.beforeCreate(a.e);
+					var t = format(a.e);
 //				System.out.println("Crud.create t=" + t);
-				return t;
-			}));
+					return t;
+				});
+			});
 			updateIndexes(null, a.e, l);
 			for (var x : observers)
 				x.afterCreate(a.e);
@@ -91,26 +94,33 @@ public class Crud<E> {
 		}, true);
 	}
 
-	public E read(long id) {
-		if (id <= 0)
-			return null;
-		var o = persistence.database.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> s.read(id)), false);
-		return o != null ? parse((String) o) : null;
+	public E read(ID id) {
+//		if (id <= 0)
+//			return null;
+		var o = persistence.database.perform((ss, _) -> ss.perform(type.getSimpleName(), s0 -> {
+			@SuppressWarnings("unchecked")
+			var s = (com.janilla.database.Store<ID, String>) s0;
+			return s.read(id);
+		}), false);
+		return o != null ? parse(o) : null;
 	}
 
-	public List<E> read(long[] ids) {
-		if (ids == null || ids.length == 0)
+	public List<E> read(List<ID> ids) {
+		if (ids == null || ids.isEmpty())
 			return List.of();
-		return persistence.database
-				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
-					var o = s.read(x);
-					return o != null ? parse((String) o) : null;
-				}).toList()), false);
+		return persistence.database.perform((ss, _) -> ss.perform(type.getSimpleName(), s0 -> {
+			@SuppressWarnings("unchecked")
+			var s = (com.janilla.database.Store<ID, String>) s0;
+			return ids.stream().map(x -> {
+				var o = s.read(x);
+				return o != null ? parse(o) : null;
+			}).toList();
+		}), false);
 	}
 
-	public E update(long id, UnaryOperator<E> operator) {
-		if (id <= 0)
-			return null;
+	public E update(ID id, UnaryOperator<E> operator) {
+//		if (id <= 0)
+//			return null;
 		return persistence.database.perform((ss, _) -> {
 			class A {
 
@@ -119,13 +129,18 @@ public class Crud<E> {
 				E e2;
 			}
 			var a = new A();
-			ss.perform(type.getSimpleName(), s -> s.update(id, x -> {
-				a.e1 = parse((String) x);
-				a.e2 = operator.apply(a.e1);
-				for (var y : observers)
-					a.e2 = y.beforeUpdate(a.e2);
-				return format(a.e2);
-			}));
+			ss.perform(type.getSimpleName(), s0 -> {
+				@SuppressWarnings("unchecked")
+				var s = (com.janilla.database.Store<ID, String>) s0;
+				s.update(id, x -> {
+					a.e1 = parse((String) x);
+					a.e2 = operator.apply(a.e1);
+					for (var y : observers)
+						a.e2 = y.beforeUpdate(a.e2);
+					return format(a.e2);
+				});
+				return null;
+			});
 			updateIndexes(a.e1, a.e2, id);
 			for (var x : observers)
 				x.afterUpdate(a.e1, a.e2);
@@ -133,12 +148,16 @@ public class Crud<E> {
 		}, true);
 	}
 
-	public E delete(long id) {
-		if (id <= 0)
-			return null;
+	public E delete(ID id) {
+//		if (id <= 0)
+//			return null;
 		return persistence.database.perform((ss, _) -> {
-			var o = ss.perform(type.getSimpleName(), s -> s.delete(id));
-			var e = parse((String) o);
+			var o = ss.perform(type.getSimpleName(), s0 -> {
+				@SuppressWarnings("unchecked")
+				var s = (com.janilla.database.Store<ID, String>) s0;
+				return s.delete(id);
+			});
+			var e = parse(o);
 			updateIndexes(e, null, id);
 			for (var x : observers)
 				x.afterDelete(e);
@@ -146,24 +165,28 @@ public class Crud<E> {
 		}, true);
 	}
 
-	public List<E> delete(long[] ids) {
-		if (ids == null || ids.length == 0)
+	public List<E> delete(List<ID> ids) {
+		if (ids == null || ids.isEmpty())
 			return List.of();
 //		return persistence.database
 //				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
 //					var o = s.delete(x);
 //					return o != null ? parse((String) o) : null;
 //				}).toList()), true);
-		return persistence.database().perform((_, _) -> Arrays.stream(ids).mapToObj(this::delete).toList(), true);
+		return persistence.database().perform((_, _) -> ids.stream().map(this::delete).toList(), true);
 	}
 
-	public long[] list() {
+	public List<ID> list() {
 		return persistence.database.perform((ss, ii) -> type.isAnnotationPresent(Index.class)
-				? ii.perform(type.getSimpleName(), i -> getIndexIds(i.values()).toArray())
-				: ss.perform(type.getSimpleName(), s -> s.ids().toArray()), false);
+				? ii.perform(type.getSimpleName(), i -> getIndexIds(i.values()).toList())
+				: ss.perform(type.getSimpleName(), s0 -> {
+					@SuppressWarnings("unchecked")
+					var s = (com.janilla.database.Store<ID, String>) s0;
+					return s.ids().toList();
+				}), false);
 	}
 
-	public IdPage list(long skip, long limit) {
+	public IdPage<ID> list(long skip, long limit) {
 //		System.out.println("Crud.list, skip=" + skip + ", limit=" + limit);
 		return persistence.database
 				.perform((ss, ii) -> type.isAnnotationPresent(Index.class) ? ii.perform(type.getSimpleName(), i -> {
@@ -172,18 +195,20 @@ public class Crud<E> {
 						vv = vv.skip(skip);
 					if (limit >= 0)
 						vv = vv.limit(limit);
-					var j = getIndexIds(vv).toArray();
+					var j = getIndexIds(vv).toList();
 					var c = i.count();
-					return new IdPage(j, c);
-				}) : ss.perform(type.getSimpleName(), s -> {
+					return new IdPage<>(j, c);
+				}) : ss.perform(type.getSimpleName(), s0 -> {
+					@SuppressWarnings("unchecked")
+					var s = (com.janilla.database.Store<ID, String>) s0;
 					var jj = s.ids();
 					if (skip > 0)
 						jj = jj.skip(skip);
 					if (limit >= 0)
 						jj = jj.limit(limit);
-					var i = jj.toArray();
+					var i = jj.toList();
 					var c = s.count();
-					return new IdPage(i, c);
+					return new IdPage<>(i, c);
 				}), false);
 	}
 
@@ -200,24 +225,25 @@ public class Crud<E> {
 		return persistence.database.perform((_, ii) -> ii.perform(n, i -> i.count(key)), false);
 	}
 
-	public long find(String index, Object key) {
+	public ID find(String index, Object key) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return persistence.database.perform((_, ii) -> ii.perform(n, i -> i.list(key)
-				.mapToLong(o -> (Long) (o instanceof Object[] oo ? oo[oo.length - 1] : o)).findFirst().orElse(0)),
-				false);
+		return persistence.database.perform((_, ii) -> ii.perform(n, i -> i.list(key).map(x -> {
+			@SuppressWarnings("unchecked")
+			var y = (ID) (x instanceof Object[] oo ? oo[oo.length - 1] : x);
+			return y;
+		}).findFirst().orElse(null)), false);
 	}
 
-	public long[] filter(String index, Object... keys) {
+	public List<ID> filter(String index, Object... keys) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
 //		System.out.println("n=" + n + ", keys=" + Arrays.toString(keys));
 		switch (keys.length) {
 		case 0:
-			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.values()).toArray()),
-					false);
+			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.values()).toList()), false);
 		case 1:
-			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.list(keys[0])).toArray()),
+			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.list(keys[0])).toList()),
 					false);
 		}
 		class A {
@@ -232,23 +258,25 @@ public class Crud<E> {
 			a.v = a.vv.hasNext() ? a.vv.next() : null;
 			return a;
 		}).toList()), false);
-		return LongStream.iterate(0, _ -> {
-			@SuppressWarnings({ "rawtypes", "unchecked" })
+		return Stream.iterate((ID) null, _ -> {
 			var a = aa.stream().max((a1, a2) -> {
-				var c1 = a1.v != null ? (Comparable) ((Object[]) a1.v)[0] : null;
-				var c2 = a2.v != null ? (Comparable) ((Object[]) a2.v)[0] : null;
+				@SuppressWarnings("unchecked")
+				var c1 = a1.v != null ? (ID) ((Object[]) a1.v)[0] : null;
+				@SuppressWarnings("unchecked")
+				var c2 = a2.v != null ? (ID) ((Object[]) a2.v)[0] : null;
 				return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
 			}).orElse(null);
 			if (a == null || a.v == null)
-				return 0;
+				return null;
 			var v = (Object[]) a.v;
-			var i = (Long) v[v.length - 1];
+			@SuppressWarnings("unchecked")
+			var i = (ID) v[v.length - 1];
 			a.v = a.vv.hasNext() ? a.vv.next() : null;
 			return i;
-		}).skip(1).takeWhile(x -> x > 0).toArray();
+		}).skip(1).takeWhile(Objects::nonNull).toList();
 	}
 
-	public IdPage filter(String index, long skip, long limit, Object... keys) {
+	public IdPage<ID> filter(String index, long skip, long limit, Object... keys) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
 		switch (keys.length) {
@@ -259,7 +287,7 @@ public class Crud<E> {
 					jj = jj.skip(skip);
 				if (limit >= 0)
 					jj = jj.limit(limit);
-				return new IdPage(jj.toArray(), i.count());
+				return new IdPage<>(jj.toList(), i.count());
 			}), false);
 		case 1:
 			return persistence.database.perform((_, ii) -> ii.perform(n, i -> {
@@ -268,7 +296,7 @@ public class Crud<E> {
 					jj = jj.skip(skip);
 				if (limit >= 0)
 					jj = jj.limit(limit);
-				return new IdPage(jj.toArray(), i.count(keys[0]));
+				return new IdPage<>(jj.toList(), i.count(keys[0]));
 			}), false);
 		}
 		class A {
@@ -288,39 +316,41 @@ public class Crud<E> {
 			return a;
 		}).toList()), false);
 
-		return new IdPage(LongStream.iterate(0, _ -> {
-			@SuppressWarnings({ "rawtypes", "unchecked" })
+		return new IdPage<>(Stream.iterate((ID) null, _ -> {
 			var a = aa.stream().max((a1, a2) -> {
-				var c1 = a1.v != null ? (Comparable) ((Object[]) a1.v)[0] : null;
-				var c2 = a2.v != null ? (Comparable) ((Object[]) a2.v)[0] : null;
+				@SuppressWarnings("unchecked")
+				var c1 = a1.v != null ? (ID) ((Object[]) a1.v)[0] : null;
+				@SuppressWarnings("unchecked")
+				var c2 = a2.v != null ? (ID) ((Object[]) a2.v)[0] : null;
 				return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
 			}).orElse(null);
 			if (a == null || a.v == null)
-				return 0;
+				return null;
 			var v = (Object[]) a.v;
-			var i = (Long) v[v.length - 1];
+			@SuppressWarnings("unchecked")
+			var i = (ID) v[v.length - 1];
 			a.v = a.vv.hasNext() ? a.vv.next() : null;
 			return i;
-		}).skip(1 + skip).takeWhile(x -> x > 0).limit(limit).toArray(), aa.stream().mapToLong(x -> x.l).sum());
+		}).skip(1 + skip).takeWhile(Objects::nonNull).limit(limit).toList(), aa.stream().mapToLong(x -> x.l).sum());
 	}
 
-	public long[] filter(String index, Predicate<Object> operation) {
+	public List<ID> filter(String index, Predicate<Object> operation) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toArray()),
+		return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toList()),
 				false);
 	}
 
-	public IdPage filter(String index, Predicate<Object> operation, long skip, long limit) {
+	public IdPage<ID> filter(String index, Predicate<Object> operation, long skip, long limit) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
 		return persistence.database.perform((_, ii) -> ii.perform(n,
-				i -> new IdPage(getIndexIds(i.valuesIf(operation)).skip(skip).limit(limit).toArray(),
+				i -> new IdPage<>(getIndexIds(i.valuesIf(operation)).skip(skip).limit(limit).toList(),
 						i.countIf(operation))),
 				false);
 	}
 
-	public IdPage filter(Map<String, Object[]> keys, long skip, long limit) {
+	public IdPage<ID> filter(Map<String, Object[]> keys, long skip, long limit) {
 		var ee = keys.entrySet().stream().filter(x -> x.getValue() != null && x.getValue().length > 0).toList();
 		if (ee.isEmpty())
 			return list(skip, limit);
@@ -331,9 +361,9 @@ public class Crud<E> {
 		return persistence.database.perform((_, ii) -> {
 			class A {
 
-				PrimitiveIterator.OfLong lli;
+				Iterator<ID> lli;
 
-				long l;
+				ID l;
 			}
 			var aa = new ArrayList<A>();
 			for (var e : ee) {
@@ -356,56 +386,59 @@ public class Crud<E> {
 					return null;
 				});
 				var a = new A();
-				a.lli = LongStream.iterate(0, _ -> {
-					@SuppressWarnings({ "rawtypes", "unchecked" })
+				a.lli = Stream.iterate((ID) null, _ -> {
 					var b = bb.stream().max((b1, b2) -> {
-						var v1 = b1.v != null ? (Comparable) b1.v[0] : null;
-						var v2 = b2.v != null ? (Comparable) b2.v[0] : null;
+						@SuppressWarnings("unchecked")
+						var v1 = b1.v != null ? (ID) b1.v[0] : null;
+						@SuppressWarnings("unchecked")
+						var v2 = b2.v != null ? (ID) b2.v[0] : null;
 						return v1 != null ? (v2 != null ? v1.compareTo(v2) : 1) : (v2 != null ? -1 : 0);
 					}).orElse(null);
 					if (b == null || b.v == null)
-						return 0;
-					var l = (long) b.v[b.v.length - 1];
+						return null;
+					@SuppressWarnings("unchecked")
+					var l = (ID) b.v[b.v.length - 1];
 					b.v = b.vvi.hasNext() ? b.vvi.next() : null;
 					return l;
-				}).skip(1).takeWhile(x -> x > 0).iterator();
-				a.l = a.lli.hasNext() ? a.lli.nextLong() : 0;
+				}).skip(1).takeWhile(Objects::nonNull).iterator();
+				a.l = a.lli.hasNext() ? a.lli.next() : null;
 				aa.add(a);
 			}
-			var llb = LongStream.builder();
+			var llb = Stream.<ID>builder();
 			class C {
 
 				long l;
 			}
 			var c = new C();
-			var t = LongStream.iterate(0, _ -> {
+			var t = Stream.iterate((ID) null, _ -> {
 				for (;;) {
-					var ll = aa.stream().mapToLong(a -> a.l).toArray();
+					var ll = aa.stream().map(a -> a.l).toList();
 //					System.out.println("ll=" + Arrays.toString(ll));
-					var l = Arrays.stream(ll).allMatch(y -> y != 0) ? Arrays.stream(ll).max().getAsLong() : 0;
-					if (l == 0)
-						return 0;
+					var l = ll.stream().allMatch(Objects::nonNull) ? ll.stream().max(Comparator.naturalOrder()).get()
+							: null;
+					if (l == null)
+						return null;
 					var e = true;
 					for (var a : aa) {
-						while (a.l != 0 && a.l < l)
-							a.l = a.lli.hasNext() ? a.lli.nextLong() : 0;
-						if (a.l != l)
+						while (a.l != null && a.l.compareTo(l) < 0)
+							a.l = a.lli.hasNext() ? a.lli.next() : null;
+						if (!a.l.equals(l))
 							e = false;
 					}
 					if (e) {
 						for (var a : aa)
-							a.l = a.lli.hasNext() ? a.lli.nextLong() : 0;
+							a.l = a.lli.hasNext() ? a.lli.next() : null;
 						return l;
 					}
 				}
-			}).skip(1).takeWhile(x -> x != 0).peek(x -> {
+			}).skip(1).takeWhile(Objects::nonNull).peek(x -> {
 				var o = c.l++ - skip;
 				if (o >= 0 && (limit < 0 || o < limit)) {
 //					System.out.println("x=" + x);
 					llb.add(x);
 				}
 			}).count();
-			return new IdPage(llb.build().toArray(), t);
+			return new IdPage<>(llb.build().toList(), t);
 		}, false);
 	}
 
@@ -427,11 +460,11 @@ public class Crud<E> {
 		return t;
 	}
 
-	protected void updateIndexes(E entity1, E entity2, long id) {
+	protected void updateIndexes(E entity1, E entity2, ID id) {
 		updateIndexes(entity1, entity2, id, this::getIndexName);
 	}
 
-	protected void updateIndexes(E entity1, E entity2, long id, UnaryOperator<String> indexName) {
+	protected void updateIndexes(E entity1, E entity2, ID id, UnaryOperator<String> indexName) {
 		var im1 = entity1 != null ? getIndexMap(entity1, id) : null;
 		var im2 = entity2 != null ? getIndexMap(entity2, id) : null;
 		for (var k : (im1 != null ? im1 : im2).keySet()) {
@@ -453,7 +486,7 @@ public class Crud<E> {
 				.collect(Collectors.joining("."));
 	}
 
-	protected Map<String, Map.Entry<Object, Object>> getIndexMap(E entity, long id) {
+	protected Map<String, Map.Entry<Object, Object>> getIndexMap(E entity, ID id) {
 		var m = new HashMap<String, Map.Entry<Object, Object>>();
 		for (var e : indexEntryGetters.entrySet()) {
 			var n = e.getKey();
@@ -516,22 +549,24 @@ public class Crud<E> {
 		}), true);
 	}
 
-	protected LongStream getIndexIds(Stream<Object> results) {
-		return results.mapToLong(x -> {
-			var y = switch (x) {
-			case Object[] oo -> (Long) oo[oo.length - 1];
-			default -> (Long) x;
+	protected Stream<ID> getIndexIds(Stream<Object> results) {
+		return results.map(x -> {
+			@SuppressWarnings("unchecked")
+			var y = (ID) switch (x) {
+			case Object[] oo -> oo[oo.length - 1];
+			default -> x;
 			};
 			return y;
 		});
 	}
 
-	public record IdPage(long[] ids, long total) {
+	public record IdPage<ID>(List<ID> ids, long total) {
 
-		static IdPage EMPTY = new IdPage(new long[0], 0);
+		private static IdPage<?> EMPTY = new IdPage<>(List.of(), 0);
 
-		public static IdPage empty() {
-			return EMPTY;
+		@SuppressWarnings("unchecked")
+		public static <ID> IdPage<ID> empty() {
+			return (IdPage<ID>) EMPTY;
 		}
 	}
 

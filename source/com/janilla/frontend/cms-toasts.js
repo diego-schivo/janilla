@@ -26,8 +26,8 @@ import WebComponent from "./web-component.js";
 
 export default class CmsToasts extends WebComponent {
 
-	static get templateName() {
-		return "cms-toasts";
+	static get templateNames() {
+		return ["cms-toasts"];
 	}
 
 	constructor() {

@@ -30,8 +30,8 @@ export default class CmsCheckbox2 extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-checkbox2";
+	static get templateNames() {
+		return ["cms-checkbox2"];
 	}
 
 	constructor() {

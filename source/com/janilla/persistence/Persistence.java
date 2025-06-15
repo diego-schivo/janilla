@@ -51,13 +51,13 @@ public class Persistence {
 
 	protected final Database database;
 
-	protected final Iterable<Class<?>> types;
+	protected final Iterable<Class<? extends Entity<?>>> types;
 
 	protected final MapAndType.TypeResolver typeResolver;
 
 	protected final Configuration configuration = new Configuration();
 
-	public Persistence(Database database, Iterable<Class<?>> types, MapAndType.TypeResolver typeResolver) {
+	public Persistence(Database database, Iterable<Class<? extends Entity<?>>> types, MapAndType.TypeResolver typeResolver) {
 		this.database = database;
 		this.types = types;
 		this.typeResolver = typeResolver;
@@ -83,14 +83,14 @@ public class Persistence {
 		return i;
 	}
 
-	public <E> Crud<E> crud(Class<E> class1) {
+	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> class1) {
 		@SuppressWarnings("unchecked")
-		var c = (Crud<E>) configuration.cruds.get(class1);
+		var c = (Crud<ID, E>) configuration.cruds.get(class1);
 		return c;
 	}
 
-	protected <E, K, V> void configure(Class<E> type) {
-		Crud<E> c = newCrud(type);
+	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
+		Crud<?, E> c = newCrud(type);
 		if (c == null)
 			return;
 		// System.out.println("Persistence.configure, type=" + type);
@@ -140,9 +140,10 @@ public class Persistence {
 		}
 	}
 
-	protected <E> Crud<E> newCrud(Class<E> type) {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
 		return !Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
-				&& type.isAnnotationPresent(Store.class) ? new Crud<>(type, this) : null;
+				&& type.isAnnotationPresent(Store.class) ? new Crud(type, this) : null;
 	}
 
 	protected void createStoresAndIndexes() {
@@ -225,11 +226,11 @@ public class Persistence {
 
 	protected static class Configuration {
 
-		protected Map<Class<?>, Crud<?>> cruds = new HashMap<>();
+		protected Map<Class<?>, Crud<?, ?>> cruds = new HashMap<>();
 
 		protected Map<String, IndexFactory<?, ?>> indexFactories = new HashMap<>();
 
-		public Map<Class<?>, Crud<?>> cruds() {
+		public Map<Class<?>, Crud<?, ?>> cruds() {
 			return cruds;
 		}
 
@@ -256,7 +257,8 @@ public class Persistence {
 
 		protected Property sortGetter;
 
-		protected Map.Entry<Object, Object> getIndexEntry(Object entity, long id) throws ReflectiveOperationException {
+		protected Map.Entry<Object, Object> getIndexEntry(Object entity, Comparable<?> id)
+				throws ReflectiveOperationException {
 			var k = keyGetter != null ? keyGetter.apply(entity) : null;
 			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
 			return keyGetter == null || k != null ? new AbstractMap.SimpleEntry<>(k, v) : null;

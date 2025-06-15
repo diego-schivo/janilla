@@ -26,8 +26,8 @@ import WebComponent from "./web-component.js";
 
 export default class CmsDashboard extends WebComponent {
 
-	static get templateName() {
-		return "cms-dashboard";
+	static get templateNames() {
+		return ["cms-dashboard"];
 	}
 
 	constructor() {

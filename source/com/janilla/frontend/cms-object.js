@@ -30,8 +30,8 @@ export default class CmsObject extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-object";
+	static get templateNames() {
+		return ["cms-object"];
 	}
 
 	constructor() {
@@ -46,7 +46,7 @@ export default class CmsObject extends WebComponent {
 			$template: "",
 			...this.dataset,
 			lists: (() => {
-				const pp0 = this.foo(f);
+				const pp0 = a.formProperties(f);
 				let snn = a.sidebar(f.type);
 				return (snn?.length ? [
 					pp0.filter(([k, _]) => !snn.includes(k)),
@@ -120,9 +120,5 @@ export default class CmsObject extends WebComponent {
 				value: f.type
 			}
 		}));
-	}
-
-	foo(f) {
-		return f.properties ? Object.entries(f.properties).filter(([k, _]) => k !== "id") : [];
 	}
 }

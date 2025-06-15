@@ -37,9 +37,12 @@ import com.janilla.database.Index;
 import com.janilla.database.KeyAndData;
 import com.janilla.database.NameAndData;
 import com.janilla.io.ByteConverter;
+import com.janilla.io.ByteConverter.SortOrder;
+import com.janilla.io.ByteConverter.TypeAndOrder;
 import com.janilla.json.MapAndType;
 import com.janilla.json.MapAndType.TypeResolver;
 import com.janilla.persistence.Crud;
+import com.janilla.persistence.Entity;
 import com.janilla.persistence.Persistence;
 import com.janilla.persistence.Store;
 import com.janilla.reflect.Reflection;
@@ -50,7 +53,7 @@ public class CmsPersistence extends Persistence {
 
 		@Override
 		public <E> E beforeCreate(E entity) {
-			var d = (Document) entity;
+			var d = (Document<?>) entity;
 			var i = Instant.now();
 			var v = d.getClass().getAnnotation(Versions.class);
 			var m = Map.<String, Object>of("createdAt", i, "updatedAt", i);
@@ -63,7 +66,7 @@ public class CmsPersistence extends Persistence {
 
 		@Override
 		public <E> E beforeUpdate(E entity) {
-			var d = (Document) entity;
+			var d = (Document<?>) entity;
 			var i = Instant.now();
 			var m = Map.<String, Object>of("updatedAt", i);
 			if (d.documentStatus() == Document.Status.PUBLISHED) {
@@ -74,7 +77,7 @@ public class CmsPersistence extends Persistence {
 		}
 	};
 
-	public CmsPersistence(Database database, Iterable<Class<?>> types, TypeResolver typeResolver) {
+	public CmsPersistence(Database database, Iterable<Class<? extends Entity<?>>> types, TypeResolver typeResolver) {
 		super(database, types, typeResolver);
 	}
 
@@ -83,17 +86,18 @@ public class CmsPersistence extends Persistence {
 		if (nameAndData.name().startsWith(Version.class.getSimpleName() + "<")
 				&& nameAndData.name().endsWith(">.document")) {
 			@SuppressWarnings("unchecked")
-			var i = (Index<K, V>) new Index<Long, Object[]>(
-					new BTree<>(database.bTreeOrder(), database.channel(), database.memory(),
-							KeyAndData.getByteConverter(ByteConverter.LONG), nameAndData.bTree()),
-					ByteConverter.of(Version.class, "-updatedAt", "id"));
+			var i = (Index<K, V>) new Index<Long, Object[]>(new BTree<>(database.bTreeOrder(), database.channel(),
+					database.memory(), KeyAndData.getByteConverter(ByteConverter.LONG), nameAndData.bTree()),
+//					ByteConverter.of(Version.class, "-updatedAt", "id"));
+					ByteConverter.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
+							new TypeAndOrder(Long.class, SortOrder.ASCENDING)));
 			return i;
 		}
 		return super.newIndex(nameAndData);
 	}
 
 	@Override
-	protected <E, K, V> void configure(Class<E> type) {
+	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
 		super.configure(type);
 		var v = type.getAnnotation(Versions.class);
 		if (v != null && v.drafts())
@@ -103,13 +107,13 @@ public class CmsPersistence extends Persistence {
 	}
 
 	@Override
-	protected <E> Crud<E> newCrud(Class<E> type) {
+	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
 		if (!Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
 				&& type.isAnnotationPresent(Store.class)) {
 			@SuppressWarnings("unchecked")
-			var t = (Class<? extends Document>) type;
-			@SuppressWarnings({ "unchecked", "rawtypes" })
-			var c = (Crud<E>) new DocumentCrud(t, this);
+			var t = (Class<? extends Document<?>>) type;
+			@SuppressWarnings({ "rawtypes", "unchecked" })
+			var c = (Crud<?, E>) new DocumentCrud(t, this);
 			c.observers().add(DOCUMENT_OBSERVER);
 			return c;
 		}
@@ -129,61 +133,73 @@ public class CmsPersistence extends Persistence {
 				}, true);
 	}
 
-	protected ByteConverter<Document.Reference<?>> documentReferenceConverter;
+//	protected ByteConverter<Document.Reference<ID, ?>> documentReferenceConverter;
 
-	public ByteConverter<Document.Reference<?>> documentReferenceConverter() {
-		if (documentReferenceConverter == null)
-			documentReferenceConverter = new ByteConverter<>() {
+	public <ID extends Comparable<ID>> ByteConverter<Document.Reference<ID, ?>> documentReferenceConverter(
+			ByteConverter<ID> idByteConverter) {
+//		if (documentReferenceConverter == null)
+//			documentReferenceConverter = 
+		return new ByteConverter<>() {
 
-				@Override
-				public byte[] serialize(Document.Reference<?> element) {
-					var s = element.type().getSimpleName();
-					var l = element.id();
-					var bb = s.getBytes();
-					var b = ByteBuffer.allocate(Integer.BYTES + bb.length + Long.BYTES);
-					b.putInt(bb.length);
-					b.put(bb);
-					b.putLong(l);
-					return b.array();
+			@Override
+			public byte[] serialize(Document.Reference<ID, ?> element) {
+				var bb1 = element.type().getSimpleName().getBytes();
+				var bb2 = idByteConverter.serialize(element.id());
+				var b = ByteBuffer.allocate(Integer.BYTES + bb1.length + bb2.length);
+				b.putInt(bb1.length);
+				b.put(bb1);
+				b.put(bb2);
+				return b.array();
+			}
+
+			@Override
+			public int getLength(ByteBuffer buffer) {
+				var p = buffer.position();
+				var i = buffer.getInt(p);
+				var l1 = Integer.BYTES + i;
+				buffer.position(p + l1);
+				try {
+					var l2 = idByteConverter.getLength(buffer);
+					return l1 + l2;
+				} finally {
+					buffer.position(p);
 				}
+			}
 
-				@Override
-				public int getLength(ByteBuffer buffer) {
-					var i = buffer.getInt(buffer.position());
-					return Integer.BYTES + i + Long.BYTES;
-				}
+			@Override
+			public Document.Reference<ID, ?> deserialize(ByteBuffer buffer) {
+				var i = buffer.getInt();
+				var bb = new byte[i];
+				buffer.get(bb);
+				var l = idByteConverter.deserialize(buffer);
+				var s = new String(bb);
+				var t = typeResolver.apply(new MapAndType(Map.of("$type", s), null)).type();
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				var r = (Document.Reference<ID, ?>) new Document.Reference(t, l);
+				return r;
+			}
 
-				@Override
-				public Document.Reference<?> deserialize(ByteBuffer buffer) {
-					var i = buffer.getInt();
-					var bb = new byte[i];
+			@Override
+			public int compare(ByteBuffer buffer, Document.Reference<ID, ?> element) {
+				var p = buffer.position();
+				try {
+					var bb = new byte[buffer.getInt()];
 					buffer.get(bb);
-					var l = buffer.getLong();
-					var s = new String(bb);
-					var t = typeResolver.apply(new MapAndType(Map.of("$type", s), null)).type();
-					@SuppressWarnings({ "rawtypes", "unchecked" })
-					var r = new Document.Reference(t, l);
-					return r;
-				}
-
-				@Override
-				public int compare(ByteBuffer buffer, Document.Reference<?> element) {
-					var p = buffer.position();
-					var i = buffer.getInt(p);
-					var bb = new byte[i];
-					buffer.get(p + Integer.BYTES, bb);
 					var c = new String(bb).compareTo(element.type().getSimpleName());
-					return c != 0 ? c : Long.compare(buffer.getLong(p + Integer.BYTES + i), element.id());
+					return c != 0 ? c : idByteConverter.compare(buffer, element.id());
+				} finally {
+					buffer.position(p);
 				}
-			};
-		return documentReferenceConverter;
+			}
+		};
+//		return documentReferenceConverter;
 	}
 
 	@Override
 	protected <K> ByteConverter<K> keyConverter(Type type) {
 		if (type == Document.Reference.class) {
 			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<K>) documentReferenceConverter();
+			var h = (ByteConverter<K>) documentReferenceConverter(ByteConverter.LONG);
 			return h;
 		}
 		return super.keyConverter(type);

@@ -71,7 +71,7 @@ public class ApplicationPersistenceBuilder {
 			}
 			var m = new BTreeMemory(bto, ch, BlockReference.read(ch, 0), Math.max(3 * BlockReference.BYTES, ch.size()));
 			var d = new Database(bto, ch, m, BlockReference.BYTES, 2 * BlockReference.BYTES,
-					x -> new Store<String>(new BTree<>(bto, ch, m, IdAndElement.BYTE_CONVERTER, x.bTree()),
+					x -> new Store<>(new BTree<>(bto, ch, m, IdAndElement.byteConverter(ByteConverter.LONG), x.bTree()),
 							ByteConverter.STRING, y -> {
 								var v = y.get("nextId");
 								var id = v != null ? (long) v : 1L;

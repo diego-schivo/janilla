@@ -26,16 +26,16 @@ package com.janilla.cms;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.janilla.database.Store;
 import com.janilla.persistence.Crud;
 import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
 
-public class DocumentCrud<E extends Document> extends Crud<E> {
+public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> extends Crud<ID, E> {
 
 	protected final String versionStore;
 
@@ -51,28 +51,33 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 			return super.create(entity);
 		return persistence.database().perform((ss, _) -> {
 			var e = super.create(entity);
-			var vv = new ArrayList<Version<E>>(1);
-			ss.perform(versionStore, s -> s.create(x -> {
-				var v = new Version<>(x, e);
-				vv.add(v);
-				return format(v);
-			}));
+			var vv = new ArrayList<Version<ID, E>>(1);
+			ss.perform(versionStore, s0 -> {
+				@SuppressWarnings("unchecked")
+				var s = (Store<ID, String>) s0;
+				s.create(x -> {
+					var v = new Version<>(x, e);
+					vv.add(v);
+					return format(v);
+				});
+				return null;
+			});
 			updateVersionIndexes(null, vv, e.id());
 			return e;
 		}, true);
 	}
 
-	public E read(long id, boolean drafts) {
+	public E read(ID id, boolean drafts) {
 		if (!type.isAnnotationPresent(Versions.class) || !drafts)
 			return read(id);
-		if (id <= 0)
-			return null;
+//		if (id <= 0)
+//			return null;
 		return persistence.database().perform((_, ii) -> {
 			var e = read(id);
 //			System.out.println("e=" + e);
 			if (e != null) {
-				var l = (long) ii.perform(versionStore + ".document",
-						i -> ((Object[]) i.list(id).findFirst().get())[1]);
+				@SuppressWarnings("unchecked")
+				var l = (ID) ii.perform(versionStore + ".document", i -> ((Object[]) i.list(id).findFirst().get())[1]);
 				var v = readVersion(l);
 //				System.out.println("v=" + v);
 				if (v.document().updatedAt().isAfter(e.updatedAt()))
@@ -82,16 +87,15 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 		}, false);
 	}
 
-	public List<E> read(long[] ids, boolean drafts) {
+	public List<E> read(List<ID> ids, boolean drafts) {
 		if (!type.isAnnotationPresent(Versions.class) || !drafts)
 			return read(ids);
-		if (ids == null || ids.length == 0)
+		if (ids == null || ids.isEmpty())
 			return List.of();
-		return persistence.database().perform((_, _) -> Arrays.stream(ids).mapToObj(x -> read(x, true)).toList(),
-				false);
+		return persistence.database().perform((_, _) -> ids.stream().map(x -> read(x, true)).toList(), false);
 	}
 
-	public E update(long id, E entity, Set<String> include, boolean newVersion) {
+	public E update(ID id, E entity, Set<String> include, boolean newVersion) {
 		var exclude = Set.of("id", "createdAt", "updatedAt");
 		if (!type.isAnnotationPresent(Versions.class))
 			return super.update(id, x -> Reflection.copy(entity, x,
@@ -124,24 +128,35 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 			default:
 				throw new RuntimeException();
 			}
-			var vv1 = new ArrayList<Version<E>>(1);
-			var vv2 = new ArrayList<Version<E>>(1);
+			var vv1 = new ArrayList<Version<ID, E>>(1);
+			var vv2 = new ArrayList<Version<ID, E>>(1);
 			if (a.nv)
-				ss.perform(versionStore, s -> s.create(x -> {
-					var v = new Version<>(x, e2);
-					vv2.add(v);
-					return format(v);
-				}));
-			else {
-				var l = (long) ii.perform(versionStore + ".document", i -> (Object[]) i.list(id).findFirst().get())[1];
-				ss.perform(versionStore, s -> s.update(l, x -> {
+				ss.perform(versionStore, s0 -> {
 					@SuppressWarnings("unchecked")
-					var v1 = (Version<E>) parse((String) x, Version.class);
-					vv1.add(v1);
-					var v2 = new Version<>(v1.id(), e2);
-					vv2.add(v2);
-					return format(v2);
-				}));
+					var s = (Store<ID, String>) s0;
+					s.create(x -> {
+						var v = new Version<>(x, e2);
+						vv2.add(v);
+						return format(v);
+					});
+					return null;
+				});
+			else {
+				@SuppressWarnings("unchecked")
+				var l = (ID) ii.perform(versionStore + ".document", i -> (Object[]) i.list(id).findFirst().get())[1];
+				ss.perform(versionStore, s0 -> {
+					@SuppressWarnings("unchecked")
+					var s = (Store<ID, String>) s0;
+					s.update(l, x -> {
+						@SuppressWarnings("unchecked")
+						var v1 = (Version<ID, E>) parse((String) x, Version.class);
+						vv1.add(v1);
+						var v2 = new Version<>(v1.id(), e2);
+						vv2.add(v2);
+						return format(v2);
+					});
+					return null;
+				});
 			}
 			updateVersionIndexes(vv1, vv2, id);
 			return e2;
@@ -149,64 +164,80 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 	}
 
 	@Override
-	public E delete(long id) {
+	public E delete(ID id) {
 		if (!type.isAnnotationPresent(Versions.class))
 			return super.delete(id);
 		return persistence.database().perform((ss, ii) -> {
 			var e = super.delete(id);
-			var ll = ii.perform(versionStore + ".document",
-					i -> i.list(id).mapToLong(x -> (long) ((Object[]) x)[1]).toArray());
-			var vv = ss.perform(versionStore, s -> Arrays.stream(ll).mapToObj(x -> {
-				var o = s.delete(x);
+			var ll = ii.perform(versionStore + ".document", i -> i.list(id).map(x -> {
 				@SuppressWarnings("unchecked")
-				var v = (Version<E>) parse((String) o, Version.class);
-				return v;
-			})).toList();
+				var y = (ID) ((Object[]) x)[1];
+				return y;
+			}).toList());
+			var vv = ss.perform(versionStore, s0 -> {
+				@SuppressWarnings("unchecked")
+				var s = (Store<ID, String>) s0;
+				return ll.stream().map(x -> {
+					var o = s.delete(x);
+					@SuppressWarnings("unchecked")
+					var v = (Version<ID, E>) parse((String) o, Version.class);
+					return v;
+				});
+			}).toList();
 			updateVersionIndexes(vv, null, id);
 			return e;
 		}, true);
 	}
 
-	public List<E> patch(long[] ids, E entity, Set<String> include) {
+	public List<E> patch(List<ID> ids, E entity, Set<String> include) {
 //		if (!type.isAnnotationPresent(Versions.class))
 //			throw new UnsupportedOperationException();
-		if (ids == null || ids.length == 0)
+		if (ids == null || ids.isEmpty())
 			return List.of();
-		return persistence.database()
-				.perform((_, _) -> Arrays.stream(ids)
-						.mapToObj(x -> update(x, entity, include, type.isAnnotationPresent(Versions.class))).toList(),
-						true);
+		return persistence.database().perform((_, _) -> ids.stream()
+				.map(x -> update(x, entity, include, type.isAnnotationPresent(Versions.class))).toList(), true);
 	}
 
-	public List<Version<E>> readVersions(long id) {
+	public List<Version<ID, E>> readVersions(ID id) {
 		return persistence.database().perform((ss, ii) -> {
-			var ll = ii.perform(versionStore + ".document",
-					i -> i.list(id).mapToLong(x -> (long) ((Object[]) x)[1]).toArray());
-			var vv = ss.perform(versionStore, s -> Arrays.stream(ll).mapToObj(x -> {
-				var o = s.read(x);
+			var ll = ii.perform(versionStore + ".document", i -> i.list(id).map(x -> {
 				@SuppressWarnings("unchecked")
-				var v = (Version<E>) parse((String) o, Version.class);
-				return v;
-			})).toList();
+				ID y = (ID) ((Object[]) x)[1];
+				return y;
+			}).toList());
+			var vv = ss.perform(versionStore, s0 -> {
+				@SuppressWarnings("unchecked")
+				var s = (Store<ID, String>) s0;
+				return ll.stream().map(x -> {
+					var o = s.read(x);
+					@SuppressWarnings("unchecked")
+					var v = (Version<ID, E>) parse((String) o, Version.class);
+					return v;
+				});
+			}).toList();
 			return vv;
 		}, false);
 	}
 
-	public Version<E> readVersion(long versionId) {
-		return persistence.database().perform((ss, _) -> ss.perform(versionStore, s -> {
+	public Version<ID, E> readVersion(ID versionId) {
+		return persistence.database().perform((ss, _) -> ss.perform(versionStore, s0 -> {
+			@SuppressWarnings("unchecked")
+			var s = (Store<ID, String>) s0;
 			var o = s.read(versionId);
 			@SuppressWarnings("unchecked")
-			var v = (Version<E>) parse((String) o, Version.class);
+			var v = (Version<ID, E>) parse((String) o, Version.class);
 			return v;
 		}), false);
 	}
 
-	public E restoreVersion(long versionId, Document.Status status) {
+	public E restoreVersion(ID versionId, Document.Status status) {
 		return persistence.database().perform((ss, ii) -> {
-			var v1 = ss.perform(versionStore, s -> {
+			var v1 = ss.perform(versionStore, s0 -> {
+				@SuppressWarnings("unchecked")
+				var s = (Store<ID, String>) s0;
 				var o = s.read(versionId);
 				@SuppressWarnings("unchecked")
-				var v = (Version<E>) parse((String) o, Version.class);
+				var v = (Version<ID, E>) parse((String) o, Version.class);
 				return v;
 			});
 			var e = super.update(v1.document().id(), x -> {
@@ -215,10 +246,15 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 					x = Reflection.copy(Map.of("documentStatus", status), x);
 				return x;
 			});
-			var l = ss.perform(versionStore, s -> s.create(x -> {
-				var v2 = new Version<>(x, e);
-				return format(v2);
-			}));
+			var l = ss.perform(versionStore, s0 -> {
+				@SuppressWarnings("unchecked")
+				var s = (Store<ID, String>) s0;
+				s.create(x -> {
+					var v2 = new Version<>(x, e);
+					return format(v2);
+				});
+				return null;
+			});
 			ii.perform(versionStore + ".document", i -> {
 				i.add(e.id(), new Object[][] { { e.updatedAt(), l } });
 				return null;
@@ -227,7 +263,7 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 		}, true);
 	}
 
-	protected void updateVersionIndexes(Iterable<Version<E>> vv1, Iterable<Version<E>> vv2, long id) {
+	protected void updateVersionIndexes(Iterable<Version<ID, E>> vv1, Iterable<Version<ID, E>> vv2, ID id) {
 		class A {
 
 			E e1;
@@ -252,4 +288,5 @@ public class DocumentCrud<E extends Document> extends Crud<E> {
 		}), true);
 		updateIndexes(a.e1, a.e2, id, x -> getIndexName(x) + "Draft");
 	}
+
 }

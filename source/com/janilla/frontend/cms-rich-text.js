@@ -30,8 +30,8 @@ export default class CmsRichText extends WebComponent {
 		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	static get templateName() {
-		return "cms-rich-text";
+	static get templateNames() {
+		return ["cms-rich-text"];
 	}
 
 	constructor() {
