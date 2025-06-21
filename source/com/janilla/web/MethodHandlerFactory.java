@@ -31,7 +31,9 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -269,7 +271,10 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 				if (b.isEmpty())
 					e = f;
 			}
-			return e != null ? new Invocation(i.target, e.getKey(), e.getValue(), x.getValue()) : null;
+			return e != null
+					? new Invocation(i.target, e.getKey(), e.getValue(),
+							getParameterTypes(e.getKey(), i.target.getClass()), x.getValue())
+					: null;
 		}).filter(Objects::nonNull);
 		if (invocationComparator != null)
 			jj = jj.sorted(invocationComparator);
@@ -403,7 +408,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		var m = invocation.method;
 		var gg = invocation.regexGroups;
 		var pp = m.getParameters();
-		var ptt = m.getParameterTypes();
+		var ptt = invocation.parameterTypes();
 		var paa = m.getParameterAnnotations();
 		var bb = Arrays.stream(paa)
 				.map(x -> Arrays.stream(x).filter(y -> y.annotationType() == Bind.class).findFirst().orElse(null))
@@ -549,9 +554,37 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			h.handle(exchange);
 	}
 
+	protected static Class<?>[] getParameterTypes(Method method, Class<?> class1) {
+		if (class1.getGenericSuperclass() instanceof ParameterizedType pt) {
+			var pp = method.getDeclaringClass().getTypeParameters();
+			var aa = pt.getActualTypeArguments();
+			var m = IntStream.range(0, pp.length).mapToObj(i -> Map.entry(pp[i].getName(), aa[i]))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+//		System.out.println("m=" + m);
+			var tt = Arrays.stream(method.getGenericParameterTypes())
+					.map(x -> x instanceof TypeVariable v ? m.get(v.getName()) : x).toArray(Class[]::new);
+//		System.out.println(Arrays.asList(tt));
+			return tt;
+		}
+		return method.getParameterTypes();
+	}
+
 	public record Invocable(Object target, Map<Method, MethodHandle> methodHandles) {
 	}
 
-	public record Invocation(Object target, Method method, MethodHandle methodHandle, String... regexGroups) {
+	public record Invocation(Object target, Method method, MethodHandle methodHandle, Class<?>[] parameterTypes,
+			String... regexGroups) {
+
+//		public Class<?>[] getParameterTypes() {
+//			var pp = method.getDeclaringClass().getTypeParameters();
+//			var aa = ((ParameterizedType) target.getClass().getGenericSuperclass()).getActualTypeArguments();
+//			var m = IntStream.range(0, pp.length).mapToObj(i -> Map.entry(pp[i].getName(), aa[i]))
+//					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+//			System.out.println("m=" + m);
+//			var tt = Arrays.stream(method.getGenericParameterTypes())
+//					.map(x -> x instanceof TypeVariable v ? m.get(v.getName()) : x).toArray(Class[]::new);
+//			System.out.println(Arrays.asList(tt));
+//			return tt;
+//		}
 	}
 }

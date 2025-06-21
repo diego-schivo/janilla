@@ -64,7 +64,10 @@ public class Factory {
 					c = x;
 					break;
 				}
-			var c0 = c.getConstructors()[0];
+			var cc = c.getConstructors();
+			if (cc.length != 1)
+				throw new RuntimeException(c + " has " + cc.length + " constructors");
+			var c0 = cc[0];
 //			System.out.println("Factory.create, c0 = " + c0);
 			if (c.getEnclosingClass() == source.getClass())
 				return () -> {

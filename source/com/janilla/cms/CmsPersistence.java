@@ -25,6 +25,7 @@
 package com.janilla.cms;
 
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -35,7 +36,6 @@ import com.janilla.database.BTree;
 import com.janilla.database.Database;
 import com.janilla.database.Index;
 import com.janilla.database.KeyAndData;
-import com.janilla.database.NameAndData;
 import com.janilla.io.ByteConverter;
 import com.janilla.io.ByteConverter.SortOrder;
 import com.janilla.io.ByteConverter.TypeAndOrder;
@@ -82,18 +82,18 @@ public class CmsPersistence extends Persistence {
 	}
 
 	@Override
-	public <K, V> Index<K, V> newIndex(NameAndData nameAndData) {
-		if (nameAndData.name().startsWith(Version.class.getSimpleName() + "<")
-				&& nameAndData.name().endsWith(">.document")) {
+	public <K, V> Index<K, V> newIndex(KeyAndData<String> keyAndData) {
+		if (keyAndData.key().startsWith(Version.class.getSimpleName() + "<")
+				&& keyAndData.key().endsWith(">.document")) {
 			@SuppressWarnings("unchecked")
 			var i = (Index<K, V>) new Index<Long, Object[]>(new BTree<>(database.bTreeOrder(), database.channel(),
-					database.memory(), KeyAndData.getByteConverter(ByteConverter.LONG), nameAndData.bTree()),
+					database.memory(), KeyAndData.getByteConverter(ByteConverter.LONG), keyAndData.bTree()),
 //					ByteConverter.of(Version.class, "-updatedAt", "id"));
 					ByteConverter.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
 							new TypeAndOrder(Long.class, SortOrder.ASCENDING)));
 			return i;
 		}
-		return super.newIndex(nameAndData);
+		return super.newIndex(keyAndData);
 	}
 
 	@Override
@@ -113,7 +113,7 @@ public class CmsPersistence extends Persistence {
 			@SuppressWarnings("unchecked")
 			var t = (Class<? extends Document<?>>) type;
 			@SuppressWarnings({ "rawtypes", "unchecked" })
-			var c = (Crud<?, E>) new DocumentCrud(t, this);
+			var c = (Crud<?, E>) new DocumentCrud(t, nextId(t), this);
 			c.observers().add(DOCUMENT_OBSERVER);
 			return c;
 		}
@@ -197,7 +197,7 @@ public class CmsPersistence extends Persistence {
 
 	@Override
 	protected <K> ByteConverter<K> keyConverter(Type type) {
-		if (type == Document.Reference.class) {
+		if (type instanceof ParameterizedType x && x.getRawType() == Document.Reference.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<K>) documentReferenceConverter(ByteConverter.LONG);
 			return h;

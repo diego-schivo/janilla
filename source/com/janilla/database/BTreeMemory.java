@@ -29,6 +29,8 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.UnaryOperator;
 
+import com.janilla.io.ByteConverter;
+
 public class BTreeMemory implements Memory {
 
 //	public static void main(String[] args) throws Exception {
@@ -60,7 +62,7 @@ public class BTreeMemory implements Memory {
 //				}).toArray();
 //			}
 //
-////			{
+	////			{
 ////				var s = "[Allocate[size=58], Allocate[size=46], Free[index=1], Allocate[size=20], Free[index=0], Free[index=0], Allocate[size=26]]";
 ////				p = Arrays.stream(s.substring(1, s.length() - 1).split(", ")).map(x -> {
 ////					var i = Integer.parseInt(x.substring(x.indexOf('=') + 1, x.length() - 1));
@@ -177,7 +179,7 @@ public class BTreeMemory implements Memory {
 		protected Queue<BlockReference> queue = new ArrayDeque<>();
 
 		public FreeBTree(int order, SeekableByteChannel channel, Memory memory, BlockReference root) {
-			super(order, channel, memory, BlockReference.BYTE_CONVERTER, root);
+			super(order, channel, memory, ByteConverter.of(BlockReference.class), root);
 		}
 
 		@Override

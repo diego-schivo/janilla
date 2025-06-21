@@ -29,5 +29,4 @@ public interface Memory {
 	BlockReference allocate(int size);
 
 	void free(BlockReference reference);
-
 }

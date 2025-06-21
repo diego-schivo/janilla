@@ -32,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -50,16 +49,11 @@ public class Store<ID extends Comparable<ID>, E> {
 			Supplier<Store<Long, String>> ss = () -> {
 				Store<Long, String> s;
 				try {
-					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch),
 							Math.max(2 * BlockReference.BYTES, ch.size()));
-					var t = new BTree<>(o, ch, m, IdAndElement.byteConverter(ByteConverter.LONG),
-							BlockReference.read(ch, BlockReference.BYTES));
-					s = new Store<>(t, ByteConverter.STRING, x -> {
-						var v = x.get("nextId");
-						var id = v != null ? (long) v : 1L;
-						x.put("nextId", id + 1);
-						return id;
-					});
+					var t = new BTree<>(o, ch, m, IdAndReference.byteConverter(ByteConverter.LONG),
+							BlockReference.read(ch));
+					s = new Store<>(t, ByteConverter.STRING);
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
@@ -75,7 +69,10 @@ public class Store<ID extends Comparable<ID>, E> {
 				var s = ss.get();
 				s.setAttributes(new LinkedHashMap<String, Object>());
 
-				a.id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
+				var v = s.attributes.get("nextId");
+				a.id = v != null ? (long) v : 1L;
+				s.attributes.put("nextId", a.id + 1);
+				s.create(a.id, Json.format(Map.of("id", a.id, "title", "Foo")));
 				s.update(a.id, x -> {
 					@SuppressWarnings("unchecked")
 					var m = (Map<String, Object>) Json.parse(x);
@@ -110,19 +107,15 @@ public class Store<ID extends Comparable<ID>, E> {
 		}
 	}
 
-	protected final BTree<IdAndElement<ID>> bTree;
+	protected final BTree<IdAndReference<ID>> bTree;
 
 	protected final ByteConverter<E> elementConverter;
 
-	protected final Function<Map<String, Object>, ID> newId;
-
 	protected Map<String, Object> attributes;
 
-	public Store(BTree<IdAndElement<ID>> bTree, ByteConverter<E> elementConverter,
-			Function<Map<String, Object>, ID> newId) {
+	public Store(BTree<IdAndReference<ID>> bTree, ByteConverter<E> elementConverter) {
 		this.bTree = bTree;
 		this.elementConverter = elementConverter;
-		this.newId = newId;
 	}
 
 	public Map<String, Object> getAttributes() {
@@ -133,23 +126,23 @@ public class Store<ID extends Comparable<ID>, E> {
 		this.attributes = attributes;
 	}
 
-	public ID create(Function<ID, E> element) {
+	public void create(ID id, E element) {
 		try {
-			var bt = bTree;
-			var id = newId.apply(attributes);
-			var e = element.apply(id);
-			var bb = elementConverter.serialize(e);
-			var r = bt.memory().allocate(bb.length);
-			bt.channel().position(r.position());
+			var bb = elementConverter.serialize(element);
+
+			var r = bTree.memory().allocate(bb.length);
 			var b = ByteBuffer.allocate(r.capacity());
 			b.put(0, bb);
-			bt.channel().write(b);
+
+			var ch = bTree.channel();
+			ch.position(r.position());
+			ch.write(b);
 			if (b.remaining() != 0)
 				throw new IOException();
-			r = new BlockReference(-1, r.position(), r.capacity());
-			bt.add(new IdAndElement<>(id, r));
+
+			bTree.add(new IdAndReference<>(id, new BlockReference(-1, r.position(), r.capacity())));
+
 			attributes.compute("size", (_, v) -> v == null ? 1L : (Long) v + 1);
-			return id;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
@@ -157,10 +150,10 @@ public class Store<ID extends Comparable<ID>, E> {
 
 	public E read(ID id) {
 		var t = bTree;
-		var i = t.get(new IdAndElement<>(id, new BlockReference(-1, -1, 0)));
+		var i = t.get(new IdAndReference<>(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
 			return null;
-		return readElement(i.element());
+		return readElement(i.reference());
 	}
 
 	public E update(ID id, UnaryOperator<E> operator) {
@@ -170,22 +163,22 @@ public class Store<ID extends Comparable<ID>, E> {
 		}
 		var t = bTree;
 		var a = new A();
-		t.get(new IdAndElement<>(id, new BlockReference(-1, -1, 0)), j -> {
+		t.get(new IdAndReference<>(id, new BlockReference(-1, -1, 0)), j -> {
 			try {
 				if (j == null)
 					return null;
-				var e = readElement(j.element());
+				var e = readElement(j.reference());
 				a.e = operator.apply(e);
 				var c = elementConverter.serialize(a.e);
-				var r = c.length > j.element().capacity() ? t.memory().allocate(c.length) : null;
-				var p = r != null ? r.position() : j.element().position();
+				var r = c.length > j.reference().capacity() ? t.memory().allocate(c.length) : null;
+				var p = r != null ? r.position() : j.reference().position();
 				t.channel().position(p);
-				var d = ByteBuffer.allocate(r != null ? r.capacity() : j.element().capacity());
+				var d = ByteBuffer.allocate(r != null ? r.capacity() : j.reference().capacity());
 				d.put(0, c);
 				t.channel().write(d);
 				if (d.remaining() != 0)
 					throw new IOException();
-				return r != null ? new IdAndElement<>(id, new BlockReference(-1, r.position(), r.capacity())) : null;
+				return r != null ? new IdAndReference<>(id, new BlockReference(-1, r.position(), r.capacity())) : null;
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -195,20 +188,20 @@ public class Store<ID extends Comparable<ID>, E> {
 
 	public E delete(ID id) {
 		var t = bTree;
-		var i = t.remove(new IdAndElement<>(id, new BlockReference(-1, -1, 0)));
+		var i = t.remove(new IdAndReference<>(id, new BlockReference(-1, -1, 0)));
 		if (i == null)
 			return null;
-		var e = readElement(i.element());
+		var e = readElement(i.reference());
 		attributes.compute("size", (_, v) -> (Long) v - 1);
 		return e;
 	}
 
 	public Stream<ID> ids() {
-		return bTree.stream().map(IdAndElement::id);
+		return bTree.stream().map(IdAndReference::id);
 	}
 
 	public Stream<E> elements() {
-		return bTree.stream().map(IdAndElement::element).map(this::readElement);
+		return bTree.stream().map(IdAndReference::reference).map(this::readElement);
 	}
 
 	public long count() {

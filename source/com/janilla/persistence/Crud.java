@@ -27,6 +27,7 @@ package com.janilla.persistence;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -51,14 +53,17 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected final Class<E> type;
 
+	protected final Function<Map<String, Object>, ID> nextId;
+
 	protected final Persistence persistence;
 
 	protected final Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new HashMap<>();
 
 	protected final List<Observer> observers = new ArrayList<>();
 
-	public Crud(Class<E> type, Persistence persistence) {
+	public Crud(Class<E> type, Function<Map<String, Object>, ID> nextId, Persistence persistence) {
 		this.type = type;
+		this.nextId = nextId;
 		this.persistence = persistence;
 	}
 
@@ -78,14 +83,17 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			var l = ss.perform(type.getSimpleName(), s0 -> {
 				@SuppressWarnings("unchecked")
 				var s = (com.janilla.database.Store<ID, String>) s0;
-				return s.create(x -> {
-					a.e = Reflection.copy(Map.of("id", x), entity);
-					for (var y : observers)
-						a.e = y.beforeCreate(a.e);
-					var t = format(a.e);
-//				System.out.println("Crud.create t=" + t);
-					return t;
-				});
+				a.e = entity;
+				if (nextId != null) {
+					var id = nextId.apply(s.getAttributes());
+					a.e = Reflection.copy(Collections.singletonMap("id", id), a.e);
+				}
+				for (var y : observers)
+					a.e = y.beforeCreate(a.e);
+				var t = format(a.e);
+//				System.out.println("Crud.create id=" + a.e.id() + ", t=" + t);
+				s.create(a.e.id(), t);
+				return a.e.id();
 			});
 			updateIndexes(null, a.e, l);
 			for (var x : observers)
@@ -95,8 +103,8 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	public E read(ID id) {
-//		if (id <= 0)
-//			return null;
+		if (id == null)
+			return null;
 		var o = persistence.database.perform((ss, _) -> ss.perform(type.getSimpleName(), s0 -> {
 			@SuppressWarnings("unchecked")
 			var s = (com.janilla.database.Store<ID, String>) s0;
@@ -119,8 +127,8 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	public E update(ID id, UnaryOperator<E> operator) {
-//		if (id <= 0)
-//			return null;
+		if (id == null)
+			return null;
 		return persistence.database.perform((ss, _) -> {
 			class A {
 
@@ -149,8 +157,8 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	public E delete(ID id) {
-//		if (id <= 0)
-//			return null;
+		if (id == null)
+			return null;
 		return persistence.database.perform((ss, _) -> {
 			var o = ss.perform(type.getSimpleName(), s0 -> {
 				@SuppressWarnings("unchecked")
@@ -461,6 +469,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	protected void updateIndexes(E entity1, E entity2, ID id) {
+//		System.out.println("Crud.updateIndexes, entity1=" + entity1 + ", entity2=" + entity2 + ", id=" + id);
 		updateIndexes(entity1, entity2, id, this::getIndexName);
 	}
 
@@ -559,6 +568,15 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			return y;
 		});
 	}
+
+//	protected ID newId(Map<String, Object> attributes) {
+//		var v = attributes.get("nextId");
+//		var l = v != null ? (long) v : 1L;
+//		attributes.put("nextId", l + 1);
+//		@SuppressWarnings("unchecked")
+//		var id = (ID) Long.valueOf(l);
+//		return id;
+//	}
 
 	public record IdPage<ID>(List<ID> ids, long total) {
 

@@ -28,51 +28,19 @@ import java.nio.ByteBuffer;
 
 import com.janilla.io.ByteConverter;
 
-public record IdAndElement<T extends Comparable<T>>(T id, BlockReference element) {
+public record IdAndReference<ID extends Comparable<ID>>(ID id, BlockReference reference) {
 
-//	public static int BYTES = Long.BYTES + BlockReference.BYTES;
-//
-//	public static ByteConverter<IdAndElement> BYTE_CONVERTER = new ByteConverter<>() {
-//
-//		@Override
-//		public byte[] serialize(IdAndElement element) {
-//			var b = ByteBuffer.allocate(BYTES);
-//			b.putLong(element.id());
-//			b.putLong(element.element.position());
-//			b.putInt(element.element.capacity());
-//			return b.array();
-//		}
-//
-//		@Override
-//		public int getLength(ByteBuffer buffer) {
-//			return BYTES;
-//		}
-//
-//		@Override
-//		public IdAndElement deserialize(ByteBuffer buffer) {
-//			var i = buffer.getLong();
-//			var q = buffer.getLong();
-//			var c = buffer.getInt();
-//			return new IdAndElement(i, new BlockReference(-1, q, c));
-//		}
-//
-//		@Override
-//		public int compare(ByteBuffer buffer, IdAndElement element) {
-//			return Long.compare(buffer.getLong(buffer.position()), element.id());
-//		}
-//	};
-
-	public static <T extends Comparable<T>> ByteConverter<IdAndElement<T>> byteConverter(
-			ByteConverter<T> idByteConverter) {
+	public static <ID extends Comparable<ID>> ByteConverter<IdAndReference<ID>> byteConverter(
+			ByteConverter<ID> idByteConverter) {
 		return new ByteConverter<>() {
 
 			@Override
-			public byte[] serialize(IdAndElement<T> element) {
+			public byte[] serialize(IdAndReference<ID> element) {
 				var bb = idByteConverter.serialize(element.id);
 				var b = ByteBuffer.allocate(bb.length + BlockReference.BYTES);
 				b.put(bb);
-				b.putLong(element.element.position());
-				b.putInt(element.element.capacity());
+				b.putLong(element.reference.position());
+				b.putInt(element.reference.capacity());
 				return b.array();
 			}
 
@@ -82,15 +50,15 @@ public record IdAndElement<T extends Comparable<T>>(T id, BlockReference element
 			}
 
 			@Override
-			public IdAndElement<T> deserialize(ByteBuffer buffer) {
+			public IdAndReference<ID> deserialize(ByteBuffer buffer) {
 				var i = idByteConverter.deserialize(buffer);
 				var q = buffer.getLong();
 				var c = buffer.getInt();
-				return new IdAndElement<>(i, new BlockReference(-1, q, c));
+				return new IdAndReference<>(i, new BlockReference(-1, q, c));
 			}
 
 			@Override
-			public int compare(ByteBuffer buffer, IdAndElement<T> element) {
+			public int compare(ByteBuffer buffer, IdAndReference<ID> element) {
 				var p = buffer.position();
 				try {
 					var id = idByteConverter.deserialize(buffer);

@@ -61,10 +61,9 @@ public class BTree<E> {
 				FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
 			Supplier<BTree<Integer>> bts = () -> {
 				try {
-					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch),
 							Math.max(2 * BlockReference.BYTES, ch.size()));
-					return new BTree<Integer>(o, ch, m, ByteConverter.INTEGER,
-							BlockReference.read(ch, BlockReference.BYTES));
+					return new BTree<Integer>(o, ch, m, ByteConverter.INTEGER, BlockReference.read(ch));
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}

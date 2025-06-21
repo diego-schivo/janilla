@@ -35,6 +35,8 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -107,5 +109,14 @@ public interface Net {
 
 	static String urlEncode(String string) {
 		return string != null ? URLEncoder.encode(string, StandardCharsets.UTF_8) : null;
+	}
+
+	@SafeVarargs
+	static String uriString(String pathname, Map.Entry<String, String>... search) {
+		var s2 = Arrays.stream(search).filter(Objects::nonNull)
+				.map(x -> x.getValue() != null ? urlEncode(x.getKey()) + "=" + urlEncode(x.getValue())
+						: urlEncode(x.getKey()))
+				.collect(Collectors.joining("&"));
+		return !s2.isEmpty() ? pathname + "?" + s2 : pathname;
 	}
 }

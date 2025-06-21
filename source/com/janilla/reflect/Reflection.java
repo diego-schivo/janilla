@@ -176,27 +176,31 @@ public class Reflection {
 				: null;
 		return mm.values().stream()
 				.map(x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of((Method) x[0], (Method) x[1]))
-				.map(p -> {
+				.map(x -> {
 					Field f;
 					try {
-						f = c.getDeclaredField(p.name());
+						f = c.getDeclaredField(x.name());
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}
 					var o = f != null ? f.getAnnotation(Order.class) : null;
-					return new AbstractMap.SimpleEntry<>(p,
-							o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(p.name()) : null);
+					return new AbstractMap.SimpleEntry<>(x,
+							o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(x.name()) : null);
 				}).sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
-				.map(Map.Entry::getKey).flatMap(p -> {
+				.map(Map.Entry::getKey).flatMap(x -> {
 					Field f;
 					try {
-						f = c.getDeclaredField(p.name());
+						f = c.getDeclaredField(x.name());
 					} catch (NoSuchFieldException e) {
 						f = null;
 					}
-					return f != null && f.isAnnotationPresent(Flatten.class)
-							? properties(f.getType()).filter(q -> !mm.containsKey(q.name())).map(q -> Property.of(p, q))
-							: Stream.of(p);
+					if (f != null && f.isAnnotationPresent(Flatten.class)) {
+						var m = properties.get(f.getType());
+						if (m == null)
+							m = compute(f.getType());
+						return m.values().stream().filter(y -> !mm.containsKey(y.name())).map(y -> Property.of(x, y));
+					}
+					return Stream.of(x);
 				}).collect(Collectors.toMap(Property::name, p -> p, (v, _) -> v, LinkedHashMap::new));
 	}
 }

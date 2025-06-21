@@ -55,11 +55,11 @@ public class Index<K, V> {
 				StandardOpenOption.WRITE)) {
 			Supplier<Index<String, Object[]>> is = () -> {
 				try {
-					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch),
 							Math.max(2 * BlockReference.BYTES, ch.size()));
-					return new Index<>(
-							new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING),
-									BlockReference.read(ch, BlockReference.BYTES)),
+					var t = new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING),
+							BlockReference.read(ch));
+					return new Index<>(t,
 							ByteConverter.of(
 									new ByteConverter.TypeAndOrder(Instant.class, ByteConverter.SortOrder.DESCENDING),
 									new ByteConverter.TypeAndOrder(Long.class, ByteConverter.SortOrder.DESCENDING)));

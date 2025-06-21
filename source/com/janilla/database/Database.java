@@ -56,17 +56,12 @@ public class Database {
 				FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
 			Supplier<Database> ds = () -> {
 				try {
-					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch),
 							Math.max(3 * BlockReference.BYTES, ch.size()));
 					return new Database(o, ch, m, BlockReference.BYTES, 2 * BlockReference.BYTES,
 							x -> new Store<>(
-									new BTree<>(o, ch, m, IdAndElement.byteConverter(ByteConverter.LONG), x.bTree()),
-									ByteConverter.STRING, y -> {
-										var v = y.get("nextId");
-										var id = v != null ? (long) v : 1L;
-										y.put("nextId", id + 1);
-										return id;
-									}),
+									new BTree<>(o, ch, m, IdAndReference.byteConverter(ByteConverter.LONG), x.bTree()),
+									ByteConverter.STRING),
 							x -> new Index<String, Object[]>(
 									new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING), x.bTree()),
 									ByteConverter.of(
@@ -86,7 +81,10 @@ public class Database {
 					ss.perform("Article", s0 -> {
 						@SuppressWarnings("unchecked")
 						var s = (Store<Long, String>) s0;
-						var id = s.create(x -> Json.format(Map.of("id", x, "title", "Foo")));
+						var v = s.attributes.get("nextId");
+						var id = v != null ? (long) v : 1L;
+						s.attributes.put("nextId", id + 1);
+						s.create(id, Json.format(Map.of("id", id, "title", "Foo")));
 						s.update(id, x -> {
 							@SuppressWarnings("unchecked")
 							var m = (Map<String, Object>) Json.parse((String) x);
@@ -145,9 +143,9 @@ public class Database {
 
 	protected final long indexesRoot;
 
-	protected final Function<NameAndData, Store<?, ?>> newStore;
+	protected final Function<KeyAndData<String>, Store<?, ?>> newStore;
 
-	protected final Function<NameAndData, Index<?, ?>> newIndex;
+	protected final Function<KeyAndData<String>, Index<?, ?>> newIndex;
 
 	protected final Stores stores;
 
@@ -158,8 +156,8 @@ public class Database {
 	protected final AtomicBoolean performing = new AtomicBoolean();
 
 	public Database(int bTreeOrder, TransactionalByteChannel channel, BTreeMemory memory, long storesRoot,
-			long indexesRoot, Function<NameAndData, Store<?, ?>> newStore,
-			Function<NameAndData, Index<?, ?>> newIndex) {
+			long indexesRoot, Function<KeyAndData<String>, Store<?, ?>> newStore,
+			Function<KeyAndData<String>, Index<?, ?>> newIndex) {
 		this.bTreeOrder = bTreeOrder;
 		this.channel = channel;
 		this.memory = memory;
@@ -169,10 +167,12 @@ public class Database {
 		this.newIndex = newIndex;
 
 		try {
-			stores = new Stores(new BTree<>(bTreeOrder, channel, memory, NameAndData.BYTE_CONVERTER,
-					BlockReference.read(channel, storesRoot)), newStore);
-			indexes = new Indexes(new BTree<>(bTreeOrder, channel, memory, NameAndData.BYTE_CONVERTER,
-					BlockReference.read(channel, indexesRoot)), newIndex);
+			channel.position(storesRoot);
+			stores = new Stores(new BTree<>(bTreeOrder, channel, memory,
+					KeyAndData.getByteConverter(ByteConverter.STRING), BlockReference.read(channel)), newStore);
+			channel.position(indexesRoot);
+			indexes = new Indexes(new BTree<>(bTreeOrder, channel, memory,
+					KeyAndData.getByteConverter(ByteConverter.STRING), BlockReference.read(channel)), newIndex);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

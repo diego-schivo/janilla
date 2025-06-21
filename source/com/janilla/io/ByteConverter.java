@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.UUID;
 
+import com.janilla.database.BlockReference;
 import com.janilla.reflect.Reflection;
 
 public interface ByteConverter<E> {
@@ -76,6 +77,10 @@ public interface ByteConverter<E> {
 		} else if (type == UUID.class) {
 			@SuppressWarnings("unchecked")
 			var h = (ByteConverter<T>) UUID1;
+			return h;
+		} else if (type == BlockReference.class) {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<T>) BLOCK_REFERENCE;
 			return h;
 		} else
 			throw new IllegalArgumentException("type=" + type);
@@ -458,6 +463,41 @@ public interface ByteConverter<E> {
 			var c = Long.compare(buffer.getLong(buffer.position()), element.getMostSignificantBits());
 			return c != 0 ? c
 					: Long.compare(buffer.getLong(buffer.position() + Long.BYTES), element.getLeastSignificantBits());
+		}
+	};
+
+	ByteConverter<BlockReference> BLOCK_REFERENCE = new ByteConverter<BlockReference>() {
+
+		@Override
+		public byte[] serialize(BlockReference element) {
+			var b = ByteBuffer.allocate(BlockReference.BYTES);
+			b.putLong(element.position());
+			b.putInt(element.capacity());
+			return b.array();
+		}
+
+		@Override
+		public int getLength(ByteBuffer buffer) {
+			return BlockReference.BYTES;
+		}
+
+		@Override
+		public BlockReference deserialize(ByteBuffer buffer) {
+			var p = buffer.getLong();
+			var c = buffer.getInt();
+			return new BlockReference(-1, p, c);
+		}
+
+		@Override
+		public int compare(ByteBuffer buffer, BlockReference element) {
+			var p = buffer.position();
+			var c = buffer.getInt(p + Long.BYTES);
+			var i = Integer.compare(c, element.capacity());
+			if (i == 0 && element.position() >= 0) {
+				var q = buffer.getLong(p);
+				i = Long.compare(q, element.position());
+			}
+			return i;
 		}
 	};
 

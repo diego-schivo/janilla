@@ -40,7 +40,7 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		return object instanceof Renderable r ? x -> {
+		return object instanceof Renderable<?> r ? x -> {
 			render(r.value(), (HttpExchange) x);
 			return true;
 		} : null;

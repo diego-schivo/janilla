@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.janilla.database.Store;
 import com.janilla.persistence.Crud;
@@ -39,8 +40,8 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 
 	protected final String versionStore;
 
-	public DocumentCrud(Class<E> type, Persistence persistence) {
-		super(type, persistence);
+	public DocumentCrud(Class<E> type, Function<Map<String, Object>, ID> nextId, Persistence persistence) {
+		super(type, nextId, persistence);
 		versionStore = Version.class.getSimpleName() + "<" + type.getSimpleName() + ">";
 	}
 
@@ -55,11 +56,10 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			ss.perform(versionStore, s0 -> {
 				@SuppressWarnings("unchecked")
 				var s = (Store<ID, String>) s0;
-				s.create(x -> {
-					var v = new Version<>(x, e);
-					vv.add(v);
-					return format(v);
-				});
+				var id = nextId.apply(s.getAttributes());
+				var v = new Version<>(id, e);
+				vv.add(v);
+				s.create(id, format(v));
 				return null;
 			});
 			updateVersionIndexes(null, vv, e.id());
@@ -70,8 +70,8 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	public E read(ID id, boolean drafts) {
 		if (!type.isAnnotationPresent(Versions.class) || !drafts)
 			return read(id);
-//		if (id <= 0)
-//			return null;
+		if (id == null)
+			return null;
 		return persistence.database().perform((_, ii) -> {
 			var e = read(id);
 //			System.out.println("e=" + e);
@@ -134,11 +134,10 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 				ss.perform(versionStore, s0 -> {
 					@SuppressWarnings("unchecked")
 					var s = (Store<ID, String>) s0;
-					s.create(x -> {
-						var v = new Version<>(x, e2);
-						vv2.add(v);
-						return format(v);
-					});
+					var id2 = nextId.apply(s.getAttributes());
+					var v = new Version<>(id2, e2);
+					vv2.add(v);
+					s.create(id2, format(v));
 					return null;
 				});
 			else {
@@ -249,10 +248,9 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			var l = ss.perform(versionStore, s0 -> {
 				@SuppressWarnings("unchecked")
 				var s = (Store<ID, String>) s0;
-				s.create(x -> {
-					var v2 = new Version<>(x, e);
-					return format(v2);
-				});
+				var id = nextId.apply(s.getAttributes());
+				var v2 = new Version<>(id, e);
+				s.create(id, format(v2));
 				return null;
 			});
 			ii.perform(versionStore + ".document", i -> {

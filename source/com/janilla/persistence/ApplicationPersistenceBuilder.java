@@ -36,7 +36,8 @@ import com.janilla.database.BTree;
 import com.janilla.database.BTreeMemory;
 import com.janilla.database.BlockReference;
 import com.janilla.database.Database;
-import com.janilla.database.IdAndElement;
+import com.janilla.database.IdAndReference;
+import com.janilla.database.KeyAndData;
 import com.janilla.database.Store;
 import com.janilla.io.ByteConverter;
 import com.janilla.io.TransactionalByteChannel;
@@ -69,21 +70,22 @@ public class ApplicationPersistenceBuilder {
 						FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ,
 								StandardOpenOption.WRITE));
 			}
-			var m = new BTreeMemory(bto, ch, BlockReference.read(ch, 0), Math.max(3 * BlockReference.BYTES, ch.size()));
+			var m = new BTreeMemory(bto, ch, BlockReference.read(ch), Math.max(3 * BlockReference.BYTES, ch.size()));
 			var d = new Database(bto, ch, m, BlockReference.BYTES, 2 * BlockReference.BYTES,
-					x -> new Store<>(new BTree<>(bto, ch, m, IdAndElement.byteConverter(ByteConverter.LONG), x.bTree()),
-							ByteConverter.STRING, y -> {
-								var v = y.get("nextId");
-								var id = v != null ? (long) v : 1L;
-								y.put("nextId", id + 1);
-								return id;
-							}),
-					x -> persistence.newIndex(x));
-//			persistence = factory.create(Persistence.class, Map.of("database", d, "types", factory.types()));
+					x -> newStore(bto, ch, m, x), x -> persistence.newIndex(x));
 			persistence = factory.create(Persistence.class, Map.of("database", d));
 			return persistence;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	protected <ID extends Comparable<ID>> Store<ID, String> newStore(int bTreeOrder, TransactionalByteChannel channel,
+			BTreeMemory memory, KeyAndData<String> keyAndData) {
+		@SuppressWarnings("unchecked")
+		var s = (Store<ID, String>) new Store<>(new BTree<>(bTreeOrder, channel, memory,
+				IdAndReference.byteConverter(ByteConverter.LONG), keyAndData.bTree()), ByteConverter.STRING);
+//				});
+		return s;
 	}
 }

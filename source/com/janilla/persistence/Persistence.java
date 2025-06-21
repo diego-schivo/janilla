@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 import com.janilla.database.BTree;
 import com.janilla.database.Database;
 import com.janilla.database.KeyAndData;
-import com.janilla.database.NameAndData;
 import com.janilla.io.ByteConverter;
 import com.janilla.json.MapAndType;
 import com.janilla.reflect.Property;
@@ -57,7 +56,8 @@ public class Persistence {
 
 	protected final Configuration configuration = new Configuration();
 
-	public Persistence(Database database, Iterable<Class<? extends Entity<?>>> types, MapAndType.TypeResolver typeResolver) {
+	public Persistence(Database database, Iterable<Class<? extends Entity<?>>> types,
+			MapAndType.TypeResolver typeResolver) {
 		this.database = database;
 		this.types = types;
 		this.typeResolver = typeResolver;
@@ -74,12 +74,12 @@ public class Persistence {
 		return typeResolver;
 	}
 
-	public <K, V> com.janilla.database.Index<K, V> newIndex(NameAndData nameAndData) {
-		var ni = configuration.indexFactories.get(nameAndData.name());
+	public <K, V> com.janilla.database.Index<K, V> newIndex(KeyAndData<String> keyAndData) {
+		var ni = configuration.indexFactories.get(keyAndData.key());
 		if (ni == null)
 			return null;
 		@SuppressWarnings("unchecked")
-		var i = (com.janilla.database.Index<K, V>) ni.newIndex(nameAndData, database);
+		var i = (com.janilla.database.Index<K, V>) ni.newIndex(keyAndData, database);
 		return i;
 	}
 
@@ -143,7 +143,29 @@ public class Persistence {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
 		return !Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
-				&& type.isAnnotationPresent(Store.class) ? new Crud(type, this) : null;
+				&& type.isAnnotationPresent(Store.class) ? new Crud(type, nextId(type), this) : null;
+	}
+
+	protected <ID extends Comparable<ID>> Function<Map<String, Object>, ID> nextId(Class<?> type) {
+		var t = Reflection.property(type, "id").type();
+		if (t == Long.class)
+			return x -> {
+				var v = x.get("nextId");
+				var l = v != null ? (long) v : 1L;
+				x.put("nextId", l + 1);
+				@SuppressWarnings("unchecked")
+				var id = (ID) Long.valueOf(l);
+				return id;
+			};
+		else if (t == UUID.class)
+			return _ -> {
+				@SuppressWarnings("unchecked")
+				var id = (ID) UUID.randomUUID();
+				return id;
+			};
+		else
+			// throw new RuntimeException(type + " " + t);
+			return _ -> null;
 	}
 
 	protected void createStoresAndIndexes() {
@@ -245,9 +267,9 @@ public class Persistence {
 
 		protected ByteConverter<V> valueConverter;
 
-		protected com.janilla.database.Index<K, V> newIndex(NameAndData nameAndData, Database database) {
+		protected com.janilla.database.Index<K, V> newIndex(KeyAndData<String> keyAndData, Database database) {
 			return new com.janilla.database.Index<K, V>(new BTree<>(database.bTreeOrder(), database.channel(),
-					database.memory(), KeyAndData.getByteConverter(keyConverter), nameAndData.bTree()), valueConverter);
+					database.memory(), KeyAndData.getByteConverter(keyConverter), keyAndData.bTree()), valueConverter);
 		}
 	}
 

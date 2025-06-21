@@ -51,18 +51,15 @@ public class Indexes {
 			Supplier<Indexes> iis = () -> {
 				Indexes ii;
 				try {
-					var m = new BTreeMemory(o, ch, BlockReference.read(ch, 0),
+					var m = new BTreeMemory(o, ch, BlockReference.read(ch),
 							Math.max(2 * BlockReference.BYTES, ch.size()));
-					ii = new Indexes(
-							new BTree<>(o, ch, m, NameAndData.BYTE_CONVERTER,
-									BlockReference.read(ch, BlockReference.BYTES)),
-							x -> new Index<String, Object[]>(
-									new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING), x.bTree()),
-									ByteConverter.of(
-											new ByteConverter.TypeAndOrder(Instant.class,
-													ByteConverter.SortOrder.DESCENDING),
-											new ByteConverter.TypeAndOrder(Long.class,
-													ByteConverter.SortOrder.DESCENDING))));
+					var t = new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING),
+							BlockReference.read(ch));
+					ii = new Indexes(t, x -> new Index<String, Object[]>(
+							new BTree<>(o, ch, m, KeyAndData.getByteConverter(ByteConverter.STRING), x.bTree()),
+							ByteConverter.of(
+									new ByteConverter.TypeAndOrder(Instant.class, ByteConverter.SortOrder.DESCENDING),
+									new ByteConverter.TypeAndOrder(Long.class, ByteConverter.SortOrder.DESCENDING))));
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
@@ -95,18 +92,18 @@ public class Indexes {
 		}
 	}
 
-	protected final BTree<NameAndData> bTree;
+	protected final BTree<KeyAndData<String>> bTree;
 
-	protected final Function<NameAndData, Index<?, ?>> newIndex;
+	protected final Function<KeyAndData<String>, Index<?, ?>> newIndex;
 
-	public Indexes(BTree<NameAndData> bTree, Function<NameAndData, Index<?, ?>> newIndex) {
+	public Indexes(BTree<KeyAndData<String>> bTree, Function<KeyAndData<String>, Index<?, ?>> newIndex) {
 		this.bTree = bTree;
 		this.newIndex = newIndex;
 	}
 
 	public void create(String name) {
 //		System.out.println("Indexes.create, name=" + name);
-		bTree.getOrAdd(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
+		bTree.getOrAdd(new KeyAndData<>(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
 	}
 
 	public <K, V, R> R perform(String name, Function<Index<K, V>, R> operation) {
@@ -116,7 +113,7 @@ public class Indexes {
 		}
 		var bt = bTree;
 		var a = new A();
-		bt.get(new NameAndData(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)), x -> {
+		bt.get(new KeyAndData<>(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)), x -> {
 			@SuppressWarnings("unchecked")
 			var i = (Index<K, V>) newIndex.apply(x);
 			String aa1;
@@ -164,7 +161,7 @@ public class Indexes {
 			}
 			var btr = i.bTree.root();
 			return aar.position() != x.attributes().position() || btr.position() != x.bTree().position()
-					? new NameAndData(name, aar, btr)
+					? new KeyAndData<>(name, aar, btr)
 					: null;
 		});
 		return a.r;
