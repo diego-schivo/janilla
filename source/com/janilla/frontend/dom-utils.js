@@ -29,7 +29,8 @@ export const removeAllChildren = element => {
 
 export const matchNode = (xpath, context, not) => {
 	const q = resolve => {
-		const n = context.ownerDocument.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+		const n = context.ownerDocument.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+		// console.log("matchNode", xpath);
 		if (not ? !n : n) {
 			// console.log("matchNode", xpath, n);
 			resolve(n);
@@ -50,7 +51,10 @@ export const matchNode = (xpath, context, not) => {
 	return new Promise((resolve, reject) => {
 		const n = q(r(resolve));
 		if (not ? n : !n) {
-			o = new MutationObserver(() => q(r(resolve)));
+			o = new MutationObserver(() => {
+				// console.log("mutation");
+				q(r(resolve));
+			});
 			o.observe(context, { childList: true, subtree: true });
 			t = setTimeout(() => {
 				if (o) {
