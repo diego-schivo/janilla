@@ -67,9 +67,10 @@ public class HttpServer extends SecureServer {
 
 	@Override
 	protected void handleConnection(SecureTransfer st) throws IOException {
-		do
-			st.read();
-		while (st.in().position() < 16);
+		do {
+			if (st.read() == -1)
+				return;
+		} while (st.in().position() < 16);
 //		System.out.println("bb=" + new String(st.in().array(), 0, 16));
 
 		var ap = st.engine().getApplicationProtocol();
@@ -89,7 +90,7 @@ public class HttpServer extends SecureServer {
 				for (;; i++, b1 = b2) {
 					if (i == st.in().position()) {
 						var n = st.read();
-						System.out.println("n=" + n);
+//						System.out.println("n=" + n);
 						if (n == -1)
 							return;
 					}
@@ -178,8 +179,10 @@ public class HttpServer extends SecureServer {
 	}
 
 	protected void handleConnection2(SecureTransfer st) throws IOException {
-		while (st.in().position() < 24)
-			st.read();
+		while (st.in().position() < 24) {
+			if (st.read() == -1)
+				return;
+		}
 		st.in().flip();
 		var cp = new byte[24];
 		st.in().get(cp);
@@ -210,6 +213,8 @@ public class HttpServer extends SecureServer {
 		var streams = new HashMap<Integer, List<Frame>>();
 		for (;;) {
 			var bb = readFrame(st);
+			if (bb == null)
+				break;
 			var f = hd.decodeFrame(bb);
 //			System.out.println("f=" + f);
 			switch (f) {
@@ -251,9 +256,10 @@ public class HttpServer extends SecureServer {
 		try {
 			if (st.in().remaining() < 3) {
 				st.in().compact();
-				do
-					st.read();
-				while (st.in().position() < 3);
+				do {
+					if (st.read() == -1)
+						return null;
+				} while (st.in().position() < 3);
 				st.in().flip();
 			}
 			var pl = (Short.toUnsignedInt(st.in().getShort(st.in().position())) << 8)

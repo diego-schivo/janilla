@@ -26,26 +26,28 @@ package com.janilla.net;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 public abstract class SecureServer {
 
+	protected static final int TIMEOUT_MILLIS = 10 * 1000;
+
 	protected final SSLContext sslContext;
 
-	protected final Map<SocketChannel, Long> lastUsed = new HashMap<>();
+//	protected final Map<SocketChannel, ThreadAndMillis> lastUsed = new HashMap<>();
+//
+//	protected final Lock lastUsedLock = new ReentrantLock();
 
-	protected final Lock lastUsedLock = new ReentrantLock();
+	protected final Map<SocketChannel, ThreadAndMillis> lastUsed = new ConcurrentHashMap<>();
 
 	public SecureServer(SSLContext sslContext) {
 		this.sslContext = sslContext;
@@ -54,62 +56,31 @@ public abstract class SecureServer {
 	public void serve(SocketAddress endpoint) {
 		Thread.startVirtualThread(() -> {
 			for (;;) {
-				shutdownConnections();
 				try {
 					TimeUnit.SECONDS.sleep(1);
 				} catch (InterruptedException e) {
 					break;
 				}
+				shutdownConnections();
 			}
 		});
-		try (var ssc = ServerSocketChannel.open()) {
-			ssc.socket().bind(endpoint);
+		try (var sch = ServerSocketChannel.open()) {
+			sch.socket().bind(endpoint);
 			for (;;) {
-				var sc = ssc.accept();
+				var ch = sch.accept();
 //				System.out.println("sc=" + sc + ", sc.isBlocking()=" + sc.isBlocking());
-				lastUsedLock.lock();
-				try {
-					lastUsed.put(sc, System.currentTimeMillis());
-				} finally {
-					lastUsedLock.unlock();
-				}
-				Thread.startVirtualThread(() -> {
-					try (var _ = sc) {
-						var se = createSslEngine();
-						var st = new SecureTransfer(sc, se) {
-
-							@Override
-							public int read() throws IOException {
-								updateLastUsed();
-								var n = super.read();
-								updateLastUsed();
-								return n;
-							}
-
-							@Override
-							public void write() throws IOException {
-								updateLastUsed();
-								super.write();
-								updateLastUsed();
-							}
-
-							private void updateLastUsed() throws IOException {
-								lastUsedLock.lock();
-								try {
-									if (lastUsed.containsKey(sc))
-										lastUsed.put(sc, System.currentTimeMillis());
-									else
-										throw new IOException();
-								} finally {
-									lastUsedLock.unlock();
-								}
-							}
-						};
-						handleConnection(st);
+//				lastUsedLock.lock();
+//				try {
+				lastUsed.put(ch, new ThreadAndMillis(Thread.startVirtualThread(() -> {
+					try (var _ = ch) {
+						handleConnection(new CustomTransfer(ch, createSslEngine()));
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-				});
+				}), System.currentTimeMillis()));
+//				} finally {
+//					lastUsedLock.unlock();
+//				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -117,22 +88,24 @@ public abstract class SecureServer {
 	}
 
 	protected void shutdownConnections() {
-		Set<SocketChannel> s = new HashSet<>();
-		lastUsedLock.lock();
-		try {
+		Map<SocketChannel, ThreadAndMillis> m = new HashMap<>();
+//		lastUsedLock.lock();
+//		try {
 //			System.out.println("SecureServer.shutdownConnections, lastUsed=" + lastUsed.size());
-			var ctm = System.currentTimeMillis();
-			for (var esi = lastUsed.entrySet().iterator(); esi.hasNext();) {
-				var kv = esi.next();
-				if (ctm >= kv.getValue() + 10 * 1000) {
-					esi.remove();
-					s.add(kv.getKey());
-				}
+		var ms = System.currentTimeMillis();
+		for (var it = lastUsed.entrySet().iterator(); it.hasNext();) {
+			var kv = it.next();
+			if (ms >= kv.getValue().millis + TIMEOUT_MILLIS) {
+				it.remove();
+				m.put(kv.getKey(), kv.getValue());
 			}
-		} finally {
-			lastUsedLock.unlock();
 		}
-		for (var sc : s) {
+//		} finally {
+//			lastUsedLock.unlock();
+//		}
+		for (var kv : m.entrySet()) {
+			var ch = kv.getKey();
+			var th = kv.getValue().thread;
 //			System.out.println("SecureServer.shutdownConnections, sc=" + sc);
 
 //			String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^\\d.]", "");
@@ -142,11 +115,13 @@ public abstract class SecureServer {
 //				throw new UncheckedIOException(e);
 //			}
 
-			if (sc.isOpen())
+			if (th.isAlive())
+				th.interrupt();
+			else if (ch.isOpen())
 				try {
-					sc.shutdownInput();
-					sc.shutdownOutput();
-					sc.close();
+					ch.shutdownInput();
+					ch.shutdownOutput();
+					ch.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -154,10 +129,49 @@ public abstract class SecureServer {
 	}
 
 	protected SSLEngine createSslEngine() {
-		var se = sslContext.createSSLEngine();
-		se.setUseClientMode(false);
-		return se;
+		var x = sslContext.createSSLEngine();
+		x.setUseClientMode(false);
+		return x;
 	}
 
-	protected abstract void handleConnection(SecureTransfer st) throws IOException;
+	protected abstract void handleConnection(SecureTransfer transfer) throws IOException;
+
+	protected class CustomTransfer extends SecureTransfer {
+
+		public CustomTransfer(ByteChannel channel, SSLEngine engine) {
+			super(channel, engine);
+		}
+
+		@Override
+		public int read() throws IOException {
+			updateLastUsed();
+			var n = super.read();
+			updateLastUsed();
+			return n;
+		}
+
+		@Override
+		public void write() throws IOException {
+			updateLastUsed();
+			super.write();
+			updateLastUsed();
+		}
+
+		protected void updateLastUsed() throws IOException {
+//				lastUsedLock.lock();
+//				try {
+//					if (lastUsed.containsKey(sc))
+//						lastUsed.put(sc, new ThreadAndMillis(Thread.currentThread(),
+//								System.currentTimeMillis()));
+			if (lastUsed.computeIfPresent((SocketChannel) channel,
+					(_, v) -> new ThreadAndMillis(v.thread, System.currentTimeMillis())) == null)
+				throw new IOException();
+//				} finally {
+//					lastUsedLock.unlock();
+//				}
+		}
+	}
+
+	protected record ThreadAndMillis(Thread thread, long millis) {
+	}
 }
