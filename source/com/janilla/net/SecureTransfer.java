@@ -91,7 +91,7 @@ public class SecureTransfer {
 					return in.position() - p;
 				var n = read0();
 				if (n == -1)
-					return -1;
+					break;
 			}
 			return -1;
 		} finally {
@@ -124,7 +124,8 @@ public class SecureTransfer {
 				engine.getDelegatedTask().run();
 				break;
 			case NEED_UNWRAP:
-				read0();
+				if (read0() == -1)
+					return;
 				break;
 			case NEED_WRAP:
 				write0();
@@ -142,10 +143,9 @@ public class SecureTransfer {
 //			var t = engine.getUseClientMode() ? "C" : "S";
 			for (var r = in0.position() == 0;;) {
 				if (r) {
-//					System.out.println(t + ": read");
-//					@SuppressWarnings("unused")
+//					System.out.println(Thread.currentThread().threadId() + ", " + channel + ", read");
 					var n = channel.read(in0);
-//					System.out.println(t + ": read " + n);
+//					System.out.println(Thread.currentThread().threadId() + ", " + channel + ", read, " + n);
 					if (n == -1)
 						return -1;
 				}

@@ -43,10 +43,6 @@ public abstract class SecureServer {
 
 	protected final SSLContext sslContext;
 
-//	protected final Map<SocketChannel, ThreadAndMillis> lastUsed = new HashMap<>();
-//
-//	protected final Lock lastUsedLock = new ReentrantLock();
-
 	protected final Map<SocketChannel, ThreadAndMillis> lastUsed = new ConcurrentHashMap<>();
 
 	public SecureServer(SSLContext sslContext) {
@@ -68,9 +64,7 @@ public abstract class SecureServer {
 			sch.socket().bind(endpoint);
 			for (;;) {
 				var ch = sch.accept();
-//				System.out.println("sc=" + sc + ", sc.isBlocking()=" + sc.isBlocking());
-//				lastUsedLock.lock();
-//				try {
+//				System.out.println("ch=" + ch + ", ch.isBlocking()=" + ch.isBlocking());
 				lastUsed.put(ch, new ThreadAndMillis(Thread.startVirtualThread(() -> {
 					try (var _ = ch) {
 						handleConnection(new CustomTransfer(ch, createSslEngine()));
@@ -78,9 +72,6 @@ public abstract class SecureServer {
 						e.printStackTrace();
 					}
 				}), System.currentTimeMillis()));
-//				} finally {
-//					lastUsedLock.unlock();
-//				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -89,8 +80,6 @@ public abstract class SecureServer {
 
 	protected void shutdownConnections() {
 		Map<SocketChannel, ThreadAndMillis> m = new HashMap<>();
-//		lastUsedLock.lock();
-//		try {
 //			System.out.println("SecureServer.shutdownConnections, lastUsed=" + lastUsed.size());
 		var ms = System.currentTimeMillis();
 		for (var it = lastUsed.entrySet().iterator(); it.hasNext();) {
@@ -100,9 +89,6 @@ public abstract class SecureServer {
 				m.put(kv.getKey(), kv.getValue());
 			}
 		}
-//		} finally {
-//			lastUsedLock.unlock();
-//		}
 		for (var kv : m.entrySet()) {
 			var ch = kv.getKey();
 			var th = kv.getValue().thread;
@@ -117,7 +103,8 @@ public abstract class SecureServer {
 
 			if (th.isAlive())
 				th.interrupt();
-			else if (ch.isOpen())
+
+			if (ch.isOpen())
 				try {
 					ch.shutdownInput();
 					ch.shutdownOutput();
@@ -158,17 +145,9 @@ public abstract class SecureServer {
 		}
 
 		protected void updateLastUsed() throws IOException {
-//				lastUsedLock.lock();
-//				try {
-//					if (lastUsed.containsKey(sc))
-//						lastUsed.put(sc, new ThreadAndMillis(Thread.currentThread(),
-//								System.currentTimeMillis()));
 			if (lastUsed.computeIfPresent((SocketChannel) channel,
 					(_, v) -> new ThreadAndMillis(v.thread, System.currentTimeMillis())) == null)
 				throw new IOException();
-//				} finally {
-//					lastUsedLock.unlock();
-//				}
 		}
 	}
 
