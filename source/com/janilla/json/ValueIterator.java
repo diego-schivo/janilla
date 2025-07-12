@@ -107,7 +107,7 @@ public class ValueIterator extends TokenIterator {
 		case Map<?, ?> x -> context.newObjectIterator(x.entrySet().stream().map(y -> {
 			@SuppressWarnings("unchecked")
 			var z = y.getKey() instanceof Locale l
-					? new AbstractMap.SimpleEntry<String, Object>(l.toLanguageTag(), y.getValue())
+					? new AbstractMap.SimpleImmutableEntry<String, Object>(l.toLanguageTag(), y.getValue())
 					: (Map.Entry<String, Object>) y;
 			return z;
 		}).iterator());

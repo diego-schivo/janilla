@@ -25,8 +25,13 @@
 package com.janilla.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.function.IntConsumer;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -164,11 +169,11 @@ public interface Util {
 		return p.build().toArray();
 	}
 
-	public static String toBinaryString(IntStream integers) {
+	static String toBinaryString(IntStream integers) {
 		return integers.mapToObj(Integer::toBinaryString).collect(Collectors.joining(" "));
 	}
 
-	public static String toHexString(IntStream integers) {
+	static String toHexString(IntStream integers) {
 		return integers.mapToObj(x -> {
 			var s = Integer.toHexString(x);
 			return s.length() == 1 ? "0" + s : s;
@@ -179,11 +184,11 @@ public interface Util {
 		}, (b1, _) -> b1, StringBuilder::toString));
 	}
 
-	public static IntStream toIntStream(byte[] bytes) {
+	static IntStream toIntStream(byte[] bytes) {
 		return IntStream.range(0, bytes.length).map(x -> Byte.toUnsignedInt(bytes[x]));
 	}
 
-	public static IntStream parseHex(String string) {
+	static IntStream parseHex(String string) {
 		var e = (string.length() - (string.length() / 5)) / 2;
 		return IntStream.range(0, e).map(x -> {
 			var i = x * 2;
@@ -192,24 +197,109 @@ public interface Util {
 		});
 	}
 
-//	public static PrimitiveIterator.OfInt concat(int i, PrimitiveIterator.OfInt ii) {
-//		return new PrimitiveIterator.OfInt() {
-//			
-//			boolean x;
-//
-//			@Override
-//			public boolean hasNext() {
-//				return !x || ii.hasNext();
-//			}
-//
-//			@Override
-//			public int nextInt() {
-//				if (!x) {
-//					x = true;
-//					return i;
+//	static Map<Path, List<Path>> getPackageFiles(String package1) {
+//		System.out.println("Util.getPackageFiles, package1=" + package1);
+//		var l = Thread.currentThread().getContextClassLoader();
+//		var s = package1.replace('.', '/');
+//		var ss = IntStream.iterate(-1, x -> s.indexOf('/', x + 1)).skip(1).takeWhile(x -> x != -1)
+//				.mapToObj(x -> s.substring(0, x));
+//		var c = package1.split("\\.").length;
+//		return Stream.concat(ss, Stream.of(s)).flatMap(x -> {
+//			System.out.println("Util.getPackageFiles, x=" + x);
+//			return l.resources(x).map(y -> {
+//				System.out.println("Util.getPackageFiles, y=" + y);
+//				URI u;
+//				try {
+//					u = y.toURI();
+//				} catch (URISyntaxException e) {
+//					throw new RuntimeException(e);
 //				}
-//				return ii.nextInt();
+//				var q = Path.of(u);
+//				return x.length() < s.length() ? q.resolve(s.substring(x.length() + 1)) : q;
+//			});
+//		}).distinct().filter(Files::exists).map(d -> {
+//			try {
+//				System.out.println("Util.getPackageFiles, d=" + d);
+//				var d0 = Stream.iterate(d, Path::getParent).limit(c + 1).reduce((_, x) -> x).get();
+//				System.out.println("Util.getPackageFiles, d0=" + d0);
+//				try (var pp = Files.list(d)) {
+//					var ff = pp.filter(Files::isRegularFile).map(file -> {
+//						System.out.println("Util.getPackageFiles, file=" + file);
+//						return d0.relativize(file);
+//					}).sorted().toList();
+//					return Map.entry(d0, ff);
+//				}
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
 //			}
-//		};
+//		}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 //	}
+
+//	static List<Path[]> getPackageFiles(String package1) {
+//		System.out.println("Util.getPackageFiles, package1=" + package1);
+//		var l = Thread.currentThread().getContextClassLoader();
+//		var s = package1.replace('.', '/');
+//		var ss = IntStream.iterate(-1, x -> s.indexOf('/', x + 1)).skip(1).takeWhile(x -> x != -1)
+//				.mapToObj(x -> s.substring(0, x));
+//		var c = package1.split("\\.").length;
+//		return Stream.concat(ss, Stream.of(s)).flatMap(x -> {
+//			System.out.println("Util.getPackageFiles, x=" + x);
+//			return l.resources(x).map(y -> {
+//				System.out.println("Util.getPackageFiles, y=" + y);
+//				URI u;
+//				try {
+//					u = y.toURI();
+//				} catch (URISyntaxException e) {
+//					throw new RuntimeException(e);
+//				}
+//				var q = Path.of(u);
+//				return x.length() < s.length() ? q.resolve(s.substring(x.length() + 1)) : q;
+//			});
+//		}).distinct().filter(Files::isDirectory).flatMap(d -> {
+//			try {
+//				System.out.println("Util.getPackageFiles, d=" + d);
+//				var d0 = Stream.iterate(d, Path::getParent).limit(c + 1).reduce((_, x) -> x).get();
+//				var d1 = d0.relativize(d);
+//				System.out.println("Util.getPackageFiles, d0=" + d0);
+//				try (var pp = Files.walk(d)) {
+//					var ff = pp.filter(Files::isRegularFile).map(file -> {
+//						System.out.println("Util.getPackageFiles, file=" + file);
+//						return d.relativize(file);
+//					}).sorted().map(x -> new Path[] { d0, d1, x }).toList();
+//					return ff.stream();
+//				}
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+//		}).toList();
+//	}
+
+	static Set<Path> getPackageFiles(String package1) {
+		System.out.println("Util.getPackageFiles, package1=" + package1);
+		var l = Thread.currentThread().getContextClassLoader();
+		var s = package1.replace('.', '/');
+		return l.resources(s).map(y -> {
+			System.out.println("Util.getPackageFiles, y=" + y);
+			URI u;
+			try {
+				u = y.toURI();
+			} catch (URISyntaxException e) {
+				throw new RuntimeException(e);
+			}
+			return Path.of(u);
+		}).distinct().filter(Files::isDirectory).flatMap(d -> {
+			try {
+				System.out.println("Util.getPackageFiles, d=" + d);
+				try (var pp = Files.walk(d)) {
+					var ff = pp.filter(Files::isRegularFile).map(file -> {
+						System.out.println("Util.getPackageFiles, file=" + file);
+						return file;
+					}).toList();
+					return ff.stream();
+				}
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}).collect(Collectors.toSet());
+	}
 }

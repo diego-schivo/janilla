@@ -53,6 +53,7 @@ public class HttpEncoder {
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
 			bb1.put((byte) pl);
 			bb1.put((byte) Frame.Name.GOAWAY.type());
+			bb1.put((byte) 0x00);
 			bb1.putInt(x.streamIdentifier());
 			bb1.flip();
 			bb2 = ByteBuffer.allocate(bb1.remaining() + pl);

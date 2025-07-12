@@ -36,7 +36,6 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -243,6 +242,6 @@ public class Index<K, V> {
 
 	@Override
 	public String toString() {
-		return super.toString() + "[" + Objects.toString(attributes) + "]";
+		return super.toString() + "[" + attributes + "]";
 	}
 }

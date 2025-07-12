@@ -118,11 +118,8 @@ public class HttpServer extends SecureServer {
 							var ss = s.split(" ", 3);
 							rq.setMethod(ss[0].trim());
 							rq.setTarget(ss[1].trim());
-						} else {
-							if (rq.getHeaders() == null)
-								rq.setHeaders(new ArrayList<>());
-							rq.getHeaders().add(HeaderField.fromLine(s));
-						}
+						} else
+							rq.setHeader(HeaderField.fromLine(s));
 						i++;
 					}
 				}
@@ -141,7 +138,7 @@ public class HttpServer extends SecureServer {
 					rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
 				}
 				try (var rs = new HttpResponse()) {
-					rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
+					rs.setStatus(0);
 					var baos = new ByteArrayOutputStream();
 					rs.setBody(Channels.newChannel(baos));
 					var ex = createExchange(rq);
@@ -149,7 +146,7 @@ public class HttpServer extends SecureServer {
 					ex.setResponse(rs);
 					ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
 					sb = Stream.<String>builder();
-					sb.add("HTTP/1.1 " + rs.getHeaderValue(":status") + " OK");
+					sb.add("HTTP/1.1 " + rs.getStatus() + " OK");
 					for (var h : rs.getHeaders())
 						if (!h.name().startsWith(":"))
 							sb.add(h.toLine());
@@ -216,7 +213,7 @@ public class HttpServer extends SecureServer {
 			if (bb == null)
 				break;
 			var f = hd.decodeFrame(bb);
-//			System.out.println("f=" + f);
+//			System.out.println("HttpServer.handleConnection2, f=" + f);
 			switch (f) {
 			case Frame.Data _:
 			case Frame.Headers _:
@@ -245,6 +242,9 @@ public class HttpServer extends SecureServer {
 			case Frame.Ping _:
 			case Frame.WindowUpdate _:
 				break;
+			case Frame.Goaway _:
+				return;
+//			case Frame.RstStream _:
 			default:
 				throw new RuntimeException(f.toString());
 			}
@@ -262,11 +262,13 @@ public class HttpServer extends SecureServer {
 				} while (transfer.in().position() < 3);
 				transfer.in().flip();
 			}
-			var pl = (Short.toUnsignedInt(transfer.in().getShort(transfer.in().position())) << 8)
+			var l = (Short.toUnsignedInt(transfer.in().getShort(transfer.in().position())) << 8)
 					| Byte.toUnsignedInt(transfer.in().get(transfer.in().position() + Short.BYTES));
-			if (pl > 16384)
+//			System.out.println("HttpServer.readFrame, l=" + l);
+			if (l > 16384)
 				throw new RuntimeException();
-			var bb = new byte[9 + pl];
+			var bb = new byte[9 + l];
+//			System.out.println("transfer.in().remaining() " + transfer.in().remaining());
 			if (transfer.in().remaining() < bb.length) {
 				transfer.in().compact();
 				do
@@ -295,11 +297,8 @@ public class HttpServer extends SecureServer {
 			rq.setHeaders(hff);
 			rq.setBody(IO.toReadableByteChannel(dbb.flip()));
 //			System.out.println("HttpServer.handleStream, rq=" + rq.getTarget());
-//			ff.clear();
 			try (var rs = new HttpResponse()) {
-				rs.setHeaders(new ArrayList<>(List.of(new HeaderField(":status", null))));
-//				var baos = new ByteArrayOutputStream();
-//				rs.setBody(Channels.newChannel(baos));
+				rs.setStatus(0);
 				rs.setBody(new WritableByteChannel() {
 
 					private boolean closed;
@@ -350,18 +349,7 @@ public class HttpServer extends SecureServer {
 				ex.setRequest(rq);
 				ex.setResponse(rs);
 				ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
-//				var bb = baos.toByteArray();
-//				ff.add(new Frame.Headers(false, true, bb.length == 0, si, false, 0, 0, rs.getHeaders()));
-//				for (var o = 0; o < bb.length;) {
-//					var l = Math.min(bb.length - o, 16384);
-//					ff.add(new Frame.Data(false, o + l == bb.length, si, Arrays.copyOfRange(bb, o, o + l)));
-//					o += l;
-//				}
 			}
-//			for (var f : ff) {
-//				var bb = he.encodeFrame(f);
-//				writeFrame(st, bb);
-//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -371,25 +359,30 @@ public class HttpServer extends SecureServer {
 		return new HttpExchange();
 	}
 
-	protected boolean handleExchange(HttpExchange he) {
+	protected boolean handleExchange(HttpExchange ex) {
 		var k = true;
 		Exception e;
 		try {
-			k = handler.handle(he);
+			k = handler.handle(ex);
 			e = null;
 		} catch (HandleException x) {
 			e = x.getCause();
 		} catch (UncheckedIOException x) {
 			e = x.getCause();
-		} catch (Exception x) {
+		} catch (RuntimeException x) {
+			if (x.getCause() instanceof Error y)
+				throw y;
 			e = x;
 		}
+//		System.out.println("HttpServer.handleExchange, e=" + e);
 		if (e != null)
 			try {
 				e.printStackTrace();
-				he.setException(e);
-				k = handler.handle(he);
-			} catch (Exception x) {
+				ex.setException(e);
+				k = handler.handle(ex);
+			} catch (RuntimeException x) {
+				if (x.getCause() instanceof Error y)
+					throw y;
 				x.printStackTrace();
 				k = false;
 			}

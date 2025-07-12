@@ -92,7 +92,7 @@ public interface Net {
 			var i = s.indexOf(delimiter2);
 			var k = (i >= 0 ? s.substring(0, i) : s).trim();
 			var v = i >= 0 ? s.substring(i + 1).trim() : null;
-			return new AbstractMap.SimpleEntry<>(urlDecode(k), urlDecode(v));
+			return new AbstractMap.SimpleImmutableEntry<>(urlDecode(k), urlDecode(v));
 		}).reduce(new EntryList<>(), (l, e) -> {
 			l.add(e.getKey(), e.getValue());
 			return l;

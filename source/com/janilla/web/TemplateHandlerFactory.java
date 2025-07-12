@@ -34,16 +34,16 @@ import com.janilla.http.HttpHandler;
 
 public class TemplateHandlerFactory implements WebHandlerFactory {
 
-	protected Object application;
+	protected final Object application;
 
-	public void setApplication(Object application) {
+	public TemplateHandlerFactory(Object application) {
 		this.application = application;
 	}
 
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
 		return object instanceof Renderable r && r.renderer().annotation != null ? x -> {
-			render(r, (HttpExchange) x);
+			render(r, x);
 			return true;
 		} : null;
 	}
@@ -52,17 +52,18 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 		var rs = exchange.getResponse();
 		if (rs.getStatus() == 0)
 			rs.setStatus(200);
-		if (rs.getHeaderValue("cache-control") == null)
+		if (rs.getHeader("cache-control") == null)
 			rs.setHeaderValue("cache-control", "no-cache");
-		if (rs.getHeaderValue("content-type") == null)
+		if (rs.getHeader("content-type") == null)
 			rs.setHeaderValue("content-type", "text/html");
 		var s = input.get();
 		if (s != null) {
 			var bb = s.getBytes();
 			rs.setHeaderValue("content-length", String.valueOf(bb.length));
 			try {
-//				((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb), true);
-				((WritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb));
+				var n = ((WritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb));
+				if (n != bb.length)
+					throw new RuntimeException();
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

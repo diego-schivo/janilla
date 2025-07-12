@@ -33,6 +33,7 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -50,14 +51,13 @@ public class Persistence {
 
 	protected final Database database;
 
-	protected final Iterable<Class<? extends Entity<?>>> types;
+	protected final Set<Class<? extends Entity<?>>> types;
 
 	protected final MapAndType.TypeResolver typeResolver;
 
 	protected final Configuration configuration = new Configuration();
 
-	public Persistence(Database database, Iterable<Class<? extends Entity<?>>> types,
-			MapAndType.TypeResolver typeResolver) {
+	public Persistence(Database database, Set<Class<? extends Entity<?>>> types, MapAndType.TypeResolver typeResolver) {
 		this.database = database;
 		this.types = types;
 		this.typeResolver = typeResolver;
@@ -283,7 +283,7 @@ public class Persistence {
 				throws ReflectiveOperationException {
 			var k = keyGetter != null ? keyGetter.apply(entity) : null;
 			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
-			return keyGetter == null || k != null ? new AbstractMap.SimpleEntry<>(k, v) : null;
+			return keyGetter == null || k != null ? new AbstractMap.SimpleImmutableEntry<>(k, v) : null;
 		}
 	}
 }

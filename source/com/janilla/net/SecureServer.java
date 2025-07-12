@@ -101,10 +101,13 @@ public abstract class SecureServer {
 //				throw new UncheckedIOException(e);
 //			}
 
-			if (th.isAlive())
+			if (th.isAlive()) {
+//				System.out.println("SecureServer.shutdownConnections, th=" + th);
 				th.interrupt();
+			}
 
-			if (ch.isOpen())
+			if (ch.isOpen()) {
+//				System.out.println("SecureServer.shutdownConnections, ch=" + ch);
 				try {
 					ch.shutdownInput();
 					ch.shutdownOutput();
@@ -112,6 +115,7 @@ public abstract class SecureServer {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
+			}
 		}
 	}
 

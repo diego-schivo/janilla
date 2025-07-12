@@ -93,7 +93,7 @@ public class Reflection {
 			return destination;
 		var vv = kk.stream().map(k -> {
 			var v = source.apply(k);
-			return v != SKIP_COPY ? new AbstractMap.SimpleEntry<>(k, v) : null;
+			return v != SKIP_COPY ? new AbstractMap.SimpleImmutableEntry<>(k, v) : null;
 		}).filter(Objects::nonNull).collect(HashMap::new, (m, kv) -> m.put(kv.getKey(), kv.getValue()), Map::putAll);
 		if (vv.isEmpty())
 			return destination;
@@ -184,7 +184,7 @@ public class Reflection {
 						f = null;
 					}
 					var o = f != null ? f.getAnnotation(Order.class) : null;
-					return new AbstractMap.SimpleEntry<>(x,
+					return new AbstractMap.SimpleImmutableEntry<>(x,
 							o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(x.name()) : null);
 				}).sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
 				.map(Map.Entry::getKey).flatMap(x -> {

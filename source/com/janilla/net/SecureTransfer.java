@@ -90,6 +90,7 @@ public class SecureTransfer {
 				if (!in.hasRemaining() || in.position() > p)
 					return in.position() - p;
 				var n = read0();
+//				System.out.println("SecureTransfer.read, n=" + n);
 				if (n == -1)
 					break;
 			}

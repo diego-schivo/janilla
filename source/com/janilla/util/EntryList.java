@@ -51,7 +51,7 @@ public class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
 	}
 
 	public void add(K key, V value) {
-		add(new AbstractMap.SimpleEntry<>(key, value));
+		add(new AbstractMap.SimpleImmutableEntry<>(key, value));
 	}
 
 	public V get(Object key) {

@@ -24,7 +24,6 @@
  */
 package com.janilla.web;
 
-import com.janilla.http.HeaderField;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 
@@ -64,8 +63,9 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 	@Override
 	public HttpHandler createHandler(Object object, HttpExchange exchange) {
 		if (object instanceof Exception e) {
-			var f = e.getClass().getAnnotation(Error.class);
-			return c -> handle(f, (HttpExchange) c);
+			var er = e.getClass().getAnnotation(Error.class);
+//			System.out.println("ExceptionHandlerFactory.createHandler, er=" + er);
+			return x -> handle(er, x);
 		}
 		return null;
 	}
@@ -73,11 +73,9 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 	protected boolean handle(Error error, HttpExchange exchange) {
 		var rs = exchange.getResponse();
 		var s = error != null ? error.code() : 500;
-
-//		System.out.println("s=" + s);
-
+//		System.out.println("ExceptionHandlerFactory.handle, s=" + s);
 		rs.setStatus(s);
-		rs.getHeaders().add(new HeaderField("cache-control", "no-cache"));
+		rs.setHeaderValue("cache-control", "no-cache");
 		return true;
 	}
 }

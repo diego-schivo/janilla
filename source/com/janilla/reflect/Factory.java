@@ -27,23 +27,61 @@ package com.janilla.reflect;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class Factory {
 
-	protected final Iterable<Class<?>> types;
+	public static void main(String[] args) {
+		var f = new Factory(Set.of(Foo.C.class), new Foo("a"));
+		var x1 = f.create(Foo.I.class, Map.of("s2", "b"));
+		System.out.println("x1=" + x1);
+		var x2 = f.create(Foo.I.class, Map.of("s2", "c"));
+		System.out.println("x2=" + x2);
+	}
+
+	public static class Foo {
+
+		public final String s1;
+
+		public Foo(String s1) {
+			this.s1 = s1;
+		}
+
+		public interface I {
+		}
+
+		public class C implements I {
+
+			public String s1;
+
+			private final String s2;
+
+			public C(String s2) {
+				this.s2 = s2;
+			}
+
+			@Override
+			public String toString() {
+				return s1 + s2;
+			}
+		}
+	}
+
+	protected final Set<Class<?>> types;
 
 	protected final Object source;
 
-	protected final Map<Class<?>, Supplier<?>> suppliers = new ConcurrentHashMap<>();
+	protected final Map<Class<?>, Function<Map<String, Object>, ?>> functions = new ConcurrentHashMap<>();
 
-	public Factory(Iterable<Class<?>> types, Object source) {
+	public Factory(Set<Class<?>> types, Object source) {
 		this.types = types;
 		this.source = source;
 	}
 
-	public Iterable<Class<?>> types() {
+	public Set<Class<?>> types() {
 		return types;
 	}
 
@@ -56,8 +94,7 @@ public class Factory {
 	}
 
 	public <T> T create(Class<T> type, Map<String, Object> arguments) {
-		@SuppressWarnings("unchecked")
-		var s = (Supplier<T>) suppliers.computeIfAbsent(type, k -> {
+		var f = functions.computeIfAbsent(type, k -> {
 			var c = k;
 			for (var x : types)
 				if (type.isAssignableFrom(x) && !Modifier.isAbstract(x.getModifiers())) {
@@ -70,29 +107,39 @@ public class Factory {
 			var c0 = cc[0];
 //			System.out.println("Factory.create, c0 = " + c0);
 			if (c.getEnclosingClass() == source.getClass())
-				return () -> {
+				return aa -> {
 					try {
+						var aa2 = Stream.concat(Stream.of(source), Arrays.stream(c0.getParameters()).skip(1).map(x -> {
+							if (aa != null && aa.containsKey(x.getName()))
+								return aa.get(x.getName());
+							var p = Reflection.property(source.getClass(), x.getName());
+							return p != null ? p.get(source) : null;
+						})).toArray();
 						@SuppressWarnings("unchecked")
-						var t = (T) c0.newInstance(source);
+						var t = (T) c0.newInstance(aa2);
 						return Reflection.copy(source, t);
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
 				};
-			return () -> {
+			return aa -> {
 				try {
+					var aa2 = Arrays.stream(c0.getParameters()).map(x -> {
+						if (aa != null && aa.containsKey(x.getName()))
+							return aa.get(x.getName());
+						var p = Reflection.property(source.getClass(), x.getName());
+						return p != null ? p.get(source) : null;
+					}).toArray();
 					@SuppressWarnings("unchecked")
-					var t = (T) c0.newInstance(Arrays.stream(c0.getParameters()).map(x -> {
-//						System.out.println("Factory.create, x = " + x);
-						return arguments != null && arguments.containsKey(x.getName()) ? arguments.get(x.getName())
-								: Reflection.property(source.getClass(), x.getName()).get(source);
-					}).toArray());
+					var t = (T) c0.newInstance(aa2);
 					return Reflection.copy(source, t);
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}
 			};
 		});
-		return s.get();
+		@SuppressWarnings("unchecked")
+		var t = (T) f.apply(arguments);
+		return t;
 	}
 }

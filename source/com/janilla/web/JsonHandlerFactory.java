@@ -55,8 +55,9 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 		var bb = s.getBytes();
 		rs.setHeaderValue("content-length", String.valueOf(bb.length));
 		try {
-//			((HttpWritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb), true);
-			((WritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb));
+			var n = ((WritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb));
+			if (n != bb.length)
+				throw new RuntimeException();
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

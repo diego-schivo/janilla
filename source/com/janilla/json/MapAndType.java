@@ -25,6 +25,7 @@
 package com.janilla.json;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 
@@ -57,11 +58,11 @@ public record MapAndType(Map<?, ?> map, Class<?> type) {
 
 	public static class DollarTypeResolver implements TypeResolver {
 
-		protected final Iterable<Class<?>> types;
+		protected final Set<Class<?>> types;
 
 		protected final Map<String, Class<?>> resolveMap = new ConcurrentHashMap<>();
 
-		public DollarTypeResolver(Iterable<Class<?>> types) {
+		public DollarTypeResolver(Set<Class<?>> types) {
 			this.types = types;
 		}
 

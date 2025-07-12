@@ -58,24 +58,33 @@ public abstract class HttpMessage implements Closeable {
 	// Getters and Setters
 	// *******************
 
+	public HeaderField getHeader(String name) {
+		return headers != null ? headers.stream().filter(x -> x.name().equals(name)).findFirst().orElse(null) : null;
+	}
+
+	public void setHeader(HeaderField header) {
+		if (headers == null)
+			headers = new ArrayList<>();
+		else {
+			var i = 0;
+			for (var x : headers) {
+				if (x.name().equals(header.name())) {
+					headers.set(i, header);
+					return;
+				}
+				i++;
+			}
+		}
+		headers.add(header);
+	}
+
 	public String getHeaderValue(String name) {
-		return headers != null
-				? headers.stream().filter(x -> x.name().equals(name)).findFirst().map(HeaderField::value).orElse(null)
-				: null;
+		var x = getHeader(name);
+		return x != null ? x.value() : null;
 	}
 
 	public void setHeaderValue(String name, String value) {
-		if (headers == null)
-			headers = new ArrayList<>();
-		var i = 0;
-		for (var h : headers) {
-			if (h.name().equals(name)) {
-				headers.set(i, h.withValue(value));
-				return;
-			}
-			i++;
-		}
-		headers.add(new HeaderField(name, value));
+		setHeader(new HeaderField(name, value));
 	}
 
 	@Override

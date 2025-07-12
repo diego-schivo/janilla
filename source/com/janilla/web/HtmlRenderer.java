@@ -54,7 +54,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 
 	@Override
 	public String apply(T value) {
-		var t = Objects.toString(template(value), "${}");
+		var t = Objects.requireNonNullElse(template(value), "${}");
 		for (var i = 0; i < 3; i++) {
 			var p = switch (i) {
 			case 0 -> COMMENT;
@@ -147,9 +147,8 @@ public class HtmlRenderer<T> extends Renderer<T> {
 			k2 = k;
 		}
 		var t = factory.template(k1, k2);
-		if (t == null) {
+		if (t == null)
 			throw new NullPointerException(k1 + ", " + k2);
-		}
 		return t;
 	}
 

@@ -170,14 +170,14 @@ public class Converter {
 				return n.entrySet().stream().map(e -> {
 					var k = convert(e.getKey(), aa[0]);
 					var v = convert(e.getValue(), aa[1]);
-					return new AbstractMap.SimpleEntry<>(k, v);
+					return new AbstractMap.SimpleImmutableEntry<>(k, v);
 				}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 			}
 			if (c == Map.Entry.class) {
 				var aa = ((ParameterizedType) target).getActualTypeArguments();
 				var k = convert(n.get("key"), aa[0]);
 				var v = convert(n.get("value"), aa[1]);
-				return new AbstractMap.SimpleEntry<>(k, v);
+				return new AbstractMap.SimpleImmutableEntry<>(k, v);
 			}
 			return convert(n, c);
 		}

@@ -27,11 +27,11 @@ package com.janilla.http;
 public class HttpResponse extends HttpMessage {
 
 	public int getStatus() {
-		var v = getHeaderValue(":status");
-		return v != null ? Integer.parseInt(v) : 0;
+		var x = getHeaderValue(":status");
+		return x != null ? Integer.parseInt(x) : 0;
 	}
 
 	public void setStatus(int status) {
-		setHeaderValue(":status", String.valueOf(status));
+		setHeaderValue(":status", status != 0 ? String.valueOf(status) : null);
 	}
 }

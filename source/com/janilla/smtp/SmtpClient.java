@@ -100,7 +100,7 @@ public class SmtpClient {
 								+ message + "\n.",
 						"QUIT" }) {
 					if (s != null) {
-						System.out.println("C: " + s.replace("\n", "\nC: "));
+//						System.out.println("C: " + s.replace("\n", "\nC: "));
 						sch.write(encoder.encode(CharBuffer.wrap(s.replace("\n", "\r\n") + "\r\n")));
 					}
 					dbuf.clear();

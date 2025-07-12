@@ -73,7 +73,7 @@ public class ReflectionValueIterator extends ValueIterator {
 		var kkvv = class0.isEnum() ? Stream.of(Map.<String, Object>entry("name", ((Enum<?>) object).name()))
 				: Reflection.properties(class0).map(x -> {
 //			System.out.println("ReflectionValueIterator.newIterator, x=" + x + ", object=" + object);
-					Map.Entry<String, Object> kv = new AbstractMap.SimpleEntry<>(x.name(), x.get(object));
+					Map.Entry<String, Object> kv = new AbstractMap.SimpleImmutableEntry<>(x.name(), x.get(object));
 					return kv;
 				});
 		if (((ReflectionJsonIterator) context).includeType) {

@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import com.janilla.database.BTree;
 import com.janilla.database.Database;
@@ -77,7 +78,7 @@ public class CmsPersistence extends Persistence {
 		}
 	};
 
-	public CmsPersistence(Database database, Iterable<Class<? extends Entity<?>>> types, TypeResolver typeResolver) {
+	public CmsPersistence(Database database, Set<Class<? extends Entity<?>>> types, TypeResolver typeResolver) {
 		super(database, types, typeResolver);
 	}
 
