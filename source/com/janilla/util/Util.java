@@ -25,13 +25,8 @@
 package com.janilla.util;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
 import java.util.function.IntConsumer;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -273,33 +268,4 @@ public interface Util {
 //			}
 //		}).toList();
 //	}
-
-	static Set<Path> getPackageFiles(String package1) {
-		System.out.println("Util.getPackageFiles, package1=" + package1);
-		var l = Thread.currentThread().getContextClassLoader();
-		var s = package1.replace('.', '/');
-		return l.resources(s).map(y -> {
-			System.out.println("Util.getPackageFiles, y=" + y);
-			URI u;
-			try {
-				u = y.toURI();
-			} catch (URISyntaxException e) {
-				throw new RuntimeException(e);
-			}
-			return Path.of(u);
-		}).distinct().filter(Files::isDirectory).flatMap(d -> {
-			try {
-				System.out.println("Util.getPackageFiles, d=" + d);
-				try (var pp = Files.walk(d)) {
-					var ff = pp.filter(Files::isRegularFile).map(file -> {
-						System.out.println("Util.getPackageFiles, file=" + file);
-						return file;
-					}).toList();
-					return ff.stream();
-				}
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		}).collect(Collectors.toSet());
-	}
 }

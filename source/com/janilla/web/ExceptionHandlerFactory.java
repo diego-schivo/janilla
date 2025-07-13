@@ -26,10 +26,11 @@ package com.janilla.web;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpHandlerFactory;
 
-public class ExceptionHandlerFactory implements WebHandlerFactory {
+public class ExceptionHandlerFactory implements HttpHandlerFactory {
 
-	public static void main(String[] args) throws Exception {
+//	public static void main(String[] args) throws Exception {
 //		var f = new ExceptionHandlerFactory();
 //
 //		var i = new ByteArrayInputStream("""
@@ -58,10 +59,10 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 //				Content-Length: 0\r
 //				\r
 //				""") : t;
-	}
+//	}
 
 	@Override
-	public HttpHandler createHandler(Object object, HttpExchange exchange) {
+	public HttpHandler createHandler(Object object) {
 		if (object instanceof Exception e) {
 			var er = e.getClass().getAnnotation(Error.class);
 //			System.out.println("ExceptionHandlerFactory.createHandler, er=" + er);
@@ -71,7 +72,7 @@ public class ExceptionHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected boolean handle(Error error, HttpExchange exchange) {
-		var rs = exchange.getResponse();
+		var rs = exchange.response();
 		var s = error != null ? error.code() : 500;
 //		System.out.println("ExceptionHandlerFactory.handle, s=" + s);
 		rs.setStatus(s);

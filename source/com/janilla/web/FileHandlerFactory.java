@@ -24,18 +24,19 @@
  */
 package com.janilla.web;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -44,16 +45,17 @@ import java.util.stream.Stream;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
 import com.janilla.io.IO;
 
-public class ResourceHandlerFactory implements WebHandlerFactory {
+public class FileHandlerFactory implements HttpHandlerFactory {
 
 	protected static final Set<String> EXTENSIONS = Set.of("avif", "css", "html", "ico", "jpg", "js", "png", "svg",
 			"ttf", "webp", "woff", "woff2");
 
 //	public static void main(String[] args) throws Exception {
-//		var f = new ResourceHandlerFactory();
+//		var f = new FileHandlerFactory();
 //		f.setToInputStream(u -> u.getPath().equals("/test.html") ? new ByteArrayInputStream("""
 //				<html>
 //					<head>
@@ -98,14 +100,18 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 //				</html>""") : s;
 //	}
 
-	protected final Map<String, Resource> resources;
+	protected final Map<String, File> files;
 
-	public ResourceHandlerFactory(Set<Path> files) {
+	public FileHandlerFactory(Collection<Path> files) {
+//		System.out.println("FileHandlerFactory, files=" + files);
 		var l = Thread.currentThread().getContextClassLoader();
-		var rr = Stream.<Resource>builder();
+		var rr = Stream.<File>builder();
 		files.stream().forEach(x -> {
-			var d0 = Stream.iterate(x, y -> y.getParent()).dropWhile(y -> !y.getFileName().toString().equals("classes"))
-					.findFirst().get();
+//			System.out.println("x.getFileSystem()=" + (x.getFileSystem() == FileSystems.getDefault()));
+			var d0 = x.getFileSystem() == FileSystems.getDefault()
+					? Stream.iterate(x, y -> y.getParent())
+							.dropWhile(y -> !y.getFileName().toString().equals("classes")).findFirst().get()
+					: x.getFileSystem().getRootDirectories().iterator().next();
 			x = d0.relativize(x);
 			try {
 				var n = x.getFileName().toString();
@@ -115,18 +121,18 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 					;
 				else if (EXTENSIONS.contains(ex)) {
 //					var x = d0.relativize(file);
-					var p = x.getParent().toString().replace(File.separatorChar, '.');
-					n = x.toString().replace(File.separatorChar, '/');
+					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
+					n = x.toString().replace(java.io.File.separatorChar, '/');
 					var file = d0.resolve(x);
-					var r = new FileResource(p, "/" + n, Files.size(file));
+					var r = new DefaultFile(p, "/" + n, Files.size(file));
 //				System.out.println("r=" + r);
 					rr.add(r);
 				} else if (ex.equals("zip")) {
 //					var x = d0.relativize(file);
-					var p = x.getParent().toString().replace(File.separatorChar, '.');
-					n = x.toString().replace(File.separatorChar, '/');
+					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
+					n = x.toString().replace(java.io.File.separatorChar, '/');
 					var file = d0.resolve(x);
-					var a = new FileResource(p, "/" + n, Files.size(file));
+					var a = new DefaultFile(p, "/" + n, Files.size(file));
 					URI u;
 					try {
 						u = l.getResource(n).toURI();
@@ -146,7 +152,7 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 							var i = n.lastIndexOf('.');
 							var ex = i != -1 ? n.substring(i + 1).toLowerCase() : null;
 							if (ex != null && EXTENSIONS.contains(ex)) {
-								var r = new ZipEntryResource(a, file.toString(), Files.size(file));
+								var r = new ZipEntryFile(a, file.toString(), Files.size(file));
 //							System.out.println("r=" + r);
 								rr.add(r);
 							}
@@ -158,35 +164,35 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 				throw new UncheckedIOException(e);
 			}
 		});
-		resources = rr.build().collect(Collectors.toMap(x -> switch (x) {
-		case FileResource y -> y.path.substring(y.package1.length() + 1);
-		case ZipEntryResource y ->
+		this.files = rr.build().collect(Collectors.toMap(x -> switch (x) {
+		case DefaultFile y -> y.path.substring(y.package1.length() + 1);
+		case ZipEntryFile y ->
 			y.archive.path.substring(0, y.archive.path.length() - 4).substring(y.archive.package1.length() + 1)
 					+ y.path;
 		default -> throw new IllegalArgumentException();
-		}, x -> x, (_, x) -> x, LinkedHashMap::new));
-		System.out.println("ResourceHandlerFactory, resources=" + resources);
+		}, x -> x, (x, _) -> x, LinkedHashMap::new));
+//		System.out.println("FileHandlerFactory, files=" + this.files);
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object, HttpExchange exchange) {
+	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest rq) {
-			var r = resources.get(rq.getPath());
-//			System.out.println("ResourceHandlerFactory.createHandler, rq=" + rq.getPath() + ", r=" + r);
-			if (r != null)
+			var f = files.get(rq.getPath());
+			if (f != null)
 				return x -> {
-					handle(r, x);
+					handle(f, x);
 					return true;
 				};
 		}
 		return null;
 	}
 
-	protected void handle(Resource resource, HttpExchange exchange) {
-		var rs = exchange.getResponse();
+	protected void handle(File file, HttpExchange exchange) {
+//		System.out.println("FileHandlerFactory.handle, file=" + file);
+		var rs = exchange.response();
 		rs.setStatus(200);
 		rs.setHeaderValue("cache-control", "max-age=3600");
-		switch (resource.path().substring(resource.path().lastIndexOf('.') + 1)) {
+		switch (file.path().substring(file.path().lastIndexOf('.') + 1).toLowerCase()) {
 		case "html":
 			rs.setHeaderValue("content-type", "text/html");
 			break;
@@ -200,22 +206,25 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 			rs.setHeaderValue("content-type", "image/svg+xml");
 			break;
 		}
-		rs.setHeaderValue("content-length", String.valueOf(resource.size()));
+		rs.setHeaderValue("content-length", String.valueOf(file.size()));
 
 		var l = Thread.currentThread().getContextClassLoader();
-		try (var in = switch (resource) {
-		case FileResource x -> l.getResourceAsStream(x.path.substring(1));
-		case ZipEntryResource x -> {
+		try (var in = switch (file) {
+		case DefaultFile x -> l.getResourceAsStream(x.path.substring(1));
+		case ZipEntryFile x -> {
 			URI u;
 			try {
 				u = l.getResource(x.archive.path.substring(1)).toURI();
 			} catch (URISyntaxException g) {
 				throw new RuntimeException(g);
 			}
-			var v = u.toString();
-			if (!v.startsWith("jar:"))
-				u = URI.create("jar:" + v);
-			yield Files.newInputStream(IO.zipFileSystem(u).getPath(x.path));
+//			System.out.println("FileHandlerFactory.handle, u=" + u);
+			var s = u.toString();
+			if (!s.startsWith("jar:"))
+				u = URI.create("jar:" + s);
+			var p = IO.zipFileSystem(u).getPath(x.path);
+//			System.out.println("FileHandlerFactory.handle, p=" + p);
+			yield Files.newInputStream(p);
 		}
 		default -> throw new IllegalArgumentException();
 		}; var out = Channels.newOutputStream((WritableByteChannel) rs.getBody())) {
@@ -225,16 +234,16 @@ public class ResourceHandlerFactory implements WebHandlerFactory {
 		}
 	}
 
-	public interface Resource {
+	public interface File {
 
 		String path();
 
 		long size();
 	}
 
-	public record FileResource(String package1, String path, long size) implements Resource {
+	public record DefaultFile(String package1, String path, long size) implements File {
 	}
 
-	public record ZipEntryResource(FileResource archive, String path, long size) implements Resource {
+	public record ZipEntryFile(DefaultFile archive, String path, long size) implements File {
 	}
 }

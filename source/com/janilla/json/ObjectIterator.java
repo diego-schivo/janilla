@@ -95,8 +95,11 @@ public class ObjectIterator extends TokenIterator {
 
 	@Override
 	protected JsonToken<?> computeNext() {
-		var t = token != null ? token : iterator.next();
-		token = null;
-		return t;
+		var x = token;
+		if (x != null)
+			token = null;
+		else
+			x = iterator.next();
+		return x;
 	}
 }

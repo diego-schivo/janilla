@@ -57,17 +57,19 @@ import java.util.stream.Stream;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.json.Converter;
 import com.janilla.json.Json;
-import com.janilla.json.MapAndType;
+import com.janilla.json.NullTypeResolver;
+import com.janilla.json.TypeResolver;
 import com.janilla.net.Net;
 import com.janilla.reflect.Reflection;
 import com.janilla.util.EntryList;
 import com.janilla.util.EntryTree;
 
-public class MethodHandlerFactory implements WebHandlerFactory {
+public class MethodHandlerFactory implements HttpHandlerFactory {
 
 //	public static void main(String[] args) throws Exception {
 //		class C {
@@ -143,15 +145,15 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected final RenderableFactory renderableFactory;
 
-	protected final WebHandlerFactory rootFactory;
+	protected final HttpHandlerFactory rootFactory;
 
 	protected final Map<String, Invocable> invocables;
 
 	protected final Map<Pattern, Invocable> regexInvocables;
 
-	public MethodHandlerFactory(Set<Method> methods, Function<Class<?>, Object> targetResolver,
+	public MethodHandlerFactory(Collection<Method> methods, Function<Class<?>, Object> targetResolver,
 			Comparator<Invocation> invocationComparator, RenderableFactory renderableFactory,
-			WebHandlerFactory rootFactory) {
+			HttpHandlerFactory rootFactory) {
 		this.targetResolver = Objects.requireNonNullElseGet(targetResolver, () -> x -> {
 			try {
 				return x.getConstructor().newInstance();
@@ -167,7 +169,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		invocables = new HashMap<>();
 		for (var m : methods) {
 			var c = m.getDeclaringClass();
-			System.out.println("MethodHandlerFactory, m=" + m + ", c=" + c);
+//			System.out.println("MethodHandlerFactory, m=" + m + ", c=" + c);
 			var h1 = c.getAnnotation(Handle.class);
 			var p1 = h1 != null ? h1.path() : null;
 			var h2 = m.getAnnotation(Handle.class);
@@ -187,8 +189,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 //			}
 		}
 
-		var kk = invocables.keySet().stream().filter(k -> k.contains("(") && k.contains(")"))
-				.collect(Collectors.toSet());
+		var kk = invocables.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).toList();
 		regexInvocables = kk.stream().sorted(Comparator.comparingInt((String x) -> x.indexOf('(')).reversed())
 				.collect(Collectors.toMap(k -> Pattern.compile(k), invocables::get, (v, _) -> v, LinkedHashMap::new));
 		invocables.keySet().removeAll(kk);
@@ -196,7 +197,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object, HttpExchange exchange) {
+	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest rq) {
 			var m1 = Objects.requireNonNullElse(rq.getMethod(), "");
 			var ii = resolveInvocables(rq.getPath()).map(x -> {
@@ -267,7 +268,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 			}
 		});
 
-		var rs = exchange.getResponse();
+		var rs = exchange.response();
 		if (rs.getStatus() != 0)
 			;
 		else if (invocation.method.getReturnType() == Void.TYPE) {
@@ -303,7 +304,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected Object[] resolveArguments(Invocation invocation, HttpExchange exchange) {
-		var rq = exchange.getRequest();
+		var rq = exchange.request();
 		var qs = Net.parseQueryString(rq.getQuery());
 		Supplier<String> bs = switch (rq.getMethod()) {
 		case "PATCH", "POST", "PUT" -> {
@@ -374,25 +375,24 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 					i < ggl ? (g != null ? new String[] { g } : null)
 							: qs2 != null && n != null ? qs2.stream(n).toArray(String[]::new) : null,
 					i >= ggl ? qs : null, bs2,
-					b != null && b.resolver() != MapAndType.NullTypeResolver.class ? () -> resolver(b.resolver())
-							: null);
+					b != null && b.resolver() != NullTypeResolver.class ? () -> resolver(b.resolver()) : null);
 		}
 		return aa;
 	}
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values,
-			EntryList<String, String> entries, Supplier<String> body, Supplier<MapAndType.TypeResolver> resolver) {
+			EntryList<String, String> entries, Supplier<String> body, Supplier<TypeResolver> resolver) {
 		var c = type instanceof Class<?> x ? x : null;
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
 			return exchange;
 		if (c != null && HttpRequest.class.isAssignableFrom(c))
-			return exchange.getRequest();
+			return exchange.request();
 		if (c != null && HttpResponse.class.isAssignableFrom(c))
-			return exchange.getResponse();
+			return exchange.response();
 		if (values != null && values.length > 0)
 			return parseParameter(values, type);
 		if (c != null) {
-			var ct = exchange.getRequest().getHeaderValue("content-type");
+			var ct = exchange.request().getHeaderValue("content-type");
 			switch (Objects.requireNonNullElse(ct, "").split(";")[0]) {
 			case "application/json": {
 				if (body == null)
@@ -487,7 +487,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 		return d.convert(i, c);
 	}
 
-	protected MapAndType.TypeResolver resolver(Class<? extends MapAndType.TypeResolver> class0) {
+	protected TypeResolver resolver(Class<? extends TypeResolver> class0) {
 		try {
 			return class0.getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {
@@ -497,7 +497,7 @@ public class MethodHandlerFactory implements WebHandlerFactory {
 
 	protected void render(Renderable<?> renderable, HttpExchange exchange) {
 //		System.out.println("MethodHandlerFactory.render, renderable=" + renderable);
-		var h = rootFactory.createHandler(renderable, exchange);
+		var h = rootFactory.createHandler(renderable);
 		if (h != null)
 			h.handle(exchange);
 	}

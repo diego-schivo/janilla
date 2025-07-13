@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import com.janilla.http.HttpExchange;
-import com.janilla.json.MapAndType;
+import com.janilla.json.DollarTypeResolver;
 import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;
@@ -50,7 +50,7 @@ public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID
 	}
 
 	@Handle(method = "POST")
-	public E create(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
+	public E create(@Bind(resolver = DollarTypeResolver.class) E entity) {
 		return crud().create(entity);
 	}
 
@@ -63,7 +63,7 @@ public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID
 	}
 
 	@Handle(method = "PUT")
-	public E update(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
+	public E update(@Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);

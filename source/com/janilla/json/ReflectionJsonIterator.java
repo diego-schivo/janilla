@@ -41,8 +41,7 @@ public class ReflectionJsonIterator extends JsonIterator {
 		c.l = List.of(d2, d3);
 		c.m = List.of(456L, 567L);
 		c.n = List.of(Map.entry("a", "b"), Map.entry("a", "b"));
-		var t = new ReflectionJsonIterator();
-		t.setObject(c);
+		var t = new ReflectionJsonIterator(c, false);
 		var s = Json.format(t);
 		System.out.println(s);
 		C o = null;
@@ -119,9 +118,10 @@ public class ReflectionJsonIterator extends JsonIterator {
 	public record D(int i) {
 	}
 
-	protected boolean includeType;
+	protected final boolean includeType;
 
-	public void setIncludeType(boolean includeType) {
+	public ReflectionJsonIterator(Object object, boolean includeType) {
+		super(object);
 		this.includeType = includeType;
 	}
 

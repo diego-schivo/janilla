@@ -29,28 +29,21 @@ import java.util.NoSuchElementException;
 
 public class NumberIterator implements Iterator<JsonToken<?>> {
 
-	protected Number number;
+	protected final Number value;
 
 	private int state;
 
 	private JsonToken<?> token;
 
-	public void setNumber(Number number) {
-		this.number = number;
+	public NumberIterator(Number value) {
+		this.value = value;
 	}
 
 	@Override
 	public boolean hasNext() {
-		while (token == null && state != 1) {
-			var s = state;
-			state = switch (s) {
-			case 0 -> {
-				token = new JsonToken<>(JsonToken.Type.NUMBER, number);
-				yield 1;
-			}
-			default -> s;
-			};
-//			System.out.println("NumberIterator.hasNext, " + s + " -> " + state);
+		if (state == 0) {
+			token = new JsonToken<>(JsonToken.Type.NUMBER, value);
+			state = 1;
 		}
 		return token != null;
 	}
@@ -59,8 +52,8 @@ public class NumberIterator implements Iterator<JsonToken<?>> {
 	public JsonToken<?> next() {
 		if (!hasNext())
 			throw new NoSuchElementException();
-		var t = token;
+		var x = token;
 		token = null;
-		return t;
+		return x;
 	}
 }

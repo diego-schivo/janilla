@@ -35,16 +35,9 @@ public class NullIterator implements Iterator<JsonToken<?>> {
 
 	@Override
 	public boolean hasNext() {
-		while (token == null && state != 1) {
-			var s = state;
-			state = switch (s) {
-			case 0 -> {
-				token = JsonToken.NULL;
-				yield 1;
-			}
-			default -> s;
-			};
-//			System.out.println("NullIterator.hasNext, " + s + " -> " + state);
+		if (state == 0) {
+			token = JsonToken.NULL;
+			state = 1;
 		}
 		return token != null;
 	}
@@ -53,8 +46,8 @@ public class NullIterator implements Iterator<JsonToken<?>> {
 	public JsonToken<?> next() {
 		if (!hasNext())
 			throw new NoSuchElementException();
-		var t = token;
+		var x = token;
 		token = null;
-		return t;
+		return x;
 	}
 }

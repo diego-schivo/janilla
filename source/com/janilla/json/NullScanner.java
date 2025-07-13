@@ -28,9 +28,11 @@ import java.util.List;
 
 public class NullScanner implements Scanner {
 
-	int state;
+	private static final String STRING = "null";
 
-	int index;
+	private int state;
+
+	private int index;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {
@@ -38,31 +40,20 @@ public class NullScanner implements Scanner {
 		do {
 			var s = state;
 			state = switch (s) {
-
 			case 0 -> {
-				if (value == 'n') {
-					index = 1;
+				if (value == STRING.charAt(index)) {
+					index++;
 					a = true;
-					yield index < "null".length() ? 1 : 2;
+					yield index < STRING.length() ? 0 : 1;
 				}
 				a = false;
 				yield -1;
 			}
 
 			case 1 -> {
-				if (value == "null".charAt(index)) {
-					index++;
-					a = true;
-					yield index < "null".length() ? 1 : 2;
-				}
-				a = false;
-				yield -1;
-			}
-
-			case 2 -> {
 				tokens.add(JsonToken.NULL);
 				a = false;
-				yield 3;
+				yield 2;
 			}
 
 			default -> {

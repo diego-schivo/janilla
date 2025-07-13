@@ -32,22 +32,25 @@ import java.util.Iterator;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpHandlerFactory;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 
-public class JsonHandlerFactory implements WebHandlerFactory {
+public class JsonHandlerFactory implements HttpHandlerFactory {
 
 	@Override
-	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		return object instanceof Renderable<?> r ? x -> {
-			render(r.value(), (HttpExchange) x);
-			return true;
-		} : null;
+	public HttpHandler createHandler(Object object) {
+		if (object instanceof Renderable r)
+			return x -> {
+				render(r.value(), x);
+				return true;
+			};
+		return null;
 	}
 
 	protected void render(Object object, HttpExchange exchange) {
-		var rs = exchange.getResponse();
+		var rs = exchange.response();
 		rs.setHeaderValue("content-type", "application/json");
 
 		var s = Json.format(buildJsonIterator(object, exchange));
@@ -64,8 +67,6 @@ public class JsonHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected Iterator<JsonToken<?>> buildJsonIterator(Object object, HttpExchange exchange) {
-		var i = new ReflectionJsonIterator();
-		i.setObject(object);
-		return i;
+		return new ReflectionJsonIterator(object, false);
 	}
 }

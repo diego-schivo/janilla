@@ -29,7 +29,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.janilla.json.MapAndType;
+import com.janilla.json.NullTypeResolver;
+import com.janilla.json.TypeResolver;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.PARAMETER })
@@ -39,5 +40,5 @@ public @interface Bind {
 
 	String parameter() default "";
 
-	Class<? extends MapAndType.TypeResolver> resolver() default MapAndType.NullTypeResolver.class;
+	Class<? extends TypeResolver> resolver() default NullTypeResolver.class;
 }

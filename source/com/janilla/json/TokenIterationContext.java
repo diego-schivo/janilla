@@ -31,8 +31,7 @@ import java.util.Map;
 
 public abstract class TokenIterationContext {
 
-//	private Deque<Object> stack = new ArrayDeque<>();
-	private Deque<Object> stack = new LinkedList<>();
+	protected final Deque<Object> stack = new LinkedList<>(); // new ArrayDeque<>();
 
 	public Deque<Object> stack() {
 		return stack;
@@ -43,32 +42,26 @@ public abstract class TokenIterationContext {
 	}
 
 	public Iterator<JsonToken<?>> newBooleanIterator(Boolean value) {
-		var tt = new BooleanIterator();
-		tt.setValue(value);
-		return tt;
+		return new BooleanIterator(value);
 	}
 
 	public Iterator<JsonToken<?>> newNullIterator() {
 		return new NullIterator();
 	}
 
-	public Iterator<JsonToken<?>> newNumberIterator(Number number) {
-		var tt = new NumberIterator();
-		tt.setNumber(number);
-		return tt;
+	public Iterator<JsonToken<?>> newNumberIterator(Number value) {
+		return new NumberIterator(value);
 	}
 
 	public Iterator<JsonToken<?>> newObjectIterator(Iterator<Map.Entry<String, Object>> entries) {
 		return new ObjectIterator(this, entries);
 	}
 
-	public Iterator<JsonToken<?>> newStringIterator(String string) {
-		var tt = new StringIterator();
-		tt.setString(string);
-		return tt;
+	public Iterator<JsonToken<?>> newStringIterator(String value) {
+		return new StringIterator(value);
 	}
 
-	public Iterator<JsonToken<?>> newValueIterator(Object object) {
-		return new ValueIterator(this, object);
+	public Iterator<JsonToken<?>> newValueIterator(Object value) {
+		return new ValueIterator(this, value);
 	}
 }

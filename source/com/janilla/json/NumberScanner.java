@@ -28,9 +28,9 @@ import java.util.List;
 
 public class NumberScanner implements Scanner {
 
-	int state;
+	private int state;
 
-	StringBuilder buffer;
+	private StringBuilder string;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {
@@ -41,8 +41,8 @@ public class NumberScanner implements Scanner {
 
 			case 0 -> {
 				if (value == '-') {
-					buffer = new StringBuilder();
-					buffer.append((char) value);
+					string = new StringBuilder();
+					string.append((char) value);
 					a = true;
 				}
 				yield 1;
@@ -50,9 +50,9 @@ public class NumberScanner implements Scanner {
 
 			case 1 -> {
 				if (value >= '0' && value <= '9') {
-					if (buffer == null)
-						buffer = new StringBuilder();
-					buffer.append((char) value);
+					if (string == null)
+						string = new StringBuilder();
+					string.append((char) value);
 					a = true;
 					yield 2;
 				}
@@ -62,23 +62,23 @@ public class NumberScanner implements Scanner {
 
 			case 2 -> {
 				if (value >= '0' && value <= '9') {
-					buffer.append((char) value);
+					string.append((char) value);
 					a = true;
 					yield 2;
 				}
 				if (value == '.') {
-					buffer.append((char) value);
+					string.append((char) value);
 					a = true;
 					yield 3;
 				}
-				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, Long.parseLong(buffer.toString())));
+				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, Long.parseLong(string.toString())));
 				a = false;
 				yield 5;
 			}
 
 			case 3 -> {
 				if (value >= '0' && value <= '9') {
-					buffer.append((char) value);
+					string.append((char) value);
 					a = true;
 					yield 4;
 				}
@@ -88,11 +88,11 @@ public class NumberScanner implements Scanner {
 
 			case 4 -> {
 				if (value >= '0' && value <= '9') {
-					buffer.append((char) value);
+					string.append((char) value);
 					a = true;
 					yield 4;
 				}
-				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, Double.parseDouble(buffer.toString())));
+				tokens.add(new JsonToken<>(JsonToken.Type.NUMBER, Double.parseDouble(string.toString())));
 				a = false;
 				yield 5;
 			}

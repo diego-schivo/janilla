@@ -45,40 +45,36 @@ public class ReflectionValueIterator extends ValueIterator {
 	protected Iterator<JsonToken<?>> newIterator() {
 		var tt = super.newIterator();
 		if (tt == null) {
-			tt = switch (object) {
+			tt = switch (value) {
 			case byte[] x -> context.newStringIterator(Base64.getEncoder().encodeToString(x));
+			case double[] x -> context.newArrayIterator(Arrays.stream(x).boxed().iterator());
+			case int[] x -> context.newArrayIterator(Arrays.stream(x).boxed().iterator());
 			case long[] x -> context.newArrayIterator(Arrays.stream(x).boxed().iterator());
 			case Object[] x -> context.newArrayIterator(Arrays.stream(x).iterator());
 			case Collection<?> x -> context.newArrayIterator(x.iterator());
 			case Stream<?> x -> context.newArrayIterator(x.iterator());
 			default -> null;
 			};
-		}
-		if (tt == null) {
-			var c = Modifier.isPublic(object.getClass().getModifiers()) ? object.getClass() : switch (object) {
-			case Map.Entry<?, ?> _ -> Map.Entry.class;
-			default -> throw new RuntimeException();
-			};
-//			if (c.isEnum())
-//				tt = context.newStringIterator(object.toString());
-//			else {
-			var s = entries(c);
-			tt = context.newObjectIterator(s.iterator());
-//			}
+			if (tt == null) {
+				var c = Modifier.isPublic(value.getClass().getModifiers()) ? value.getClass() : switch (value) {
+				case Map.Entry<?, ?> _ -> Map.Entry.class;
+				default -> throw new RuntimeException();
+				};
+				tt = context.newObjectIterator(entries(c).iterator());
+			}
 		}
 		return tt;
 	}
 
-	protected Stream<Map.Entry<String, Object>> entries(Class<?> class0) {
-		var kkvv = class0.isEnum() ? Stream.of(Map.<String, Object>entry("name", ((Enum<?>) object).name()))
-				: Reflection.properties(class0).map(x -> {
-//			System.out.println("ReflectionValueIterator.newIterator, x=" + x + ", object=" + object);
-					Map.Entry<String, Object> kv = new AbstractMap.SimpleImmutableEntry<>(x.name(), x.get(object));
-					return kv;
+	protected Stream<Map.Entry<String, Object>> entries(Class<?> type) {
+		var kkvv = type.isEnum() ? Stream.of(Map.<String, Object>entry("name", ((Enum<?>) value).name()))
+				: Reflection.properties(type).map(x -> {
+//					System.out.println("ReflectionValueIterator.entries, x=" + x + ", object=" + object);
+					return (Map.Entry<String, Object>) new AbstractMap.SimpleImmutableEntry<>(x.name(), x.get(value));
 				});
 		if (((ReflectionJsonIterator) context).includeType) {
-			var t = class0.getName().substring(class0.getPackageName().length() + 1).replace('$', '.');
-			kkvv = Stream.concat(Stream.of(Map.entry("$type", (Object) t)), kkvv);
+			var x = (Object) type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');
+			kkvv = Stream.concat(Stream.of(Map.entry("$type", x)), kkvv);
 		}
 		return kkvv;
 	}

@@ -31,8 +31,9 @@ import java.nio.channels.WritableByteChannel;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpHandlerFactory;
 
-public class TemplateHandlerFactory implements WebHandlerFactory {
+public class TemplateHandlerFactory implements HttpHandlerFactory {
 
 	protected final Object application;
 
@@ -41,7 +42,7 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object, HttpExchange exchange) {
+	public HttpHandler createHandler(Object object) {
 		return object instanceof Renderable r && r.renderer().annotation != null ? x -> {
 			render(r, x);
 			return true;
@@ -49,7 +50,7 @@ public class TemplateHandlerFactory implements WebHandlerFactory {
 	}
 
 	protected void render(Renderable<?> input, HttpExchange exchange) {
-		var rs = exchange.getResponse();
+		var rs = exchange.response();
 		if (rs.getStatus() == 0)
 			rs.setStatus(200);
 		if (rs.getHeader("cache-control") == null)

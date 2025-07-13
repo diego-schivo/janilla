@@ -48,9 +48,9 @@ public abstract class TokenIterator implements Iterator<JsonToken<?>> {
 	public final JsonToken<?> next() {
 		if (!hasNext())
 			throw new NoSuchElementException();
-		var t = computeNext();
+		var x = computeNext();
 		hasNext = null;
-		return t;
+		return x;
 	}
 
 	protected abstract boolean computeHasNext();

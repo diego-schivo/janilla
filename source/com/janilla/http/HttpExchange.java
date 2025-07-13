@@ -24,41 +24,42 @@
  */
 package com.janilla.http;
 
-public class HttpExchange {
+public interface HttpExchange {
 
-	private HttpRequest request;
+	HttpRequest request();
 
-	private HttpResponse response;
+	HttpResponse response();
 
-	private Exception exception;
+	Exception exception();
 
-	// *******************
-	// Getters and Setters
+	HttpExchange withException(Exception exception);
 
-	public HttpRequest getRequest() {
-		return request;
+	abstract class Base implements HttpExchange {
+
+		protected final HttpRequest request;
+
+		protected final HttpResponse response;
+
+		protected Exception exception;
+
+		public Base(HttpRequest request, HttpResponse response) {
+			this.request = request;
+			this.response = response;
+		}
+
+		@Override
+		public HttpRequest request() {
+			return request;
+		}
+
+		@Override
+		public HttpResponse response() {
+			return response;
+		}
+
+		@Override
+		public Exception exception() {
+			return exception;
+		}
 	}
-
-	public void setRequest(HttpRequest request) {
-		this.request = request;
-	}
-
-	public HttpResponse getResponse() {
-		return response;
-	}
-
-	public void setResponse(HttpResponse response) {
-		this.response = response;
-	}
-
-	public Exception getException() {
-		return exception;
-	}
-
-	public void setException(Exception exception) {
-		this.exception = exception;
-	}
-
-	// Getters and Setters
-	// *******************
 }

@@ -22,12 +22,11 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.web;
+package com.janilla.json;
 
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
+public record ObjectAndType(Object object, Class<?> type) {
 
-public interface WebHandlerFactory {
-
-	HttpHandler createHandler(Object object, HttpExchange exchange);
+	public ObjectAndType withType(Class<?> type) {
+		return new ObjectAndType(object, type);
+	}
 }

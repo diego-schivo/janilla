@@ -40,9 +40,9 @@ public class StringScanner implements Scanner {
 		assert p.equals(o) : p;
 	}
 
-	int state;
+	private int state;
 
-	StringBuilder buffer;
+	private StringBuilder string;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {
@@ -53,7 +53,7 @@ public class StringScanner implements Scanner {
 
 			case 0 -> {
 				if (value == '"') {
-					buffer = new StringBuilder();
+					string = new StringBuilder();
 					a = true;
 					yield 1;
 				}
@@ -67,11 +67,11 @@ public class StringScanner implements Scanner {
 					yield 2;
 				}
 				if (value != '"') {
-					buffer.append((char) value);
+					string.append((char) value);
 					a = true;
 					yield 1;
 				}
-				tokens.add(new JsonToken<>(JsonToken.Type.STRING, buffer.toString()));
+				tokens.add(new JsonToken<>(JsonToken.Type.STRING, string.toString()));
 				a = true;
 				yield 3;
 			}
@@ -79,27 +79,27 @@ public class StringScanner implements Scanner {
 			case 2 -> {
 				switch (value) {
 				case '"':
-					buffer.append('"');
+					string.append('"');
 					a = true;
 					yield 1;
 				case '\\':
-					buffer.append('\\');
+					string.append('\\');
 					a = true;
 					yield 1;
 				case 'n':
-					buffer.append('\n');
+					string.append('\n');
 					a = true;
 					yield 1;
 				case 'r':
-					buffer.append('\r');
+					string.append('\r');
 					a = true;
 					yield 1;
 				case 't':
-					buffer.append('\t');
+					string.append('\t');
 					a = true;
 					yield 1;
 				case '/':
-					buffer.append('/');
+					string.append('/');
 					a = true;
 					yield 1;
 				default:

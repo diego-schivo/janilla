@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import com.janilla.http.HttpExchange;
-import com.janilla.json.MapAndType;
+import com.janilla.json.DollarTypeResolver;
 import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;
@@ -52,7 +52,7 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 	}
 
 	@Handle(method = "POST")
-	public E create(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
+	public E create(@Bind(resolver = DollarTypeResolver.class) E entity) {
 		return crud().create(entity);
 	}
 
@@ -70,7 +70,7 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 	}
 
 	@Handle(method = "PUT", path = "(\\d+)")
-	public E update(ID id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, Boolean draft,
+	public E update(ID id, @Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft,
 			Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
 		if (s != entity.documentStatus())
@@ -95,12 +95,12 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 	}
 
 	@Handle(method = "PATCH", path = "(\\d+)")
-	public E patch(ID id, @Bind(resolver = MapAndType.DollarTypeResolver.class) E entity) {
+	public E patch(ID id, @Bind(resolver = DollarTypeResolver.class) E entity) {
 		return patch(entity, List.of(id)).getFirst();
 	}
 
 	@Handle(method = "PATCH")
-	public List<E> patch(@Bind(resolver = MapAndType.DollarTypeResolver.class) E entity, @Bind("id") List<ID> ids) {
+	public List<E> patch(@Bind(resolver = DollarTypeResolver.class) E entity, @Bind("id") List<ID> ids) {
 		return crud().patch(ids, entity, MethodHandlerFactory.JSON_KEYS.get());
 	}
 

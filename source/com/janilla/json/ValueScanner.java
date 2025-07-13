@@ -29,9 +29,9 @@ import java.util.stream.Stream;
 
 public class ValueScanner implements Scanner {
 
-	int state;
+	private int state;
 
-	Scanner scanner;
+	private Scanner scanner;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {
@@ -62,12 +62,12 @@ public class ValueScanner implements Scanner {
 			}
 
 			case 2 -> {
-				var f = Stream
-						.of(new ObjectScanner(), new ArrayScanner(), new StringScanner(), new NumberScanner(),
-								new BooleanScanner(), new NullScanner())
-						.filter(m -> m.accept(value, tokens)).findFirst();
-				if (f.isPresent()) {
-					scanner = f.get();
+				var x = Stream
+						.of(new ArrayScanner(), new BooleanScanner(), new NullScanner(), new NumberScanner(),
+								new ObjectScanner(), new StringScanner())
+						.filter(y -> y.accept(value, tokens)).findFirst();
+				if (x.isPresent()) {
+					scanner = x.get();
 					a = true;
 					yield 3;
 				}

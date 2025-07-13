@@ -42,7 +42,8 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 
 	protected final Persistence persistence;
 
-	public CmsReflectionJsonIterator(Persistence persistence) {
+	public CmsReflectionJsonIterator(Object object, boolean includeType, Persistence persistence) {
+		super(object, includeType);
 		this.persistence = persistence;
 	}
 
@@ -95,7 +96,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 
 		@Override
 		protected Iterator<JsonToken<?>> newIterator() {
-			return object instanceof Class<?> c
+			return value instanceof Class<?> c
 					? context.newStringIterator(c.getName().substring(c.getPackageName().length() + 1))
 					: super.newIterator();
 		}
@@ -109,7 +110,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 			if (v != null) {
 				var n = Version.class.getSimpleName() + "<" + class0.getSimpleName() + ">.document";
 				var vc = persistence.database()
-						.perform((_, ii) -> ii.perform(n, i -> i.count(((Document<?>) object).id())), false);
+						.perform((_, ii) -> ii.perform(n, i -> i.count(((Document<?>) value).id())), false);
 				var kv = Map.entry("versionCount", (Object) vc);
 				kkvv = Stream.concat(kkvv, Stream.of(kv));
 			}

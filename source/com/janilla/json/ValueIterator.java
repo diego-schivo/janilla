@@ -41,7 +41,7 @@ import java.util.UUID;
 
 public class ValueIterator extends TokenIterator {
 
-	protected final Object object;
+	protected final Object value;
 
 	private int state;
 
@@ -49,9 +49,9 @@ public class ValueIterator extends TokenIterator {
 
 	private Iterator<JsonToken<?>> iterator;
 
-	public ValueIterator(TokenIterationContext context, Object object) {
+	public ValueIterator(TokenIterationContext context, Object value) {
 		super(context);
-		this.object = object;
+		this.value = value;
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class ValueIterator extends TokenIterator {
 			var s = state;
 			state = switch (s) {
 			case 0 -> {
-				context.stack().push(object);
+				context.stack().push(value);
 				token = JsonToken.VALUE_START;
 				yield 1;
 			}
@@ -91,8 +91,8 @@ public class ValueIterator extends TokenIterator {
 	}
 
 	protected Iterator<JsonToken<?>> newIterator() {
-//		System.out.println("ValueIterator.newIterator, object=" + object);
-		return object == null ? context.newNullIterator() : switch (object) {
+//		System.out.println("ValueIterator.newIterator, value=" + value);
+		return value != null ? switch (value) {
 		case Boolean x -> context.newBooleanIterator(x);
 		case Date x -> context.newStringIterator(x.toString());
 		case Instant x -> context.newStringIterator(x.toString());
@@ -118,6 +118,6 @@ public class ValueIterator extends TokenIterator {
 		case URI x -> context.newStringIterator(x.toString());
 		case UUID x -> context.newStringIterator(x.toString());
 		default -> null;
-		};
+		} : context.newNullIterator();
 	}
 }

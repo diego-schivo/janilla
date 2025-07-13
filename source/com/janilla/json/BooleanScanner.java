@@ -28,11 +28,13 @@ import java.util.List;
 
 public class BooleanScanner implements Scanner {
 
-	int state;
+	private static final String[] STRINGS = new String[] { "true", "false" };
 
-	StringBuilder buffer;
+	private int state;
 
-	int index;
+	private String string;
+
+	private int index;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {
@@ -42,29 +44,29 @@ public class BooleanScanner implements Scanner {
 			state = switch (s) {
 
 			case 0 -> {
-				for (var t : new String[] { "true", "false" })
-					if (value == t.charAt(0)) {
-						buffer = new StringBuilder(t);
+				for (var x : STRINGS)
+					if (value == x.charAt(0)) {
+						string = x;
 						index = 1;
 						a = true;
-						yield index < buffer.length() ? 1 : 2;
+						yield index < string.length() ? 1 : 2;
 					}
 				a = false;
 				yield -1;
 			}
 
 			case 1 -> {
-				if (value == buffer.charAt(index)) {
+				if (value == string.charAt(index)) {
 					index++;
 					a = true;
-					yield index < buffer.length() ? 1 : 2;
+					yield index < string.length() ? 1 : 2;
 				}
 				a = false;
 				yield -1;
 			}
 
 			case 2 -> {
-				tokens.add(new JsonToken<>(JsonToken.Type.BOOLEAN, Boolean.parseBoolean(buffer.toString())));
+				tokens.add(new JsonToken<>(JsonToken.Type.BOOLEAN, Boolean.parseBoolean(string)));
 				a = false;
 				yield 3;
 			}

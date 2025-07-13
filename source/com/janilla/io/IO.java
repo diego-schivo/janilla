@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -48,7 +49,7 @@ public abstract class IO {
 
 	public static final int DEFAULT_BUFFER_CAPACITY = 8192;
 
-	public static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.+)!(.+)");
+	public static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.*)!(.*)");
 
 	public static void emptyDirectory(Path directory) throws IOException {
 		Files.walkFileTree(directory, new SimpleFileVisitor<>() {
@@ -70,7 +71,7 @@ public abstract class IO {
 
 	public static Stream<Path> getPackageFiles(String package1) {
 		var b = Stream.<Path>builder();
-		IO.acceptPackageFiles(package1, b::add);
+		acceptPackageFiles(package1, b::add);
 		return b.build();
 	}
 
@@ -200,7 +201,7 @@ public abstract class IO {
 		return n;
 	}
 
-	static Map<String, FileSystem> zipFileSystems = new ConcurrentHashMap<>();
+	private static Map<String, FileSystem> zipFileSystems = new ConcurrentHashMap<>();
 
 	public static FileSystem zipFileSystem(URI uri) throws IOException {
 		try {
@@ -259,5 +260,37 @@ public abstract class IO {
 				return l;
 			}
 		};
+	}
+
+	public static List<Path> getPackagePaths(String package1) {
+//		System.out.println("Util.getPackageFiles, package1=" + package1);
+		var l = Thread.currentThread().getContextClassLoader();
+		var s = package1.replace('.', '/');
+		return l.resources(s).map(x -> {
+			URI u;
+			try {
+				u = x.toURI();
+			} catch (URISyntaxException e) {
+				throw new RuntimeException(e);
+			}
+//			System.out.println("Util.getPackageFiles, u=" + u);
+			var m = JAR_URI_PATTERN.matcher(u.toString());
+			Path d;
+			try {
+				d = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(u);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+//			System.out.println("Util.getPackageFiles, d=" + d);
+			return d;
+		}).flatMap(x -> {
+			try (var yy = Files.walk(x)) {
+				var pp = yy.toList();
+//				System.out.println("Util.getPackageFiles, pp=" + pp);
+				return pp.stream();
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}).toList();
 	}
 }

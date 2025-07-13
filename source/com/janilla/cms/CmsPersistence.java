@@ -29,9 +29,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import com.janilla.database.BTree;
 import com.janilla.database.Database;
@@ -40,8 +40,8 @@ import com.janilla.database.KeyAndData;
 import com.janilla.io.ByteConverter;
 import com.janilla.io.ByteConverter.SortOrder;
 import com.janilla.io.ByteConverter.TypeAndOrder;
-import com.janilla.json.MapAndType;
-import com.janilla.json.MapAndType.TypeResolver;
+import com.janilla.json.ObjectAndType;
+import com.janilla.json.TypeResolver;
 import com.janilla.persistence.Crud;
 import com.janilla.persistence.Entity;
 import com.janilla.persistence.Persistence;
@@ -78,7 +78,7 @@ public class CmsPersistence extends Persistence {
 		}
 	};
 
-	public CmsPersistence(Database database, Set<Class<? extends Entity<?>>> types, TypeResolver typeResolver) {
+	public CmsPersistence(Database database, Collection<Class<? extends Entity<?>>> types, TypeResolver typeResolver) {
 		super(database, types, typeResolver);
 	}
 
@@ -174,7 +174,7 @@ public class CmsPersistence extends Persistence {
 				buffer.get(bb);
 				var l = idByteConverter.deserialize(buffer);
 				var s = new String(bb);
-				var t = typeResolver.apply(new MapAndType(Map.of("$type", s), null)).type();
+				var t = typeResolver.apply(new ObjectAndType(Map.of("$type", s), null)).type();
 				@SuppressWarnings({ "rawtypes", "unchecked" })
 				var r = (Document.Reference<ID, ?>) new Document.Reference(t, l);
 				return r;

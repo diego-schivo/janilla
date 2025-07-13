@@ -26,8 +26,9 @@ package com.janilla.reflect;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -35,7 +36,7 @@ import java.util.stream.Stream;
 public class Factory {
 
 	public static void main(String[] args) {
-		var f = new Factory(Set.of(Foo.C.class), new Foo("a"));
+		var f = new Factory(List.of(Foo.C.class), new Foo("a"));
 		var x1 = f.create(Foo.I.class, Map.of("s2", "b"));
 		System.out.println("x1=" + x1);
 		var x2 = f.create(Foo.I.class, Map.of("s2", "c"));
@@ -70,18 +71,18 @@ public class Factory {
 		}
 	}
 
-	protected final Set<Class<?>> types;
+	protected final Collection<Class<?>> types;
 
 	protected final Object source;
 
 	protected final Map<Class<?>, Function<Map<String, Object>, ?>> functions = new ConcurrentHashMap<>();
 
-	public Factory(Set<Class<?>> types, Object source) {
+	public Factory(Collection<Class<?>> types, Object source) {
 		this.types = types;
 		this.source = source;
 	}
 
-	public Set<Class<?>> types() {
+	public Collection<Class<?>> types() {
 		return types;
 	}
 

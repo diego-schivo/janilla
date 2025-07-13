@@ -26,25 +26,25 @@ package com.janilla.json;
 
 public record JsonToken<T>(Type type, T data) {
 
-	final static JsonToken<Boundary> JSON_START = new JsonToken<>(Type.JSON, Boundary.START);
-	final static JsonToken<Boundary> JSON_END = new JsonToken<>(Type.JSON, Boundary.END);
-	final static JsonToken<Boundary> OBJECT_START = new JsonToken<>(Type.OBJECT, Boundary.START);
-	final static JsonToken<Boundary> OBJECT_END = new JsonToken<>(Type.OBJECT, Boundary.END);
-	final static JsonToken<Boundary> ARRAY_START = new JsonToken<>(Type.ARRAY, Boundary.START);
 	final static JsonToken<Boundary> ARRAY_END = new JsonToken<>(Type.ARRAY, Boundary.END);
-	final static JsonToken<Boundary> MEMBER_START = new JsonToken<>(Type.MEMBER, Boundary.START);
-	final static JsonToken<Boundary> MEMBER_END = new JsonToken<>(Type.MEMBER, Boundary.END);
-	final static JsonToken<Boundary> ELEMENT_START = new JsonToken<>(Type.ELEMENT, Boundary.START);
+	final static JsonToken<Boundary> ARRAY_START = new JsonToken<>(Type.ARRAY, Boundary.START);
 	final static JsonToken<Boundary> ELEMENT_END = new JsonToken<>(Type.ELEMENT, Boundary.END);
-	final static JsonToken<Boundary> VALUE_START = new JsonToken<>(Type.VALUE, Boundary.START);
-	final static JsonToken<Boundary> VALUE_END = new JsonToken<>(Type.VALUE, Boundary.END);
+	final static JsonToken<Boundary> ELEMENT_START = new JsonToken<>(Type.ELEMENT, Boundary.START);
+	final static JsonToken<Boundary> JSON_END = new JsonToken<>(Type.JSON, Boundary.END);
+	final static JsonToken<Boundary> JSON_START = new JsonToken<>(Type.JSON, Boundary.START);
+	final static JsonToken<Boundary> MEMBER_END = new JsonToken<>(Type.MEMBER, Boundary.END);
+	final static JsonToken<Boundary> MEMBER_START = new JsonToken<>(Type.MEMBER, Boundary.START);
 	final static JsonToken<Object> NULL = new JsonToken<>(Type.NULL, null);
+	final static JsonToken<Boundary> OBJECT_END = new JsonToken<>(Type.OBJECT, Boundary.END);
+	final static JsonToken<Boundary> OBJECT_START = new JsonToken<>(Type.OBJECT, Boundary.START);
+	final static JsonToken<Boundary> VALUE_END = new JsonToken<>(Type.VALUE, Boundary.END);
+	final static JsonToken<Boundary> VALUE_START = new JsonToken<>(Type.VALUE, Boundary.START);
 
 	public enum Type {
-		JSON, OBJECT, ARRAY, MEMBER, ELEMENT, VALUE, STRING, NUMBER, BOOLEAN, NULL
+		ARRAY, BOOLEAN, ELEMENT, JSON, MEMBER, NUMBER, NULL, OBJECT, STRING, VALUE
 	}
 
 	public enum Boundary {
-		START, END
+		END, START
 	}
 }

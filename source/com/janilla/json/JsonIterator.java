@@ -29,7 +29,7 @@ import java.util.NoSuchElementException;
 
 public class JsonIterator extends TokenIterationContext implements Iterator<JsonToken<?>> {
 
-	protected Object object;
+	protected final Object object;
 
 	private Boolean hasNext;
 
@@ -39,39 +39,39 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 
 	private Iterator<JsonToken<?>> iterator;
 
-	public void setObject(Object object) {
+	public JsonIterator(Object object) {
 		this.object = object;
 	}
 
 	@Override
 	public boolean hasNext() {
-		if (hasNext != null)
-			return hasNext;
-		while (token == null && (iterator == null || !iterator.hasNext()) && state != 3) {
-			var s = state;
-			state = switch (s) {
-			case 0 -> {
-				stack().push(object);
-				token = JsonToken.JSON_START;
-				yield 1;
-			}
-			case 1 -> {
-				if (iterator == null)
-					iterator = newValueIterator(object);
-				if (iterator.hasNext())
+		if (hasNext == null) {
+			while (token == null && (iterator == null || !iterator.hasNext()) && state != 3) {
+				var s = state;
+				state = switch (s) {
+				case 0 -> {
+					stack().push(object);
+					token = JsonToken.JSON_START;
 					yield 1;
-				yield 2;
-			}
-			case 2 -> {
-				stack().pop();
-				token = JsonToken.JSON_END;
-				yield 3;
-			}
-			default -> s;
-			};
+				}
+				case 1 -> {
+					if (iterator == null)
+						iterator = newValueIterator(object);
+					if (iterator.hasNext())
+						yield 1;
+					yield 2;
+				}
+				case 2 -> {
+					stack().pop();
+					token = JsonToken.JSON_END;
+					yield 3;
+				}
+				default -> s;
+				};
 //			System.out.println("JsonIterator.hasNext, " + s + " -> " + state);
+			}
+			hasNext = token != null || (iterator != null && iterator.hasNext());
 		}
-		hasNext = token != null || (iterator != null && iterator.hasNext());
 		return hasNext;
 	}
 
@@ -79,9 +79,12 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 	public JsonToken<?> next() {
 		if (!hasNext())
 			throw new NoSuchElementException();
-		var t = token != null ? token : iterator.next();
+		var x = token;
+		if (x != null)
+			token = null;
+		else
+			x = iterator.next();
 		hasNext = null;
-		token = null;
-		return t;
+		return x;
 	}
 }

@@ -26,48 +26,51 @@ package com.janilla.web;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
-import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpHandlerFactory;
 import com.janilla.reflect.Factory;
 
-public class ApplicationHandlerBuilder implements WebHandlerFactory {
+public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected final Factory factory;
 
-	protected final Set<Method> methods;
+	protected final Collection<Method> methods;
 
-	protected final Set<Path> resourceFiles;
+	protected final Collection<Path> files;
 
-	protected List<WebHandlerFactory> handlerFactories;
+	protected final List<HttpHandlerFactory> handlerFactories;
 
-	public ApplicationHandlerBuilder(Factory factory, Set<Method> methods, Set<Path> resourceFiles) {
+	public ApplicationHandlerFactory(Factory factory, Collection<Method> methods, Collection<Path> files) {
 		this.factory = factory;
 		this.methods = methods;
-		this.resourceFiles = resourceFiles;
-	}
-
-	public HttpHandler build() {
+		this.files = files;
 		handlerFactories = buildFactories();
-		return x -> {
-			var o = x.getException() != null ? x.getException() : x.getRequest();
-			var h = createHandler(o, x);
-			if (h == null)
-				throw new NotFoundException(x.getRequest().getMethod() + " " + x.getRequest().getTarget());
-			return h.handle(x);
-		};
 	}
 
-	protected List<WebHandlerFactory> buildFactories() {
-		return List.of(buildMethodHandlerFactory(), buildTemplateHandlerFactory(), buildResourceHandlerFactory(),
+	@Override
+	public HttpHandler createHandler(Object object) {
+		for (var f : handlerFactories)
+			if (f != null) {
+				var h = f.createHandler(object);
+				if (h != null) {
+//					System.out.println("ApplicationHandlerBuilder.createHandler, f=" + f + ", h=" + h);
+					return h;
+				}
+			}
+		return null;
+	}
+
+	protected List<HttpHandlerFactory> buildFactories() {
+		return List.of(buildMethodHandlerFactory(), buildTemplateHandlerFactory(), buildFileHandlerFactory(),
 				buildJsonHandlerFactory(), buildExceptionHandlerFactory());
 	}
 
-	protected WebHandlerFactory buildMethodHandlerFactory() {
+	protected HttpHandlerFactory buildMethodHandlerFactory() {
 		return factory.create(MethodHandlerFactory.class,
 				Map.of("methods", methods, "targetResolver",
 						(Function<Class<?>, Object>) x -> x.isAssignableFrom(factory.source().getClass())
@@ -76,32 +79,19 @@ public class ApplicationHandlerBuilder implements WebHandlerFactory {
 						"rootFactory", this));
 	}
 
-	protected WebHandlerFactory buildTemplateHandlerFactory() {
+	protected HttpHandlerFactory buildTemplateHandlerFactory() {
 		return factory.create(TemplateHandlerFactory.class, Map.of("rootFactory", this));
 	}
 
-	protected WebHandlerFactory buildResourceHandlerFactory() {
-		return factory.create(ResourceHandlerFactory.class, Map.of("files", resourceFiles, "rootFactory", this));
+	protected HttpHandlerFactory buildFileHandlerFactory() {
+		return factory.create(FileHandlerFactory.class, Map.of("files", files, "rootFactory", this));
 	}
 
-	protected WebHandlerFactory buildJsonHandlerFactory() {
+	protected HttpHandlerFactory buildJsonHandlerFactory() {
 		return factory.create(JsonHandlerFactory.class, Map.of("rootFactory", this));
 	}
 
-	protected WebHandlerFactory buildExceptionHandlerFactory() {
+	protected HttpHandlerFactory buildExceptionHandlerFactory() {
 		return factory.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this));
-	}
-
-	@Override
-	public HttpHandler createHandler(Object object, HttpExchange exchange) {
-		for (var f : handlerFactories)
-			if (f != null) {
-				var h = f.createHandler(object, exchange);
-				if (h != null) {
-//					System.out.println("ApplicationHandlerBuilder.createHandler, f=" + f + ", h=" + h);
-					return h;
-				}
-			}
-		return null;
 	}
 }

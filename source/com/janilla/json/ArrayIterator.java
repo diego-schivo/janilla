@@ -77,15 +77,18 @@ public class ArrayIterator extends TokenIterator {
 			}
 			default -> s;
 			};
-//			System.out.println("ArrayIterator.hasNext, " + s + " -> " + state);
+//			System.out.println("ArrayIterator.computeHasNext, " + s + " -> " + state);
 		}
 		return token != null || (iterator != null && iterator.hasNext());
 	}
 
 	@Override
 	protected JsonToken<?> computeNext() {
-		var t = token != null ? token : iterator.next();
-		token = null;
-		return t;
+		var x = token;
+		if (x != null)
+			token = null;
+		else
+			x = iterator.next();
+		return x;
 	}
 }

@@ -28,9 +28,9 @@ import java.util.List;
 
 public class ObjectScanner implements Scanner {
 
-	int state;
+	private int state;
 
-	Scanner scanner;
+	private Scanner scanner;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {

@@ -22,38 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.json;
+package com.janilla.http;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+public interface HttpHandlerFactory {
 
-public class BooleanIterator implements Iterator<JsonToken<?>> {
-
-	protected final Boolean value;
-
-	private int state;
-
-	private JsonToken<?> token;
-
-	public BooleanIterator(Boolean value) {
-		this.value = value;
-	}
-
-	@Override
-	public boolean hasNext() {
-		if (state == 0) {
-			token = new JsonToken<>(JsonToken.Type.BOOLEAN, value);
-			state = 1;
-		}
-		return token != null;
-	}
-
-	@Override
-	public JsonToken<?> next() {
-		if (!hasNext())
-			throw new NoSuchElementException();
-		var x = token;
-		token = null;
-		return x;
-	}
+	HttpHandler createHandler(Object object);
 }

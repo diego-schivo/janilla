@@ -451,10 +451,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	protected String format(Object object) {
-		var tt = new CustomReflectionJsonIterator();
-		tt.setObject(object);
-		tt.setIncludeType(true);
-		return Json.format(tt);
+		return Json.format(new CustomReflectionJsonIterator(object, true));
 	}
 
 	protected E parse(String string) {
@@ -610,6 +607,10 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected class CustomReflectionJsonIterator extends ReflectionJsonIterator {
 
+		public CustomReflectionJsonIterator(Object object, boolean includeType) {
+			super(object, includeType);
+		}
+
 		@Override
 		public Iterator<JsonToken<?>> newValueIterator(Object object) {
 			return new CustomReflectionValueIterator(this, object);
@@ -624,7 +625,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 		@Override
 		protected Iterator<JsonToken<?>> newIterator() {
-			return object instanceof Class<?> c ? context.newStringIterator(persistence.typeResolver.format(c))
+			return value instanceof Class<?> c ? context.newStringIterator(persistence.typeResolver.format(c))
 					: super.newIterator();
 		}
 	}

@@ -45,7 +45,7 @@ public class RenderableFactory {
 	}
 
 	public <T> Renderable<T> createRenderable(AnnotatedElement annotated, T value) {
-//		System.out.println("MethodHandlerFactory.of, annotated=" + annotated + ", value=" + value);
+//		System.out.println("RenderableFactory.createRenderable, annotated=" + annotated + ", value=" + value);
 		var ra = Stream.of(annotated, value != null ? value.getClass() : null)
 				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(x -> x != null).findFirst()
 				.orElse(null);

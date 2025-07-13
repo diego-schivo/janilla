@@ -28,7 +28,7 @@ import java.util.List;
 
 public class WhitespaceScanner implements Scanner {
 
-	int state;
+	private int state;
 
 	@Override
 	public boolean accept(int value, List<JsonToken<?>> tokens) {

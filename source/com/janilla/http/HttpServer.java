@@ -141,9 +141,7 @@ public class HttpServer extends SecureServer {
 					rs.setStatus(0);
 					var baos = new ByteArrayOutputStream();
 					rs.setBody(Channels.newChannel(baos));
-					var ex = createExchange(rq);
-					ex.setRequest(rq);
-					ex.setResponse(rs);
+					var ex = createExchange(rq, rs);
 					ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
 					sb = Stream.<String>builder();
 					sb.add("HTTP/1.1 " + rs.getStatus() + " OK");
@@ -345,9 +343,7 @@ public class HttpServer extends SecureServer {
 						return (int) (written - w);
 					}
 				});
-				var ex = createExchange(rq);
-				ex.setRequest(rq);
-				ex.setResponse(rs);
+				var ex = createExchange(rq, rs);
 				ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
 			}
 		} catch (Exception e) {
@@ -355,8 +351,15 @@ public class HttpServer extends SecureServer {
 		}
 	}
 
-	protected HttpExchange createExchange(HttpRequest request) {
-		return new HttpExchange();
+	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+		record R(HttpRequest request, HttpResponse response, Exception exception) implements HttpExchange {
+
+			@Override
+			public HttpExchange withException(Exception exception) {
+				return new R(request, response, exception);
+			}
+		}
+		return new R(request, response, null);
 	}
 
 	protected boolean handleExchange(HttpExchange ex) {
@@ -378,7 +381,7 @@ public class HttpServer extends SecureServer {
 		if (e != null)
 			try {
 				e.printStackTrace();
-				ex.setException(e);
+				ex = ex.withException(e);
 				k = handler.handle(ex);
 			} catch (RuntimeException x) {
 				if (x.getCause() instanceof Error y)

@@ -33,7 +33,6 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -43,7 +42,7 @@ import com.janilla.database.BTree;
 import com.janilla.database.Database;
 import com.janilla.database.KeyAndData;
 import com.janilla.io.ByteConverter;
-import com.janilla.json.MapAndType;
+import com.janilla.json.TypeResolver;
 import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
 
@@ -51,13 +50,13 @@ public class Persistence {
 
 	protected final Database database;
 
-	protected final Set<Class<? extends Entity<?>>> types;
+	protected final Collection<Class<? extends Entity<?>>> types;
 
-	protected final MapAndType.TypeResolver typeResolver;
+	protected final TypeResolver typeResolver;
 
 	protected final Configuration configuration = new Configuration();
 
-	public Persistence(Database database, Set<Class<? extends Entity<?>>> types, MapAndType.TypeResolver typeResolver) {
+	public Persistence(Database database, Collection<Class<? extends Entity<?>>> types, TypeResolver typeResolver) {
 		this.database = database;
 		this.types = types;
 		this.typeResolver = typeResolver;
@@ -70,7 +69,7 @@ public class Persistence {
 		return database;
 	}
 
-	public MapAndType.TypeResolver typeResolver() {
+	public TypeResolver typeResolver() {
 		return typeResolver;
 	}
 

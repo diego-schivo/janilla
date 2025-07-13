@@ -29,52 +29,30 @@ import java.util.NoSuchElementException;
 
 public class StringIterator implements Iterator<JsonToken<?>> {
 
-	protected String string;
+	protected final String value;
 
 	private int state;
 
 	private JsonToken<?> token;
 
-	public void setString(String string) {
-		this.string = string;
+	public StringIterator(String value) {
+		this.value = value;
 	}
 
 	@Override
 	public boolean hasNext() {
-		while (token == null && state != 1) {
-			var s = state;
-			state = switch (s) {
-			case 0 -> {
-				var b = new StringBuilder();
-				for (var i = string.chars().iterator(); i.hasNext();) {
-					var c = (char) i.nextInt();
-					switch (c) {
-					case '"':
-						b.append("\\\"");
-						break;
-					case '\\':
-						b.append("\\\\");
-						break;
-					case '\n':
-						b.append("\\n");
-						break;
-					case '\r':
-						b.append("\\r");
-						break;
-					case '\t':
-						b.append("\\t");
-						break;
-					default:
-						b.append(c);
-						break;
-					}
-				}
-				token = new JsonToken<>(JsonToken.Type.STRING, b.toString());
-				yield 1;
-			}
-			default -> s;
-			};
-//			System.out.println("StringIterator.hasNext, " + s + " -> " + state);
+		if (state == 0) {
+			var b = new StringBuilder();
+			value.chars().forEach(x -> b.append(switch (x) {
+			case '"' -> "\\\"";
+			case '\\' -> "\\\\";
+			case '\n' -> "\\n";
+			case '\r' -> "\\r";
+			case '\t' -> "\\t";
+			default -> (char) x;
+			}));
+			token = new JsonToken<>(JsonToken.Type.STRING, b.toString());
+			state = 1;
 		}
 		return token != null;
 	}
@@ -83,8 +61,8 @@ public class StringIterator implements Iterator<JsonToken<?>> {
 	public JsonToken<?> next() {
 		if (!hasNext())
 			throw new NoSuchElementException();
-		var t = token;
+		var x = token;
 		token = null;
-		return t;
+		return x;
 	}
 }
