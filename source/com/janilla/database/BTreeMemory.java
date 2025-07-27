@@ -74,11 +74,11 @@ public class BTreeMemory implements Memory {
 ////				}).toArray();
 ////			}
 //
-//			System.out.println(Arrays.toString(p));
+//			IO.println(Arrays.toString(p));
 //
 //			var b = new ArrayList<BlockReference>();
 //			for (var q : p) {
-//				System.out.println(q);
+//				IO.println(q);
 //				BlockReference r;
 //				switch (q) {
 //				case Allocate a:
@@ -92,7 +92,7 @@ public class BTreeMemory implements Memory {
 //				default:
 //					throw new RuntimeException();
 //				}
-//				System.out.println("\t" + r);
+//				IO.println("\t" + r);
 //			}
 //		}
 //	}
@@ -106,7 +106,7 @@ public class BTreeMemory implements Memory {
 
 			@Override
 			public void free(BlockReference reference) {
-//				System.out.println("free " + reference + "!");
+//				IO.println("free " + reference + "!");
 				freeBTree.queue.offer(reference);
 			}
 
@@ -115,7 +115,7 @@ public class BTreeMemory implements Memory {
 				var c = computeCapacity(size);
 				var p = BTreeMemory.this.append(c);
 				var r = new BlockReference(-1, p, c);
-//				System.out.println("allocate " + r + "!");
+//				IO.println("allocate " + r + "!");
 				return r;
 			}
 		};
@@ -140,19 +140,19 @@ public class BTreeMemory implements Memory {
 		var c = computeCapacity(size);
 		var r = freeBTree.remove(new BlockReference(-1, -1, c));
 		if (r != null) {
-//			System.out.println("allocate " + r + "*");
+//			IO.println("allocate " + r + "*");
 			return r;
 		}
 		var p = append(c);
 		r = new BlockReference(-1, p, c);
-//		System.out.println("allocate " + r);
+//		IO.println("allocate " + r);
 		return r;
 	}
 
 	@Override
 	public void free(BlockReference reference) {
 		var r = reference;
-//		System.out.println("free " + r);
+//		IO.println("free " + r);
 		var t = freeBTree;
 		t.getOrAdd(r);
 	}

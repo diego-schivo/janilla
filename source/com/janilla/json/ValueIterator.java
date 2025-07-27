@@ -78,7 +78,7 @@ public class ValueIterator extends TokenIterator {
 			}
 			default -> s;
 			};
-//			System.out.println("ValueIterator.hasNext, " + s + " -> " + state);
+//			IO.println("ValueIterator.hasNext, " + s + " -> " + state);
 		}
 		return token != null || (iterator != null && iterator.hasNext());
 	}
@@ -91,7 +91,7 @@ public class ValueIterator extends TokenIterator {
 	}
 
 	protected Iterator<JsonToken<?>> newIterator() {
-//		System.out.println("ValueIterator.newIterator, value=" + value);
+//		IO.println("ValueIterator.newIterator, value=" + value);
 		return value != null ? switch (value) {
 		case Boolean x -> context.newBooleanIterator(x);
 		case Date x -> context.newStringIterator(x.toString());

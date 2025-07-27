@@ -24,6 +24,7 @@
  */
 package com.janilla.database;
 
+import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
@@ -116,14 +117,14 @@ public class Database {
 						@SuppressWarnings("unchecked")
 						var s = (Store<Long, String>) s0;
 						var m = Json.parse((String) s.read(1L));
-						System.out.println(m);
+						IO.println(m);
 						assert m.equals(Map.of("id", 1L, "title", "FooBarBazQux")) : m;
 						return null;
 					});
 
 					ii.perform("Article.tagList", i -> {
 						var ll = i.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
-						System.out.println(Arrays.toString(ll));
+						IO.println(Arrays.toString(ll));
 						assert Arrays.equals(ll, new long[] { 2, 1 }) : ll;
 						return null;
 					});
@@ -202,7 +203,7 @@ public class Database {
 		performLock.lock();
 		try {
 //			if (write)
-//				System.out.println("1 " + LocalDateTime.now());
+//				IO.println("1 " + LocalDateTime.now());
 			var p = performing.getAndSet(true);
 			var fl = !p ? ((FileChannel) channel.channel()).lock() : null;
 			try {
@@ -232,7 +233,7 @@ public class Database {
 			throw new UncheckedIOException(e);
 		} finally {
 //			if (write)
-//				System.out.println("2 " + LocalDateTime.now());
+//				IO.println("2 " + LocalDateTime.now());
 			performLock.unlock();
 		}
 	}

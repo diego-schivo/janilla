@@ -87,17 +87,20 @@ public interface ByteConverter<E> {
 	}
 
 	static ByteConverter<Object[]> of(Class<?> type, String... properties) {
+//		IO.println("ByteConverter.of, type=" + type + ", properties=" + Arrays.toString(properties));
 		return of(Arrays.stream(properties).map(n -> {
 			var d = n.startsWith("-");
 			if (n.startsWith("+") || d)
 				n = n.substring(1);
 			var t = Reflection.property(type, n).type();
 			var o = d ? SortOrder.DESCENDING : SortOrder.ASCENDING;
+//			IO.println("ByteConverter.of, n=" + n + ", t=" + t + ", o=" + o);
 			return new TypeAndOrder(t, o);
 		}).toArray(TypeAndOrder[]::new));
 	}
 
 	static ByteConverter<Object[]> of(TypeAndOrder... types) {
+//		IO.println("ByteConverter.of, types=" + Arrays.toString(types));
 		var hh = Arrays.stream(types).map(x -> ByteConverter.of(x.type)).toArray(ByteConverter[]::new);
 		var oo = Arrays.stream(types).map(TypeAndOrder::order).toArray(SortOrder[]::new);
 		return new ByteConverter<>() {
@@ -127,7 +130,7 @@ public interface ByteConverter<E> {
 						var l = h.getLength(buffer);
 						p2 += l;
 						if (l < 0 || p2 > buffer.limit()) {
-//							System.out.println("l=" + l);
+//							IO.println("l=" + l);
 							throw new RuntimeException();
 						}
 						buffer.position(p2);
@@ -405,7 +408,7 @@ public interface ByteConverter<E> {
 			if (element == null)
 				return 1;
 			if (l < 0 || p + Integer.BYTES + l > buffer.limit()) {
-//				System.out.println("l=" + l);
+//				IO.println("l=" + l);
 				throw new RuntimeException();
 			}
 			var bb = new byte[l];

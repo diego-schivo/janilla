@@ -115,7 +115,7 @@ public class ArrayScanner implements Scanner {
 			}
 			};
 
-//			System.out.println("ArrayScanner.accept " + value + " " + a + " " + s + " -> " + state);
+//			IO.println("ArrayScanner.accept " + value + " " + a + " " + s + " -> " + state);
 
 		} while (a == null);
 		return a;

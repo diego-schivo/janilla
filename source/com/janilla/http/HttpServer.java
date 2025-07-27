@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
@@ -40,7 +41,6 @@ import java.util.stream.Stream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
-import com.janilla.io.IO;
 import com.janilla.net.SecureServer;
 import com.janilla.net.SecureTransfer;
 import com.janilla.web.HandleException;
@@ -51,8 +51,8 @@ public class HttpServer extends SecureServer {
 
 	protected final HttpHandler handler;
 
-	public HttpServer(SSLContext sslContext, HttpHandler handler) {
-		super(sslContext);
+	public HttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler) {
+		super(sslContext, endpoint);
 		this.handler = handler;
 	}
 
@@ -71,10 +71,10 @@ public class HttpServer extends SecureServer {
 			if (transfer.read() == -1)
 				return;
 		} while (transfer.in().position() < 16);
-//		System.out.println("bb=" + new String(st.in().array(), 0, 16));
+//		IO.println("bb=" + new String(st.in().array(), 0, 16));
 
 		var ap = transfer.engine().getApplicationProtocol();
-//		System.out.println("ap=" + ap);
+//		IO.println("ap=" + ap);
 		if (ap.equals("h2"))
 			handleConnection2(transfer);
 		else
@@ -83,14 +83,14 @@ public class HttpServer extends SecureServer {
 
 	protected void handleConnection1(SecureTransfer transfer) throws IOException {
 		for (;;) {
-//			System.out.println("st.in().position()=" + st.in().position());
+//			IO.println("st.in().position()=" + st.in().position());
 			var sb = Stream.<String>builder();
 			for (;;) {
 				int i = 0, b1 = -1, b2;
 				for (;; i++, b1 = b2) {
 					if (i == transfer.in().position()) {
 						var n = transfer.read();
-//						System.out.println("n=" + n);
+//						IO.println("n=" + n);
 						if (n == -1)
 							return;
 					}
@@ -98,13 +98,13 @@ public class HttpServer extends SecureServer {
 					if (b1 == '\r' && b2 == '\n')
 						break;
 				}
-//				System.out.println("i=" + i);
+//				IO.println("i=" + i);
 				transfer.in().flip();
 				var bb = new byte[i + 1];
 				transfer.in().get(bb);
 				transfer.in().compact();
 				var s = new String(bb, 0, i - 1);
-//				System.out.println("s=" + s);
+//				IO.println("s=" + s);
 				if (!s.isEmpty())
 					sb.add(s);
 				else
@@ -181,7 +181,7 @@ public class HttpServer extends SecureServer {
 		transfer.in().flip();
 		var cp = new byte[24];
 		transfer.in().get(cp);
-//		System.out.println("cp=" + new String(cp));
+//		IO.println("cp=" + new String(cp));
 		if (!Arrays.equals(cp, """
 				PRI * HTTP/2.0\r
 				\r
@@ -211,7 +211,7 @@ public class HttpServer extends SecureServer {
 			if (bb == null)
 				break;
 			var f = hd.decodeFrame(bb);
-//			System.out.println("HttpServer.handleConnection2, f=" + f);
+//			IO.println("HttpServer.handleConnection2, f=" + f);
 			switch (f) {
 			case Frame.Data _:
 			case Frame.Headers _:
@@ -224,7 +224,7 @@ public class HttpServer extends SecureServer {
 				}
 				break;
 			case @SuppressWarnings("unused") Frame.Settings s:
-//				System.out.println("s=" + s);
+//				IO.println("s=" + s);
 				transfer.outLock().lock();
 				try {
 					transfer.out().clear();
@@ -262,11 +262,11 @@ public class HttpServer extends SecureServer {
 			}
 			var l = (Short.toUnsignedInt(transfer.in().getShort(transfer.in().position())) << 8)
 					| Byte.toUnsignedInt(transfer.in().get(transfer.in().position() + Short.BYTES));
-//			System.out.println("HttpServer.readFrame, l=" + l);
+//			IO.println("HttpServer.readFrame, l=" + l);
 			if (l > 16384)
 				throw new RuntimeException();
 			var bb = new byte[9 + l];
-//			System.out.println("transfer.in().remaining() " + transfer.in().remaining());
+//			IO.println("transfer.in().remaining() " + transfer.in().remaining());
 			if (transfer.in().remaining() < bb.length) {
 				transfer.in().compact();
 				do
@@ -293,8 +293,9 @@ public class HttpServer extends SecureServer {
 				else
 					dbb.put(((Frame.Data) f).data());
 			rq.setHeaders(hff);
-			rq.setBody(IO.toReadableByteChannel(dbb.flip()));
-//			System.out.println("HttpServer.handleStream, rq=" + rq.getTarget());
+//			rq.setBody(IO.toReadableByteChannel(dbb.flip()));
+			rq.setBody(Channels.newChannel(new ByteArrayInputStream(dbb.array())));
+//			IO.println("HttpServer.handleStream, rq=" + rq.getTarget());
 			try (var rs = new HttpResponse()) {
 				rs.setStatus(0);
 				rs.setBody(new WritableByteChannel() {
@@ -310,7 +311,7 @@ public class HttpServer extends SecureServer {
 
 					@Override
 					public void close() throws IOException {
-//						System.out.println("HttpServer.handleStream, close");
+//						IO.println("HttpServer.handleStream, close");
 						if (closed)
 							return;
 						var f = written == 0 ? new Frame.Headers(false, true, true, si, false, 0, 0, rs.getHeaders())
@@ -322,7 +323,7 @@ public class HttpServer extends SecureServer {
 
 					@Override
 					public int write(ByteBuffer src) throws IOException {
-//						System.out.println("HttpServer.handleStream, write");
+//						IO.println("HttpServer.handleStream, write");
 						if (closed)
 							throw new IOException("closed");
 						var w = written;
@@ -377,7 +378,7 @@ public class HttpServer extends SecureServer {
 				throw y;
 			e = x;
 		}
-//		System.out.println("HttpServer.handleExchange, e=" + e);
+//		IO.println("HttpServer.handleExchange, e=" + e);
 		if (e != null)
 			try {
 				e.printStackTrace();

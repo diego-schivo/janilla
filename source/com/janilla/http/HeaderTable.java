@@ -31,11 +31,10 @@ import java.util.Map;
 
 public class HeaderTable {
 
-	static HeaderTable STATIC;
+	protected static final HeaderTable STATIC;
 
 	static {
-		STATIC = new HeaderTable();
-		STATIC.setStartIndex(1);
+		STATIC = new HeaderTable(false, 1);
 		"""
 				:authority
 				:method: GET
@@ -99,33 +98,30 @@ public class HeaderTable {
 				via
 				www-authenticate: """.lines().map(x -> {
 			var i = x.indexOf(':', 1);
-			return new HeaderField(i >= 0 ? x.substring(0, i).trim() : x, i >= 0 ? x.substring(i + 1).trim() : null);
+			return new HeaderField(i != -1 ? x.substring(0, i).trim() : x, i != -1 ? x.substring(i + 1).trim() : null);
 		}).forEach(STATIC::add);
 	}
 
-	static int size(HeaderField header) {
+	protected static int size(HeaderField header) {
 		return header.name().length() + (header.value() != null ? header.value().length() : 0) + 32;
 	}
 
-	boolean dynamic;
+	protected final boolean dynamic;
 
-	int startIndex;
+	protected final int startIndex;
 
-	int maxSize = -1;
+	protected int maxSize = -1;
 
-	int size;
+	protected int size;
 
-	List<HeaderField> list = new ArrayList<>();
+	protected List<HeaderField> list = new ArrayList<>();
 
-	Map<String, List<IndexAndHeader>> map = new HashMap<>();
+	protected Map<String, List<IndexAndHeader>> map = new HashMap<>();
 
-	int addCount;
+	protected int addCount;
 
-	public void setDynamic(boolean dynamic) {
+	public HeaderTable(boolean dynamic, int startIndex) {
 		this.dynamic = dynamic;
-	}
-
-	public void setStartIndex(int startIndex) {
 		this.startIndex = startIndex;
 	}
 
@@ -141,12 +137,12 @@ public class HeaderTable {
 		return startIndex + list.size() - 1;
 	}
 
-	HeaderField header(int index) {
+	protected HeaderField header(int index) {
 		var i = index - startIndex;
 		return i >= 0 && i < list.size() ? list.get(i) : null;
 	}
 
-	List<IndexAndHeader> headers(String name) {
+	protected List<IndexAndHeader> headers(String name) {
 		return map.get(name);
 	}
 
@@ -179,22 +175,22 @@ public class HeaderTable {
 		return "[list=" + list + ",size=" + size + "]";
 	}
 
-	class IndexAndHeader {
+	protected class IndexAndHeader {
 
-		private int previousAddCount;
+		private final int previousAddCount;
 
-		private HeaderField header;
+		private final HeaderField header;
 
-		private IndexAndHeader(int previousAddCount, HeaderField header) {
+		public IndexAndHeader(int previousAddCount, HeaderField header) {
 			this.previousAddCount = previousAddCount;
 			this.header = header;
 		}
 
-		int index() {
+		protected int index() {
 			return dynamic ? startIndex - 1 + addCount - previousAddCount : startIndex + previousAddCount;
 		}
 
-		HeaderField header() {
+		protected HeaderField header() {
 			return header;
 		}
 	}

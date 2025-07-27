@@ -22,46 +22,44 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.util;
+package com.janilla.zip;
 
-import java.util.function.IntConsumer;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class BitsConsumer implements IntConsumer {
+public final class Zip {
 
-	IntConsumer bytes;
+	private static final Map<String, FileSystem> ZIP_FILE_SYSTEMS = new ConcurrentHashMap<>();
 
-	long current;
-
-	int currentLength;
-	
-	int length;
-
-	public BitsConsumer(IntConsumer bytes) {
-		this.bytes = bytes;
-	}
-	
-	public int length() {
-		return length;
+	private Zip() {
+		throw new Error("no instances");
 	}
 
-	@Override
-	public void accept(int value) {
-		accept(value, 8);
-	}
-
-	public void accept(int value, int bitsLength) {
-		current = (current << bitsLength) | (value & ((1L << bitsLength) - 1));
-		var l = currentLength + bitsLength;
-		for (; l >= 8; l -= 8) {
-			bytes.accept((int) (current >>> (l - 8)));
-			length++;
-			current &= (1 << (l - 8)) - 1;
-		}
-		currentLength = l;
-	}
-
-	public void accept(byte[] bytes) {
-		for (var b : bytes)
-			accept(b);
+	public static FileSystem zipFileSystem(URI uri) {
+		return ZIP_FILE_SYSTEMS.computeIfAbsent(uri.toString(), k -> {
+			var i = k.lastIndexOf('!');
+			if (i == -1)
+				try {
+					return FileSystems.getFileSystem(uri);
+				} catch (FileSystemNotFoundException _) {
+					try {
+						return FileSystems.newFileSystem(uri, Map.of());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				}
+			var p = zipFileSystem(URI.create(k.substring(0, i))).getPath(k.substring(i + 1));
+			try {
+				return FileSystems.newFileSystem(p, Map.of());
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		});
 	}
 }

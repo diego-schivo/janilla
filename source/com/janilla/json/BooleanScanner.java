@@ -77,7 +77,7 @@ public class BooleanScanner implements Scanner {
 			}
 			};
 
-//			System.out.println("NumberScanner.accept " + value + " " + a + " " + s + " -> " + state);
+//			IO.println("NumberScanner.accept " + value + " " + a + " " + s + " -> " + state);
 
 		} while (a == null);
 		return a;

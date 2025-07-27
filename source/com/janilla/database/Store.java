@@ -24,6 +24,7 @@
  */
 package com.janilla.database;
 
+import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -88,7 +89,7 @@ public class Store<ID extends Comparable<ID>, E> {
 				s.setAttributes(new LinkedHashMap<String, Object>(Map.of("size", 1L)));
 
 				var m = Json.parse(s.delete(a.id));
-				System.out.println(m);
+				IO.println(m);
 				var n = Map.of("id", a.id, "title", "FooBarBazQux");
 				assert m.equals(n) : m;
 			}

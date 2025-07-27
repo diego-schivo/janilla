@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.io.IO;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -43,13 +44,13 @@ public interface Jwt {
 		var p = Stream.of(Map.entry("loggedInAs", "admin"), Map.entry("iat", 1422779638))
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v, _) -> v, LinkedHashMap::new));
 		var t = Jwt.generateToken(h, p, "secretkey");
-		System.out.println(t);
+		IO.println(t);
 		assert t.equals(
 				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mzh9.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI=")
 				: t;
 
 		var q = Jwt.verifyToken(t, "secretkey");
-		System.out.println(q);
+		IO.println(q);
 		assert q.equals(p) : q;
 	}
 
@@ -59,11 +60,11 @@ public interface Jwt {
 
 		var h = Json.format(header);
 		var p = Json.format(payload);
-//		System.out.println("h=" + h + ", p=" + p);
+//		IO.println("h=" + h + ", p=" + p);
 
 		var e = Base64.getUrlEncoder();
 		var t = e.encodeToString(h.getBytes()) + "." + e.encodeToString(p.getBytes());
-//		System.out.println("t=" + t);
+//		IO.println("t=" + t);
 
 		Mac m;
 		try {
@@ -79,9 +80,9 @@ public interface Jwt {
 		}
 
 		var a = m.doFinal(t.getBytes());
-//		System.out.println("a=" + Arrays.toString(a));
+//		IO.println("a=" + Arrays.toString(a));
 		var s = e.encodeToString(a);
-//		System.out.println("s=" + s);
+//		IO.println("s=" + s);
 		t += "." + s;
 		return t;
 	}

@@ -98,7 +98,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel<Seekable
 		var s = transactionChannel.size();
 		if (s == 0)
 			return;
-		var b = ByteBuffer.allocate((int) Math.min(s, IO.DEFAULT_BUFFER_CAPACITY));
+		var b = ByteBuffer.allocate((int) Math.min(s, 16384));
 		transactionChannel.position(0);
 		for (var p = 0L; p < s;) {
 			if (b.position() < Long.BYTES + Integer.BYTES) {

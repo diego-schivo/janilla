@@ -158,7 +158,7 @@ public class ObjectScanner implements Scanner {
 			}
 			};
 
-//			System.out.println("ObjectScanner.accept " + value + " " + a + " " + s + " -> " + state);
+//			IO.println("ObjectScanner.accept " + value + " " + a + " " + s + " -> " + state);
 
 		} while (a == null);
 		return a;

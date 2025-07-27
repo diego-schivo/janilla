@@ -65,7 +65,7 @@ public class WhitespaceScanner implements Scanner {
 			}
 			};
 
-//			System.out.println("WhitespaceScanner.accept " + value + " " + a + " " + s + " -> " + state);
+//			IO.println("WhitespaceScanner.accept " + value + " " + a + " " + s + " -> " + state);
 
 		} while (a == null);
 		return a;

@@ -24,6 +24,7 @@
  */
 package com.janilla.io;
 
+import java.io.IO;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,15 +71,15 @@ public record Range(long from, long to) {
 		}
 
 		for (var irr : in) {
-			System.out.println("irr=" + Json.format(irr, true));
+			IO.println("irr=" + Json.format(irr, true));
 
 			var orr = new ArrayList<Range>();
 			var bb = new boolean[l];
 			irr.stream().forEach(x -> {
-				System.out.println("x=" + x);
+				IO.println("x=" + x);
 				var rr = union(orr, x);
-				System.out.println("rr=" + rr.toList());
-				System.out.println("orr=" + orr);
+				IO.println("rr=" + rr.toList());
+				IO.println("orr=" + orr);
 				for (var j = (int) x.from; j < (int) x.to; j++)
 					bb[j] = true;
 			});

@@ -24,6 +24,7 @@
  */
 package com.janilla.http;
 
+import java.io.IO;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,61 +33,130 @@ import java.util.PrimitiveIterator;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 
-import com.janilla.util.BitsConsumer;
-import com.janilla.util.BitsIterator;
-import com.janilla.util.Util;
+public final class Huffman {
 
-class Huffman {
-
-	static Huffman.Table table = new Huffman.Table();
+	protected static final Table TABLE = new Table();
 
 	public static void main(String[] args) {
 		var s1 = "www.example.com";
-		var bb = IntStream.builder();
-		encode(s1, bb);
-		var h = Util.toHexString(bb.build());
-		System.out.println("h=" + h);
+		var b = IntStream.builder();
+		encode(s1, b);
+		var h = Hpack.toHexString(b.build());
+		IO.println("h=" + h);
 		assert h.equals("f1e3 c2e5 f23a 6ba0 ab90 f4ff") : h;
-		var s2 = decode(Util.parseHex(h).iterator(), 12);
-		System.out.println("s2=" + s2);
+		var s2 = decode(Hpack.parseHex(h).iterator(), 12);
+		IO.println("s2=" + s2);
 		assert s2.equals(s1) : s2;
 	}
 
-	static int encode(String string, IntConsumer bytes) {
-		var bc = new BitsConsumer(bytes);
-		IntStream.concat(string.chars(), IntStream.of(256)).forEach(new IntConsumer() {
+	public static int encode(String string, IntConsumer bytes) {
+		class BitsConsumer implements IntConsumer {
 
-			int totalBitLength;
+			private final IntConsumer bytes;
+
+			private long current;
+
+			private int currentLength;
+
+			private int length;
+
+			public BitsConsumer(IntConsumer bytes) {
+				this.bytes = bytes;
+			}
+
+			public int length() {
+				return length;
+			}
 
 			@Override
 			public void accept(int value) {
-				var r = table.get(value);
-				var bl = r.bitLength();
+				accept(value, 8);
+			}
+
+			public void accept(int value, int bitsLength) {
+				current = (current << bitsLength) | (value & ((1L << bitsLength) - 1));
+				var l = currentLength + bitsLength;
+				for (; l >= 8; l -= 8) {
+					bytes.accept((int) (current >>> (l - 8)));
+					length++;
+					current &= (1 << (l - 8)) - 1;
+				}
+				currentLength = l;
+			}
+		}
+		var c = new BitsConsumer(bytes);
+		IntStream.concat(string.chars(), IntStream.of(256)).forEach(new IntConsumer() {
+
+			private int totalBitLength;
+
+			@Override
+			public void accept(int value) {
+				var r = TABLE.get(value);
+				var l = r.bitLength();
 				if (value == 256) {
-					bl = 8 - (totalBitLength & 0x07);
-					if (bl == 8)
+					l = 8 - (totalBitLength & 0x07);
+					if (l == 8)
 						return;
 				}
-				bc.accept(r.code(), bl);
-				totalBitLength += bl;
+				c.accept(r.code(), l);
+				totalBitLength += l;
 			}
 		});
-		return bc.length();
+		return c.length();
 	}
 
-	static String decode(PrimitiveIterator.OfInt bytes, int length) {
+	public static String decode(PrimitiveIterator.OfInt bytes, int length) {
+		class BitsIterator implements PrimitiveIterator.OfInt {
+
+			private final PrimitiveIterator.OfInt bytes;
+
+			private long current;
+
+			private int currentLength;
+
+			public BitsIterator(PrimitiveIterator.OfInt bytes) {
+				this.bytes = bytes;
+			}
+
+			@Override
+			public boolean hasNext() {
+				return hasNext(8);
+			}
+
+			@Override
+			public int nextInt() {
+				return nextInt(8);
+			}
+
+			public boolean hasNext(int bitLength) {
+				return currentLength >= bitLength || bytes.hasNext();
+			}
+
+			public int nextInt(int bitLength) {
+				while (currentLength < bitLength) {
+					var i = bytes.nextInt();
+					current = (current << 8) | i;
+					currentLength += 8;
+				}
+				var l = currentLength - bitLength;
+				var i = (int) (current >>> l);
+				current &= (1 << l) - 1;
+				currentLength = l;
+				return i;
+			}
+		}
 		var k = 0;
 		var kl = 0;
 		var t = length << 3;
 		var bi = new BitsIterator(bytes);
 		var b = new StringBuilder();
 		while (t > 0) {
-			var d = table.maxBitLength() - kl;
+			var d = TABLE.maxBitLength() - kl;
 			var l = Math.min(d, t - kl);
 			var i = bi.nextInt(l);
 			k = (k << l) | i;
 			kl += l;
-			var r = table.row(k << (d - l));
+			var r = TABLE.row(k << (d - l));
 			if (r.bitLength() > t)
 				break;
 			b.append((char) r.symbol());
@@ -97,15 +167,15 @@ class Huffman {
 		return b.toString();
 	}
 
-	static class Table extends ArrayList<Row> {
+	protected static class Table extends ArrayList<Row> {
 
 		private static final long serialVersionUID = 7599260395553249133L;
 
-		int maxBitLength;
+		protected final int maxBitLength;
 
-		List<KeyAndRow> sortedRows;
+		protected final List<KeyAndRow> sortedRows;
 
-		Table() {
+		public Table() {
 			var ii = new int[] { 0x1ff8, 13, 0x7fffd8, 23, 0xfffffe2, 28, 0xfffffe3, 28, 0xfffffe4, 28, 0xfffffe5, 28,
 					0xfffffe6, 28, 0xfffffe7, 28, 0xfffffe8, 28, 0xffffea, 24, 0x3ffffffc, 30, 0xfffffe9, 28, 0xfffffea,
 					28, 0x3ffffffd, 30, 0xfffffeb, 28, 0xfffffec, 28, 0xfffffed, 28, 0xfffffee, 28, 0xfffffef, 28,
@@ -151,18 +221,18 @@ class Huffman {
 			return maxBitLength;
 		}
 
-		Row row(int z) {
-			var j = Collections.binarySearch(sortedRows, z,
+		protected Row row(int z) {
+			var i = Collections.binarySearch(sortedRows, z,
 					Comparator.comparing(x -> x instanceof KeyAndRow r ? r.key() : (Integer) x));
-			if (j < 0)
-				j = -j - 2;
-			return sortedRows.get(j).row();
+			if (i < 0)
+				i = -i - 2;
+			return sortedRows.get(i).row();
 		}
 	}
 
-	record Row(int symbol, int code, int bitLength) {
+	protected record Row(int symbol, int code, int bitLength) {
 	}
 
-	record KeyAndRow(int key, Row row) {
+	protected record KeyAndRow(int key, Row row) {
 	}
 }

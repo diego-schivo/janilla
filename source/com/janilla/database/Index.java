@@ -24,6 +24,7 @@
  */
 package com.janilla.database;
 
+import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -83,7 +84,7 @@ public class Index<K, V> {
 				i.setAttributes(new LinkedHashMap<String, Object>(Map.of("size", 2L)));
 
 				var ll = i.list("foo").mapToLong(x -> (long) ((Object[]) x)[1]).toArray();
-				System.out.println(Arrays.toString(ll));
+				IO.println(Arrays.toString(ll));
 				assert Arrays.equals(ll, new long[] { 2, 1 }) : ll;
 			}
 		}
@@ -109,7 +110,7 @@ public class Index<K, V> {
 	}
 
 	public boolean add(K key, V[] values) {
-//		System.out.println("Index.add, key=" + key + ", values="
+//		IO.println("Index.add, key=" + key + ", values="
 //				+ Arrays.stream(values).map(x -> x instanceof Object[] oo ? List.of(oo) : x).toList());
 
 		return apply(key, (aa, bt) -> {
@@ -125,7 +126,7 @@ public class Index<K, V> {
 	}
 
 	public boolean remove(K key, V[] values) {
-//		System.out.println("Index.remove, key=" + key + ", values="
+//		IO.println("Index.remove, key=" + key + ", values="
 //				+ Arrays.stream(values).map(x -> x instanceof Object[] oo ? List.of(oo) : x).toList());
 
 		return apply(key, (aa, bt) -> {
@@ -172,7 +173,7 @@ public class Index<K, V> {
 	}
 
 	public <R> R apply(K key, BiFunction<Map<String, Object>, BTree<V>, R> function, boolean add) {
-//		System.out.println(
+//		IO.println(
 //				"Index.apply, key=" + (key instanceof Object[] oo ? Arrays.toString(oo) : key) + ", add=" + add);
 		class A {
 
@@ -209,7 +210,7 @@ public class Index<K, V> {
 			a.removeKey = s1 != 0 && s2 == 0;
 
 			var aa2 = Json.format(aa);
-//			System.out.println("Index.apply, aa1=" + aa1 + ", aa2=" + aa2);
+//			IO.println("Index.apply, aa1=" + aa1 + ", aa2=" + aa2);
 			var aar = x.attributes();
 			if (!aa2.equals(aa1)) {
 				var bb = ByteConverter.STRING.serialize(aa2);

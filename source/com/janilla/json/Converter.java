@@ -27,7 +27,6 @@ package com.janilla.json;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
@@ -57,31 +56,32 @@ public class Converter {
 		this.typeResolver = typeResolver;
 	}
 
-	public Object convert(Object object, Type target) {
-//		System.out.println("Converter.convert, object=" + object + ", target=" + target);
-		var c = getRawType(target);
+	@SuppressWarnings("unchecked")
+	public <T> T convert(Object object, Type target) {
+//		IO.println("Converter.convert, object=" + object + ", target=" + target);
+		var c = Reflection.getRawType(target);
 
 		if (object == null || (object instanceof String x && x.isEmpty())) {
 			if (c == Boolean.TYPE)
-				return false;
+				return (T) Boolean.FALSE;
 			if (c == Double.TYPE)
-				return 0d;
+				return (T) Double.valueOf(0);
 			if (c == Integer.TYPE)
-				return 0;
+				return (T) Integer.valueOf(0);
 			if (c == Long.TYPE)
-				return 0l;
+				return (T) Long.valueOf(0);
 			if (c == String.class)
-				return object;
+				return (T) object;
 			return null;
 		}
 
 		if (c != null && c.isAssignableFrom(object.getClass()))
 			if (c != Object.class && !c.isArray() && !Collection.class.isAssignableFrom(c)
 					&& !Map.class.isAssignableFrom(c))
-				return object;
+				return (T) object;
 
 		if (c == BigDecimal.class)
-			return switch (object) {
+			return (T) switch (object) {
 			case Double x -> BigDecimal.valueOf(x);
 			case Integer x -> BigDecimal.valueOf(x);
 			case Long x -> BigDecimal.valueOf(x);
@@ -90,17 +90,17 @@ public class Converter {
 			};
 
 		if (c == Boolean.class || c == Boolean.TYPE)
-			return switch (object) {
+			return (T) switch (object) {
 			case Boolean _ -> object;
 			case String x -> Boolean.parseBoolean(x);
 			default -> throw new RuntimeException();
 			};
 
 		if (c == Instant.class)
-			return Instant.parse((String) object);
+			return (T) Instant.parse((String) object);
 
 		if (c == Integer.class || c == Integer.TYPE)
-			return switch (object) {
+			return (T) switch (object) {
 			case Integer _ -> object;
 			case Long x -> x.intValue();
 			case String x -> Integer.parseInt(x);
@@ -108,13 +108,13 @@ public class Converter {
 			};
 
 		if (c == LocalDate.class)
-			return LocalDate.parse((String) object);
+			return (T) LocalDate.parse((String) object);
 
 		if (c == Locale.class)
-			return Locale.forLanguageTag((String) object);
+			return (T) Locale.forLanguageTag((String) object);
 
 		if (c == Long.class || c == Long.TYPE)
-			return switch (object) {
+			return (T) switch (object) {
 			case Integer x -> x.longValue();
 			case Long _ -> object;
 			case String x -> Long.parseLong(x);
@@ -122,22 +122,22 @@ public class Converter {
 			};
 
 		if (c == OffsetDateTime.class)
-			return OffsetDateTime.parse((String) object);
+			return (T) OffsetDateTime.parse((String) object);
 
 		if (c == Path.class)
-			return Path.of((String) object);
+			return (T) Path.of((String) object);
 
 		if (c == URI.class)
-			return URI.create((String) object);
+			return (T) URI.create((String) object);
 
 		if (c == UUID.class)
-			return UUID.fromString((String) object);
+			return (T) UUID.fromString((String) object);
 
 		if (c == byte[].class)
-			return Base64.getDecoder().decode((String) object);
+			return (T) Base64.getDecoder().decode((String) object);
 
 		if (c == Class.class)
-			return typeResolver.parse((String) object);
+			return (T) typeResolver.parse((String) object);
 
 		if (c != null && c.isEnum()) {
 			var n = switch (object) {
@@ -145,9 +145,9 @@ public class Converter {
 			case Map<?, ?> x -> (String) x.get("name");
 			default -> throw new RuntimeException();
 			};
-			@SuppressWarnings({ "rawtypes", "unchecked" })
+			@SuppressWarnings("rawtypes")
 			var x = Enum.valueOf((Class) c, n);
-			return x;
+			return (T) x;
 		}
 
 		if (c != null && (c.isArray() || Collection.class.isAssignableFrom(c))) {
@@ -161,23 +161,23 @@ public class Converter {
 
 			if (c.isArray()) {
 				if (c.componentType() == Double.TYPE)
-					return oo.mapToDouble(x -> (double) x).toArray();
+					return (T) oo.mapToDouble(x -> (double) x).toArray();
 				if (c.componentType() == Integer.TYPE)
-					return oo.mapToInt(x -> (int) x).toArray();
+					return (T) oo.mapToInt(x -> (int) x).toArray();
 				if (c.componentType() == Long.TYPE)
-					return oo.mapToLong(x -> (long) x).toArray();
-				return oo.toArray(x -> (Object[]) Array.newInstance(getRawType(t), x));
+					return (T) oo.mapToLong(x -> (long) x).toArray();
+				return (T) oo.toArray(x -> (Object[]) Array.newInstance(Reflection.getRawType(t), x));
 			}
 			if (c == List.class)
-				return oo.toList();
+				return (T) oo.toList();
 			if (c == Set.class)
-				return oo.collect(Collectors.toCollection(LinkedHashSet::new));
+				return (T) oo.collect(Collectors.toCollection(LinkedHashSet::new));
 		}
 
 		if (object instanceof Map<?, ?> m) {
 			if (c == Map.class) {
 				var aa = ((ParameterizedType) target).getActualTypeArguments();
-				return m.entrySet().stream().map(x -> {
+				return (T) m.entrySet().stream().map(x -> {
 					var k = convert(x.getKey(), aa[0]);
 					var v = convert(x.getValue(), aa[1]);
 					return new AbstractMap.SimpleImmutableEntry<>(k, v);
@@ -187,16 +187,16 @@ public class Converter {
 				var aa = ((ParameterizedType) target).getActualTypeArguments();
 				var k = convert(m.get("key"), aa[0]);
 				var v = convert(m.get("value"), aa[1]);
-				return new AbstractMap.SimpleImmutableEntry<>(k, v);
+				return (T) new AbstractMap.SimpleImmutableEntry<>(k, v);
 			}
-			return convertMap(m, c);
+			return (T) convertMap(m, c);
 		}
 
-		return object;
+		return (T) object;
 	}
 
 	protected Object convertMap(Map<?, ?> map, Class<?> target) {
-//		System.out.println("Converter.convertMap, map=" + map + ", target=" + target);
+//		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
 		var ot = typeResolver != null ? typeResolver.apply(new ObjectAndType(map, target)) : null;
 		if (ot != null) {
 			if (target != null && !target.isAssignableFrom(ot.type()))
@@ -216,7 +216,7 @@ public class Converter {
 				o = null;
 		} else {
 			var c0 = target.getConstructors()[0];
-//			System.out.println("Converter.convertMap, c0=" + c0);
+//			IO.println("Converter.convertMap, c0=" + c0);
 			var tt = target.isRecord() ? Arrays.stream(target.getRecordComponents()).collect(
 					Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, _) -> x, LinkedHashMap::new))
 					: null;
@@ -228,12 +228,12 @@ public class Converter {
 				} else {
 					o = c0.newInstance();
 					for (var x : map.entrySet()) {
-//						System.out.println("Converter.convertMap, x=" + x);
+//						IO.println("Converter.convertMap, x=" + x);
 						var n = (String) x.getKey();
 						var p = !n.startsWith("$") ? Reflection.property(target, n) : null;
 						if (p != null) {
 							var v = convert(x.getValue(), p.genericType());
-//							System.out.println("Converter.convertMap, p=" + p + ", v=" + v);
+//							IO.println("Converter.convertMap, p=" + p + ", v=" + v);
 							p.set(o, v);
 						}
 					}
@@ -243,15 +243,5 @@ public class Converter {
 			}
 		}
 		return o;
-	}
-
-	protected static Class<?> getRawType(Type type) {
-//		System.out.println("Converter.getRawType, type=" + type);
-		return switch (type) {
-		case Class<?> x -> x;
-		case ParameterizedType x -> (Class<?>) x.getRawType();
-		case TypeVariable<?> _ -> null;
-		default -> throw new IllegalArgumentException();
-		};
 	}
 }

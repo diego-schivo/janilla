@@ -72,7 +72,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	public E create(E entity) {
-//		System.out.println("Crud.create entity=" + entity);
+//		IO.println("Crud.create entity=" + entity);
 
 		return persistence.database.perform((ss, _) -> {
 			class A {
@@ -91,7 +91,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				for (var y : observers)
 					a.e = y.beforeCreate(a.e);
 				var t = format(a.e);
-//				System.out.println("Crud.create id=" + a.e.id() + ", t=" + t);
+//				IO.println("Crud.create id=" + a.e.id() + ", t=" + t);
 				s.create(a.e.id(), t);
 				return a.e.id();
 			});
@@ -121,6 +121,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			var s = (com.janilla.database.Store<ID, String>) s0;
 			return ids.stream().map(x -> {
 				var o = s.read(x);
+//				IO.println("Crud.read, x=" + x + ", o=" + o);
 				return o != null ? parse(o) : null;
 			}).toList();
 		}), false);
@@ -195,7 +196,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	public IdPage<ID> list(long skip, long limit) {
-//		System.out.println("Crud.list, skip=" + skip + ", limit=" + limit);
+//		IO.println("Crud.list, skip=" + skip + ", limit=" + limit);
 		return persistence.database
 				.perform((ss, ii) -> type.isAnnotationPresent(Index.class) ? ii.perform(type.getSimpleName(), i -> {
 					var vv = i.values();
@@ -246,7 +247,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	public List<ID> filter(String index, Object... keys) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-//		System.out.println("n=" + n + ", keys=" + Arrays.toString(keys));
+//		IO.println("n=" + n + ", keys=" + Arrays.toString(keys));
 		switch (keys.length) {
 		case 0:
 			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.values()).toList()), false);
@@ -421,7 +422,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			var t = Stream.iterate((ID) null, _ -> {
 				for (;;) {
 					var ll = aa.stream().map(a -> a.l).toList();
-//					System.out.println("ll=" + Arrays.toString(ll));
+//					IO.println("ll=" + Arrays.toString(ll));
 					var l = ll.stream().allMatch(Objects::nonNull) ? ll.stream().max(Comparator.naturalOrder()).get()
 							: null;
 					if (l == null)
@@ -442,7 +443,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			}).skip(1).takeWhile(Objects::nonNull).peek(x -> {
 				var o = c.l++ - skip;
 				if (o >= 0 && (limit < 0 || o < limit)) {
-//					System.out.println("x=" + x);
+//					IO.println("x=" + x);
 					llb.add(x);
 				}
 			}).count();
@@ -459,6 +460,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	protected <T> T parse(String string, Class<T> target) {
+//		IO.println("Crud.parse, string=" + string + ", target=" + target);
 		var c = new Converter(persistence.typeResolver);
 		@SuppressWarnings("unchecked")
 		var t = (T) c.convert(Json.parse(string), target);
@@ -466,7 +468,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	protected void updateIndexes(E entity1, E entity2, ID id) {
-//		System.out.println("Crud.updateIndexes, entity1=" + entity1 + ", entity2=" + entity2 + ", id=" + id);
+//		IO.println("Crud.updateIndexes, entity1=" + entity1 + ", entity2=" + entity2 + ", id=" + id);
 		updateIndexes(entity1, entity2, id, this::getIndexName);
 	}
 
@@ -543,7 +545,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	protected void updateIndex(String n, Map<Object, Object> remove, Map<Object, Object> add) {
 //		var n = Stream.of(type.getSimpleName(), name).filter(x -> x != null && !x.isEmpty())
 //				.collect(Collectors.joining("."));
-//		System.out.println("Crud.updateIndex, n=" + n + ", remove=" + remove + ", add=" + add);
+//		IO.println("Crud.updateIndex, n=" + n + ", remove=" + remove + ", add=" + add);
 		persistence.database.perform((_, ii) -> ii.perform(n, i -> {
 			if (remove != null)
 				for (var e : remove.entrySet())

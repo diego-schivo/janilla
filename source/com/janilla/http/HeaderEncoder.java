@@ -29,12 +29,7 @@ import java.util.stream.Stream;
 
 public class HeaderEncoder {
 
-	protected final HeaderTable table = new HeaderTable();
-
-	{
-		table.setDynamic(true);
-		table.setStartIndex(HeaderTable.STATIC.maxIndex() + 1);
-	}
+	protected final HeaderTable table = new HeaderTable(true, HeaderTable.STATIC.maxIndex() + 1);
 
 	public HeaderTable table() {
 		return table;
@@ -56,9 +51,9 @@ public class HeaderEncoder {
 		if (r == HeaderField.Representation.INDEXED)
 			return Hpack.encodeInteger(ih.index(), bytes, r.first(), r.prefix());
 		int n;
-		if (ih != null) {
+		if (ih != null)
 			n = Hpack.encodeInteger(ih.index(), bytes, r.first(), r.prefix());
-		} else {
+		else {
 			bytes.accept(Byte.toUnsignedInt(r.first()));
 			n = 1 + Hpack.encodeString(header.name(), bytes, huffman);
 		}
@@ -72,7 +67,7 @@ public class HeaderEncoder {
 		Hpack.encodeInteger(maxSize, bytes, (byte) 0x20, 5);
 	}
 
-	HeaderTable.IndexAndHeader indexAndHeader(HeaderField header) {
+	protected HeaderTable.IndexAndHeader indexAndHeader(HeaderField header) {
 		var hh1 = HeaderTable.STATIC.headers(header.name());
 		var hh2 = table.headers(header.name());
 		var hh = Stream.concat(hh1 != null ? hh1.stream() : Stream.empty(), hh2 != null ? hh2.stream() : Stream.empty())

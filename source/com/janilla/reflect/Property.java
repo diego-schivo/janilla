@@ -34,6 +34,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 
 public interface Property {
 
@@ -86,8 +87,7 @@ public interface Property {
 
 			@Override
 			public boolean canSet() {
-//				return Modifier.isFinal(field.getModifiers());
-				return true;
+				return !Modifier.isFinal(field.getModifiers());
 			}
 
 			@Override
@@ -97,8 +97,9 @@ public interface Property {
 		};
 	}
 
-	static Property of(Method getter, Method setter) {
+	static Property of(Class<?> class1, Method getter, Method setter) {
 		var n = getter != null ? name(getter) : name(setter);
+//		IO.println("n=" + n);
 		MethodHandle g, s;
 		try {
 			var l = MethodHandles.publicLookup();
@@ -107,6 +108,11 @@ public interface Property {
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}
+		var gt0 = getter != null ? getter.getGenericReturnType() : setter.getGenericParameterTypes()[0];
+		var dc = getter != null ? getter.getDeclaringClass() : setter.getDeclaringClass();
+		var gt = gt0 instanceof TypeVariable v && dc != class1 ? Reflection.resolveTypeVariable(v, class1, dc) : gt0;
+		var t = gt != gt0 ? Reflection.getRawType(gt)
+				: getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
 		return new Property() {
 
 			@Override
@@ -116,12 +122,12 @@ public interface Property {
 
 			@Override
 			public Class<?> type() {
-				return getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
+				return t;
 			}
 
 			@Override
 			public Type genericType() {
-				return getter != null ? getter.getGenericReturnType() : setter.getGenericParameterTypes()[0];
+				return gt;
 			}
 
 			@Override

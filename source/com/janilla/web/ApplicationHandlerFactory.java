@@ -24,7 +24,6 @@
  */
 package com.janilla.web;
 
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -33,19 +32,20 @@ import java.util.function.Function;
 
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
+import com.janilla.reflect.ClassAndMethod;
 import com.janilla.reflect.Factory;
 
 public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected final Factory factory;
 
-	protected final Collection<Method> methods;
+	protected final Collection<ClassAndMethod> methods;
 
 	protected final Collection<Path> files;
 
 	protected final List<HttpHandlerFactory> handlerFactories;
 
-	public ApplicationHandlerFactory(Factory factory, Collection<Method> methods, Collection<Path> files) {
+	public ApplicationHandlerFactory(Factory factory, Collection<ClassAndMethod> methods, Collection<Path> files) {
 		this.factory = factory;
 		this.methods = methods;
 		this.files = files;
@@ -58,7 +58,7 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 			if (f != null) {
 				var h = f.createHandler(object);
 				if (h != null) {
-//					System.out.println("ApplicationHandlerBuilder.createHandler, f=" + f + ", h=" + h);
+//					IO.println("ApplicationHandlerBuilder.createHandler, f=" + f + ", h=" + h);
 					return h;
 				}
 			}

@@ -26,72 +26,73 @@ package com.janilla.http;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 
 public record HttpCookie(String name, String value, String domain, ZonedDateTime expires, boolean httpOnly,
 		Integer maxAge, boolean partitioned, String path, String sameSite, boolean secure) {
 
-	private static DateTimeFormatter EXPIRES_FORMATTER = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O",
-			Locale.ENGLISH);
+	private static final DateTimeFormatter EXPIRES_FORMATTER = DateTimeFormatter
+			.ofPattern("EEE, dd MMM yyyy HH:mm:ss O", Locale.ENGLISH);
 
 	public static HttpCookie of(String name, String value) {
 		return new HttpCookie(name, value, null, null, false, null, false, null, null, false);
 	}
 
-	public static HttpCookie parse(String text) {
-		var ss0 = text.split(";");
+	public static HttpCookie parse(String string) {
+		var i = 0;
 		String n = null;
 		String v = null;
 		String d = null;
 		ZonedDateTime e = null;
 		var ho = false;
 		Integer ma = null;
-		var pr = false;
-		String pt = null;
+		var p1 = false;
+		String p2 = null;
 		String ss = null;
 		var s = false;
-		for (var i = 0; i < ss0.length; i++) {
-			var j = ss0[i].indexOf('=');
-			var s1 = ss0[i].substring(0, j).trim();
-			var s2 = ss0[i].substring(j + 1).trim();
+		for (var x : string.split(";")) {
+			var yy = Arrays.stream(x.split("=", 2)).map(String::trim).toArray(String[]::new);
 			if (i == 0) {
-				n = s1;
-				if (s2.length() > 0)
-					v = s2;
+				n = yy[0];
+				if (yy.length > 1 && !yy[1].isEmpty())
+					v = yy[1];
 			} else
-				switch (s1) {
+				switch (yy[0]) {
 				case "Domain":
-					if (s2.length() > 0)
-						d = s2;
+					if (yy.length > 1 && !yy[1].isEmpty())
+						d = yy[1];
 					break;
 				case "Expires":
-					if (s2.length() > 0)
-						e = ZonedDateTime.parse(s2, EXPIRES_FORMATTER);
+					if (yy.length > 1 && !yy[1].isEmpty())
+						e = ZonedDateTime.parse(yy[1], EXPIRES_FORMATTER);
 					break;
 				case "HttpOnly":
 					ho = true;
 					break;
 				case "MaxAge":
-					if (s2.length() > 0)
-						ma = Integer.parseInt(s2);
+					if (yy.length > 1 && !yy[1].isEmpty())
+						ma = Integer.parseInt(yy[1]);
 					break;
 				case "Partitioned":
-					pr = true;
+					p1 = true;
 					break;
 				case "Path":
-					if (s2.length() > 0)
-						pt = s2;
+					if (yy.length > 1 && !yy[1].isEmpty())
+						p2 = yy[1];
 					break;
 				case "SameSite":
-					if (s2.length() > 0)
-						ss = s2;
+					if (yy.length > 1 && !yy[1].isEmpty())
+						ss = yy[1];
 					break;
 				case "Secure":
 					s = true;
 					break;
 				}
+			i++;
 		}
-		return new HttpCookie(n, v, d, e, ho, ma, pr, pt, ss, s);
+		return new HttpCookie(n, v, d, e, ho, ma, p1, p2, ss, s);
 	}
 
 	public HttpCookie withDomain(String domain) {
@@ -127,32 +128,24 @@ public record HttpCookie(String name, String value, String domain, ZonedDateTime
 	}
 
 	public String format() {
-		var sb = new StringBuilder();
-		sb.append(name + "=" + (value != null ? value : ""));
-		if (domain != null) {
-			sb.append("; Domain=" + domain);
-		}
-		if (expires != null) {
-			sb.append("; Expires=" + expires.format(EXPIRES_FORMATTER));
-		}
-		if (httpOnly) {
-			sb.append("; HttpOnly");
-		}
-		if (maxAge != null) {
-			sb.append("; MaxAge=" + maxAge);
-		}
-		if (partitioned) {
-			sb.append("; Partitioned");
-		}
-		if (path != null) {
-			sb.append("; Path=" + path);
-		}
-		if (sameSite != null) {
-			sb.append("; SameSite=" + sameSite);
-		}
-		if (secure) {
-			sb.append("; Secure");
-		}
-		return sb.toString();
+		var b = new StringBuilder();
+		b.append(name + "=" + Objects.toString(value, ""));
+		if (domain != null)
+			b.append("; Domain=" + domain);
+		if (expires != null)
+			b.append("; Expires=" + expires.format(EXPIRES_FORMATTER));
+		if (httpOnly)
+			b.append("; HttpOnly");
+		if (maxAge != null)
+			b.append("; MaxAge=" + maxAge);
+		if (partitioned)
+			b.append("; Partitioned");
+		if (path != null)
+			b.append("; Path=" + path);
+		if (sameSite != null)
+			b.append("; SameSite=" + sameSite);
+		if (secure)
+			b.append("; Secure");
+		return b.toString();
 	}
 }

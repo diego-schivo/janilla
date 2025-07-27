@@ -29,22 +29,74 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.janilla.util.Util;
-
 public record MultipartFormData(List<Part> parts, String boundary) {
 
 	public static MultipartFormData fromByteArray(byte[] bytes) {
-		var z = Util.findIndexes(bytes, "\r\n".getBytes(), 1)[0];
+		var z = findIndexes(bytes, "\r\n".getBytes(), 1)[0];
 		var s = Arrays.copyOf(bytes, z);
-		var ii = Util.findIndexes(bytes, s);
+		var ii = findIndexes(bytes, s);
 		var pp = IntStream.range(0, ii.length - 1)
 				.mapToObj(x -> Arrays.copyOfRange(bytes, ii[x] + s.length + 2, ii[x + 1] - 2)).map(x -> {
-					var i = Util.findIndexes(x, "\r\n\r\n".getBytes(), 1)[0];
+					var i = findIndexes(x, "\r\n\r\n".getBytes(), 1)[0];
 					var hh = new String(x, 0, i).lines().map(HeaderField::fromLine).toList();
 					var pb = Arrays.copyOfRange(x, i + 4, x.length);
 					return new MultipartFormData.Part(hh, pb);
 				}).toList();
 		return new MultipartFormData(pp, new String(s, 2, s.length - 2));
+	}
+
+	public static int[] findIndexes(byte[] bytes, byte[] search) {
+		return findIndexes(bytes, search, -1);
+	}
+
+	public static int[] findIndexes(byte[] bytes, byte[] search, int limit) {
+		if (limit == 0)
+			return new int[0];
+		var w = search;
+		var t = new int[w.length + 1];
+		{
+			var p = 1;
+			var c = 0;
+			t[0] = -1;
+			while (p < w.length) {
+				if (w[p] == w[c])
+					t[p] = t[c];
+				else {
+					t[p] = c;
+					while (c >= 0 && w[p] != w[c])
+						c = t[c];
+				}
+				p++;
+				c++;
+			}
+			t[p] = c;
+//			IO.println(Arrays.toString(t));
+		}
+		var s = bytes;
+		var j = 0;
+		var k = 0;
+		var p = IntStream.builder();
+		var n = 0;
+		while (j < s.length) {
+			if (w[k] == s[j]) {
+				j++;
+				k++;
+				if (k == w.length) {
+					p.add(j - k);
+					n++;
+					if (limit > 0 && n == limit)
+						break;
+					k = t[k];
+				}
+			} else {
+				k = t[k];
+				if (k < 0) {
+					j++;
+					k++;
+				}
+			}
+		}
+		return p.build().toArray();
 	}
 
 	public byte[] toByteArray() {

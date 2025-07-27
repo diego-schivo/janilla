@@ -24,6 +24,7 @@
  */
 package com.janilla.database;
 
+import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -84,7 +85,7 @@ public class Indexes {
 				var ii = iis.get();
 				ii.perform("Article.tagList", i -> {
 					var ll = i.list("foo").mapToLong(x -> (Long) ((Object[]) x)[1]).toArray();
-					System.out.println(Arrays.toString(ll));
+					IO.println(Arrays.toString(ll));
 					assert Arrays.equals(ll, new long[] { 2, 1 }) : ll;
 					return ll;
 				});
@@ -102,7 +103,7 @@ public class Indexes {
 	}
 
 	public void create(String name) {
-//		System.out.println("Indexes.create, name=" + name);
+//		IO.println("Indexes.create, name=" + name);
 		bTree.getOrAdd(new KeyAndData<>(name, new BlockReference(-1, -1, 0), new BlockReference(-1, -1, 0)));
 	}
 
@@ -135,7 +136,7 @@ public class Indexes {
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
-//			System.out.println("Indexes.perform, name=" + name + ", i=" + i);
+//			IO.println("Indexes.perform, name=" + name + ", i=" + i);
 
 			a.r = operation.apply(i);
 

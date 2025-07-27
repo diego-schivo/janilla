@@ -92,11 +92,12 @@ public class Persistence {
 		Crud<?, E> c = newCrud(type);
 		if (c == null)
 			return;
-		// System.out.println("Persistence.configure, type=" + type);
+//		IO.println("Persistence.configure, type=" + type);
 		configuration.cruds.put(type, c);
 
 		for (var oo = Stream.concat(Stream.of(type), Reflection.properties(type)).iterator(); oo.hasNext();) {
 			var o = oo.next();
+//			IO.println("Persistence.configure, o=" + o);
 			var p = o instanceof Property x ? x : null;
 			var ae = p != null ? p.annotatedElement() : (AnnotatedElement) o;
 			var i = ae.getAnnotation(Index.class);
@@ -113,7 +114,7 @@ public class Persistence {
 			if (s.startsWith("+") || s.startsWith("-"))
 				s = s.substring(1);
 			var sp = !s.isEmpty() ? Reflection.property(type, s) : null;
-			// System.out.println("Persistence.configure, sp=" + sp);
+//			IO.println("Persistence.configure, sp=" + sp);
 			if (sp != null && sp.type() != null) {
 				@SuppressWarnings("unchecked")
 				var h = (ByteConverter<V>) ByteConverter.of(type, i.sort(), "id");

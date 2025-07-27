@@ -27,8 +27,7 @@ package com.janilla.http;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import com.janilla.io.IO;
+import java.util.stream.IntStream;
 
 public class HttpDecoder {
 
@@ -37,17 +36,17 @@ public class HttpDecoder {
 	public Frame decodeFrame(byte[] bytes) {
 		var bb = ByteBuffer.wrap(bytes);
 		var pl = (Short.toUnsignedInt(bb.getShort()) << 8) | Byte.toUnsignedInt(bb.get());
-//		System.out.println("pl=" + pl);
+//		IO.println("pl=" + pl);
 		if (pl != bytes.length - 9)
 			throw new RuntimeException();
 		var t0 = Byte.toUnsignedInt(bb.get());
 		var fn = Frame.Name.of(t0);
 //		if (fn == null)
-//			System.out.println("t0=" + t0 + ", t=" + fn);
+//			IO.println("t0=" + t0 + ", t=" + fn);
 		var ff = Byte.toUnsignedInt(bb.get());
-//		System.out.println("ff=" + ff);
+//		IO.println("ff=" + ff);
 		var si = bb.getInt() & 0x8fffffff;
-//		System.out.println("si=" + si);
+//		IO.println("si=" + si);
 		var f = switch (fn) {
 		case DATA -> {
 			yield new Frame.Data((ff & 0x08) != 0, (ff & 0x01) != 0, si,
@@ -74,10 +73,11 @@ public class HttpDecoder {
 				w = 0;
 			}
 			headerDecoder.headerFields().clear();
-			var ii = IO.toIntStream(bb).iterator();
+			var ii = IntStream.generate(() -> bb.hasRemaining() ? Byte.toUnsignedInt(bb.get()) : -1)
+					.takeWhile(x -> x != -1).iterator();
 			while (ii.hasNext())
 				headerDecoder.decode(ii);
-//			System.out.println("hd.headerFields=" + hd.headerFields());
+//			IO.println("hd.headerFields=" + hd.headerFields());
 			yield new Frame.Headers(p, (ff & 0x04) != 0, (ff & 0x01) != 0, si, e, sd, w,
 					new ArrayList<>(headerDecoder.headerFields()));
 		}
@@ -104,12 +104,12 @@ public class HttpDecoder {
 		}
 		case WINDOW_UPDATE -> {
 			var wsi = bb.getInt() & 0x8fffffff;
-//			System.out.println("wsi=" + wsi);
+//			IO.println("wsi=" + wsi);
 			yield new Frame.WindowUpdate(si, wsi);
 		}
 		default -> throw new RuntimeException(fn.name());
 		};
-//		System.out.println("HttpDecoder.decodeFrame, f=" + f);
+//		IO.println("HttpDecoder.decodeFrame, f=" + f);
 		return f;
 	}
 }

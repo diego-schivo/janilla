@@ -91,9 +91,9 @@ public class HtmlRenderer<T> extends Renderer<T> {
 							if (av.value == null)
 								break;
 							av = evaluate(av, k);
-//							System.out.println("Renderer.interpolate, k=" + k + ", av=" + av);
+//							IO.println("Renderer.interpolate, k=" + k + ", av=" + av);
 //							if (k.equals("selected"))
-//								System.out.println("debugger");
+//								IO.println("debugger");
 						}
 					var v = av.value;
 					vv.add(v);
@@ -127,7 +127,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 					return Matcher.quoteReplacement(Objects.toString(v, ""));
 				});
 				s = f.apply(s, new A(x, vv.toArray()));
-//				System.out.println("Renderer.interpolate, s=" + s);
+//				IO.println("Renderer.interpolate, s=" + s);
 				return Matcher.quoteReplacement(s);
 			});
 		}

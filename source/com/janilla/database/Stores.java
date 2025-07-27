@@ -24,6 +24,7 @@
  */
 package com.janilla.database;
 
+import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -95,7 +96,7 @@ public class Stores {
 					@SuppressWarnings("unchecked")
 					var s = (Store<Long, String>) s0;
 					var m = Json.parse((String) s.read(a.id));
-					System.out.println(m);
+					IO.println(m);
 					assert m.equals(Map.of("id", a.id, "title", "FooBarBazQux")) : m;
 					return null;
 				});

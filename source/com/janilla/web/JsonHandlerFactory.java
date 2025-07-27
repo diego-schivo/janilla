@@ -54,7 +54,7 @@ public class JsonHandlerFactory implements HttpHandlerFactory {
 		rs.setHeaderValue("content-type", "application/json");
 
 		var s = Json.format(buildJsonIterator(object, exchange));
-//		System.out.println("JsonHandlerFactory.render, s=" + s);
+//		IO.println("JsonHandlerFactory.render, s=" + s);
 		var bb = s.getBytes();
 		rs.setHeaderValue("content-length", String.valueOf(bb.length));
 		try {

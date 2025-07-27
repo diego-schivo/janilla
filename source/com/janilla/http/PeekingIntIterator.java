@@ -26,15 +26,15 @@ package com.janilla.http;
 
 import java.util.PrimitiveIterator;
 
-class PeekingIntIterator implements PrimitiveIterator.OfInt {
+public class PeekingIntIterator implements PrimitiveIterator.OfInt {
 
-	PrimitiveIterator.OfInt iterator;
+	protected final PrimitiveIterator.OfInt iterator;
 
-	boolean hasCurrent;
+	protected boolean hasCurrent;
 
-	int current;
+	protected int current;
 
-	PeekingIntIterator(PrimitiveIterator.OfInt iterator) {
+	public PeekingIntIterator(PrimitiveIterator.OfInt iterator) {
 		this.iterator = iterator;
 	}
 
@@ -52,7 +52,7 @@ class PeekingIntIterator implements PrimitiveIterator.OfInt {
 		return nextInt(false);
 	}
 
-	private int nextInt(boolean peek) {
+	protected int nextInt(boolean peek) {
 		if (hasCurrent) {
 			hasCurrent = peek;
 			return current;

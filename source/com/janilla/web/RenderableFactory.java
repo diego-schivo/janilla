@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedElement;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -37,37 +39,35 @@ public class RenderableFactory {
 	protected static final Pattern TEMPLATE_ELEMENT = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>",
 			Pattern.DOTALL);
 
-	protected Map<String, Map<String, String>> templates = new ConcurrentHashMap<>();
+	protected final Map<String, Map<String, String>> templates = new ConcurrentHashMap<>();
 
 	public String template(String key1, String key2) {
-		var tt = templates.get(key1);
-		return tt != null ? tt.get(key2) : null;
+		return Optional.ofNullable(templates.get(key1)).map(x -> x.get(key2)).orElse(null);
 	}
 
 	public <T> Renderable<T> createRenderable(AnnotatedElement annotated, T value) {
-//		System.out.println("RenderableFactory.createRenderable, annotated=" + annotated + ", value=" + value);
-		var ra = Stream.of(annotated, value != null ? value.getClass() : null)
-				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(x -> x != null).findFirst()
+//		IO.println("RenderableFactory.createRenderable, annotated=" + annotated + ", value=" + value);
+		var a = Stream.of(annotated, value != null ? value.getClass() : null)
+				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(Objects::nonNull).findFirst()
 				.orElse(null);
 		@SuppressWarnings("unchecked")
-		var rc = (Class<Renderer<T>>) (ra != null ? ra.renderer() : HtmlRenderer.class);
+		var c = (Class<Renderer<T>>) (a != null ? a.renderer() : HtmlRenderer.class);
 		Renderer<T> r;
 		try {
-			r = rc.getConstructor().newInstance();
+			r = c.getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException("rc=" + rc, e);
+			throw new RuntimeException("c=" + c, e);
 		}
 		r.factory = this;
-		r.annotation = ra;
-		var t = ra != null ? ra.template() : null;
+		r.annotation = a;
+		var t = a != null ? a.template() : null;
 		if (t != null && t.endsWith(".html")) {
 			templates.computeIfAbsent(t, k -> {
 				var m = new ConcurrentHashMap<String, String>();
-				try (var is = value.getClass().getResourceAsStream(k)) {
-					if (is == null)
+				try (var s = value.getClass().getResourceAsStream(k)) {
+					if (s == null)
 						throw new NullPointerException(k);
-					var s = new String(is.readAllBytes());
-					m.put("", TEMPLATE_ELEMENT.matcher(s).replaceAll(y -> {
+					m.put("", TEMPLATE_ELEMENT.matcher(new String(s.readAllBytes())).replaceAll(y -> {
 						m.put(y.group(1), y.group(2));
 						return "";
 					}));

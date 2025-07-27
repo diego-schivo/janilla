@@ -24,6 +24,7 @@
  */
 package com.janilla.database;
 
+import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -50,9 +51,9 @@ public class BTree<E> {
 		var o = 3;
 		var r = ThreadLocalRandom.current();
 		var a = IntStream.range(0, l).map(_ -> r.nextInt(1, l)).toArray();
-		System.out.println(Arrays.toString(a));
+		IO.println(Arrays.toString(a));
 		var b = IntStream.range(0, r.nextInt(1, a.length + 1)).map(_ -> r.nextInt(a.length)).distinct().toArray();
-		System.out.println(Arrays.toString(b));
+		IO.println(Arrays.toString(b));
 
 		var f = Files.createTempFile("b-tree", "");
 		var tf = Files.createTempFile("b-tree", ".transaction");
@@ -88,7 +89,7 @@ public class BTree<E> {
 					a[i] = -1;
 				}
 				e = Arrays.stream(a).filter(x -> x >= 0).toArray();
-				System.out.println(Arrays.toString(e));
+				IO.println(Arrays.toString(e));
 			}
 			ch.commitTransaction();
 
@@ -97,7 +98,7 @@ public class BTree<E> {
 			{
 				var bt = bts.get();
 				var s = bt.stream().mapToInt(Integer::intValue).toArray();
-				System.out.println(Arrays.toString(s));
+				IO.println(Arrays.toString(s));
 				Arrays.sort(e);
 				assert Arrays.equals(s, e) : "\n\t" + Arrays.toString(s) + "\n\t" + Arrays.toString(e);
 			}
@@ -148,7 +149,7 @@ public class BTree<E> {
 	}
 
 	public void add(E element, UnaryOperator<E> operator) {
-//		System.out.println("add element=" + element);
+//		IO.println("add element=" + element);
 
 		var r = root;
 		var n = new Node();
@@ -172,7 +173,7 @@ public class BTree<E> {
 	}
 
 	public E get(E element, UnaryOperator<E> operator) {
-//		System.out.println("get element=" + element);
+//		IO.println("get element=" + element);
 
 		var r = root;
 		var n = new Node();
@@ -196,7 +197,7 @@ public class BTree<E> {
 	}
 
 	public E getOrAdd(E element, UnaryOperator<E> operator) {
-//		System.out.println("getOrAdd element=" + element);
+//		IO.println("getOrAdd element=" + element);
 
 		var r = root;
 		var n = new Node();
@@ -218,7 +219,7 @@ public class BTree<E> {
 	}
 
 	public E remove(E element) {
-//		System.out.println("remove element=" + element);
+//		IO.println("remove element=" + element);
 
 		var r = root;
 		var n = new Node();
@@ -319,7 +320,7 @@ public class BTree<E> {
 	}
 
 	void add(E element, UnaryOperator<E> operator, Node node, Deque<ElementReference> stack) {
-//		System.out.println("add element=" + element);
+//		IO.println("add element=" + element);
 		BlockReference r = null;
 		var e = element;
 		E e2 = null;
@@ -600,7 +601,7 @@ public class BTree<E> {
 				var l = elementConverter.getLength(buffer);
 				p += l;
 				if (l < 0 || p > buffer.limit()) {
-					System.out.println("l=" + l);
+					IO.println("l=" + l);
 					throw new RuntimeException();
 				}
 				buffer.position(p);

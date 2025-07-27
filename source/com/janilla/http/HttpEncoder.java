@@ -30,14 +30,14 @@ import java.util.stream.IntStream;
 public class HttpEncoder {
 
 	public byte[] encodeFrame(Frame frame) {
-//		System.out.println("HttpEncoder.encodeFrame, frame=" + frame);
+//		IO.println("HttpEncoder.encodeFrame, frame=" + frame);
 		int pl;
 		var bb1 = ByteBuffer.allocate(9);
 		ByteBuffer bb2;
 		switch (frame) {
 		case Frame.Data x:
 			pl = x.data().length;
-//			System.out.println("pl=" + pl);
+//			IO.println("pl=" + pl);
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
 			bb1.put((byte) pl);
 			bb1.put((byte) Frame.Name.DATA.type());

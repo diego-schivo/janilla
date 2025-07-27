@@ -47,7 +47,7 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
-import com.janilla.io.IO;
+import com.janilla.zip.Zip;
 
 public class FileHandlerFactory implements HttpHandlerFactory {
 
@@ -84,7 +84,7 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 //		}
 //
 //		var s = o.toString();
-//		System.out.println(s);
+//		IO.println(s);
 //		assert Objects.equals(s, """
 //				HTTP/1.1 200 OK\r
 //				Cache-Control: max-age=3600\r
@@ -103,16 +103,16 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 	protected final Map<String, File> files;
 
 	public FileHandlerFactory(Collection<Path> files) {
-//		System.out.println("FileHandlerFactory, files=" + files);
+//		IO.println("FileHandlerFactory, files=" + files);
 		var l = Thread.currentThread().getContextClassLoader();
 		var rr = Stream.<File>builder();
 		files.stream().forEach(x -> {
-//			System.out.println("x.getFileSystem()=" + (x.getFileSystem() == FileSystems.getDefault()));
-			var d0 = x.getFileSystem() == FileSystems.getDefault()
+//			IO.println("x.getFileSystem()=" + (x.getFileSystem() == FileSystems.getDefault()));
+			var d = x.getFileSystem() == FileSystems.getDefault()
 					? Stream.iterate(x, y -> y.getParent())
 							.dropWhile(y -> !y.getFileName().toString().equals("classes")).findFirst().get()
 					: x.getFileSystem().getRootDirectories().iterator().next();
-			x = d0.relativize(x);
+			x = d.relativize(x);
 			try {
 				var n = x.getFileName().toString();
 				var i = n.lastIndexOf('.');
@@ -123,15 +123,15 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 //					var x = d0.relativize(file);
 					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
 					n = x.toString().replace(java.io.File.separatorChar, '/');
-					var file = d0.resolve(x);
+					var file = d.resolve(x);
 					var r = new DefaultFile(p, "/" + n, Files.size(file));
-//				System.out.println("r=" + r);
+//				IO.println("r=" + r);
 					rr.add(r);
 				} else if (ex.equals("zip")) {
 //					var x = d0.relativize(file);
 					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
 					n = x.toString().replace(java.io.File.separatorChar, '/');
-					var file = d0.resolve(x);
+					var file = d.resolve(x);
 					var a = new DefaultFile(p, "/" + n, Files.size(file));
 					URI u;
 					try {
@@ -142,18 +142,18 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 					var v = u.toString();
 					if (!v.startsWith("jar:"))
 						u = URI.create("jar:" + v);
-					var fs = IO.zipFileSystem(u);
+					var fs = Zip.zipFileSystem(u);
 					Files.walkFileTree(fs.getPath("/"), new SimpleFileVisitor<>() {
 
 						@Override
 						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-//							System.out.println("file=" + file);
+//							IO.println("file=" + file);
 							var n = file.getFileName().toString();
 							var i = n.lastIndexOf('.');
 							var ex = i != -1 ? n.substring(i + 1).toLowerCase() : null;
 							if (ex != null && EXTENSIONS.contains(ex)) {
 								var r = new ZipEntryFile(a, file.toString(), Files.size(file));
-//							System.out.println("r=" + r);
+//							IO.println("r=" + r);
 								rr.add(r);
 							}
 							return FileVisitResult.CONTINUE;
@@ -171,7 +171,7 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 					+ y.path;
 		default -> throw new IllegalArgumentException();
 		}, x -> x, (x, _) -> x, LinkedHashMap::new));
-//		System.out.println("FileHandlerFactory, files=" + this.files);
+//		IO.println("FileHandlerFactory, files=" + this.files);
 	}
 
 	@Override
@@ -188,7 +188,7 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected void handle(File file, HttpExchange exchange) {
-//		System.out.println("FileHandlerFactory.handle, file=" + file);
+//		IO.println("FileHandlerFactory.handle, file=" + file);
 		var rs = exchange.response();
 		rs.setStatus(200);
 		rs.setHeaderValue("cache-control", "max-age=3600");
@@ -218,12 +218,12 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 			} catch (URISyntaxException g) {
 				throw new RuntimeException(g);
 			}
-//			System.out.println("FileHandlerFactory.handle, u=" + u);
+//			IO.println("FileHandlerFactory.handle, u=" + u);
 			var s = u.toString();
 			if (!s.startsWith("jar:"))
 				u = URI.create("jar:" + s);
-			var p = IO.zipFileSystem(u).getPath(x.path);
-//			System.out.println("FileHandlerFactory.handle, p=" + p);
+			var p = Zip.zipFileSystem(u).getPath(x.path);
+//			IO.println("FileHandlerFactory.handle, p=" + p);
 			yield Files.newInputStream(p);
 		}
 		default -> throw new IllegalArgumentException();

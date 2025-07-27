@@ -24,6 +24,7 @@
  */
 package com.janilla.reflect;
 
+import java.io.IO;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,16 +32,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class Factory {
 
 	public static void main(String[] args) {
-		var f = new Factory(List.of(Foo.C.class), new Foo("a"));
+		var z = new Foo("a");
+		var f = new Factory(List.of(Foo.C.class), () -> z);
 		var x1 = f.create(Foo.I.class, Map.of("s2", "b"));
-		System.out.println("x1=" + x1);
+		IO.println("x1=" + x1);
 		var x2 = f.create(Foo.I.class, Map.of("s2", "c"));
-		System.out.println("x2=" + x2);
+		IO.println("x2=" + x2);
 	}
 
 	public static class Foo {
@@ -73,11 +76,13 @@ public class Factory {
 
 	protected final Collection<Class<?>> types;
 
-	protected final Object source;
+	protected final Supplier<Object> source;
+
+	protected final Map<Class<?>, List<Class<?>>> foo = new ConcurrentHashMap<>();
 
 	protected final Map<Class<?>, Function<Map<String, Object>, ?>> functions = new ConcurrentHashMap<>();
 
-	public Factory(Collection<Class<?>> types, Object source) {
+	public Factory(Collection<Class<?>> types, Supplier<Object> source) {
 		this.types = types;
 		this.source = source;
 	}
@@ -87,7 +92,7 @@ public class Factory {
 	}
 
 	public Object source() {
-		return source;
+		return source.get();
 	}
 
 	public <T> T create(Class<T> type) {
@@ -95,7 +100,16 @@ public class Factory {
 	}
 
 	public <T> T create(Class<T> type, Map<String, Object> arguments) {
-		var f = functions.computeIfAbsent(type, k -> {
+		return create(type, arguments, null);
+	}
+
+	public <T> T create(Class<T> type, Map<String, Object> arguments, Function<List<Class<?>>, Class<?>> bar) {
+//		IO.println("Factory.create, type = " + type);
+		var tt = Stream.concat(
+				foo.computeIfAbsent(type, k -> types.stream().filter(x -> k.isAssignableFrom(x)).toList()).stream(),
+				Stream.of(type)).toList();
+		var t1 = bar != null ? bar.apply(tt) : tt.getFirst();
+		var f = functions.computeIfAbsent(t1, k -> {
 			var c = k;
 			for (var x : types)
 				if (type.isAssignableFrom(x) && !Modifier.isAbstract(x.getModifiers())) {
@@ -106,19 +120,20 @@ public class Factory {
 			if (cc.length != 1)
 				throw new RuntimeException(c + " has " + cc.length + " constructors");
 			var c0 = cc[0];
-//			System.out.println("Factory.create, c0 = " + c0);
-			if (c.getEnclosingClass() == source.getClass())
+//			IO.println("Factory.create, c0 = " + c0);
+			var source1 = source.get();
+			if (source1 != null && c.getEnclosingClass() == source1.getClass())
 				return aa -> {
 					try {
-						var aa2 = Stream.concat(Stream.of(source), Arrays.stream(c0.getParameters()).skip(1).map(x -> {
+						var aa2 = Stream.concat(Stream.of(source1), Arrays.stream(c0.getParameters()).skip(1).map(x -> {
 							if (aa != null && aa.containsKey(x.getName()))
 								return aa.get(x.getName());
-							var p = Reflection.property(source.getClass(), x.getName());
-							return p != null ? p.get(source) : null;
+							var p = Reflection.property(source1.getClass(), x.getName());
+							return p != null ? p.get(source1) : null;
 						})).toArray();
 						@SuppressWarnings("unchecked")
 						var t = (T) c0.newInstance(aa2);
-						return Reflection.copy(source, t);
+						return Reflection.copy(source1, t);
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
@@ -128,12 +143,14 @@ public class Factory {
 					var aa2 = Arrays.stream(c0.getParameters()).map(x -> {
 						if (aa != null && aa.containsKey(x.getName()))
 							return aa.get(x.getName());
-						var p = Reflection.property(source.getClass(), x.getName());
-						return p != null ? p.get(source) : null;
+						var p = source1 != null ? Reflection.property(source1.getClass(), x.getName()) : null;
+						return p != null ? p.get(source1) : null;
 					}).toArray();
 					@SuppressWarnings("unchecked")
 					var t = (T) c0.newInstance(aa2);
-					return Reflection.copy(source, t);
+					if (source1 != null)
+						t = Reflection.copy(source1, t);
+					return t;
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}

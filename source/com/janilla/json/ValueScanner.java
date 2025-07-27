@@ -115,7 +115,7 @@ public class ValueScanner implements Scanner {
 			}
 			};
 
-//			System.out.println("ValueScanner.accept " + value + " " + a + " " + s + " -> " + state);
+//			IO.println("ValueScanner.accept " + value + " " + a + " " + s + " -> " + state);
 
 		} while (a == null);
 		return a;

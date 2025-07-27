@@ -77,7 +77,7 @@ public class ArrayIterator extends TokenIterator {
 			}
 			default -> s;
 			};
-//			System.out.println("ArrayIterator.computeHasNext, " + s + " -> " + state);
+//			IO.println("ArrayIterator.computeHasNext, " + s + " -> " + state);
 		}
 		return token != null || (iterator != null && iterator.hasNext());
 	}

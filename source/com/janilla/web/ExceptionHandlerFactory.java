@@ -52,7 +52,7 @@ public class ExceptionHandlerFactory implements HttpHandlerFactory {
 //		}
 //
 //		var t = o.toString();
-//		System.out.println(t);
+//		IO.println(t);
 //		assert t.equals("""
 //				HTTP/1.1 404 Not Found\r
 //				Cache-Control: no-cache\r
@@ -65,7 +65,7 @@ public class ExceptionHandlerFactory implements HttpHandlerFactory {
 	public HttpHandler createHandler(Object object) {
 		if (object instanceof Exception e) {
 			var er = e.getClass().getAnnotation(Error.class);
-//			System.out.println("ExceptionHandlerFactory.createHandler, er=" + er);
+//			IO.println("ExceptionHandlerFactory.createHandler, er=" + er);
 			return x -> handle(er, x);
 		}
 		return null;
@@ -74,7 +74,7 @@ public class ExceptionHandlerFactory implements HttpHandlerFactory {
 	protected boolean handle(Error error, HttpExchange exchange) {
 		var rs = exchange.response();
 		var s = error != null ? error.code() : 500;
-//		System.out.println("ExceptionHandlerFactory.handle, s=" + s);
+//		IO.println("ExceptionHandlerFactory.handle, s=" + s);
 		rs.setStatus(s);
 		rs.setHeaderValue("cache-control", "no-cache");
 		return true;

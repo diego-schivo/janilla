@@ -90,7 +90,7 @@ public class SecureTransfer {
 				if (!in.hasRemaining() || in.position() > p)
 					return in.position() - p;
 				var n = read0();
-//				System.out.println("SecureTransfer.read, n=" + n);
+//				IO.println("SecureTransfer.read, n=" + n);
 				if (n == -1)
 					break;
 			}
@@ -116,12 +116,12 @@ public class SecureTransfer {
 	}
 
 	protected void handshake() throws IOException {
-//		System.out.println("engine.getApplicationProtocol()=" + engine.getApplicationProtocol());
+//		IO.println("engine.getApplicationProtocol()=" + engine.getApplicationProtocol());
 //		var t = engine.getUseClientMode() ? "C" : "S";
 		while (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
 			switch (engine.getHandshakeStatus()) {
 			case NEED_TASK:
-//				System.out.println(t + ": task");
+//				IO.println(t + ": task");
 				engine.getDelegatedTask().run();
 				break;
 			case NEED_UNWRAP:
@@ -135,7 +135,7 @@ public class SecureTransfer {
 				throw new IOException(engine.getHandshakeStatus().toString());
 			}
 		}
-//		System.out.println("engine.getApplicationProtocol()=" + engine.getApplicationProtocol());
+//		IO.println("engine.getApplicationProtocol()=" + engine.getApplicationProtocol());
 	}
 
 	protected int read0() throws IOException {
@@ -144,17 +144,17 @@ public class SecureTransfer {
 //			var t = engine.getUseClientMode() ? "C" : "S";
 			for (var r = in0.position() == 0;;) {
 				if (r) {
-//					System.out.println(Thread.currentThread().threadId() + ", " + channel + ", read");
+//					IO.println(Thread.currentThread().threadId() + ", " + channel + ", read");
 					var n = channel.read(in0);
-//					System.out.println(Thread.currentThread().threadId() + ", " + channel + ", read, " + n);
+//					IO.println(Thread.currentThread().threadId() + ", " + channel + ", read, " + n);
 					if (n == -1)
 						return -1;
 				}
 				in0.flip();
-//				System.out.println(t + ": unwrap");
+//				IO.println(t + ": unwrap");
 //				@SuppressWarnings("unused")
 				var ser = engine.unwrap(in0, in);
-//				System.out.println(t + ": unwrap " + ser);
+//				IO.println(t + ": unwrap " + ser);
 				in0.compact();
 				r = ser.getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW;
 				if (!r)
@@ -170,16 +170,16 @@ public class SecureTransfer {
 		try {
 //			var t = engine.getUseClientMode() ? "C" : "S";
 			out0.clear();
-//			System.out.println(t + ": wrap");
+//			IO.println(t + ": wrap");
 			@SuppressWarnings("unused")
 			var r = engine.wrap(out, out0);
-//			System.out.println(t + ": wrap " + r);
+//			IO.println(t + ": wrap " + r);
 			out0.flip();
 			while (out0.hasRemaining()) {
-//				System.out.println(t + ": write");
+//				IO.println(t + ": write");
 				@SuppressWarnings("unused")
 				var n = channel.write(out0);
-//				System.out.println(t + ": write " + n);
+//				IO.println(t + ": write " + n);
 			}
 		} finally {
 			outLock.unlock();

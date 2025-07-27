@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.io.IO;
 import java.util.List;
 
 public class StringScanner implements Scanner {
@@ -32,11 +33,11 @@ public class StringScanner implements Scanner {
 		var s = """
 				{"returnUrl":"https:\\/\\/your-company.com\\/checkout?shopperOrder=12xy.."}""";
 		var o = Json.parse(s);
-		System.out.println(o);
+		IO.println(o);
 		var t = Json.format(o);
-		System.out.println(t);
+		IO.println(t);
 		var p = Json.parse(t);
-		System.out.println(p);
+		IO.println(p);
 		assert p.equals(o) : p;
 	}
 
@@ -114,7 +115,7 @@ public class StringScanner implements Scanner {
 			}
 			};
 
-//			System.out.println("StringParser.accept " + value + " " + a + " " + s + " -> " + state);
+//			IO.println("StringParser.accept " + value + " " + a + " " + s + " -> " + state);
 
 		} while (a == null);
 		return a;

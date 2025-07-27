@@ -43,13 +43,16 @@ public abstract class SecureServer {
 
 	protected final SSLContext sslContext;
 
+	protected final SocketAddress endpoint;
+
 	protected final Map<SocketChannel, ThreadAndMillis> lastUsed = new ConcurrentHashMap<>();
 
-	public SecureServer(SSLContext sslContext) {
+	public SecureServer(SSLContext sslContext, SocketAddress endpoint) {
 		this.sslContext = sslContext;
+		this.endpoint = endpoint;
 	}
 
-	public void serve(SocketAddress endpoint) {
+	public void serve() {
 		Thread.startVirtualThread(() -> {
 			for (;;) {
 				try {
@@ -64,7 +67,7 @@ public abstract class SecureServer {
 			sch.socket().bind(endpoint);
 			for (;;) {
 				var ch = sch.accept();
-//				System.out.println("ch=" + ch + ", ch.isBlocking()=" + ch.isBlocking());
+//				IO.println("ch=" + ch + ", ch.isBlocking()=" + ch.isBlocking());
 				lastUsed.put(ch, new ThreadAndMillis(Thread.startVirtualThread(() -> {
 					try (var _ = ch) {
 						handleConnection(new CustomTransfer(ch, createSslEngine()));
@@ -80,7 +83,7 @@ public abstract class SecureServer {
 
 	protected void shutdownConnections() {
 		Map<SocketChannel, ThreadAndMillis> m = new HashMap<>();
-//			System.out.println("SecureServer.shutdownConnections, lastUsed=" + lastUsed.size());
+//			IO.println("SecureServer.shutdownConnections, lastUsed=" + lastUsed.size());
 		var ms = System.currentTimeMillis();
 		for (var it = lastUsed.entrySet().iterator(); it.hasNext();) {
 			var kv = it.next();
@@ -92,7 +95,7 @@ public abstract class SecureServer {
 		for (var kv : m.entrySet()) {
 			var ch = kv.getKey();
 			var th = kv.getValue().thread;
-//			System.out.println("SecureServer.shutdownConnections, sc=" + sc);
+//			IO.println("SecureServer.shutdownConnections, sc=" + sc);
 
 //			String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^\\d.]", "");
 //			try {
@@ -102,12 +105,12 @@ public abstract class SecureServer {
 //			}
 
 			if (th.isAlive()) {
-//				System.out.println("SecureServer.shutdownConnections, th=" + th);
+//				IO.println("SecureServer.shutdownConnections, th=" + th);
 				th.interrupt();
 			}
 
 			if (ch.isOpen()) {
-//				System.out.println("SecureServer.shutdownConnections, ch=" + ch);
+//				IO.println("SecureServer.shutdownConnections, ch=" + ch);
 				try {
 					ch.shutdownInput();
 					ch.shutdownOutput();

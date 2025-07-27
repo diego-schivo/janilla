@@ -29,6 +29,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -50,19 +53,19 @@ public class Reflection {
 	private static Map<Class<?>, Map<String, Property>> properties = new ConcurrentHashMap<>();
 
 	public static Stream<String> propertyNames(Class<?> class1) {
-//		System.out.println("Reflection.properties, class1=" + class1);
+//		IO.println("Reflection.properties, class1=" + class1);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.keySet().stream();
 	}
 
 	public static Stream<Property> properties(Class<?> class1) {
-//		System.out.println("Reflection.properties, class1=" + class1);
+//		IO.println("Reflection.properties, class1=" + class1);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.values().stream();
 	}
 
 	public static Property property(Class<?> class1, String name) {
-//		System.out.println("Reflection.property, class1=" + class1 + ", name=" + name);
+//		IO.println("Reflection.property, class1=" + class1 + ", name=" + name);
 		var m = properties.computeIfAbsent(class1, Reflection::compute);
 		return m.get(name);
 	}
@@ -109,13 +112,15 @@ public class Reflection {
 				throw new RuntimeException(e);
 			}
 		}
-		properties(c).filter(x -> vv.containsKey(x.name()) && x.canSet())
-				.forEach(x -> x.set(destination, vv.get(x.name())));
+		properties(c).filter(x -> vv.containsKey(x.name()) && x.canSet()).forEach(x -> {
+//			IO.println("Reflection.copy, x=" + x);
+			x.set(destination, vv.get(x.name()));
+		});
 		return destination;
 	}
 
 	private static Map<String, Property> compute(Class<?> class1) {
-//		System.out.println("Reflection.compute, class1=" + class1);
+//		IO.println("Reflection.compute, class1=" + class1);
 		if (!Modifier.isPublic(class1.getModifiers())) {
 			if (Map.Entry.class.isAssignableFrom(class1))
 				class1 = Map.Entry.class;
@@ -175,7 +180,7 @@ public class Reflection {
 				? IntStream.range(0, rcc.length).boxed().collect(Collectors.toMap(i -> rcc[i].getName(), i -> i + 1))
 				: null;
 		return mm.values().stream()
-				.map(x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of((Method) x[0], (Method) x[1]))
+				.map(x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of(c, (Method) x[0], (Method) x[1]))
 				.map(x -> {
 					Field f;
 					try {
@@ -202,5 +207,30 @@ public class Reflection {
 					}
 					return Stream.of(x);
 				}).collect(Collectors.toMap(Property::name, p -> p, (v, _) -> v, LinkedHashMap::new));
+	}
+
+	public static Class<?> getRawType(Type type) {
+//		IO.println("Converter.getRawType, type=" + type);
+		return switch (type) {
+		case Class<?> x -> x;
+		case ParameterizedType x -> (Class<?>) x.getRawType();
+		case TypeVariable<?> _ -> null;
+		default -> throw new IllegalArgumentException();
+		};
+	}
+
+	public static Type resolveTypeVariable(TypeVariable<?> variable, Class<?> class1, Class<?> superclassOrInterface) {
+//		IO.println("Reflection.resolveTypeVariable, variable=" + variable + ", class1=" + class1
+//				+ ", superclassOrInterface=" + superclassOrInterface);
+		var i = 0;
+		for (var x : superclassOrInterface.getTypeParameters()) {
+			if (x == variable)
+				break;
+			i++;
+		}
+		var pt = (ParameterizedType) Stream
+				.concat(Stream.of(class1.getGenericSuperclass()), Arrays.stream(class1.getGenericInterfaces()))
+				.filter(x -> x != null && Reflection.getRawType(x) == superclassOrInterface).findFirst().get();
+		return pt.getActualTypeArguments()[i];
 	}
 }

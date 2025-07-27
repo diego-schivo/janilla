@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.io.IO;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -51,11 +52,11 @@ public interface Json {
 					"qux": true
 				}""";
 		var o = Json.parse(s);
-		System.out.println(o);
+		IO.println(o);
 		var t = Json.format(o);
-		System.out.println(t);
+		IO.println(t);
 		var p = Json.parse(t);
-		System.out.println(p);
+		IO.println(p);
 		assert p.equals(o) : p;
 	}
 
@@ -76,14 +77,12 @@ public interface Json {
 	}
 
 	static <T> T parse(String string, Collector<JsonToken<?>, ?, T> collector) {
-//		System.out.println("Json.parse, string=" + string);
+//		IO.println("Json.parse, string=" + string);
 		var s = new JsonScanner();
 		var l = new ArrayList<JsonToken<?>>();
 		return IntStream.concat(string.chars(), IntStream.of(-1)).boxed().flatMap(i -> {
 			var v = i.intValue();
-
-//			System.out.println(v >= 0 ? Character.toString((char) v) : String.valueOf(v));
-
+//			IO.println("Json.parse, v=" + (v >= 0 ? Character.toString((char) v) : String.valueOf(v)));
 			l.clear();
 			if (!s.accept(v, l) || (v == -1 && !s.done()))
 				throw new RuntimeException();
@@ -157,7 +156,7 @@ public interface Json {
 
 	static Collector<JsonToken<?>, ?, Object> parseCollector() {
 		return Collector.of(() -> new ArrayList<Object>(), (a, t) -> {
-//			System.out.println("t=" + t);
+//			IO.println("t=" + t);
 			switch (t.type()) {
 			case OBJECT:
 				switch ((JsonToken.Boundary) t.data()) {

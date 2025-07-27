@@ -29,15 +29,13 @@ import java.io.IOException;
 import java.nio.channels.Channel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public abstract class HttpMessage implements Closeable {
 
 	private List<HeaderField> headers;
 
 	private Channel body;
-
-	// *******************
-	// Getters and Setters
 
 	public List<HeaderField> getHeaders() {
 		return headers;
@@ -55,11 +53,12 @@ public abstract class HttpMessage implements Closeable {
 		this.body = body;
 	}
 
-	// Getters and Setters
-	// *******************
+	public Stream<HeaderField> getHeaders(String name) {
+		return headers != null ? headers.stream().filter(x -> x.name().equals(name)) : Stream.empty();
+	}
 
 	public HeaderField getHeader(String name) {
-		return headers != null ? headers.stream().filter(x -> x.name().equals(name)).findFirst().orElse(null) : null;
+		return getHeaders(name).findFirst().orElse(null);
 	}
 
 	public void setHeader(HeaderField header) {
@@ -76,6 +75,10 @@ public abstract class HttpMessage implements Closeable {
 			}
 		}
 		headers.add(header);
+	}
+
+	public Stream<String> getHeaderValues(String name) {
+		return getHeaders(name).map(HeaderField::value);
 	}
 
 	public String getHeaderValue(String name) {

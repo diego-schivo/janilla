@@ -47,7 +47,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 
 	@Override
 	public E create(E entity) {
-//		System.out.println("entity=" + entity);
+//		IO.println("entity=" + entity);
 		if (!type.isAnnotationPresent(Versions.class))
 			return super.create(entity);
 		return persistence.database().perform((ss, _) -> {
@@ -74,12 +74,12 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			return null;
 		return persistence.database().perform((_, ii) -> {
 			var e = read(id);
-//			System.out.println("e=" + e);
+//			IO.println("e=" + e);
 			if (e != null) {
 				@SuppressWarnings("unchecked")
 				var l = (ID) ii.perform(versionStore + ".document", i -> ((Object[]) i.list(id).findFirst().get())[1]);
 				var v = readVersion(l);
-//				System.out.println("v=" + v);
+//				IO.println("v=" + v);
 				if (v.document().updatedAt().isAfter(e.updatedAt()))
 					e = v.document();
 			}

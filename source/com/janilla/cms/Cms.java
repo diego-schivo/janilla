@@ -41,9 +41,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.janilla.http.HttpRequest;
+import com.janilla.http.MultipartFormData;
 import com.janilla.net.Net;
 import com.janilla.reflect.Reflection;
-import com.janilla.util.Util;
 
 public class Cms {
 
@@ -55,13 +55,13 @@ public class Cms {
 		var skip = Set.of("createdAt", "updatedAt", "documentStatus");
 		do {
 			var c = q.remove();
-//			System.out.println("WebsiteTemplate.schema, c=" + c);
+//			IO.println("WebsiteTemplate.schema, c=" + c);
 			var v = c.getAnnotation(Versions.class);
 			var d = v != null && v.drafts();
 			var m2 = new LinkedHashMap<String, Map<String, Object>>();
 			Reflection.properties(c).filter(x -> !(skip.contains(x.name()) || (x.name().equals("publishedAt") && !d)))
 					.forEach(x -> {
-//				System.out.println("WebsiteTemplate.schema, x=" + x);
+//				IO.println("WebsiteTemplate.schema, x=" + x);
 						var m3 = new LinkedHashMap<String, Object>();
 						m3.put("type", f.apply(x.type().isEnum() ? String.class : x.type()));
 						List<Class<?>> cc;
@@ -124,13 +124,13 @@ public class Cms {
 			var ch = (ReadableByteChannel) request.getBody();
 			var bb = Channels.newInputStream(ch).readAllBytes();
 			var s = ("--" + b).getBytes();
-			var ii = Util.findIndexes(bb, s);
+			var ii = MultipartFormData.findIndexes(bb, s);
 			bbb = IntStream.range(0, ii.length - 1)
 					.mapToObj(i -> Arrays.copyOfRange(bb, ii[i] + s.length + 2, ii[i + 1] - 2)).toArray(byte[][]::new);
 		}
 		Map<String, byte[]> m = new LinkedHashMap<>();
 		for (var bb : bbb) {
-			var i = Util.findIndexes(bb, "\r\n\r\n".getBytes(), 1)[0];
+			var i = MultipartFormData.findIndexes(bb, "\r\n\r\n".getBytes(), 1)[0];
 			var hh = Net.parseEntryList(new String(bb, 0, i), "\r\n", ":");
 			var n = Arrays.stream(hh.get("Content-Disposition").split(";")).map(String::trim)
 					.filter(x -> x.startsWith("filename=")).map(x -> x.substring(x.indexOf('=') + 1))

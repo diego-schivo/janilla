@@ -39,14 +39,14 @@ export default class CmsCheckbox extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const af = this.closest("cms-admin");
+		const a = this.closest("cms-admin");
 		const p = this.dataset.path;
-		const f = af.field(p);
+		const f = a.field(p);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			label: p.substring(p.lastIndexOf(".") + 1),
 			name: p,
-			checked: f.data
+			checked: f.data,
+			text: p.substring(p.lastIndexOf(".") + 1)
 		}));
 	}
 }

@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.io.IO;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,9 +44,9 @@ public class ReflectionJsonIterator extends JsonIterator {
 		c.n = List.of(Map.entry("a", "b"), Map.entry("a", "b"));
 		var t = new ReflectionJsonIterator(c, false);
 		var s = Json.format(t);
-		System.out.println(s);
+		IO.println(s);
 		C o = null;
-		System.out.println(o);
+		IO.println(o);
 	}
 
 	public static class C {

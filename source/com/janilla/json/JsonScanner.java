@@ -78,7 +78,7 @@ public class JsonScanner implements Scanner {
 			}
 			};
 
-//			System.out.println("JsonParser.accept " + value + " " + a + " " + s + " -> " + state);
+//			IO.println("JsonParser.accept " + value + " " + a + " " + s + " -> " + state);
 
 		} while (a == null);
 		return a;

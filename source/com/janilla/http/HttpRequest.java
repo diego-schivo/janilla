@@ -63,12 +63,12 @@ public class HttpRequest extends HttpMessage {
 	public String getPath() {
 		var t = getTarget();
 		var i = t != null ? t.indexOf('?') : -1;
-		return Net.urlDecode(i >= 0 ? t.substring(0, i) : t);
+		return Net.urlDecode(i != -1 ? t.substring(0, i) : t);
 	}
 
 	public String getQuery() {
 		var t = getTarget();
 		var i = t != null ? t.indexOf('?') : -1;
-		return i >= 0 ? t.substring(i + 1) : null;
+		return i != -1 ? t.substring(i + 1) : null;
 	}
 }

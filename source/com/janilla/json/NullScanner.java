@@ -62,7 +62,7 @@ public class NullScanner implements Scanner {
 			}
 			};
 
-//			System.out.println("NumberScanner.accept " + value + " " + a + " " + s + " -> " + state);
+//			IO.println("NullScanner.accept " + value + " " + a + " " + s + " -> " + state);
 
 		} while (a == null);
 		return a;
@@ -70,6 +70,6 @@ public class NullScanner implements Scanner {
 
 	@Override
 	public boolean done() {
-		return state == 3;
+		return state == 2;
 	}
 }

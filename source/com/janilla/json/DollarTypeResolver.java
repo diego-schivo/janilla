@@ -1,17 +1,15 @@
 package com.janilla.json;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class DollarTypeResolver implements TypeResolver {
 
-	protected final List<Class<?>> types;
+	protected final Map<String, Class<?>> parseMap;
 
-	protected final Map<String, Class<?>> parseMap = new ConcurrentHashMap<>();
-
-	public DollarTypeResolver(List<Class<?>> types) {
-		this.types = types;
+	public DollarTypeResolver(Collection<Class<?>> types) {
+		parseMap = types.stream().collect(Collectors.toMap(this::format, x -> x, (x, _) -> x));
 	}
 
 	@Override
@@ -24,20 +22,15 @@ public class DollarTypeResolver implements TypeResolver {
 
 	@Override
 	public Class<?> parse(String string) {
-		var c = string != null && !string.isEmpty() ? parseMap.computeIfAbsent(string, k -> {
-			for (var x : types)
-				if (format(x).equals(k))
-					return x;
-			return null;
-		}) : null;
-//		System.out.println("DollarTypeResolver.parse, string=" + string + ", c=" + c);
+		var c = parseMap.get(string);
+//		IO.println("DollarTypeResolver.parse, string=" + string + ", c=" + c);
 		return c;
 	}
 
 	@Override
 	public String format(Class<?> class1) {
 		var x = class1.getName().substring(class1.getPackageName().length() + 1).replace('$', '.');
-//		System.out.println("DollarTypeResolver.format, class1=" + class1 + ", x=" + x);
+//		IO.println("DollarTypeResolver.format, class1=" + class1 + ", x=" + x);
 		return x;
 	}
 }

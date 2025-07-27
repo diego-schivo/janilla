@@ -24,6 +24,8 @@
  */
 package com.janilla.http;
 
+import java.io.ByteArrayInputStream;
+import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -39,7 +41,6 @@ import java.util.function.Function;
 
 import javax.net.ssl.SSLContext;
 
-import com.janilla.io.IO;
 import com.janilla.json.Json;
 import com.janilla.net.SecureTransfer;
 
@@ -52,16 +53,24 @@ public class HttpClient {
 	}
 
 	public Object getJson(String uri) {
+		return getJson(uri, null);
+	}
+
+	public Object getJson(String uri, String cookie) {
+		IO.println("HttpClient.getJson, uri=" + uri);
 		var u = URI.create(uri);
 		var rq = new HttpRequest();
 		rq.setMethod("GET");
 		rq.setTarget(u.getPath());
 		rq.setScheme(u.getScheme());
 		rq.setAuthority(u.getAuthority());
+		if (cookie != null && !cookie.isEmpty())
+			rq.setHeaderValue("cookie", cookie);
 		return send(rq, rs -> {
-			try {
-				return Json
-						.parse(new String(Channels.newInputStream((ReadableByteChannel) rs.getBody()).readAllBytes()));
+			try (var x = Channels.newInputStream((ReadableByteChannel) rs.getBody())) {
+				var s = new String(x.readAllBytes());
+				IO.println("HttpClient.getJson, s=" + s);
+				return Json.parse(s);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -74,7 +83,7 @@ public class HttpClient {
 			var i = a.indexOf(':');
 			var h = i != -1 ? a.substring(0, i) : a;
 			var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : 443;
-//			System.out.println("HttpClient.send, h=" + h + ", p=" + p);
+//			IO.println("HttpClient.send, h=" + h + ", p=" + p);
 			ch.connect(new InetSocketAddress(h, p));
 
 			var e = sslContext.createSSLEngine();
@@ -128,7 +137,7 @@ public class HttpClient {
 				var l = (Short.toUnsignedInt(t.in().getShort(0)) << 8) | Byte.toUnsignedInt(t.in().get(Short.BYTES));
 				if (l > 16384)
 					throw new RuntimeException();
-//				System.out.println("HttpClient.send, l=" + l);
+//				IO.println("HttpClient.send, l=" + l);
 
 				bb = new byte[9 + l];
 				while (t.in().position() < bb.length)
@@ -137,7 +146,7 @@ public class HttpClient {
 				t.in().get(bb);
 				t.in().compact();
 				var f = hd.decodeFrame(bb);
-//				System.out.println("HttpClient.send, f=" + f);
+//				IO.println("HttpClient.send, f=" + f);
 
 				switch (f) {
 				case Frame.Headers x:
@@ -171,8 +180,8 @@ public class HttpClient {
 					else
 						b.put(((Frame.Data) f).data());
 				rs.setHeaders(hh);
-				rs.setBody(IO.toReadableByteChannel(b.flip()));
-//				System.out.println("HttpClient.send, rs=" + rs);
+				rs.setBody(Channels.newChannel(new ByteArrayInputStream(b.array())));
+//				IO.println("HttpClient.send, rs=" + rs);
 				r = function.apply(rs);
 			}
 
@@ -181,7 +190,7 @@ public class HttpClient {
 			for (t.out().flip(); t.out().hasRemaining();)
 				t.write();
 
-//			System.out.println("HttpClient.send, closeOutbound");
+//			IO.println("HttpClient.send, closeOutbound");
 			e.closeOutbound();
 			do
 				t.write();
@@ -189,16 +198,16 @@ public class HttpClient {
 
 			var ci = true;
 			do {
-//				System.out.println("HttpClient.send, ci=" + ci);
+//				IO.println("HttpClient.send, ci=" + ci);
 				var n = t.read();
-//				System.out.println("HttpClient.send, n=" + n);
+//				IO.println("HttpClient.send, n=" + n);
 				if (n == -1) {
 					ci = false;
 					break;
 				}
 			} while (!e.isInboundDone());
 			if (ci) {
-//				System.out.println("HttpClient.send, closeInbound");
+//				IO.println("HttpClient.send, closeInbound");
 				e.closeInbound();
 			}
 			return r;
