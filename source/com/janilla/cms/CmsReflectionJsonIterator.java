@@ -110,7 +110,10 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 			if (v != null) {
 				var n = Version.class.getSimpleName() + "<" + class0.getSimpleName() + ">.document";
 				var vc = persistence.database()
-						.perform((_, ii) -> ii.perform(n, i -> i.count(((Document<?>) value).id())), false);
+//						.perform((_, ii) -> ii.perform(n, i -> i.count(((Document<?>) value).id())), false);
+						.perform(() -> {
+							throw new RuntimeException();
+						}, false);
 				var kv = Map.entry("versionCount", (Object) vc);
 				kkvv = Stream.concat(kkvv, Stream.of(kv));
 			}

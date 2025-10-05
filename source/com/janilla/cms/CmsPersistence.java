@@ -33,13 +33,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.janilla.database.BTree;
-import com.janilla.database.Database;
 import com.janilla.database.Index;
 import com.janilla.database.KeyAndData;
 import com.janilla.io.ByteConverter;
-import com.janilla.io.ByteConverter.SortOrder;
-import com.janilla.io.ByteConverter.TypeAndOrder;
 import com.janilla.json.ObjectAndType;
 import com.janilla.json.TypeResolver;
 import com.janilla.persistence.Crud;
@@ -47,6 +43,7 @@ import com.janilla.persistence.Entity;
 import com.janilla.persistence.Persistence;
 import com.janilla.persistence.Store;
 import com.janilla.reflect.Reflection;
+import com.janilla.sqlite.SQLiteDatabase;
 
 public class CmsPersistence extends Persistence {
 
@@ -78,7 +75,8 @@ public class CmsPersistence extends Persistence {
 		}
 	};
 
-	public CmsPersistence(Database database, Collection<Class<? extends Entity<?>>> types, TypeResolver typeResolver) {
+	public CmsPersistence(SQLiteDatabase database, Collection<Class<? extends Entity<?>>> types,
+			TypeResolver typeResolver) {
 		super(database, types, typeResolver);
 	}
 
@@ -86,13 +84,13 @@ public class CmsPersistence extends Persistence {
 	public <K, V> Index<K, V> newIndex(KeyAndData<String> keyAndData) {
 		if (keyAndData.key().startsWith(Version.class.getSimpleName() + "<")
 				&& keyAndData.key().endsWith(">.document")) {
-			@SuppressWarnings("unchecked")
-			var i = (Index<K, V>) new Index<Long, Object[]>(new BTree<>(database.bTreeOrder(), database.channel(),
-					database.memory(), KeyAndData.getByteConverter(ByteConverter.LONG), keyAndData.bTree()),
-//					ByteConverter.of(Version.class, "-updatedAt", "id"));
-					ByteConverter.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
-							new TypeAndOrder(Long.class, SortOrder.ASCENDING)));
-			return i;
+//			@SuppressWarnings("unchecked")
+//			var i = (Index<K, V>) new Index<Long, Object[]>(new BTree<>(database.bTreeOrder(), database.channel(),
+//					database.memory(), KeyAndData.getByteConverter(ByteConverter.LONG), keyAndData.bTree()),
+//					ByteConverter.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
+//							new TypeAndOrder(Long.class, SortOrder.ASCENDING)));
+//			return i;
+			throw new RuntimeException();
 		}
 		return super.newIndex(keyAndData);
 	}
@@ -126,12 +124,13 @@ public class CmsPersistence extends Persistence {
 		super.createStoresAndIndexes();
 		for (var t : configuration.cruds().keySet())
 			if (t.isAnnotationPresent(Versions.class))
-				database.perform((ss, ii) -> {
-					var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">";
-					ss.create(n);
-					ii.create(n + ".document");
-					return null;
-				}, true);
+//				database.perform((ss, ii) -> {
+//					var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">";
+//					ss.create(n);
+//					ii.create(n + ".document");
+//					return null;
+//				}, true);
+				throw new RuntimeException();
 	}
 
 //	protected ByteConverter<Document.Reference<ID, ?>> documentReferenceConverter;

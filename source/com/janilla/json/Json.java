@@ -79,52 +79,44 @@ public interface Json {
 	static <T> T parse(String string, Collector<JsonToken<?>, ?, T> collector) {
 //		IO.println("Json.parse, string=" + string);
 		var s = new JsonScanner();
-		var l = new ArrayList<JsonToken<?>>();
-		return IntStream.concat(string.chars(), IntStream.of(-1)).boxed().flatMap(i -> {
-			var v = i.intValue();
-//			IO.println("Json.parse, v=" + (v >= 0 ? Character.toString((char) v) : String.valueOf(v)));
-			l.clear();
-			if (!s.accept(v, l) || (v == -1 && !s.done()))
+		var tt = new ArrayList<JsonToken<?>>();
+		return IntStream.concat(string.chars(), IntStream.of(-1)).boxed().flatMap(x -> {
+			var v = x.intValue();
+//			IO.out.println(v != -1 ? Character.toString((char) v) : String.valueOf(v));
+			tt.clear();
+			if (!s.accept(v, tt) || (v == -1 && !s.done()))
 				throw new RuntimeException();
-			return l.stream();
+			return tt.stream();
 		}).collect(collector);
 	}
 
 	static Collector<JsonToken<?>, StringBuilder, String> formatCollector() {
 		return Collector.of(() -> new StringBuilder(), new BiConsumer<>() {
 
-			JsonToken<?> previous;
+			private JsonToken<?> previous;
 
 			@Override
-			public void accept(StringBuilder a, JsonToken<?> t) {
+			public void accept(StringBuilder b, JsonToken<?> t) {
 				switch (t.type()) {
 				case OBJECT:
-					switch ((JsonToken.Boundary) t.data()) {
-					case START:
-						a.append('{');
-						break;
-					case END:
-						a.append('}');
-						break;
-					}
+					b.append(switch ((JsonToken.Boundary) t.data()) {
+					case START -> '{';
+					case END -> '}';
+					});
 					break;
 				case ARRAY:
-					switch ((JsonToken.Boundary) t.data()) {
-					case START:
-						a.append('[');
-						break;
-					case END:
-						a.append(']');
-						break;
-					}
+					b.append(switch ((JsonToken.Boundary) t.data()) {
+					case START -> '[';
+					case END -> ']';
+					});
 					break;
 				case MEMBER:
 					switch ((JsonToken.Boundary) t.data()) {
 					case START:
 						if (Objects.equals(previous, JsonToken.MEMBER_END))
-							a.append(',');
+							b.append(',');
 						break;
-					default:
+					case END:
 						break;
 					}
 					break;
@@ -132,92 +124,85 @@ public interface Json {
 					switch ((JsonToken.Boundary) t.data()) {
 					case START:
 						if (Objects.equals(previous, JsonToken.ELEMENT_END))
-							a.append(',');
+							b.append(',');
 						break;
-					default:
+					case END:
 						break;
 					}
 					break;
 				case STRING:
-					a.append('"').append((String) t.data()).append('"');
+					b.append('"').append((String) t.data()).append('"');
 					if (Objects.equals(previous, JsonToken.MEMBER_START))
-						a.append(':');
+						b.append(':');
 					break;
 				case NUMBER, BOOLEAN, NULL:
-					a.append(t.data());
+					b.append(t.data());
 					break;
 				default:
 					break;
 				}
 				previous = t;
 			}
-		}, (a, _) -> a, StringBuilder::toString);
+		}, (x, _) -> x, StringBuilder::toString);
 	}
 
 	static Collector<JsonToken<?>, ?, Object> parseCollector() {
-		return Collector.of(() -> new ArrayList<Object>(), (a, t) -> {
+		return Collector.of(() -> new ArrayList<>(), (oo, t) -> {
 //			IO.println("t=" + t);
 			switch (t.type()) {
 			case OBJECT:
 				switch ((JsonToken.Boundary) t.data()) {
 				case START:
-//					a.add(new HashMap<String, Object>());
-					a.add(new LinkedHashMap<String, Object>());
+					oo.add(new LinkedHashMap<String, Object>());
 					break;
-				default:
+				case END:
 					break;
 				}
 				break;
 			case ARRAY:
 				switch ((JsonToken.Boundary) t.data()) {
 				case START:
-					a.add(new ArrayList<Object>());
+					oo.add(new ArrayList<Object>());
 					break;
-				default:
+				case END:
 					break;
 				}
 				break;
 			case MEMBER:
 				switch ((JsonToken.Boundary) t.data()) {
-				case END:
-					var v = a.remove(a.size() - 1);
-					var k = (String) a.remove(a.size() - 1);
-					@SuppressWarnings("unchecked")
-					var m = (Map<String, Object>) a.get(a.size() - 1);
-					m.put(k, v);
+				case START:
 					break;
-				default:
+				case END:
+					var v = oo.removeLast();
+					var k = (String) oo.removeLast();
+					@SuppressWarnings("unchecked")
+					var m = (Map<String, Object>) oo.getLast();
+					m.put(k, v);
 					break;
 				}
 				break;
 			case ELEMENT:
 				switch ((JsonToken.Boundary) t.data()) {
-				case END:
-					var e = a.remove(a.size() - 1);
-					@SuppressWarnings("unchecked")
-					var l = (List<Object>) a.get(a.size() - 1);
-					l.add(e);
+				case START:
 					break;
-				default:
+				case END:
+					var x = oo.removeLast();
+					@SuppressWarnings("unchecked")
+					var l = (List<Object>) oo.getLast();
+					l.add(x);
 					break;
 				}
 				break;
 			case STRING, NUMBER, BOOLEAN, NULL:
-				a.add(t.data());
+				oo.add(t.data());
 				break;
 			default:
 				break;
 			}
-		}, (a, _) -> a, a -> {
-			if (a.size() != 1)
+		}, (x, _) -> x, x -> {
+			if (x.size() != 1)
 				throw new RuntimeException();
-			return a.remove(0);
+			return x.remove(0);
 		});
-	}
-
-	static Map<String, Object> asMap(Object object) {
-		@SuppressWarnings("unchecked")
-		var m = (Map<String, Object>) object;
-		return m;
 	}
 }

@@ -27,6 +27,7 @@ package com.janilla.json;
 import java.io.IO;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -60,41 +61,40 @@ public interface Jwt {
 
 		var h = Json.format(header);
 		var p = Json.format(payload);
-//		IO.println("h=" + h + ", p=" + p);
+//		IO.println("Jwt.generateToken, h=" + h + ", p=" + p);
 
-		var e = Base64.getUrlEncoder();
-		var t = e.encodeToString(h.getBytes()) + "." + e.encodeToString(p.getBytes());
-//		IO.println("t=" + t);
+		var ue = Base64.getUrlEncoder();
+		var ss = new String[] { ue.encodeToString(h.getBytes()), ue.encodeToString(p.getBytes()) };
 
 		Mac m;
 		try {
 			m = Mac.getInstance("HmacSHA256");
-		} catch (NoSuchAlgorithmException f) {
-			throw new RuntimeException(f);
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
 		}
 		var k = new SecretKeySpec(key.getBytes(), "HmacSHA256");
 		try {
 			m.init(k);
-		} catch (InvalidKeyException f) {
-			throw new RuntimeException(f);
+		} catch (InvalidKeyException e) {
+			throw new RuntimeException(e);
 		}
 
-		var a = m.doFinal(t.getBytes());
-//		IO.println("a=" + Arrays.toString(a));
-		var s = e.encodeToString(a);
-//		IO.println("s=" + s);
-		t += "." + s;
-		return t;
+		var bb = m.doFinal((ss[0] + "." + ss[1]).getBytes());
+//		IO.println("Jwt.generateToken, bb=" + Arrays.toString(bb));
+		ss[2] = ue.encodeToString(bb);
+//		IO.println("ss=" + Arrays.toString(ss));
+		return Arrays.stream(ss).collect(Collectors.joining("."));
 	}
 
 	static Map<String, ?> verifyToken(String token, String key) {
-		var i = token.indexOf('.');
-		var j = token.lastIndexOf('.');
-		if (i < 0 || j <= i)
+		var i1 = token.indexOf('.');
+		var i2 = token.lastIndexOf('.');
+		if (i1 == -1 || i2 <= i1)
 			throw new IllegalArgumentException("token=" + token);
 
-		var d = Base64.getUrlDecoder();
-		var h = Json.parse(new String(d.decode(token.substring(0, i))));
+		var ud = Base64.getUrlDecoder();
+		var hs = new String(ud.decode(token.substring(0, i1)));
+		var h = Json.parse(hs);
 
 		if (!h.equals(Map.of("alg", "HS256", "typ", "JWT")))
 			throw new IllegalArgumentException("h=" + h);
@@ -102,26 +102,25 @@ public interface Jwt {
 		Mac m;
 		try {
 			m = Mac.getInstance("HmacSHA256");
-		} catch (NoSuchAlgorithmException f) {
-			throw new RuntimeException(f);
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
 		}
 		var k = new SecretKeySpec(key.getBytes(), "HmacSHA256");
 		try {
 			m.init(k);
-		} catch (InvalidKeyException f) {
-			throw new RuntimeException(f);
+		} catch (InvalidKeyException e) {
+			throw new RuntimeException(e);
 		}
-		var t = token.substring(0, j);
-		var a = m.doFinal(t.getBytes());
+		var bb = m.doFinal(token.substring(0, i2).getBytes());
 
-		var e = Base64.getUrlEncoder();
-		var s = e.encodeToString(a);
-		if (!s.equals(token.substring(j + 1)))
+		var ue = Base64.getUrlEncoder();
+		var s = ue.encodeToString(bb);
+		if (!s.equals(token.substring(i2 + 1)))
 			throw new IllegalArgumentException("s=" + s);
 
-		var z = new String(d.decode(token.substring(i + 1, j)));
+		var ps = new String(ud.decode(token.substring(i1 + 1, i2)));
 		@SuppressWarnings("unchecked")
-		var p = (Map<String, ?>) Json.parse(z);
+		var p = (Map<String, ?>) Json.parse(ps);
 		return p;
 	}
 }
