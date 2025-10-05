@@ -86,6 +86,11 @@ public interface Property {
 			}
 
 			@Override
+			public boolean canGet() {
+				return true;
+			}
+
+			@Override
 			public boolean canSet() {
 				return !Modifier.isFinal(field.getModifiers());
 			}
@@ -161,6 +166,11 @@ public interface Property {
 			}
 
 			@Override
+			public boolean canGet() {
+				return g != null;
+			}
+
+			@Override
 			public boolean canSet() {
 				return s != null;
 			}
@@ -211,6 +221,11 @@ public interface Property {
 			}
 
 			@Override
+			public boolean canGet() {
+				return property2.canGet();
+			}
+
+			@Override
 			public boolean canSet() {
 				return property2.canSet();
 			}
@@ -254,6 +269,8 @@ public interface Property {
 	Object get(Object object);
 
 	void set(Object object, Object value);
+
+	boolean canGet();
 
 	boolean canSet();
 }

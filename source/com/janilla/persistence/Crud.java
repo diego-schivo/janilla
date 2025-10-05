@@ -25,10 +25,7 @@
 package com.janilla.persistence;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -53,7 +50,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected final Class<E> type;
 
-	protected final Function<Map<String, Object>, ID> nextId;
+	protected final Function<E, ID> nextId;
 
 	protected final Persistence persistence;
 
@@ -61,7 +58,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected final List<Observer> observers = new ArrayList<>();
 
-	public Crud(Class<E> type, Function<Map<String, Object>, ID> nextId, Persistence persistence) {
+	public Crud(Class<E> type, Function<E, ID> nextId, Persistence persistence) {
 		this.type = type;
 		this.nextId = nextId;
 		this.persistence = persistence;
@@ -74,28 +71,33 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	public E create(E entity) {
 //		IO.println("Crud.create entity=" + entity);
 
-		return persistence.database.perform((ss, _) -> {
+		return persistence.database.perform(() -> {
 			class A {
 
 				E e;
+
+				ID i;
 			}
 			var a = new A();
-			var l = ss.perform(type.getSimpleName(), s0 -> {
+			a.e = entity;
+			if (nextId != null) {
 				@SuppressWarnings("unchecked")
-				var s = (com.janilla.database.Store<ID, String>) s0;
-				a.e = entity;
-				if (nextId != null) {
-					var id = nextId.apply(s.getAttributes());
-					a.e = Reflection.copy(Collections.singletonMap("id", id), a.e);
-				}
-				for (var y : observers)
-					a.e = y.beforeCreate(a.e);
-				var t = format(a.e);
-//				IO.println("Crud.create id=" + a.e.id() + ", t=" + t);
-				s.create(a.e.id(), t);
-				return a.e.id();
-			});
-			updateIndexes(null, a.e, l);
+				var x = (ID) Reflection.property(type, "id").get(a.e);
+				if (x == null)
+					x = nextId.apply(a.e);
+				a.i = x;
+				persistence.database.indexBTree(type.getSimpleName()).insert(a.i.toString(), format(a.e));
+			} else {
+				@SuppressWarnings("unchecked")
+				var x = (ID) Long.valueOf(persistence.database.tableBTree(type.getSimpleName()).insert(k -> {
+					a.e = Reflection.copy(Map.of("id", k), a.e);
+					for (var y : observers)
+						a.e = y.beforeCreate(a.e);
+					return new Object[] { format(a.e) };
+				}));
+				a.i = x;
+			}
+			updateIndexes(null, entity, a.i);
 			for (var x : observers)
 				x.afterCreate(a.e);
 			return a.e;
@@ -105,32 +107,28 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	public E read(ID id) {
 		if (id == null)
 			return null;
-		var o = persistence.database.perform((ss, _) -> ss.perform(type.getSimpleName(), s0 -> {
-			@SuppressWarnings("unchecked")
-			var s = (com.janilla.database.Store<ID, String>) s0;
-			return s.read(id);
+		return persistence.database.perform(() -> persistence.database.performOnTable(type.getSimpleName(), t -> {
+			var oo = t.select((Long) id);
+//					IO.println("Crud.read, x=" + x + ", o=" + o);
+			return oo != null ? parse((String) oo[0]) : null;
 		}), false);
-		return o != null ? parse(o) : null;
 	}
 
 	public List<E> read(List<ID> ids) {
 		if (ids == null || ids.isEmpty())
 			return List.of();
-		return persistence.database.perform((ss, _) -> ss.perform(type.getSimpleName(), s0 -> {
-			@SuppressWarnings("unchecked")
-			var s = (com.janilla.database.Store<ID, String>) s0;
-			return ids.stream().map(x -> {
-				var o = s.read(x);
-//				IO.println("Crud.read, x=" + x + ", o=" + o);
-				return o != null ? parse(o) : null;
-			}).toList();
-		}), false);
+		return persistence.database
+				.perform(() -> persistence.database.performOnTable(type.getSimpleName(), t -> ids.stream().map(x -> {
+					var oo = t.select((Long) x);
+//					IO.println("Crud.read, x=" + x + ", o=" + o);
+					return oo != null ? parse((String) oo[0]) : null;
+				}).toList()), false);
 	}
 
 	public E update(ID id, UnaryOperator<E> operator) {
 		if (id == null)
 			return null;
-		return persistence.database.perform((ss, _) -> {
+		return persistence.database.perform(() -> {
 			class A {
 
 				E e1;
@@ -138,15 +136,13 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				E e2;
 			}
 			var a = new A();
-			ss.perform(type.getSimpleName(), s0 -> {
-				@SuppressWarnings("unchecked")
-				var s = (com.janilla.database.Store<ID, String>) s0;
-				s.update(id, x -> {
-					a.e1 = parse((String) x);
+			persistence.database.performOnTable(type.getSimpleName(), t -> {
+				t.update((Long) id, x -> {
+					a.e1 = parse((String) x[0]);
 					a.e2 = operator.apply(a.e1);
 					for (var y : observers)
 						a.e2 = y.beforeUpdate(a.e2);
-					return format(a.e2);
+					return new Object[] { format(a.e2) };
 				});
 				return null;
 			});
@@ -160,13 +156,9 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	public E delete(ID id) {
 		if (id == null)
 			return null;
-		return persistence.database.perform((ss, _) -> {
-			var o = ss.perform(type.getSimpleName(), s0 -> {
-				@SuppressWarnings("unchecked")
-				var s = (com.janilla.database.Store<ID, String>) s0;
-				return s.delete(id);
-			});
-			var e = parse(o);
+		return persistence.database.perform(() -> {
+			var oo = persistence.database.performOnTable(type.getSimpleName(), t -> t.delete((Long) id));
+			var e = parse((String) oo[0]);
 			updateIndexes(e, null, id);
 			for (var x : observers)
 				x.afterDelete(e);
@@ -177,278 +169,77 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	public List<E> delete(List<ID> ids) {
 		if (ids == null || ids.isEmpty())
 			return List.of();
-//		return persistence.database
-//				.perform((ss, _) -> ss.perform(type.getSimpleName(), s -> Arrays.stream(ids).mapToObj(x -> {
-//					var o = s.delete(x);
-//					return o != null ? parse((String) o) : null;
-//				}).toList()), true);
-		return persistence.database().perform((_, _) -> ids.stream().map(this::delete).toList(), true);
+		return persistence.database.perform(() -> ids.stream().map(this::delete).toList(), true);
 	}
 
 	public List<ID> list() {
-		return persistence.database.perform((ss, ii) -> type.isAnnotationPresent(Index.class)
-				? ii.perform(type.getSimpleName(), i -> getIndexIds(i.values()).toList())
-				: ss.perform(type.getSimpleName(), s0 -> {
-					@SuppressWarnings("unchecked")
-					var s = (com.janilla.database.Store<ID, String>) s0;
-					return s.ids().toList();
-				}), false);
+		return persistence.database.perform(() -> persistence.database.performOnTable(type.getSimpleName(), t -> {
+			@SuppressWarnings("unchecked")
+			var ii = (List<ID>) t.keys().boxed().toList();
+			return ii;
+		}), false);
 	}
 
 	public IdPage<ID> list(long skip, long limit) {
 //		IO.println("Crud.list, skip=" + skip + ", limit=" + limit);
-		return persistence.database
-				.perform((ss, ii) -> type.isAnnotationPresent(Index.class) ? ii.perform(type.getSimpleName(), i -> {
-					var vv = i.values();
-					if (skip > 0)
-						vv = vv.skip(skip);
-					if (limit >= 0)
-						vv = vv.limit(limit);
-					var j = getIndexIds(vv).toList();
-					var c = i.count();
-					return new IdPage<>(j, c);
-				}) : ss.perform(type.getSimpleName(), s0 -> {
-					@SuppressWarnings("unchecked")
-					var s = (com.janilla.database.Store<ID, String>) s0;
-					var jj = s.ids();
-					if (skip > 0)
-						jj = jj.skip(skip);
-					if (limit >= 0)
-						jj = jj.limit(limit);
-					var i = jj.toList();
-					var c = s.count();
-					return new IdPage<>(i, c);
-				}), false);
+		return persistence.database.perform(() -> persistence.database.performOnTable(type.getSimpleName(), t -> {
+			var kk = t.keys();
+			if (skip > 0)
+				kk = kk.skip(skip);
+			if (limit >= 0)
+				kk = kk.limit(limit);
+			@SuppressWarnings("unchecked")
+			var ii = (List<ID>) kk.boxed().toList();
+			return new IdPage<>(ii, t.count());
+		}), false);
 	}
 
 	public long count() {
-		return persistence.database.perform(
-				(ss, ii) -> type.isAnnotationPresent(Index.class) ? ii.perform(type.getSimpleName(), i -> i.count())
-						: ss.perform(type.getSimpleName(), s -> s.count()),
-				false);
+		return persistence.database
+				.perform(() -> persistence.database.performOnTable(type.getSimpleName(), t -> t.count()), false);
 	}
 
 	public long count(String index, Object key) {
-		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
-				.collect(Collectors.joining("."));
-		return persistence.database.perform((_, ii) -> ii.perform(n, i -> i.count(key)), false);
+		throw new RuntimeException();
 	}
 
 	public ID find(String index, Object key) {
-		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
-				.collect(Collectors.joining("."));
-		return persistence.database.perform((_, ii) -> ii.perform(n, i -> i.list(key).map(x -> {
-			@SuppressWarnings("unchecked")
-			var y = (ID) (x instanceof Object[] oo ? oo[oo.length - 1] : x);
-			return y;
-		}).findFirst().orElse(null)), false);
+		throw new RuntimeException();
 	}
 
 	public List<ID> filter(String index, Object... keys) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
 //		IO.println("n=" + n + ", keys=" + Arrays.toString(keys));
-		switch (keys.length) {
-		case 0:
-			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.values()).toList()), false);
-		case 1:
-			return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.list(keys[0])).toList()),
-					false);
-		}
-		class A {
-
-			Iterator<Object> vv;
-
-			Object v;
-		}
-		List<A> aa = persistence.database.perform((_, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
-			var a = new A();
-			a.vv = i.list(k).iterator();
-			a.v = a.vv.hasNext() ? a.vv.next() : null;
-			return a;
-		}).toList()), false);
-		return Stream.iterate((ID) null, _ -> {
-			var a = aa.stream().max((a1, a2) -> {
-				@SuppressWarnings("unchecked")
-				var c1 = a1.v != null ? (ID) ((Object[]) a1.v)[0] : null;
-				@SuppressWarnings("unchecked")
-				var c2 = a2.v != null ? (ID) ((Object[]) a2.v)[0] : null;
-				return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
-			}).orElse(null);
-			if (a == null || a.v == null)
-				return null;
-			var v = (Object[]) a.v;
+		return switch (keys.length) {
+		case 0 -> persistence.database.perform(() -> persistence.database.performOnIndex(n, t -> {
 			@SuppressWarnings("unchecked")
-			var i = (ID) v[v.length - 1];
-			a.v = a.vv.hasNext() ? a.vv.next() : null;
-			return i;
-		}).skip(1).takeWhile(Objects::nonNull).toList();
+			var ii = (List<ID>) t.foo().boxed().toList();
+			return ii;
+		}), false);
+		case 1 -> persistence.database.perform(() -> persistence.database.performOnIndex(n, t -> {
+			@SuppressWarnings("unchecked")
+			var ii = (List<ID>) t.foo(keys[0]).boxed().toList();
+			return ii;
+		}), false);
+		default -> throw new RuntimeException();
+		};
 	}
 
 	public IdPage<ID> filter(String index, long skip, long limit, Object... keys) {
-		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
-				.collect(Collectors.joining("."));
-		switch (keys.length) {
-		case 0:
-			return persistence.database.perform((_, ii) -> ii.perform(n, i -> {
-				var jj = getIndexIds(i.values());
-				if (skip > 0)
-					jj = jj.skip(skip);
-				if (limit >= 0)
-					jj = jj.limit(limit);
-				return new IdPage<>(jj.toList(), i.count());
-			}), false);
-		case 1:
-			return persistence.database.perform((_, ii) -> ii.perform(n, i -> {
-				var jj = getIndexIds(i.list(keys[0]));
-				if (skip > 0)
-					jj = jj.skip(skip);
-				if (limit >= 0)
-					jj = jj.limit(limit);
-				return new IdPage<>(jj.toList(), i.count(keys[0]));
-			}), false);
-		}
-		class A {
-
-			Iterator<Object> vv;
-
-			Object v;
-
-			long l;
-		}
-		List<A> aa;
-		aa = persistence.database.perform((_, ii) -> ii.perform(n, i -> (List<A>) Arrays.stream(keys).map(k -> {
-			var a = new A();
-			a.vv = i.list(k).iterator();
-			a.v = a.vv.hasNext() ? a.vv.next() : null;
-			a.l = i.count(k);
-			return a;
-		}).toList()), false);
-
-		return new IdPage<>(Stream.iterate((ID) null, _ -> {
-			var a = aa.stream().max((a1, a2) -> {
-				@SuppressWarnings("unchecked")
-				var c1 = a1.v != null ? (ID) ((Object[]) a1.v)[0] : null;
-				@SuppressWarnings("unchecked")
-				var c2 = a2.v != null ? (ID) ((Object[]) a2.v)[0] : null;
-				return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
-			}).orElse(null);
-			if (a == null || a.v == null)
-				return null;
-			var v = (Object[]) a.v;
-			@SuppressWarnings("unchecked")
-			var i = (ID) v[v.length - 1];
-			a.v = a.vv.hasNext() ? a.vv.next() : null;
-			return i;
-		}).skip(1 + skip).takeWhile(Objects::nonNull).limit(limit).toList(), aa.stream().mapToLong(x -> x.l).sum());
+		throw new RuntimeException();
 	}
 
 	public List<ID> filter(String index, Predicate<Object> operation) {
-		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
-				.collect(Collectors.joining("."));
-		return persistence.database.perform((_, ii) -> ii.perform(n, i -> getIndexIds(i.valuesIf(operation)).toList()),
-				false);
+		throw new RuntimeException();
 	}
 
 	public IdPage<ID> filter(String index, Predicate<Object> operation, long skip, long limit) {
-		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
-				.collect(Collectors.joining("."));
-		return persistence.database.perform((_, ii) -> ii.perform(n,
-				i -> new IdPage<>(getIndexIds(i.valuesIf(operation)).skip(skip).limit(limit).toList(),
-						i.countIf(operation))),
-				false);
+		throw new RuntimeException();
 	}
 
 	public IdPage<ID> filter(Map<String, Object[]> keys, long skip, long limit) {
-		var ee = keys.entrySet().stream().filter(x -> x.getValue() != null && x.getValue().length > 0).toList();
-		if (ee.isEmpty())
-			return list(skip, limit);
-		if (ee.size() == 1) {
-			var e = ee.get(0);
-			return filter(e.getKey(), skip, limit, e.getValue());
-		}
-		return persistence.database.perform((_, ii) -> {
-			class A {
-
-				Iterator<ID> lli;
-
-				ID l;
-			}
-			var aa = new ArrayList<A>();
-			for (var e : ee) {
-				var n = Stream.of(type.getSimpleName(), e.getKey()).filter(x -> x != null && !x.isEmpty())
-						.collect(Collectors.joining("."));
-				class B {
-
-					Iterator<Object[]> vvi;
-
-					Object[] v;
-				}
-				var bb = new ArrayList<B>();
-				ii.perform(n, i -> {
-					for (var k : e.getValue()) {
-						var b = new B();
-						b.vvi = i.list(k).map(x -> (Object[]) x).iterator();
-						b.v = b.vvi.hasNext() ? b.vvi.next() : null;
-						bb.add(b);
-					}
-					return null;
-				});
-				var a = new A();
-				a.lli = Stream.iterate((ID) null, _ -> {
-					var b = bb.stream().max((b1, b2) -> {
-						@SuppressWarnings("unchecked")
-						var v1 = b1.v != null ? (ID) b1.v[0] : null;
-						@SuppressWarnings("unchecked")
-						var v2 = b2.v != null ? (ID) b2.v[0] : null;
-						return v1 != null ? (v2 != null ? v1.compareTo(v2) : 1) : (v2 != null ? -1 : 0);
-					}).orElse(null);
-					if (b == null || b.v == null)
-						return null;
-					@SuppressWarnings("unchecked")
-					var l = (ID) b.v[b.v.length - 1];
-					b.v = b.vvi.hasNext() ? b.vvi.next() : null;
-					return l;
-				}).skip(1).takeWhile(Objects::nonNull).iterator();
-				a.l = a.lli.hasNext() ? a.lli.next() : null;
-				aa.add(a);
-			}
-			var llb = Stream.<ID>builder();
-			class C {
-
-				long l;
-			}
-			var c = new C();
-			var t = Stream.iterate((ID) null, _ -> {
-				for (;;) {
-					var ll = aa.stream().map(a -> a.l).toList();
-//					IO.println("ll=" + Arrays.toString(ll));
-					var l = ll.stream().allMatch(Objects::nonNull) ? ll.stream().max(Comparator.naturalOrder()).get()
-							: null;
-					if (l == null)
-						return null;
-					var e = true;
-					for (var a : aa) {
-						while (a.l != null && a.l.compareTo(l) < 0)
-							a.l = a.lli.hasNext() ? a.lli.next() : null;
-						if (!a.l.equals(l))
-							e = false;
-					}
-					if (e) {
-						for (var a : aa)
-							a.l = a.lli.hasNext() ? a.lli.next() : null;
-						return l;
-					}
-				}
-			}).skip(1).takeWhile(Objects::nonNull).peek(x -> {
-				var o = c.l++ - skip;
-				if (o >= 0 && (limit < 0 || o < limit)) {
-//					IO.println("x=" + x);
-					llb.add(x);
-				}
-			}).count();
-			return new IdPage<>(llb.build().toList(), t);
-		}, false);
+		throw new RuntimeException();
 	}
 
 	protected String format(Object object) {
@@ -479,7 +270,8 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			var v1 = im1 != null ? im1.get(k) : null;
 			var v2 = im2 != null ? im2.get(k) : null;
 			if (v1 == null || v2 == null || !Objects.equals(v1.getKey(), v2.getKey())
-					|| !Arrays.equals((Object[]) v1.getValue(), (Object[]) v2.getValue())) {
+//					|| !Arrays.equals((Object[]) v1.getValue(), (Object[]) v2.getValue())) {
+					|| !Objects.equals(v1.getValue(), v2.getValue())) {
 				var k1 = v1 != null ? v1.getKey() : null;
 				var k2 = v2 != null ? v2.getKey() : null;
 				var m1 = v1 == null ? null : k2 instanceof Collection<?> c ? toMap(v1, x -> !c.contains(x)) : toMap(v1);
@@ -546,35 +338,31 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 //		var n = Stream.of(type.getSimpleName(), name).filter(x -> x != null && !x.isEmpty())
 //				.collect(Collectors.joining("."));
 //		IO.println("Crud.updateIndex, n=" + n + ", remove=" + remove + ", add=" + add);
-		persistence.database.perform((_, ii) -> ii.perform(n, i -> {
+
+		persistence.database.perform(() -> persistence.database.performOnIndex(n, t -> {
 			if (remove != null)
 				for (var e : remove.entrySet())
-					i.remove(e.getKey(), new Object[] { e.getValue() });
+					t.delete(foo(e.getKey()), foo(e.getValue()));
 			if (add != null)
 				for (var e : add.entrySet())
-					i.add(e.getKey(), new Object[] { e.getValue() });
+					t.insert(foo(e.getKey()), foo(e.getValue()));
 			return null;
 		}), true);
 	}
 
-	protected Stream<ID> getIndexIds(Stream<Object> results) {
-		return results.map(x -> {
-			@SuppressWarnings("unchecked")
-			var y = (ID) switch (x) {
-			case Object[] oo -> oo[oo.length - 1];
-			default -> x;
-			};
-			return y;
-		});
+	protected Object foo(Object object) {
+		return object == null || object instanceof Number ? object : object.toString();
 	}
 
-//	protected ID newId(Map<String, Object> attributes) {
-//		var v = attributes.get("nextId");
-//		var l = v != null ? (long) v : 1L;
-//		attributes.put("nextId", l + 1);
-//		@SuppressWarnings("unchecked")
-//		var id = (ID) Long.valueOf(l);
-//		return id;
+//	protected Stream<ID> getIndexIds(Stream<Object> results) {
+//		return results.map(x -> {
+//			@SuppressWarnings("unchecked")
+//			var y = (ID) switch (x) {
+//			case Object[] oo -> oo[oo.length - 1];
+//			default -> x;
+//			};
+//			return y;
+//		});
 //	}
 
 	public record IdPage<ID>(List<ID> ids, long total) {

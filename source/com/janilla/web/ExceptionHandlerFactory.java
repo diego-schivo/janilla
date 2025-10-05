@@ -24,6 +24,8 @@
  */
 package com.janilla.web;
 
+import java.io.IO;
+
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
@@ -74,7 +76,7 @@ public class ExceptionHandlerFactory implements HttpHandlerFactory {
 	protected boolean handle(Error error, HttpExchange exchange) {
 		var rs = exchange.response();
 		var s = error != null ? error.code() : 500;
-//		IO.println("ExceptionHandlerFactory.handle, s=" + s);
+		IO.println("ExceptionHandlerFactory.handle, s=" + s);
 		rs.setStatus(s);
 		rs.setHeaderValue("cache-control", "no-cache");
 		return true;

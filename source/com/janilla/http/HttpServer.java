@@ -238,6 +238,7 @@ public class HttpServer extends SecureServer {
 				}
 				break;
 			case Frame.Ping _:
+			case Frame.Priority _:
 			case Frame.WindowUpdate _:
 				break;
 			case Frame.Goaway _:

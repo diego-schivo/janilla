@@ -25,6 +25,7 @@
 package com.janilla.web;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedElement;
 import java.util.Map;
@@ -47,9 +48,7 @@ public class RenderableFactory {
 
 	public <T> Renderable<T> createRenderable(AnnotatedElement annotated, T value) {
 //		IO.println("RenderableFactory.createRenderable, annotated=" + annotated + ", value=" + value);
-		var a = Stream.of(annotated, value != null ? value.getClass() : null)
-				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(Objects::nonNull).findFirst()
-				.orElse(null);
+		var a = annotation(annotated, value);
 		@SuppressWarnings("unchecked")
 		var c = (Class<Renderer<T>>) (a != null ? a.renderer() : HtmlRenderer.class);
 		Renderer<T> r;
@@ -64,7 +63,7 @@ public class RenderableFactory {
 		if (t != null && t.endsWith(".html")) {
 			templates.computeIfAbsent(t, k -> {
 				var m = new ConcurrentHashMap<String, String>();
-				try (var s = value.getClass().getResourceAsStream(k)) {
+				try (var s = getResourceAsStream(value, k)) {
 					if (s == null)
 						throw new NullPointerException(k);
 					m.put("", TEMPLATE_ELEMENT.matcher(new String(s.readAllBytes())).replaceAll(y -> {
@@ -79,5 +78,15 @@ public class RenderableFactory {
 			r.templateKey1 = t;
 		}
 		return new Renderable<>(value, r);
+	}
+
+	protected <T> Render annotation(AnnotatedElement annotated, T value) {
+		return Stream.of(annotated, value != null ? value.getClass() : null)
+				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(Objects::nonNull).findFirst()
+				.orElse(null);
+	}
+
+	protected <T> InputStream getResourceAsStream(T value, String name) {
+		return value.getClass().getResourceAsStream(name);
 	}
 }

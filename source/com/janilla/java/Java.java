@@ -27,8 +27,10 @@ package com.janilla.java;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.module.ResolvedModule;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,22 +44,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import com.janilla.zip.Zip;
-
 public final class Java {
 
-	public static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.*)!(.*)");
+	private static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.*)!(.*)");
+
+	private static final Map<String, List<Class<?>>> PACKAGE_CLASSES = new ConcurrentHashMap<>();
+
+	private static final Map<String, List<Path>> PACKAGE_PATHS = new ConcurrentHashMap<>();
+
+	private static final Map<String, FileSystem> ZIP_FILE_SYSTEMS = new ConcurrentHashMap<>();
 
 	private Java() {
 		throw new Error("no instances");
 	}
 
-	private static final Map<String, List<Class<?>>> PACKAGE_CLASSES = new ConcurrentHashMap<>();
-
 	public static List<Class<?>> getPackageClasses(String package1) {
 		return PACKAGE_CLASSES.computeIfAbsent(package1, k -> {
 			Stream<Class<?>> cc = getPackagePaths(k).stream().map(x -> {
-//			IO.println("Java.getPackageClasses, x=" + x);
+//				IO.println("Java.getPackageClasses, x=" + x);
 				var d = x.getFileSystem() == FileSystems.getDefault()
 						? Stream.iterate(x, y -> y.getParent())
 								.dropWhile(y -> !y.getFileName().toString().equals("classes")).findFirst().get()
@@ -72,33 +76,31 @@ public final class Java {
 				} catch (ClassNotFoundException e) {
 					c = null;
 				}
-//			IO.println("Java.getPackageClasses, c=" + c);
+//				IO.println("Java.getPackageClasses, c=" + c);
 				return c;
 			});
 			return cc.filter(Objects::nonNull).toList();
 		});
 	}
 
-	private static final Map<String, List<Path>> PACKAGE_PATHS = new ConcurrentHashMap<>();
-
 	public static List<Path> getPackagePaths(String package1) {
 //		IO.println("Java.getPackagePaths, package1=" + package1);
 		return PACKAGE_PATHS.computeIfAbsent(package1, k -> {
-			var l = Thread.currentThread().getContextClassLoader();
-			return l.resources(k.replace('.', '/')).map(x -> {
-				URI u;
-				try {
-					u = x.toURI();
-				} catch (URISyntaxException e) {
-					throw new RuntimeException(e);
+			var n = k.replace('.', '/');
+			return ModuleLayer.boot().configuration().modules().stream().map(ResolvedModule::reference).flatMap(x -> {
+				try (var r = x.open()) {
+					return r.find(n).stream();
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
 				}
+			}).map(u -> {
 //				IO.println("Java.getPackagePaths, u=" + u);
 				var m = JAR_URI_PATTERN.matcher(u.toString());
-				var d = m.matches() ? Zip.zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(u);
+				var d = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(u);
 //				IO.println("Java.getPackagePaths, d=" + d);
 				return d;
 			}).flatMap(x -> {
-//				IO.println("Java.getPackagePaths, a=" + a);
+//				IO.println("Java.getPackagePaths, x=" + x);
 				try (var yy = Files.walk(x)) {
 					var pp = yy.toList();
 //					IO.println("Java.getPackagePaths, pp=" + pp);
@@ -132,6 +134,24 @@ public final class Java {
 		x.put(k3, v3);
 		x.put(k4, v4);
 		return x;
+	}
+
+	public static FileSystem zipFileSystem(URI uri) {
+		return ZIP_FILE_SYSTEMS.computeIfAbsent(uri.toString(), k -> {
+			try {
+				var i = k.lastIndexOf('!');
+				if (i == -1)
+					try {
+						return FileSystems.getFileSystem(uri);
+					} catch (FileSystemNotFoundException _) {
+						return FileSystems.newFileSystem(uri, Map.of());
+					}
+				var p = zipFileSystem(URI.create(k.substring(0, i))).getPath(k.substring(i + 1));
+				return FileSystems.newFileSystem(p, Map.of());
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		});
 	}
 
 	public static class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {

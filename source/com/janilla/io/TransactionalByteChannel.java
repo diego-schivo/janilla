@@ -36,36 +36,36 @@ import java.util.List;
 public class TransactionalByteChannel extends FilterSeekableByteChannel<SeekableByteChannel> {
 
 	public static void main(String[] args) throws Exception {
-		var f = Files.createTempFile("foo", "");
-		var tf = Files.createTempFile("foo", ".transaction");
+		var f1 = Files.createTempFile("foo", "");
+		var f2 = Files.createTempFile("foo", ".transaction");
 		try (var ch = new TransactionalByteChannel(
-				FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
-				FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
+				FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
+				FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
 			ch.startTransaction();
 			{
 				var b = ByteBuffer.wrap("foobar".getBytes());
 				ch.write(b);
-				if (b.remaining() != 0)
+				if (b.hasRemaining())
 					throw new IOException();
 			}
 			ch.commitTransaction();
 
-			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
+			new ProcessBuilder("hexdump", "-C", f1.toString()).inheritIO().start().waitFor();
 
 			ch.startTransaction();
 			{
 				ch.position(3);
 				var b = ByteBuffer.wrap("bazqux".getBytes());
 				ch.write(b);
-				if (b.remaining() != 0)
+				if (b.hasRemaining())
 					throw new IOException();
 
-				new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
-				new ProcessBuilder("hexdump", "-C", tf.toString()).inheritIO().start().waitFor();
+				new ProcessBuilder("hexdump", "-C", f1.toString()).inheritIO().start().waitFor();
+				new ProcessBuilder("hexdump", "-C", f2.toString()).inheritIO().start().waitFor();
 			}
 			ch.rollbackTransaction();
 
-			new ProcessBuilder("hexdump", "-C", f.toString()).inheritIO().start().waitFor();
+			new ProcessBuilder("hexdump", "-C", f1.toString()).inheritIO().start().waitFor();
 		}
 	}
 
@@ -104,7 +104,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel<Seekable
 			if (b.position() < Long.BYTES + Integer.BYTES) {
 				b.limit(b.capacity());
 				transactionChannel.read(b);
-				if (b.remaining() != 0)
+				if (b.hasRemaining())
 					throw new IOException();
 			}
 
@@ -124,7 +124,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel<Seekable
 				if (!b.hasRemaining()) {
 					b.clear();
 					transactionChannel.read(b);
-					if (b.remaining() != 0)
+					if (b.hasRemaining())
 						throw new IOException();
 					z = b.position();
 					b.limit(Math.min(z, l - n));
@@ -133,7 +133,7 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel<Seekable
 				if (l - n < b.remaining())
 					b.limit(b.position() + l - n);
 				n += channel.write(b);
-				if (b.remaining() != 0)
+				if (b.hasRemaining())
 					throw new IOException();
 			}
 			b.limit(z);
@@ -145,27 +145,23 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel<Seekable
 
 	@Override
 	public int write(ByteBuffer src) throws IOException {
-		if (src.remaining() != 0) {
+		if (src.hasRemaining()) {
 			var p = channel.position();
-			var rs = p < transaction.startSize
-					? Range.union(transaction.writeRanges,
-							new Range(p, Math.min(p + src.remaining(), transaction.startSize)))
-					: null;
-			if (rs != null)
-				for (var ri = rs.iterator(); ri.hasNext();) {
-					var r = ri.next();
+			if (p < transaction.startSize)
+				for (var rr = Range.union(transaction.writeRanges,
+						new Range(p, Math.min(p + src.remaining(), transaction.startSize))).iterator(); rr.hasNext();) {
+					var r = rr.next();
 					var l = (int) (r.to() - r.from());
 					var b = ByteBuffer.allocate(Long.BYTES + Integer.BYTES + l);
-					var z = r.to() == transaction.startSize;
-					b.putLong(z ? r.to() : r.from());
-					b.putInt(z ? -l : l);
+					b.putLong(r.to() == transaction.startSize ? r.to() : r.from());
+					b.putInt(r.to() == transaction.startSize ? -l : l);
 					channel.position(r.from());
 					channel.read(b);
-					if (b.remaining() != 0)
+					if (b.hasRemaining())
 						throw new IOException();
 					b.flip();
 					transactionChannel.write(b);
-					if (b.remaining() != 0)
+					if (b.hasRemaining())
 						throw new IOException();
 					channel.position(p);
 				}

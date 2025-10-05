@@ -34,14 +34,13 @@ import java.util.Map;
 
 import com.janilla.database.BTree;
 import com.janilla.database.BTreeMemory;
-import com.janilla.database.BlockReference;
-import com.janilla.database.Database;
 import com.janilla.database.IdAndReference;
 import com.janilla.database.KeyAndData;
 import com.janilla.database.Store;
 import com.janilla.io.ByteConverter;
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.reflect.Factory;
+import com.janilla.sqlite.SQLiteDatabase;
 
 public class ApplicationPersistenceBuilder {
 
@@ -58,21 +57,18 @@ public class ApplicationPersistenceBuilder {
 
 	public Persistence build() {
 		try {
-			var bto = 100;
 			TransactionalByteChannel ch;
 			{
 				var d = Files.createDirectories(databaseFile.getParent());
-				var f = d.resolve(databaseFile.getFileName());
-				var tf = d.resolve(databaseFile.getFileName() + ".transaction");
+				var f1 = d.resolve(databaseFile.getFileName());
+				var f2 = d.resolve(databaseFile.getFileName() + ".transaction");
 				ch = new TransactionalByteChannel(
-						FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.READ,
+						FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ,
 								StandardOpenOption.WRITE),
-						FileChannel.open(tf, StandardOpenOption.CREATE, StandardOpenOption.READ,
+						FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ,
 								StandardOpenOption.WRITE));
 			}
-			var m = new BTreeMemory(bto, ch, BlockReference.read(ch), Math.max(3 * BlockReference.BYTES, ch.size()));
-			var d = new Database(bto, ch, m, BlockReference.BYTES, 2 * BlockReference.BYTES,
-					x -> newStore(bto, ch, m, x), x -> persistence.newIndex(x));
+			var d = new SQLiteDatabase(ch);
 			persistence = factory.create(Persistence.class, Map.of("database", d));
 			return persistence;
 		} catch (IOException e) {

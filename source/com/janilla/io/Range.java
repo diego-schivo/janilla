@@ -60,11 +60,11 @@ public record Range(long from, long to) {
 				.collect(Collectors.toCollection(ArrayList::new));
 
 		if (in.get(in.size() - 1).isEmpty()) {
-			var tlr = ThreadLocalRandom.current();
+			var r = ThreadLocalRandom.current();
 			var irr = new ArrayList<Range>();
 			for (var i = 0; i < 5; i++) {
-				var f = tlr.nextInt(l);
-				var t = tlr.nextInt(f, l) + 1;
+				var f = r.nextInt(l);
+				var t = r.nextInt(f, l) + 1;
 				irr.add(new Range(f, t));
 			}
 			in.set(in.size() - 1, irr);

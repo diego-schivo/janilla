@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.io.IO;
 import java.lang.reflect.Modifier;
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -33,6 +34,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
 
 public class ReflectionValueIterator extends ValueIterator {
@@ -67,9 +69,10 @@ public class ReflectionValueIterator extends ValueIterator {
 	}
 
 	protected Stream<Map.Entry<String, Object>> entries(Class<?> type) {
+//		IO.println("ReflectionValueIterator.entries, type=" + type);
 		var kkvv = type.isEnum() ? Stream.of(Map.<String, Object>entry("name", ((Enum<?>) value).name()))
-				: Reflection.properties(type).map(x -> {
-//					IO.println("ReflectionValueIterator.entries, x=" + x + ", object=" + object);
+				: Reflection.properties(type).filter(Property::canGet).map(x -> {
+//					IO.println("ReflectionValueIterator.entries, x=" + x + ", value=" + value);
 					return (Map.Entry<String, Object>) new AbstractMap.SimpleImmutableEntry<>(x.name(), x.get(value));
 				});
 		if (((ReflectionJsonIterator) context).includeType) {

@@ -24,10 +24,11 @@
  */
 package com.janilla.web;
 
+import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.module.ResolvedModule;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileSystems;
@@ -39,6 +40,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,7 +49,7 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
-import com.janilla.zip.Zip;
+import com.janilla.java.Java;
 
 public class FileHandlerFactory implements HttpHandlerFactory {
 
@@ -104,7 +106,6 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 
 	public FileHandlerFactory(Collection<Path> files) {
 //		IO.println("FileHandlerFactory, files=" + files);
-		var l = Thread.currentThread().getContextClassLoader();
 		var rr = Stream.<File>builder();
 		files.stream().forEach(x -> {
 //			IO.println("x.getFileSystem()=" + (x.getFileSystem() == FileSystems.getDefault()));
@@ -114,35 +115,67 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 					: x.getFileSystem().getRootDirectories().iterator().next();
 			x = d.relativize(x);
 			try {
-				var n = x.getFileName().toString();
-				var i = n.lastIndexOf('.');
-				var ex = i != -1 ? n.substring(i + 1).toLowerCase() : null;
+				var n0 = x.getFileName().toString();
+				var i = n0.lastIndexOf('.');
+				var ex = i != -1 ? n0.substring(i + 1).toLowerCase() : null;
 				if (ex == null)
 					;
 				else if (EXTENSIONS.contains(ex)) {
-//					var x = d0.relativize(file);
 					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
-					n = x.toString().replace(java.io.File.separatorChar, '/');
-					var file = d.resolve(x);
-					var r = new DefaultFile(p, "/" + n, Files.size(file));
-//				IO.println("r=" + r);
+					var n = x.toString().replace(java.io.File.separatorChar, '/');
+					class B {
+
+						Module m;
+
+						URI u;
+					}
+					var b = ModuleLayer.boot().configuration().modules().stream().map(ResolvedModule::reference)
+							.map(y -> {
+								try (var r = y.open()) {
+									var o = r.find(n);
+									if (o.isEmpty())
+										return null;
+									var z = new B();
+									z.u = o.get();
+									z.m = ModuleLayer.boot().findModule(y.descriptor().name()).get();
+									return z;
+								} catch (IOException e) {
+									throw new UncheckedIOException(e);
+								}
+							}).filter(Objects::nonNull).findFirst().get();
+					var f = d.resolve(x);
+					var r = new DefaultFile(b.m, b.u, p, "/" + n, Files.size(f));
+//					IO.println("r=" + r);
 					rr.add(r);
 				} else if (ex.equals("zip")) {
-//					var x = d0.relativize(file);
 					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
-					n = x.toString().replace(java.io.File.separatorChar, '/');
-					var file = d.resolve(x);
-					var a = new DefaultFile(p, "/" + n, Files.size(file));
-					URI u;
-					try {
-						u = l.getResource(n).toURI();
-					} catch (URISyntaxException e) {
-						throw new RuntimeException(e);
+					var n = x.toString().replace(java.io.File.separatorChar, '/');
+					class B {
+
+						Module m;
+
+						URI u;
 					}
-					var v = u.toString();
+					var b = ModuleLayer.boot().configuration().modules().stream().map(ResolvedModule::reference)
+							.map(y -> {
+								try (var r = y.open()) {
+									var o = r.find(n);
+									if (o.isEmpty())
+										return null;
+									var z = new B();
+									z.u = o.get();
+									z.m = ModuleLayer.boot().findModule(y.descriptor().name()).get();
+									return z;
+								} catch (IOException e) {
+									throw new UncheckedIOException(e);
+								}
+							}).filter(Objects::nonNull).findFirst().get();
+					var v = b.u.toString();
 					if (!v.startsWith("jar:"))
-						u = URI.create("jar:" + v);
-					var fs = Zip.zipFileSystem(u);
+						b.u = URI.create("jar:" + v);
+					var fs = Java.zipFileSystem(b.u);
+					var f = d.resolve(x);
+					var a = new DefaultFile(b.m, b.u, p, "/" + n, Files.size(f));
 					Files.walkFileTree(fs.getPath("/"), new SimpleFileVisitor<>() {
 
 						@Override
@@ -153,7 +186,7 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 							var ex = i != -1 ? n.substring(i + 1).toLowerCase() : null;
 							if (ex != null && EXTENSIONS.contains(ex)) {
 								var r = new ZipEntryFile(a, file.toString(), Files.size(file));
-//							IO.println("r=" + r);
+//								IO.println("r=" + r);
 								rr.add(r);
 							}
 							return FileVisitResult.CONTINUE;
@@ -208,21 +241,15 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 		}
 		rs.setHeaderValue("content-length", String.valueOf(file.size()));
 
-		var l = Thread.currentThread().getContextClassLoader();
 		try (var in = switch (file) {
-		case DefaultFile x -> l.getResourceAsStream(x.path.substring(1));
+		case DefaultFile x -> x.module.getResourceAsStream(x.path.substring(1));
 		case ZipEntryFile x -> {
-			URI u;
-			try {
-				u = l.getResource(x.archive.path.substring(1)).toURI();
-			} catch (URISyntaxException g) {
-				throw new RuntimeException(g);
-			}
+			var u = x.archive.uri;
 //			IO.println("FileHandlerFactory.handle, u=" + u);
 			var s = u.toString();
 			if (!s.startsWith("jar:"))
 				u = URI.create("jar:" + s);
-			var p = Zip.zipFileSystem(u).getPath(x.path);
+			var p = Java.zipFileSystem(u).getPath(x.path);
 //			IO.println("FileHandlerFactory.handle, p=" + p);
 			yield Files.newInputStream(p);
 		}
@@ -241,7 +268,7 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 		long size();
 	}
 
-	public record DefaultFile(String package1, String path, long size) implements File {
+	public record DefaultFile(Module module, URI uri, String package1, String path, long size) implements File {
 	}
 
 	public record ZipEntryFile(DefaultFile archive, String path, long size) implements File {

@@ -45,10 +45,11 @@ import com.janilla.io.ByteConverter;
 import com.janilla.json.TypeResolver;
 import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
+import com.janilla.sqlite.SQLiteDatabase;
 
 public class Persistence {
 
-	protected final Database database;
+	protected final SQLiteDatabase database;
 
 	protected final Collection<Class<? extends Entity<?>>> types;
 
@@ -56,7 +57,8 @@ public class Persistence {
 
 	protected final Configuration configuration = new Configuration();
 
-	public Persistence(Database database, Collection<Class<? extends Entity<?>>> types, TypeResolver typeResolver) {
+	public Persistence(SQLiteDatabase database, Collection<Class<? extends Entity<?>>> types,
+			TypeResolver typeResolver) {
 		this.database = database;
 		this.types = types;
 		this.typeResolver = typeResolver;
@@ -65,7 +67,7 @@ public class Persistence {
 		createStoresAndIndexes();
 	}
 
-	public Database database() {
+	public SQLiteDatabase database() {
 		return database;
 	}
 
@@ -77,9 +79,10 @@ public class Persistence {
 		var ni = configuration.indexFactories.get(keyAndData.key());
 		if (ni == null)
 			return null;
-		@SuppressWarnings("unchecked")
-		var i = (com.janilla.database.Index<K, V>) ni.newIndex(keyAndData, database);
-		return i;
+//		@SuppressWarnings("unchecked")
+//		var i = (com.janilla.database.Index<K, V>) ni.newIndex(keyAndData, database);
+//		return i;
+		throw new RuntimeException();
 	}
 
 	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> class1) {
@@ -110,20 +113,20 @@ public class Persistence {
 			if (ii.keyConverter == null)
 				throw new NullPointerException("No keyConverter for index on " + p + " (" + t + ")");
 
-			var s = i.sort();
-			if (s.startsWith("+") || s.startsWith("-"))
-				s = s.substring(1);
-			var sp = !s.isEmpty() ? Reflection.property(type, s) : null;
+//			var s = i.sort();
+//			if (s.startsWith("+") || s.startsWith("-"))
+//				s = s.substring(1);
+//			var sp = !s.isEmpty() ? Reflection.property(type, s) : null;
 //			IO.println("Persistence.configure, sp=" + sp);
-			if (sp != null && sp.type() != null) {
-				@SuppressWarnings("unchecked")
-				var h = (ByteConverter<V>) ByteConverter.of(type, i.sort(), "id");
-				ii.valueConverter = h;
-			} else {
-				@SuppressWarnings("unchecked")
-				var h = (ByteConverter<V>) ByteConverter.of(type, "id");
-				ii.valueConverter = h;
-			}
+//			if (sp != null && sp.type() != null) {
+//				@SuppressWarnings("unchecked")
+//				var h = (ByteConverter<V>) ByteConverter.of(type, i.sort(), "id");
+//				ii.valueConverter = h;
+//			} else {
+			@SuppressWarnings("unchecked")
+			var h = (ByteConverter<V>) ByteConverter.of(type, "id");
+			ii.valueConverter = h;
+//			}
 			var k = type.getSimpleName() + (p != null ? "." + p.name() : "");
 			configuration.indexFactories.put(k, ii);
 
@@ -135,7 +138,7 @@ public class Persistence {
 				throw new RuntimeException(e);
 			}
 			ieg.keyGetter = p != null ? kgf.apply(type, p.name()) : null;
-			ieg.sortGetter = sp;
+//			ieg.sortGetter = sp;
 			c.indexEntryGetters.put(p != null ? p.name() : null, ieg);
 		}
 	}
@@ -148,20 +151,11 @@ public class Persistence {
 
 	protected <ID extends Comparable<ID>> Function<Map<String, Object>, ID> nextId(Class<?> type) {
 		var t = Reflection.property(type, "id").type();
-		if (t == Long.class)
-			return x -> {
-				var v = x.get("nextId");
-				var l = v != null ? (long) v : 1L;
-				x.put("nextId", l + 1);
-				@SuppressWarnings("unchecked")
-				var id = (ID) Long.valueOf(l);
-				return id;
-			};
-		else if (t == UUID.class)
+		if (t == UUID.class)
 			return _ -> {
 				@SuppressWarnings("unchecked")
-				var id = (ID) UUID.randomUUID();
-				return id;
+				var x = (ID) UUID.randomUUID();
+				return x;
 			};
 		else
 			// throw new RuntimeException(type + " " + t);
@@ -169,14 +163,14 @@ public class Persistence {
 	}
 
 	protected void createStoresAndIndexes() {
-		for (var t : configuration.cruds.keySet())
-			database.perform((ss, _) -> {
-				ss.create(t.getSimpleName());
+		for (var x : configuration.cruds.entrySet())
+			database.perform(() -> {
+				database.createTable(x.getKey().getSimpleName(), x.getValue().nextId != null);
 				return null;
 			}, true);
 		for (var k : configuration.indexFactories.keySet())
-			database.perform((_, ii) -> {
-				ii.create(k);
+			database.perform(() -> {
+				database.createIndex(k, "foo");
 				return null;
 			}, true);
 	}
@@ -277,12 +271,13 @@ public class Persistence {
 
 		protected Function<Object, Object> keyGetter;
 
-		protected Property sortGetter;
+//		protected Property sortGetter;
 
 		protected Map.Entry<Object, Object> getIndexEntry(Object entity, Comparable<?> id)
 				throws ReflectiveOperationException {
 			var k = keyGetter != null ? keyGetter.apply(entity) : null;
-			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
+//			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
+			var v = id;
 			return keyGetter == null || k != null ? new AbstractMap.SimpleImmutableEntry<>(k, v) : null;
 		}
 	}
