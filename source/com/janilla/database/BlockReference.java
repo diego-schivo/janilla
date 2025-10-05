@@ -36,7 +36,7 @@ public record BlockReference(long self, long position, int capacity) {
 		var p = channel.position();
 		var b = ByteBuffer.allocate(BYTES);
 		var n = channel.read(b);
-		if (n != -1 && b.remaining() != 0)
+		if (n != -1 && b.hasRemaining())
 			throw new IOException();
 		return new BlockReference(p, b.getLong(0), b.getInt(Long.BYTES));
 	}
@@ -47,7 +47,7 @@ public record BlockReference(long self, long position, int capacity) {
 		b.putLong(0, reference.position());
 		b.putInt(Long.BYTES, reference.capacity());
 		channel.write(b);
-		if (b.remaining() != 0)
+		if (b.hasRemaining())
 			throw new IOException();
 	}
 }

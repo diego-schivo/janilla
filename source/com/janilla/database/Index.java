@@ -193,7 +193,7 @@ public class Index<K, V> {
 					bt.channel().position(x.attributes().position());
 					var b = ByteBuffer.allocate(x.attributes().capacity());
 					bt.channel().read(b);
-					if (b.remaining() != 0)
+					if (b.hasRemaining())
 						throw new IOException();
 					b.position(0);
 					aa1 = ByteConverter.STRING.deserialize(b);
@@ -224,7 +224,7 @@ public class Index<K, V> {
 				try {
 					bt.channel().position(aar.position());
 					bt.channel().write(b);
-					if (b.remaining() != 0)
+					if (b.hasRemaining())
 						throw new IOException();
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);

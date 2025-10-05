@@ -138,7 +138,7 @@ public class Store<ID extends Comparable<ID>, E> {
 			var ch = bTree.channel();
 			ch.position(r.position());
 			ch.write(b);
-			if (b.remaining() != 0)
+			if (b.hasRemaining())
 				throw new IOException();
 
 			bTree.add(new IdAndReference<>(id, new BlockReference(-1, r.position(), r.capacity())));
@@ -177,7 +177,7 @@ public class Store<ID extends Comparable<ID>, E> {
 				var d = ByteBuffer.allocate(r != null ? r.capacity() : j.reference().capacity());
 				d.put(0, c);
 				t.channel().write(d);
-				if (d.remaining() != 0)
+				if (d.hasRemaining())
 					throw new IOException();
 				return r != null ? new IdAndReference<>(id, new BlockReference(-1, r.position(), r.capacity())) : null;
 			} catch (IOException e) {
@@ -216,7 +216,7 @@ public class Store<ID extends Comparable<ID>, E> {
 			ch.position(reference.position());
 			var b = ByteBuffer.allocate(reference.capacity());
 			ch.read(b);
-			if (b.remaining() != 0)
+			if (b.hasRemaining())
 				throw new IOException();
 			b.position(0);
 			return elementConverter.deserialize(b);
