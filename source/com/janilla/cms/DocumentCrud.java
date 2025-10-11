@@ -24,14 +24,10 @@
  */
 package com.janilla.cms;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
-import com.janilla.database.Store;
 import com.janilla.persistence.Crud;
 import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
@@ -40,7 +36,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 
 	protected final String versionStore;
 
-	public DocumentCrud(Class<E> type, Function<E, ID> nextId, Persistence persistence) {
+	public DocumentCrud(Class<E> type, Foo<ID> nextId, Persistence persistence) {
 		super(type, nextId, persistence);
 		versionStore = Version.class.getSimpleName() + "<" + type.getSimpleName() + ">";
 	}
@@ -50,52 +46,46 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 //		IO.println("entity=" + entity);
 		if (!type.isAnnotationPresent(Versions.class))
 			return super.create(entity);
-//		return persistence.database().perform((ss, _) -> {
-//			var e = super.create(entity);
-//			var vv = new ArrayList<Version<ID, E>>(1);
-//			ss.perform(versionStore, s0 -> {
-//				@SuppressWarnings("unchecked")
-//				var s = (Store<ID, String>) s0;
-//				var id = nextId.apply(s.getAttributes());
-//				var v = new Version<>(id, e);
-//				vv.add(v);
-//				s.create(id, format(v));
-//				return null;
-//			});
-//			updateVersionIndexes(null, vv, e.id());
-//			return e;
-//		}, true);
-		throw new RuntimeException();
+		return persistence.database().perform(() -> {
+			var e = super.create(entity);
+			var vv = new ArrayList<Version<ID, E>>(1);
+			persistence.database().tableBTree(versionStore).insert(x -> {
+				var v = new Version<>((ID) Long.valueOf(x), e);
+				vv.add(v);
+				return new Object[] { format(v) };
+			});
+			updateVersionIndexes(null, vv, e.id());
+			return e;
+		}, true);
 	}
 
 	public E read(ID id, boolean drafts) {
-		if (!type.isAnnotationPresent(Versions.class) || !drafts)
-			return read(id);
 		if (id == null)
 			return null;
-//		return persistence.database().perform((_, ii) -> {
-//			var e = read(id);
-////			IO.println("e=" + e);
-//			if (e != null) {
-//				@SuppressWarnings("unchecked")
-//				var l = (ID) ii.perform(versionStore + ".document", i -> ((Object[]) i.list(id).findFirst().get())[1]);
-//				var v = readVersion(l);
-////				IO.println("v=" + v);
-//				if (v.document().updatedAt().isAfter(e.updatedAt()))
-//					e = v.document();
-//			}
-//			return e;
-//		}, false);
-		throw new RuntimeException();
+		if (!type.isAnnotationPresent(Versions.class) || !drafts)
+			return read(id);
+		return persistence.database().perform(() -> {
+			var e = read(id);
+			// IO.println("e=" + e);
+			if (e != null) {
+				var i = persistence.database().indexBTree(versionStore + ".document");
+				@SuppressWarnings("unchecked")
+				var l = (ID) ((Object[]) i.select(id).findFirst().get())[1];
+				var v = readVersion(l);
+				// IO.println("v=" + v);
+				if (v.document().updatedAt().isAfter(e.updatedAt()))
+					e = v.document();
+			}
+			return e;
+		}, false);
 	}
 
 	public List<E> read(List<ID> ids, boolean drafts) {
-		if (!type.isAnnotationPresent(Versions.class) || !drafts)
-			return read(ids);
 		if (ids == null || ids.isEmpty())
 			return List.of();
-//		return persistence.database().perform((_, _) -> ids.stream().map(x -> read(x, true)).toList(), false);
-		throw new RuntimeException();
+		if (!type.isAnnotationPresent(Versions.class) || !drafts)
+			return read(ids);
+		return persistence.database().perform(() -> ids.stream().map(x -> read(x, true)).toList(), false);
 	}
 
 	public E update(ID id, E entity, Set<String> include, boolean newVersion) {
@@ -278,22 +268,22 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			E e2;
 		}
 		var a = new A();
-//		persistence.database().perform((_, ii) -> ii.perform(versionStore + ".document", i -> {
-//			if (vv1 != null)
-//				for (var v : vv1) {
-//					i.remove(id, new Object[][] { { v.document().updatedAt(), v.id() } });
-//					if (a.e1 == null)
-//						a.e1 = v.document();
-//				}
-//			if (vv2 != null)
-//				for (var v : vv2) {
-//					i.add(id, new Object[][] { { v.document().updatedAt(), v.id() } });
-//					if (a.e2 == null)
-//						a.e2 = v.document();
-//				}
-//			return null;
-//		}), true);
-//		updateIndexes(a.e1, a.e2, id, x -> getIndexName(x) + "Draft");
-		throw new RuntimeException();
+		persistence.database().perform(() -> {
+			var i = persistence.database().indexBTree(versionStore + ".document");
+			if (vv1 != null)
+				for (var v : vv1) {
+					i.delete(id, v.document().updatedAt().toString(), v.id());
+					if (a.e1 == null)
+						a.e1 = v.document();
+				}
+			if (vv2 != null)
+				for (var v : vv2) {
+					i.insert(id, v.document().updatedAt().toString(), v.id());
+					if (a.e2 == null)
+						a.e2 = v.document();
+				}
+			return null;
+		}, true);
+		updateIndexes(a.e1, a.e2, id, x -> getIndexName(x) + "Draft");
 	}
 }

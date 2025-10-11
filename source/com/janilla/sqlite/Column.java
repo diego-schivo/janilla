@@ -22,32 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.database;
+package com.janilla.sqlite;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-
-public record BlockReference(long self, long position, int capacity) {
-
-	public static int BYTES = Long.BYTES + Integer.BYTES;
-
-	public static BlockReference read(SeekableByteChannel channel) throws IOException {
-		var p = channel.position();
-		var b = ByteBuffer.allocate(BYTES);
-		var n = channel.read(b);
-		if (n != -1 && b.hasRemaining())
-			throw new IOException();
-		return new BlockReference(p, b.getLong(0), b.getInt(Long.BYTES));
-	}
-
-	public static void write(BlockReference reference, SeekableByteChannel channel) throws IOException {
-		channel.position(reference.self());
-		var b = ByteBuffer.allocate(BYTES);
-		b.putLong(0, reference.position());
-		b.putInt(Long.BYTES, reference.capacity());
-		channel.write(b);
-		if (b.hasRemaining())
-			throw new IOException();
-	}
+public record Column(String name, String type) {
 }

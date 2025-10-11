@@ -22,11 +22,21 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.database;
+package com.janilla.sqlite;
 
-public interface Memory {
+import java.nio.ByteBuffer;
 
-	BlockReference allocate(int size);
+public abstract class InteriorPage<C extends InteriorCell> extends BTreePage<C> {
 
-	void free(BlockReference reference);
+	protected InteriorPage(SQLiteDatabase database, ByteBuffer buffer) {
+		super(database, buffer);
+	}
+
+	public long getRightMostPointer() {
+		return Integer.toUnsignedLong(buffer.getInt(buffer.position() + 8));
+	}
+
+	public void setRightMostPointer(long rightMostPointer) {
+		buffer.putInt(buffer.position() + 8, (int) rightMostPointer);
+	}
 }

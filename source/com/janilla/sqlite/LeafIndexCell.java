@@ -30,13 +30,14 @@ public interface LeafIndexCell extends PayloadCell {
 
 	@Override
 	default int size() {
-		return Varint.size(payloadSize()) + initialPayload().length + (firstOverflow() != 0 ? Integer.BYTES : 0);
+		return Varint.size(payloadSize()) + initialPayloadSize() + (firstOverflow() != 0 ? Integer.BYTES : 0);
 	}
 
 	@Override
 	default void put(ByteBuffer buffer) {
 		Varint.put(buffer, payloadSize());
-		buffer.put(initialPayload());
+//		buffer.put(initialPayload());
+		getInitialPayload(buffer);
 		if (firstOverflow() != 0)
 			buffer.putInt((int) firstOverflow());
 	}
@@ -46,6 +47,16 @@ public interface LeafIndexCell extends PayloadCell {
 		@Override
 		public int start() {
 			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int initialPayloadSize() {
+			return initialPayload.length;
+		}
+
+		@Override
+		public void getInitialPayload(ByteBuffer destination) {
+			destination.put(initialPayload);
 		}
 	}
 }

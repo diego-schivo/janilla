@@ -40,18 +40,19 @@ import com.janilla.io.TransactionalByteChannel;
 
 public class Foo2 {
 
-	private static final String[] FOO = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+	private static final String[] WORDS = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 			.split("[^\\w]+");
 
 	public static void main(String[] args) {
 		var r = ThreadLocalRandom.current();
-		var b0 = 20;
-		var ss = IntStream.range(0, 20)
+		var b0 = 30;
+		var ss = IntStream.range(0, 30)
 				.mapToObj(_ -> (new String[] { "I", "U", "D" })[r.nextInt(1)] + (r.nextInt(b0) + 1))
 				.toArray(String[]::new);
 //		ss = new String[0];
-//		ss = "[I3, I6, I20, I5, I5, I7, I19, I8, I8, I6, I5, I14, I4, I3, I2, I1, I6, I13, I7, I4]".replaceAll("[\\[\\]]", "").split(", ");
-		ss = "[I3, I6, I20, I5, I5, I7, I19, I8, I8, I6, I5, I14, I4, I3, I2, I1, I6, I13]".replaceAll("[\\[\\]]", "").split(", ");
+//		ss = "[I28, I2, I18, I16, I10, I12, I17, I20, I11, I20, I19, I19, I10, I29, I4, I8, I13, I7, I23, I6, I4, I30, I8, I7, I25, I29, I1, I18, I12, I27]".replaceAll("[\\[\\]]", "").split(", ");
+		ss = "[I28, I2, I18, I16, I10, I12, I17, I20, I11, I20, I19, I19, I10, I29, I4, I8, I13, I7, I23, I6, I4, I30]"
+				.replaceAll("[\\[\\]]", "").split(", ");
 
 		try {
 			Files.deleteIfExists(Path.of("ex1a"));
@@ -89,12 +90,12 @@ public class Foo2 {
 			var b = new ProcessBuilder("/bin/bash", "-c", "sqlite3 ex1a <<EOF\n" + Arrays.stream(ss).map(x -> {
 				var v1 = x.substring(1);
 				var y = Integer.parseInt(v1);
-				var v2 = (FOO[(y - 1) % FOO.length] + y).repeat(y);
+				var v2 = (WORDS[(y - 1) % WORDS.length] + y).repeat(y);
 				return switch (x.charAt(0)) {
 				case 'I' -> "insert into tbl1 values('" + v1 + "', '" + v2 + "');";
 				case 'U' -> {
 					var yb = b0 - y + 1;
-					var v2b = (FOO[(yb - 1) % FOO.length] + yb).repeat(yb);
+					var v2b = (WORDS[(yb - 1) % WORDS.length] + yb).repeat(yb);
 					yield "update tbl1 set content='" + v2b + "' where id='" + v1 + "';";
 				}
 				case 'D' -> "delete from tbl1 where id='" + v1 + "';";
@@ -130,7 +131,7 @@ public class Foo2 {
 
 				if (ss.length != 0)
 					d.perform(() -> {
-						d.createTable("tbl1", true);
+						d.createTable("tbl1", new Column[0], true);
 						return null;
 					}, true);
 
@@ -138,42 +139,33 @@ public class Foo2 {
 					IO.println(x);
 					var k1 = x.substring(1);
 					var y = Integer.parseInt(k1);
-					var k2 = (FOO[(y - 1) % FOO.length] + y).repeat(y);
+					var k2 = (WORDS[(y - 1) % WORDS.length] + y).repeat(y);
 					switch (x.charAt(0)) {
-					case 'I':
-						try {
-							d.perform(() -> {
-								d.indexBTree("tbl1").insert(k1, k2);
+					case 'I': {
+						d.perform(() -> {
+							d.indexBTree("tbl1").insert(k1, k2);
 //						IO.println(y + " " + k);
-								return null;
-							}, true);
-						} catch (SQLiteException e) {
-							e.printStackTrace();
-						}
+							return null;
+						}, true);
+					}
 						break;
-					case 'U':
-						try {
-							var yb = b0 - y + 1;
-							var k2b = (FOO[(yb - 1) % FOO.length] + yb).repeat(yb);
-							d.perform(() -> {
-								// IO.println(y + " " + k);
-								d.indexBTree("tbl1").update(new Object[] { k1 }, _ -> new Object[] { k1, k2b });
-								return null;
-							}, true);
-						} catch (SQLiteException e) {
-							e.printStackTrace();
-						}
+					case 'U': {
+						var yb = b0 - y + 1;
+						var k2b = (WORDS[(yb - 1) % WORDS.length] + yb).repeat(yb);
+						d.perform(() -> {
+							// IO.println(y + " " + k);
+							d.indexBTree("tbl1").update(new Object[] { k1 }, _ -> new Object[] { k1, k2b });
+							return null;
+						}, true);
+					}
 						break;
-					case 'D':
-						try {
-							d.perform(() -> {
-								// IO.println(y + " " + k);
-								d.indexBTree("tbl1").delete(k1);
-								return null;
-							}, true);
-						} catch (SQLiteException e) {
-							e.printStackTrace();
-						}
+					case 'D': {
+						d.perform(() -> {
+							// IO.println(y + " " + k);
+							d.indexBTree("tbl1").delete(k1);
+							return null;
+						}, true);
+					}
 						break;
 					default:
 						throw new RuntimeException();

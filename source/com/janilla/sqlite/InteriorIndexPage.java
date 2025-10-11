@@ -25,9 +25,8 @@
 package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
-public class InteriorIndexPage extends BTreePage<InteriorIndexCell> {
+public class InteriorIndexPage extends InteriorPage<InteriorIndexCell> {
 
 	public InteriorIndexPage(SQLiteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
@@ -58,17 +57,20 @@ public class InteriorIndexPage extends BTreePage<InteriorIndexCell> {
 			}
 
 			@Override
-			public byte[] initialPayload() {
-				var ps = payloadSize();
-				var is = database.initialSize(ps, true);
-				var f = start() + Integer.BYTES + Varint.size(ps);
-				return Arrays.copyOfRange(buffer.array(), f, f + is);
+			public int initialPayloadSize() {
+				return database.initialSize(payloadSize(), true);
+			}
+
+			@Override
+			public void getInitialPayload(ByteBuffer destination) {
+				destination.put(buffer.array(), start() + Integer.BYTES + Varint.size(payloadSize()),
+						initialPayloadSize());
 			}
 
 			@Override
 			public long firstOverflow() {
 				var ps = payloadSize();
-				var is = database.initialSize(ps, true);
+				var is = initialPayloadSize();
 				return is != ps ? Integer.toUnsignedLong(buffer.getInt(start() + Integer.BYTES + Varint.size(ps) + is))
 						: 0;
 			}
@@ -76,7 +78,7 @@ public class InteriorIndexPage extends BTreePage<InteriorIndexCell> {
 			@Override
 			public int size() {
 				var ps = payloadSize();
-				var is = database.initialSize(ps, true);
+				var is = initialPayloadSize();
 				return Integer.BYTES + Varint.size(ps) + is + (is != ps ? Integer.BYTES : 0);
 			}
 		};

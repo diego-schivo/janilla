@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.sqlite;
-
-public class SQLiteException extends RuntimeException {
-
-	private static final long serialVersionUID = 2027604309960319682L;
-}
+//package com.janilla.sqlite;
+//
+//public class SQLiteException extends RuntimeException {
+//
+//	private static final long serialVersionUID = 2027604309960319682L;
+//}

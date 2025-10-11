@@ -24,76 +24,176 @@
  */
 package com.janilla.sqlite;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class Record {
 
-	public static byte[] toBytes(Object... values) {
-		var tt = new int[values.length];
-		var vv = new ArrayList<byte[]>(values.length);
-		var i = 0;
-		for (var v : values) {
-			if (v == null) {
-				tt[i] = 0;
-				vv.add(new byte[0]);
-			} else if (v instanceof Number x) {
-				if (x.intValue() == 0) {
-					tt[i] = 8;
-					vv.add(new byte[0]);
-				} else if (x.intValue() == 1) {
-					tt[i] = 9;
-					vv.add(new byte[0]);
-				} else if (x.intValue() < 128) {
-					tt[i] = 1;
-					vv.add(new byte[] { (byte) x.intValue() });
-				} else {
-					tt[i] = 2;
-					vv.add(new byte[] { (byte) (x.intValue() >>> 8), (byte) x.intValue() });
-				}
-			} else if (v instanceof String s) {
-				tt[i] = s.length() * 2 + 13;
-				vv.add(s.getBytes());
-			} else
-				throw new RuntimeException(Objects.toString(v));
-			i++;
-		}
-		var s = Arrays.stream(tt).map(Varint::size).sum();
+	public static byte[] toBytes(Element... values) {
+		var s = Arrays.stream(values).mapToInt(x -> Varint.size(x.type)).sum();
 		var s1 = Varint.size(s);
 		var s2 = Varint.size(s1 + s);
-		var bb = new byte[(s2 != s1 ? Varint.size(s2 + s) : s2) + s + vv.stream().mapToInt(x -> x.length).sum()];
+		var bb = new byte[(s2 != s1 ? Varint.size(s2 + s) : s2) + s
+				+ Arrays.stream(values).mapToInt(x -> x.content.length).sum()];
 		var b = ByteBuffer.wrap(bb);
 		Varint.put(b, s2 + s);
-		for (var x : tt)
-			Varint.put(b, x);
-		for (var x : vv)
-			b.put(x);
+		for (var x : values)
+			Varint.put(b, x.type);
+		for (var x : values)
+			b.put(x.content);
 		return bb;
 	}
 
-	public static Object[] fromBytes(byte[] bb) {
-		var b = ByteBuffer.wrap(bb);
-		var p = Varint.get(b);
-		var b2 = IntStream.builder();
-		while (b.position() != p)
-			b2.add((int) Varint.get(b));
-		var tt = b2.build().toArray();
-		return Arrays.stream(tt).mapToObj(x -> {
-			return switch (x) {
+	public static Stream<Element> fromBytes(Stream<ByteBuffer> buffers) {
+		var bi = buffers.iterator();
+		class A {
+			ByteBuffer b;
+		}
+		var a = new A();
+		a.b = bi.next();
+		int[] tt;
+		{
+			var l = Varint.get(a.b);
+			var ii = IntStream.builder();
+			while (a.b.position() < l)
+				ii.add((int) Varint.get(a.b));
+			tt = ii.build().toArray();
+		}
+//		IO.println("tt=" + Arrays.toString(tt));
+		return Arrays.stream(tt).mapToObj(t -> new Element(t, switch (t) {
+		case 0 -> null;
+		case 1, 2, 3, 4, 5, 6 -> {
+			var n = (new int[] { 8, 16, 24, 32, 48, 64 })[t - 1];
+			var x = new byte[n / 8];
+			a.b.get(x);
+//					IO.println("n=" + n + ", l=" + l);
+			yield x;
+		}
+		case 7 -> {
+			var x = new byte[Double.BYTES];
+			a.b.get(x);
+			yield x;
+		}
+		case 8, 9, 12, 13 -> new byte[0];
+		default -> {
+			if (t >= 14 && t % 2 == 0) {
+				var x = new byte[(t - 12) / 2];
+//						IO.println("bb=" + bb.length);
+				for (;;)
+					try {
+//								IO.println("a.b=" + a.b.remaining());
+						a.b.get(x);
+						break;
+					} catch (BufferUnderflowException e) {
+						a.b = bi.next();
+					}
+				yield x;
+			} else if (t >= 15 && t % 2 == 1) {
+				var x = new byte[(t - 13) / 2];
+//						IO.println("bb=" + bb.length);
+				for (;;)
+					try {
+//								IO.println("a.b=" + a.b.remaining());
+						a.b.get(x);
+						break;
+					} catch (BufferUnderflowException e) {
+						a.b = bi.next();
+					}
+				yield x;
+			} else
+				throw new RuntimeException();
+		}
+		}));
+	}
+
+	public static int compare(Iterator<Element> a, Iterator<Element> b) {
+		while (a.hasNext() && b.hasNext()) {
+			var d = a.next().compareTo(b.next());
+			if (d != 0)
+				return d;
+		}
+		return 0;
+	}
+
+	public record Element(int type, byte[] content) implements Comparable<Element> {
+
+		public static Element of(Object v) {
+			if (v == null)
+				return new Element(0, new byte[0]);
+			else if (v instanceof Long x) {
+				long l = x;
+				switch (l) {
+				case 0l:
+					return new Element(8, new byte[0]);
+				case 1l:
+					return new Element(9, new byte[0]);
+				default:
+					var ni = 0;
+					var nn = new int[] { 8, 16, 24, 32, 48, 64 };
+					for (; ni < nn.length; ni++) {
+						var m = (1l << nn[ni]) - 1;
+						if ((l & m) == l)
+							break;
+					}
+					var b = ByteBuffer.allocate(Long.BYTES);
+					b.putLong(l);
+					return new Element(1 + ni, Arrays.copyOfRange(b.array(), Long.BYTES - nn[ni] / 8, Long.BYTES));
+				}
+			} else if (v instanceof Double x) {
+				var b = ByteBuffer.allocate(Double.BYTES);
+				b.putDouble(x);
+				return new Element(7, b.array());
+			} else if (v instanceof String s) {
+				var bb = s.getBytes();
+				return new Element(bb.length * 2 + 13, bb);
+			} else
+				throw new RuntimeException(Objects.toString(v) + " (" + v.getClass() + ")");
+		}
+
+		public Object toObject() {
+			return switch (type) {
 			case 0 -> null;
-			case 1 -> Byte.toUnsignedLong(b.get());
-			case 2 -> Short.toUnsignedLong(b.getShort());
+			case 1, 2, 3, 4, 5 -> {
+				var b = ByteBuffer.allocate(Long.BYTES);
+				b.put(Long.BYTES - content.length, content);
+				yield b.getLong();
+			}
+			case 6 -> ByteBuffer.wrap(content).getLong();
+			case 7 -> ByteBuffer.wrap(content).getDouble();
 			case 8 -> 0l;
 			case 9 -> 1l;
 			default -> {
-				var bb2 = new byte[(x - 13) / 2];
-				b.get(bb2);
-				yield new String(bb2);
+				if (type >= 12 && type % 2 == 0)
+					yield content;
+				else if (type >= 13 && type % 2 == 1)
+					yield content.length != 0 ? new String(content) : "";
+				else
+					throw new RuntimeException();
 			}
 			};
-		}).toArray();
+		}
+
+		@Override
+		public int compareTo(Element v) {
+			return switch (type) {
+			case 0 -> v.type == 0 ? 0 : -1;
+
+			case 1, 2, 3, 4, 5, 6 -> switch (v.type) {
+			case 0 -> 1;
+			case 1, 2, 3, 4, 5, 6 -> {
+				var d = Integer.compare(type, v.type);
+				yield d == 0 ? Arrays.compare(content, v.content) : d;
+			}
+			default -> -1;
+			};
+
+			default -> Arrays.compare(content, v.content);
+			};
+		}
 	}
 }

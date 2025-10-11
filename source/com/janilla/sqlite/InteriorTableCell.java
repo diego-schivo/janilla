@@ -26,9 +26,7 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public interface InteriorTableCell extends Cell {
-
-	long leftChildPointer();
+public interface InteriorTableCell extends InteriorCell, Cell {
 
 	long key();
 

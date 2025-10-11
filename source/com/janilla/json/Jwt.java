@@ -64,7 +64,7 @@ public interface Jwt {
 //		IO.println("Jwt.generateToken, h=" + h + ", p=" + p);
 
 		var ue = Base64.getUrlEncoder();
-		var ss = new String[] { ue.encodeToString(h.getBytes()), ue.encodeToString(p.getBytes()) };
+		var ss = new String[] { ue.encodeToString(h.getBytes()), ue.encodeToString(p.getBytes()), null };
 
 		Mac m;
 		try {

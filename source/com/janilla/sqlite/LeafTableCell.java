@@ -32,15 +32,15 @@ public interface LeafTableCell extends PayloadCell {
 
 	@Override
 	default int size() {
-		return Varint.size(payloadSize()) + Varint.size(key()) + initialPayload().length
-				+ (firstOverflow() != 0 ? Integer.BYTES : 0);
+		var ps = payloadSize();
+		return Varint.size(ps) + Varint.size(key()) + initialPayloadSize() + (firstOverflow() != 0 ? Integer.BYTES : 0);
 	}
 
 	@Override
 	default void put(ByteBuffer buffer) {
 		Varint.put(buffer, payloadSize());
 		Varint.put(buffer, key());
-		buffer.put(initialPayload());
+		getInitialPayload(buffer);
 		if (firstOverflow() != 0)
 			buffer.putInt((int) firstOverflow());
 	}
@@ -50,6 +50,16 @@ public interface LeafTableCell extends PayloadCell {
 		@Override
 		public int start() {
 			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int initialPayloadSize() {
+			return initialPayload.length;
+		}
+
+		@Override
+		public void getInitialPayload(ByteBuffer destination) {
+			destination.put(initialPayload);
 		}
 	}
 }

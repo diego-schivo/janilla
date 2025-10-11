@@ -43,7 +43,7 @@ import com.janilla.io.TransactionalByteChannel;
 
 public class Foo {
 
-	private static final String[] FOO = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+	private static final String[] WORDS = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 			.split("[^\\w]+");
 
 	public static void main(String[] args) {
@@ -91,12 +91,12 @@ public class Foo {
 			IO.println(Arrays.toString(ss));
 			var b = new ProcessBuilder("/bin/bash", "-c", "sqlite3 ex1a <<EOF\n" + Arrays.stream(ss).map(x -> {
 				var y = Integer.parseInt(x.substring(1));
-				var z = (FOO[(y - 1) % FOO.length] + y).repeat(y);
+				var z = (WORDS[(y - 1) % WORDS.length] + y).repeat(y);
 				return switch (x.charAt(0)) {
 				case 'I' -> "insert into tbl1 values('" + z + "');";
 				case 'U' -> {
 					var y2 = b0 - y + 1;
-					var z2 = (FOO[(y2 - 1) % FOO.length] + y2).repeat(y2);
+					var z2 = (WORDS[(y2 - 1) % WORDS.length] + y2).repeat(y2);
 					yield "update tbl1 set content='" + z2 + "' where content='" + z + "';";
 				}
 				case 'D' -> "delete from tbl1 where content='" + z + "';";
@@ -122,72 +122,70 @@ public class Foo {
 			throw new UncheckedIOException(e);
 		}
 
-		{
-			try (var ch = new TransactionalByteChannel(
-					FileChannel.open(Path.of("ex1b"), StandardOpenOption.CREATE, StandardOpenOption.READ,
-							StandardOpenOption.WRITE),
-					FileChannel.open(Path.of("ex1b.transaction"), StandardOpenOption.CREATE, StandardOpenOption.READ,
-							StandardOpenOption.WRITE))) {
-				var d = new SQLiteDatabase(ch);
+		try (var ch = new TransactionalByteChannel(
+				FileChannel.open(Path.of("ex1b"), StandardOpenOption.CREATE, StandardOpenOption.READ,
+						StandardOpenOption.WRITE),
+				FileChannel.open(Path.of("ex1b.transaction"), StandardOpenOption.CREATE, StandardOpenOption.READ,
+						StandardOpenOption.WRITE))) {
+			var d = new SQLiteDatabase(ch);
 
-				if (ss.length != 0)
+			if (ss.length != 0)
+				d.perform(() -> {
+					d.createTable("tbl1", new Column[0], false);
+					d.createIndex("tbl1content", "tbl1");
+					return null;
+				}, true);
+
+			var m = new HashMap<Integer, Set<Long>>();
+			for (var x : ss) {
+				IO.println(x);
+				var y = Integer.parseInt(x.substring(1));
+				var z = (WORDS[(y - 1) % WORDS.length] + y).repeat(y);
+				switch (x.charAt(0)) {
+				case 'I': {
 					d.perform(() -> {
-						d.createTable("tbl1");
-						d.createIndex("tbl1content", "tbl1");
+						var k = d.tableBTree("tbl1").insert(_ -> new Object[] { z });
+//						IO.println(y + " " + k);
+						m.computeIfAbsent(y, _ -> new HashSet<>()).add(k);
+						d.indexBTree("tbl1content").insert(z, k);
 						return null;
 					}, true);
-
-				var m = new HashMap<Integer, Set<Long>>();
-				for (var x : ss) {
-					IO.println(x);
-					var y = Integer.parseInt(x.substring(1));
-					var z = (FOO[(y - 1) % FOO.length] + y).repeat(y);
-					switch (x.charAt(0)) {
-					case 'I': {
-						d.perform(() -> {
-							var k = d.tableBTree("tbl1").insert(_ -> new Object[] { z });
-//						IO.println(y + " " + k);
-							m.computeIfAbsent(y, _ -> new HashSet<>()).add(k);
-							d.indexBTree("tbl1content").insert(z, k);
-							return null;
-						}, true);
-					}
-						break;
-					case 'U': {
-						var kk = m.get(y);
-						var y2 = b0 - y + 1;
-						var z2 = (FOO[(y2 - 1) % FOO.length] + y2).repeat(y2);
-						if (kk != null)
-							for (var k : kk)
-								d.perform(() -> {
-//								IO.println(y + " " + k);
-									d.tableBTree("tbl1").update(k, _ -> new Object[] { z2 });
-									d.indexBTree("tbl1content").delete(z, k);
-									d.indexBTree("tbl1content").insert(z2, k);
-									return null;
-								}, true);
-					}
-						break;
-					case 'D': {
-						var kk = m.remove(y);
-						if (kk != null)
-							for (var k : kk)
-								d.perform(() -> {
-//								IO.println(y + " " + k);
-									d.tableBTree("tbl1").delete(k);
-									d.indexBTree("tbl1content").delete(z, k);
-									return null;
-								}, true);
-					}
-						break;
-					default:
-						throw new RuntimeException();
-					}
-					;
 				}
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+					break;
+				case 'U': {
+					var kk = m.get(y);
+					var y2 = b0 - y + 1;
+					var z2 = (WORDS[(y2 - 1) % WORDS.length] + y2).repeat(y2);
+					if (kk != null)
+						for (var k : kk)
+							d.perform(() -> {
+//								IO.println(y + " " + k);
+								d.tableBTree("tbl1").update(new Object[] { k }, _ -> new Object[] { z2 });
+								d.indexBTree("tbl1content").delete(z, k);
+								d.indexBTree("tbl1content").insert(z2, k);
+								return null;
+							}, true);
+				}
+					break;
+				case 'D': {
+					var kk = m.remove(y);
+					if (kk != null)
+						for (var k : kk)
+							d.perform(() -> {
+//								IO.println(y + " " + k);
+								d.tableBTree("tbl1").delete(k);
+								d.indexBTree("tbl1content").delete(z, k);
+								return null;
+							}, true);
+				}
+					break;
+				default:
+					throw new RuntimeException();
+				}
+				;
 			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 
 		{

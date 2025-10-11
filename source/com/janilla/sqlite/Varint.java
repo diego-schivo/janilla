@@ -35,7 +35,7 @@ public class Varint {
 	public static long get(ByteBuffer buffer, int index) {
 		var l = 0l;
 		for (var i = 0; i < 9; i++) {
-			var x = index == -1 ? Byte.toUnsignedInt(buffer.get()) : Byte.toUnsignedInt(buffer.get(index + i));
+			var x = Byte.toUnsignedInt(index == -1 ? buffer.get() : buffer.get(index + i));
 			var y = x & 0x7f;
 			l = (l << 7) | y;
 			if (x == y)
@@ -71,7 +71,7 @@ public class Varint {
 
 	public static int size(ByteBuffer buffer, int index) {
 		for (var i = 0; i < 9; i++) {
-			var x = index == -1 ? Byte.toUnsignedInt(buffer.get()) : Byte.toUnsignedInt(buffer.get(index + i));
+			var x = Byte.toUnsignedInt(index == -1 ? buffer.get() : buffer.get(index + i));
 			if ((x & 0x80) == 0)
 				return i + 1;
 		}

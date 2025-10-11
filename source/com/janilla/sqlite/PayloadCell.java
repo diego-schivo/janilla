@@ -24,11 +24,24 @@
  */
 package com.janilla.sqlite;
 
+import java.nio.ByteBuffer;
+
 public interface PayloadCell extends Cell {
 
 	int payloadSize();
 
-	byte[] initialPayload();
+	int initialPayloadSize();
+
+	void getInitialPayload(ByteBuffer destination);
 
 	long firstOverflow();
+
+	default ByteBuffer initialPayload(SQLiteDatabase database) {
+		var ps = payloadSize();
+		var is = database.initialSize(ps, !(this instanceof LeafTableCell));
+		var b = ByteBuffer.allocate(is);
+		getInitialPayload(b);
+		b.flip();
+		return b;
+	}
 }

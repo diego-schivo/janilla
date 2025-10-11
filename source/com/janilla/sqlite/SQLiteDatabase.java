@@ -28,12 +28,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.janilla.io.TransactionalByteChannel;
 
@@ -209,11 +210,11 @@ public class SQLiteDatabase {
 		return n;
 	}
 
-	public long createTable(String name) {
-		return createTable(name, false);
-	}
+//	public long createTable(String name) {
+//		return createTable(name, new Column[] { new Column("content", "TEXT") }, false);
+//	}
 
-	public long createTable(String name, boolean withoutRowid) {
+	public BTree<?, ?> createTable(String name, Column[] columns, boolean withoutRowid) {
 		header.setReservedBytes(12);
 
 		var n = nextPageNumber();
@@ -222,15 +223,17 @@ public class SQLiteDatabase {
 		write(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
-		t.insert(_ -> new Object[] { "table", name, name, n,
-				withoutRowid ? "CREATE TABLE " + name + "(id TEXT PRIMARY KEY, content TEXT) WITHOUT ROWID"
-						: "CREATE TABLE " + name + "(content TEXT)" });
+		t.insert(k -> new Object[] { k, "table", name, name, n, withoutRowid
+				? "CREATE TABLE " + name + "(id TEXT PRIMARY KEY, content TEXT) WITHOUT ROWID"
+				: "CREATE TABLE " + name + "("
+						+ Arrays.stream(columns).map(x -> x.name() + " " + x.type()).collect(Collectors.joining(", "))
+						+ ")" });
 
 		updateHeader();
-		return n;
+		return withoutRowid ? new IndexBTree(this, n) : new TableBTree(this, n);
 	}
 
-	public long createIndex(String name, String table) {
+	public IndexBTree createIndex(String name, String table, String... columns) {
 		header.setReservedBytes(12);
 
 		var n = nextPageNumber();
@@ -239,33 +242,27 @@ public class SQLiteDatabase {
 		write(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
-		t.insert(_ -> new Object[] { "index", name, table, n, "CREATE INDEX " + name + " ON " + table + "(content)" });
+		t.insert(k -> new Object[] { k, "index", name, table, n,
+				"CREATE INDEX " + name + " ON " + table + "(content)" });
 
 		updateHeader();
-		return n;
+		return new IndexBTree(this, n);
 	}
 
 	public TableBTree tableBTree(String name) {
+//		IO.println("SQLiteDatabase.tableBTree, name=" + name);
 		var o = schema().stream().filter(x -> x.type().equals("table") && x.name().equals(name)).findFirst().get();
 		return new TableBTree(this, o.root());
 	}
 
 	public IndexBTree indexBTree(String name) {
-		var o = schema().stream().filter(x -> /* x.type().equals("index") && */ x.name().equals(name)).findFirst()
-				.get();
+		return indexBTree(name, "index");
+	}
+
+	public IndexBTree indexBTree(String name, String type) {
+//		IO.println("SQLiteDatabase.indexBTree, name=" + name + ", type=" + type);
+		var o = schema().stream().filter(x -> x.type().equals(type) && x.name().equals(name)).findFirst().get();
 		return new IndexBTree(this, o.root());
-	}
-
-	public <R> R performOnTable(String name, Function<TableBTree, R> operation) {
-		var o = schema().stream().filter(x -> x.type().equals("table") && x.name().equals(name)).findFirst().get();
-		var t = new TableBTree(this, o.root());
-		return operation.apply(t);
-	}
-
-	public <R> R performOnIndex(String name, Function<IndexBTree, R> operation) {
-		var o = schema().stream().filter(x -> x.type().equals("index") && x.name().equals(name)).findFirst().get();
-		var t = new IndexBTree(this, o.root());
-		return operation.apply(t);
 	}
 
 	public <T> T perform(Supplier<T> operation, boolean write) {
@@ -317,13 +314,13 @@ public class SQLiteDatabase {
 		writeHeader();
 	}
 
-	protected List<SchemaObject> schema() {
+	public List<SchemaObject> schema() {
 		var t = new TableBTree(this, 1);
 		return t.rows()
-				.map(x -> new SchemaObject((String) x[0], (String) x[1], (String) x[2], (Long) x[3], (String) x[4]))
+				.map(x -> new SchemaObject((String) x[1], (String) x[2], (String) x[3], (Long) x[4], (String) x[5]))
 				.toList();
 	}
 
-	protected record SchemaObject(String type, String name, String table, long root, String sql) {
+	public record SchemaObject(String type, String name, String table, long root, String sql) {
 	}
 }

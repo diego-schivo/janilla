@@ -25,9 +25,15 @@
 package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.function.LongFunction;
+import java.util.function.UnaryOperator;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
-public abstract class BTree {
+public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 
 	protected final SQLiteDatabase database;
 
@@ -38,27 +44,63 @@ public abstract class BTree {
 		this.rootNumber = rootNumber;
 	}
 
-	protected byte[] payload(PayloadCell cell) {
-		var bb = cell.initialPayload();
-		if (cell.payloadSize() == bb.length)
-			return bb;
-		var b = ByteBuffer.allocate(cell.payloadSize());
-		b.put(bb);
-		var n = cell.firstOverflow();
-		var pb = database.allocatePage();
-		do {
-			database.read(n, pb);
-			var p = new OverflowPage(database, pb);
-			p.getContent(b);
-			n = p.getNext();
-		} while (n != 0);
-		return b.array();
+	public abstract long insert(LongFunction<Object[]> values);
+
+	public abstract boolean insert(Object... keys);
+
+	public abstract Stream<Object[]> select(Object... keys);
+
+	public abstract void update(Object[] keys, UnaryOperator<Object[]> operator);
+
+	public abstract Object[] delete(Object... keys);
+
+	public abstract Stream<? extends Cell> cells();
+
+	public abstract long count(Object... keys);
+
+	public Stream<Object[]> rows() {
+		return cells().map(this::row);
+	}
+
+	public Object[] row(Cell cell) {
+		return Record.fromBytes(payloadBuffers((PayloadCell) cell)).map(Record.Element::toObject).toArray();
+	}
+
+	public Stream<ByteBuffer> payloadBuffers(PayloadCell cell) {
+		var b0 = cell.initialPayload(database);
+		class A {
+
+			int r = cell.payloadSize() - b0.remaining();
+
+			long n = cell.firstOverflow();
+		}
+		var a = new A();
+		return Stream.iterate(b0, b -> {
+			if (a.n == 0)
+				return null;
+			var ob = database.allocatePage();
+			database.read(a.n, ob);
+			var op = new OverflowPage(database, ob);
+			var m = Math.min(database.usableSize() - Integer.BYTES, a.r);
+			var b2 = ByteBuffer.allocate(b.remaining() + m);
+			b2.put(b);
+			op.getContent(b2);
+			b2.flip();
+			a.r -= m;
+			a.n = op.getNext();
+			return b2;
+		}).takeWhile(Objects::nonNull);
 	}
 
 	protected long addOverflowPages(byte[] bytes, int start) {
+		return addOverflowPages(bytes, start, LongStream.iterate(0, _ -> database.nextPageNumber()).skip(1));
+	}
+
+	protected long addOverflowPages(byte[] bytes, int start, LongStream nextPageNumber) {
+		var ni = nextPageNumber.iterator();
 		var b = ByteBuffer.wrap(bytes);
 		b.position(start);
-		var n = database.nextPageNumber();
+		var n = ni.nextLong();
 		var n0 = n;
 		ByteBuffer pb = null;
 		do {
@@ -68,7 +110,7 @@ public abstract class BTree {
 				Arrays.fill(pb.array(), 0, pb.capacity(), (byte) 0);
 			var p = new OverflowPage(database, pb);
 			p.setContent(b);
-			p.setNext(!b.hasRemaining() ? 0 : database.nextPageNumber());
+			p.setNext(!b.hasRemaining() ? 0 : ni.nextLong());
 			database.write(n, pb);
 			n = p.getNext();
 		} while (n != 0);
@@ -87,6 +129,99 @@ public abstract class BTree {
 			database.write(number, b);
 			database.header.setFreelistSize(1);
 			database.header.setFreelistStart(number);
+		}
+	}
+
+	protected Stream<? extends BTreePage<?>> pages() {
+		return pages(rootNumber);
+	}
+
+	protected Stream<? extends BTreePage<?>> pages(long number) {
+		var p = database.readBTreePage(number, database.allocatePage());
+		// IO.println("p=" + p + ", " + p.getCellCount());
+		var s = Stream.of(p);
+		if (p instanceof InteriorPage<?> x)
+			s = Stream.concat(s, LongStream.concat(x.getCells().stream().mapToLong(InteriorCell::leftChildPointer),
+					LongStream.of(x.getRightMostPointer())).boxed().flatMap(this::pages));
+		return s;
+	}
+
+	protected Stream<LP> leafPages() {
+		return pages().filter(x -> !(x instanceof InteriorPage)).map(x -> {
+			@SuppressWarnings("unchecked")
+			var y = (LP) x;
+			return y;
+		});
+	}
+
+	protected long count(boolean all) {
+		return (all ? pages() : leafPages()).mapToLong(BTreePage::getCellCount).sum();
+	}
+
+	protected Stream<? extends Cell> cells(boolean all) {
+		return all ? cells(rootNumber) : leafPages().flatMap(p -> p.getCells().stream());
+	}
+
+	protected Stream<? extends Cell> cells(long number) {
+		var p = database.readBTreePage(number, database.allocatePage());
+		var s = p.getCells().stream().flatMap(c -> {
+			var s2 = Stream.of(c);
+			if (c instanceof InteriorCell x)
+				s2 = Stream.concat(cells(x.leftChildPointer()), s2);
+			return s2;
+		});
+		if (p instanceof InteriorPage x)
+			s = Stream.concat(s, cells(x.getRightMostPointer()));
+		return s;
+	}
+
+	public record Position(BTreePage<?> page, int index) {
+
+		public Cell cell() {
+			return page.getCells().get(index);
+		}
+	};
+
+	public class Path extends ArrayList<Position> {
+
+		private static final long serialVersionUID = 8714727091836519387L;
+
+		public boolean next() {
+			long n;
+			if (isEmpty())
+				n = rootNumber;
+			else {
+				for (;;) {
+					var p = removeLast();
+					var i = p.index() + 1;
+					if (i < p.page().getCellCount() + (p.page() instanceof InteriorPage ? 1 : 0)) {
+						p = new Position(p.page(), i);
+						add(p);
+						n = p.page() instanceof InteriorPage ip
+								? p.index() == ip.getCellCount() ? ip.getRightMostPointer()
+										: ((InteriorCell) p.cell()).leftChildPointer()
+								: 0;
+						break;
+					} else if (isEmpty())
+						return false;
+					else {
+						p = getLast();
+						if (p.index() < p.page().getCellCount())
+							return true;
+					}
+				}
+			}
+
+			while (n != 0) {
+				var p = database.readBTreePage(n, database.allocatePage());
+				add(new Position(p, 0));
+				n = p instanceof InteriorPage<?> ip
+						? ip.getCellCount() != 0 ? ip.getCells().getFirst().leftChildPointer()
+								: ip.getRightMostPointer()
+						: 0;
+			}
+
+			return true;
 		}
 	}
 }

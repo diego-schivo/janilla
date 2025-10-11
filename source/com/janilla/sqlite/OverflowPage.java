@@ -40,15 +40,15 @@ public class OverflowPage extends Page {
 		buffer.putInt(0, (int) next);
 	}
 
-	public byte[] getContent() {
-		var bb = new byte[database.usableSize() - Integer.BYTES];
-		buffer.get(Integer.BYTES, bb);
-		return bb;
-	}
-
-	public void setContent(byte[] content) {
-		buffer.put(Integer.BYTES, content);
-	}
+//	public byte[] getContent() {
+//		var bb = new byte[database.usableSize() - Integer.BYTES];
+//		buffer.get(Integer.BYTES, bb);
+//		return bb;
+//	}
+//
+//	public void setContent(byte[] content) {
+//		buffer.put(Integer.BYTES, content);
+//	}
 
 	public void getContent(ByteBuffer destination) {
 		destination.put(buffer.array(), Integer.BYTES,

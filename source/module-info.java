@@ -25,7 +25,6 @@
 module com.janilla {
 
 	exports com.janilla.cms;
-	exports com.janilla.database;
 	exports com.janilla.http;
 	exports com.janilla.io;
 	exports com.janilla.java;

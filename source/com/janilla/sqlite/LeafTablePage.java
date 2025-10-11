@@ -25,7 +25,6 @@
 package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 public class LeafTablePage extends BTreePage<LeafTableCell> {
 
@@ -60,12 +59,16 @@ public class LeafTablePage extends BTreePage<LeafTableCell> {
 			}
 
 			@Override
-			public byte[] initialPayload() {
+			public int initialPayloadSize() {
+				return database.initialSize(payloadSize(), false);
+			}
+
+			@Override
+			public void getInitialPayload(ByteBuffer destination) {
 				var ps = payloadSize();
 				var is = database.initialSize(ps, false);
 				var i = start() + Varint.size(ps);
-				i += Varint.size(buffer, i);
-				return Arrays.copyOfRange(buffer.array(), i, i + is);
+				destination.put(buffer.array(), i + Varint.size(buffer, i), is);
 			}
 
 			@Override
@@ -74,7 +77,7 @@ public class LeafTablePage extends BTreePage<LeafTableCell> {
 				var is = database.initialSize(ps, false);
 				var i = start() + Varint.size(ps);
 				i += Varint.size(buffer, i);
-				return is != ps ? Varint.get(buffer, i + is) : 0;
+				return is != ps ? buffer.getInt(i + is) : 0;
 			}
 
 			@Override

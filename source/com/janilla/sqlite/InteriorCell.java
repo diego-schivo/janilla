@@ -24,42 +24,7 @@
  */
 package com.janilla.sqlite;
 
-import java.nio.ByteBuffer;
+public interface InteriorCell extends Cell {
 
-public interface InteriorIndexCell extends InteriorCell, PayloadCell {
-
-	@Override
-	default int size() {
-		return Integer.BYTES + Varint.size(payloadSize()) + initialPayloadSize()
-				+ (firstOverflow() != 0 ? Integer.BYTES : 0);
-	}
-
-	@Override
-	default void put(ByteBuffer buffer) {
-		buffer.putInt((int) leftChildPointer());
-		Varint.put(buffer, payloadSize());
-//		buffer.put(initialPayload());
-		getInitialPayload(buffer);
-		if (firstOverflow() != 0)
-			buffer.putInt((int) firstOverflow());
-	}
-
-	record New(long leftChildPointer, int payloadSize, byte[] initialPayload, long firstOverflow)
-			implements InteriorIndexCell {
-
-		@Override
-		public int start() {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public int initialPayloadSize() {
-			return initialPayload.length;
-		}
-
-		@Override
-		public void getInitialPayload(ByteBuffer destination) {
-			destination.put(initialPayload);
-		}
-	}
+	long leftChildPointer();
 }

@@ -32,12 +32,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
-import com.janilla.database.BTree;
-import com.janilla.database.BTreeMemory;
-import com.janilla.database.IdAndReference;
-import com.janilla.database.KeyAndData;
-import com.janilla.database.Store;
-import com.janilla.io.ByteConverter;
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.reflect.Factory;
 import com.janilla.sqlite.SQLiteDatabase;
@@ -74,14 +68,5 @@ public class ApplicationPersistenceBuilder {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-	}
-
-	protected <ID extends Comparable<ID>> Store<ID, String> newStore(int bTreeOrder, TransactionalByteChannel channel,
-			BTreeMemory memory, KeyAndData<String> keyAndData) {
-		@SuppressWarnings("unchecked")
-		var s = (Store<ID, String>) new Store<>(new BTree<>(bTreeOrder, channel, memory,
-				IdAndReference.byteConverter(ByteConverter.LONG), keyAndData.bTree()), ByteConverter.STRING);
-//				});
-		return s;
 	}
 }

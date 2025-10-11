@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.sqlite;
-
-public class UniqueConstraintFailedException extends SQLiteException {
-
-	private static final long serialVersionUID = 6040894115797613563L;
-}
+//package com.janilla.sqlite;
+//
+//public class UniqueConstraintFailedException extends SQLiteException {
+//
+//	private static final long serialVersionUID = 6040894115797613563L;
+//}

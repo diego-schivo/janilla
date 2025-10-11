@@ -26,9 +26,6 @@ package com.janilla.persistence;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,13 +35,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.janilla.database.BTree;
-import com.janilla.database.Database;
-import com.janilla.database.KeyAndData;
-import com.janilla.io.ByteConverter;
 import com.janilla.json.TypeResolver;
 import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
+import com.janilla.sqlite.Column;
 import com.janilla.sqlite.SQLiteDatabase;
 
 public class Persistence {
@@ -64,7 +58,8 @@ public class Persistence {
 		this.typeResolver = typeResolver;
 		for (var t : types)
 			configure(t);
-		createStoresAndIndexes();
+		if (database.schema().isEmpty())
+			createStoresAndIndexes();
 	}
 
 	public SQLiteDatabase database() {
@@ -75,15 +70,14 @@ public class Persistence {
 		return typeResolver;
 	}
 
-	public <K, V> com.janilla.database.Index<K, V> newIndex(KeyAndData<String> keyAndData) {
-		var ni = configuration.indexFactories.get(keyAndData.key());
-		if (ni == null)
-			return null;
+//	public <K, V> com.janilla.database.Index<K, V> newIndex(KeyAndData<String> keyAndData) {
+//		var ni = configuration.indexFactories.get(keyAndData.key());
+//		if (ni == null)
+//			return null;
 //		@SuppressWarnings("unchecked")
 //		var i = (com.janilla.database.Index<K, V>) ni.newIndex(keyAndData, database);
 //		return i;
-		throw new RuntimeException();
-	}
+//	}
 
 	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> class1) {
 		@SuppressWarnings("unchecked")
@@ -107,11 +101,11 @@ public class Persistence {
 			if (i == null)
 				continue;
 
-			var t = p != null ? p.genericType() : null;
-			var ii = new IndexFactory<K, V>();
-			ii.keyConverter = keyConverter(t);
-			if (ii.keyConverter == null)
-				throw new NullPointerException("No keyConverter for index on " + p + " (" + t + ")");
+//			var t = p != null ? p.genericType() : null;
+//			var ii = new IndexFactory<K, V>();
+//			ii.keyConverter = keyConverter(t);
+//			if (ii.keyConverter == null)
+//				throw new NullPointerException("No keyConverter for index on " + p + " (" + t + ")");
 
 //			var s = i.sort();
 //			if (s.startsWith("+") || s.startsWith("-"))
@@ -123,12 +117,12 @@ public class Persistence {
 //				var h = (ByteConverter<V>) ByteConverter.of(type, i.sort(), "id");
 //				ii.valueConverter = h;
 //			} else {
-			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<V>) ByteConverter.of(type, "id");
-			ii.valueConverter = h;
+//			@SuppressWarnings("unchecked")
+//			var h = (ByteConverter<V>) ByteConverter.of(type, "id");
+//			ii.valueConverter = h;
 //			}
 			var k = type.getSimpleName() + (p != null ? "." + p.name() : "");
-			configuration.indexFactories.put(k, ii);
+			configuration.indexFactories.put(k, null);
 
 			var ieg = new IndexEntryGetter();
 			BiFunction<Class<?>, String, Function<Object, Object>> kgf;
@@ -149,23 +143,49 @@ public class Persistence {
 				&& type.isAnnotationPresent(Store.class) ? new Crud(type, nextId(type), this) : null;
 	}
 
-	protected <ID extends Comparable<ID>> Function<Map<String, Object>, ID> nextId(Class<?> type) {
+	public <ID extends Comparable<ID>> Crud.Foo<ID> nextId(Class<?> type) {
 		var t = Reflection.property(type, "id").type();
-		if (t == UUID.class)
-			return _ -> {
-				@SuppressWarnings("unchecked")
-				var x = (ID) UUID.randomUUID();
-				return x;
-			};
-		else
-			// throw new RuntimeException(type + " " + t);
-			return _ -> null;
+		@SuppressWarnings("unchecked")
+		var x = (Crud.Foo<ID>) (t == UUID.class ? new Crud.Foo<UUID>() {
+
+			@Override
+			public UUID id(Entity<UUID> e) {
+				return UUID.randomUUID();
+			}
+
+			@Override
+			public UUID fromObject(Object object) {
+				return UUID.fromString((String) object);
+			}
+
+			@Override
+			public Object toObject(UUID id) {
+				return id.toString();
+			}
+		} : t == String.class ? new Crud.Foo<String>() {
+
+			@Override
+			public String id(Entity<String> e) {
+				throw new RuntimeException();
+			}
+
+			@Override
+			public String fromObject(Object object) {
+				return (String) object;
+			}
+
+			@Override
+			public Object toObject(String id) {
+				return id;
+			}
+		} : null);
+		return x;
 	}
 
 	protected void createStoresAndIndexes() {
 		for (var x : configuration.cruds.entrySet())
 			database.perform(() -> {
-				database.createTable(x.getKey().getSimpleName(), x.getValue().nextId != null);
+				database.createTable(x.getKey().getSimpleName(), new Column[0], x.getValue().nextId != null);
 				return null;
 			}, true);
 		for (var k : configuration.indexFactories.keySet())
@@ -175,97 +195,98 @@ public class Persistence {
 			}, true);
 	}
 
-	protected <K> ByteConverter<K> keyConverter(Type type) {
-		if (type == null) {
-			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<K>) ByteConverter.NULL;
-			return h;
-		}
-		var t = type instanceof ParameterizedType pt && Collection.class.isAssignableFrom((Class<?>) pt.getRawType())
-				? pt.getActualTypeArguments()[0]
-				: null;
-		if (type == Boolean.class || type == Boolean.TYPE || type == boolean[].class || t == Boolean.class) {
-			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<K>) ByteConverter.BOOLEAN;
-			return h;
-		}
-		if (type == Integer.class || type == Integer.TYPE || type == int[].class || t == Integer.class) {
-			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<K>) ByteConverter.INTEGER;
-			return h;
-		}
-		if (type == Long.class || type == Long.TYPE || type == long[].class || t == Long.class) {
-			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<K>) ByteConverter.LONG;
-			return h;
-		}
-		if (type == String.class || t == String.class) {
-			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<K>) ByteConverter.STRING;
-			return h;
-		}
-		if (type == UUID.class || t == UUID.class) {
-			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<K>) ByteConverter.UUID1;
-			return h;
-		}
-		if ((type instanceof Class<?> c1 && c1.isEnum()) || (t instanceof Class<?> c2 && c2.isEnum())) {
-			@SuppressWarnings("unchecked")
-			var h = new ByteConverter<K>() {
-
-				@Override
-				public byte[] serialize(K element) {
-					return STRING.serialize(element.toString());
-				}
-
-				@Override
-				public int getLength(ByteBuffer buffer) {
-					return STRING.getLength(buffer);
-				}
-
-				@Override
-				public K deserialize(ByteBuffer buffer) {
-					@SuppressWarnings("rawtypes")
-					var ec = (Class) type;
-					return (K) Enum.valueOf(ec, STRING.deserialize(buffer));
-				}
-
-				@Override
-				public int compare(ByteBuffer buffer, K element) {
-					return STRING.compare(buffer, element.toString());
-				}
-			};
-			return h;
-		}
-		return null;
-	}
+//	protected <K> ByteConverter<K> keyConverter(Type type) {
+//		if (type == null) {
+//			@SuppressWarnings("unchecked")
+//			var h = (ByteConverter<K>) ByteConverter.NULL;
+//			return h;
+//		}
+//		var t = type instanceof ParameterizedType pt && Collection.class.isAssignableFrom((Class<?>) pt.getRawType())
+//				? pt.getActualTypeArguments()[0]
+//				: null;
+//		if (type == Boolean.class || type == Boolean.TYPE || type == boolean[].class || t == Boolean.class) {
+//			@SuppressWarnings("unchecked")
+//			var h = (ByteConverter<K>) ByteConverter.BOOLEAN;
+//			return h;
+//		}
+//		if (type == Integer.class || type == Integer.TYPE || type == int[].class || t == Integer.class) {
+//			@SuppressWarnings("unchecked")
+//			var h = (ByteConverter<K>) ByteConverter.INTEGER;
+//			return h;
+//		}
+//		if (type == Long.class || type == Long.TYPE || type == long[].class || t == Long.class) {
+//			@SuppressWarnings("unchecked")
+//			var h = (ByteConverter<K>) ByteConverter.LONG;
+//			return h;
+//		}
+//		if (type == String.class || t == String.class) {
+//			@SuppressWarnings("unchecked")
+//			var h = (ByteConverter<K>) ByteConverter.STRING;
+//			return h;
+//		}
+//		if (type == UUID.class || t == UUID.class) {
+//			@SuppressWarnings("unchecked")
+//			var h = (ByteConverter<K>) ByteConverter.UUID1;
+//			return h;
+//		}
+//		if ((type instanceof Class<?> c1 && c1.isEnum()) || (t instanceof Class<?> c2 && c2.isEnum())) {
+//			@SuppressWarnings("unchecked")
+//			var h = new ByteConverter<K>() {
+//
+//				@Override
+//				public byte[] serialize(K element) {
+//					return STRING.serialize(element.toString());
+//				}
+//
+//				@Override
+//				public int getLength(ByteBuffer buffer) {
+//					return STRING.getLength(buffer);
+//				}
+//
+//				@Override
+//				public K deserialize(ByteBuffer buffer) {
+//					@SuppressWarnings("rawtypes")
+//					var ec = (Class) type;
+//					return (K) Enum.valueOf(ec, STRING.deserialize(buffer));
+//				}
+//
+//				@Override
+//				public int compare(ByteBuffer buffer, K element) {
+//					return STRING.compare(buffer, element.toString());
+//				}
+//			};
+//			return h;
+//		}
+//		return null;
+//	}
 
 	protected static class Configuration {
 
 		protected Map<Class<?>, Crud<?, ?>> cruds = new HashMap<>();
 
-		protected Map<String, IndexFactory<?, ?>> indexFactories = new HashMap<>();
+//		protected Map<String, IndexFactory<?, ?>> indexFactories = new HashMap<>();
+		protected Map<String, Object> indexFactories = new HashMap<>();
 
 		public Map<Class<?>, Crud<?, ?>> cruds() {
 			return cruds;
 		}
 
-		public Map<String, IndexFactory<?, ?>> indexFactories() {
+		public Map<String, Object> indexFactories() {
 			return indexFactories;
 		}
 	}
 
-	protected static class IndexFactory<K, V> {
-
-		protected ByteConverter<K> keyConverter;
-
-		protected ByteConverter<V> valueConverter;
-
-		protected com.janilla.database.Index<K, V> newIndex(KeyAndData<String> keyAndData, Database database) {
-			return new com.janilla.database.Index<K, V>(new BTree<>(database.bTreeOrder(), database.channel(),
-					database.memory(), KeyAndData.getByteConverter(keyConverter), keyAndData.bTree()), valueConverter);
-		}
-	}
+//	protected static class IndexFactory<K, V> {
+//
+//		protected ByteConverter<K> keyConverter;
+//
+//		protected ByteConverter<V> valueConverter;
+//
+//		protected com.janilla.database.Index<K, V> newIndex(KeyAndData<String> keyAndData, Database database) {
+//			return new com.janilla.database.Index<K, V>(new BTree<>(database.bTreeOrder(), database.channel(),
+//					database.memory(), KeyAndData.getByteConverter(keyConverter), keyAndData.bTree()), valueConverter);
+//		}
+//	}
 
 	protected static class IndexEntryGetter {
 

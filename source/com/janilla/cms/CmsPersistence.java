@@ -25,24 +25,18 @@
 package com.janilla.cms;
 
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.janilla.database.Index;
-import com.janilla.database.KeyAndData;
-import com.janilla.io.ByteConverter;
-import com.janilla.json.ObjectAndType;
 import com.janilla.json.TypeResolver;
 import com.janilla.persistence.Crud;
 import com.janilla.persistence.Entity;
 import com.janilla.persistence.Persistence;
 import com.janilla.persistence.Store;
 import com.janilla.reflect.Reflection;
+import com.janilla.sqlite.Column;
 import com.janilla.sqlite.SQLiteDatabase;
 
 public class CmsPersistence extends Persistence {
@@ -81,21 +75,6 @@ public class CmsPersistence extends Persistence {
 	}
 
 	@Override
-	public <K, V> Index<K, V> newIndex(KeyAndData<String> keyAndData) {
-		if (keyAndData.key().startsWith(Version.class.getSimpleName() + "<")
-				&& keyAndData.key().endsWith(">.document")) {
-//			@SuppressWarnings("unchecked")
-//			var i = (Index<K, V>) new Index<Long, Object[]>(new BTree<>(database.bTreeOrder(), database.channel(),
-//					database.memory(), KeyAndData.getByteConverter(ByteConverter.LONG), keyAndData.bTree()),
-//					ByteConverter.of(new TypeAndOrder(Instant.class, SortOrder.DESCENDING),
-//							new TypeAndOrder(Long.class, SortOrder.ASCENDING)));
-//			return i;
-			throw new RuntimeException();
-		}
-		return super.newIndex(keyAndData);
-	}
-
-	@Override
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
 		super.configure(type);
 		var v = type.getAnnotation(Versions.class);
@@ -124,84 +103,11 @@ public class CmsPersistence extends Persistence {
 		super.createStoresAndIndexes();
 		for (var t : configuration.cruds().keySet())
 			if (t.isAnnotationPresent(Versions.class))
-//				database.perform((ss, ii) -> {
-//					var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">";
-//					ss.create(n);
-//					ii.create(n + ".document");
-//					return null;
-//				}, true);
-				throw new RuntimeException();
-	}
-
-//	protected ByteConverter<Document.Reference<ID, ?>> documentReferenceConverter;
-
-	public <ID extends Comparable<ID>> ByteConverter<Document.Reference<ID, ?>> documentReferenceConverter(
-			ByteConverter<ID> idByteConverter) {
-//		if (documentReferenceConverter == null)
-//			documentReferenceConverter = 
-		return new ByteConverter<>() {
-
-			@Override
-			public byte[] serialize(Document.Reference<ID, ?> element) {
-				var bb1 = element.type().getSimpleName().getBytes();
-				var bb2 = idByteConverter.serialize(element.id());
-				var b = ByteBuffer.allocate(Integer.BYTES + bb1.length + bb2.length);
-				b.putInt(bb1.length);
-				b.put(bb1);
-				b.put(bb2);
-				return b.array();
-			}
-
-			@Override
-			public int getLength(ByteBuffer buffer) {
-				var p = buffer.position();
-				var i = buffer.getInt(p);
-				var l1 = Integer.BYTES + i;
-				buffer.position(p + l1);
-				try {
-					var l2 = idByteConverter.getLength(buffer);
-					return l1 + l2;
-				} finally {
-					buffer.position(p);
-				}
-			}
-
-			@Override
-			public Document.Reference<ID, ?> deserialize(ByteBuffer buffer) {
-				var i = buffer.getInt();
-				var bb = new byte[i];
-				buffer.get(bb);
-				var l = idByteConverter.deserialize(buffer);
-				var s = new String(bb);
-				var t = typeResolver.apply(new ObjectAndType(Map.of("$type", s), null)).type();
-				@SuppressWarnings({ "rawtypes", "unchecked" })
-				var r = (Document.Reference<ID, ?>) new Document.Reference(t, l);
-				return r;
-			}
-
-			@Override
-			public int compare(ByteBuffer buffer, Document.Reference<ID, ?> element) {
-				var p = buffer.position();
-				try {
-					var bb = new byte[buffer.getInt()];
-					buffer.get(bb);
-					var c = new String(bb).compareTo(element.type().getSimpleName());
-					return c != 0 ? c : idByteConverter.compare(buffer, element.id());
-				} finally {
-					buffer.position(p);
-				}
-			}
-		};
-//		return documentReferenceConverter;
-	}
-
-	@Override
-	protected <K> ByteConverter<K> keyConverter(Type type) {
-		if (type instanceof ParameterizedType x && x.getRawType() == Document.Reference.class) {
-			@SuppressWarnings("unchecked")
-			var h = (ByteConverter<K>) documentReferenceConverter(ByteConverter.LONG);
-			return h;
-		}
-		return super.keyConverter(type);
+				database.perform(() -> {
+					var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">";
+					database.createTable(n, new Column[0], false);
+					database.createIndex(n + ".document", "foo");
+					return null;
+				}, true);
 	}
 }

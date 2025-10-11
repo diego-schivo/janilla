@@ -26,7 +26,7 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public class InteriorTablePage extends BTreePage<InteriorTableCell> {
+public class InteriorTablePage extends InteriorPage<InteriorTableCell> {
 
 	public InteriorTablePage(SQLiteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
