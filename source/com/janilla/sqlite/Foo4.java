@@ -38,79 +38,79 @@ import java.util.stream.IntStream;
 
 import com.janilla.io.TransactionalByteChannel;
 
-public class Foo3 {
+public class Foo4 {
 
 	private static final String[] WORDS = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 			.split("[^\\w]+");
 
 	public static void main(String[] args) {
 		var r = ThreadLocalRandom.current();
-		var ss = IntStream.range(0, 39)
+		var ss = IntStream.range(0, 45)
 				.mapToObj(x -> (new String[] { "I", "U", "D" })[r.nextInt(1)] + (/* r.nextInt(10) */x + 1))
 				.toArray(String[]::new);
 //		ss = new String[0];
 //		ss = "[I28, I2, I18, I16, I10, I12, I17, I20, I11, I20, I19, I19, I10, I29, I4, I8, I13, I7, I23, I6, I4, I30, I8, I7, I25, I29, I1, I18, I12, I27]".replaceAll("[\\[\\]]", "").split(", ");
 //		ss = "[I1, I2, I3, I4, I5, I6, I7, I8, I9, I10]".replaceAll("[\\[\\]]", "").split(", ");
 
-		try {
-			Files.deleteIfExists(Path.of("ex1a"));
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
-		{
-			var b = new ProcessBuilder("/bin/bash", "-c", ss.length == 0 ? """
-					sqlite3 <<EOF
-					PRAGMA page_size = 512;
-					.save ex1a
-					EOF
-					""" : """
-					sqlite3 ex1a <<EOF
-					PRAGMA page_size = 512;
-					CREATE TABLE words(content TEXT PRIMARY KEY, id INTEGER) WITHOUT ROWID;
-					EOF
-					""").inheritIO();
-			Process p;
-			try {
-				p = b.start();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-			try {
-				p.waitFor();
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		{
-			IO.println(Arrays.toString(ss));
-			var b = new ProcessBuilder("/bin/bash", "-c", "sqlite3 ex1a <<EOF\n" + Arrays.stream(ss).map(x -> {
-				var v1 = Integer.parseInt(x.substring(1));
-				var v2 = (WORDS[(v1 - 1) % /* WORDS.length */5] + v1); // .repeat(y);
-				return switch (x.charAt(0)) {
-				case 'I' -> "insert into words values('" + v2 + "', " + v1 + ");";
-//				case 'U' -> {
-//					var yb = b0 - y + 1;
-//					var v2b = (WORDS[(yb - 1) % WORDS.length] + yb).repeat(yb);
-//					yield "update tbl1 set content='" + v2b + "' where id='" + v1 + "';";
-//				}
-//				case 'D' -> "delete from tbl1 where id='" + v1 + "';";
-				default -> throw new RuntimeException();
-				};
-			}).collect(Collectors.joining("\n")) + "\nEOF").inheritIO();
-			Process p;
-			try {
-				p = b.start();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-			try {
-				p.waitFor();
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
+//		try {
+//			Files.deleteIfExists(Path.of("ex1a"));
+//		} catch (IOException e) {
+//			throw new UncheckedIOException(e);
+//		}
+//
+//		{
+//			var b = new ProcessBuilder("/bin/bash", "-c", ss.length == 0 ? """
+//					sqlite3 <<EOF
+//					PRAGMA page_size = 512;
+//					.save ex1a
+//					EOF
+//					""" : """
+//					sqlite3 ex1a <<EOF
+//					PRAGMA page_size = 512;
+//					CREATE TABLE words(content TEXT PRIMARY KEY, id INTEGER) WITHOUT ROWID;
+//					EOF
+//					""").inheritIO();
+//			Process p;
+//			try {
+//				p = b.start();
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+//			try {
+//				p.waitFor();
+//			} catch (InterruptedException e) {
+//				throw new RuntimeException(e);
+//			}
+//		}
+//
+//		{
+//			IO.println(Arrays.toString(ss));
+//			var b = new ProcessBuilder("/bin/bash", "-c", "sqlite3 ex1a <<EOF\n" + Arrays.stream(ss).map(x -> {
+//				var v1 = Integer.parseInt(x.substring(1));
+//				var v2 = (WORDS[(v1 - 1) % /* WORDS.length */5] + v1); // .repeat(y);
+//				return switch (x.charAt(0)) {
+//				case 'I' -> "insert into words values('" + v2 + "', " + v1 + ");";
+		////				case 'U' -> {
+////					var yb = b0 - y + 1;
+////					var v2b = (WORDS[(yb - 1) % WORDS.length] + yb).repeat(yb);
+////					yield "update tbl1 set content='" + v2b + "' where id='" + v1 + "';";
+////				}
+////				case 'D' -> "delete from tbl1 where id='" + v1 + "';";
+//				default -> throw new RuntimeException();
+//				};
+//			}).collect(Collectors.joining("\n")) + "\nEOF").inheritIO();
+//			Process p;
+//			try {
+//				p = b.start();
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+//			try {
+//				p.waitFor();
+//			} catch (InterruptedException e) {
+//				throw new RuntimeException(e);
+//			}
+//		}
 
 		try {
 			Files.deleteIfExists(Path.of("ex1b"));
@@ -126,8 +126,7 @@ public class Foo3 {
 			var d = new SQLiteDatabase(ch);
 			d.perform(() -> {
 //				var t = d.createTable("Words", new Column[] { new Column("Word", "TEXT") }, false);
-				var t = d.createTable("words",
-						new Column[] { new Column("content", "TEXT"), new Column("id", "INTEGER") }, true);
+				var t = d.createIndex("idx", "words", "content", "id");
 //				for (var i = 0; i < 40; i++) {
 				////					t.insert(x -> new Object[] { x, WORDS[r.nextInt(WORDS.length)] });
 ////					var oo = new Object[] { WORDS[i % WORDS.length] + (i + 1) };
@@ -141,11 +140,11 @@ public class Foo3 {
 			for (var x : ss) {
 				IO.println(x);
 				var k1 = Integer.parseInt(x.substring(1));
-				var k2 = (WORDS[(k1 - 1) % /* WORDS.length */5] + k1);// .repeat(y);
+				var k2 = WORDS[(k1 - 1) % /* WORDS.length */5];// + k1);// .repeat(y);
 				switch (x.charAt(0)) {
 				case 'I': {
 					d.perform(() -> {
-						d.indexBTree("words", "table").insert(k2, (long) k1);
+						d.indexBTree("idx").insert(k2, (long) k1);
 //						IO.println(y + " " + k);
 						return null;
 					}, true);
@@ -170,7 +169,7 @@ public class Foo3 {
 			}
 			d.perform(() -> {
 //				var t = d.tableBTree("Words");
-				var t = d.indexBTree("words", "table");
+				var t = d.indexBTree("idx");
 				var p = t.new Path();
 				while (p.next()) {
 					IO.print(Arrays.toString(p.stream().mapToInt(BTree.Position::index).toArray()));
@@ -178,7 +177,7 @@ public class Foo3 {
 					IO.println(c instanceof PayloadCell ? Arrays.toString(t.row(c)) : "-");
 				}
 
-				t.select("consectetur").forEach(x -> IO.println(Arrays.toString(x)));
+				t.select("dolor").forEach(x -> IO.println(Arrays.toString(x)));
 				return null;
 			}, false);
 		} catch (IOException e) {
@@ -200,20 +199,20 @@ public class Foo3 {
 //			}
 //		}
 
-		{
-			var b = new ProcessBuilder("/bin/bash", "-c", "diff --width=140 --side-by-side <(xxd ex1a) <(xxd ex1b)")
-					.inheritIO();
-			Process p;
-			try {
-				p = b.start();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-			try {
-				p.waitFor();
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
+//		{
+//			var b = new ProcessBuilder("/bin/bash", "-c", "diff --width=140 --side-by-side <(xxd ex1a) <(xxd ex1b)")
+//					.inheritIO();
+//			Process p;
+//			try {
+//				p = b.start();
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+//			try {
+//				p.waitFor();
+//			} catch (InterruptedException e) {
+//				throw new RuntimeException(e);
+//			}
+//		}
 	}
 }

@@ -111,7 +111,8 @@ public class CellList<C extends Cell> extends AbstractList<C> implements RandomA
 					page.setFragmentedSize(page.getFragmentedSize() + d);
 			}
 		} else {
-			var s = page.getCellContentAreaStart() - (page.buffer.position() + 8 + page.getCellCount() * Short.BYTES);
+			var s = page.getCellContentAreaStart() - (page.buffer.position() + (page instanceof InteriorPage ? 12 : 8)
+					+ page.getCellCount() * Short.BYTES);
 			if (s < Short.BYTES + cs) {
 				s += page.freeblocks.stream().mapToInt(x -> x.size()).sum();
 				if (s < Short.BYTES + cs)

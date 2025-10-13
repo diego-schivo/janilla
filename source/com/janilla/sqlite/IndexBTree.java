@@ -48,7 +48,7 @@ public class IndexBTree extends BTree<LeafIndexPage, LeafIndexCell> {
 
 	@Override
 	public boolean insert(Object... keys) {
-//		IO.println("keys=" + Arrays.toString(keys));
+		IO.println("keys=" + Arrays.toString(keys));
 
 		var n = rootNumber;
 		List<Page.Numbered<BTreePage<?>>> rr = new ArrayList<>();
@@ -176,9 +176,14 @@ public class IndexBTree extends BTree<LeafIndexPage, LeafIndexCell> {
 		return search(keys, s -> {
 			if (!s.found())
 				return Stream.empty();
-			var p = s.path().getLast();
-			return IntStream.range(p.index(), p.page().getCellCount()).mapToObj(ci -> {
-				var c = (PayloadCell) p.page().getCells().get(ci);
+//			var p = s.path().getLast();
+//			return IntStream.range(p.index(), p.page().getCellCount()).mapToObj(ci -> {
+//				var c = (PayloadCell) p.page().getCells().get(ci);
+//				return compare(c, keys) == 0 ? row(c) : null;
+//			}).takeWhile(Objects::nonNull);
+			return Stream.iterate(s.path(), x -> x.next() ? x : null).takeWhile(Objects::nonNull).map(x -> {
+				var p = x.getLast();
+				var c = (PayloadCell) p.page().getCells().get(p.index());
 				return compare(c, keys) == 0 ? row(c) : null;
 			}).takeWhile(Objects::nonNull);
 		});
@@ -279,22 +284,33 @@ public class IndexBTree extends BTree<LeafIndexPage, LeafIndexCell> {
 //		IO.println("keys=" + Arrays.toString(keys));
 		var n = rootNumber;
 		var f = false;
-		var pp = new ArrayList<Position>();
+		var pp = new Path();
 		f: for (;;) {
 			var p = (BTreePage<?>) database.readBTreePage(n, database.allocatePage());
 			var ci = 0;
 			for (var c : p.getCells()) {
 				var d = compare(c, keys);
-				if (d == 0) {
-					f = true;
-					pp.add(new Position(p, ci));
-					break f;
-				}
+//				if (d == 0) {
+//					f = true;
+//					pp.add(new Position(p, ci));
+//					break f;
+//				}
 				if (c instanceof InteriorCell c2) {
-					if (d > 0) {
+					if (d >= 0) {
 						pp.add(new Position(p, ci));
 						n = c2.leftChildPointer();
 						continue f;
+					}
+				}
+				if (d == 0)
+					f = true;
+				if (d >= 0) {
+					pp.add(new Position(p, ci));
+					if (c instanceof InteriorCell c2) {
+						n = c2.leftChildPointer();
+						continue f;
+					} else {
+						break f;
 					}
 				}
 				ci++;
@@ -314,6 +330,6 @@ public class IndexBTree extends BTree<LeafIndexPage, LeafIndexCell> {
 		return Record.compare(a, b);
 	}
 
-	public record Search(boolean found, List<Position> path) {
+	public record Search(boolean found, Path path) {
 	}
 }

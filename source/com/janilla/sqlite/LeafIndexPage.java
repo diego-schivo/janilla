@@ -48,7 +48,9 @@ public class LeafIndexPage extends BTreePage<LeafIndexCell> {
 
 			@Override
 			public int payloadSize() {
-				return (int) Varint.get(buffer, start());
+				var x = (int) Varint.get(buffer, start());
+//				IO.println("x=" + x);
+				return x;
 			}
 
 			@Override

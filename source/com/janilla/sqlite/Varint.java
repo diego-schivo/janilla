@@ -38,6 +38,7 @@ public class Varint {
 			var x = Byte.toUnsignedInt(index == -1 ? buffer.get() : buffer.get(index + i));
 			var y = x & 0x7f;
 			l = (l << 7) | y;
+//			IO.println("x=" + x + ", y=" + y + ", l=" + l);
 			if (x == y)
 				return l;
 		}

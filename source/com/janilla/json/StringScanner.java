@@ -24,7 +24,7 @@
  */
 package com.janilla.json;
 
-import java.io.IO;
+//import java.io.IO;
 import java.util.List;
 
 public class StringScanner implements Scanner {

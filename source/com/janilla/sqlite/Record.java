@@ -56,6 +56,7 @@ public class Record {
 		}
 		var a = new A();
 		a.b = bi.next();
+//		IO.println("a.b=" + a.b.remaining());
 		int[] tt;
 		{
 			var l = Varint.get(a.b);
@@ -65,50 +66,55 @@ public class Record {
 			tt = ii.build().toArray();
 		}
 //		IO.println("tt=" + Arrays.toString(tt));
-		return Arrays.stream(tt).mapToObj(t -> new Element(t, switch (t) {
-		case 0 -> null;
-		case 1, 2, 3, 4, 5, 6 -> {
-			var n = (new int[] { 8, 16, 24, 32, 48, 64 })[t - 1];
-			var x = new byte[n / 8];
-			a.b.get(x);
+		return Arrays.stream(tt).mapToObj(t -> {
+			byte[] c;
+			switch (t) {
+			case 0:
+				c = new byte[0];
+				break;
+			case 1, 2, 3, 4, 5, 6:
+				var n = (new int[] { 8, 16, 24, 32, 48, 64 })[t - 1];
+				c = new byte[n / 8];
+				a.b.get(c);
 //					IO.println("n=" + n + ", l=" + l);
-			yield x;
-		}
-		case 7 -> {
-			var x = new byte[Double.BYTES];
-			a.b.get(x);
-			yield x;
-		}
-		case 8, 9, 12, 13 -> new byte[0];
-		default -> {
-			if (t >= 14 && t % 2 == 0) {
-				var x = new byte[(t - 12) / 2];
+				break;
+			case 7:
+				c = new byte[Double.BYTES];
+				a.b.get(c);
+				break;
+			case 8, 9, 12, 13:
+				c = new byte[0];
+				break;
+			default:
+				if (t >= 14 && t % 2 == 0) {
+					c = new byte[(t - 12) / 2];
 //						IO.println("bb=" + bb.length);
-				for (;;)
-					try {
+					for (;;)
+						try {
 //								IO.println("a.b=" + a.b.remaining());
-						a.b.get(x);
-						break;
-					} catch (BufferUnderflowException e) {
-						a.b = bi.next();
-					}
-				yield x;
-			} else if (t >= 15 && t % 2 == 1) {
-				var x = new byte[(t - 13) / 2];
+							a.b.get(c);
+							break;
+						} catch (BufferUnderflowException e) {
+							a.b = bi.next();
+						}
+					break;
+				} else if (t >= 15 && t % 2 == 1) {
+					c = new byte[(t - 13) / 2];
 //						IO.println("bb=" + bb.length);
-				for (;;)
-					try {
+					for (;;)
+						try {
 //								IO.println("a.b=" + a.b.remaining());
-						a.b.get(x);
-						break;
-					} catch (BufferUnderflowException e) {
-						a.b = bi.next();
-					}
-				yield x;
-			} else
-				throw new RuntimeException();
-		}
-		}));
+							a.b.get(c);
+							break;
+						} catch (BufferUnderflowException e) {
+							a.b = bi.next();
+						}
+					break;
+				} else
+					throw new RuntimeException();
+			}
+			return new Element(t, c);
+		});
 	}
 
 	public static int compare(Iterator<Element> a, Iterator<Element> b) {
@@ -156,44 +162,51 @@ public class Record {
 		}
 
 		public Object toObject() {
-			return switch (type) {
-			case 0 -> null;
-			case 1, 2, 3, 4, 5 -> {
+			switch (type) {
+			case 0:
+				return null;
+			case 1, 2, 3, 4, 5:
 				var b = ByteBuffer.allocate(Long.BYTES);
 				b.put(Long.BYTES - content.length, content);
-				yield b.getLong();
-			}
-			case 6 -> ByteBuffer.wrap(content).getLong();
-			case 7 -> ByteBuffer.wrap(content).getDouble();
-			case 8 -> 0l;
-			case 9 -> 1l;
-			default -> {
+				return b.getLong();
+			case 6:
+				return ByteBuffer.wrap(content).getLong();
+			case 7:
+				return ByteBuffer.wrap(content).getDouble();
+			case 8:
+				return 0l;
+			case 9:
+				return 1l;
+			default:
 				if (type >= 12 && type % 2 == 0)
-					yield content;
+					return content;
 				else if (type >= 13 && type % 2 == 1)
-					yield content.length != 0 ? new String(content) : "";
+					return content.length != 0 ? new String(content) : "";
 				else
 					throw new RuntimeException();
 			}
-			};
 		}
 
 		@Override
 		public int compareTo(Element v) {
-			return switch (type) {
-			case 0 -> v.type == 0 ? 0 : -1;
+			switch (type) {
+			case 0:
+				return v.type == 0 ? 0 : -1;
 
-			case 1, 2, 3, 4, 5, 6 -> switch (v.type) {
-			case 0 -> 1;
-			case 1, 2, 3, 4, 5, 6 -> {
-				var d = Integer.compare(type, v.type);
-				yield d == 0 ? Arrays.compare(content, v.content) : d;
+			case 1, 2, 3, 4, 5, 6:
+				switch (v.type) {
+				case 0:
+					return 1;
+				case 1, 2, 3, 4, 5, 6:
+					var d = Integer.compare(type, v.type);
+					return d == 0 ? Arrays.compare(content, v.content) : d;
+				default:
+					return -1;
+				}
+
+			default:
+				return Arrays.compare(content, v.content);
 			}
-			default -> -1;
-			};
-
-			default -> Arrays.compare(content, v.content);
-			};
 		}
 	}
 }

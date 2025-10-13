@@ -24,7 +24,7 @@
  */
 package com.janilla.http;
 
-import java.io.IO;
+//import java.io.IO;
 import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.function.IntConsumer;

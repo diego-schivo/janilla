@@ -24,7 +24,7 @@
  */
 package com.janilla.sqlite;
 
-import java.io.IO;
+//import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;

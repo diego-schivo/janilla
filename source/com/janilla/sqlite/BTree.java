@@ -63,10 +63,12 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 	}
 
 	public Object[] row(Cell cell) {
+//		IO.println("cell.start()=" + cell.start());
 		return Record.fromBytes(payloadBuffers((PayloadCell) cell)).map(Record.Element::toObject).toArray();
 	}
 
 	public Stream<ByteBuffer> payloadBuffers(PayloadCell cell) {
+//		IO.println("cell.payloadSize()=" + cell.payloadSize());
 		var b0 = cell.initialPayload(database);
 		class A {
 

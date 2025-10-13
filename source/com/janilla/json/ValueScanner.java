@@ -25,6 +25,7 @@
 package com.janilla.json;
 
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class ValueScanner implements Scanner {
@@ -63,14 +64,26 @@ public class ValueScanner implements Scanner {
 
 			case 2 -> {
 				var x = Stream
-						.of(new ArrayScanner(), new BooleanScanner(), new NullScanner(), new NumberScanner(),
-								new ObjectScanner(), new StringScanner())
-						.filter(y -> y.accept(value, tokens)).findFirst();
+						.<Supplier<Scanner>>of(ArrayScanner::new, BooleanScanner::new, NullScanner::new,
+								NumberScanner::new, ObjectScanner::new, StringScanner::new)
+						.map(Supplier::get).filter(y -> {
+							IO.println("value=" + value + ", tokens=" + tokens);
+							return y.accept(value, tokens);
+						}).findFirst();
 				if (x.isPresent()) {
 					scanner = x.get();
 					a = true;
 					yield 3;
 				}
+//				for (var x : List.<Supplier<Scanner>>of(ArrayScanner::new, BooleanScanner::new, NullScanner::new,
+//						NumberScanner::new, ObjectScanner::new, StringScanner::new)) {
+//					var y = x.get();
+//					if (y.accept(value, tokens)) {
+//						scanner = y;
+//						a = true;
+//						yield 3;
+//					}
+//				}
 				a = false;
 				yield -1;
 			}

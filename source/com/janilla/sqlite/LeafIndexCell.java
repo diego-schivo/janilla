@@ -35,8 +35,8 @@ public interface LeafIndexCell extends PayloadCell {
 
 	@Override
 	default void put(ByteBuffer buffer) {
+		IO.println("payloadSize()=" + payloadSize());
 		Varint.put(buffer, payloadSize());
-//		buffer.put(initialPayload());
 		getInitialPayload(buffer);
 		if (firstOverflow() != 0)
 			buffer.putInt((int) firstOverflow());

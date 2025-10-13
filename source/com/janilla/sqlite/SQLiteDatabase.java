@@ -35,6 +35,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.janilla.io.TransactionalByteChannel;
 
@@ -215,7 +216,7 @@ public class SQLiteDatabase {
 //	}
 
 	public BTree<?, ?> createTable(String name, Column[] columns, boolean withoutRowid) {
-		header.setReservedBytes(12);
+//		header.setReservedBytes(12);
 
 		var n = nextPageNumber();
 		var p = withoutRowid ? new LeafIndexPage(this, allocatePage()) : new LeafTablePage(this, allocatePage());
@@ -223,18 +224,22 @@ public class SQLiteDatabase {
 		write(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
-		t.insert(k -> new Object[] { k, "table", name, name, n, withoutRowid
-				? "CREATE TABLE " + name + "(id TEXT PRIMARY KEY, content TEXT) WITHOUT ROWID"
-				: "CREATE TABLE " + name + "("
-						+ Arrays.stream(columns).map(x -> x.name() + " " + x.type()).collect(Collectors.joining(", "))
-						+ ")" });
+		t.insert(
+				k -> new Object[] { k, "table", name, name, n,
+						withoutRowid
+								? "CREATE TABLE " + name + "(" + IntStream.range(0, columns.length)
+										.mapToObj(x -> columns[x].name() + " " + columns[x].type()
+												+ (x == 0 ? " PRIMARY KEY" : ""))
+										.collect(Collectors.joining(", ")) + ") WITHOUT ROWID"
+								: "CREATE TABLE " + name + "(" + Arrays.stream(columns)
+										.map(x -> x.name() + " " + x.type()).collect(Collectors.joining(", ")) + ")" });
 
 		updateHeader();
 		return withoutRowid ? new IndexBTree(this, n) : new TableBTree(this, n);
 	}
 
 	public IndexBTree createIndex(String name, String table, String... columns) {
-		header.setReservedBytes(12);
+//		header.setReservedBytes(12);
 
 		var n = nextPageNumber();
 		var p = new LeafIndexPage(this, allocatePage());
@@ -305,7 +310,7 @@ public class SQLiteDatabase {
 	}
 
 	protected void updateHeader() {
-		header.setReservedBytes(12);
+//		header.setReservedBytes(12);
 		header.setChangeCounter(header.getChangeCounter() + 1);
 		header.setSchemaCookie(header.getSchemaCookie() + 1);
 		header.setSchemaFormat(4);
