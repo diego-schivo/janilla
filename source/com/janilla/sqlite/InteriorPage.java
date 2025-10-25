@@ -25,6 +25,7 @@
 package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public abstract class InteriorPage<C extends InteriorCell> extends BTreePage<C> {
 
@@ -38,5 +39,11 @@ public abstract class InteriorPage<C extends InteriorCell> extends BTreePage<C> 
 
 	public void setRightMostPointer(long rightMostPointer) {
 		buffer.putInt(buffer.position() + 8, (int) rightMostPointer);
+	}
+
+	public long childPointer(int index) {
+		var l = getCellCount() + 1;
+		Objects.checkIndex(index, l);
+		return index == l - 1 ? getRightMostPointer() : cells.get(index).leftChildPointer();
 	}
 }

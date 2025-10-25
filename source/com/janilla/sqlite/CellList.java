@@ -25,8 +25,10 @@
 package com.janilla.sqlite;
 
 import java.util.AbstractList;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.RandomAccess;
+import java.util.stream.IntStream;
 
 public class CellList<C extends Cell> extends AbstractList<C> implements RandomAccess {
 
@@ -65,37 +67,39 @@ public class CellList<C extends Cell> extends AbstractList<C> implements RandomA
 		return c;
 	}
 
-	@Override
-	public C set(int index, C element) {
-		var c = page.cell(index);
-		var d = element.size() - c.size();
-		int cp;
-		if (d > 0) {
-			removeCell(c);
-			cp = addCell(element);
-			if (cp == -1)
-				throw new IllegalStateException();
-		} else {
-			d = -d;
-			cp = c.start() + d;
-			var p0 = page.buffer.position();
-			page.buffer.position(cp);
-			element.put(page.buffer);
-			page.buffer.position(p0);
-			if (d == 0)
-				;
-			else if (d < 4)
-				page.setFragmentedSize(page.getFragmentedSize() + d);
-			else
-				page.freeblocks.insert(new Freeblock.New(c.start(), d));
-		}
-		page.cellPointers.set(index, cp);
-		return c;
-	}
+//	@Override
+//	public C set(int index, C element) {
+//		var c = get(index);
+//		var d = element.size() - c.size();
+//		int cp;
+//		if (d > 0) {
+//			removeCell(c);
+//			cp = addCell(element);
+//			if (cp == -1)
+//				throw new IllegalStateException();
+//		} else {
+//			d = -d;
+//			cp = c.start() + d;
+//			var p0 = page.buffer.position();
+//			page.buffer.position(cp);
+//			element.put(page.buffer);
+//			page.buffer.position(p0);
+//			if (d == 0)
+//				;
+//			else if (d < 4)
+//				page.setFragmentedSize(page.getFragmentedSize() + d);
+//			else
+//				page.freeblocks.insert(new Freeblock.New(c.start(), d));
+//		}
+//		page.cellPointers.set(index, cp);
+//		return c;
+//	}
 
 	protected int addCell(C cell) {
+		var s = page.getCellContentAreaStart() - (page.buffer.position() + (page instanceof InteriorPage ? 12 : 8)
+				+ page.getCellCount() * Short.BYTES);
 		var cs = cell.size();
-		var fi = page.freeblocks.minSizeIndex(cs);
+		var fi = s >= Short.BYTES ? page.freeblocks.minSizeIndex(cs) : -1;
 		int cp;
 		if (fi != -1) {
 //				IO.println("fi=" + fi);
@@ -111,12 +115,27 @@ public class CellList<C extends Cell> extends AbstractList<C> implements RandomA
 					page.setFragmentedSize(page.getFragmentedSize() + d);
 			}
 		} else {
-			var s = page.getCellContentAreaStart() - (page.buffer.position() + (page instanceof InteriorPage ? 12 : 8)
-					+ page.getCellCount() * Short.BYTES);
 			if (s < Short.BYTES + cs) {
 				s += page.freeblocks.stream().mapToInt(x -> x.size()).sum();
-				if (s < Short.BYTES + cs)
-					return -1;
+				if (s < Short.BYTES + cs) {
+//					IO.println(
+//							"s < Short.BYTES + cs, " + s + ", " + (Short.BYTES + cs) + ", " + page.getFragmentedSize());
+					if (s + page.getFragmentedSize() < Short.BYTES + cs)
+						return -1;
+					page.freeblocks.clear();
+					page.setCellContentAreaStart(page.database.usableSize());
+					page.setFragmentedSize(0);
+					record R(int i, Cell c) {
+					}
+					IntStream.range(0, page.getCellCount()).mapToObj(x -> new R(x, page.getCells().get(x)))
+							.sorted(Comparator.<R>comparingInt(x -> x.c.start()).reversed()).forEach(x -> {
+								var l = x.c.size();
+								var dp = page.getCellContentAreaStart() - l;
+								System.arraycopy(page.buffer.array(), x.c.start(), page.buffer.array(), dp, l);
+								page.cellPointers.set(x.i, dp);
+								page.setCellContentAreaStart(dp);
+							});
+				}
 				for (var ff = page.freeblocks.iterator(); ff.hasNext();) {
 					var f = ff.next();
 					var fs = f.start();

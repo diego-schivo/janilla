@@ -26,30 +26,32 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public interface InteriorIndexCell extends InteriorCell, PayloadCell {
+public interface IndexLeafCell extends PayloadCell {
 
 	@Override
 	default int size() {
-		return Integer.BYTES + Varint.size(payloadSize()) + initialPayloadSize()
-				+ (firstOverflow() != 0 ? Integer.BYTES : 0);
+		return Varint.size(payloadSize()) + initialPayloadSize() + (firstOverflow() != 0 ? Integer.BYTES : 0);
 	}
 
 	@Override
 	default void put(ByteBuffer buffer) {
-		buffer.putInt((int) leftChildPointer());
-		IO.println("payloadSize()=" + payloadSize());
+//		IO.println("payloadSize()=" + payloadSize());
 		Varint.put(buffer, payloadSize());
 		getInitialPayload(buffer);
 		if (firstOverflow() != 0)
 			buffer.putInt((int) firstOverflow());
 	}
 
-	record New(long leftChildPointer, int payloadSize, byte[] initialPayload, long firstOverflow)
-			implements InteriorIndexCell {
+	record New(int payloadSize, byte[] initialPayload, long firstOverflow) implements IndexLeafCell {
+
+//		@Override
+//		public BTreePage<?> page() {
+//			return null;
+//		}
 
 		@Override
 		public int start() {
-			throw new UnsupportedOperationException();
+			return -1;
 		}
 
 		@Override

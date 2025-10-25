@@ -28,6 +28,8 @@ import java.nio.ByteBuffer;
 
 public interface Cell {
 
+//	BTreePage<?> page();
+
 	int start();
 
 	int size();

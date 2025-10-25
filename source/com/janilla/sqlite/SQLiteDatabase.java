@@ -59,7 +59,7 @@ public class SQLiteDatabase {
 
 					var b = allocatePage();
 					b.position(100);
-					var p = new LeafTablePage(this, b);
+					var p = new TableLeafPage(this, b);
 					p.setCellContentAreaStart(header.getPageSize());
 					write(1, b);
 
@@ -123,10 +123,10 @@ public class SQLiteDatabase {
 		var t = Byte.toUnsignedInt(buffer.get(buffer.position()));
 //		IO.println("SQLiteDatabase.readBTreePage, number=" + number + ", t=" + t);
 		return switch (t) {
-		case 0x05 -> new InteriorTablePage(this, buffer);
-		case 0x0d -> new LeafTablePage(this, buffer);
-		case 0x02 -> new InteriorIndexPage(this, buffer);
-		case 0x0a -> new LeafIndexPage(this, buffer);
+		case 0x05 -> new TableInteriorPage(this, buffer);
+		case 0x0d -> new TableLeafPage(this, buffer);
+		case 0x02 -> new IndexInteriorPage(this, buffer);
+		case 0x0a -> new IndexLeafPage(this, buffer);
 		default -> throw new RuntimeException();
 		};
 	}
@@ -142,10 +142,6 @@ public class SQLiteDatabase {
 			throw new UncheckedIOException(e);
 		}
 		buffer.position(number == 1 ? 100 : 0);
-	}
-
-	public void write(Page.Numbered<?> page) {
-		write(page.number(), page.content().buffer());
 	}
 
 	public void write(long number, ByteBuffer buffer) {
@@ -188,38 +184,69 @@ public class SQLiteDatabase {
 		}
 	}
 
-	public long nextPageNumber() {
-		var fn = header.getFreelistStart();
-		long n;
-		if (fn != 0) {
-//			var fp = new FreelistPage(allocatePage(), true);
-//			read(fn, fp);
-//			if (!fp.getLeafPointers().isEmpty()) {
-//				n = fp.getLeafPointers().removeLast();
-//				write(fn, fp);
-//			} else {
-//				n = fn;
-//				header.setFreelistStart(0);
-//			}
-//			header.setFreelistSize(header.getFreelistSize() - 1);
-			throw new RuntimeException();
-		} else {
-			n = header.getSize() + 1;
-			header.setSize(n);
+	public long newPage() {
+		var s = header.getFreelistSize();
+		if (s == 0) {
+			var x = header.getSize() + 1;
+			header.setSize(x);
+			return x;
 		}
-//		writeHeader();
-		return n;
+		var n = header.getFreelistStart();
+		var b = allocatePage();
+		read(n, b);
+		var p = new FreelistPage(this, b);
+		long x;
+		if (!p.getLeafPointers().isEmpty()) {
+			x = p.getLeafPointers().removeLast();
+			write(n, b);
+		} else {
+			x = n;
+			header.setFreelistStart(p.getNext());
+		}
+		header.setFreelistSize(header.getFreelistSize() - 1);
+		return x;
 	}
 
-//	public long createTable(String name) {
-//		return createTable(name, new Column[] { new Column("content", "TEXT") }, false);
-//	}
+	public void freePage(long number, ByteBuffer buffer) {
+		var s = header.getFreelistSize();
+		if (s == 0) {
+			var p = new FreelistPage(this, buffer);
+			p.setNext(0);
+			p.getLeafPointers().clear();
+			write(number, buffer);
+			header.setFreelistStart(number);
+		} else {
+			var n = header.getFreelistStart();
+			var b = allocatePage();
+			for (;;) {
+				read(n, b);
+				var p = new FreelistPage(this, b);
+				try {
+					p.getLeafPointers().add(number);
+					write(n, b);
+					break;
+				} catch (IllegalStateException e) {
+					if (p.getNext() == 0) {
+						var p2 = new FreelistPage(this, buffer);
+						p2.setNext(0);
+						p2.getLeafPointers().clear();
+						write(number, buffer);
+						p.setNext(number);
+						write(n, b);
+						break;
+					}
+					n = p.getNext();
+				}
+			}
+		}
+		header.setFreelistSize(s + 1);
+	}
 
 	public BTree<?, ?> createTable(String name, Column[] columns, boolean withoutRowid) {
-//		header.setReservedBytes(12);
+		header.setReservedBytes(12);
 
-		var n = nextPageNumber();
-		var p = withoutRowid ? new LeafIndexPage(this, allocatePage()) : new LeafTablePage(this, allocatePage());
+		var n = newPage();
+		var p = withoutRowid ? new IndexLeafPage(this, allocatePage()) : new TableLeafPage(this, allocatePage());
 		p.setCellContentAreaStart(usableSize());
 		write(n, p.buffer());
 
@@ -239,16 +266,16 @@ public class SQLiteDatabase {
 	}
 
 	public IndexBTree createIndex(String name, String table, String... columns) {
-//		header.setReservedBytes(12);
+		header.setReservedBytes(12);
 
-		var n = nextPageNumber();
-		var p = new LeafIndexPage(this, allocatePage());
+		var n = newPage();
+		var p = new IndexLeafPage(this, allocatePage());
 		p.setCellContentAreaStart(usableSize());
 		write(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
 		t.insert(k -> new Object[] { k, "index", name, table, n,
-				"CREATE INDEX " + name + " ON " + table + "(content)" });
+				"CREATE INDEX " + name + " ON " + table + "(" + String.join(", ", columns) + ")" });
 
 		updateHeader();
 		return new IndexBTree(this, n);
@@ -310,7 +337,7 @@ public class SQLiteDatabase {
 	}
 
 	protected void updateHeader() {
-//		header.setReservedBytes(12);
+		header.setReservedBytes(12);
 		header.setChangeCounter(header.getChangeCounter() + 1);
 		header.setSchemaCookie(header.getSchemaCookie() + 1);
 		header.setSchemaFormat(4);
@@ -327,5 +354,26 @@ public class SQLiteDatabase {
 	}
 
 	public record SchemaObject(String type, String name, String table, long root, String sql) {
+	}
+
+	public int[] balance(int[] ss, boolean interior) {
+//		IO.println("ss=" + Arrays.toString(ss) + " " + ss.length);
+		var s = Arrays.stream(ss).sum();
+//		IO.println("s=" + s + ", u=" + u);
+		var l = Math.ceilDiv(s, usableSize() - (interior ? 12 : 8));
+		var d = (double) s / l;
+		var ii = new int[l];
+		s = 0;
+		var i = 0;
+		for (var si = 0; si < ss.length; si++) {
+			s += ss[si];
+			if (s > (i + 1) * d) {
+//				IO.println("s=" + s + ", d2=" + d2);
+				i++;
+			} else
+				ii[i]++;
+		}
+		IO.println("ii=" + Arrays.toString(ii));
+		return ii;
 	}
 }

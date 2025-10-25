@@ -26,26 +26,45 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public interface InteriorTableCell extends InteriorCell, Cell {
+public class TableInteriorPage extends InteriorPage<TableInteriorCell> {
 
-	long key();
-
-	@Override
-	default int size() {
-		return Integer.BYTES + Varint.size(key());
+	public TableInteriorPage(SQLiteDatabase database, ByteBuffer buffer) {
+		super(database, buffer);
+		setType(0x05);
 	}
 
 	@Override
-	default void put(ByteBuffer buffer) {
-		buffer.putInt((int) leftChildPointer());
-		Varint.put(buffer, key());
-	}
+	protected TableInteriorCell cell(int index) {
+		return new TableInteriorCell() {
 
-	record New(long leftChildPointer, long key) implements InteriorTableCell {
+			public int pointer() {
+				return buffer.position() + 12 + index * Short.BYTES;
+			}
 
-		@Override
-		public int start() {
-			throw new UnsupportedOperationException();
-		}
+//			@Override
+//			public BTreePage<?> page() {
+//				return InteriorTablePage.this;
+//			}
+
+			@Override
+			public int start() {
+				return Short.toUnsignedInt(buffer.getShort(pointer()));
+			}
+
+			@Override
+			public long leftChildPointer() {
+				return Integer.toUnsignedLong(buffer.getInt(start()));
+			}
+
+			@Override
+			public long key() {
+				return Varint.get(buffer, start() + Integer.BYTES);
+			}
+
+			@Override
+			public int size() {
+				return Integer.BYTES + Varint.size(buffer, start() + Integer.BYTES);
+			}
+		};
 	}
 }

@@ -66,7 +66,8 @@ public class FreeblockList<C extends Cell> extends AbstractSequentialList<Freebl
 						a = false;
 					}
 				}
-				if (fi != 0 && fi != size()) {
+//				if (fi != 0 && fi != size()) {
+				if (fi != size()) {
 					var f1 = freeblock;
 					var f2 = get(fi);
 					var d = f2.start() - f1.end();
@@ -108,6 +109,11 @@ public class FreeblockList<C extends Cell> extends AbstractSequentialList<Freebl
 	public ListIterator<Freeblock> listIterator(int index) {
 		return new FreeblockIterator<>(page,
 				index != 0 ? starts().skip(index - 1).findFirst().getAsInt() : page.buffer.position() + 1);
+	}
+
+	@Override
+	public void clear() {
+		page.buffer.putShort(page.buffer.position() + 1, (short) 0);
 	}
 
 	private IntStream starts() {

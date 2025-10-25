@@ -26,20 +26,25 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public class LeafIndexPage extends BTreePage<LeafIndexCell> {
+public class IndexLeafPage extends BTreePage<IndexLeafCell> {
 
-	public LeafIndexPage(SQLiteDatabase database, ByteBuffer buffer) {
+	public IndexLeafPage(SQLiteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
 		setType(0x0a);
 	}
 
 	@Override
-	protected LeafIndexCell cell(int index) {
-		return new LeafIndexCell() {
+	protected IndexLeafCell cell(int index) {
+		return new IndexLeafCell() {
 
 			public int pointer() {
 				return buffer.position() + 8 + index * Short.BYTES;
 			}
+
+//			@Override
+//			public BTreePage<?> page() {
+//				return LeafIndexPage.this;
+//			}
 
 			@Override
 			public int start() {

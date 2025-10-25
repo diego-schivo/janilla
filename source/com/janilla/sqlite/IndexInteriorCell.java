@@ -22,9 +22,49 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-//package com.janilla.sqlite;
-//
-//public class SQLiteException extends RuntimeException {
-//
-//	private static final long serialVersionUID = 2027604309960319682L;
-//}
+package com.janilla.sqlite;
+
+import java.nio.ByteBuffer;
+
+public interface IndexInteriorCell extends InteriorCell, PayloadCell {
+
+	@Override
+	default int size() {
+		return Integer.BYTES + Varint.size(payloadSize()) + initialPayloadSize()
+				+ (firstOverflow() != 0 ? Integer.BYTES : 0);
+	}
+
+	@Override
+	default void put(ByteBuffer buffer) {
+		buffer.putInt((int) leftChildPointer());
+//		IO.println("payloadSize()=" + payloadSize());
+		Varint.put(buffer, payloadSize());
+		getInitialPayload(buffer);
+		if (firstOverflow() != 0)
+			buffer.putInt((int) firstOverflow());
+	}
+
+	record New(long leftChildPointer, int payloadSize, byte[] initialPayload, long firstOverflow)
+			implements IndexInteriorCell {
+
+//		@Override
+//		public BTreePage<?> page() {
+//			return null;
+//		}
+
+		@Override
+		public int start() {
+			return -1;
+		}
+
+		@Override
+		public int initialPayloadSize() {
+			return initialPayload.length;
+		}
+
+		@Override
+		public void getInitialPayload(ByteBuffer destination) {
+			destination.put(initialPayload);
+		}
+	}
+}

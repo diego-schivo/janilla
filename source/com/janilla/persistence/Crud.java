@@ -46,7 +46,7 @@ import com.janilla.json.ReflectionValueIterator;
 import com.janilla.json.TokenIterationContext;
 import com.janilla.reflect.Reflection;
 import com.janilla.sqlite.BTree;
-import com.janilla.sqlite.LeafTableCell;
+import com.janilla.sqlite.TableLeafCell;
 import com.janilla.sqlite.PayloadCell;
 import com.janilla.sqlite.Record;
 
@@ -186,7 +186,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			return t.cells().map(c -> {
 				@SuppressWarnings("unchecked")
 				var id = (ID) switch (c) {
-				case LeafTableCell c2 -> c2.key();
+				case TableLeafCell c2 -> c2.key();
 				case PayloadCell c2 -> Record.fromBytes(t.payloadBuffers(c2)).findFirst().get();
 				default -> throw new RuntimeException();
 				};
@@ -208,7 +208,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			return new IdPage<>(cc.map(c -> {
 				@SuppressWarnings("unchecked")
 				var x = (ID) switch (c) {
-				case LeafTableCell c2 -> c2.key();
+				case TableLeafCell c2 -> c2.key();
 				case PayloadCell c2 -> Record.fromBytes(t.payloadBuffers(c2)).findFirst().get();
 				default -> throw new RuntimeException();
 				};

@@ -27,9 +27,9 @@ package com.janilla.sqlite;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.LongFunction;
-import java.util.function.UnaryOperator;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -46,17 +46,15 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 
 	public abstract long insert(LongFunction<Object[]> values);
 
-	public abstract boolean insert(Object... keys);
+	public abstract boolean insert(Object[] key, Object[] data);
 
-	public abstract Stream<Object[]> select(Object... keys);
+	public abstract Stream<Object[]> select(Object... key);
 
-	public abstract void update(Object[] keys, UnaryOperator<Object[]> operator);
-
-	public abstract Object[] delete(Object... keys);
+	public abstract void delete(Object... key);
 
 	public abstract Stream<? extends Cell> cells();
 
-	public abstract long count(Object... keys);
+	public abstract long count(Object... key);
 
 	public Stream<Object[]> rows() {
 		return cells().map(this::row);
@@ -95,7 +93,7 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 	}
 
 	protected long addOverflowPages(byte[] bytes, int start) {
-		return addOverflowPages(bytes, start, LongStream.iterate(0, _ -> database.nextPageNumber()).skip(1));
+		return addOverflowPages(bytes, start, LongStream.iterate(0, _ -> database.newPage()).skip(1));
 	}
 
 	protected long addOverflowPages(byte[] bytes, int start, LongStream nextPageNumber) {
@@ -180,13 +178,27 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 	public record Position(BTreePage<?> page, int index) {
 
 		public Cell cell() {
-			return page.getCells().get(index);
+			return index != page.getCellCount() ? page.getCells().get(index) : null;
 		}
 	};
 
 	public class Path extends ArrayList<Position> {
 
 		private static final long serialVersionUID = 8714727091836519387L;
+
+		public Path() {
+		}
+
+		public Path(Collection<Position> pp) {
+			super(pp);
+		}
+
+		public long number(int index) {
+			if (index == 0)
+				return rootNumber;
+			var x = get(index - 1);
+			return ((InteriorPage<?>) x.page()).childPointer(x.index());
+		}
 
 		public boolean next() {
 			long n;
@@ -225,5 +237,9 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 
 			return true;
 		}
+
+//		public Path foo(int l) {
+//			return new Path(subList(0, l));
+//		}
 	}
 }

@@ -38,7 +38,7 @@ public interface PayloadCell extends Cell {
 
 	default ByteBuffer initialPayload(SQLiteDatabase database) {
 		var ps = payloadSize();
-		var is = database.initialSize(ps, !(this instanceof LeafTableCell));
+		var is = database.initialSize(ps, !(this instanceof TableLeafCell));
 		var b = ByteBuffer.allocate(is);
 		getInitialPayload(b);
 		b.flip();

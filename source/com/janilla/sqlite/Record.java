@@ -34,6 +34,13 @@ import java.util.stream.Stream;
 
 public class Record {
 
+	public static void main(String[] args) {
+//		IO.println(Element.of(193l));
+		var e1 = Element.of(70l);
+		var e2 = Element.of(1l);
+		IO.println(e1.compareTo(e2));
+	}
+
 	public static byte[] toBytes(Element... values) {
 		var s = Arrays.stream(values).mapToInt(x -> Varint.size(x.type)).sum();
 		var s1 = Varint.size(s);
@@ -142,7 +149,7 @@ public class Record {
 					var ni = 0;
 					var nn = new int[] { 8, 16, 24, 32, 48, 64 };
 					for (; ni < nn.length; ni++) {
-						var m = (1l << nn[ni]) - 1;
+						var m = (1l << (nn[ni] - 1)) - 1;
 						if ((l & m) == l)
 							break;
 					}
@@ -193,13 +200,16 @@ public class Record {
 			case 0:
 				return v.type == 0 ? 0 : -1;
 
-			case 1, 2, 3, 4, 5, 6:
+			case 1, 2, 3, 4, 5, 6, 7, 8, 9:
 				switch (v.type) {
 				case 0:
 					return 1;
-				case 1, 2, 3, 4, 5, 6:
-					var d = Integer.compare(type, v.type);
-					return d == 0 ? Arrays.compare(content, v.content) : d;
+				case 1, 2, 3, 4, 5, 6, 7, 8, 9:
+					var n1 = (Number) toObject();
+					var n2 = (Number) v.toObject();
+					return (n1 instanceof Double || n2 instanceof Double)
+							? Double.compare(n1.doubleValue(), n2.doubleValue())
+							: Long.compare(n1.longValue(), n2.longValue());
 				default:
 					return -1;
 				}

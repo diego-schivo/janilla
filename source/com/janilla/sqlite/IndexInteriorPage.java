@@ -26,20 +26,25 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public class InteriorTablePage extends InteriorPage<InteriorTableCell> {
+public class IndexInteriorPage extends InteriorPage<IndexInteriorCell> {
 
-	public InteriorTablePage(SQLiteDatabase database, ByteBuffer buffer) {
+	public IndexInteriorPage(SQLiteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
-		setType(0x05);
+		setType(0x02);
 	}
 
 	@Override
-	protected InteriorTableCell cell(int index) {
-		return new InteriorTableCell() {
+	protected IndexInteriorCell cell(int index) {
+		return new IndexInteriorCell() {
 
 			public int pointer() {
 				return buffer.position() + 12 + index * Short.BYTES;
 			}
+
+//			@Override
+//			public BTreePage<?> page() {
+//				return InteriorIndexPage.this;
+//			}
 
 			@Override
 			public int start() {
@@ -52,13 +57,34 @@ public class InteriorTablePage extends InteriorPage<InteriorTableCell> {
 			}
 
 			@Override
-			public long key() {
-				return Varint.get(buffer, start() + Integer.BYTES);
+			public int payloadSize() {
+				return (int) Varint.get(buffer, start() + Integer.BYTES);
+			}
+
+			@Override
+			public int initialPayloadSize() {
+				return database.initialSize(payloadSize(), true);
+			}
+
+			@Override
+			public void getInitialPayload(ByteBuffer destination) {
+				destination.put(buffer.array(), start() + Integer.BYTES + Varint.size(payloadSize()),
+						initialPayloadSize());
+			}
+
+			@Override
+			public long firstOverflow() {
+				var ps = payloadSize();
+				var is = initialPayloadSize();
+				return is != ps ? Integer.toUnsignedLong(buffer.getInt(start() + Integer.BYTES + Varint.size(ps) + is))
+						: 0;
 			}
 
 			@Override
 			public int size() {
-				return Integer.BYTES + Varint.size(buffer, start() + Integer.BYTES);
+				var ps = payloadSize();
+				var is = initialPayloadSize();
+				return Integer.BYTES + Varint.size(ps) + is + (is != ps ? Integer.BYTES : 0);
 			}
 		};
 	}

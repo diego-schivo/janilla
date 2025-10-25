@@ -40,7 +40,4 @@ public abstract class Page {
 	public ByteBuffer buffer() {
 		return buffer;
 	}
-
-	public record Numbered<T extends Page>(long number, T content) {
-	}
 }

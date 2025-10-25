@@ -28,6 +28,10 @@ import java.nio.ByteBuffer;
 
 public class Varint {
 
+	public static void main(String[] args) {
+		IO.println(size(193));
+	}
+
 	public static long get(ByteBuffer buffer) {
 		return get(buffer, -1);
 	}
