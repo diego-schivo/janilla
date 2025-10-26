@@ -50,19 +50,19 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 
 	public abstract Stream<Object[]> select(Object... key);
 
-	public abstract void delete(Object... key);
+	public abstract boolean delete(Object... key);
 
 	public abstract Stream<? extends Cell> cells();
 
 	public abstract long count(Object... key);
 
 	public Stream<Object[]> rows() {
-		return cells().map(this::row);
+		return cells().filter(x -> x instanceof PayloadCell).map(x -> this.row((PayloadCell) x));
 	}
 
-	public Object[] row(Cell cell) {
+	public Object[] row(PayloadCell cell) {
 //		IO.println("cell.start()=" + cell.start());
-		return Record.fromBytes(payloadBuffers((PayloadCell) cell)).map(Record.Element::toObject).toArray();
+		return Record.fromBytes(payloadBuffers(cell)).map(Record.Element::toObject).toArray();
 	}
 
 	public Stream<ByteBuffer> payloadBuffers(PayloadCell cell) {
@@ -237,9 +237,5 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 
 			return true;
 		}
-
-//		public Path foo(int l) {
-//			return new Path(subList(0, l));
-//		}
 	}
 }

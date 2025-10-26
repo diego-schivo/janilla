@@ -24,31 +24,10 @@
  */
 package com.janilla.sqlite;
 
-import java.nio.ByteBuffer;
+public record SimpleTableInteriorCell(long leftChildPointer, long key) implements TableInteriorCell {
 
-public class OverflowPage extends Page {
-
-	public OverflowPage(SQLiteDatabase database, ByteBuffer buffer) {
-		super(database, buffer);
-	}
-
-	public long getNext() {
-		return Integer.toUnsignedLong(buffer.getInt(0));
-	}
-
-	public void setNext(long next) {
-		buffer.putInt(0, (int) next);
-	}
-
-	public void getContent(ByteBuffer destination) {
-		destination.put(buffer.array(), Integer.BYTES,
-				Math.min(database.usableSize() - Integer.BYTES, destination.remaining()));
-	}
-
-	public void setContent(ByteBuffer source) {
-		var o = source.position();
-		var l = Math.min(database.usableSize() - Integer.BYTES, source.remaining());
-		buffer.put(Integer.BYTES, source.array(), o, l);
-		source.position(o + l);
+	@Override
+	public int start() {
+		return -1;
 	}
 }

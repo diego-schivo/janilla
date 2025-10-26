@@ -43,28 +43,4 @@ public interface IndexInteriorCell extends InteriorCell, PayloadCell {
 		if (firstOverflow() != 0)
 			buffer.putInt((int) firstOverflow());
 	}
-
-	record New(long leftChildPointer, int payloadSize, byte[] initialPayload, long firstOverflow)
-			implements IndexInteriorCell {
-
-//		@Override
-//		public BTreePage<?> page() {
-//			return null;
-//		}
-
-		@Override
-		public int start() {
-			return -1;
-		}
-
-		@Override
-		public int initialPayloadSize() {
-			return initialPayload.length;
-		}
-
-		@Override
-		public void getInitialPayload(ByteBuffer destination) {
-			destination.put(initialPayload);
-		}
-	}
 }

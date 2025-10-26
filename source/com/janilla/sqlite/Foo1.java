@@ -121,7 +121,7 @@ public class Foo1 {
 						StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE))) {
 			var d = new SQLiteDatabase(ch);
 			d.perform(() -> {
-				d.createTable("t1", new Column[] { new Column("a", "INTEGER"), new Column("b", "TEXT") }, true);
+				d.createTable("t1", new Column[] { new Column("a", "INTEGER", true), new Column("b", "TEXT", false) }, true);
 				return null;
 			}, true);
 			for (var x : ss) {
@@ -149,7 +149,7 @@ public class Foo1 {
 				while (p.next()) {
 					IO.print(Arrays.toString(p.stream().mapToInt(BTree.Position::index).toArray()));
 					var c = p.getLast().cell();
-					IO.println(c instanceof PayloadCell ? Arrays.toString(t.row(c)) : "-");
+					IO.println(c instanceof PayloadCell x ? Arrays.toString(t.row(x)) : "-");
 				}
 				return null;
 			}, false);

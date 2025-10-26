@@ -35,33 +35,9 @@ public interface IndexLeafCell extends PayloadCell {
 
 	@Override
 	default void put(ByteBuffer buffer) {
-//		IO.println("payloadSize()=" + payloadSize());
 		Varint.put(buffer, payloadSize());
 		getInitialPayload(buffer);
 		if (firstOverflow() != 0)
 			buffer.putInt((int) firstOverflow());
-	}
-
-	record New(int payloadSize, byte[] initialPayload, long firstOverflow) implements IndexLeafCell {
-
-//		@Override
-//		public BTreePage<?> page() {
-//			return null;
-//		}
-
-		@Override
-		public int start() {
-			return -1;
-		}
-
-		@Override
-		public int initialPayloadSize() {
-			return initialPayload.length;
-		}
-
-		@Override
-		public void getInitialPayload(ByteBuffer destination) {
-			destination.put(initialPayload);
-		}
 	}
 }

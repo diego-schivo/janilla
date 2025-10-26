@@ -41,11 +41,6 @@ public class IndexInteriorPage extends InteriorPage<IndexInteriorCell> {
 				return buffer.position() + 12 + index * Short.BYTES;
 			}
 
-//			@Override
-//			public BTreePage<?> page() {
-//				return InteriorIndexPage.this;
-//			}
-
 			@Override
 			public int start() {
 				return Short.toUnsignedInt(buffer.getShort(pointer()));

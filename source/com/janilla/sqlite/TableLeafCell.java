@@ -26,9 +26,7 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public interface TableLeafCell extends PayloadCell {
-
-	long key();
+public interface TableLeafCell extends PayloadCell, KeyCell {
 
 	@Override
 	default int size() {
@@ -43,28 +41,5 @@ public interface TableLeafCell extends PayloadCell {
 		getInitialPayload(buffer);
 		if (firstOverflow() != 0)
 			buffer.putInt((int) firstOverflow());
-	}
-
-	record New(int payloadSize, long key, byte[] initialPayload, long firstOverflow) implements TableLeafCell {
-
-//		@Override
-//		public BTreePage<?> page() {
-//			return null;
-//		}
-
-		@Override
-		public int start() {
-			return -1;
-		}
-
-		@Override
-		public int initialPayloadSize() {
-			return initialPayload.length;
-		}
-
-		@Override
-		public void getInitialPayload(ByteBuffer destination) {
-			destination.put(initialPayload);
-		}
 	}
 }

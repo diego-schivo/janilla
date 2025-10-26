@@ -26,29 +26,21 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public class OverflowPage extends Page {
+public record SimpleIndexInteriorCell(long leftChildPointer, int payloadSize, byte[] initialPayload, long firstOverflow)
+		implements IndexInteriorCell {
 
-	public OverflowPage(SQLiteDatabase database, ByteBuffer buffer) {
-		super(database, buffer);
+	@Override
+	public int start() {
+		return -1;
 	}
 
-	public long getNext() {
-		return Integer.toUnsignedLong(buffer.getInt(0));
+	@Override
+	public int initialPayloadSize() {
+		return initialPayload.length;
 	}
 
-	public void setNext(long next) {
-		buffer.putInt(0, (int) next);
-	}
-
-	public void getContent(ByteBuffer destination) {
-		destination.put(buffer.array(), Integer.BYTES,
-				Math.min(database.usableSize() - Integer.BYTES, destination.remaining()));
-	}
-
-	public void setContent(ByteBuffer source) {
-		var o = source.position();
-		var l = Math.min(database.usableSize() - Integer.BYTES, source.remaining());
-		buffer.put(Integer.BYTES, source.array(), o, l);
-		source.position(o + l);
+	@Override
+	public void getInitialPayload(ByteBuffer destination) {
+		destination.put(initialPayload);
 	}
 }

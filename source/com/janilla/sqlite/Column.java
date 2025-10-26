@@ -24,5 +24,5 @@
  */
 package com.janilla.sqlite;
 
-public record Column(String name, String type) {
+public record Column(String name, String type, boolean primaryKey) {
 }

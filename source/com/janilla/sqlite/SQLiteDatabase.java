@@ -243,7 +243,7 @@ public class SQLiteDatabase {
 	}
 
 	public BTree<?, ?> createTable(String name, Column[] columns, boolean withoutRowid) {
-		header.setReservedBytes(12);
+//		header.setReservedBytes(12);
 
 		var n = newPage();
 		var p = withoutRowid ? new IndexLeafPage(this, allocatePage()) : new TableLeafPage(this, allocatePage());
@@ -251,22 +251,26 @@ public class SQLiteDatabase {
 		write(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
-		t.insert(
-				k -> new Object[] { k, "table", name, name, n,
-						withoutRowid
-								? "CREATE TABLE " + name + "(" + IntStream.range(0, columns.length)
+		t.insert(k -> new Object[] { k, "table", name, name, n,
+				withoutRowid
+						? "CREATE TABLE " + name + "("
+								+ IntStream.range(0, columns.length)
 										.mapToObj(x -> columns[x].name() + " " + columns[x].type()
 												+ (x == 0 ? " PRIMARY KEY" : ""))
-										.collect(Collectors.joining(", ")) + ") WITHOUT ROWID"
-								: "CREATE TABLE " + name + "(" + Arrays.stream(columns)
-										.map(x -> x.name() + " " + x.type()).collect(Collectors.joining(", ")) + ")" });
+										.collect(Collectors.joining(", "))
+								+ ") WITHOUT ROWID"
+						: "CREATE TABLE " + name + "("
+								+ Arrays.stream(columns)
+										.map(x -> x.name() + " " + x.type() + (x.primaryKey() ? " PRIMARY KEY" : ""))
+										.collect(Collectors.joining(", "))
+								+ ")" });
 
 		updateHeader();
 		return withoutRowid ? new IndexBTree(this, n) : new TableBTree(this, n);
 	}
 
 	public IndexBTree createIndex(String name, String table, String... columns) {
-		header.setReservedBytes(12);
+//		header.setReservedBytes(12);
 
 		var n = newPage();
 		var p = new IndexLeafPage(this, allocatePage());
@@ -337,7 +341,7 @@ public class SQLiteDatabase {
 	}
 
 	protected void updateHeader() {
-		header.setReservedBytes(12);
+//		header.setReservedBytes(12);
 		header.setChangeCounter(header.getChangeCounter() + 1);
 		header.setSchemaCookie(header.getSchemaCookie() + 1);
 		header.setSchemaFormat(4);
@@ -354,26 +358,5 @@ public class SQLiteDatabase {
 	}
 
 	public record SchemaObject(String type, String name, String table, long root, String sql) {
-	}
-
-	public int[] balance(int[] ss, boolean interior) {
-//		IO.println("ss=" + Arrays.toString(ss) + " " + ss.length);
-		var s = Arrays.stream(ss).sum();
-//		IO.println("s=" + s + ", u=" + u);
-		var l = Math.ceilDiv(s, usableSize() - (interior ? 12 : 8));
-		var d = (double) s / l;
-		var ii = new int[l];
-		s = 0;
-		var i = 0;
-		for (var si = 0; si < ss.length; si++) {
-			s += ss[si];
-			if (s > (i + 1) * d) {
-//				IO.println("s=" + s + ", d2=" + d2);
-				i++;
-			} else
-				ii[i]++;
-		}
-		IO.println("ii=" + Arrays.toString(ii));
-		return ii;
 	}
 }

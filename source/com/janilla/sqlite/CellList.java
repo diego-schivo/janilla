@@ -67,34 +67,6 @@ public class CellList<C extends Cell> extends AbstractList<C> implements RandomA
 		return c;
 	}
 
-//	@Override
-//	public C set(int index, C element) {
-//		var c = get(index);
-//		var d = element.size() - c.size();
-//		int cp;
-//		if (d > 0) {
-//			removeCell(c);
-//			cp = addCell(element);
-//			if (cp == -1)
-//				throw new IllegalStateException();
-//		} else {
-//			d = -d;
-//			cp = c.start() + d;
-//			var p0 = page.buffer.position();
-//			page.buffer.position(cp);
-//			element.put(page.buffer);
-//			page.buffer.position(p0);
-//			if (d == 0)
-//				;
-//			else if (d < 4)
-//				page.setFragmentedSize(page.getFragmentedSize() + d);
-//			else
-//				page.freeblocks.insert(new Freeblock.New(c.start(), d));
-//		}
-//		page.cellPointers.set(index, cp);
-//		return c;
-//	}
-
 	protected int addCell(C cell) {
 		var s = page.getCellContentAreaStart() - (page.buffer.position() + (page instanceof InteriorPage ? 12 : 8)
 				+ page.getCellCount() * Short.BYTES);

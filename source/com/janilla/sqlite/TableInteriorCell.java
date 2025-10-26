@@ -26,9 +26,7 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public interface TableInteriorCell extends InteriorCell, Cell {
-
-	long key();
+public interface TableInteriorCell extends InteriorCell, KeyCell {
 
 	@Override
 	default int size() {
@@ -39,18 +37,5 @@ public interface TableInteriorCell extends InteriorCell, Cell {
 	default void put(ByteBuffer buffer) {
 		buffer.putInt((int) leftChildPointer());
 		Varint.put(buffer, key());
-	}
-
-	record New(long leftChildPointer, long key) implements TableInteriorCell {
-
-//		@Override
-//		public BTreePage<?> page() {
-//			return null;
-//		}
-
-		@Override
-		public int start() {
-			return -1;
-		}
 	}
 }

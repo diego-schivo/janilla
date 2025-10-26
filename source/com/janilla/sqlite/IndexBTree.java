@@ -59,8 +59,8 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 			var bb = Record.toBytes(Stream.concat(Arrays.stream(key), Arrays.stream(data)).map(Record.Element::of)
 					.toArray(Record.Element[]::new));
 			var is = database.initialSize(bb.length, true);
-			c = is == bb.length ? new IndexLeafCell.New(bb.length, bb, 0)
-					: new IndexLeafCell.New(bb.length, Arrays.copyOf(bb, is), addOverflowPages(bb, is));
+			c = is == bb.length ? new SimpleIndexLeafCell(bb.length, bb, 0)
+					: new SimpleIndexLeafCell(bb.length, Arrays.copyOf(bb, is), addOverflowPages(bb, is));
 		}
 
 		try {
@@ -71,6 +71,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 			cc.add(i, c);
 			new IndexRebalance(s.path(), p, cc, database);
 		}
+
 		database.updateHeader();
 		return true;
 	}
@@ -88,12 +89,12 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 	}
 
 	@Override
-	public void delete(Object... key) {
-		IO.println("key=" + Arrays.toString(key));
+	public boolean delete(Object... key) {
+//		IO.println("key=" + Arrays.toString(key));
 
 		var s = search(key);
 		if (s.found() == -1)
-			return;
+			return false;
 
 		IndexLeafCell c;
 		if (s.found() == s.path().size() - 1)
@@ -105,7 +106,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 			pi = new Position(p, i);
 			s.path().add(pi);
 			c = p.getCells().get(i);
-			c = new IndexLeafCell.New(c.payloadSize(), c.initialPayload(database).array(), c.firstOverflow());
+			c = new SimpleIndexLeafCell(c.payloadSize(), c.initialPayload(database).array(), c.firstOverflow());
 		}
 
 		{
@@ -132,9 +133,10 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 			var p = (BTreePage<PayloadCell>) pi.page();
 			var i = pi.index();
 			var c1 = (PayloadCell) p.getCells().get(i);
-			c1 = c1 instanceof IndexInteriorCell x ? new IndexInteriorCell.New(x.leftChildPointer(), c.payloadSize(), c.initialPayload(database).array(),
-					c.firstOverflow()) :new IndexLeafCell.New(c.payloadSize(), c.initialPayload(database).array(),
-							c.firstOverflow()) ;
+			c1 = c1 instanceof IndexInteriorCell x
+					? new SimpleIndexInteriorCell(x.leftChildPointer(), c.payloadSize(),
+							c.initialPayload(database).array(), c.firstOverflow())
+					: new SimpleIndexLeafCell(c.payloadSize(), c.initialPayload(database).array(), c.firstOverflow());
 			p.getCells().remove(i);
 			try {
 				p.getCells().add(i, c1);
@@ -148,6 +150,8 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 		}
 
 		database.updateHeader();
+
+		return true;
 	}
 
 	public LongStream ids(Object... keys) {
@@ -192,19 +196,12 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 		var f = -1;
 		var pp = new Path();
 		f: for (var i = 0;; i++) {
-			var p = (BTreePage<?>) database.readBTreePage(n, database.allocatePage());
+			var p = database.readBTreePage(n, database.allocatePage());
 			var ci = 0;
 			for (var c : p.getCells()) {
 				var d = compare(c, keys);
 				if (d == 0)
 					f = i;
-//				if (c instanceof InteriorCell c2) {
-//					if (d >= 0) {
-//						pp.add(new Position(p, ci));
-//						n = c2.leftChildPointer();
-//						continue f;
-//					}
-//				}
 				if (d >= 0) {
 					pp.add(new Position(p, ci));
 					if (c instanceof InteriorCell c2) {
@@ -216,7 +213,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 				ci++;
 			}
 			pp.add(new Position(p, ci));
-			if (p instanceof IndexInteriorPage p2)
+			if (p instanceof InteriorPage p2)
 				n = p2.getRightMostPointer();
 			else
 				break;
@@ -224,34 +221,12 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 		return new Search(pp, f);
 	}
 
+	public record Search(Path path, int found) {
+	}
+
 	protected int compare(Cell cell, Object[] keys) {
 		var a = Record.fromBytes(payloadBuffers((PayloadCell) cell)).iterator();
 		var b = Arrays.stream(keys).map(Record.Element::of).iterator();
 		return Record.compare(a, b);
-	}
-
-//	protected int[] balance(int[] ss, int u) {
-//		IO.println("ss=" + Arrays.toString(ss) + " " + ss.length);
-//		var s = Arrays.stream(ss).sum();
-	////		IO.println("s=" + s + ", u=" + u);
-
-//		var l = Math.ceilDiv(s, u);
-//		var d = (double) s / l;
-//		var ii = new int[l];
-//		s = 0;
-//		var i = 0;
-//		for (var si = 0; si < ss.length; si++) {
-//			s += ss[si];
-//			if (s > (i + 1) * d) {
-	////				IO.println("s=" + s + ", d2=" + d2);
-//				i++;
-//			} else
-//				ii[i]++;
-//		}
-//		IO.println("ii=" + Arrays.toString(ii));
-//		return ii;
-//	}
-
-	public record Search(Path path, int found) {
 	}
 }

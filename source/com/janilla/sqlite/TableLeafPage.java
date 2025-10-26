@@ -41,11 +41,6 @@ public class TableLeafPage extends BTreePage<TableLeafCell> {
 				return buffer.position() + 8 + index * Short.BYTES;
 			}
 
-//			@Override
-//			public BTreePage<?> page() {
-//				return LeafTablePage.this;
-//			}
-
 			@Override
 			public int start() {
 				return Short.toUnsignedInt(buffer.getShort(pointer()));

@@ -24,6 +24,7 @@
  */
 package com.janilla.sqlite;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
@@ -38,24 +39,50 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	@Override
 	public long insert(LongFunction<Object[]> values) {
 		var n = rootNumber;
-		var b = database.allocatePage();
-		var p = (TableLeafPage) database.readBTreePage(n, b);
+		var pp = new Path();
+		for (;;) {
+			var p = database.readBTreePage(n, database.allocatePage());
+			pp.add(new Position(p, p.getCellCount()));
+			if (p instanceof TableInteriorPage p2)
+				n = p2.getRightMostPointer();
+			else
+				break;
+		}
+
+		var pi = pp.removeLast();
+		var p = (TableLeafPage) pi.page();
+		var i = pi.index();
 		var k = (p.getCellCount() != 0 ? p.getCells().getLast().key() : 0) + 1;
 		var vv = values.apply(k);
 //		IO.println("TableBTree.insert, k=" + k + ", vv=" + Arrays.toString(vv));
 		var l = (long) vv[0];
-		if (l >= k)
-			k = l;
-		else
-			throw new RuntimeException();
+		if (l < k) {
+//			throw new RuntimeException();
+			var s = search(l);
+			if (s.found() == s.path().size() - 1)
+				return -1;
+			pp = s.path();
+			pi = pp.removeLast();
+			p = (TableLeafPage) pi.page();
+			i = pi.index();
+		}
+		k = l;
 		var bb = Record.toBytes(Arrays.stream(vv).skip(1).map(Record.Element::of).toArray(Record.Element[]::new));
 		var is = database.initialSize(bb.length, false);
-		var c = is == bb.length ? new TableLeafCell.New(bb.length, k, bb, 0)
-				: new TableLeafCell.New(bb.length, k, Arrays.copyOf(bb, is), addOverflowPages(bb, is));
+		var c = is == bb.length ? new SimpleTableLeafCell(bb.length, k, bb, 0)
+				: new SimpleTableLeafCell(bb.length, k, Arrays.copyOf(bb, is), addOverflowPages(bb, is));
 		if (p.getCellCount() == 0)
 			p.setCellContentAreaStart(database.usableSize());
-		p.getCells().add(c);
-		database.write(n, b);
+
+		try {
+			p.getCells().add(i, c);
+			database.write(pp.number(pp.size()), p.buffer());
+		} catch (IllegalStateException e) {
+			var cc = new ArrayList<>(p.getCells());
+			cc.add(i, c);
+			new TableRebalance(pp, p, cc, database);
+		}
+
 		database.updateHeader();
 		return c.key();
 	}
@@ -71,8 +98,30 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	}
 
 	@Override
-	public void delete(Object... keys) {
-		throw new RuntimeException();
+	public boolean delete(Object... keys) {
+//		IO.println("key=" + Arrays.toString(key));
+
+		var k = (long) keys[0];
+		var s = search(k);
+		if (s.found() != s.path().size() - 1)
+			return false;
+
+		{
+			var pi = s.path().removeLast();
+			var p = (TableLeafPage) pi.page();
+			var i = pi.index();
+			p.getCells().remove(i);
+
+			if (!s.path().isEmpty() && 3
+					* (8 + p.getCells().stream().mapToInt(x -> Short.BYTES + x.size()).sum()) < database.usableSize())
+				new TableRebalance(s.path(), p, p.getCells(), database);
+			else
+				database.write(s.path().number(s.path().size()), p.buffer());
+		}
+
+		database.updateHeader();
+
+		return true;
 	}
 
 	public LongStream keys() {
@@ -92,11 +141,50 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	}
 
 	@Override
-	public Object[] row(Cell cell) {
+	public Object[] row(PayloadCell cell) {
 		var oo = super.row(cell);
-		var oo2 = new Object[oo.length + 1];
-		oo2[0] = ((TableLeafCell) cell).key();
-		System.arraycopy(oo, 0, oo2, 1, oo.length);
-		return oo2;
+		if (oo[0] == null)
+			oo[0] = ((TableLeafCell) cell).key();
+		else {
+			var oo2 = new Object[oo.length + 1];
+			oo2[0] = ((TableLeafCell) cell).key();
+			System.arraycopy(oo, 0, oo2, 1, oo.length);
+			oo = oo2;
+		}
+		return oo;
+	}
+
+	protected Search search(long key) {
+//		IO.println("keys=" + Arrays.toString(keys));
+		var n = rootNumber;
+		var f = -1;
+		var pp = new Path();
+		f: for (var i = 0;; i++) {
+			var p = database.readBTreePage(n, database.allocatePage());
+			var ci = 0;
+			for (var c : p.getCells()) {
+				var d = Long.compare(((KeyCell) c).key(), key);
+				if (d == 0)
+					f = i;
+				if (d >= 0) {
+					pp.add(new Position(p, ci));
+					if (c instanceof InteriorCell c2) {
+						n = c2.leftChildPointer();
+						continue f;
+					} else
+						break f;
+				}
+				ci++;
+			}
+			pp.add(new Position(p, ci));
+			if (p instanceof InteriorPage p2)
+				n = p2.getRightMostPointer();
+			else
+				break;
+		}
+		return new Search(pp, f);
+	}
+
+	public record Search(Path path, int found) {
 	}
 }
