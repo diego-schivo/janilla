@@ -26,11 +26,11 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public class Header {
+public class DatabaseHeader {
 
 	protected final ByteBuffer buffer;
 
-	public Header(ByteBuffer buffer) {
+	public DatabaseHeader(ByteBuffer buffer) {
 		this.buffer = buffer;
 	}
 

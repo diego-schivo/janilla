@@ -34,8 +34,8 @@ public interface TableInteriorCell extends InteriorCell, KeyCell {
 	}
 
 	@Override
-	default void put(ByteBuffer buffer) {
-		buffer.putInt((int) leftChildPointer());
-		Varint.put(buffer, key());
+	default void put(ByteBuffer destination) {
+		destination.putInt((int) leftChildPointer());
+		Varint.put(destination, key());
 	}
 }

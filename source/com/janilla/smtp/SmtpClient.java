@@ -24,7 +24,6 @@
  */
 package com.janilla.smtp;
 
-//import java.io.IO;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;

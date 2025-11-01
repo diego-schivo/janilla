@@ -33,14 +33,14 @@ public class FreeblockList<C extends Cell> extends AbstractSequentialList<Freebl
 
 	private final BTreePage<C> page;
 
-	FreeblockList(BTreePage<C> page) {
+	public FreeblockList(BTreePage<C> page) {
 		this.page = page;
 	}
 
 	public void insert(Freeblock freeblock) {
 		if (freeblock.start() == page.getCellContentAreaStart()) {
 			var s = freeblock.end();
-			Arrays.fill(page.buffer.array(), freeblock.start(), s, (byte) 0);
+			Arrays.fill(page.buffer().array(), freeblock.start(), s, (byte) 0);
 			var f = !isEmpty() ? getFirst() : null;
 			var d = f != null ? f.start() - s : 4;
 			if (d < 4) {
@@ -59,20 +59,19 @@ public class FreeblockList<C extends Cell> extends AbstractSequentialList<Freebl
 					var f2 = freeblock;
 					var d = f2.start() - f1.end();
 					if (d < 4) {
-						freeblock = new Freeblock.New(f1.start(), f2.end() - f1.start());
+						freeblock = new SimpleFreeblock(f1.start(), f2.end() - f1.start());
 						set(fi - 1, freeblock);
 						if (d > 0)
 							page.setFragmentedSize(page.getFragmentedSize() - d);
 						a = false;
 					}
 				}
-//				if (fi != 0 && fi != size()) {
 				if (fi != size()) {
 					var f1 = freeblock;
 					var f2 = get(fi);
 					var d = f2.start() - f1.end();
 					if (d < 4) {
-						freeblock = new Freeblock.New(f1.start(), f2.end() - f1.start());
+						freeblock = new SimpleFreeblock(f1.start(), f2.end() - f1.start());
 						set(fi, freeblock);
 						if (d > 0)
 							page.setFragmentedSize(page.getFragmentedSize() - d);
@@ -90,7 +89,7 @@ public class FreeblockList<C extends Cell> extends AbstractSequentialList<Freebl
 	}
 
 	public int minSizeIndex(int size) {
-		var ss = starts().map(x -> Short.toUnsignedInt(page.buffer.getShort(x + Short.BYTES)));
+		var ss = starts().map(x -> Short.toUnsignedInt(page.buffer().getShort(x + Short.BYTES)));
 		var ii = new int[] { -1 };
 		return ss.peek(_ -> ii[0]++).filter(x -> x >= size).findFirst().isPresent() ? ii[0] : -1;
 	}
@@ -108,16 +107,16 @@ public class FreeblockList<C extends Cell> extends AbstractSequentialList<Freebl
 	@Override
 	public ListIterator<Freeblock> listIterator(int index) {
 		return new FreeblockIterator<>(page,
-				index != 0 ? starts().skip(index - 1).findFirst().getAsInt() : page.buffer.position() + 1);
+				index != 0 ? starts().skip(index - 1).findFirst().getAsInt() : page.buffer().position() + 1);
 	}
 
 	@Override
 	public void clear() {
-		page.buffer.putShort(page.buffer.position() + 1, (short) 0);
+		page.buffer().putShort(page.buffer().position() + 1, (short) 0);
 	}
 
 	private IntStream starts() {
-		return IntStream.iterate(page.buffer.position() + 1, x -> Short.toUnsignedInt(page.buffer.getShort(x))).skip(1)
-				.takeWhile(x -> x != 0);
+		return IntStream.iterate(page.buffer().position() + 1, x -> Short.toUnsignedInt(page.buffer().getShort(x)))
+				.skip(1).takeWhile(x -> x != 0);
 	}
 }

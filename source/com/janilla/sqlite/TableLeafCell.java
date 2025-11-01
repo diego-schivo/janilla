@@ -35,11 +35,11 @@ public interface TableLeafCell extends PayloadCell, KeyCell {
 	}
 
 	@Override
-	default void put(ByteBuffer buffer) {
-		Varint.put(buffer, payloadSize());
-		Varint.put(buffer, key());
-		getInitialPayload(buffer);
+	default void put(ByteBuffer destination) {
+		Varint.put(destination, payloadSize());
+		Varint.put(destination, key());
+		getInitialPayload(destination);
 		if (firstOverflow() != 0)
-			buffer.putInt((int) firstOverflow());
+			destination.putInt((int) firstOverflow());
 	}
 }

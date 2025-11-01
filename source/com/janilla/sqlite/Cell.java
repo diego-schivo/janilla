@@ -32,5 +32,5 @@ public interface Cell {
 
 	int size();
 
-	void put(ByteBuffer buffer);
+	void put(ByteBuffer destination);
 }

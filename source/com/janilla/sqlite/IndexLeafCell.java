@@ -34,10 +34,10 @@ public interface IndexLeafCell extends PayloadCell {
 	}
 
 	@Override
-	default void put(ByteBuffer buffer) {
-		Varint.put(buffer, payloadSize());
-		getInitialPayload(buffer);
+	default void put(ByteBuffer destination) {
+		Varint.put(destination, payloadSize());
+		getInitialPayload(destination);
 		if (firstOverflow() != 0)
-			buffer.putInt((int) firstOverflow());
+			destination.putInt((int) firstOverflow());
 	}
 }

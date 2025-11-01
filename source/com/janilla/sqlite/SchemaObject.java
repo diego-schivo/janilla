@@ -24,13 +24,5 @@
  */
 package com.janilla.sqlite;
 
-public interface Freeblock {
-
-	int start();
-
-	int size();
-
-	default int end() {
-		return start() + size();
-	}
+public record SchemaObject(long id, String type, String name, String table, long root, String sql) {
 }

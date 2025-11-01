@@ -51,10 +51,11 @@ public class CellList<C extends Cell> extends AbstractList<C> implements RandomA
 
 	@Override
 	public void add(int index, C element) {
-		var cp = addCell(element);
-		if (cp == -1)
+		Objects.checkIndex(index, page.getCellCount() + 1);
+		var x = addCell(element);
+		if (x == -1)
 			throw new IllegalStateException();
-		page.cellPointers.add(index, cp);
+		page.getCellPointers().add(index, x);
 		page.setCellCount(page.getCellCount() + 1);
 	}
 
@@ -62,39 +63,39 @@ public class CellList<C extends Cell> extends AbstractList<C> implements RandomA
 	public C remove(int index) {
 		var c = get(index);
 		removeCell(c);
-		page.cellPointers.remove(index);
+		page.getCellPointers().remove(index);
 		page.setCellCount(page.getCellCount() - 1);
 		return c;
 	}
 
 	protected int addCell(C cell) {
-		var s = page.getCellContentAreaStart() - (page.buffer.position() + (page instanceof InteriorPage ? 12 : 8)
+		var s = page.getCellContentAreaStart() - (page.buffer().position() + (page instanceof InteriorPage ? 12 : 8)
 				+ page.getCellCount() * Short.BYTES);
 		var cs = cell.size();
-		var fi = s >= Short.BYTES ? page.freeblocks.minSizeIndex(cs) : -1;
+		var fi = s >= Short.BYTES ? page.selectFreeblock(cs) : -1;
 		int cp;
 		if (fi != -1) {
 //				IO.println("fi=" + fi);
-			var f = page.freeblocks.get(fi);
+			var f = page.getFreeblocks().get(fi);
 			var d = f.size() - cs;
 			if (d >= 4) {
 				cp = f.start() + d;
-				page.freeblocks.set(fi, new Freeblock.New(f.start(), d));
+				page.getFreeblocks().set(fi, new SimpleFreeblock(f.start(), d));
 			} else {
 				cp = f.start();
-				page.freeblocks.remove(fi);
+				page.getFreeblocks().remove(fi);
 				if (d != 0)
 					page.setFragmentedSize(page.getFragmentedSize() + d);
 			}
 		} else {
 			if (s < Short.BYTES + cs) {
-				s += page.freeblocks.stream().mapToInt(x -> x.size()).sum();
+				s += page.getFreeblocks().stream().mapToInt(x -> x.size()).sum();
 				if (s < Short.BYTES + cs) {
 //					IO.println(
 //							"s < Short.BYTES + cs, " + s + ", " + (Short.BYTES + cs) + ", " + page.getFragmentedSize());
 					if (s + page.getFragmentedSize() < Short.BYTES + cs)
 						return -1;
-					page.freeblocks.clear();
+					page.getFreeblocks().clear();
 					page.setCellContentAreaStart(page.database.usableSize());
 					page.setFragmentedSize(0);
 					record R(int i, Cell c) {
@@ -103,24 +104,24 @@ public class CellList<C extends Cell> extends AbstractList<C> implements RandomA
 							.sorted(Comparator.<R>comparingInt(x -> x.c.start()).reversed()).forEach(x -> {
 								var l = x.c.size();
 								var dp = page.getCellContentAreaStart() - l;
-								System.arraycopy(page.buffer.array(), x.c.start(), page.buffer.array(), dp, l);
-								page.cellPointers.set(x.i, dp);
+								System.arraycopy(page.buffer().array(), x.c.start(), page.buffer().array(), dp, l);
+								page.getCellPointers().set(x.i, dp);
 								page.setCellContentAreaStart(dp);
 							});
 				}
-				for (var ff = page.freeblocks.iterator(); ff.hasNext();) {
+				for (var ff = page.getFreeblocks().iterator(); ff.hasNext();) {
 					var f = ff.next();
 					var fs = f.start();
 					var d = f.size();
 					ff.remove();
 					var as1 = page.getCellContentAreaStart();
 					var as2 = as1 + d;
-					System.arraycopy(page.buffer.array(), as1, page.buffer.array(), as2, fs - as1);
-					for (var i = 0; i < page.cellPointers.size(); i++) {
-						var p = page.cellPointers.get(i).intValue();
+					System.arraycopy(page.buffer().array(), as1, page.buffer().array(), as2, fs - as1);
+					for (var i = 0; i < page.getCellPointers().size(); i++) {
+						var p = page.getCellPointers().get(i).intValue();
 						if (p < fs) {
 							p += d;
-							page.cellPointers.set(i, p);
+							page.getCellPointers().set(i, p);
 						}
 					}
 					page.setCellContentAreaStart(as2);
@@ -129,14 +130,14 @@ public class CellList<C extends Cell> extends AbstractList<C> implements RandomA
 			cp = page.getCellContentAreaStart() - cs;
 			page.setCellContentAreaStart(cp);
 		}
-		var p0 = page.buffer.position();
-		page.buffer.position(cp);
+		var p0 = page.buffer().position();
+		page.buffer().position(cp);
 		cell.put(page.buffer);
-		page.buffer.position(p0);
+		page.buffer().position(p0);
 		return cp;
 	}
 
 	protected void removeCell(C cell) {
-		page.freeblocks.insert(new Freeblock.New(cell.start(), cell.size()));
+		page.insertFreeblock(new SimpleFreeblock(cell.start(), cell.size()));
 	}
 }

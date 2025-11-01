@@ -24,13 +24,5 @@
  */
 package com.janilla.sqlite;
 
-public interface Freeblock {
-
-	int start();
-
-	int size();
-
-	default int end() {
-		return start() + size();
-	}
+public record SimpleFreeblock(int start, int size) implements Freeblock {
 }

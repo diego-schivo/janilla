@@ -193,7 +193,6 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 				throw new RuntimeException(e);
 			}
 			i.methodHandles.put(m, h);
-//			}
 		}
 
 		var kk = invocables.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).toList();

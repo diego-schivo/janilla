@@ -22,15 +22,24 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.sqlite;
+package com.janilla.persistence;
 
-public interface Freeblock {
+import java.util.UUID;
 
-	int start();
+public class UuidIdHelper implements IdHelper<UUID> {
 
-	int size();
+	@Override
+	public UUID random(Entity<UUID> entity) {
+		return UUID.randomUUID();
+	}
 
-	default int end() {
-		return start() + size();
+	@Override
+	public UUID fromDatabaseValue(Object object) {
+		return UUID.fromString((String) object);
+	}
+
+	@Override
+	public Object toDatabaseValue(UUID id) {
+		return id.toString();
 	}
 }

@@ -28,41 +28,38 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Record {
 
-	public static void main(String[] args) {
-//		IO.println(Element.of(193l));
-		var e1 = Element.of(70l);
-		var e2 = Element.of(1l);
-		IO.println(e1.compareTo(e2));
-	}
+//	public static void main(String[] args) {
+//		var e1 = RecordColumn.of(70l);
+//		var e2 = RecordColumn.of(1l);
+//		IO.println(e1.compareTo(e2));
+//	}
 
-	public static byte[] toBytes(Element... values) {
-		var s = Arrays.stream(values).mapToInt(x -> Varint.size(x.type)).sum();
+	public static byte[] toBytes(RecordColumn... columns) {
+		var s = Arrays.stream(columns).mapToInt(x -> Varint.size(x.type())).sum();
 		var s1 = Varint.size(s);
 		var s2 = Varint.size(s1 + s);
 		var bb = new byte[(s2 != s1 ? Varint.size(s2 + s) : s2) + s
-				+ Arrays.stream(values).mapToInt(x -> x.content.length).sum()];
+				+ Arrays.stream(columns).mapToInt(x -> x.content().length).sum()];
 		var b = ByteBuffer.wrap(bb);
 		Varint.put(b, s2 + s);
-		for (var x : values)
-			Varint.put(b, x.type);
-		for (var x : values)
-			b.put(x.content);
+		for (var x : columns)
+			Varint.put(b, x.type());
+		for (var x : columns)
+			b.put(x.content());
 		return bb;
 	}
 
-	public static Stream<Element> fromBytes(Stream<ByteBuffer> buffers) {
+	public static Stream<RecordColumn> fromBytes(Stream<ByteBuffer> buffers) {
 		var bi = buffers.iterator();
 		class A {
-			ByteBuffer b;
+			ByteBuffer b = bi.next();
 		}
 		var a = new A();
-		a.b = bi.next();
 //		IO.println("a.b=" + a.b.remaining());
 		int[] tt;
 		{
@@ -72,7 +69,7 @@ public class Record {
 				ii.add((int) Varint.get(a.b));
 			tt = ii.build().toArray();
 		}
-//		IO.println("tt=" + Arrays.toString(tt));
+//		IO.println("Record.fromBytes, tt=" + Arrays.toString(tt));
 		return Arrays.stream(tt).mapToObj(t -> {
 			byte[] c;
 			switch (t) {
@@ -120,103 +117,16 @@ public class Record {
 				} else
 					throw new RuntimeException();
 			}
-			return new Element(t, c);
+			return new RecordColumn(t, c);
 		});
 	}
 
-	public static int compare(Iterator<Element> a, Iterator<Element> b) {
+	public static int compare(Iterator<RecordColumn> a, Iterator<RecordColumn> b) {
 		while (a.hasNext() && b.hasNext()) {
 			var d = a.next().compareTo(b.next());
 			if (d != 0)
 				return d;
 		}
 		return 0;
-	}
-
-	public record Element(int type, byte[] content) implements Comparable<Element> {
-
-		public static Element of(Object v) {
-			if (v == null)
-				return new Element(0, new byte[0]);
-			else if (v instanceof Long x) {
-				long l = x;
-				switch (l) {
-				case 0l:
-					return new Element(8, new byte[0]);
-				case 1l:
-					return new Element(9, new byte[0]);
-				default:
-					var ni = 0;
-					var nn = new int[] { 8, 16, 24, 32, 48, 64 };
-					for (; ni < nn.length; ni++) {
-						var m = (1l << (nn[ni] - 1)) - 1;
-						if ((l & m) == l)
-							break;
-					}
-					var b = ByteBuffer.allocate(Long.BYTES);
-					b.putLong(l);
-					return new Element(1 + ni, Arrays.copyOfRange(b.array(), Long.BYTES - nn[ni] / 8, Long.BYTES));
-				}
-			} else if (v instanceof Double x) {
-				var b = ByteBuffer.allocate(Double.BYTES);
-				b.putDouble(x);
-				return new Element(7, b.array());
-			} else if (v instanceof String s) {
-				var bb = s.getBytes();
-				return new Element(bb.length * 2 + 13, bb);
-			} else
-				throw new RuntimeException(Objects.toString(v) + " (" + v.getClass() + ")");
-		}
-
-		public Object toObject() {
-			switch (type) {
-			case 0:
-				return null;
-			case 1, 2, 3, 4, 5:
-				var b = ByteBuffer.allocate(Long.BYTES);
-				b.put(Long.BYTES - content.length, content);
-				return b.getLong();
-			case 6:
-				return ByteBuffer.wrap(content).getLong();
-			case 7:
-				return ByteBuffer.wrap(content).getDouble();
-			case 8:
-				return 0l;
-			case 9:
-				return 1l;
-			default:
-				if (type >= 12 && type % 2 == 0)
-					return content;
-				else if (type >= 13 && type % 2 == 1)
-					return content.length != 0 ? new String(content) : "";
-				else
-					throw new RuntimeException();
-			}
-		}
-
-		@Override
-		public int compareTo(Element v) {
-			switch (type) {
-			case 0:
-				return v.type == 0 ? 0 : -1;
-
-			case 1, 2, 3, 4, 5, 6, 7, 8, 9:
-				switch (v.type) {
-				case 0:
-					return 1;
-				case 1, 2, 3, 4, 5, 6, 7, 8, 9:
-					var n1 = (Number) toObject();
-					var n2 = (Number) v.toObject();
-					return (n1 instanceof Double || n2 instanceof Double)
-							? Double.compare(n1.doubleValue(), n2.doubleValue())
-							: Long.compare(n1.longValue(), n2.longValue());
-				default:
-					return -1;
-				}
-
-			default:
-				return Arrays.compare(content, v.content);
-			}
-		}
 	}
 }

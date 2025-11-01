@@ -28,8 +28,12 @@ import java.nio.ByteBuffer;
 
 public class OverflowPage extends Page {
 
-	public OverflowPage(SQLiteDatabase database, ByteBuffer buffer) {
+	public OverflowPage(SqliteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
+	}
+
+	public OverflowPage(SqliteDatabase database, long number) {
+		super(database, number);
 	}
 
 	public long getNext() {

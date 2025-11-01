@@ -41,41 +41,43 @@ public class BooleanScanner implements Scanner {
 		Boolean a = null;
 		do {
 			var s = state;
-			state = switch (s) {
+			switch (s) {
 
-			case 0 -> {
+			case 0:
 				for (var x : STRINGS)
 					if (value == x.charAt(0)) {
 						string = x;
 						index = 1;
 						a = true;
-						yield index < string.length() ? 1 : 2;
+						state = index < string.length() ? 1 : 2;
 					}
-				a = false;
-				yield -1;
-			}
+				if (state == 0) {
+					a = false;
+					state = -1;
+				}
+				break;
 
-			case 1 -> {
+			case 1:
 				if (value == string.charAt(index)) {
 					index++;
 					a = true;
-					yield index < string.length() ? 1 : 2;
+					state = index < string.length() ? 1 : 2;
+				} else {
+					a = false;
+					state = -1;
 				}
-				a = false;
-				yield -1;
-			}
+				break;
 
-			case 2 -> {
+			case 2:
 				tokens.add(new JsonToken<>(JsonToken.Type.BOOLEAN, Boolean.parseBoolean(string)));
 				a = false;
-				yield 3;
-			}
+				state = 3;
+				break;
 
-			default -> {
+			default:
 				a = false;
-				yield s;
+				break;
 			}
-			};
 
 //			IO.println("NumberScanner.accept " + value + " " + a + " " + s + " -> " + state);
 

@@ -26,9 +26,9 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public class TableLeafPage extends BTreePage<TableLeafCell> {
+public final class TableLeafPage extends BTreePage<TableLeafCell> {
 
-	public TableLeafPage(SQLiteDatabase database, ByteBuffer buffer) {
+	public TableLeafPage(SqliteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
 		setType(0x0d);
 	}
@@ -60,13 +60,13 @@ public class TableLeafPage extends BTreePage<TableLeafCell> {
 
 			@Override
 			public int initialPayloadSize() {
-				return database.initialSize(payloadSize(), false);
+				return database.computePayloadInitialSize(payloadSize(), false);
 			}
 
 			@Override
 			public void getInitialPayload(ByteBuffer destination) {
 				var ps = payloadSize();
-				var is = database.initialSize(ps, false);
+				var is = database.computePayloadInitialSize(ps, false);
 				var i = start() + Varint.size(ps);
 				destination.put(buffer.array(), i + Varint.size(buffer, i), is);
 			}
@@ -74,7 +74,7 @@ public class TableLeafPage extends BTreePage<TableLeafCell> {
 			@Override
 			public long firstOverflow() {
 				var ps = payloadSize();
-				var is = database.initialSize(ps, false);
+				var is = database.computePayloadInitialSize(ps, false);
 				var i = start() + Varint.size(ps);
 				i += Varint.size(buffer, i);
 				return is != ps ? buffer.getInt(i + is) : 0;
@@ -83,7 +83,7 @@ public class TableLeafPage extends BTreePage<TableLeafCell> {
 			@Override
 			public int size() {
 				var ps = payloadSize();
-				var is = database.initialSize(ps, false);
+				var is = database.computePayloadInitialSize(ps, false);
 				var s = Varint.size(ps);
 				return s + Varint.size(buffer, start() + s) + is + (is != ps ? Integer.BYTES : 0);
 			}

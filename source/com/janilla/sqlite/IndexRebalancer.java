@@ -31,23 +31,34 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class IndexRebalance {
+public class IndexRebalancer implements Runnable {
 
-	protected SQLiteDatabase database;
+	protected final BTreePath path;
+
+	protected final BTreePage<? extends PayloadCell> page;
+
+	protected final List<? extends PayloadCell> cells;
+
+	protected final SqliteDatabase database;
 
 	protected IndexInteriorPage p1;
 
-	public IndexRebalance(BTree<?, ?>.Path path, BTreePage<? extends PayloadCell> page,
-			List<? extends PayloadCell> cells, SQLiteDatabase database) {
-		this.database = database;
-		
+	public IndexRebalancer(BTreePath path, BTreePage<? extends PayloadCell> page, List<? extends PayloadCell> cells) {
+		this.path = path;
+		this.page = page;
+		this.cells = cells;
+		database = page.database;
+	}
+
+	@Override
+	public void run() {
 		p1 = !path.isEmpty() ? (IndexInteriorPage) path.getLast().page() : null;
 
 		record R(int i, long n, BTreePage<? extends PayloadCell> p) {
 		}
 		R[] rr;
 		if (path.isEmpty())
-			rr = new R[] { new R(0, path.number(0), page) };
+			rr = new R[] { new R(0, path.pointer(0), page) };
 		else {
 			var i = path.getLast().index();
 			var l = p1.getCellCount() + 1;
@@ -56,26 +67,22 @@ public class IndexRebalance {
 			rr = IntStream.rangeClosed(i1, i2).mapToObj(x -> {
 				var n = p1.childPointer(x);
 				@SuppressWarnings("unchecked")
-				var p = x == i ? page
-						: (BTreePage<? extends PayloadCell>) database.readBTreePage(n, database.allocatePage());
+				var p = x == i ? page : (BTreePage<? extends PayloadCell>) BTreePage.read(n, database);
 				return new R(x, n, p);
 			}).toArray(R[]::new);
 		}
-		var cc2 = Arrays.stream(rr)
-				.flatMap(x -> Stream.concat(x.p == page ? cells.stream() : x.p.getCells().stream(),
-						Optional.ofNullable(x != rr[rr.length - 1] ? p1.getCells().get(x.i) : null)
-								.map(y -> page instanceof InteriorPage
-										? new SimpleIndexInteriorCell(((IndexInteriorPage) x.p).getRightMostPointer(),
-												y.payloadSize(), y.initialPayload(database).array(), y.firstOverflow())
-										: new SimpleIndexLeafCell(y.payloadSize(), y.initialPayload(database).array(),
-												y.firstOverflow()))
-								.stream()))
+		var cc2 = Arrays.stream(rr).flatMap(x -> Stream.concat(x.p == page ? cells.stream() : x.p.getCells().stream(),
+				Optional.ofNullable(x != rr[rr.length - 1] ? p1.getCells().get(x.i) : null)
+						.map(y -> page instanceof InteriorPage
+								? new SimpleIndexInteriorCell(((IndexInteriorPage) x.p).getRightMostPointer(),
+										y.payloadSize(), y.toInitialPayloadBytes(), y.firstOverflow())
+								: new SimpleIndexLeafCell(y.payloadSize(), y.toInitialPayloadBytes(), y.firstOverflow()))
+						.stream()))
 				.toList();
 
-		var ll = partition(cc2.stream().mapToInt(x -> Short.BYTES + x.size()).toArray(),
-				page instanceof InteriorPage);
+		var ll = partition(cc2.stream().mapToInt(x -> Short.BYTES + x.size()).toArray(), page instanceof InteriorPage);
 		if (p1 == null && ll.length != 1) {
-			p1 = new IndexInteriorPage(database, database.allocatePage());
+			p1 = new IndexInteriorPage(database, database.newPageBuffer());
 			p1.setCellContentAreaStart(database.usableSize());
 		}
 		var cc1 = p1 != null ? p1.getCells() : null;
@@ -84,19 +91,18 @@ public class IndexRebalance {
 		for (var li = 0; li < ll.length; li++) {
 			var n = li < rr.length && (!path.isEmpty() || p1 == null) ? rr[li].n : database.newPage();
 			{
-				var x = page instanceof InteriorPage ? new IndexInteriorPage(database, database.allocatePage())
-						: new IndexLeafPage(database, database.allocatePage());
+				var x = page instanceof InteriorPage ? new IndexInteriorPage(database, database.newPageBuffer())
+						: new IndexLeafPage(database, database.newPageBuffer());
 				x.setCellContentAreaStart(database.usableSize());
 				x.getCells().addAll(cc2.subList(i2, i2 += ll[li]));
 				if (x instanceof IndexInteriorPage y)
 					y.setRightMostPointer(i2 != cc2.size() ? ((IndexInteriorCell) cc2.get(i2)).leftChildPointer()
 							: ((IndexInteriorPage) rr[rr.length - 1].p).getRightMostPointer());
-				database.write(n, x.buffer());
+				database.writePageBuffer(n, x.buffer());
 			}
 			if (i2 != cc2.size()) {
 				var x = cc2.get(i2++);
-				var y = new SimpleIndexInteriorCell(n, x.payloadSize(), x.initialPayload(database).array(),
-						x.firstOverflow());
+				var y = new SimpleIndexInteriorCell(n, x.payloadSize(), x.toInitialPayloadBytes(), x.firstOverflow());
 				if (!path.isEmpty() && li < rr.length - 1)
 					cc1.remove(rr[li].i);
 				try {
@@ -112,8 +118,7 @@ public class IndexRebalance {
 				}
 				if (!path.isEmpty() && rr[0].i + li != cc1.size()) {
 					var x = cc1.get(rr[0].i + li);
-					var y = new SimpleIndexInteriorCell(n, x.payloadSize(), x.initialPayload(database).array(),
-							x.firstOverflow());
+					var y = new SimpleIndexInteriorCell(n, x.payloadSize(), x.toInitialPayloadBytes(), x.firstOverflow());
 					cc1.remove(rr[0].i + li);
 					cc1.add(rr[0].i + li, y);
 				} else
@@ -125,10 +130,10 @@ public class IndexRebalance {
 			;
 		else if (cc1 == p1.getCells() && !(ll.length < rr.length && path.size() > 1
 				&& 3 * (12 + cc1.stream().mapToInt(x -> Short.BYTES + x.size()).sum()) < database.usableSize()))
-			database.write(path.number(!path.isEmpty() ? path.size() - 1 : 0), p1.buffer());
+			database.writePageBuffer(path.pointer(!path.isEmpty() ? path.size() - 1 : 0), p1.buffer());
 		else {
 			path.removeLast();
-			new IndexRebalance(path, p1, cc1, database);
+			new IndexRebalancer(path, p1, cc1);
 		}
 	}
 

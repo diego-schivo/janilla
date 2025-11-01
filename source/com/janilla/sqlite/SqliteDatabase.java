@@ -39,29 +39,35 @@ import java.util.stream.IntStream;
 
 import com.janilla.io.TransactionalByteChannel;
 
-public class SQLiteDatabase {
+public class SqliteDatabase {
 
 	protected final TransactionalByteChannel channel;
 
-	protected final Header header = new Header(ByteBuffer.allocate(100));
+	protected final int pageSize;
+
+	protected final int reservedBytes;
+
+	protected final DatabaseHeader header = new DatabaseHeader(ByteBuffer.allocate(100));
 
 	protected final Lock performLock = new ReentrantLock();
 
 	protected final AtomicBoolean performing = new AtomicBoolean();
 
-	public SQLiteDatabase(TransactionalByteChannel channel) {
+	public SqliteDatabase(TransactionalByteChannel channel, int pageSize, int reservedBytes) {
 		this.channel = channel;
+		this.pageSize = pageSize;
+		this.reservedBytes = reservedBytes;
+
 		try {
 			if (channel.size() == 0)
 				perform(() -> {
-					header.setPageSize(512);
-//					header.setPageSize(4096);
+					header.setPageSize(pageSize);
 
-					var b = allocatePage();
+					var b = newPageBuffer();
 					b.position(100);
 					var p = new TableLeafPage(this, b);
 					p.setCellContentAreaStart(header.getPageSize());
-					write(1, b);
+					writePageBuffer(1, b);
 
 					header.setString("SQLite format 3\0");
 					header.setWriteVersion(1);
@@ -89,14 +95,13 @@ public class SQLiteDatabase {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-//		IO.println(header.getSize());
 	}
 
 	public TransactionalByteChannel channel() {
 		return channel;
 	}
 
-	public Header header() {
+	public DatabaseHeader header() {
 		return header;
 	}
 
@@ -104,7 +109,8 @@ public class SQLiteDatabase {
 		return header.getPageSize() - header.getReservedBytes();
 	}
 
-	public int initialSize(int p, boolean index) {
+	public int computePayloadInitialSize(int payloadSize, boolean index) {
+		var p = payloadSize;
 		var u = usableSize();
 		var x = index ? (u - 12) * 64 / 255 - 23 : u - 35;
 		if (p <= x)
@@ -114,52 +120,8 @@ public class SQLiteDatabase {
 		return k <= x ? k : m;
 	}
 
-	public ByteBuffer allocatePage() {
+	public ByteBuffer newPageBuffer() {
 		return ByteBuffer.allocate(header.getPageSize());
-	}
-
-	public BTreePage<?> readBTreePage(long number, ByteBuffer buffer) {
-		read(number, buffer);
-		var t = Byte.toUnsignedInt(buffer.get(buffer.position()));
-//		IO.println("SQLiteDatabase.readBTreePage, number=" + number + ", t=" + t);
-		return switch (t) {
-		case 0x05 -> new TableInteriorPage(this, buffer);
-		case 0x0d -> new TableLeafPage(this, buffer);
-		case 0x02 -> new IndexInteriorPage(this, buffer);
-		case 0x0a -> new IndexLeafPage(this, buffer);
-		default -> throw new RuntimeException();
-		};
-	}
-
-	public void read(long number, ByteBuffer buffer) {
-		buffer.clear();
-		try {
-			var s = header.getPageSize();
-			channel.position((number - 1) * s);
-			if (channel.read(buffer) != s)
-				throw new IOException();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		buffer.position(number == 1 ? 100 : 0);
-	}
-
-	public void write(long number, ByteBuffer buffer) {
-		buffer.clear();
-		try {
-			var s = header.getPageSize();
-			channel.position((number - 1) * s);
-			if (channel.write(buffer) != s)
-				throw new IOException();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		buffer.position(number == 1 ? 100 : 0);
-
-		if (number > header.getSize()) {
-			header.setSize(number);
-			writeHeader();
-		}
 	}
 
 	public void readHeader() {
@@ -184,6 +146,37 @@ public class SQLiteDatabase {
 		}
 	}
 
+	public void readPageBuffer(long number, ByteBuffer buffer) {
+		buffer.clear();
+		try {
+			var s = header.getPageSize();
+			channel.position((number - 1) * s);
+			if (channel.read(buffer) != s)
+				throw new IOException();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		buffer.position(number == 1 ? 100 : 0);
+	}
+
+	public void writePageBuffer(long number, ByteBuffer buffer) {
+		buffer.clear();
+		try {
+			var s = header.getPageSize();
+			channel.position((number - 1) * s);
+			if (channel.write(buffer) != s)
+				throw new IOException();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		buffer.position(number == 1 ? 100 : 0);
+
+		if (number > header.getSize()) {
+			header.setSize(number);
+			writeHeader();
+		}
+	}
+
 	public long newPage() {
 		var s = header.getFreelistSize();
 		if (s == 0) {
@@ -192,13 +185,11 @@ public class SQLiteDatabase {
 			return x;
 		}
 		var n = header.getFreelistStart();
-		var b = allocatePage();
-		read(n, b);
-		var p = new FreelistPage(this, b);
+		var p = new FreelistTrunkPage(this, n);
 		long x;
 		if (!p.getLeafPointers().isEmpty()) {
 			x = p.getLeafPointers().removeLast();
-			write(n, b);
+			writePageBuffer(n, p.buffer());
 		} else {
 			x = n;
 			header.setFreelistStart(p.getNext());
@@ -210,29 +201,29 @@ public class SQLiteDatabase {
 	public void freePage(long number, ByteBuffer buffer) {
 		var s = header.getFreelistSize();
 		if (s == 0) {
-			var p = new FreelistPage(this, buffer);
+			var p = new FreelistTrunkPage(this, buffer);
 			p.setNext(0);
 			p.getLeafPointers().clear();
-			write(number, buffer);
+			writePageBuffer(number, buffer);
 			header.setFreelistStart(number);
 		} else {
 			var n = header.getFreelistStart();
-			var b = allocatePage();
+			var b = newPageBuffer();
 			for (;;) {
-				read(n, b);
-				var p = new FreelistPage(this, b);
+				readPageBuffer(n, b);
+				var p = new FreelistTrunkPage(this, b);
 				try {
 					p.getLeafPointers().add(number);
-					write(n, b);
+					writePageBuffer(n, b);
 					break;
 				} catch (IllegalStateException e) {
 					if (p.getNext() == 0) {
-						var p2 = new FreelistPage(this, buffer);
+						var p2 = new FreelistTrunkPage(this, buffer);
 						p2.setNext(0);
 						p2.getLeafPointers().clear();
-						write(number, buffer);
+						writePageBuffer(number, buffer);
 						p.setNext(number);
-						write(n, b);
+						writePageBuffer(n, b);
 						break;
 					}
 					n = p.getNext();
@@ -242,13 +233,14 @@ public class SQLiteDatabase {
 		header.setFreelistSize(s + 1);
 	}
 
-	public BTree<?, ?> createTable(String name, Column[] columns, boolean withoutRowid) {
-//		header.setReservedBytes(12);
+	public BTree<?, ?> createTable(String name, TableColumn[] columns, boolean withoutRowid) {
+		if (header.getReservedBytes() == 0 && reservedBytes != 0)
+			header.setReservedBytes(reservedBytes);
 
 		var n = newPage();
-		var p = withoutRowid ? new IndexLeafPage(this, allocatePage()) : new TableLeafPage(this, allocatePage());
+		var p = withoutRowid ? new IndexLeafPage(this, newPageBuffer()) : new TableLeafPage(this, newPageBuffer());
 		p.setCellContentAreaStart(usableSize());
-		write(n, p.buffer());
+		writePageBuffer(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
 		t.insert(k -> new Object[] { k, "table", name, name, n,
@@ -269,13 +261,22 @@ public class SQLiteDatabase {
 		return withoutRowid ? new IndexBTree(this, n) : new TableBTree(this, n);
 	}
 
+	public void dropTable(String name) {
+		var t = new TableBTree(this, 1);
+		var o = schema().stream().filter(x -> x.type().equals("table") && x.name().equals(name)).findFirst().get();
+		t.delete(new Object[] { o.id() }, null);
+
+		updateHeader();
+	}
+
 	public IndexBTree createIndex(String name, String table, String... columns) {
-//		header.setReservedBytes(12);
+		if (header.getReservedBytes() == 0 && reservedBytes != 0)
+			header.setReservedBytes(reservedBytes);
 
 		var n = newPage();
-		var p = new IndexLeafPage(this, allocatePage());
+		var p = new IndexLeafPage(this, newPageBuffer());
 		p.setCellContentAreaStart(usableSize());
-		write(n, p.buffer());
+		writePageBuffer(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
 		t.insert(k -> new Object[] { k, "index", name, table, n,
@@ -285,17 +286,19 @@ public class SQLiteDatabase {
 		return new IndexBTree(this, n);
 	}
 
-	public TableBTree tableBTree(String name) {
+	public TableBTree table(String name) {
 //		IO.println("SQLiteDatabase.tableBTree, name=" + name);
-		var o = schema().stream().filter(x -> x.type().equals("table") && x.name().equals(name)).findFirst().get();
-		return new TableBTree(this, o.root());
+		return new TableBTree(this,
+				name.equals("sqlite_schema") ? 1
+						: schema().stream().filter(x -> x.type().equals("table") && x.name().equals(name)).findFirst()
+								.get().root());
 	}
 
-	public IndexBTree indexBTree(String name) {
-		return indexBTree(name, "index");
+	public IndexBTree index(String name) {
+		return index(name, "index");
 	}
 
-	public IndexBTree indexBTree(String name, String type) {
+	public IndexBTree index(String name, String type) {
 //		IO.println("SQLiteDatabase.indexBTree, name=" + name + ", type=" + type);
 		var o = schema().stream().filter(x -> x.type().equals(type) && x.name().equals(name)).findFirst().get();
 		return new IndexBTree(this, o.root());
@@ -341,7 +344,8 @@ public class SQLiteDatabase {
 	}
 
 	protected void updateHeader() {
-//		header.setReservedBytes(12);
+		if (header.getReservedBytes() == 0 && reservedBytes != 0)
+			header.setReservedBytes(reservedBytes);
 		header.setChangeCounter(header.getChangeCounter() + 1);
 		header.setSchemaCookie(header.getSchemaCookie() + 1);
 		header.setSchemaFormat(4);
@@ -352,11 +356,7 @@ public class SQLiteDatabase {
 
 	public List<SchemaObject> schema() {
 		var t = new TableBTree(this, 1);
-		return t.rows()
-				.map(x -> new SchemaObject((String) x[1], (String) x[2], (String) x[3], (Long) x[4], (String) x[5]))
-				.toList();
-	}
-
-	public record SchemaObject(String type, String name, String table, long root, String sql) {
+		return t.rows().map(x -> new SchemaObject((Long) x[0], (String) x[1], (String) x[2], (String) x[3], (Long) x[4],
+				(String) x[5])).toList();
 	}
 }

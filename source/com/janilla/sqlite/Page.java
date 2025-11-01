@@ -28,13 +28,19 @@ import java.nio.ByteBuffer;
 
 public abstract class Page {
 
-	protected final SQLiteDatabase database;
+	protected final SqliteDatabase database;
 
 	protected final ByteBuffer buffer;
 
-	protected Page(SQLiteDatabase database, ByteBuffer buffer) {
+	protected Page(SqliteDatabase database, ByteBuffer buffer) {
 		this.database = database;
 		this.buffer = buffer;
+	}
+
+	protected Page(SqliteDatabase database, long number) {
+		var b = database.newPageBuffer();
+		database.readPageBuffer(number, b);
+		this(database, b);
 	}
 
 	public ByteBuffer buffer() {

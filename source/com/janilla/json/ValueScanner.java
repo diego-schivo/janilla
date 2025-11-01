@@ -39,94 +39,92 @@ public class ValueScanner implements Scanner {
 		Boolean a = null;
 		do {
 			var s = state;
-			state = switch (s) {
+			switch (s) {
 
-			case 0 -> {
+			case 0:
 				tokens.add(JsonToken.VALUE_START);
 				scanner = new WhitespaceScanner();
 				if (scanner.accept(value, tokens)) {
 					a = true;
-					yield 1;
-				}
-				yield 2;
-			}
+					state = 1;
+				} else
+					state = 2;
+				break;
 
-			case 1 -> {
+			case 1:
 				if (scanner.accept(value, tokens))
 					a = true;
 				if (scanner.done())
-					yield 2;
-				if (a != null)
-					yield 1;
-				a = false;
-				yield -1;
-			}
+					state = 2;
+				else if (a != null)
+					state = 1;
+				else {
+					a = false;
+					state = -1;
+				}
+				break;
 
-			case 2 -> {
+			case 2: {
 				var x = Stream
 						.<Supplier<Scanner>>of(ArrayScanner::new, BooleanScanner::new, NullScanner::new,
 								NumberScanner::new, ObjectScanner::new, StringScanner::new)
 						.map(Supplier::get).filter(y -> {
-							IO.println("value=" + value + ", tokens=" + tokens);
+//							IO.println("value=" + value + ", tokens=" + tokens);
 							return y.accept(value, tokens);
 						}).findFirst();
 				if (x.isPresent()) {
 					scanner = x.get();
 					a = true;
-					yield 3;
+					state = 3;
+				} else {
+					a = false;
+					state = -1;
 				}
-//				for (var x : List.<Supplier<Scanner>>of(ArrayScanner::new, BooleanScanner::new, NullScanner::new,
-//						NumberScanner::new, ObjectScanner::new, StringScanner::new)) {
-//					var y = x.get();
-//					if (y.accept(value, tokens)) {
-//						scanner = y;
-//						a = true;
-//						yield 3;
-//					}
-//				}
-				a = false;
-				yield -1;
 			}
+				break;
 
-			case 3 -> {
+			case 3:
 				if (scanner.accept(value, tokens))
 					a = true;
 				if (scanner.done())
-					yield 4;
-				if (a != null)
-					yield 3;
-				a = false;
-				yield -1;
-			}
+					state = 4;
+				else if (a != null)
+					state = 3;
+				else {
+					a = false;
+					state = -1;
+				}
+				break;
 
-			case 4 -> {
+			case 4:
 				scanner = new WhitespaceScanner();
 				if (scanner.accept(value, tokens)) {
 					a = true;
-					yield 5;
+					state = 5;
+				} else {
+					tokens.add(JsonToken.VALUE_END);
+					state = 6;
 				}
-				tokens.add(JsonToken.VALUE_END);
-				yield 6;
-			}
+				break;
 
-			case 5 -> {
+			case 5:
 				if (scanner.accept(value, tokens))
 					a = true;
 				if (scanner.done()) {
 					tokens.add(JsonToken.VALUE_END);
-					yield 6;
+					state = 6;
+				} else if (a != null)
+					state = 5;
+				else {
+					a = false;
+					state = -1;
 				}
-				if (a != null)
-					yield 5;
-				a = false;
-				yield -1;
-			}
+				break;
 
-			default -> {
+			default:
 				a = false;
-				yield s;
+				break;
 			}
-			};
 
 //			IO.println("ValueScanner.accept " + value + " " + a + " " + s + " -> " + state);
 

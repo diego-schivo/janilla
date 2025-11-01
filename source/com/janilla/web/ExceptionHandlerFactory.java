@@ -24,8 +24,6 @@
  */
 package com.janilla.web;
 
-//import java.io.IO;
-
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;

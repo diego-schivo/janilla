@@ -28,18 +28,18 @@ import java.nio.ByteBuffer;
 
 public class Varint {
 
-	public static void main(String[] args) {
-		IO.println(size(193));
+//	public static void main(String[] args) {
+//		IO.println(size(193));
+//	}
+
+	public static long get(ByteBuffer source) {
+		return get(source, -1);
 	}
 
-	public static long get(ByteBuffer buffer) {
-		return get(buffer, -1);
-	}
-
-	public static long get(ByteBuffer buffer, int index) {
+	public static long get(ByteBuffer source, int index) {
 		var l = 0l;
 		for (var i = 0; i < 9; i++) {
-			var x = Byte.toUnsignedInt(index == -1 ? buffer.get() : buffer.get(index + i));
+			var x = Byte.toUnsignedInt(index == -1 ? source.get() : source.get(index + i));
 			var y = x & 0x7f;
 			l = (l << 7) | y;
 //			IO.println("x=" + x + ", y=" + y + ", l=" + l);
@@ -49,16 +49,16 @@ public class Varint {
 		throw new RuntimeException();
 	}
 
-	public static void put(ByteBuffer buffer, long value) {
-		put(buffer, -1, value);
+	public static void put(ByteBuffer destination, long value) {
+		put(destination, -1, value);
 	}
 
-	public static void put(ByteBuffer buffer, int index, long value) {
-		var bb = bytes(value);
+	public static void put(ByteBuffer destination, int index, long value) {
+		var bb = toBytes(value);
 		if (index == -1)
-			buffer.put(bb);
+			destination.put(bb);
 		else
-			buffer.put(index, bb);
+			destination.put(index, bb);
 	}
 
 	public static int size(long value) {
@@ -70,20 +70,20 @@ public class Varint {
 		throw new RuntimeException();
 	}
 
-	public static int size(ByteBuffer buffer) {
-		return size(buffer, -1);
+	public static int size(ByteBuffer source) {
+		return size(source, -1);
 	}
 
-	public static int size(ByteBuffer buffer, int index) {
+	public static int size(ByteBuffer source, int index) {
 		for (var i = 0; i < 9; i++) {
-			var x = Byte.toUnsignedInt(index == -1 ? buffer.get() : buffer.get(index + i));
+			var x = Byte.toUnsignedInt(index == -1 ? source.get() : source.get(index + i));
 			if ((x & 0x80) == 0)
 				return i + 1;
 		}
 		throw new RuntimeException();
 	}
 
-	public static byte[] bytes(long value) {
+	public static byte[] toBytes(long value) {
 		var bb = new byte[size(value)];
 		for (var i = 0; i < bb.length; i++) {
 			var x = (int) (value & 0x7f);

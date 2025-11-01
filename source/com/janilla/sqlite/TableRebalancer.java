@@ -29,28 +29,39 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
-public class TableRebalance {
+public class TableRebalancer implements Runnable {
 
-	protected SQLiteDatabase database;
+	protected final BTreePath path;
+
+	protected final BTreePage<? extends KeyCell> page;
+
+	protected final List<? extends KeyCell> cells;
+
+	protected final SqliteDatabase database;
 
 	protected TableInteriorPage p1;
 
-	public TableRebalance(BTree<?, ?>.Path path, BTreePage<? extends KeyCell> page, List<? extends KeyCell> cells,
-			SQLiteDatabase database) {
-		this.database = database;
+	public TableRebalancer(BTreePath path, BTreePage<? extends KeyCell> page, List<? extends KeyCell> cells) {
+		this.path = path;
+		this.page = page;
+		this.cells = cells;
+		database = page.database;
+	}
 
+	@Override
+	public void run() {
 		if (!path.isEmpty())
 			p1 = (TableInteriorPage) path.getLast().page();
-		else {
-			p1 = new TableInteriorPage(database, database.allocatePage());
-			p1.setCellContentAreaStart(database.usableSize());
-		}
+//		else {
+//			p1 = new TableInteriorPage(database, database.allocatePage());
+//			p1.setCellContentAreaStart(database.usableSize());
+//		}
 
 		record R(int i, long n, BTreePage<? extends KeyCell> p) {
 		}
 		R[] rr;
 		if (path.isEmpty())
-			rr = new R[] { new R(0, path.number(0), page) };
+			rr = new R[] { new R(0, path.pointer(0), page) };
 		else {
 			var i = path.getLast().index();
 			var l = p1.getCellCount() + 1;
@@ -60,12 +71,19 @@ public class TableRebalance {
 				var n = p1.childPointer(x);
 				@SuppressWarnings("unchecked")
 				var p = x == i ? page
-						: (BTreePage<? extends KeyCell>) database.readBTreePage(n, database.allocatePage());
+						: (BTreePage<? extends KeyCell>) BTreePage.read(n, database);
 				return new R(x, n, p);
 			}).toArray(R[]::new);
 		}
 		var cc2 = Arrays.stream(rr).flatMap(x -> x.p == page ? cells.stream() : x.p.getCells().stream()).toList();
 		var ll = partition(cc2.stream().mapToInt(x -> Short.BYTES + x.size()).toArray(), page instanceof InteriorPage);
+		if (p1 == null) {
+			var b = database.newPageBuffer();
+			if (path.isEmpty() && rr[0].n == 1)
+				b.position(100);
+			p1 = new TableInteriorPage(database, b);
+			p1.setCellContentAreaStart(database.usableSize());
+		}
 		var cc1 = p1.getCells();
 
 		var i2 = 0;
@@ -73,14 +91,14 @@ public class TableRebalance {
 			var n = !path.isEmpty() && li < rr.length ? rr[li].n : database.newPage();
 			BTreePage<? extends KeyCell> p;
 			{
-				p = page instanceof InteriorPage ? new TableInteriorPage(database, database.allocatePage())
-						: new TableLeafPage(database, database.allocatePage());
+				p = page instanceof InteriorPage ? new TableInteriorPage(database, database.newPageBuffer())
+						: new TableLeafPage(database, database.newPageBuffer());
 				p.setCellContentAreaStart(database.usableSize());
 				p.getCells().addAll(cc2.subList(i2, i2 += ll[li]));
 				if (p instanceof TableInteriorPage x)
 					x.setRightMostPointer(i2 != cc2.size() ? ((TableInteriorCell) cc2.get(i2)).leftChildPointer()
 							: ((TableInteriorPage) rr[rr.length - 1].p).getRightMostPointer());
-				database.write(n, p.buffer());
+				database.writePageBuffer(n, p.buffer());
 			}
 			var i1 = rr[0].i + li;
 			if (i2 != cc2.size()) {
@@ -105,31 +123,32 @@ public class TableRebalance {
 					cc1.remove(i1);
 					cc1.add(i1, y);
 				} else if (path.size() == 1 && p1.getCellCount() == 0) {
-					database.write(path.number(0), p.buffer());
+					database.writePageBuffer(path.pointer(0), p.buffer());
 					database.freePage(n, p.buffer());
 					p1 = null;
 				} else
 					p1.setRightMostPointer(n);
-			}
+			} else if (path.isEmpty())
+				p1.setRightMostPointer(n);
 		}
 
 		if (p1 == null)
 			;
 		else if (cc1 == p1.getCells() && !(ll.length < rr.length && path.size() > 1
 				&& 3 * (12 + cc1.stream().mapToInt(x -> Short.BYTES + x.size()).sum()) < database.usableSize()))
-			database.write(path.number(!path.isEmpty() ? path.size() - 1 : 0), p1.buffer());
+			database.writePageBuffer(path.pointer(!path.isEmpty() ? path.size() - 1 : 0), p1.buffer());
 		else {
 			path.removeLast();
-			new TableRebalance(path, p1, cc1, database);
+			new TableRebalancer(path, p1, cc1);
 		}
 	}
 
 	protected int[] partition(int[] cellSizes, boolean interior) {
-//		IO.println("ss=" + Arrays.toString(ss) + " " + ss.length);
+		IO.println("cellSizes=" + Arrays.toString(cellSizes) + " " + cellSizes.length);
 		var s = Arrays.stream(cellSizes).sum();
-//		IO.println("s=" + s + ", u=" + u);
-		var y = database.usableSize() - (interior ? 12 : 8);
-		var l = Math.ceilDiv(s, y);
+		var u = database.usableSize() - (interior ? 12 : 8);
+		var l = Math.ceilDiv(s, u);
+		IO.println("s=" + s + ", y=" + u + ", l=" + l);
 		var ii = new int[l];
 		if (interior) {
 			var d = (double) s / l;
@@ -161,16 +180,23 @@ public class TableRebalance {
 			var i = 0;
 			for (var si = 0; si < cellSizes.length; si++) {
 				s += cellSizes[si];
-				if (s > d) {
-//					IO.println("s=" + s + ", d2=" + d2);
+				if (s > u) {
 					if (++i == ii.length)
 						ii = Arrays.copyOf(ii, i + 1);
 					s = cellSizes[si];
 				}
 				ii[i]++;
+				if (s > d) {
+					IO.println("s=" + s + ", d=" + d);
+					if (++i == ii.length)
+						ii = Arrays.copyOf(ii, i + 1);
+					s = 0;
+				}
 			}
+			if (i < l - 1)
+				ii = Arrays.copyOf(ii, i + 1);
 		}
-//		IO.println("ii=" + Arrays.toString(ii));
+		IO.println("ii=" + Arrays.toString(ii));
 		return ii;
 	}
 }

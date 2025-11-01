@@ -34,36 +34,36 @@ public class FreeblockIterator<C extends Cell> implements ListIterator<Freeblock
 
 	private int pointer;
 
-	private int pointer0;
+	private int previousPointer;
 
-	public FreeblockIterator(BTreePage<C> page, int p) {
+	public FreeblockIterator(BTreePage<C> page, int pointer) {
 		this.page = page;
-		this.pointer = p;
+		this.pointer = pointer;
 	}
 
 	@Override
 	public boolean hasNext() {
-		return page.buffer.getShort(pointer) != 0;
+		return page.buffer().getShort(pointer) != 0;
 	}
 
 	@Override
 	public Freeblock next() {
-		if (page.buffer.getShort(pointer) == 0)
+		if (page.buffer().getShort(pointer) == 0)
 			throw new NoSuchElementException();
 		var i = pointer;
 		var x = new Freeblock() {
 
 			@Override
 			public int start() {
-				return Short.toUnsignedInt(page.buffer.getShort(i));
+				return Short.toUnsignedInt(page.buffer().getShort(i));
 			}
 
 			@Override
 			public int size() {
-				return Short.toUnsignedInt(page.buffer.getShort(start() + Short.BYTES));
+				return Short.toUnsignedInt(page.buffer().getShort(start() + Short.BYTES));
 			}
 		};
-		pointer0 = pointer;
+		previousPointer = pointer;
 		pointer = x.start();
 		return x;
 	}
@@ -90,32 +90,32 @@ public class FreeblockIterator<C extends Cell> implements ListIterator<Freeblock
 
 	@Override
 	public void remove() {
-		page.buffer.putShort(pointer0, page.buffer.getShort(pointer));
-		Arrays.fill(page.buffer.array(), pointer, pointer + 2 * Short.BYTES, (byte) 0);
-		pointer = pointer0;
+		page.buffer().putShort(previousPointer, page.buffer().getShort(pointer));
+		Arrays.fill(page.buffer().array(), pointer, pointer + 2 * Short.BYTES, (byte) 0);
+		pointer = previousPointer;
 	}
 
 	@Override
 	public void set(Freeblock e) {
 		if (e.start() != pointer) {
-			page.buffer.putShort(pointer0, (short) e.start());
-			page.buffer.putShort(e.start(), page.buffer.getShort(pointer));
+			page.buffer().putShort(previousPointer, (short) e.start());
+			page.buffer().putShort(e.start(), page.buffer().getShort(pointer));
 //				Arrays.fill(buffer.array(), e.start() + 2 * Short.BYTES, pointer + 2 * Short.BYTES, (byte) 0);
 			pointer = e.start();
 		}
-		page.buffer.putShort(pointer + Short.BYTES, (short) e.size());
-		Arrays.fill(page.buffer.array(), e.start() + 2 * Short.BYTES, e.end(), (byte) 0);
+		page.buffer().putShort(pointer + Short.BYTES, (short) e.size());
+		Arrays.fill(page.buffer().array(), e.start() + 2 * Short.BYTES, e.end(), (byte) 0);
 	}
 
 	@Override
 	public void add(Freeblock e) {
-		insert(e, pointer, Short.toUnsignedInt(page.buffer.getShort(pointer)));
+		insert(e, pointer, Short.toUnsignedInt(page.buffer().getShort(pointer)));
 	}
 
 	private void insert(Freeblock e, int previous, int next) {
-		page.buffer.putShort(previous, (short) e.start());
-		page.buffer.putShort(e.start(), (short) next);
-		page.buffer.putShort(e.start() + Short.BYTES, (short) e.size());
-		Arrays.fill(page.buffer.array(), e.start() + 2 * Short.BYTES, e.start() + e.size(), (byte) 0);
+		page.buffer().putShort(previous, (short) e.start());
+		page.buffer().putShort(e.start(), (short) next);
+		page.buffer().putShort(e.start() + Short.BYTES, (short) e.size());
+		Arrays.fill(page.buffer().array(), e.start() + 2 * Short.BYTES, e.start() + e.size(), (byte) 0);
 	}
 }

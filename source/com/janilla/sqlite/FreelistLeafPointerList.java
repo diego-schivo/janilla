@@ -25,54 +25,60 @@
 package com.janilla.sqlite;
 
 import java.util.AbstractList;
+import java.util.Objects;
 import java.util.RandomAccess;
 
-public class CellPointerList<C extends Cell> extends AbstractList<Integer> implements RandomAccess {
+public class FreelistLeafPointerList extends AbstractList<Long> implements RandomAccess {
 
-	protected final BTreePage<C> page;
+	protected final FreelistTrunkPage trunkPage;
 
-	public CellPointerList(BTreePage<C> page) {
-		this.page = page;
+	public FreelistLeafPointerList(FreelistTrunkPage trunkPage) {
+		this.trunkPage = trunkPage;
+	}
+
+	@Override
+	public void add(int index, Long element) {
+		var s = size();
+		if (8 + (s + 1) * Integer.BYTES > trunkPage.buffer().limit())
+			throw new IllegalStateException();
+		Objects.checkIndex(index, s + 1);
+		var i = 8 + index * Integer.BYTES;
+		if (index != s)
+			System.arraycopy(trunkPage.buffer().array(), i, trunkPage.buffer().array(), i + Integer.BYTES,
+					(s - index) * Integer.BYTES);
+		trunkPage.buffer().putInt(i, element.intValue());
+		setSize(s + 1);
+	}
+
+	@Override
+	public void clear() {
+		setSize(0);
+	}
+
+	@Override
+	public Long get(int index) {
+		Objects.checkIndex(index, size());
+		return Integer.toUnsignedLong(trunkPage.buffer().getInt(8 + index * Integer.BYTES));
 	}
 
 	@Override
 	public int size() {
-		return page.getCellCount();
+		return trunkPage.buffer().getInt(4);
 	}
 
 	@Override
-	public Integer get(int index) {
-		return Short.toUnsignedInt(page.buffer().getShort(offset(index)));
-	}
-
-	@Override
-	public void add(int index, Integer element) {
-		var o = offset(index);
-		var m = size() - index;
-		if (m > 0)
-			System.arraycopy(page.buffer().array(), o, page.buffer().array(), o + Short.BYTES, m * Short.BYTES);
-		page.buffer().putShort(o, element.shortValue());
-	}
-
-	@Override
-	public Integer remove(int index) {
-		var o = offset(index);
-		var x = Short.toUnsignedInt(page.buffer().getShort(o));
-		var m = size() - index - 1;
-		if (m > 0)
-			System.arraycopy(page.buffer().array(), o + Short.BYTES, page.buffer().array(), o, m * Short.BYTES);
+	public Long remove(int index) {
+		var x = get(index);
+		var i = 8 + index * Integer.BYTES;
+		var s = size();
+		if (index != s - 1)
+			System.arraycopy(trunkPage.buffer().array(), i + Integer.BYTES, trunkPage.buffer().array(), i,
+					(s - 1 - index) * Integer.BYTES);
+		setSize(s - 1);
 		return x;
 	}
 
-	@Override
-	public Integer set(int index, Integer element) {
-		var o = offset(index);
-		var x = Short.toUnsignedInt(page.buffer().getShort(o));
-		page.buffer().putShort(o, element.shortValue());
-		return x;
-	}
-
-	public int offset(int index) {
-		return page.buffer().position() + (page instanceof InteriorPage ? 12 : 8) + index * Short.BYTES;
+	protected void setSize(int size) {
+		trunkPage.buffer().putInt(4, size);
 	}
 }

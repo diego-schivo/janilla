@@ -27,15 +27,32 @@ package com.janilla.sqlite;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public abstract class BTreePage<C extends Cell> extends Page {
+public sealed abstract class BTreePage<C extends Cell> extends Page permits InteriorPage, TableLeafPage, IndexLeafPage {
 
-	protected FreeblockList<C> freeblocks = new FreeblockList<C>(this);
+	public static BTreePage<?> of(ByteBuffer buffer, SqliteDatabase database) {
+		var t = Byte.toUnsignedInt(buffer.get(buffer.position()));
+		return switch (t) {
+		case 0x05 -> new TableInteriorPage(database, buffer);
+		case 0x0d -> new TableLeafPage(database, buffer);
+		case 0x02 -> new IndexInteriorPage(database, buffer);
+		case 0x0a -> new IndexLeafPage(database, buffer);
+		default -> throw new RuntimeException(Integer.toHexString(t));
+		};
+	}
 
-	protected CellPointerList<C> cellPointers = new CellPointerList<C>(this);
+	public static BTreePage<?> read(long number, SqliteDatabase database) {
+		var b = database.newPageBuffer();
+		database.readPageBuffer(number, b);
+		return of(b, database);
+	}
 
-	protected CellList<C> cells = new CellList<C>(this);
+	private final FreeblockList<C> freeblocks = new FreeblockList<C>(this);
 
-	protected BTreePage(SQLiteDatabase database, ByteBuffer buffer) {
+	private final CellPointerList<C> cellPointers = new CellPointerList<C>(this);
+
+	private final CellList<C> cells = new CellList<C>(this);
+
+	protected BTreePage(SqliteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
 	}
 
@@ -75,9 +92,21 @@ public abstract class BTreePage<C extends Cell> extends Page {
 		buffer.put(buffer.position() + 7, (byte) fragmentedSize);
 	}
 
+	public List<Integer> getCellPointers() {
+		return cellPointers;
+	}
+
 	public List<C> getCells() {
 		return cells;
 	}
 
 	protected abstract C cell(int index);
+
+	public int selectFreeblock(int minSize) {
+		return freeblocks.minSizeIndex(minSize);
+	}
+
+	public void insertFreeblock(Freeblock freeblock) {
+		freeblocks.insert(freeblock);
+	}
 }

@@ -34,7 +34,7 @@ import java.util.Map;
 
 import com.janilla.io.TransactionalByteChannel;
 import com.janilla.reflect.Factory;
-import com.janilla.sqlite.SQLiteDatabase;
+import com.janilla.sqlite.SqliteDatabase;
 
 public class ApplicationPersistenceBuilder {
 
@@ -62,7 +62,7 @@ public class ApplicationPersistenceBuilder {
 						FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ,
 								StandardOpenOption.WRITE));
 			}
-			var d = new SQLiteDatabase(ch);
+			var d = new SqliteDatabase(ch, 4096, 0);
 			persistence = factory.create(Persistence.class, Map.of("database", d));
 			return persistence;
 		} catch (IOException e) {

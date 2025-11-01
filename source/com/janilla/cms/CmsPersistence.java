@@ -32,16 +32,17 @@ import java.util.Map;
 
 import com.janilla.json.TypeResolver;
 import com.janilla.persistence.Crud;
+import com.janilla.persistence.CrudObserver;
 import com.janilla.persistence.Entity;
 import com.janilla.persistence.Persistence;
 import com.janilla.persistence.Store;
 import com.janilla.reflect.Reflection;
-import com.janilla.sqlite.Column;
-import com.janilla.sqlite.SQLiteDatabase;
+import com.janilla.sqlite.TableColumn;
+import com.janilla.sqlite.SqliteDatabase;
 
 public class CmsPersistence extends Persistence {
 
-	protected static final Crud.Observer DOCUMENT_OBSERVER = new Crud.Observer() {
+	protected static final CrudObserver DOCUMENT_OBSERVER = new CrudObserver() {
 
 		@Override
 		public <E> E beforeCreate(E entity) {
@@ -69,7 +70,7 @@ public class CmsPersistence extends Persistence {
 		}
 	};
 
-	public CmsPersistence(SQLiteDatabase database, Collection<Class<? extends Entity<?>>> types,
+	public CmsPersistence(SqliteDatabase database, Collection<Class<? extends Entity<?>>> types,
 			TypeResolver typeResolver) {
 		super(database, types, typeResolver);
 	}
@@ -91,7 +92,7 @@ public class CmsPersistence extends Persistence {
 			@SuppressWarnings("unchecked")
 			var t = (Class<? extends Document<?>>) type;
 			@SuppressWarnings({ "rawtypes", "unchecked" })
-			var c = (Crud<?, E>) new DocumentCrud(t, nextId(t), this);
+			var c = (Crud<?, E>) new DocumentCrud(t, idConverter(t), this);
 			c.observers().add(DOCUMENT_OBSERVER);
 			return c;
 		}
@@ -105,7 +106,7 @@ public class CmsPersistence extends Persistence {
 			if (t.isAnnotationPresent(Versions.class))
 				database.perform(() -> {
 					var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">";
-					database.createTable(n, new Column[0], false);
+					database.createTable(n, new TableColumn[0], false);
 					database.createIndex(n + ".document", "foo");
 					return null;
 				}, true);

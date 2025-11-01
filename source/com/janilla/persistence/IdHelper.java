@@ -22,15 +22,13 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.sqlite;
+package com.janilla.persistence;
 
-public interface Freeblock {
+public interface IdHelper<ID extends Comparable<ID>> {
 
-	int start();
+	ID random(Entity<ID> entity);
 
-	int size();
+	ID fromDatabaseValue(Object object);
 
-	default int end() {
-		return start() + size();
-	}
+	Object toDatabaseValue(ID id);
 }

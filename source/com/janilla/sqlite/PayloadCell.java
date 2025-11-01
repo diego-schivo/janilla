@@ -36,12 +36,17 @@ public interface PayloadCell extends Cell {
 
 	long firstOverflow();
 
-	default ByteBuffer initialPayload(SQLiteDatabase database) {
-		var ps = payloadSize();
-		var is = database.initialSize(ps, !(this instanceof TableLeafCell));
-		var b = ByteBuffer.allocate(is);
+//	default ByteBuffer initialPayload(SqliteDatabase database) {
+//		var c = database.computePayloadInitialSize(payloadSize(), !(this instanceof TableLeafCell));
+//		var b = ByteBuffer.allocate(c);
+//		getInitialPayload(b);
+//		b.flip();
+//		return b;
+//	}
+
+	default byte[] toInitialPayloadBytes() {
+		var b = ByteBuffer.allocate(initialPayloadSize());
 		getInitialPayload(b);
-		b.flip();
-		return b;
+		return b.array();
 	}
 }

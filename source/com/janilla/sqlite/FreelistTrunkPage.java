@@ -25,17 +25,18 @@
 package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
-import java.util.AbstractList;
 import java.util.List;
-import java.util.Objects;
-import java.util.RandomAccess;
 
-public class FreelistPage extends Page {
+public class FreelistTrunkPage extends Page {
 
-	private LeafPointerList leafPointers = new LeafPointerList();
+	private FreelistLeafPointerList leafPointers = new FreelistLeafPointerList(this);
 
-	public FreelistPage(SQLiteDatabase database, ByteBuffer buffer) {
+	public FreelistTrunkPage(SqliteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
+	}
+
+	public FreelistTrunkPage(SqliteDatabase database, long number) {
+		super(database, number);
 	}
 
 	public long getNext() {
@@ -48,52 +49,5 @@ public class FreelistPage extends Page {
 
 	public List<Long> getLeafPointers() {
 		return leafPointers;
-	}
-
-	private class LeafPointerList extends AbstractList<Long> implements RandomAccess {
-
-		@Override
-		public void add(int index, Long element) {
-			var s = size();
-			if (8 + (s + 1) * Integer.BYTES > buffer.limit())
-				throw new IllegalStateException();
-			Objects.checkIndex(index, s + 1);
-			var i = 8 + index * Integer.BYTES;
-			if (index != s)
-				System.arraycopy(buffer.array(), i, buffer.array(), i + Integer.BYTES, (s - index) * Integer.BYTES);
-			buffer.putInt(i, element.intValue());
-			setSize(s + 1);
-		}
-
-		@Override
-		public void clear() {
-			setSize(0);
-		}
-
-		@Override
-		public Long get(int index) {
-			Objects.checkIndex(index, size());
-			return Integer.toUnsignedLong(buffer.getInt(8 + index * Integer.BYTES));
-		}
-
-		@Override
-		public int size() {
-			return buffer.getInt(4);
-		}
-
-		@Override
-		public Long remove(int index) {
-			var x = get(index);
-			var i = 8 + index * Integer.BYTES;
-			var s = size();
-			if (index != s - 1)
-				System.arraycopy(buffer.array(), i + Integer.BYTES, buffer.array(), i, (s - 1 - index) * Integer.BYTES);
-			setSize(s - 1);
-			return x;
-		}
-
-		protected void setSize(int size) {
-			buffer.putInt(4, size);
-		}
 	}
 }

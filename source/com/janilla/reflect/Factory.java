@@ -24,7 +24,6 @@
  */
 package com.janilla.reflect;
 
-//import java.io.IO;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,6 +82,7 @@ public class Factory {
 	protected final Map<Class<?>, Function<Map<String, Object>, ?>> functions = new ConcurrentHashMap<>();
 
 	public Factory(Collection<Class<?>> types, Supplier<Object> source) {
+//		IO.println("Factory, types=" + types);
 		this.types = types;
 		this.source = source;
 	}
@@ -110,12 +110,14 @@ public class Factory {
 				Stream.of(type)).toList();
 		var t1 = bar != null ? bar.apply(tt) : tt.getFirst();
 		var f = functions.computeIfAbsent(t1, k -> {
-			var c = k;
+			var c = !Modifier.isAbstract(k.getModifiers()) ? k : null;
 			for (var x : types)
 				if (type.isAssignableFrom(x) && !Modifier.isAbstract(x.getModifiers())) {
 					c = x;
 					break;
 				}
+			if (c == null)
+				return _ -> null;
 			var cc = c.getConstructors();
 			if (cc.length != 1)
 				throw new RuntimeException(c + " has " + cc.length + " constructors");

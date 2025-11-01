@@ -26,9 +26,9 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public class IndexInteriorPage extends InteriorPage<IndexInteriorCell> {
+public final class IndexInteriorPage extends InteriorPage<IndexInteriorCell> {
 
-	public IndexInteriorPage(SQLiteDatabase database, ByteBuffer buffer) {
+	public IndexInteriorPage(SqliteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
 		setType(0x02);
 	}
@@ -58,7 +58,7 @@ public class IndexInteriorPage extends InteriorPage<IndexInteriorCell> {
 
 			@Override
 			public int initialPayloadSize() {
-				return database.initialSize(payloadSize(), true);
+				return database.computePayloadInitialSize(payloadSize(), true);
 			}
 
 			@Override

@@ -26,9 +26,9 @@ package com.janilla.sqlite;
 
 import java.nio.ByteBuffer;
 
-public class IndexLeafPage extends BTreePage<IndexLeafCell> {
+public final class IndexLeafPage extends BTreePage<IndexLeafCell> {
 
-	public IndexLeafPage(SQLiteDatabase database, ByteBuffer buffer) {
+	public IndexLeafPage(SqliteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
 		setType(0x0a);
 	}
@@ -49,13 +49,12 @@ public class IndexLeafPage extends BTreePage<IndexLeafCell> {
 			@Override
 			public int payloadSize() {
 				var x = (int) Varint.get(buffer, start());
-//				IO.println("x=" + x);
 				return x;
 			}
 
 			@Override
 			public int initialPayloadSize() {
-				return database.initialSize(payloadSize(), true);
+				return database.computePayloadInitialSize(payloadSize(), true);
 			}
 
 			@Override

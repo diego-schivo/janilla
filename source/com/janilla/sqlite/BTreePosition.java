@@ -24,13 +24,9 @@
  */
 package com.janilla.sqlite;
 
-public interface Freeblock {
+public record BTreePosition(BTreePage<?> page, int index) {
 
-	int start();
-
-	int size();
-
-	default int end() {
-		return start() + size();
+	public Cell cell() {
+		return index != page.getCellCount() ? page.getCells().get(index) : null;
 	}
 }

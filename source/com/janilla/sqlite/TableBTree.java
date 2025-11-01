@@ -26,23 +26,51 @@ package com.janilla.sqlite;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.function.Consumer;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 
-	public TableBTree(SQLiteDatabase database, long rootNumber) {
+	public TableBTree(SqliteDatabase database, long rootNumber) {
 		super(database, rootNumber);
 	}
 
 	@Override
-	public long insert(LongFunction<Object[]> values) {
+	public boolean select(Object[] key, Consumer<Stream<Object[]>> rowsOperation) {
+		var k = (long) key[0];
+		var s = search(k);
+		if (s.found() != s.path().size() - 1)
+			return false;
+		if (rowsOperation != null)
+			rowsOperation.accept(Stream.<Object[]>of(row((PayloadCell) s.path().getLast().cell())));
+		return true;
+	}
+
+	@Override
+	public long count(Object... keys) {
+		if (keys.length == 0)
+			return count(false);
+		throw new RuntimeException();
+	}
+
+	@Override
+	public boolean insert(Object[] key, Object[] data) {
+		var l = insert(_ -> {
+			var oo = Arrays.copyOf(key, key.length + data.length);
+			System.arraycopy(data, 0, oo, key.length, data.length);
+			return oo;
+		});
+		return l != -1;
+	}
+
+	public long insert(LongFunction<Object[]> row) {
 		var n = rootNumber;
-		var pp = new Path();
+		var pp = new BTreePath(this);
 		for (;;) {
-			var p = database.readBTreePage(n, database.allocatePage());
-			pp.add(new Position(p, p.getCellCount()));
+			var p = BTreePage.read(n, database);
+			pp.add(new BTreePosition(p, p.getCellCount()));
 			if (p instanceof TableInteriorPage p2)
 				n = p2.getRightMostPointer();
 			else
@@ -53,11 +81,10 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 		var p = (TableLeafPage) pi.page();
 		var i = pi.index();
 		var k = (p.getCellCount() != 0 ? p.getCells().getLast().key() : 0) + 1;
-		var vv = values.apply(k);
-//		IO.println("TableBTree.insert, k=" + k + ", vv=" + Arrays.toString(vv));
-		var l = (long) vv[0];
+		var oo = row.apply(k);
+//		IO.println("TableBTree.insert, k=" + k + ", oo=" + Arrays.toString(oo));
+		var l = (long) oo[0];
 		if (l < k) {
-//			throw new RuntimeException();
 			var s = search(l);
 			if (s.found() == s.path().size() - 1)
 				return -1;
@@ -67,8 +94,8 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 			i = pi.index();
 		}
 		k = l;
-		var bb = Record.toBytes(Arrays.stream(vv).skip(1).map(Record.Element::of).toArray(Record.Element[]::new));
-		var is = database.initialSize(bb.length, false);
+		var bb = Record.toBytes(Arrays.stream(oo).skip(1).map(RecordColumn::of).toArray(RecordColumn[]::new));
+		var is = database.computePayloadInitialSize(bb.length, false);
 		var c = is == bb.length ? new SimpleTableLeafCell(bb.length, k, bb, 0)
 				: new SimpleTableLeafCell(bb.length, k, Arrays.copyOf(bb, is), addOverflowPages(bb, is));
 		if (p.getCellCount() == 0)
@@ -76,11 +103,11 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 
 		try {
 			p.getCells().add(i, c);
-			database.write(pp.number(pp.size()), p.buffer());
+			database.writePageBuffer(pp.pointer(pp.size()), p.buffer());
 		} catch (IllegalStateException e) {
 			var cc = new ArrayList<>(p.getCells());
 			cc.add(i, c);
-			new TableRebalance(pp, p, cc, database);
+			new TableRebalancer(pp, p, cc).run();
 		}
 
 		database.updateHeader();
@@ -88,35 +115,28 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	}
 
 	@Override
-	public boolean insert(Object[] key, Object[] data) {
-		throw new RuntimeException();
-	}
-
-	@Override
-	public Stream<Object[]> select(Object... keys) {
-		throw new RuntimeException();
-	}
-
-	@Override
-	public boolean delete(Object... keys) {
+	public boolean delete(Object[] key, Consumer<Stream<Object[]>> rowsOperation) {
 //		IO.println("key=" + Arrays.toString(key));
 
-		var k = (long) keys[0];
+		var k = (long) key[0];
 		var s = search(k);
 		if (s.found() != s.path().size() - 1)
 			return false;
 
 		{
 			var pi = s.path().removeLast();
+			if (rowsOperation != null)
+				rowsOperation.accept(Stream.<Object[]>of(row((PayloadCell) pi.cell())));
+
 			var p = (TableLeafPage) pi.page();
 			var i = pi.index();
 			p.getCells().remove(i);
 
 			if (!s.path().isEmpty() && 3
 					* (8 + p.getCells().stream().mapToInt(x -> Short.BYTES + x.size()).sum()) < database.usableSize())
-				new TableRebalance(s.path(), p, p.getCells(), database);
+				new TableRebalancer(s.path(), p, p.getCells()).run();
 			else
-				database.write(s.path().number(s.path().size()), p.buffer());
+				database.writePageBuffer(s.path().pointer(s.path().size()), p.buffer());
 		}
 
 		database.updateHeader();
@@ -126,13 +146,6 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 
 	public LongStream keys() {
 		return cells().mapToLong(x -> ((TableLeafCell) x).key());
-	}
-
-	@Override
-	public long count(Object... keys) {
-		if (keys.length == 0)
-			return count(false);
-		throw new RuntimeException();
 	}
 
 	@Override
@@ -155,36 +168,37 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	}
 
 	protected Search search(long key) {
-//		IO.println("keys=" + Arrays.toString(keys));
+//		IO.println("TableBTree.search, key=" + key);
 		var n = rootNumber;
 		var f = -1;
-		var pp = new Path();
+		var pp = new BTreePath(this);
 		f: for (var i = 0;; i++) {
-			var p = database.readBTreePage(n, database.allocatePage());
+			var p = BTreePage.read(n, database);
 			var ci = 0;
 			for (var c : p.getCells()) {
 				var d = Long.compare(((KeyCell) c).key(), key);
 				if (d == 0)
 					f = i;
 				if (d >= 0) {
-					pp.add(new Position(p, ci));
-					if (c instanceof InteriorCell c2) {
-						n = c2.leftChildPointer();
+					pp.add(new BTreePosition(p, ci));
+					if (c instanceof InteriorCell x) {
+						n = x.leftChildPointer();
 						continue f;
 					} else
 						break f;
 				}
 				ci++;
 			}
-			pp.add(new Position(p, ci));
-			if (p instanceof InteriorPage p2)
-				n = p2.getRightMostPointer();
+			pp.add(new BTreePosition(p, ci));
+			if (p instanceof InteriorPage x)
+				n = x.getRightMostPointer();
 			else
 				break;
 		}
+//		IO.println("TableBTree.search, f=" + f);
 		return new Search(pp, f);
 	}
 
-	public record Search(Path path, int found) {
+	public record Search(BTreePath path, int found) {
 	}
 }

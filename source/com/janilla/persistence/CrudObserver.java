@@ -22,15 +22,24 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.sqlite;
+package com.janilla.persistence;
 
-public interface Freeblock {
+public interface CrudObserver {
 
-	int start();
+	default <E> E beforeCreate(E entity) {
+		return entity;
+	}
 
-	int size();
+	default <E> void afterCreate(E entity) {
+	}
 
-	default int end() {
-		return start() + size();
+	default <E> E beforeUpdate(E entity) {
+		return entity;
+	}
+
+	default <E> void afterUpdate(E entity1, E entity2) {
+	}
+
+	default <E> void afterDelete(E entity) {
 	}
 }

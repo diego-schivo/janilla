@@ -27,9 +27,9 @@ package com.janilla.sqlite;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public abstract class InteriorPage<C extends InteriorCell> extends BTreePage<C> {
+public sealed abstract class InteriorPage<C extends InteriorCell> extends BTreePage<C> permits TableInteriorPage, IndexInteriorPage {
 
-	protected InteriorPage(SQLiteDatabase database, ByteBuffer buffer) {
+	protected InteriorPage(SqliteDatabase database, ByteBuffer buffer) {
 		super(database, buffer);
 	}
 
@@ -44,6 +44,6 @@ public abstract class InteriorPage<C extends InteriorCell> extends BTreePage<C> 
 	public long childPointer(int index) {
 		var l = getCellCount() + 1;
 		Objects.checkIndex(index, l);
-		return index == l - 1 ? getRightMostPointer() : cells.get(index).leftChildPointer();
+		return index == l - 1 ? getRightMostPointer() : getCells().get(index).leftChildPointer();
 	}
 }

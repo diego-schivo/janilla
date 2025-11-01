@@ -32,26 +32,28 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.TreeSet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import com.janilla.io.TransactionalByteChannel;
 
-public class Foo2 {
+public class Foo3 {
 
 	private static final String[] WORDS = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 			.split("[^\\w]+");
 
 	public static void main(String[] args) {
-		var ss = Stream.concat(IntStream.range(0, 1).mapToObj(x -> "I" + (x + 1)),
-				IntStream.range(0, 0).mapToObj(x -> "D" + (x + 1))).toArray(String[]::new);
-//		var r = ThreadLocalRandom.current();
-//		var b1 = 100;
-//		var ss = IntStream.range(0, b1).mapToObj(
-//				x -> (new String[] { "I", "D" })[(int) r.nextDouble(1 + (double) x / b1)] + (r.nextInt(50) + 1))
-//				.toArray(String[]::new);
+//		var ss = Stream.concat(IntStream.range(0, 800).mapToObj(x -> "I" + (x + 1)),
+//				IntStream.range(0, 750).mapToObj(x -> "D" + (x + 1))).toArray(String[]::new);
+		var r = ThreadLocalRandom.current();
+		var b1 = 10000;
+		var ss = IntStream.range(0, b1)
+//				.mapToObj(x -> (new String[] { "I", "D" })[(int) (r.nextDouble((double) (x + 1) / b1) * 2)]
+				.mapToObj(x -> (new String[] { "I", "D" })[(int) r.nextDouble(1 + (double) x / b1)]
+						+ (r.nextInt(5000) + 1))
+				.toArray(String[]::new);
 //		ss = new String[0];
-//		ss = "[I59, I5, I34, I59, I23, I65, I37, I75, I34, I62, I8, I65, I8, I47, I27, I17, D79, I82, I9, I12, I36, I14, I47, I35, I49, D43, I51, D65, I53, I52, D9, I74, I44, I93, I100, I8, I8, I12, I36, I21, I18, I40, D1, I41, I23, D25, I30, I52, I40, I90, I96, I48, D54, I61, I34, I2, I39, I18, I80, I100, I38, D58, I44, I67, I6, I66, I97, D56, I10, D9, I53, D35, I70, D34, D55, D25, I58, I31, I78, I38, I46, D17, I45, D69, I44, I20, I6, I55, D62, D45, I53, I37, I76, D18, D77, D92, D44, I98, I11, I68, I56, D94, I62, I94, D95, I39, I21, D16, I83, D62, I45, I100, I66, I61, I22, I47, I12, I48, I83, I96, I55, I60, I68, I64, I44, I95, I54, D5, I97, I62, I81, I90, I96, D73, I57, D69, D15, D60, D96, I27, I64, D69, I95, I97, D22, I41, I27, I82, I54, D1, D28, I6, I70, D100, I40, I54, I39, I74, I26, D49, I69, D72, D26, D4, I67, D9, I79, I19, I41, D80, D21, D31, I44, I70, D8, D16, I89, D76, I47, I93, D58, D46, I80, I87, I51, D10, I95, D47, D75, I65, I6, I47, I23, D41, I56, D41, I79, I20, I88, I22]"
+//		ss = ""
 //				.replaceAll("[\\[\\]]", "").split(", ");
 		IO.println(Arrays.toString(ss));
 
@@ -70,7 +72,7 @@ public class Foo2 {
 //					""" : """
 //					sqlite3 ex1a <<EOF
 //					PRAGMA page_size = 512;
-//					CREATE TABLE t1(a INTEGER PRIMARY KEY, b TEXT);
+//					CREATE TABLE t1(a INTEGER PRIMARY KEY, b TEXT) WITHOUT ROWID;
 //					EOF
 //					""").inheritIO();
 //			Process p;
@@ -90,13 +92,13 @@ public class Foo2 {
 //			var pb = new ProcessBuilder("/bin/bash", "-c", "sqlite3 ex1a <<EOF\n" + Arrays.stream(ss).map(x -> {
 //				var i = Integer.parseInt(x.substring(1));
 //				var a = (long) i;
-//				var b = WORDS[(i - 1) % WORDS.length].repeat((i - 1) % 20 + 1);
+//				var b = WORDS[(i - 1) % WORDS.length];
 //				var s = switch (x.charAt(0)) {
 //				case 'I' -> "insert into t1 values(" + a + ", '" + b + "');";
 //				case 'D' -> "delete from t1 where a=" + a + ";";
 //				default -> throw new RuntimeException();
 //				};
-		////				IO.println(s);
+//				IO.println(s);
 //				return s;
 //			}).collect(Collectors.joining("\n")) + "\nEOF").inheritIO();
 //			Process p;
@@ -119,22 +121,22 @@ public class Foo2 {
 						StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE))) {
 			var d = new SqliteDatabase(ch, 512, 12);
 			d.perform(() -> {
-				d.createTable("t1", new TableColumn[] { new TableColumn("a", "INTEGER", true),
-						new TableColumn("b", "TEXT", false) }, false);
+				d.createTable("t1", new TableColumn[] { new TableColumn("a", "INTEGER", true), new TableColumn("b", "TEXT", false) },
+						true);
 				return null;
 			}, true);
 			for (var x : ss) {
 				IO.println(x);
 				var i = Integer.parseInt(x.substring(1));
 				var a = (long) i;
-				var b = WORDS[(i - 1) % WORDS.length].repeat((i - 1) % 20 + 1);
+				var b = WORDS[(i - 1) % WORDS.length].repeat(i % 5 + 1);
 				d.perform(() -> {
 					switch (x.charAt(0)) {
 					case 'I':
-						d.table("t1").insert(_ -> new Object[] { a, null, b });
+						d.index("t1", "table").insert(new Object[] { a, b }, null);
 						break;
 					case 'D':
-						d.table("t1").delete(new Object[] { a }, null);
+						d.index("t1", "table").delete(new Object[] { a }, null);
 						break;
 					default:
 						throw new RuntimeException();
@@ -143,18 +145,18 @@ public class Foo2 {
 				}, true);
 			}
 			d.perform(() -> {
-				var t = d.table("t1");
+				var t = d.index("t1", "table");
 				var p = new BTreePath(t);
 				while (p.next()) {
 					IO.print(Arrays.toString(p.stream().mapToInt(BTreePosition::index).toArray()));
 					var c = p.getLast().cell();
-					IO.println(c instanceof PayloadCell x ? Arrays.toString(t.row(x)) : ((KeyCell) c).key());
+					IO.println(c instanceof PayloadCell x ? Arrays.toString(t.row(x)) : "-");
 				}
 				return null;
 			}, false);
 			d.perform(() -> {
 				try {
-					Files.write(Path.of("ex1b.txt"), d.table("t1").rows().map(Arrays::toString).toList());
+					Files.write(Path.of("ex1b.txt"), d.index("t1", "table").rows().map(Arrays::toString).toList());
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
@@ -175,7 +177,7 @@ public class Foo2 {
 		for (var x : ss) {
 			var i = Integer.parseInt(x.substring(1));
 			var a = (long) i;
-			var b = WORDS[(i - 1) % WORDS.length].repeat((i - 1) % 20 + 1);
+			var b = WORDS[(i - 1) % WORDS.length].repeat(i % 5 + 1);
 			var e = new Object[] { a, b };
 			switch (x.charAt(0)) {
 			case 'I':
@@ -196,9 +198,8 @@ public class Foo2 {
 
 		{
 //			var b = new ProcessBuilder("/bin/bash", "-c", "diff --width=140 --side-by-side <(xxd ex1a) <(xxd ex1b)")
-//					.inheritIO();
-			var b = new ProcessBuilder("/bin/bash", "-c", "hexdump -C -v ex1b").inheritIO();
-//			var b = new ProcessBuilder("/bin/bash", "-c", "diff ex1c.txt ex1b.txt").inheritIO();
+//			var b = new ProcessBuilder("/bin/bash", "-c", "hexdump -C -v ex1b").inheritIO();
+			var b = new ProcessBuilder("/bin/bash", "-c", "diff --side-by-side ex1c.txt ex1b.txt").inheritIO();
 			Process p;
 			try {
 				p = b.start();

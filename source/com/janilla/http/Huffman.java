@@ -24,7 +24,6 @@
  */
 package com.janilla.http;
 
-//import java.io.IO;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

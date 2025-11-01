@@ -22,15 +22,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.sqlite;
+package com.janilla.persistence;
 
-public interface Freeblock {
+import java.util.List;
 
-	int start();
+public record IdPage<ID>(List<ID> ids, long total) {
 
-	int size();
+	private static IdPage<?> EMPTY = new IdPage<>(List.of(), 0);
 
-	default int end() {
-		return start() + size();
+	@SuppressWarnings("unchecked")
+	public static <ID> IdPage<ID> empty() {
+		return (IdPage<ID>) EMPTY;
 	}
 }

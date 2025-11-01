@@ -35,12 +35,11 @@ public interface IndexInteriorCell extends InteriorCell, PayloadCell {
 	}
 
 	@Override
-	default void put(ByteBuffer buffer) {
-		buffer.putInt((int) leftChildPointer());
-//		IO.println("payloadSize()=" + payloadSize());
-		Varint.put(buffer, payloadSize());
-		getInitialPayload(buffer);
+	default void put(ByteBuffer destination) {
+		destination.putInt((int) leftChildPointer());
+		Varint.put(destination, payloadSize());
+		getInitialPayload(destination);
 		if (firstOverflow() != 0)
-			buffer.putInt((int) firstOverflow());
+			destination.putInt((int) firstOverflow());
 	}
 }
