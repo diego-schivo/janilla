@@ -177,7 +177,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	public E delete(ID id) {
-		IO.println("Crud.delete, id=" + id);
+//		IO.println("Crud.delete, id=" + id);
 		if (id == null)
 			throw new NullPointerException();
 		return persistence.database().perform(() -> {
@@ -216,7 +216,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				};
 				@SuppressWarnings("unchecked")
 				var id = idHelper != null ? idHelper.fromDatabaseValue(o) : (ID) o;
-				IO.println("id=" + id);
+//				IO.println("id=" + id);
 				return id;
 			}).toList();
 		}, false);
@@ -240,7 +240,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				};
 				@SuppressWarnings("unchecked")
 				var id = idHelper != null ? idHelper.fromDatabaseValue(o) : (ID) o;
-				IO.println("id=" + id);
+//				IO.println("id=" + id);
 				return id;
 			}).toList(), t.count());
 		}, false);
@@ -400,7 +400,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 		return persistence.database().perform(() -> {
 			var t = persistence.database().index(n);
 			@SuppressWarnings("unchecked")
-			var ii = (List<ID>) t.rows().filter(x -> operation.test(x[0])).map(x -> x[x.length - 1]).toList();
+			var ii = t.rows().filter(x -> operation.test(x[0])).map(x -> (ID) x[x.length - 1]).toList();
 			return ii;
 		}, false);
 	}

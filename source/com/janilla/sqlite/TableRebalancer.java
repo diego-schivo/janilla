@@ -50,12 +50,9 @@ public class TableRebalancer implements Runnable {
 
 	@Override
 	public void run() {
+//		IO.println("TableRebalancer.run, path=" + path);
 		if (!path.isEmpty())
 			p1 = (TableInteriorPage) path.getLast().page();
-//		else {
-//			p1 = new TableInteriorPage(database, database.allocatePage());
-//			p1.setCellContentAreaStart(database.usableSize());
-//		}
 
 		record R(int i, long n, BTreePage<? extends KeyCell> p) {
 		}
@@ -70,13 +67,16 @@ public class TableRebalancer implements Runnable {
 			rr = IntStream.rangeClosed(i1, i2).mapToObj(x -> {
 				var n = p1.childPointer(x);
 				@SuppressWarnings("unchecked")
-				var p = x == i ? page
-						: (BTreePage<? extends KeyCell>) BTreePage.read(n, database);
+				var p = x == i ? page : (BTreePage<? extends KeyCell>) BTreePage.read(n, database);
 				return new R(x, n, p);
 			}).toArray(R[]::new);
 		}
+//		IO.println("TableRebalancer.run, rr=" + Arrays.toString(rr));
+
 		var cc2 = Arrays.stream(rr).flatMap(x -> x.p == page ? cells.stream() : x.p.getCells().stream()).toList();
+//		IO.println("TableRebalancer.run, cc2=" + cc2);
 		var ll = partition(cc2.stream().mapToInt(x -> Short.BYTES + x.size()).toArray(), page instanceof InteriorPage);
+//		IO.println("TableRebalancer.run, ll=" + Arrays.toString(ll));
 		if (p1 == null) {
 			var b = database.newPageBuffer();
 			if (path.isEmpty() && rr[0].n == 1)
@@ -94,7 +94,7 @@ public class TableRebalancer implements Runnable {
 				p = page instanceof InteriorPage ? new TableInteriorPage(database, database.newPageBuffer())
 						: new TableLeafPage(database, database.newPageBuffer());
 				p.setCellContentAreaStart(database.usableSize());
-				p.getCells().addAll(cc2.subList(i2, i2 += ll[li]));
+				((List) p.getCells()).addAll(cc2.subList(i2, i2 += ll[li]));
 				if (p instanceof TableInteriorPage x)
 					x.setRightMostPointer(i2 != cc2.size() ? ((TableInteriorCell) cc2.get(i2)).leftChildPointer()
 							: ((TableInteriorPage) rr[rr.length - 1].p).getRightMostPointer());
@@ -144,11 +144,11 @@ public class TableRebalancer implements Runnable {
 	}
 
 	protected int[] partition(int[] cellSizes, boolean interior) {
-		IO.println("cellSizes=" + Arrays.toString(cellSizes) + " " + cellSizes.length);
+//		IO.println("cellSizes=" + Arrays.toString(cellSizes) + " " + cellSizes.length);
 		var s = Arrays.stream(cellSizes).sum();
 		var u = database.usableSize() - (interior ? 12 : 8);
 		var l = Math.ceilDiv(s, u);
-		IO.println("s=" + s + ", y=" + u + ", l=" + l);
+//		IO.println("s=" + s + ", u=" + u + ", l=" + l);
 		var ii = new int[l];
 		if (interior) {
 			var d = (double) s / l;
@@ -187,8 +187,8 @@ public class TableRebalancer implements Runnable {
 				}
 				ii[i]++;
 				if (s > d) {
-					IO.println("s=" + s + ", d=" + d);
-					if (++i == ii.length)
+//					IO.println("s=" + s + ", d=" + d);
+					if (++i == ii.length && si != cellSizes.length - 1)
 						ii = Arrays.copyOf(ii, i + 1);
 					s = 0;
 				}
@@ -196,7 +196,7 @@ public class TableRebalancer implements Runnable {
 			if (i < l - 1)
 				ii = Arrays.copyOf(ii, i + 1);
 		}
-		IO.println("ii=" + Arrays.toString(ii));
+//		IO.println("ii=" + Arrays.toString(ii));
 		return ii;
 	}
 }

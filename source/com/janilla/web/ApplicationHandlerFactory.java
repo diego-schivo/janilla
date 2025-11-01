@@ -74,7 +74,7 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 		return factory.create(MethodHandlerFactory.class,
 				Map.of("methods", methods, "targetResolver", (Function<Class<?>, Object>) x -> {
 					var y = factory.source();
-					IO.println("x=" + x + ", y=" + y);
+//					IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
 					return x.isAssignableFrom(y.getClass()) ? factory.source() : factory.create(x);
 				}, "rootFactory", this));
 	}

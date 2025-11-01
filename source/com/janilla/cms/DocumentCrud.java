@@ -65,7 +65,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	}
 
 	public E read(ID id, boolean drafts) {
-		IO.println("DocumentCrud.read, id=" + id + ", drafts=" + drafts);
+//		IO.println("DocumentCrud.read, id=" + id + ", drafts=" + drafts);
 		if (id == null)
 			return null;
 		return type.isAnnotationPresent(Versions.class) && drafts ? persistence.database().perform(() -> {
@@ -79,13 +79,13 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 				var a = new A();
 				i.select(new Object[] { id }, x -> {
 					var oo = x.findFirst().get();
-					IO.println("oo=" + Arrays.toString(oo));
+//					IO.println("oo=" + Arrays.toString(oo));
 					@SuppressWarnings("unchecked")
 					var id2 = (ID) oo[oo.length - 1];
 					a.id = id2;
 				});
 				var v = readVersion(a.id);
-				IO.println("DocumentCrud.read, v=" + v);
+//				IO.println("DocumentCrud.read, v=" + v);
 				if (v != null && v.document().updatedAt().isAfter(e.updatedAt()))
 					e = v.document();
 			}
@@ -221,7 +221,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			var vv = new ArrayList<Version<ID, E>>(1);
 			persistence.database().table(versionTable).select(new Object[] { versionId }, x -> {
 				var oo = x.findFirst().get();
-				IO.println("oo=" + Arrays.toString(oo));
+//				IO.println("oo=" + Arrays.toString(oo));
 				@SuppressWarnings("unchecked")
 				var v = (Version<ID, E>) parse((String) oo[1], Version.class);
 				vv.add(v);

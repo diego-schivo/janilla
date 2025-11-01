@@ -71,13 +71,15 @@ public class IndexRebalancer implements Runnable {
 				return new R(x, n, p);
 			}).toArray(R[]::new);
 		}
-		var cc2 = Arrays.stream(rr).flatMap(x -> Stream.concat(x.p == page ? cells.stream() : x.p.getCells().stream(),
-				Optional.ofNullable(x != rr[rr.length - 1] ? p1.getCells().get(x.i) : null)
-						.map(y -> page instanceof InteriorPage
-								? new SimpleIndexInteriorCell(((IndexInteriorPage) x.p).getRightMostPointer(),
-										y.payloadSize(), y.toInitialPayloadBytes(), y.firstOverflow())
-								: new SimpleIndexLeafCell(y.payloadSize(), y.toInitialPayloadBytes(), y.firstOverflow()))
-						.stream()))
+		var cc2 = Arrays.stream(rr)
+				.flatMap(x -> Stream.concat(x.p == page ? cells.stream() : x.p.getCells().stream(),
+						Optional.ofNullable(x != rr[rr.length - 1] ? p1.getCells().get(x.i) : null)
+								.map(y -> page instanceof InteriorPage
+										? new SimpleIndexInteriorCell(((IndexInteriorPage) x.p).getRightMostPointer(),
+												y.payloadSize(), y.toInitialPayloadBytes(), y.firstOverflow())
+										: new SimpleIndexLeafCell(y.payloadSize(), y.toInitialPayloadBytes(),
+												y.firstOverflow()))
+								.stream()))
 				.toList();
 
 		var ll = partition(cc2.stream().mapToInt(x -> Short.BYTES + x.size()).toArray(), page instanceof InteriorPage);
@@ -94,7 +96,7 @@ public class IndexRebalancer implements Runnable {
 				var x = page instanceof InteriorPage ? new IndexInteriorPage(database, database.newPageBuffer())
 						: new IndexLeafPage(database, database.newPageBuffer());
 				x.setCellContentAreaStart(database.usableSize());
-				x.getCells().addAll(cc2.subList(i2, i2 += ll[li]));
+				((List) x.getCells()).addAll(cc2.subList(i2, i2 += ll[li]));
 				if (x instanceof IndexInteriorPage y)
 					y.setRightMostPointer(i2 != cc2.size() ? ((IndexInteriorCell) cc2.get(i2)).leftChildPointer()
 							: ((IndexInteriorPage) rr[rr.length - 1].p).getRightMostPointer());
@@ -118,7 +120,8 @@ public class IndexRebalancer implements Runnable {
 				}
 				if (!path.isEmpty() && rr[0].i + li != cc1.size()) {
 					var x = cc1.get(rr[0].i + li);
-					var y = new SimpleIndexInteriorCell(n, x.payloadSize(), x.toInitialPayloadBytes(), x.firstOverflow());
+					var y = new SimpleIndexInteriorCell(n, x.payloadSize(), x.toInitialPayloadBytes(),
+							x.firstOverflow());
 					cc1.remove(rr[0].i + li);
 					cc1.add(rr[0].i + li, y);
 				} else

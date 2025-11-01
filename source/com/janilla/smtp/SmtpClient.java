@@ -99,7 +99,7 @@ public class SmtpClient {
 							+ message + "\n.",
 					"QUIT" }) {
 				if (s != null) {
-					IO.println("SmtpClient.sendMail, s=" + s);
+//					IO.println("SmtpClient.sendMail, s=" + s);
 					t.out().put(ce.encode(CharBuffer.wrap(s.replace("\n", "\r\n") + "\r\n")));
 					for (t.out().flip(); t.out().hasRemaining();)
 						t.write();
@@ -108,7 +108,7 @@ public class SmtpClient {
 				t.read();
 				t.in().flip();
 				var b = cd.decode(t.in());
-				IO.println("SmtpClient.sendMail, b=" + b);
+//				IO.println("SmtpClient.sendMail, b=" + b);
 				t.in().compact();
 			}
 		} catch (IOException e) {
