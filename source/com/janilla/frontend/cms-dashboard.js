@@ -49,22 +49,24 @@ export default class CmsDashboard extends WebComponent {
 		if (el) {
 			event.stopPropagation();
 			event.preventDefault();
+			const re = this.closest("app-element");
 			const a = this.closest("cms-admin");
 			switch (el.name) {
 				case "seed":
-					await fetch("/api/seed", { method: "POST" });
+					await fetch(`${re.dataset.apiUrl}/seed`, { method: "POST" });
 					a.renderToast("Database seeded!", "success");
 					break;
 				case "create":
 					const t = el.closest("a").getAttribute("href").split("/").at(-1);
-					const r = await fetch(`/api/${t}`, {
+					const r = await fetch(`${re.dataset.apiUrl}/${t}`, {
 						method: "POST",
+						credentials: "include",
 						headers: { "content-type": "application/json" },
 						body: JSON.stringify({ $type: el.dataset.type })
 					});
 					const j = await r.json();
 					if (r.ok) {
-						history.pushState(undefined, "", `/admin/collections/${t}/${j.id}`);
+						history.pushState({}, "", `/admin/collections/${t}/${j.id}`);
 						dispatchEvent(new CustomEvent("popstate"));
 					} else
 						a.renderToast(j, "error");
@@ -74,8 +76,7 @@ export default class CmsDashboard extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const a = this.closest("cms-admin");
-		const s = a.state;
+		const s = history.state.cmsAdmin;
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			groups: Object.entries(s.schema["Data"]).map(([k, v]) => ({
@@ -86,7 +87,7 @@ export default class CmsDashboard extends WebComponent {
 						$template: "card",
 						href: `/admin/${k}/${k2.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`,
 						name: k2.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
-						button: k === "collections" && !a.isReadOnly(v2.elementTypes[0]) ? {
+						button: k === "collections" && !this.closest("cms-admin").isReadOnly(v2.elementTypes[0]) ? {
 							$template: "button",
 							type: v2.elementTypes[0]
 						} : null

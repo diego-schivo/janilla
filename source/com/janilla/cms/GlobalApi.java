@@ -34,7 +34,6 @@ import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
-import com.janilla.web.NotFoundException;
 
 public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID>> {
 
@@ -42,11 +41,12 @@ public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID
 
 	protected final Predicate<HttpExchange> drafts;
 
-	public Persistence persistence;
+	protected final Persistence persistence;
 
-	protected GlobalApi(Class<E> type, Predicate<HttpExchange> drafts) {
+	protected GlobalApi(Class<E> type, Predicate<HttpExchange> drafts, Persistence persistence) {
 		this.type = type;
 		this.drafts = drafts;
+		this.persistence = persistence;
 	}
 
 	@Handle(method = "POST")
@@ -56,10 +56,7 @@ public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID
 
 	@Handle(method = "GET")
 	public E read(HttpExchange exchange) {
-		var e = crud().read(id(), drafts.test(exchange));
-		if (e == null)
-			throw new NotFoundException("entity " + 1);
-		return e;
+		return crud().read(id(), drafts.test(exchange));
 	}
 
 	@Handle(method = "PUT")
@@ -67,18 +64,12 @@ public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);
-		var e = crud().update(id(), entity, null, !Boolean.TRUE.equals(autosave));
-		if (e == null)
-			throw new NotFoundException("entity " + 1);
-		return e;
+		return crud().update(id(), entity, null, !Boolean.TRUE.equals(autosave));
 	}
 
 	@Handle(method = "DELETE")
 	public E delete() {
-		var e = crud().delete(id());
-		if (e == null)
-			throw new NotFoundException("entity " + 1);
-		return e;
+		return crud().delete(id());
 	}
 
 	@Handle(method = "GET", path = "versions")

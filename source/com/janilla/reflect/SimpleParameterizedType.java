@@ -22,22 +22,26 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-module com.janilla {
+package com.janilla.reflect;
 
-	exports com.janilla.cms;
-	exports com.janilla.http;
-	exports com.janilla.io;
-	exports com.janilla.ioc;
-	exports com.janilla.java;
-	exports com.janilla.json;
-	exports com.janilla.net;
-	exports com.janilla.persistence;
-	exports com.janilla.reflect;
-	exports com.janilla.smtp;
-	exports com.janilla.sqlite;
-	exports com.janilla.web;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
-	opens com.janilla.cms;
-	opens com.janilla.frontend;
-	opens com.janilla.net;
+public record SimpleParameterizedType(Type rawType, Type[] actualTypeArguments, Type ownerType)
+		implements ParameterizedType {
+
+	@Override
+	public Type[] getActualTypeArguments() {
+		return actualTypeArguments;
+	}
+
+	@Override
+	public Type getRawType() {
+		return rawType;
+	}
+
+	@Override
+	public Type getOwnerType() {
+		return ownerType;
+	}
 }

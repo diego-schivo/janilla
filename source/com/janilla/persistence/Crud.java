@@ -130,6 +130,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	public List<E> read(List<ID> ids) {
+//		IO.println("Crud.read, ids=" + ids);
 		if (ids == null || ids.isEmpty())
 			return List.of();
 		return persistence.database().perform(() -> {
@@ -140,11 +141,13 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				}
 				var a = new A();
 				var k = idHelper != null ? idHelper.toDatabaseValue(x) : x;
+//				IO.println("Crud.read, k=" + k);
 				t.select(new Object[] { k }, y -> {
 					var oo = y.findFirst().orElse(null);
-//					IO.println("k=" + k + ", oo=" + Arrays.toString(oo));
+//					IO.println("Crud.read, oo=" + Arrays.toString(oo));
 					a.e = oo != null ? parse((String) oo[oo.length - 1]) : null;
 				});
+//				IO.println("Crud.read, a.e=" + a.e);
 				return a.e;
 			}).toList();
 		}, false);
@@ -216,7 +219,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				};
 				@SuppressWarnings("unchecked")
 				var id = idHelper != null ? idHelper.fromDatabaseValue(o) : (ID) o;
-//				IO.println("id=" + id);
+//				IO.println("Crud.list, o=" + o + ", id=" + id);
 				return id;
 			}).toList();
 		}, false);
@@ -281,9 +284,9 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	public List<ID> filter(String index, Object... keys) {
+//		IO.println("Crud.filter, index=" + index + ", keys=" + Arrays.toString(keys));
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-//		IO.println("n=" + n + ", keys=" + Arrays.toString(keys));
 		switch (keys.length) {
 		case 0:
 			return persistence.database().perform(() -> {

@@ -72,6 +72,7 @@ import com.janilla.json.TypeResolver;
 import com.janilla.net.Net;
 import com.janilla.reflect.ClassAndMethod;
 import com.janilla.reflect.Reflection;
+import com.janilla.reflect.SimpleParameterizedType;
 
 public class MethodHandlerFactory implements HttpHandlerFactory {
 
@@ -483,14 +484,15 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected Object parseParameter(String[] strings, Type type) {
-		var c = (Class<?>) type;
+//		IO.println("MethodHandlerFactory.parseParameter, strings=" + Arrays.toString(strings) + ", type=" + type);
+		var c = (Class<?>) (type instanceof ParameterizedType x ? x.getRawType() : type);
 		var i = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
 //		var d = new Converter(x -> x.map().containsKey("$type")
 //				? new Converter.MapType(x.map(), typeResolver.apply((String) x.map().get("$type")))
 //				: null);
 		var d = new Converter(null);
-		return d.convert(i, c);
+		return d.convert(i, type);
 	}
 
 	protected TypeResolver resolver(Class<? extends TypeResolver> class0) {
@@ -508,16 +510,26 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 			h.handle(exchange);
 	}
 
-	protected static Class<?>[] getParameterTypes(Method method, Class<?> class1) {
+	protected static Type[] getParameterTypes(Method method, Class<?> class1) {
 		if (class1.getGenericSuperclass() instanceof ParameterizedType pt) {
 			var pp = method.getDeclaringClass().getTypeParameters();
 			var aa = pt.getActualTypeArguments();
 			var m = IntStream.range(0, pp.length).mapToObj(i -> Map.entry(pp[i].getName(), aa[i]))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-//		IO.println("m=" + m);
-			var tt = Arrays.stream(method.getGenericParameterTypes())
-					.map(x -> x instanceof TypeVariable v ? m.get(v.getName()) : x).toArray(Class[]::new);
-//		IO.println(Arrays.asList(tt));
+//			IO.println("MethodHandlerFactory.getParameterTypes, m=" + m);
+			var tt = Arrays.stream(method.getGenericParameterTypes()).map(x -> {
+				switch (x) {
+				case TypeVariable<?> x2:
+					return m.get(x2.getName());
+				case ParameterizedType x2:
+					return new SimpleParameterizedType(x2.getRawType(), Arrays.stream(x2.getActualTypeArguments())
+							.map(y -> y instanceof TypeVariable y2 ? m.get(y2.getName()) : y).toArray(Type[]::new),
+							null);
+				default:
+					return x;
+				}
+			}).toArray(Type[]::new);
+//			IO.println("MethodHandlerFactory.getParameterTypes, tt=" + Arrays.toString(tt));
 			return tt;
 		}
 		return method.getParameterTypes();
@@ -530,7 +542,7 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 		}
 	}
 
-	public record Invocation(Object target, Method method, MethodHandle methodHandle, Class<?>[] parameterTypes,
+	public record Invocation(Object target, Method method, MethodHandle methodHandle, Type[] parameterTypes,
 			String... regexGroups) {
 	}
 

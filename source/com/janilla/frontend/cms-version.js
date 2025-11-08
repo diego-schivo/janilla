@@ -58,7 +58,7 @@ export default class CmsVersion extends WebComponent {
 				const s = a.state;
 				s.document = await (await fetch(`${s.collectionSlug ? s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/")) : s.documentUrl}/versions/${s.version.id}`, { method: "POST" })).json();
 				a.renderToast("Restored successfully.");
-				history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 3).join("/")}`);
+				history.pushState({}, "", `/admin/${s.pathSegments.slice(0, 3).join("/")}`);
 				dispatchEvent(new CustomEvent("popstate"));
 				break;
 			case "restore":

@@ -51,12 +51,12 @@ export default class CmsResetPassword extends WebComponent {
 	handleSubmit = async event => {
 		event.preventDefault();
 		event.stopPropagation();
-		await (await fetch("/api/users/reset-password", {
+		await (await fetch(`${re.dataset.apiUrl}/users/reset-password`, {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
 		})).json();
-		history.pushState(undefined, "", "/admin");
+		history.pushState({}, "", "/admin");
 		dispatchEvent(new CustomEvent("popstate"));
 	}
 

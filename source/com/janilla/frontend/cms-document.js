@@ -39,12 +39,11 @@ export default class CmsDocument extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const a = this.closest("cms-admin");
-		const s = a.state;
+		const s = history.state.cmsAdmin;
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			title: (() => {
-				let t = a.title(s.document);
+				let t = this.closest("cms-admin").title(s.document);
 				if (!t?.length)
 					t = s.pathSegments[2];
 				return t;

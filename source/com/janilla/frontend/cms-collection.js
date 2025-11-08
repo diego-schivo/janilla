@@ -80,6 +80,7 @@ export default class CmsCollection extends WebComponent {
 		if (!b)
 			return;
 		event.stopPropagation();
+		const re = this.closest("app-element");
 		const n = this.dataset.name;
 		const s = this.state;
 		let u;
@@ -99,16 +100,26 @@ export default class CmsCollection extends WebComponent {
 			case "confirm-delete":
 				u = new URL(`/api/${n}`, location.href);
 				Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
-				await (await fetch(u, { method: "DELETE" })).json();
-				delete s.deleteDialog;
-				delete s.data;
-				this.requestDisplay();
+				const j = await (await fetch(u, {
+					method: "DELETE",
+					credentials: "include"
+				})).json();
+				if (j.some(x => x.$type === "User" && x.id === re.state.user.id)) {
+					delete re.state.computeState;
+					history.pushState({}, "", `/admin/collections/${n}`);
+					dispatchEvent(new CustomEvent("popstate"));
+				} else {
+					delete s.deleteDialog;
+					delete s.data;
+					this.requestDisplay();
+				}
 				break;
 			case "confirm-publish":
 				u = new URL(`/api/${n}`, location.href);
 				Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
 				await (await fetch(u, {
 					method: "PATCH",
+					credentials: "include",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
 						$type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0],
@@ -123,6 +134,7 @@ export default class CmsCollection extends WebComponent {
 				Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
 				await (await fetch(u, {
 					method: "PATCH",
+					credentials: "include",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
 						$type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0],
@@ -133,12 +145,13 @@ export default class CmsCollection extends WebComponent {
 				this.requestDisplay();
 				break;
 			case "create":
-				const d = await (await fetch(`/api/${n}`, {
+				const d = await (await fetch(`${re.dataset.apiUrl}/${n}`, {
 					method: "POST",
+					credentials: "include",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({ $type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0] })
 				})).json();
-				history.pushState(undefined, "", `/admin/collections/${n}/${d.id}`);
+				history.pushState({}, "", `/admin/collections/${n}/${d.id}`);
 				dispatchEvent(new CustomEvent("popstate"));
 				break;
 			case "delete":
@@ -175,7 +188,7 @@ export default class CmsCollection extends WebComponent {
 				s.data = pe.state.field.data;
 				break;
 			default:
-				s.data = await (await fetch(`/api/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
+				s.data = await (await fetch(`${this.closest("app-element").dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
 				this.requestDisplay();
 				break;
 		}

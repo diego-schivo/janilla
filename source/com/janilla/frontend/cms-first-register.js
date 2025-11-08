@@ -47,19 +47,21 @@ export default class CmsFirstRegister extends WebComponent {
 	handleSubmit = async event => {
 		event.preventDefault();
 		event.stopPropagation();
-		const r = await fetch("/api/users/first-register", {
+		const a = this.closest("app-element");
+		const r = await fetch(`${a.dataset.apiUrl}/users/first-register`, {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
 		});
 		if (r.ok) {
-			history.pushState(undefined, "", "/admin");
+			history.pushState({ user: await r.json() }, "", "/admin");
 			dispatchEvent(new CustomEvent("popstate"));
 		} else
 			this.closest("cms-admin").renderToast(await r.json(), "error");
 	}
 
 	async updateDisplay() {
+		document.title = "Create first user - Janilla";
 		this.appendChild(this.interpolateDom({
 			$template: ""
 		}));

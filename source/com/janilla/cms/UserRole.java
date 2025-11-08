@@ -22,22 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-module com.janilla {
+package com.janilla.cms;
 
-	exports com.janilla.cms;
-	exports com.janilla.http;
-	exports com.janilla.io;
-	exports com.janilla.ioc;
-	exports com.janilla.java;
-	exports com.janilla.json;
-	exports com.janilla.net;
-	exports com.janilla.persistence;
-	exports com.janilla.reflect;
-	exports com.janilla.smtp;
-	exports com.janilla.sqlite;
-	exports com.janilla.web;
+public enum UserRole {
 
-	opens com.janilla.cms;
-	opens com.janilla.frontend;
-	opens com.janilla.net;
+	ADMIN
 }

@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -134,6 +135,10 @@ public final class Java {
 		x.put(k3, v3);
 		x.put(k4, v4);
 		return x;
+	}
+
+	public static <K, V> Entry<K, V> mapEntry(K k, V v) {
+		return new AbstractMap.SimpleImmutableEntry<>(k, v);
 	}
 
 	public static FileSystem zipFileSystem(URI uri) {

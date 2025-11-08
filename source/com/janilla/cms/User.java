@@ -22,22 +22,26 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-module com.janilla {
+package com.janilla.cms;
 
-	exports com.janilla.cms;
-	exports com.janilla.http;
-	exports com.janilla.io;
-	exports com.janilla.ioc;
-	exports com.janilla.java;
-	exports com.janilla.json;
-	exports com.janilla.net;
-	exports com.janilla.persistence;
-	exports com.janilla.reflect;
-	exports com.janilla.smtp;
-	exports com.janilla.sqlite;
-	exports com.janilla.web;
+import java.time.Instant;
+import java.util.Set;
 
-	opens com.janilla.cms;
-	opens com.janilla.frontend;
-	opens com.janilla.net;
+public interface User<ID extends Comparable<ID>> extends Document<ID> {
+
+	String email();
+
+	String salt();
+
+	String resetPasswordToken();
+
+	Instant resetPasswordExpiration();
+
+	boolean passwordEquals(String password);
+
+	User<ID> withPassword(String password);
+
+	User<ID> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
+
+	User<ID> withRoles(Set<UserRole> roles);
 }

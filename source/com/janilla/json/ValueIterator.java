@@ -117,6 +117,7 @@ public class ValueIterator extends TokenIterator {
 		case String x -> context.newStringIterator(x);
 		case URI x -> context.newStringIterator(x.toString());
 		case UUID x -> context.newStringIterator(x.toString());
+		case Class<?> x -> context.newStringIterator(x.toString());
 		default -> null;
 		} : context.newNullIterator();
 	}

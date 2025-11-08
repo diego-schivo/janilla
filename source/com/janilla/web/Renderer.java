@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 public abstract class Renderer<T> implements Function<T, String> {
 
-	protected RenderableFactory factory;
+	protected RenderableFactory renderableFactory;
 
 	protected Render annotation;
 

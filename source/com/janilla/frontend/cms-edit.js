@@ -63,14 +63,15 @@ export default class CmsEdit extends WebComponent {
 			let r, j;
 			switch (el.value) {
 				case "create":
-					r = await fetch(`/api/${s.collectionSlug}`, {
+					r = await fetch(`${re.dataset.apiUrl}/${s.collectionSlug}`, {
 						method: "POST",
+						credentials: "include",
 						headers: { "content-type": "application/json" },
 						body: JSON.stringify({ $type: s.documentType })
 					});
 					j = await r.json();
 					if (r.ok) {
-						history.pushState(undefined, "", `/admin/collections/${s.collectionSlug}/${j.id}`);
+						history.pushState({}, "", `/admin/collections/${s.collectionSlug}/${j.id}`);
 						dispatchEvent(new CustomEvent("popstate"));
 					} else
 						a.renderToast(j, "error");
@@ -82,23 +83,30 @@ export default class CmsEdit extends WebComponent {
 						a.initField(f);
 						f.data[k.substring(i + 1)] = v;
 					}
-					r = await fetch(`/api/${s.collectionSlug}`, {
+					r = await fetch(`${re.dataset.apiUrl}/${s.collectionSlug}`, {
 						method: "POST",
+						credentials: "include",
 						headers: { "content-type": "application/json" },
 						body: JSON.stringify(s.document)
 					});
 					j = await r.json();
 					if (r.ok) {
-						history.pushState(undefined, "", `/admin/collections/${s.collectionSlug}/${j.id}`);
+						history.pushState({}, "", `/admin/collections/${s.collectionSlug}/${j.id}`);
 						dispatchEvent(new CustomEvent("popstate"));
 					} else
 						a.renderToast(j, "error");
 					break;
 				case "delete":
-					r = await fetch(s.documentUrl, { method: "DELETE" });
+					r = await fetch(s.documentUrl, {
+						method: "DELETE",
+						credentials: "include"
+					});
 					j = await r.json();
 					if (r.ok) {
-						history.pushState(undefined, "", `/admin/${s.pathSegments.slice(0, 2).join("/")}`);
+						const re = this.closest("app-element");
+						if (j.$type === "User" && j.id === re.state.user.id)
+							delete re.state.computeState;
+						history.pushState({}, "", `/admin/${s.pathSegments.slice(0, 2).join("/")}`);
 						dispatchEvent(new CustomEvent("popstate"));
 					} else
 						a.renderToast(j, "error");
@@ -171,7 +179,8 @@ export default class CmsEdit extends WebComponent {
 			for (const [k, v] of kkvv2)
 				fd.append(k, v);
 			const xhr = new XMLHttpRequest();
-			xhr.open("POST", "/api/files/upload", true);
+			xhr.open("POST", `${this.closest("app-element").dataset.apiUrl}/files/upload`, true);
+			xhr.withCredentials = true;
 			xhr.send(fd);
 		}
 		const a = this.closest("cms-admin");
@@ -196,6 +205,7 @@ export default class CmsEdit extends WebComponent {
 		}
 		const r = await fetch(u, {
 			method: s.document.id ? "PUT" : "POST",
+			credentials: "include",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(s.document)
 		});
@@ -227,8 +237,8 @@ export default class CmsEdit extends WebComponent {
 	}
 
 	async updateDisplay() {
+		const s = history.state.cmsAdmin;
 		const a = this.closest("cms-admin");
-		const s = a.state;
 		this.state.versions = Object.hasOwn(s.document, "versionCount");
 		this.state.drafts = Object.hasOwn(s.document, "documentStatus");
 		this.appendChild(this.interpolateDom({

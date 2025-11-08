@@ -99,7 +99,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 					vv.add(v);
 					var r = v instanceof Renderable<?> z ? z
 							: v != null && !(e.isEmpty() && av.annotated == null)
-									? factory.createRenderable(av.annotated, v)
+									? renderableFactory.createRenderable(av.annotated, v)
 									: null;
 					var iis = v instanceof Iterator || v instanceof Iterable || v instanceof Stream;
 					if (r != null) {
@@ -118,7 +118,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 						var d = annotation != null ? annotation.delimiter() : null;
 						var c = d != null && !d.isEmpty() ? Collectors.joining(d) : Collectors.joining();
 						v = w.map(z -> {
-							var r2 = factory.createRenderable(elementType, z);
+							var r2 = renderableFactory.createRenderable(elementType, z);
 							if (r2.renderer().templateKey1 == null)
 								r2.renderer().templateKey1 = templateKey1;
 							return r2.get();
@@ -146,7 +146,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 			k1 = templateKey1;
 			k2 = k;
 		}
-		var t = factory.template(k1, k2);
+		var t = renderableFactory.template(k1, k2);
 		if (t == null)
 			throw new NullPointerException(k1 + ", " + k2);
 		return t;

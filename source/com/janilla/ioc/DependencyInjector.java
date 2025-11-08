@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.reflect;
+package com.janilla.ioc;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -34,11 +34,13 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class Factory {
+import com.janilla.reflect.Reflection;
+
+public class DependencyInjector {
 
 	public static void main(String[] args) {
 		var z = new Foo("a");
-		var f = new Factory(List.of(Foo.C.class), () -> z);
+		var f = new DependencyInjector(List.of(Foo.C.class), () -> z);
 		var x1 = f.create(Foo.I.class, Map.of("s2", "b"));
 		IO.println("x1=" + x1);
 		var x2 = f.create(Foo.I.class, Map.of("s2", "c"));
@@ -75,24 +77,29 @@ public class Factory {
 
 	protected final Collection<Class<?>> types;
 
-	protected final Supplier<Object> source;
+	protected final Supplier<Object> context;
 
-	protected final Map<Class<?>, List<Class<?>>> foo = new ConcurrentHashMap<>();
+	protected final String name;
 
 	protected final Map<Class<?>, Function<Map<String, Object>, ?>> functions = new ConcurrentHashMap<>();
 
-	public Factory(Collection<Class<?>> types, Supplier<Object> source) {
+	public DependencyInjector(Collection<Class<?>> types, Supplier<Object> context) {
+		this(types, context, null);
+	}
+
+	public DependencyInjector(Collection<Class<?>> types, Supplier<Object> context, String name) {
 //		IO.println("Factory, types=" + types);
 		this.types = types;
-		this.source = source;
+		this.context = context;
+		this.name = name;
 	}
 
 	public Collection<Class<?>> types() {
 		return types;
 	}
 
-	public Object source() {
-		return source.get();
+	public Object context() {
+		return context.get();
 	}
 
 	public <T> T create(Class<T> type) {
@@ -100,22 +107,14 @@ public class Factory {
 	}
 
 	public <T> T create(Class<T> type, Map<String, Object> arguments) {
-		return create(type, arguments, null);
-	}
-
-	public <T> T create(Class<T> type, Map<String, Object> arguments, Function<List<Class<?>>, Class<?>> bar) {
-//		IO.println("Factory.create, type = " + type);
-		var tt = Stream.concat(
-				foo.computeIfAbsent(type, k -> types.stream().filter(x -> k.isAssignableFrom(x)).toList()).stream(),
-				Stream.of(type)).toList();
-		var t1 = bar != null ? bar.apply(tt) : tt.getFirst();
-		var f = functions.computeIfAbsent(t1, k -> {
-			var c = !Modifier.isAbstract(k.getModifiers()) ? k : null;
-			for (var x : types)
-				if (type.isAssignableFrom(x) && !Modifier.isAbstract(x.getModifiers())) {
-					c = x;
-					break;
-				}
+		var f = functions.computeIfAbsent(type, k -> {
+			var c = Stream.concat(types.stream(), Stream.of(k)).filter(x -> !Modifier.isAbstract(x.getModifiers()))
+					.filter(k::isAssignableFrom).filter(x -> {
+						var a = x.getAnnotation(Context.class);
+						var nn = a != null ? a.value() : null;
+						return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
+					}).findFirst().orElse(null);
+//			IO.println("Factory.create, c=" + c);
 			if (c == null)
 				return _ -> null;
 			var cc = c.getConstructors();
@@ -123,7 +122,7 @@ public class Factory {
 				throw new RuntimeException(c + " has " + cc.length + " constructors");
 			var c0 = cc[0];
 //			IO.println("Factory.create, c0 = " + c0);
-			var source1 = source.get();
+			var source1 = context.get();
 			if (source1 != null && c.getEnclosingClass() == source1.getClass())
 				return aa -> {
 					try {

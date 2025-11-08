@@ -76,9 +76,8 @@ export default class CmsAdmin extends WebComponent {
 					this.querySelector("dialog").close();
 					break;
 				case "logout":
-					await fetch("/api/users/logout", { method: "POST" });
-					delete this.closest("root-element").state.user;
-					history.pushState(undefined, "", "/admin");
+					await fetch(`${this.closest("app-element").dataset.apiUrl}/users/logout`, { method: "POST" });
+					history.pushState({}, "", "/admin");
 					dispatchEvent(new CustomEvent("popstate"));
 					break;
 			}
@@ -94,93 +93,21 @@ export default class CmsAdmin extends WebComponent {
 		const nn = s.pathSegments.slice(0, 3);
 		if (v !== "edit")
 			nn.push(v);
-		history.pushState(undefined, "", `/admin/${nn.join("/")}`);
+		history.pushState({}, "", `/admin/${nn.join("/")}`);
 		dispatchEvent(new CustomEvent("popstate"));
 	}
 
-	async computeState() {
-		const s = this.state;
-		[
-			"pathSegments",
-			"collectionSlug",
-			"globalSlug",
-			"documentType",
-			"documentUrl",
-			"documentSubview",
-			"versionId",
-			"document",
-			"versions",
-			"version"
-		].forEach(x => delete s[x]);
-		const u = this.closest("root-element").state.user;
-		/*
-		if (this.dataset.email !== s.me?.email) {
-			this.closest("root-element").requestDisplay();
-			return;
-		}
-		*/
-		let p = this.dataset.path;
-		if (u && p === "/account")
-			p = `/collections/users/${u.id}`;
-		s.pathSegments = p.length > 1 ? p.substring(1).split("/") : [];
-		if (u) {
-			if (["/create-first-user", "/login", "/forgot"].includes(p) || p.startsWith("/reset/")) {
-				history.pushState(undefined, "", "/admin");
-				dispatchEvent(new CustomEvent("popstate"));
-				return;
-			}
-
-			if (p === "/logout") {
-				await fetch("/api/users/logout", { method: "POST" });
-				delete this.closest("root-element").state.user;
-				history.pushState(undefined, "", "/admin");
-				dispatchEvent(new CustomEvent("popstate"));
-				return;
-			}
-
-			if (p !== "/unauthorized" && !u.roles?.some(x => x.name === "ADMIN")) {
-				history.pushState(undefined, "", "/admin/unauthorized");
-				dispatchEvent(new CustomEvent("popstate"));
-				return;
-			}
-
-			s.schema ??= await (await fetch("/api/schema")).json();
-
-			if (s.pathSegments[0] === "collections") {
-				s.collectionSlug = s.pathSegments[1];
-				s.documentType = s.schema["Collections"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].elementTypes[0];
-				s.documentUrl = s.pathSegments.length >= 3 ? `/api/${s.collectionSlug}/${s.pathSegments[2]}` : null;
-			}
-			if (s.pathSegments[0] === "globals") {
-				s.globalSlug = s.pathSegments[1];
-				s.documentType = s.schema["Globals"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].type;
-				s.documentUrl = s.pathSegments.length >= 2 ? `/api/${s.globalSlug}` : null;
-			}
-
-			s.documentSubview = s.documentUrl ? s.pathSegments[s.collectionSlug ? 3 : 2] ?? "default" : null;
-			s.versionId = s.documentSubview === "versions" ? s.pathSegments[s.collectionSlug ? 4 : 3] : null;
-			if (s.versionId) {
-				s.documentSubview = "version";
-				s.versionId = parseInt(s.versionId);
-			}
-			await Promise.all([
-				s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : { $type: s.documentType }) : null,
-				s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`).then(async x => s.versions = await x.json()) : null,
-				s.documentSubview === "version" ? fetch(`${s.collectionSlug ? s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/")) : s.documentUrl}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
-			]);
-			//console.log("s.document", s.document);
-			this.requestDisplay();
-		} else if (!["/create-first-user", "/login", "/forgot", "/reset"].includes(p) && !p.startsWith("/reset/")) {
-			history.pushState(undefined, "", "/admin/login");
-			dispatchEvent(new CustomEvent("popstate"));
-		}
-	}
-
 	async updateDisplay() {
-		const s = this.state;
-		s.computeState ??= this.computeState();
-		const u = this.closest("root-element").state.user;
-		const gg = u && s.schema ? Object.entries(s.schema["Data"]).map(([k, v]) => ({
+		const hs = history.state;
+		let s = hs.cmsAdmin
+		if (!s) {
+			let p = this.dataset.path;
+			if (hs.user && p === "/account")
+				p = `/collections/users/${hs.user.id}`;
+			s = { pathSegments: p.length > 1 ? p.substring(1).split("/") : [] };
+			this.foo(p, s);
+		}
+		const gg = hs.user && s.schema ? Object.entries(s.schema["Data"]).map(([k, v]) => ({
 			$template: "group",
 			label: k.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
 			checked: true,
@@ -192,15 +119,15 @@ export default class CmsAdmin extends WebComponent {
 		})) : null;
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			p: u ? {
+			p: hs.user ? {
 				$template: "p",
 				checked: true
 			} : null,
-			aside: u && s.schema ? {
+			aside: hs.user && s.schema ? {
 				$template: "aside",
 				groups: gg
 			} : null,
-			header: u ? {
+			header: hs.user ? {
 				$template: "header",
 				items: (() => {
 					const xx = [];
@@ -291,15 +218,76 @@ export default class CmsAdmin extends WebComponent {
 						return { $template: s.schema ? "dashboard" : "loading" };
 				}
 			})(),
-			dialog: u && s.schema ? {
+			dialog: hs.user && s.schema ? {
 				$template: "dialog",
 				groups: gg
 			} : null
 		}));
 	}
 
+	async foo(p, s) {
+		let hs = history.state;
+		if (hs.user) {
+			if (["/create-first-user", "/login", "/forgot"].includes(p) || p.startsWith("/reset/")) {
+				history.pushState({}, "", "/admin");
+				dispatchEvent(new CustomEvent("popstate"));
+				return;
+			}
+
+			const a = this.closest("app-element");
+			if (p === "/logout") {
+				await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
+				//delete this.closest("app-element").state.user;
+				history.pushState({}, "", "/admin");
+				dispatchEvent(new CustomEvent("popstate"));
+				return;
+			}
+
+			if (p !== "/unauthorized" && !hs.user.roles?.some(x => x.name === "ADMIN")) {
+				history.pushState({}, "", "/admin/unauthorized");
+				dispatchEvent(new CustomEvent("popstate"));
+				return;
+			}
+
+			s.schema = await (await fetch(`${a.dataset.apiUrl}/schema`)).json();
+
+			if (s.pathSegments[0] === "collections") {
+				s.collectionSlug = s.pathSegments[1];
+				s.documentType = s.schema["Collections"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].elementTypes[0];
+				s.documentUrl = s.pathSegments.length >= 3 ? `${a.dataset.apiUrl}/${s.collectionSlug}/${s.pathSegments[2]}` : null;
+			}
+			if (s.pathSegments[0] === "globals") {
+				s.globalSlug = s.pathSegments[1];
+				s.documentType = s.schema["Globals"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].type;
+				s.documentUrl = s.pathSegments.length >= 2 ? `${a.dataset.apiUrl}/${s.globalSlug}` : null;
+			}
+
+			s.documentSubview = s.documentUrl ? s.pathSegments[s.collectionSlug ? 3 : 2] ?? "default" : null;
+			s.versionId = s.documentSubview === "versions" ? s.pathSegments[s.collectionSlug ? 4 : 3] : null;
+			if (s.versionId) {
+				s.documentSubview = "version";
+				s.versionId = parseInt(s.versionId);
+			}
+			await Promise.all([
+				s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : { $type: s.documentType }) : null,
+				s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`).then(async x => s.versions = await x.json()) : null,
+				s.documentSubview === "version" ? fetch(`${s.collectionSlug ? s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/")) : s.documentUrl}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
+			]);
+		} else if (!["/create-first-user", "/forgot", "/login", "/reset"].includes(p) && !p.startsWith("/reset/")) {
+			//location.href = "/admin/login";
+			console.log("/admin/login");
+			return;
+		}
+		history.replaceState(hs = {
+			...hs,
+			cmsAdmin: s
+		}, "");
+		this.requestDisplay();
+	}
+
 	field(path, parent) {
-		const s = this.state;
+		const hs = history.state;
+		const s = hs.cmsAdmin;
 		let f = parent ?? {
 			type: s.documentType,
 			properties: s.schema[s.documentType],
@@ -344,7 +332,9 @@ export default class CmsAdmin extends WebComponent {
 	}
 
 	title(document) {
-		if (Object.values(this.state.schema.Globals ?? {}).some(x => x.type === document.$type))
+		const hs = history.state;
+		const s = hs.cmsAdmin;
+		if (Object.values(s.schema.Globals ?? {}).some(x => x.type === document.$type))
 			return document.$type.split(/(?=[A-Z])/).join(" ");
 		switch (document.$type) {
 			case "Media":

@@ -33,20 +33,20 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
 import com.janilla.io.TransactionalByteChannel;
-import com.janilla.reflect.Factory;
+import com.janilla.ioc.DependencyInjector;
 import com.janilla.sqlite.SqliteDatabase;
 
 public class ApplicationPersistenceBuilder {
 
 	protected final Path databaseFile;
 
-	protected final Factory factory;
+	protected final DependencyInjector injector;
 
 	protected Persistence persistence;
 
-	public ApplicationPersistenceBuilder(Path databaseFile, Factory factory) {
+	public ApplicationPersistenceBuilder(Path databaseFile, DependencyInjector injector) {
 		this.databaseFile = databaseFile;
-		this.factory = factory;
+		this.injector = injector;
 	}
 
 	public Persistence build() {
@@ -63,7 +63,7 @@ public class ApplicationPersistenceBuilder {
 								StandardOpenOption.WRITE));
 			}
 			var d = new SqliteDatabase(ch, 4096, 0);
-			persistence = factory.create(Persistence.class, Map.of("database", d));
+			persistence = injector.create(Persistence.class, Map.of("database", d));
 			return persistence;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);

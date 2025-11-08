@@ -22,22 +22,41 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-module com.janilla {
+package com.janilla.http;
 
-	exports com.janilla.cms;
-	exports com.janilla.http;
-	exports com.janilla.io;
-	exports com.janilla.ioc;
-	exports com.janilla.java;
-	exports com.janilla.json;
-	exports com.janilla.net;
-	exports com.janilla.persistence;
-	exports com.janilla.reflect;
-	exports com.janilla.smtp;
-	exports com.janilla.sqlite;
-	exports com.janilla.web;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.channels.Channels;
+import java.util.function.Function;
 
-	opens com.janilla.cms;
-	opens com.janilla.frontend;
-	opens com.janilla.net;
+public class DirectHttpClient extends HttpClient {
+
+	protected final HttpServer server;
+
+	public DirectHttpClient(HttpServer server) {
+		super(null);
+		this.server = server;
+	}
+
+	@Override
+	public <R> R send(HttpRequest request, Function<HttpResponse, R> function) {
+		var rs0 = new HttpResponse();
+		var o = new ByteArrayOutputStream();
+		try (var rs = rs0) {
+			rs.setStatus(0);
+			rs.setBody(Channels.newChannel(o));
+			var ex = server.createExchange(request, rs);
+			ScopedValue.where(HttpServer.HTTP_EXCHANGE, ex).call(() -> server.handleExchange(ex));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		try (var rs = rs0) {
+			rs.setBody(Channels.newChannel(new ByteArrayInputStream(o.toByteArray())));
+			return function.apply(rs);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 }

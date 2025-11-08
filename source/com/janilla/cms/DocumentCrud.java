@@ -26,7 +26,6 @@ package com.janilla.cms;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,6 +93,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	}
 
 	public List<E> read(List<ID> ids, boolean drafts) {
+//		IO.println("DocumentCrud.read, ids=" + ids + ", drafts=" + drafts);
 		if (ids == null || ids.isEmpty())
 			return List.of();
 		return type.isAnnotationPresent(Versions.class) && drafts
@@ -102,6 +102,8 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	}
 
 	public E update(ID id, E entity, Set<String> include, boolean newVersion) {
+//		IO.println("DocumentCrud.update, id=" + id + ", entity=" + entity + ", include=" + include + ", newVersion"
+//				+ newVersion);
 		var exclude = Set.of("id", "createdAt", "updatedAt");
 		return type.isAnnotationPresent(Versions.class) ? persistence.database().perform(() -> {
 			var e1 = read(id, true);
@@ -144,13 +146,15 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			else {
 				var i = persistence.database().index(versionTable + ".document");
 				i.select(new Object[] { id }, x -> {
+					var oo = x.findFirst().get();
 					@SuppressWarnings("unchecked")
-					var id2 = (ID) x.findFirst().get()[1];
+					var id2 = (ID) oo[oo.length - 1];
 					a.id = id2;
 				});
 				persistence.database().table(versionTable).delete(new Object[] { a.id }, x -> {
+					var oo = x.findFirst().get();
 					@SuppressWarnings("unchecked")
-					var v1 = (Version<ID, E>) parse((String) x.findFirst().get()[1], Version.class);
+					var v1 = (Version<ID, E>) parse((String) oo[1], Version.class);
 					vv1.add(v1);
 				});
 				persistence.database().table(versionTable).insert(_ -> {

@@ -36,7 +36,6 @@ import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.MethodHandlerFactory;
-import com.janilla.web.NotFoundException;
 
 public abstract class CollectionApi<ID extends Comparable<ID>, E extends Document<ID>> {
 
@@ -44,11 +43,12 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 
 	protected final Predicate<HttpExchange> drafts;
 
-	public Persistence persistence;
+	protected final Persistence persistence;
 
-	protected CollectionApi(Class<E> type, Predicate<HttpExchange> drafts) {
+	protected CollectionApi(Class<E> type, Predicate<HttpExchange> drafts, Persistence persistence) {
 		this.type = type;
 		this.drafts = drafts;
+		this.persistence = persistence;
 	}
 
 	@Handle(method = "POST")
@@ -57,36 +57,28 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 	}
 
 	@Handle(method = "GET")
-	public List<E> read() {
-		return crud().read(crud().list());
+	public List<E> read(Long skip, Long limit) {
+		var s = skip != null ? skip.longValue() : 0;
+		var l = limit != null ? limit.longValue() : -1;
+		return crud().read(s != 0 || l != -1 ? crud().list(s, l).ids() : crud().list());
 	}
 
 	@Handle(method = "GET", path = "(\\d+)")
 	public E read(ID id, HttpExchange exchange) {
-		var e = crud().read(id, drafts.test(exchange));
-		if (e == null)
-			throw new NotFoundException("entity " + id);
-		return e;
+		return crud().read(id, drafts.test(exchange));
 	}
 
 	@Handle(method = "PUT", path = "(\\d+)")
-	public E update(ID id, @Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft,
-			Boolean autosave) {
+	public E update(ID id, @Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);
-		var e = crud().update(id, entity, updateInclude(entity), !Boolean.TRUE.equals(autosave));
-		if (e == null)
-			throw new NotFoundException("entity " + id);
-		return e;
+		return crud().update(id, entity, updateInclude(entity), !Boolean.TRUE.equals(autosave));
 	}
 
 	@Handle(method = "DELETE", path = "(\\d+)")
 	public E delete(ID id) {
-		var e = crud().delete(id);
-		if (e == null)
-			throw new NotFoundException("entity " + id);
-		return e;
+		return crud().delete(id);
 	}
 
 	@Handle(method = "DELETE")

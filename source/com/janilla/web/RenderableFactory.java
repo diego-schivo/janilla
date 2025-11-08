@@ -51,13 +51,8 @@ public class RenderableFactory {
 		var a = annotation(annotated, value);
 		@SuppressWarnings("unchecked")
 		var c = (Class<Renderer<T>>) (a != null ? a.renderer() : HtmlRenderer.class);
-		Renderer<T> r;
-		try {
-			r = c.getConstructor().newInstance();
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException("c=" + c, e);
-		}
-		r.factory = this;
+		var r = createRenderer(c);
+		r.renderableFactory = this;
 		r.annotation = a;
 		var t = a != null ? a.template() : null;
 		if (t != null && t.endsWith(".html")) {
@@ -78,6 +73,14 @@ public class RenderableFactory {
 			r.templateKey1 = t;
 		}
 		return new Renderable<>(value, r);
+	}
+
+	protected <T> Renderer<T> createRenderer(Class<Renderer<T>> c) {
+		try {
+			return c.getConstructor().newInstance();
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException("c=" + c, e);
+		}
 	}
 
 	protected <T> Render annotation(AnnotatedElement annotated, T value) {

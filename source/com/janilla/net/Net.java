@@ -101,4 +101,8 @@ public final class Net {
 				.collect(Collectors.joining("&"));
 		return Stream.of(pathname, s).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("?"));
 	}
+
+//	public static String uriString(String pathname, String name1, String value1) {
+//		return pathname + "?" + (value1 != null ? urlEncode(name1) + "=" + urlEncode(value1) : urlEncode(name1));
+//	}
 }

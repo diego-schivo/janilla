@@ -36,7 +36,10 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 
@@ -51,24 +54,24 @@ public class HttpClient {
 		this.sslContext = sslContext;
 	}
 
-	public Object getJson(String uri) {
+	public Object getJson(URI uri) {
 		return getJson(uri, null);
 	}
 
-	public Object getJson(String uri, String cookie) {
-//		IO.println("HttpClient.getJson, uri=" + uri);
-		var u = URI.create(uri);
+	public Object getJson(URI uri, String cookie) {
+		IO.println("HttpClient.getJson, uri=" + uri + ", cookie=" + cookie);
 		var rq = new HttpRequest();
 		rq.setMethod("GET");
-		rq.setTarget(u.getPath());
-		rq.setScheme(u.getScheme());
-		rq.setAuthority(u.getAuthority());
+		rq.setTarget(
+				Stream.of(uri.getPath(), uri.getQuery()).filter(Objects::nonNull).collect(Collectors.joining("?")));
+		rq.setScheme(uri.getScheme());
+		rq.setAuthority(uri.getAuthority());
 		if (cookie != null && !cookie.isEmpty())
 			rq.setHeaderValue("cookie", cookie);
 		return send(rq, rs -> {
 			try (var x = Channels.newInputStream((ReadableByteChannel) rs.getBody())) {
 				var s = new String(x.readAllBytes());
-//				IO.println("HttpClient.getJson, s=" + s);
+				IO.println("HttpClient.getJson, s=" + s);
 				return Json.parse(s);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
