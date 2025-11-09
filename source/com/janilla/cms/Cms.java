@@ -95,7 +95,7 @@ public class Cms {
 									m3.put("referenceType", f.apply(ta.value()[0]));
 							}
 							cc = List.of();
-						} else if (x.type() == Document.Reference.class) {
+						} else if (x.type() == DocumentReference.class) {
 							var ta = x.annotatedType().getAnnotation(Types.class);
 							if (ta != null)
 								m3.put("referenceTypes", Arrays.stream(ta.value()).map(f).toList());

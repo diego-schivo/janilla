@@ -70,7 +70,7 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 
 	@Handle(method = "PUT", path = "(\\d+)")
 	public E update(ID id, @Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
-		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
+		var s = Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);
 		return crud().update(id, entity, updateInclude(entity), !Boolean.TRUE.equals(autosave));
@@ -109,7 +109,7 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 	@Handle(method = "POST", path = "versions/(\\d+)")
 	public E restoreVersion(ID versionId, Boolean draft) {
 		return crud().restoreVersion(versionId,
-				Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED);
+				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 	}
 
 	protected DocumentCrud<ID, E> crud() {

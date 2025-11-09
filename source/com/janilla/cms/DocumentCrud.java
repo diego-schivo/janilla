@@ -26,6 +26,7 @@ package com.janilla.cms;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,7 +72,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			var e = read(id);
 			// IO.println("e=" + e);
 			if (e != null) {
-				var i = persistence.database().index(versionTable + ".document");
+				var i = persistence.database().index(versionTable + ".documentId");
 				class A {
 					ID id;
 				}
@@ -102,8 +103,8 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	}
 
 	public E update(ID id, E entity, Set<String> include, boolean newVersion) {
-//		IO.println("DocumentCrud.update, id=" + id + ", entity=" + entity + ", include=" + include + ", newVersion"
-//				+ newVersion);
+		IO.println("DocumentCrud.update, id=" + id + ", entity=" + entity + ", include=" + include + ", newVersion"
+				+ newVersion);
 		var exclude = Set.of("id", "createdAt", "updatedAt");
 		return type.isAnnotationPresent(Versions.class) ? persistence.database().perform(() -> {
 			var e1 = read(id, true);
@@ -144,7 +145,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 					return new Object[] { x, format(v) };
 				});
 			else {
-				var i = persistence.database().index(versionTable + ".document");
+				var i = persistence.database().index(versionTable + ".documentId");
 				i.select(new Object[] { id }, x -> {
 					var oo = x.findFirst().get();
 					@SuppressWarnings("unchecked")
@@ -153,6 +154,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 				});
 				persistence.database().table(versionTable).delete(new Object[] { a.id }, x -> {
 					var oo = x.findFirst().get();
+					IO.println("oo=" + Arrays.toString(oo));
 					@SuppressWarnings("unchecked")
 					var v1 = (Version<ID, E>) parse((String) oo[1], Version.class);
 					vv1.add(v1);
@@ -175,7 +177,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 		return type.isAnnotationPresent(Versions.class) ? persistence.database().perform(() -> {
 			var e = super.delete(id);
 			var ids = new ArrayList<ID>();
-			persistence.database().index(versionTable + ".document").select(new Object[] { id }, x -> x.map(oo -> {
+			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, x -> x.map(oo -> {
 				@SuppressWarnings("unchecked")
 				var id2 = (ID) oo[1];
 				return id2;
@@ -204,7 +206,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	public List<Version<ID, E>> readVersions(ID id) {
 		return persistence.database().perform(() -> {
 			var ids = new ArrayList<ID>();
-			persistence.database().index(versionTable + ".document").select(new Object[] { id }, x -> x.map(oo -> {
+			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, x -> x.map(oo -> {
 				@SuppressWarnings("unchecked")
 				var id2 = (ID) oo[1];
 				return id2;
@@ -234,7 +236,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 		}, false);
 	}
 
-	public E restoreVersion(ID versionId, Document.Status status) {
+	public E restoreVersion(ID versionId, DocumentStatus status) {
 		return persistence.database().perform(() -> {
 			var v1 = readVersion(versionId);
 			var e = super.update(v1.document().id(), x -> {
@@ -249,7 +251,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 				var v = new Version<>(id, e);
 				return new Object[] { x, format(v) };
 			});
-			persistence.database().index(versionTable + ".document").insert(new Object[] { e.id(), e.updatedAt(), l },
+			persistence.database().index(versionTable + ".documentId").insert(new Object[] { e.id(), e.updatedAt(), l },
 					null);
 			return e;
 		}, true);
@@ -261,22 +263,20 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			E e2;
 		}
 		var a = new A();
-		persistence.database().perform(() -> {
-			var i = persistence.database().index(versionTable + ".document");
-			if (vv1 != null)
-				for (var v : vv1) {
-					i.delete(new Object[] { id, v.document().updatedAt().toString(), v.id() }, null);
-					if (a.e1 == null)
-						a.e1 = v.document();
-				}
-			if (vv2 != null)
-				for (var v : vv2) {
-					i.insert(new Object[] { id, v.document().updatedAt().toString(), v.id() }, null);
-					if (a.e2 == null)
-						a.e2 = v.document();
-				}
-			return null;
-		}, true);
-		updateIndexes(a.e1, a.e2, id, x -> getIndexName(x) + "Draft");
+		var i = persistence.database().index(versionTable + ".documentId");
+		if (vv1 != null)
+			for (var v : vv1) {
+				i.delete(new Object[] { id, v.document().updatedAt().toString(), v.id() }, null);
+				if (a.e1 == null)
+					a.e1 = v.document();
+			}
+		if (vv2 != null)
+			for (var v : vv2) {
+				i.insert(new Object[] { id, v.document().updatedAt().toString(), v.id() }, null);
+				if (a.e2 == null)
+					a.e2 = v.document();
+			}
+		updateIndexes(a.e1, a.e2, id,
+				x -> persistence.database().index(type.getSimpleName() + "." + x + "Draft", "table"));
 	}
 }

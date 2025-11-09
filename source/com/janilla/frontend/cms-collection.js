@@ -149,7 +149,7 @@ export default class CmsCollection extends WebComponent {
 					method: "POST",
 					credentials: "include",
 					headers: { "content-type": "application/json" },
-					body: JSON.stringify({ $type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0] })
+					body: JSON.stringify({ $type: history.state.cmsAdmin.schema["Collections"][n].elementTypes[0] })
 				})).json();
 				history.pushState({}, "", `/admin/collections/${n}/${d.id}`);
 				dispatchEvent(new CustomEvent("popstate"));

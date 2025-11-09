@@ -28,8 +28,11 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Modifier;
 import java.util.AbstractMap;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -113,7 +116,7 @@ public class Persistence {
 //			ii.valueConverter = h;
 //			}
 			var k = type.getSimpleName() + (p != null ? "." + p.name() : "");
-			configuration.indexFactories.put(k, null);
+			configuration.indexes.add(k);
 
 			var ieg = new IndexEntryGetter();
 			BiFunction<Class<?>, String, Function<Object, Object>> kgf;
@@ -137,36 +140,42 @@ public class Persistence {
 	public <ID extends Comparable<ID>> IdHelper<ID> idConverter(Class<?> type) {
 		var t = Reflection.property(type, "id").type();
 		@SuppressWarnings("unchecked")
-		var x = (IdHelper<ID>) (t == UUID.class ? new UuidIdHelper()
-				: t == String.class ? new StringIdHelper() : null);
+		var x = (IdHelper<ID>) (t == UUID.class ? new UuidIdHelper() : t == String.class ? new StringIdHelper() : null);
 		return x;
 	}
 
 	protected void createStoresAndIndexes() {
-		for (var x : configuration.cruds.entrySet())
-			database.perform(() -> {
-				database.createTable(x.getKey().getSimpleName(), new TableColumn[0], x.getValue().idHelper != null);
-				return null;
-			}, true);
-		for (var k : configuration.indexFactories.keySet())
-			database.perform(() -> {
-				database.createIndex(k, "foo");
-				return null;
-			}, true);
+		database.perform(() -> {
+			for (var x : configuration.cruds.entrySet())
+				database.createTable(x.getKey().getSimpleName(), Stream.concat(
+						Stream.of(new TableColumn("id", "INTEGER", true), new TableColumn("content", "TEXT", false)),
+						x.getValue().indexEntryGetters.keySet().stream().filter(Objects::nonNull)
+								.map(y -> new TableColumn(y,
+										Number.class.isAssignableFrom(Reflection.property(x.getKey(), y).type())
+												? "INTEGER"
+												: "TEXT",
+										false)))
+						.toArray(TableColumn[]::new), x.getValue().idHelper != null);
+			for (var k : configuration.indexes) {
+				var ss = k.split("\\.");
+				database.createIndex(k, ss[0], ss.length == 2 ? ss[1] : "id");
+			}
+			return null;
+		}, true);
 	}
 
 	protected static class Configuration {
 
-		protected Map<Class<?>, Crud<?, ?>> cruds = new HashMap<>();
+		protected Map<Class<?>, Crud<?, ?>> cruds = new LinkedHashMap<>();
 
-		protected Map<String, Object> indexFactories = new HashMap<>();
+		protected Set<String> indexes = new LinkedHashSet<>();
 
 		public Map<Class<?>, Crud<?, ?>> cruds() {
 			return cruds;
 		}
 
-		public Map<String, Object> indexFactories() {
-			return indexFactories;
+		public Set<String> indexes() {
+			return indexes;
 		}
 	}
 

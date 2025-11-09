@@ -196,7 +196,7 @@ export default class CmsEdit extends WebComponent {
 			const i = k.lastIndexOf(".");
 			f.parent.data[k.substring(i + 1)] = v;
 		}
-		const s = a.state;
+		const s = history.state.cmsAdmin;
 		//console.log("s", s);
 		const u = new URL(s.documentUrl, location.href);
 		if (auto) {

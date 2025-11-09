@@ -100,14 +100,15 @@ export default class CmsAdmin extends WebComponent {
 	async updateDisplay() {
 		const hs = history.state;
 		let s = hs.cmsAdmin
+		const as = this.closest("app-element").state;
 		if (!s) {
 			let p = this.dataset.path;
-			if (hs.user && p === "/account")
-				p = `/collections/users/${hs.user.id}`;
+			if (as.user && p === "/account")
+				p = `/collections/users/${as.user.id}`;
 			s = { pathSegments: p.length > 1 ? p.substring(1).split("/") : [] };
 			this.foo(p, s);
 		}
-		const gg = hs.user && s.schema ? Object.entries(s.schema["Data"]).map(([k, v]) => ({
+		const gg = as.user && s.schema ? Object.entries(s.schema["Data"]).map(([k, v]) => ({
 			$template: "group",
 			label: k.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
 			checked: true,
@@ -119,15 +120,15 @@ export default class CmsAdmin extends WebComponent {
 		})) : null;
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			p: hs.user ? {
+			p: as.user ? {
 				$template: "p",
 				checked: true
 			} : null,
-			aside: hs.user && s.schema ? {
+			aside: as.user && s.schema ? {
 				$template: "aside",
 				groups: gg
 			} : null,
-			header: hs.user ? {
+			header: as.user ? {
 				$template: "header",
 				items: (() => {
 					const xx = [];
@@ -218,7 +219,7 @@ export default class CmsAdmin extends WebComponent {
 						return { $template: s.schema ? "dashboard" : "loading" };
 				}
 			})(),
-			dialog: hs.user && s.schema ? {
+			dialog: as.user && s.schema ? {
 				$template: "dialog",
 				groups: gg
 			} : null
@@ -226,15 +227,16 @@ export default class CmsAdmin extends WebComponent {
 	}
 
 	async foo(p, s) {
+		const a = this.closest("app-element");
+		const as = a.state;
 		let hs = history.state;
-		if (hs.user) {
+		if (as.user) {
 			if (["/create-first-user", "/login", "/forgot"].includes(p) || p.startsWith("/reset/")) {
 				history.pushState({}, "", "/admin");
 				dispatchEvent(new CustomEvent("popstate"));
 				return;
 			}
 
-			const a = this.closest("app-element");
 			if (p === "/logout") {
 				await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
 				//delete this.closest("app-element").state.user;
@@ -243,7 +245,7 @@ export default class CmsAdmin extends WebComponent {
 				return;
 			}
 
-			if (p !== "/unauthorized" && !hs.user.roles?.some(x => x.name === "ADMIN")) {
+			if (p !== "/unauthorized" && !as.user.roles?.some(x => x.name === "ADMIN")) {
 				history.pushState({}, "", "/admin/unauthorized");
 				dispatchEvent(new CustomEvent("popstate"));
 				return;

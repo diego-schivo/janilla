@@ -61,7 +61,7 @@ public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID
 
 	@Handle(method = "PUT")
 	public E update(@Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
-		var s = Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED;
+		var s = Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);
 		return crud().update(id(), entity, null, !Boolean.TRUE.equals(autosave));
@@ -85,7 +85,7 @@ public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID
 	@Handle(method = "POST", path = "versions/(\\d+)")
 	public E restoreVersion(ID versionId, Boolean draft) {
 		return crud().restoreVersion(versionId,
-				Boolean.TRUE.equals(draft) ? Document.Status.DRAFT : Document.Status.PUBLISHED);
+				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 	}
 
 	protected DocumentCrud<ID, E> crud() {

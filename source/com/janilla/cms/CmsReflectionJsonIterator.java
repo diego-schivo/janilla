@@ -63,7 +63,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 					object = o = x;
 				}
 				stack().push(o);
-			} else if (object instanceof Document.Reference<?, ?> r) {
+			} else if (object instanceof DocumentReference<?, ?> r) {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
 				var x = persistence.crud((Class) r.type()).read(r.id());
 				object = x;
@@ -108,7 +108,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 			if (v == null || !v.drafts())
 				kkvv = kkvv.filter(kv -> kv.getKey() != "documentStatus");
 			if (v != null) {
-				var n = Version.class.getSimpleName() + "<" + class0.getSimpleName() + ">.document";
+				var n = Version.class.getSimpleName() + "<" + class0.getSimpleName() + ">.documentId";
 				var vc = persistence.database()
 						.perform(() -> persistence.database().index(n).count(((Document<?>) value).id()), false);
 				var kv = Map.entry("versionCount", (Object) vc);

@@ -392,6 +392,8 @@ public class SqliteDatabase {
 	}
 
 	public BTree<?, ?> createTable(String name, TableColumn[] columns, boolean withoutRowid) {
+//		IO.println("SqliteDatabase.createTable, name=" + name + ", columns=" + Arrays.toString(columns)
+//				+ ", withoutRowid=" + withoutRowid);
 		if (header.getReservedBytes() == 0 && reservedBytes != 0)
 			header.setReservedBytes(reservedBytes);
 
@@ -401,19 +403,11 @@ public class SqliteDatabase {
 		writePageBuffer(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
-		t.insert(k -> new Object[] { k, "table", name, name, n,
-				withoutRowid
-						? "CREATE TABLE " + name + "("
-								+ IntStream.range(0, columns.length)
-										.mapToObj(x -> columns[x].name() + " " + columns[x].type()
-												+ (x == 0 ? " PRIMARY KEY" : ""))
-										.collect(Collectors.joining(", "))
-								+ ") WITHOUT ROWID"
-						: "CREATE TABLE " + name + "("
-								+ Arrays.stream(columns)
-										.map(x -> x.name() + " " + x.type() + (x.primaryKey() ? " PRIMARY KEY" : ""))
-										.collect(Collectors.joining(", "))
-								+ ")" });
+		t.insert(
+				k -> new Object[] { k, "table", name, name, n,
+						"CREATE TABLE \"" + name + "\"(" + Arrays.stream(columns)
+								.map(x -> "\"" + x.name() + "\" " + x.type() + (x.primaryKey() ? " PRIMARY KEY" : ""))
+								.collect(Collectors.joining(", ")) + ")" + (withoutRowid ? " WITHOUT ROWID" : "") });
 
 		updateHeader();
 		return withoutRowid ? new IndexBTree(this, n) : new TableBTree(this, n);
@@ -437,8 +431,8 @@ public class SqliteDatabase {
 		writePageBuffer(n, p.buffer());
 
 		var t = new TableBTree(this, 1);
-		t.insert(k -> new Object[] { k, "index", name, table, n,
-				"CREATE INDEX " + name + " ON " + table + "(" + String.join(", ", columns) + ")" });
+		t.insert(k -> new Object[] { k, "index", name, table, n, "CREATE INDEX \"" + name + "\" ON \"" + table + "\"("
+				+ Arrays.stream(columns).map(x -> "\"" + x + "\"").collect(Collectors.joining(", ")) + ")" });
 
 		updateHeader();
 		return new IndexBTree(this, n);

@@ -32,13 +32,13 @@ import java.util.function.Function;
 
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
-import com.janilla.ioc.DependencyInjector;
+import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.reflect.ClassAndMethod;
 
 public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
-	protected final DependencyInjector injector;
+	protected final DiFactory diFactory;
 
 	protected final Collection<ClassAndMethod> methods;
 
@@ -48,9 +48,9 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected final List<HttpHandlerFactory> handlerFactories;
 
-	public ApplicationHandlerFactory(DependencyInjector injector, Collection<ClassAndMethod> methods,
+	public ApplicationHandlerFactory(DiFactory diFactory, Collection<ClassAndMethod> methods,
 			RenderableFactory renderableFactory, Collection<Path> files) {
-		this.injector = injector;
+		this.diFactory = diFactory;
 		this.methods = methods;
 		this.renderableFactory = renderableFactory;
 		this.files = files;
@@ -76,27 +76,27 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected HttpHandlerFactory buildMethodHandlerFactory() {
-		return injector.create(MethodHandlerFactory.class,
+		return diFactory.create(MethodHandlerFactory.class,
 				Java.hashMap("methods", methods, "targetResolver", (Function<Class<?>, Object>) x -> {
-					var y = injector.context();
+					var y = diFactory.context();
 //					IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
-					return x.isAssignableFrom(y.getClass()) ? injector.context() : injector.create(x);
+					return x.isAssignableFrom(y.getClass()) ? diFactory.context() : diFactory.create(x);
 				}, "renderableFactory", renderableFactory, "rootFactory", this));
 	}
 
 	protected HttpHandlerFactory buildTemplateHandlerFactory() {
-		return injector.create(TemplateHandlerFactory.class, Map.of("rootFactory", this));
+		return diFactory.create(TemplateHandlerFactory.class, Map.of("rootFactory", this));
 	}
 
 	protected HttpHandlerFactory buildFileHandlerFactory() {
-		return injector.create(FileHandlerFactory.class, Map.of("files", files, "rootFactory", this));
+		return diFactory.create(FileHandlerFactory.class, Map.of("files", files, "rootFactory", this));
 	}
 
 	protected HttpHandlerFactory buildJsonHandlerFactory() {
-		return injector.create(JsonHandlerFactory.class, Map.of("rootFactory", this));
+		return diFactory.create(JsonHandlerFactory.class, Map.of("rootFactory", this));
 	}
 
 	protected HttpHandlerFactory buildExceptionHandlerFactory() {
-		return injector.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this));
+		return diFactory.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this));
 	}
 }

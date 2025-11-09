@@ -37,8 +37,8 @@ import com.janilla.persistence.Entity;
 import com.janilla.persistence.Persistence;
 import com.janilla.persistence.Store;
 import com.janilla.reflect.Reflection;
-import com.janilla.sqlite.TableColumn;
 import com.janilla.sqlite.SqliteDatabase;
+import com.janilla.sqlite.TableColumn;
 
 public class CmsPersistence extends Persistence {
 
@@ -52,7 +52,7 @@ public class CmsPersistence extends Persistence {
 			var m = Map.<String, Object>of("createdAt", i, "updatedAt", i);
 			if (d.documentStatus() == null) {
 				m = new HashMap<>(m);
-				m.put("documentStatus", v != null && v.drafts() ? Document.Status.DRAFT : Document.Status.PUBLISHED);
+				m.put("documentStatus", v != null && v.drafts() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 			}
 			return Reflection.copy(m, entity);
 		}
@@ -62,7 +62,7 @@ public class CmsPersistence extends Persistence {
 			var d = (Document<?>) entity;
 			var i = Instant.now();
 			var m = Map.<String, Object>of("updatedAt", i);
-			if (d.documentStatus() == Document.Status.PUBLISHED) {
+			if (d.documentStatus() == DocumentStatus.PUBLISHED) {
 				m = new HashMap<>(m);
 				m.put("publishedAt", i);
 			}
@@ -75,15 +75,17 @@ public class CmsPersistence extends Persistence {
 		super(database, types, typeResolver);
 	}
 
-	@Override
-	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
-		super.configure(type);
-		var v = type.getAnnotation(Versions.class);
-		if (v != null && v.drafts())
-			for (var k : configuration.indexFactories().keySet().toArray(String[]::new))
-				if (k.equals(type.getSimpleName()) || k.startsWith(type.getSimpleName() + "."))
-					configuration.indexFactories().put(k + "Draft", configuration.indexFactories().get(k));
-	}
+//	@Override
+//	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
+//		super.configure(type);
+//		var v = type.getAnnotation(Versions.class);
+//		if (v != null && v.drafts())
+//			for (var k : configuration.indexes().toArray(String[]::new)) {
+//				var ss = k.split("_");
+//				if (ss[0].equals(type.getSimpleName()))
+//					configuration.indexes().add(k + "Draft");
+//			}
+//	}
 
 	@Override
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
@@ -101,14 +103,29 @@ public class CmsPersistence extends Persistence {
 
 	@Override
 	protected void createStoresAndIndexes() {
-		super.createStoresAndIndexes();
-		for (var t : configuration.cruds().keySet())
-			if (t.isAnnotationPresent(Versions.class))
-				database.perform(() -> {
+		database.perform(() -> {
+			super.createStoresAndIndexes();
+			for (var t : configuration.cruds().keySet()) {
+				var v = t.getAnnotation(Versions.class);
+				if (v != null) {
 					var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">";
-					database.createTable(n, new TableColumn[0], false);
-					database.createIndex(n + ".document", "foo");
-					return null;
-				}, true);
+					database.createTable(n,
+							new TableColumn[] { new TableColumn("id", "INTEGER", true),
+									new TableColumn("document", "TEXT", false),
+									new TableColumn("documentId", "INTEGER", false) },
+							false);
+					database.createIndex(n + ".documentId", n, "documentId");
+					if (v.drafts())
+						for (var k : configuration.indexes()) {
+							var ss = k.split("\\.");
+							if (ss[0].equals(t.getSimpleName()))
+								database.createTable(k + "Draft", new TableColumn[] {
+										new TableColumn(ss[1], "TEXT", true), new TableColumn("id", "INTEGER", false) },
+										true);
+						}
+				}
+			}
+			return null;
+		}, true);
 	}
 }

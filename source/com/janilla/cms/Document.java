@@ -34,15 +34,7 @@ public interface Document<ID extends Comparable<ID>> extends Entity<ID> {
 
 	Instant updatedAt();
 
-	Status documentStatus();
+	DocumentStatus documentStatus();
 
 	Instant publishedAt();
-
-	public enum Status {
-
-		DRAFT, PUBLISHED
-	}
-
-	public record Reference<ID extends Comparable<ID>, T extends Document<ID>>(Class<T> type, ID id) {
-	}
 }

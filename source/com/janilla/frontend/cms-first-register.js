@@ -54,7 +54,8 @@ export default class CmsFirstRegister extends WebComponent {
 			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
 		});
 		if (r.ok) {
-			history.pushState({ user: await r.json() }, "", "/admin");
+			a.state.user = await r.json();
+			history.pushState({}, "", "/admin");
 			dispatchEvent(new CustomEvent("popstate"));
 		} else
 			this.closest("cms-admin").renderToast(await r.json(), "error");

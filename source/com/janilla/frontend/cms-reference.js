@@ -86,7 +86,7 @@ export default class CmsReference extends WebComponent {
 		const p = this.dataset.path;
 		const s = this.state;
 		s.field ??= a.field(p);
-		const cc = a.state.schema["Collections"];
+		const cc = history.state.cmsAdmin.schema["Collections"];
 		const cn = Object.entries(cc).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
 		this.appendChild(this.interpolateDom({
 			$template: "",

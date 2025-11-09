@@ -34,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -47,6 +48,7 @@ import com.janilla.json.ReflectionValueIterator;
 import com.janilla.json.TokenIterationContext;
 import com.janilla.reflect.Reflection;
 import com.janilla.sqlite.BTree;
+import com.janilla.sqlite.IndexBTree;
 import com.janilla.sqlite.PayloadCell;
 import com.janilla.sqlite.Record;
 import com.janilla.sqlite.RecordColumn;
@@ -61,7 +63,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected final Persistence persistence;
 
-	protected final Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new HashMap<>();
+	protected final Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new LinkedHashMap<>();
 
 	protected final List<CrudObserver> observers = new ArrayList<>();
 
@@ -166,6 +168,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			var kk = new Object[] { idHelper != null ? idHelper.toDatabaseValue(id) : id };
 			t.delete(kk, rr -> {
 				var oo = rr.findFirst().get();
+				IO.println("oo=" + Arrays.toString(oo));
 				a.e1 = parse((String) oo[oo.length - 1]);
 			});
 			a.e2 = operator.apply(a.e1);
@@ -518,10 +521,10 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected void updateIndexes(E entity1, E entity2, ID id) {
 //		IO.println("Crud.updateIndexes, entity1=" + entity1 + ", entity2=" + entity2 + ", id=" + id);
-		updateIndexes(entity1, entity2, id, this::getIndexName);
+		updateIndexes(entity1, entity2, id, this::getIndex);
 	}
 
-	protected void updateIndexes(E entity1, E entity2, ID id, UnaryOperator<String> indexName) {
+	protected void updateIndexes(E entity1, E entity2, ID id, Function<String, IndexBTree> index) {
 		var im1 = entity1 != null ? getIndexMap(entity1, id) : null;
 		var im2 = entity2 != null ? getIndexMap(entity2, id) : null;
 		for (var k : (im1 != null ? im1 : im2).keySet()) {
@@ -534,14 +537,15 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				var k2 = v2 != null ? v2.getKey() : null;
 				var m1 = v1 == null ? null : k2 instanceof Collection<?> c ? toMap(v1, x -> !c.contains(x)) : toMap(v1);
 				var m2 = v2 == null ? null : k1 instanceof Collection<?> c ? toMap(v2, x -> !c.contains(x)) : toMap(v2);
-				updateIndex(indexName.apply(k), m1, m2);
+				updateIndex(index.apply(k), m1, m2);
 			}
 		}
 	}
 
-	protected String getIndexName(String key) {
-		return Stream.of(type.getSimpleName(), key).filter(x -> x != null && !x.isEmpty())
+	protected IndexBTree getIndex(String key) {
+		var n = Stream.of(type.getSimpleName(), key).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
+		return persistence.database().index(n);
 	}
 
 	protected Map<String, Map.Entry<Object, Object>> getIndexMap(E entity, ID id) {
@@ -592,18 +596,14 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 		return m;
 	}
 
-	protected void updateIndex(String n, Map<Object, Object> remove, Map<Object, Object> add) {
-//		IO.println("Crud.updateIndex, n=" + n + ", remove=" + remove + ", add=" + add);
-		persistence.database().perform(() -> {
-			var t = persistence.database().index(n);
-			if (remove != null)
-				for (var e : remove.entrySet())
-					t.delete(new Object[] { toDatabaseValue(e.getKey()), toDatabaseValue(e.getValue()) }, null);
-			if (add != null)
-				for (var e : add.entrySet())
-					t.insert(new Object[] { toDatabaseValue(e.getKey()), toDatabaseValue(e.getValue()) }, null);
-			return null;
-		}, true);
+	protected void updateIndex(IndexBTree index, Map<Object, Object> remove, Map<Object, Object> add) {
+		IO.println("Crud.updateIndex, remove=" + remove + ", add=" + add);
+		if (remove != null)
+			for (var e : remove.entrySet())
+				index.delete(new Object[] { toDatabaseValue(e.getKey()), toDatabaseValue(e.getValue()) }, null);
+		if (add != null)
+			for (var e : add.entrySet())
+				index.insert(new Object[] { toDatabaseValue(e.getKey()), toDatabaseValue(e.getValue()) }, null);
 	}
 
 	protected Object toDatabaseValue(Object object) {
