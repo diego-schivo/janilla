@@ -47,7 +47,8 @@ export default class CmsLogin extends WebComponent {
 	handleSubmit = async event => {
 		event.preventDefault();
 		event.stopPropagation();
-		const r = await fetch(`${re.dataset.apiUrl}/users/forgot-password`, {
+		const a = this.closest("cms-admin");
+		const r = await fetch(`${a.dataset.apiUrl}/users/forgot-password`, {
 			method: "POST",
 			headers: { "content-type": "application/json" },
 			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
@@ -56,7 +57,7 @@ export default class CmsLogin extends WebComponent {
 			this.state.submitted = true;
 			this.requestDisplay();
 		} else
-			this.closest("cms-admin").renderToast(await r.json(), "error");
+			a.renderToast(await r.json(), "error");
 	}
 
 	async updateDisplay() {

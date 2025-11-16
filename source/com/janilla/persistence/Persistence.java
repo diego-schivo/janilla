@@ -90,7 +90,7 @@ public class Persistence {
 			var o = oo.next();
 //			IO.println("Persistence.configure, o=" + o);
 			var p = o instanceof Property x ? x : null;
-			var ae = p != null ? p.annotatedElement() : (AnnotatedElement) o;
+			var ae = (AnnotatedElement) (p != null ? p.member() : o);
 			var i = ae.getAnnotation(Index.class);
 			if (i == null)
 				continue;

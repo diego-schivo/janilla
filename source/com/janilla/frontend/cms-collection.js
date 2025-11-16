@@ -26,12 +26,12 @@ import WebComponent from "./web-component.js";
 
 export default class CmsCollection extends WebComponent {
 
-	static get observedAttributes() {
-		return ["data-ids", "data-name"];
-	}
-
 	static get templateNames() {
 		return ["cms-collection"];
+	}
+
+	static get observedAttributes() {
+		return ["data-ids", "data-name"];
 	}
 
 	constructor() {
@@ -48,12 +48,6 @@ export default class CmsCollection extends WebComponent {
 		super.disconnectedCallback();
 		this.removeEventListener("change", this.handleChange);
 		this.removeEventListener("click", this.handleClick);
-	}
-
-	attributeChangedCallback(name, oldValue, newValue) {
-		if (newValue !== oldValue && this.state)
-			delete this.state.computeState;
-		super.attributeChangedCallback(name, oldValue, newValue);
 	}
 
 	handleChange = event => {
@@ -80,7 +74,7 @@ export default class CmsCollection extends WebComponent {
 		if (!b)
 			return;
 		event.stopPropagation();
-		const re = this.closest("app-element");
+		const a = this.closest("cms-admin");
 		const n = this.dataset.name;
 		const s = this.state;
 		let u;
@@ -122,7 +116,7 @@ export default class CmsCollection extends WebComponent {
 					credentials: "include",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
-						$type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0],
+						$type: a.state.schema["Collections"][n].elementTypes[0],
 						documentStatus: "PUBLISHED"
 					})
 				})).json();
@@ -137,7 +131,7 @@ export default class CmsCollection extends WebComponent {
 					credentials: "include",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
-						$type: this.closest("cms-admin").state.schema["Collections"][n].elementTypes[0],
+						$type: a.state.schema["Collections"][n].elementTypes[0],
 						documentStatus: "DRAFT"
 					})
 				})).json();
@@ -145,11 +139,19 @@ export default class CmsCollection extends WebComponent {
 				this.requestDisplay();
 				break;
 			case "create":
-				const d = await (await fetch(`${re.dataset.apiUrl}/${n}`, {
+				const d = await (await fetch(`${a.dataset.apiUrl}/${n}`, {
 					method: "POST",
 					credentials: "include",
 					headers: { "content-type": "application/json" },
-					body: JSON.stringify({ $type: history.state.cmsAdmin.schema["Collections"][n].elementTypes[0] })
+					body: JSON.stringify({ $type: a.state.schema["Collections"][n].elementTypes[0] })
+					/*
+					body: JSON.stringify({
+						$type: Object.entries(a.state.schema["Data"])
+							.filter(([k, _]) => k !== "globals")
+							.map(([_, v]) => a.state.schema[v.type][n])
+							.find(x => x).elementTypes[0]
+					})
+					*/
 				})).json();
 				history.pushState({}, "", `/admin/collections/${n}/${d.id}`);
 				dispatchEvent(new CustomEvent("popstate"));
@@ -169,42 +171,28 @@ export default class CmsCollection extends WebComponent {
 		}
 	}
 
-	async computeState() {
-		const s = this.state;
-		[
-			"data"
-		].forEach(x => delete s[x]);
-		const pe = this.parentElement;
-		const pen = pe.tagName.toLowerCase();
-		//s.dialog = pen === "dialog";
-		s.selectionIds = [];
-		const n = this.dataset.name;
-		switch (pen) {
-			case "cms-reference":
-			case "cms-document-reference":
-				s.data = pe.state.field.data?.id ? [pe.state.field.data] : [];
-				break;
-			case "cms-reference-array":
-				s.data = pe.state.field.data;
-				break;
-			default:
-				s.data = await (await fetch(`${this.closest("app-element").dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
-				this.requestDisplay();
-				break;
-		}
-	}
-
 	async updateDisplay() {
-		const s = this.state;
-		s.computeState ??= this.computeState();
-		const pe = this.parentElement;
-		const pen = pe.tagName.toLowerCase();
-		const a = this.closest("cms-admin");
+		const p = this.parentElement;
+		const pn = p.tagName.toLowerCase();
 		const n = this.dataset.name;
+		const a = this.closest("cms-admin");
+		const s = this.state;
+		s.data ??= await (async () => {
+			switch (pn) {
+				case "cms-reference":
+				case "cms-document-reference":
+					return p.state.field.data?.id ? [p.state.field.data] : [];
+				case "cms-reference-array":
+					return p.state.field.data;
+				default:
+					return await (await fetch(`${a.dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
+			}
+		})();
+		s.selectionIds ??= [];
 		const hh = a.headers(n);
 		this.appendChild(this.interpolateDom({
 			$template: "",
-			header: !["cms-reference", "cms-document-reference", "cms-reference-array"].includes(pen) ? {
+			header: !["cms-reference", "cms-document-reference", "cms-reference-array"].includes(pn) ? {
 				$template: "header",
 				title: n.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
 				selection: s.selectionIds?.length ? {
@@ -220,7 +208,7 @@ export default class CmsCollection extends WebComponent {
 				$template: "table",
 				heads: (() => {
 					const cc = hh.map(x => x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" "));
-					if (!["cms-reference", "cms-document-reference", "dialog", "cms-reference-array"].includes(pen))
+					if (!["cms-reference", "cms-document-reference", "dialog", "cms-reference-array"].includes(pn))
 						cc.unshift({
 							$template: "checkbox",
 							checked: s.selectionIds.length === s.data.length
@@ -241,7 +229,7 @@ export default class CmsCollection extends WebComponent {
 							href: `/admin/collections/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${x.id}`,
 							content: cc[0]
 						};
-						if (!["cms-reference", "cms-document-reference", "dialog", "cms-reference-array"].includes(pen))
+						if (!["cms-reference", "cms-document-reference", "dialog", "cms-reference-array"].includes(pn))
 							cc.unshift({
 								$template: "checkbox",
 								value: x.id,

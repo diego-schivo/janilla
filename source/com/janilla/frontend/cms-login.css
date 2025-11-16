@@ -8,8 +8,7 @@ cms-reset-password {
   width: 100%;
 
   &,
-  form,
-  label {
+  form {
     display: flex;
     flex-direction: column;
   }
@@ -33,8 +32,6 @@ cms-reset-password {
   }
 
   label {
-    gap: 5px;
-
     &:has([required]) span::after {
       color: light-dark(rgb(37, 180, 183), rgb(218, 75, 72));
       content: " *";

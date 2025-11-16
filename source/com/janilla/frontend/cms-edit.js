@@ -59,19 +59,19 @@ export default class CmsEdit extends WebComponent {
 		if (el.matches("select:not([name])")) {
 			event.stopPropagation();
 			const a = this.closest("cms-admin");
-			const s = a.state;
+			const as = a.state;
 			let r, j;
 			switch (el.value) {
 				case "create":
-					r = await fetch(`${re.dataset.apiUrl}/${s.collectionSlug}`, {
+					r = await fetch(`${a.dataset.apiUrl}/${as.collectionSlug}`, {
 						method: "POST",
 						credentials: "include",
 						headers: { "content-type": "application/json" },
-						body: JSON.stringify({ $type: s.documentType })
+						body: JSON.stringify({ $type: as.documentType })
 					});
 					j = await r.json();
 					if (r.ok) {
-						history.pushState({}, "", `/admin/collections/${s.collectionSlug}/${j.id}`);
+						history.pushState({}, "", `/admin/collections/${as.collectionSlug}/${j.id}`);
 						dispatchEvent(new CustomEvent("popstate"));
 					} else
 						a.renderToast(j, "error");
@@ -83,21 +83,21 @@ export default class CmsEdit extends WebComponent {
 						a.initField(f);
 						f.data[k.substring(i + 1)] = v;
 					}
-					r = await fetch(`${re.dataset.apiUrl}/${s.collectionSlug}`, {
+					r = await fetch(`${a.dataset.apiUrl}/${as.collectionSlug}`, {
 						method: "POST",
 						credentials: "include",
 						headers: { "content-type": "application/json" },
-						body: JSON.stringify(s.document)
+						body: JSON.stringify(as.document)
 					});
 					j = await r.json();
 					if (r.ok) {
-						history.pushState({}, "", `/admin/collections/${s.collectionSlug}/${j.id}`);
+						history.pushState({}, "", `/admin/collections/${as.collectionSlug}/${j.id}`);
 						dispatchEvent(new CustomEvent("popstate"));
 					} else
 						a.renderToast(j, "error");
 					break;
 				case "delete":
-					r = await fetch(s.documentUrl, {
+					r = await fetch(as.documentUrl, {
 						method: "DELETE",
 						credentials: "include"
 					});
@@ -106,7 +106,7 @@ export default class CmsEdit extends WebComponent {
 						const re = this.closest("app-element");
 						if (j.$type === "User" && j.id === re.state.user.id)
 							delete re.state.computeState;
-						history.pushState({}, "", `/admin/${s.pathSegments.slice(0, 2).join("/")}`);
+						history.pushState({}, "", `/admin/${as.pathSegments.slice(0, 2).join("/")}`);
 						dispatchEvent(new CustomEvent("popstate"));
 					} else
 						a.renderToast(j, "error");
@@ -174,16 +174,16 @@ export default class CmsEdit extends WebComponent {
 		const kkvv = [...new FormData(this.querySelector("form")).entries()];
 		//console.log("kkvv", kkvv);
 		const kkvv2 = kkvv.filter(([_, x]) => x instanceof File);
+		const a = this.closest("cms-admin");
 		if (kkvv2.length) {
 			const fd = new FormData();
 			for (const [k, v] of kkvv2)
 				fd.append(k, v);
 			const xhr = new XMLHttpRequest();
-			xhr.open("POST", `${this.closest("app-element").dataset.apiUrl}/files/upload`, true);
+			xhr.open("POST", `a.dataset.apiUrl}/files/upload`, true);
 			xhr.withCredentials = true;
 			xhr.send(fd);
 		}
-		const a = this.closest("cms-admin");
 		const o = {};
 		for (const [k, v] of kkvv.filter(([k, _]) => k.split(".").at(-1) !== "$type")) {
 			//console.log("k", k, "v", v);
@@ -196,18 +196,17 @@ export default class CmsEdit extends WebComponent {
 			const i = k.lastIndexOf(".");
 			f.parent.data[k.substring(i + 1)] = v;
 		}
-		const s = history.state.cmsAdmin;
 		//console.log("s", s);
-		const u = new URL(s.documentUrl, location.href);
+		const u = new URL(a.state.documentUrl, location.href);
 		if (auto) {
 			u.searchParams.append("draft", true);
 			u.searchParams.append("autosave", true);
 		}
 		const r = await fetch(u, {
-			method: s.document.id ? "PUT" : "POST",
+			method: a.state.document.id ? "PUT" : "POST",
 			credentials: "include",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify(s.document)
+			body: JSON.stringify(a.state.document)
 		});
 		const j = await r.json();
 		if (r.ok) {
@@ -229,7 +228,7 @@ export default class CmsEdit extends WebComponent {
 						y[k] = v;
 			};
 			//console.log("s.document", s.document);
-			f(j, s.document);
+			f(j, a.state.document);
 			//console.log("s.document", s.document);
 			a.requestDisplay();
 		} else
@@ -237,20 +236,20 @@ export default class CmsEdit extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const s = history.state.cmsAdmin;
 		const a = this.closest("cms-admin");
-		this.state.versions = Object.hasOwn(s.document, "versionCount");
-		this.state.drafts = Object.hasOwn(s.document, "documentStatus");
+		const as = a.state;
+		this.state.versions = Object.hasOwn(as.document, "versionCount");
+		this.state.drafts = Object.hasOwn(as.document, "documentStatus");
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			entries: (() => {
 				const kkvv = [];
 				if (this.state.drafts)
-					kkvv.push(["Status", s.document.documentStatus.name]);
-				if (s.document.updatedAt)
-					kkvv.push(["Last Modified", a.dateTimeFormat.format(new Date(s.document.updatedAt))]);
-				if (s.document.createdAt)
-					kkvv.push(["Created", a.dateTimeFormat.format(new Date(s.document.createdAt))]);
+					kkvv.push(["Status", as.document.documentStatus.name]);
+				if (as.document.updatedAt)
+					kkvv.push(["Last Modified", a.dateTimeFormat.format(new Date(as.document.updatedAt))]);
+				if (as.document.createdAt)
+					kkvv.push(["Created", a.dateTimeFormat.format(new Date(as.document.createdAt))]);
 				return kkvv;
 			})().map(x => ({
 				$template: "entry",
@@ -258,7 +257,7 @@ export default class CmsEdit extends WebComponent {
 				value: x[1]
 			})),
 			previewLink: (() => {
-				const h = a.preview(s.document);
+				const h = a.preview(as.document);
 				return h ? {
 					$template: "preview-link",
 					href: h
@@ -268,7 +267,7 @@ export default class CmsEdit extends WebComponent {
 				$template: "button",
 				...(this.state.drafts ? {
 					name: "publish",
-					disabled: s.document.documentStatus === "PUBLISHED" && !this.state.changed,
+					disabled: as.document.documentStatus === "PUBLISHED" && !this.state.changed,
 					text: "Publish Changes"
 				} : {
 					name: "save",
@@ -276,7 +275,7 @@ export default class CmsEdit extends WebComponent {
 					text: "Save"
 				})
 			},
-			select: s.collectionSlug ? {
+			select: as.collectionSlug ? {
 				$template: "select",
 				options: [{
 					text: "\u22ee"

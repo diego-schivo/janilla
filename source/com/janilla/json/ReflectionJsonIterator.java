@@ -31,6 +31,18 @@ import java.util.Objects;
 
 public class ReflectionJsonIterator extends JsonIterator {
 
+	protected final boolean includeType;
+
+	public ReflectionJsonIterator(Object object, boolean includeType) {
+		super(object);
+		this.includeType = includeType;
+	}
+
+	@Override
+	public Iterator<JsonToken<?>> newValueIterator(Object object) {
+		return new ReflectionValueIterator(this, object);
+	}
+
 	public static void main(String[] args) {
 		var c = new C();
 		c.s = "foo";
@@ -116,17 +128,5 @@ public class ReflectionJsonIterator extends JsonIterator {
 	}
 
 	public record D(int i) {
-	}
-
-	protected final boolean includeType;
-
-	public ReflectionJsonIterator(Object object, boolean includeType) {
-		super(object);
-		this.includeType = includeType;
-	}
-
-	@Override
-	public Iterator<JsonToken<?>> newValueIterator(Object object) {
-		return new ReflectionValueIterator(this, object);
 	}
 }

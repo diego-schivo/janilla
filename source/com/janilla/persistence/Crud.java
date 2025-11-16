@@ -65,7 +65,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected final Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new LinkedHashMap<>();
 
-	protected final List<CrudObserver> observers = new ArrayList<>();
+	protected final List<CrudObserver<E>> observers = new ArrayList<>();
 
 	public Crud(Class<E> type, IdHelper<ID> idHelper, Persistence persistence) {
 		this.type = type;
@@ -73,7 +73,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 		this.persistence = persistence;
 	}
 
-	public List<CrudObserver> observers() {
+	public List<CrudObserver<E>> observers() {
 		return observers;
 	}
 
@@ -127,6 +127,8 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				var oo = x.findFirst().orElse(null);
 				a.e = oo != null ? parse((String) oo[oo.length - 1]) : null;
 			});
+			for (var o : observers)
+				a.e = o.afterRead(a.e);
 			return a.e;
 		}, false);
 	}
@@ -149,6 +151,8 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 //					IO.println("Crud.read, oo=" + Arrays.toString(oo));
 					a.e = oo != null ? parse((String) oo[oo.length - 1]) : null;
 				});
+				for (var o : observers)
+					a.e = o.afterRead(a.e);
 //				IO.println("Crud.read, a.e=" + a.e);
 				return a.e;
 			}).toList();

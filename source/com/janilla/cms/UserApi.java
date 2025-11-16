@@ -43,14 +43,17 @@ import com.janilla.web.ForbiddenException;
 import com.janilla.web.Handle;
 import com.janilla.web.UnauthorizedException;
 
-public abstract class UserApi<ID extends Comparable<ID>, E extends User<ID>> extends CollectionApi<ID, E> {
+public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E extends User<ID, R>>
+		extends CollectionApi<ID, E> {
 
 	protected final String jwtKey;
 
-	public UserApi(Class<E> type, Predicate<HttpExchange> drafts, Persistence persistence, String jwtKey) {
+	protected UserApi(Class<E> type, Predicate<HttpExchange> drafts, Persistence persistence, String jwtKey) {
 		super(type, drafts, persistence);
 		this.jwtKey = jwtKey;
 	}
+
+//	public abstract R adminRole();
 
 	@Handle(method = "PUT", path = "(\\d+)")
 	public E update(ID id, E entity, Boolean draft, Boolean autosave, String password) {
@@ -103,7 +106,7 @@ public abstract class UserApi<ID extends Comparable<ID>, E extends User<ID>> ext
 			if (crud().count() != 0)
 				throw new ForbiddenException("You are not allowed to perform this action.");
 			@SuppressWarnings("unchecked")
-			var e = (E) user.withPassword(password).withRoles(Set.of(UserRole.ADMIN));
+			var e = (E) user.withPassword(password); // .withRoles(Set.of(adminRole()));
 			return crud().create(e);
 		}, true);
 		var h = Map.of("alg", "HS256", "typ", "JWT");

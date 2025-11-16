@@ -59,14 +59,13 @@ export default class CmsFile extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const re = this.closest("app-element");
 		const a = this.closest("cms-admin");
 		const p = this.dataset.path;
 		const f = a.field(p);
 		const s = this.state;
 		this.appendChild(this.interpolateDom(f.data ? {
 			$template: "update",
-			apiUrl: re.dataset.apiUrl,
+			apiUrl: a.dataset.apiUrl,
 			data: f.data
 		} : {
 			$template: "create",

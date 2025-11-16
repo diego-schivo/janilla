@@ -26,12 +26,12 @@ import WebComponent from "./web-component.js";
 
 export default class CmsDocument extends WebComponent {
 
-	static get observedAttributes() {
-		return ["data-subview", "data-updated-at"];
-	}
-
 	static get templateNames() {
 		return ["cms-document"];
+	}
+
+	static get observedAttributes() {
+		return ["data-subview", "data-updated-at"];
 	}
 
 	constructor() {
@@ -39,18 +39,19 @@ export default class CmsDocument extends WebComponent {
 	}
 
 	async updateDisplay() {
-		const s = history.state.cmsAdmin;
+		const a = this.closest("cms-admin");
+		const as = a.state;
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			title: (() => {
-				let t = this.closest("cms-admin").title(s.document);
+				let t = a.title(as.document);
 				if (!t?.length)
-					t = s.pathSegments[2];
+					t = as.pathSegments[2];
 				return t;
 			})(),
 			tabs: [
 				"edit",
-				Object.hasOwn(s.document, "versionCount") ? "versions" : null,
+				Object.hasOwn(as.document, "versionCount") ? "versions" : null,
 				"api"
 			].filter(x => x).join(),
 			activeTab: (() => {
@@ -66,9 +67,9 @@ export default class CmsDocument extends WebComponent {
 			edit: {
 				$template: "edit"
 			},
-			versions: Object.hasOwn(s.document, "versionCount") ? {
+			versions: Object.hasOwn(as.document, "versionCount") ? {
 				$template: "versions",
-				count: s.document.versionCount
+				count: as.document.versionCount
 			} : null,
 			api: {
 				$template: "api"
@@ -84,7 +85,7 @@ export default class CmsDocument extends WebComponent {
 			} : null,
 			apiPanel: this.dataset.subview === "api" ? {
 				$template: "api-panel",
-				json: JSON.stringify(s.document, null, "  ")
+				json: JSON.stringify(as.document, null, "  ")
 			} : null
 		}));
 	}

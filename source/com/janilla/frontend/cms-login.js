@@ -47,7 +47,7 @@ export default class CmsLogin extends WebComponent {
 	handleSubmit = async event => {
 		event.preventDefault();
 		event.stopPropagation();
-		const a = this.closest("app-element");
+		const a = this.closest("cms-admin");
 		const r = await fetch(`${a.dataset.apiUrl}/users/login`, {
 			method: "POST",
 			credentials: "include",
@@ -55,9 +55,13 @@ export default class CmsLogin extends WebComponent {
 			body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
 		});
 		if (r.ok) {
-			history.pushState({ user: await r.json() }, "", "/admin");
+			this.dispatchEvent(new CustomEvent("user-change", {
+				bubbles: true,
+				detail: { user: await r.json() }
+			}));
+			history.pushState({}, "", "/admin");
 			dispatchEvent(new CustomEvent("popstate"));
 		} else
-			this.closest("cms-admin").renderToast(await r.json(), "error");
+			a.renderToast(await r.json(), "error");
 	}
 }

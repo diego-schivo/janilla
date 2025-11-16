@@ -27,7 +27,7 @@ package com.janilla.cms;
 import java.time.Instant;
 import java.util.Set;
 
-public interface User<ID extends Comparable<ID>> extends Document<ID> {
+public interface User<ID extends Comparable<ID>, R extends UserRole> extends Document<ID> {
 
 	String email();
 
@@ -39,9 +39,9 @@ public interface User<ID extends Comparable<ID>> extends Document<ID> {
 
 	boolean passwordEquals(String password);
 
-	User<ID> withPassword(String password);
+	User<ID, R> withPassword(String password);
 
-	User<ID> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
+	User<ID, R> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
 
-	User<ID> withRoles(Set<UserRole> roles);
+	User<ID, R> withRoles(Set<R> roles);
 }

@@ -45,7 +45,7 @@ public class CmsPersistence extends Persistence {
 	protected static final CrudObserver DOCUMENT_OBSERVER = new CrudObserver() {
 
 		@Override
-		public <E> E beforeCreate(E entity) {
+		public Entity beforeCreate(Entity entity) {
 			var d = (Document<?>) entity;
 			var i = Instant.now();
 			var v = d.getClass().getAnnotation(Versions.class);
@@ -58,7 +58,7 @@ public class CmsPersistence extends Persistence {
 		}
 
 		@Override
-		public <E> E beforeUpdate(E entity) {
+		public Entity beforeUpdate(Entity entity) {
 			var d = (Document<?>) entity;
 			var i = Instant.now();
 			var m = Map.<String, Object>of("updatedAt", i);

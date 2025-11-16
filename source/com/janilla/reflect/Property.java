@@ -27,7 +27,6 @@ package com.janilla.reflect;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
@@ -37,6 +36,25 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 
 public interface Property {
+
+//	AnnotatedElement annotatedElement();
+	Member member();
+
+	Class<?> type();
+
+	Type genericType();
+
+	AnnotatedType annotatedType();
+
+	String name();
+
+	Object get(Object object);
+
+	void set(Object object, Object value);
+
+	boolean canGet();
+
+	boolean canSet();
 
 	static Property of(Field field) {
 		var n = name(field);
@@ -48,8 +66,12 @@ public interface Property {
 		}
 		return new Property() {
 
+//			@Override
+//			public AnnotatedElement annotatedElement() {
+//				return field;
+//			}
 			@Override
-			public AnnotatedElement annotatedElement() {
+			public Member member() {
 				return field;
 			}
 
@@ -121,8 +143,12 @@ public interface Property {
 				: getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
 		return new Property() {
 
+//			@Override
+//			public AnnotatedElement annotatedElement() {
+//				return getter != null ? getter : setter;
+//			}
 			@Override
-			public AnnotatedElement annotatedElement() {
+			public Member member() {
 				return getter != null ? getter : setter;
 			}
 
@@ -186,9 +212,13 @@ public interface Property {
 	static Property of(Property property1, Property property2) {
 		return new Property() {
 
+//			@Override
+//			public AnnotatedElement annotatedElement() {
+//				return property2.annotatedElement();
+//			}
 			@Override
-			public AnnotatedElement annotatedElement() {
-				return property2.annotatedElement();
+			public Member member() {
+				return property2.member();
 			}
 
 			@Override
@@ -256,22 +286,4 @@ public interface Property {
 		default -> throw new IllegalArgumentException();
 		};
 	}
-
-	AnnotatedElement annotatedElement();
-
-	Class<?> type();
-
-	Type genericType();
-
-	AnnotatedType annotatedType();
-
-	String name();
-
-	Object get(Object object);
-
-	void set(Object object, Object value);
-
-	boolean canGet();
-
-	boolean canSet();
 }

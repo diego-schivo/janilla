@@ -42,13 +42,15 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 
 	public DocumentCrud(Class<E> type, IdHelper<ID> idHelper, Persistence persistence) {
 		super(type, idHelper, persistence);
-		versionTable = Version.class.getSimpleName() + "<" + type.getSimpleName() + ">";
+		versionTable = type.isAnnotationPresent(Versions.class)
+				? Version.class.getSimpleName() + "<" + type.getSimpleName() + ">"
+				: null;
 	}
 
 	@Override
 	public E create(E entity) {
 //		IO.println("DocumentCrud.create, entity=" + entity);
-		return type.isAnnotationPresent(Versions.class) ? persistence.database().perform(() -> {
+		return versionTable != null ? persistence.database().perform(() -> {
 			var e = super.create(entity);
 			var vv = new ArrayList<Version<ID, E>>(1);
 			persistence.database().table(versionTable).insert(x -> {
@@ -68,7 +70,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 //		IO.println("DocumentCrud.read, id=" + id + ", drafts=" + drafts);
 		if (id == null)
 			return null;
-		return type.isAnnotationPresent(Versions.class) && drafts ? persistence.database().perform(() -> {
+		return versionTable != null && drafts ? persistence.database().perform(() -> {
 			var e = read(id);
 			// IO.println("e=" + e);
 			if (e != null) {
@@ -97,7 +99,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 //		IO.println("DocumentCrud.read, ids=" + ids + ", drafts=" + drafts);
 		if (ids == null || ids.isEmpty())
 			return List.of();
-		return type.isAnnotationPresent(Versions.class) && drafts
+		return versionTable != null && drafts
 				? persistence.database().perform(() -> ids.stream().map(x -> read(x, true)).toList(), false)
 				: read(ids);
 	}
@@ -106,7 +108,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 		IO.println("DocumentCrud.update, id=" + id + ", entity=" + entity + ", include=" + include + ", newVersion"
 				+ newVersion);
 		var exclude = Set.of("id", "createdAt", "updatedAt");
-		return type.isAnnotationPresent(Versions.class) ? persistence.database().perform(() -> {
+		return versionTable != null ? persistence.database().perform(() -> {
 			var e1 = read(id, true);
 			E e2;
 			class A {
@@ -122,7 +124,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 					a.nv = true;
 				break;
 			case PUBLISHED:
-				e2 = super.update(id, x -> {
+				e2 = update(id, x -> {
 					var s1 = x.documentStatus();
 					x = Reflection.copy(entity, e1,
 							y -> (include == null || include.contains(y)) && !exclude.contains(y));
@@ -168,18 +170,18 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 			updateVersionIndexes(vv1, vv2, id);
 			return e2;
 		}, true)
-				: super.update(id, x -> Reflection.copy(entity, x,
+				: update(id, x -> Reflection.copy(entity, x,
 						y -> (include == null || include.contains(y)) && !exclude.contains(y)));
 	}
 
 	@Override
 	public E delete(ID id) {
-		return type.isAnnotationPresent(Versions.class) ? persistence.database().perform(() -> {
+		return versionTable != null ? persistence.database().perform(() -> {
 			var e = super.delete(id);
 			var ids = new ArrayList<ID>();
 			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, x -> x.map(oo -> {
 				@SuppressWarnings("unchecked")
-				var id2 = (ID) oo[1];
+				var id2 = (ID) oo[oo.length - 1];
 				return id2;
 			}).forEach(ids::add));
 			var vv = new ArrayList<Version<ID, E>>(ids.size());
@@ -195,12 +197,10 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	}
 
 	public List<E> patch(List<ID> ids, E entity, Set<String> include) {
-//		if (!type.isAnnotationPresent(Versions.class))
-//			throw new UnsupportedOperationException();
 		if (ids == null || ids.isEmpty())
 			return List.of();
-		return persistence.database().perform(() -> ids.stream()
-				.map(x -> update(x, entity, include, type.isAnnotationPresent(Versions.class))).toList(), true);
+		return persistence.database()
+				.perform(() -> ids.stream().map(x -> update(x, entity, include, versionTable != null)).toList(), true);
 	}
 
 	public List<Version<ID, E>> readVersions(ID id) {
@@ -239,7 +239,7 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	public E restoreVersion(ID versionId, DocumentStatus status) {
 		return persistence.database().perform(() -> {
 			var v1 = readVersion(versionId);
-			var e = super.update(v1.document().id(), x -> {
+			var e = update(v1.document().id(), x -> {
 				x = v1.document();
 				if (status != x.documentStatus())
 					x = Reflection.copy(Map.of("documentStatus", status), x);

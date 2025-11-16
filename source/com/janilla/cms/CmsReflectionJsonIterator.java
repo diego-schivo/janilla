@@ -57,7 +57,8 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 				var p = Reflection.property(stack().peek().getClass(), n);
 				var ta = p != null ? p.annotatedType().getAnnotation(Types.class) : null;
 				var t = ta != null ? ta.value()[0] : null;
-				if (t != null) {
+				if (t != null
+						&& !stack().stream().anyMatch(x -> x.getClass() == t && ((Document<?>) x).id().equals(l))) {
 					@SuppressWarnings({ "rawtypes", "unchecked" })
 					var x = persistence.crud((Class) t).read(l);
 					object = o = x;

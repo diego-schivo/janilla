@@ -28,7 +28,7 @@ import com.janilla.http.HttpExchange;
 
 public interface UserHttpExchange extends HttpExchange {
 
-	User<?> sessionUser();
+	User<?, ?> sessionUser();
 
 	void setSessionCookie(String value);
 }

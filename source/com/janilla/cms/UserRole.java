@@ -24,7 +24,5 @@
  */
 package com.janilla.cms;
 
-public enum UserRole {
-
-	ADMIN
+public interface UserRole {
 }

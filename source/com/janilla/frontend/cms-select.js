@@ -43,7 +43,7 @@ export default class CmsSelect extends WebComponent {
 		const p = this.dataset.path;
 		const f = a.field(p);
 		const oo = a.options(f);
-		console.log("f", f, "oo", oo);
+		// console.log("f", f, "oo", oo);
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			name: p,

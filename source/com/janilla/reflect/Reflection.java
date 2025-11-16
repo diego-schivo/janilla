@@ -233,4 +233,34 @@ public class Reflection {
 				.filter(x -> x != null && Reflection.getRawType(x) == superclassOrInterface).findFirst().get();
 		return pt.getActualTypeArguments()[i];
 	}
+
+	public static Type[] getMethodActualParameterTypes(Method method, Class<?> target) {
+		var m = getActualTypeArguments(target, method.getDeclaringClass());
+		return Arrays.stream(method.getGenericParameterTypes()).map(x -> {
+			switch (x) {
+			case TypeVariable<?> v:
+				return m.get(v.getName());
+			case ParameterizedType t:
+				return new SimpleParameterizedType(t.getRawType(),
+						Arrays.stream(t.getActualTypeArguments())
+								.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toArray(Type[]::new),
+						null);
+			default:
+				return x;
+			}
+		}).toArray(Type[]::new);
+	}
+
+	public static Map<String, Type> getActualTypeArguments(Class<?> target, Class<?> superClass) {
+		Map<String, Type> m = null;
+		for (var c = target; c != superClass; c = c.getSuperclass()) {
+			var pp = c.getSuperclass().getTypeParameters();
+			var aa = ((ParameterizedType) c.getGenericSuperclass()).getActualTypeArguments();
+			var m0 = m;
+			m = IntStream.range(0, pp.length).<Map<String, Type>>collect(LinkedHashMap::new,
+					(x, i) -> x.put(pp[i].getName(), aa[i] instanceof TypeVariable v ? m0.get(v.getName()) : aa[i]),
+					Map::putAll);
+		}
+		return m;
+	}
 }

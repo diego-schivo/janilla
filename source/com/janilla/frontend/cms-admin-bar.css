@@ -1,0 +1,22 @@
+cms-admin-bar {
+  align-items: center;
+  display: flex;
+  font-size: small;
+  gap: 0.625rem;
+  padding: 0.5rem 2rem;
+
+  a {
+    text-decoration: none;
+
+    &:nth-child(2) {
+      min-width: 3.125rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &:nth-child(3) {
+      margin-left: auto;
+    }
+  }
+}

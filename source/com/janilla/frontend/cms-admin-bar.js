@@ -22,28 +22,26 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.persistence;
+import WebComponent from "./web-component.js";
 
-public interface CrudObserver<E extends Entity<?>> {
+export default class CmsAdminBar extends WebComponent {
 
-	default E beforeCreate(E entity) {
-		return entity;
+	static get templateNames() {
+		return ["cms-admin-bar"];
 	}
 
-	default void afterCreate(E entity) {
+	static get observedAttributes() {
+		return ["data-user-email"];
 	}
 
-	default E afterRead(E entity) {
-		return entity;
+	constructor() {
+		super();
 	}
 
-	default E beforeUpdate(E entity) {
-		return entity;
-	}
-
-	default void afterUpdate(E entity1, E entity2) {
-	}
-
-	default void afterDelete(E entity) {
+	async updateDisplay() {
+		this.appendChild(this.interpolateDom({
+			$template: "",
+			...this.dataset
+		}));
 	}
 }

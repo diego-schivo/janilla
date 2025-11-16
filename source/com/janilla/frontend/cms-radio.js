@@ -48,7 +48,7 @@ export default class CmsRadio extends WebComponent {
 				$template: "option",
 				name: p,
 				value: x,
-				checked: x == f.data,
+				checked: x == f.data?.name,
 				text: x
 			}))
 		}));

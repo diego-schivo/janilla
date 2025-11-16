@@ -85,8 +85,12 @@ export default class CmsReferenceArray extends WebComponent {
 		const p = this.dataset.path;
 		const s = this.state;
 		s.field ??= a.field(p);
-		const cc = a.state.schema["Collections"];
-		const cn = Object.entries(cc).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
+		/*
+		const cn = Object.entries(a.state.schema["Data"]).filter(([k, _]) => k !== "globals")
+			.flatMap(([_, v]) => Object.entries(a.state.schema[v.type]))
+			.find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
+		*/
+		const cn = Object.entries(a.state.schema["Collections"]).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
 		this.appendChild(this.interpolateDom({
 			$template: "",
 			...this.dataset,
