@@ -26,7 +26,6 @@ package com.janilla.ioc;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,7 +56,7 @@ public class DiFactory {
 		this.name = name;
 	}
 
-	public Collection<Class<?>> types() {
+	public List<Class<?>> types() {
 		return types;
 	}
 

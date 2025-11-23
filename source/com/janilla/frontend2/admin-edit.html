@@ -1,0 +1,39 @@
+<form autocomplete="off">
+  <div>
+    <dl>
+      <!--${entries}-->
+    </dl>
+  </div>
+  <div>
+    <!--${previewLink}-->
+    <!--${button}-->
+    <!--${select}-->
+  </div>
+  <admin-fields data-updated-at="${updatedAt}"></admin-fields>
+</form>
+
+<template id="entry">
+  <dt>${key}</dt>
+  <dd>${value}</dd>
+</template>
+
+<template id="preview-link">
+  <a href="${href}" target="_blank">
+    <lucide-icon data-name="link-2"></lucide-icon>
+    Preview
+  </a>
+</template>
+
+<template id="button">
+  <button name="${name}" class="primary" disabled="${disabled}">${text}</button>
+</template>
+
+<template id="select">
+  <select>
+    <!--${options}-->
+  </select>
+</template>
+
+<template id="option">
+  <option value="${value}" selected="${selected}">${text}</option>
+</template>

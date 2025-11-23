@@ -48,6 +48,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import com.janilla.java.Java;
+
 public class Reflection {
 
 	private static Map<Class<?>, Map<String, Property>> properties = new ConcurrentHashMap<>();
@@ -206,17 +208,7 @@ public class Reflection {
 						return m.values().stream().filter(y -> !mm.containsKey(y.name())).map(y -> Property.of(x, y));
 					}
 					return Stream.of(x);
-				}).collect(Collectors.toMap(Property::name, p -> p, (v, _) -> v, LinkedHashMap::new));
-	}
-
-	public static Class<?> getRawType(Type type) {
-//		IO.println("Converter.getRawType, type=" + type);
-		return switch (type) {
-		case Class<?> x -> x;
-		case ParameterizedType x -> (Class<?>) x.getRawType();
-		case TypeVariable<?> _ -> null;
-		default -> throw new IllegalArgumentException();
-		};
+				}).collect(Collectors.toMap(Property::name, p -> p, (_, x) -> x, LinkedHashMap::new));
 	}
 
 	public static Type resolveTypeVariable(TypeVariable<?> variable, Class<?> class1, Class<?> superclassOrInterface) {
@@ -230,7 +222,7 @@ public class Reflection {
 		}
 		var pt = (ParameterizedType) Stream
 				.concat(Stream.of(class1.getGenericSuperclass()), Arrays.stream(class1.getGenericInterfaces()))
-				.filter(x -> x != null && Reflection.getRawType(x) == superclassOrInterface).findFirst().get();
+				.filter(x -> x != null && Java.toClass(x) == superclassOrInterface).findFirst().get();
 		return pt.getActualTypeArguments()[i];
 	}
 

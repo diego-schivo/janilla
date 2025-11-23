@@ -22,9 +22,29 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.reflect;
+import WebComponent from "./web-component.js";
 
-import java.lang.reflect.Method;
+export default class AdminText extends WebComponent {
 
-public record ClassAndMethod(Class<?> class1, Method method) {
+	static get templateNames() {
+		return ["admin-text"];
+	}
+
+	static get observedAttributes() {
+		return ["data-array-key", "data-path", "data-updated-at"];
+	}
+
+	constructor() {
+		super();
+	}
+
+	async updateDisplay() {
+		const p = this.dataset.path;
+		const f = this.closest("admin-edit").field(p);
+		this.appendChild(this.interpolateDom({
+			$template: "",
+			path: p,
+			data: f.data
+		}));
+	}
 }

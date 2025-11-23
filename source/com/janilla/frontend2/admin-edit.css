@@ -1,0 +1,136 @@
+.admin admin-edit {
+  &,
+  form {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  form {
+    @media (min-width: 1441px) {
+      display: grid;
+      grid-template: auto 1fr / 1fr auto;
+    }
+
+    > div {
+      align-items: center;
+      backdrop-filter: blur(8px);
+      background: rgba(20, 20, 20, 0.3);
+      border-bottom: 1px solid rgb(47, 47, 47);
+      display: flex;
+      gap: 1rem;
+      margin: 0 -1rem;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+
+      &:has(dl) {
+        overflow: auto;
+        padding: 1rem;
+        scrollbar-width: none;
+
+        @media (min-width: 1441px) {
+          margin-left: -3.75rem;
+          margin-right: 0;
+          padding-left: 3.75rem;
+          padding-right: 0;
+        }
+      }
+
+      &:has(button) {
+        padding: 0.5rem 1rem;
+
+        @media (min-width: 1441px) {
+          margin-left: 0;
+          margin-right: -3.75rem;
+          padding-left: 0;
+          padding-right: 3.75rem;
+        }
+      }
+
+      dl {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        white-space: nowrap;
+      }
+
+      dt {
+        color: light-dark(rgb(127, 127, 127), rgb(128, 128, 128));
+
+        &::after {
+          content: ":";
+        }
+      }
+
+      dd {
+        color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
+        font-weight: 600;
+      }
+
+      a,
+      button {
+        line-height: 1.5rem;
+        padding: 0.25rem 0.5rem !important;
+      }
+
+      a {
+        border: 1px solid rgb(255, 255, 255);
+        border-radius: 0.1875rem;
+        display: flex;
+        gap: 0.5rem;
+        text-decoration: none;
+      }
+
+      button {
+        &:disabled {
+          cursor: not-allowed;
+        }
+
+        &[name="publish"] {
+          background: light-dark(rgb(74, 74, 74), rgb(181, 181, 181));
+          color: light-dark(rgb(235, 235, 235), rgb(20, 20, 20));
+        }
+      }
+
+      select {
+        margin-left: auto;
+        padding: 0.5rem;
+        text-align: center;
+        width: 2rem;
+      }
+    }
+
+    > admin-fields {
+      /*align-items: flex-start;*/
+      @media (max-width: 1440px) {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      @media (min-width: 1441px) {
+        align-items: stretch;
+      }
+
+      > ul {
+        @media (min-width: 1441px) {
+          padding-top: 1.875rem;
+          padding-bottom: 3.75rem;
+        }
+
+        &:nth-child(2) {
+          @media (min-width: 1441px) {
+            position: sticky;
+            top: 3.5rem;
+          }
+        }
+      }
+
+      @media (min-width: 1441px) {
+        grid-column: 1 / span 2;
+      }
+    }
+  }
+}

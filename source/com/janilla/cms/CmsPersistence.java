@@ -30,7 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.janilla.json.TypeResolver;
+import com.janilla.java.TypeResolver;
 import com.janilla.persistence.Crud;
 import com.janilla.persistence.CrudObserver;
 import com.janilla.persistence.Entity;

@@ -22,22 +22,11 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.json;
+package com.janilla.java;
 
-public class NullTypeResolver implements TypeResolver {
+public record TypedData(Object data, Class<?> type) {
 
-	@Override
-	public ObjectAndType apply(ObjectAndType t) {
-		return null;
-	}
-
-	@Override
-	public Class<?> parse(String string) {
-		return null;
-	}
-
-	@Override
-	public String format(Class<?> class1) {
-		return null;
+	public TypedData withType(Class<?> type) {
+		return new TypedData(data, type);
 	}
 }

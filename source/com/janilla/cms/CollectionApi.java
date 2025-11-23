@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import com.janilla.http.HttpExchange;
-import com.janilla.json.DollarTypeResolver;
+import com.janilla.java.DollarTypeResolver;
 import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;

@@ -66,40 +66,6 @@ export default class CmsAdmin extends WebComponent {
 	}
 	*/
 
-	handleClick = async event => {
-		const el = event.target.closest("button");
-		if (el?.name) {
-			event.stopPropagation();
-			switch (el.name) {
-				case "open-menu":
-					this.querySelector("dialog").showModal();
-					break;
-				case "close-menu":
-					this.querySelector("dialog").close();
-					break;
-				case "logout":
-					await fetch(`${this.dataset.apiUrl}/users/logout`, { method: "POST" });
-					this.dispatchEvent(new CustomEvent("user-change", { bubbles: true }));
-					history.pushState({}, "", "/admin");
-					dispatchEvent(new CustomEvent("popstate"));
-					break;
-			}
-		}
-	}
-
-	handleSelectTab = event => {
-		if (event.detail.name !== "document-subview")
-			return;
-		event.preventDefault();
-		const v = event.detail.value;
-		const s = this.state;
-		const nn = s.pathSegments.slice(0, 3);
-		if (v !== "edit")
-			nn.push(v);
-		history.pushState({}, "", `/admin/${nn.join("/")}`);
-		dispatchEvent(new CustomEvent("popstate"));
-	}
-
 	async updateDisplay() {
 		const p = this.dataset.path === "/account" && this.dataset.adminRole !== undefined
 			? `/collections/users/${this.dataset.userId}`
@@ -278,6 +244,40 @@ export default class CmsAdmin extends WebComponent {
 		}));
 	}
 
+	handleClick = async event => {
+		const el = event.target.closest("button");
+		if (el?.name) {
+			event.stopPropagation();
+			switch (el.name) {
+				case "open-menu":
+					this.querySelector("dialog").showModal();
+					break;
+				case "close-menu":
+					this.querySelector("dialog").close();
+					break;
+				case "logout":
+					await fetch(`${this.dataset.apiUrl}/users/logout`, { method: "POST" });
+					this.dispatchEvent(new CustomEvent("user-change", { bubbles: true }));
+					history.pushState({}, "", "/admin");
+					dispatchEvent(new CustomEvent("popstate"));
+					break;
+			}
+		}
+	}
+
+	handleSelectTab = event => {
+		if (event.detail.name !== "document-subview")
+			return;
+		event.preventDefault();
+		const v = event.detail.value;
+		const s = this.state;
+		const nn = s.pathSegments.slice(0, 3);
+		if (v !== "edit")
+			nn.push(v);
+		history.pushState({}, "", `/admin/${nn.join("/")}`);
+		dispatchEvent(new CustomEvent("popstate"));
+	}
+
 	field(path, parent) {
 		const s = this.state;
 		let f = parent ?? {
@@ -350,8 +350,15 @@ export default class CmsAdmin extends WebComponent {
 
 	cell(object, key) {
 		const x = object[key];
-		if (key === "updatedAt")
-			return this.dateTimeFormat.format(new Date(x));
+		switch (key) {
+			case "id":
+				return {
+					$template: "id",
+					...object
+				};
+			case "updatedAt":
+				return this.dateTimeFormat.format(new Date(x));
+		}
 		if (typeof x === "object" && x?.$type === "File")
 			return {
 				$template: "media",

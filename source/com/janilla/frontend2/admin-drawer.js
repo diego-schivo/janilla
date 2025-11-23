@@ -22,13 +22,45 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.json;
+import WebComponent from "./web-component.js";
 
-import java.util.function.UnaryOperator;
+export default class AdminDrawer extends WebComponent {
 
-public interface TypeResolver extends UnaryOperator<ObjectAndType> {
+	static get templateNames() {
+		return ["admin-drawer"];
+	}
 
-	Class<?> parse(String string);
+	static get observedAttributes() {
+		return [];
+	}
 
-	String format(Class<?> class1);
+	constructor() {
+		super();
+		this.attachShadow({ mode: "open" });
+	}
+
+	connectedCallback() {
+		super.connectedCallback();
+		this.addEventListener("click", this.handleClick);
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.removeEventListener("click", this.handleClick);
+	}
+
+	async updateDisplay() {
+		this.shadowRoot.appendChild(this.interpolateDom({
+			$template: ""
+		}));
+	}
+
+	handleClick = async event => {
+		const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
+		if (b?.name === "close") {
+			event.preventDefault();
+			event.stopPropagation();
+			this.dispatchEvent(new CustomEvent("close-drawer", { bubbles: true }));
+		}
+	}
 }

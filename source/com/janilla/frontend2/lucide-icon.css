@@ -1,0 +1,11 @@
+lucide-icon {
+  aspect-ratio: 1;
+  display: block;
+  width: 1rem;
+
+  svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
+}

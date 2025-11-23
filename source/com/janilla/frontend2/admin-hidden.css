@@ -1,0 +1,9 @@
+.admin {
+  
+  .field:has(> div > admin-hidden) {
+    margin-bottom: -1rem;
+  }
+
+  admin-hidden {
+  }
+}

@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.json.Converter;
+import com.janilla.java.Converter;
 import com.janilla.json.Json;
 
 public record Range(long from, long to) {

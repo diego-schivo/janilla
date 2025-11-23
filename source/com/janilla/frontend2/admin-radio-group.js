@@ -22,39 +22,35 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.json;
+import WebComponent from "./web-component.js";
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.stream.Collectors;
+export default class AdminRadioGroup extends WebComponent {
 
-public class DollarTypeResolver implements TypeResolver {
-
-	protected final Map<String, Class<?>> parseMap;
-
-	public DollarTypeResolver(Collection<Class<?>> types) {
-		parseMap = types.stream().collect(Collectors.toMap(this::format, x -> x, (x, _) -> x));
+	static get templateNames() {
+		return ["admin-radio-group"];
 	}
 
-	@Override
-	public ObjectAndType apply(ObjectAndType ot) {
-		var m = ot.object() instanceof Map<?, ?> x ? x : null;
-		var t = m != null ? m.get("$type") : null;
-		var c = t instanceof String x ? parse(x) : null;
-		return c != null ? ot.withType(c) : null;
+	static get observedAttributes() {
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
-	@Override
-	public Class<?> parse(String string) {
-		var c = parseMap.get(string);
-//		IO.println("DollarTypeResolver.parse, string=" + string + ", c=" + c);
-		return c;
+	constructor() {
+		super();
 	}
 
-	@Override
-	public String format(Class<?> class1) {
-		var x = class1.getName().substring(class1.getPackageName().length() + 1).replace('$', '.');
-//		IO.println("DollarTypeResolver.format, class1=" + class1 + ", x=" + x);
-		return x;
+	async updateDisplay() {
+		const a = this.closest("admin-element");
+		const p = this.dataset.path;
+		const f = a.field(p);
+		this.appendChild(this.interpolateDom({
+			$template: "",
+			options: a.options(f).map(x => ({
+				$template: "option",
+				name: p,
+				value: x,
+				checked: x == f.data?.name,
+				text: x
+			}))
+		}));
 	}
 }

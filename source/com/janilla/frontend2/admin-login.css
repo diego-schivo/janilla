@@ -1,0 +1,72 @@
+.admin {
+admin-create-first-user,
+admin-forgot-password,
+admin-login,
+admin-reset-password {
+  gap: 1rem;
+  justify-content: center;
+  max-width: 30rem;
+  width: 100%;
+
+  &,
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  form {
+    gap: 1rem;
+
+    @media (min-width: 1441px) {
+      gap: 1.25rem;
+    }
+  }
+
+  img {
+    margin: 0 auto 2.5rem;
+    width: 12rem;
+  }
+
+  h1 {
+    /*font-size: 2rem;*/
+    font-size: 1.625rem;
+  }
+
+  label {
+    &:has([required]) span::after {
+      color: light-dark(rgb(37, 180, 183), rgb(218, 75, 72));
+      content: " *";
+    }
+  }
+  
+  input,
+  button {
+    border-radius: 3px;
+	box-sizing: border-box;
+	height: 40px;	
+    padding: 0.5rem 1rem;
+  }
+  
+  input {
+    background: light-dark(rgb(221, 221, 221), rgb(34, 34, 34));
+    border: 1px solid rgb(60, 60, 60);
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  button {
+    background: light-dark(rgb(20, 20, 20), rgb(235, 235, 235));
+    color: light-dark(rgb(235, 235, 235), rgb(20, 20, 20));
+
+    &:hover {
+      background: light-dark(rgb(74, 74, 74), rgb(181, 181, 181));
+    }
+
+    @media (min-width: 1441px) {
+      margin-bottom: 1.5rem;
+    }
+  }
+}
+}

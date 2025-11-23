@@ -639,7 +639,7 @@ public final class Hpack {
 			if (b.length() % 5 == 4)
 				b.append(b.length() % 40 == 39 ? '\n' : ' ');
 			b.append(x);
-		}, (b1, _) -> b1, StringBuilder::toString));
+		}, (_, x) -> x, StringBuilder::toString));
 	}
 
 }

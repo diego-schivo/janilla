@@ -77,7 +77,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 
 	@Override
 	public boolean insert(Object[] key, Object[] data) {
-		IO.println("IndexBTree.insert, key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data));
+//		IO.println("IndexBTree.insert, key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data));
 
 		var s = search(key);
 		if (s.found() != -1)
@@ -111,7 +111,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 
 	@Override
 	public boolean delete(Object[] key, Consumer<Stream<Object[]>> rowsOperation) {
-		IO.println("IndexBTree.delete, key=" + Arrays.toString(key));
+//		IO.println("IndexBTree.delete, key=" + Arrays.toString(key));
 
 		var s = search(key);
 		if (s.found() == -1)

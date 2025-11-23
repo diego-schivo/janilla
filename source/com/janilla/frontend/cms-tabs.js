@@ -26,12 +26,12 @@ import WebComponent from "./web-component.js";
 
 export default class CmsTabs extends WebComponent {
 
-	static get observedAttributes() {
-		return ["data-active-tab", "data-name", "data-no-tab-list", "data-no-tab-panels", "data-tab"];
-	}
-
 	static get templateNames() {
 		return ["cms-tabs"];
+	}
+
+	static get observedAttributes() {
+		return ["data-active-tab", "data-name", "data-no-tab-list", "data-no-tab-panels", "data-tab"];
 	}
 
 	constructor() {
@@ -53,27 +53,6 @@ export default class CmsTabs extends WebComponent {
 		if (newValue !== oldValue && this.state)
 			delete this.state.activeTab;
 		super.attributeChangedCallback(name, oldValue, newValue);
-	}
-
-	handleClick = async event => {
-		const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
-		if (b?.role !== "tab")
-			return;
-		event.stopPropagation();
-		const s = this.state;
-		const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
-		const t = s.tabs[i];
-		if (this.dispatchEvent(new CustomEvent("select-tab", {
-			bubbles: true,
-			cancelable: true,
-			detail: {
-				name: this.dataset.name,
-				value: t
-			}
-		}))) {
-			s.activeTab = t;
-			this.requestDisplay();
-		}
 	}
 
 	async updateDisplay() {
@@ -98,5 +77,26 @@ export default class CmsTabs extends WebComponent {
 				hidden: x !== s.activeTab
 			})) : null
 		}));
+	}
+
+	handleClick = async event => {
+		const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
+		if (b?.role !== "tab")
+			return;
+		event.stopPropagation();
+		const s = this.state;
+		const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
+		const t = s.tabs[i];
+		if (this.dispatchEvent(new CustomEvent("select-tab", {
+			bubbles: true,
+			cancelable: true,
+			detail: {
+				name: this.dataset.name,
+				value: t
+			}
+		}))) {
+			s.activeTab = t;
+			this.requestDisplay();
+		}
 	}
 }

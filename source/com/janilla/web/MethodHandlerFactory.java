@@ -62,99 +62,27 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.java.Java;
-import com.janilla.java.Java.EntryList;
-import com.janilla.json.Converter;
+import com.janilla.java.Converter;
+import com.janilla.java.NullTypeResolver;
+import com.janilla.java.TypeResolver;
 import com.janilla.json.Json;
-import com.janilla.json.NullTypeResolver;
-import com.janilla.json.TypeResolver;
-import com.janilla.net.Net;
-import com.janilla.reflect.ClassAndMethod;
 import com.janilla.reflect.Reflection;
 
 public class MethodHandlerFactory implements HttpHandlerFactory {
 
-//	public static void main(String[] args) throws Exception {
-//		class C {
-//
-//			@SuppressWarnings("unused")
-//			public String foo() {
-//				return "bar";
-//			}
-//		}
-//		var c = new C();
-//		var f1 = new MethodHandlerFactory();
-//		f1.setToInvocation(r -> {
-//			var u = r.getURI();
-//			var p = u.getPath();
-//			var n = p.startsWith("/") ? p.substring(1) : null;
-//			Method m;
-//			try {
-//				m = C.class.getMethod(n);
-//			} catch (NoSuchMethodException e) {
-//				m = null;
-//			} catch (SecurityException e) {
-//				throw new RuntimeException(e);
-//			}
-//			return m != null ? new MethodInvocation(m, c, null) : null;
-//		});
-//		var f2 = new TemplateHandlerFactory();
-//		var f = new DelegatingHandlerFactory();
-//		{
-//			var a = new WebHandlerFactory[] { f1, f2 };
-//			f.setToHandler((o, d) -> {
-//				if (a != null)
-//					for (var g : a) {
-//						var h = g.createHandler(o, d);
-//						if (h != null)
-//							return h;
-//					}
-//				return null;
-//			});
-//		}
-//		f1.setMainFactory(f);
-//
-//		var is = new ByteArrayInputStream("""
-//				GET /foo HTTP/1.1\r
-//				Content-Length: 0\r
-//				\r
-//				""".getBytes());
-//		var os = new ByteArrayOutputStream();
-//		try (var rc = new HttpMessageReadableByteChannel(Channels.newChannel(is));
-//				var rq = rc.readRequest();
-//				var wc = new HttpMessageWritableByteChannel(Channels.newChannel(os));
-//				var rs = wc.writeResponse()) {
-//			var d = new HttpExchange();
-//			d.setRequest(rq);
-//			d.setResponse(rs);
-//			var h = f.createHandler(rq, d);
-//			h.handle(d);
-//		}
-//
-//		var s = os.toString();
-//		IO.println(s);
-//		assert Objects.equals(s, """
-//				HTTP/1.1 200 OK\r
-//				Cache-Control: no-cache\r
-//				Content-Length: 4\r
-//				\r
-//				bar
-//				""") : s;
-//	}
+	protected final Function<Class<?>, Object> targetResolver;
 
 	protected final Comparator<Invocation> invocationComparator;
-
-	protected final Function<Class<?>, Object> targetResolver;
 
 	protected final RenderableFactory renderableFactory;
 
 	protected final HttpHandlerFactory rootFactory;
 
-	protected final Map<String, Invocable> invocables;
+	protected final Map<String, InvocationGroup> groups;
 
-	protected final Map<Pattern, Invocable> regexInvocables;
+	protected final Map<Pattern, InvocationGroup> regexGroups;
 
-	public MethodHandlerFactory(Collection<ClassAndMethod> methods, Function<Class<?>, Object> targetResolver,
+	public MethodHandlerFactory(Collection<Invocable> methods, Function<Class<?>, Object> targetResolver,
 			Comparator<Invocation> invocationComparator, RenderableFactory renderableFactory,
 			HttpHandlerFactory rootFactory) {
 		this.targetResolver = Objects.requireNonNullElseGet(targetResolver, () -> x -> {
@@ -169,10 +97,10 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 		this.rootFactory = rootFactory;
 
 		var oo = new HashMap<Class<?>, Object>();
-		invocables = new HashMap<>();
-		for (var z : methods) {
-			var c = z.class1();
-			var m = z.method();
+		groups = new HashMap<>();
+		for (var cm : methods) {
+			var c = cm.type();
+			var m = cm.method();
 //			IO.println("MethodHandlerFactory, m=" + m + ", c=" + c);
 			var h1 = c.getAnnotation(Handle.class);
 			var p1 = h1 != null ? h1.path() : null;
@@ -183,21 +111,21 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 			else if (p2.startsWith("/"))
 				p1 = null;
 			var p = Stream.of(p1, p2).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("/"));
-			var i = invocables.computeIfAbsent(p,
-					_ -> new Invocable(oo.computeIfAbsent(c, targetResolver), new HashMap<>()));
+			var i = groups.computeIfAbsent(p,
+					_ -> new InvocationGroup(oo.computeIfAbsent(c, targetResolver), new HashMap<>()));
 			MethodHandle h;
 			try {
 				h = MethodHandles.publicLookup().unreflect(m);
 			} catch (IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
-			i.methodHandles.put(m, h);
+			i.methodHandles().put(m, h);
 		}
 
-		var kk = invocables.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).toList();
-		regexInvocables = kk.stream().sorted(Comparator.comparingInt((String x) -> x.indexOf('(')).reversed())
-				.collect(Collectors.toMap(k -> Pattern.compile(k), invocables::get, (v, _) -> v, LinkedHashMap::new));
-		invocables.keySet().removeAll(kk);
+		var kk = groups.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).toList();
+		regexGroups = kk.stream().sorted(Comparator.comparingInt((String x) -> x.indexOf('(')).reversed())
+				.collect(Collectors.toMap(k -> Pattern.compile(k), groups::get, (_, x) -> x, LinkedHashMap::new));
+		groups.keySet().removeAll(kk);
 //		IO.println("m=" + m + "\nx=" + x);
 	}
 
@@ -205,41 +133,57 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest r) {
 			var m1 = Objects.requireNonNullElse(r.getMethod(), "");
-			var ii = resolveInvocables(r.getPath()).map(x -> {
-				Map.Entry<Method, MethodHandle> kv = null;
-				for (var y : x.methodHandles.entrySet()) {
-					var m2 = Objects.requireNonNullElse(y.getKey().getAnnotation(Handle.class).method(), "");
+			var ii = resolveInvocables(r.getPath()).map(i -> {
+				Method m = null;
+				MethodHandle h = null;
+				for (var x : i.methodHandles().entrySet()) {
+					var m2 = Objects.requireNonNullElse(x.getKey().getAnnotation(Handle.class).method(), "");
 					if (m2.equalsIgnoreCase(m1)) {
-						kv = y;
+						m = x.getKey();
+						h = x.getValue();
 						break;
 					}
-					if (m2.isEmpty())
-						kv = y;
+					if (m2.isEmpty()) {
+						m = x.getKey();
+						h = x.getValue();
+					}
 				}
-				return kv != null ? new Invocation(x.target, kv.getKey(), kv.getValue(),
+				return m != null ? new Invocation(i.object(), m, h,
 //								getParameterTypes(kv.getKey(), x.target.getClass()), x.regexGroups)
-						Reflection.getMethodActualParameterTypes(kv.getKey(), x.target.getClass()), x.regexGroups)
+						Reflection.getMethodActualParameterTypes(m, i.object().getClass()), i.regexGroups())
 						: null;
 			}).filter(Objects::nonNull);
 			if (invocationComparator != null)
 				ii = ii.sorted(invocationComparator);
-			var i = ii.findFirst();
-			if (i.isPresent())
-				return x -> handle(i.get(), x);
+//			var i = ii.findFirst();
+//			if (i.isPresent())
+//				return x -> handle(i.get(), x);
+			var l = ii.toList();
+			if (!l.isEmpty())
+				return x -> {
+					NotFoundException f = null;
+					for (var i : l)
+						try {
+							return handle(i, x);
+						} catch (NotFoundException e) {
+							f = e;
+						}
+					throw f;
+				};
 		}
 		return null;
 	}
 
-	public Stream<Invocable> resolveInvocables(String path) {
+	public Stream<InvocationGroup> resolveInvocables(String path) {
 //		IO.println(Thread.currentThread().getName() + " AnnotationDrivenToMethodInvocation invocations1=" + i
 //				+ ", invocations2=" + j);
 		if (path == null)
 			return Stream.empty();
-		var i = invocables.get(path);
-		var b = Stream.<Invocable>builder();
+		var i = groups.get(path);
+		var b = Stream.<InvocationGroup>builder();
 		if (i != null)
 			b.add(i);
-		for (var x : regexInvocables.entrySet()) {
+		for (var x : regexGroups.entrySet()) {
 			var m = x.getKey().matcher(path);
 			if (m.matches()) {
 				i = x.getValue();
@@ -259,8 +203,8 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 			var aa1 = resolveArguments(invocation, exchange);
 //		IO.println("MethodHandlerFactory.handle, aa=" + Arrays.toString(aa));
 			try {
-				var aa2 = Stream.concat(Stream.of(invocation.target), Arrays.stream(aa1)).toArray();
-				return invocation.methodHandle.invokeWithArguments(aa2);
+				var aa2 = Stream.concat(Stream.of(invocation.object()), Arrays.stream(aa1)).toArray();
+				return invocation.methodHandle().invokeWithArguments(aa2);
 			} catch (Throwable e) {
 				switch (e) {
 				case RuntimeException x:
@@ -276,10 +220,10 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 		var rs = exchange.response();
 		if (rs.getStatus() != 0)
 			;
-		else if (invocation.method.getReturnType() == Void.TYPE) {
+		else if (invocation.method().getReturnType() == Void.TYPE) {
 			rs.setStatus(204);
 			rs.setHeaderValue("cache-control", "no-cache");
-		} else if (o instanceof Path x && invocation.method.isAnnotationPresent(Attachment.class)) {
+		} else if (o instanceof Path x && invocation.method().isAnnotationPresent(Attachment.class)) {
 			rs.setStatus(200);
 			rs.setHeaderValue("cache-control", "max-age=3600");
 			rs.setHeaderValue("Content-Disposition", "attachment; filename=\"" + x.getFileName() + "\"");
@@ -295,14 +239,14 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 				throw new UncheckedIOException(e);
 			}
 		} else if (o instanceof URI x) {
-			rs.setStatus(302);
+			rs.setStatus(307);
 			rs.setHeaderValue("cache-control", "no-cache");
 			rs.setHeaderValue("location", x.toString());
 		} else {
 			rs.setStatus(200);
 			if (rs.getHeader("cache-control") == null)
 				rs.setHeaderValue("cache-control", "no-cache");
-			var r = renderableFactory.createRenderable(invocation.method.getAnnotatedReturnType(), o);
+			var r = renderableFactory.createRenderable(invocation.method().getAnnotatedReturnType(), o);
 			render(r, exchange);
 		}
 		return true;
@@ -310,7 +254,8 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 
 	protected Object[] resolveArguments(Invocation invocation, HttpExchange exchange) {
 		var rq = exchange.request();
-		var qs = Net.parseQueryString(rq.getQuery());
+//		var qs = Net.parseQueryString(rq.getQuery());
+		var qs = rq.getQuery();
 		Supplier<String> bs = switch (rq.getMethod()) {
 		case "PATCH", "POST", "PUT" -> {
 			var s = new Supplier<String>() {
@@ -333,24 +278,25 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 			var ct = Objects.requireNonNullElse(rq.getHeaderValue("content-type"), "").split(";")[0];
 			switch (ct) {
 			case "application/x-www-form-urlencoded":
-				var qs2 = Net.parseQueryString(s.get());
-				if (qs2 == null)
-					;
-				else if (qs == null)
-					qs = qs2;
-				else
-					qs.addAll(qs2);
+//				var qs2 = Net.parseQueryString(s.get());
+//				if (qs2 == null)
+//					;
+//				else if (qs == null)
+//					qs = qs2;
+//				else
+//					qs.addAll(qs2);
+				qs = Stream.of(qs, s.get()).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("&"));
 				break;
 			case "application/json":
 				var s2 = s.get();
 				var o = s2 != null ? Json.parse(s2) : null;
 				if (o instanceof Map<?, ?> m && !m.isEmpty()) {
-					if (qs == null)
-						qs = new Java.EntryList<>();
-					for (var kv : m.entrySet())
-						if (kv.getValue() instanceof Boolean || kv.getValue() instanceof Number
-								|| kv.getValue() instanceof String)
-							qs.add(kv.getKey().toString(), kv.getValue().toString());
+//					if (qs == null)
+//						qs = new Java.EntryList<>();
+//					for (var kv : m.entrySet())
+//						if (kv.getValue() instanceof Boolean || kv.getValue() instanceof Number
+//								|| kv.getValue() instanceof String)
+//							qs.add(kv.getKey().toString(), kv.getValue().toString());
 				}
 				break;
 			}
@@ -359,8 +305,8 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 		default -> null;
 		};
 
-		var m = invocation.method;
-		var gg = invocation.regexGroups;
+		var m = invocation.method();
+		var gg = invocation.regexGroups();
 		var pp = m.getParameters();
 		var ptt = invocation.parameterTypes();
 		var paa = m.getParameterAnnotations();
@@ -376,17 +322,19 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 					.filter(x -> x != null && !x.isEmpty()).findFirst().orElse(null);
 			var qs2 = qs;
 			var bs2 = i == ggl || (ptt[i] instanceof Class<?> x && x.isRecord()) ? bs : null;
-			aa[i] = resolveArgument(ptt[i], exchange,
-					i < ggl ? (g != null ? new String[] { g } : null)
-							: qs2 != null && n != null ? qs2.stream(n).toArray(String[]::new) : null,
-					i >= ggl ? qs : null, bs2,
-					b != null && b.resolver() != NullTypeResolver.class ? () -> resolver(b.resolver()) : null);
+			Supplier<Converter> cs = () -> converter(b != null ? b.resolver() : null);
+			aa[i] = resolveArgument(ptt[i], exchange, i < ggl ? (g != null ? new String[] { g } : null)
+//							: qs2 != null && n != null ? qs2.stream(n).toArray(String[]::new) : null,
+					: null,
+//					i >= ggl ? qs : null,
+					bs2, cs);
 		}
 		return aa;
 	}
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values,
-			EntryList<String, String> entries, Supplier<String> body, Supplier<TypeResolver> resolver) {
+//			EntryList<String, String> entries, 
+			Supplier<String> body, Supplier<Converter> converter) {
 		var c = type instanceof Class<?> x ? x : null;
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
 			return exchange;
@@ -412,29 +360,31 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 					var kk = (Collection<String>) m.keySet();
 					JSON_KEYS.get().addAll(kk);
 				}
-				return new Converter(resolver != null ? resolver.get() : null).convert(o, c);
+				return converter.get().convert(o, c);
 			}
 			case "application/x-www-form-urlencoded": {
-				if (entries == null)
-					break;
-				var t = createEntryTree();
-//				t.setTypeResolver(typeResolver);
-				entries.forEach(t::add);
-				return t.convert(c);
+//				if (entries == null)
+//					break;
+//				var t = createEntryTree();
+				////				t.setTypeResolver(typeResolver);
+//				entries.forEach(t::add);
+//				return t.convert(c);
+				throw new RuntimeException();
 			}
 			default:
 				if (c.isRecord()) {
 					var tt = Arrays.stream(c.getRecordComponents()).collect(
-							Collectors.toMap(x -> x.getName(), x -> x.getType(), (v, _) -> v, LinkedHashMap::new));
+							Collectors.toMap(x -> x.getName(), x -> x.getType(), (_, x) -> x, LinkedHashMap::new));
 					var aa = tt.entrySet().stream().map(x -> {
 						var n = x.getKey();
 						var t = x.getValue();
 						return resolveArgument(t, exchange,
-								entries != null
-										? entries.stream().filter(y -> y.getKey().equals(n)).map(Map.Entry::getValue)
-												.toArray(String[]::new)
-										: null,
-								entries, body, null);
+//								entries != null
+//										? entries.stream().filter(y -> y.getKey().equals(n)).map(Map.Entry::getValue)
+//												.toArray(String[]::new)
+//										: null,
+//								entries,
+								null, body, null);
 					}).toArray();
 					try {
 						return c.getConstructors()[0].newInstance(aa);
@@ -461,11 +411,12 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 							if (p == null)
 								continue;
 							var v = resolveArgument(p.type(), exchange,
-									entries != null
-											? entries.stream().filter(x -> x.getKey().equals(n))
-													.map(Map.Entry::getValue).toArray(String[]::new)
-											: null,
-									entries, body, null);
+//									entries != null
+//											? entries.stream().filter(x -> x.getKey().equals(n))
+//													.map(Map.Entry::getValue).toArray(String[]::new)
+//											: null,
+//									entries,
+									null, body, null);
 							p.set(o, v);
 						}
 						return o;
@@ -493,9 +444,10 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 		return d.convert(i, type);
 	}
 
-	protected TypeResolver resolver(Class<? extends TypeResolver> class0) {
+	protected Converter converter(Class<? extends TypeResolver> type) {
 		try {
-			return class0.getConstructor().newInstance();
+			return new Converter(
+					type != null && type != NullTypeResolver.class ? type.getConstructor().newInstance() : null);
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);
 		}
@@ -506,17 +458,6 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 		var h = rootFactory.createHandler(renderable);
 		if (h != null)
 			h.handle(exchange);
-	}
-
-	public record Invocable(Object target, Map<Method, MethodHandle> methodHandles, String... regexGroups) {
-
-		public Invocable withRegexGroups(String... regexGroups) {
-			return new Invocable(target, methodHandles, regexGroups);
-		}
-	}
-
-	public record Invocation(Object target, Method method, MethodHandle methodHandle, Type[] parameterTypes,
-			String... regexGroups) {
 	}
 
 	public static class EntryTree extends LinkedHashMap<String, Object> {
@@ -593,4 +534,72 @@ public class MethodHandlerFactory implements HttpHandlerFactory {
 			}
 		}
 	}
+
+//	public static void main(String[] args) throws Exception {
+//	class C {
+//
+//		@SuppressWarnings("unused")
+//		public String foo() {
+//			return "bar";
+//		}
+//	}
+//	var c = new C();
+//	var f1 = new MethodHandlerFactory();
+//	f1.setToInvocation(r -> {
+//		var u = r.getURI();
+//		var p = u.getPath();
+//		var n = p.startsWith("/") ? p.substring(1) : null;
+//		Method m;
+//		try {
+//			m = C.class.getMethod(n);
+//		} catch (NoSuchMethodException e) {
+//			m = null;
+//		} catch (SecurityException e) {
+//			throw new RuntimeException(e);
+//		}
+//		return m != null ? new MethodInvocation(m, c, null) : null;
+//	});
+//	var f2 = new TemplateHandlerFactory();
+//	var f = new DelegatingHandlerFactory();
+//	{
+//		var a = new WebHandlerFactory[] { f1, f2 };
+//		f.setToHandler((o, d) -> {
+//			if (a != null)
+//				for (var g : a) {
+//					var h = g.createHandler(o, d);
+//					if (h != null)
+//						return h;
+//				}
+//			return null;
+//		});
+//	}
+//	f1.setMainFactory(f);
+//
+//	var is = new ByteArrayInputStream("""
+//			GET /foo HTTP/1.1\r
+//			Content-Length: 0\r
+//			\r
+//			""".getBytes());
+//	var os = new ByteArrayOutputStream();
+//	try (var rc = new HttpMessageReadableByteChannel(Channels.newChannel(is));
+//			var rq = rc.readRequest();
+//			var wc = new HttpMessageWritableByteChannel(Channels.newChannel(os));
+//			var rs = wc.writeResponse()) {
+//		var d = new HttpExchange();
+//		d.setRequest(rq);
+//		d.setResponse(rs);
+//		var h = f.createHandler(rq, d);
+//		h.handle(d);
+//	}
+//
+//	var s = os.toString();
+//	IO.println(s);
+//	assert Objects.equals(s, """
+//			HTTP/1.1 200 OK\r
+//			Cache-Control: no-cache\r
+//			Content-Length: 4\r
+//			\r
+//			bar
+//			""") : s;
+//}
 }

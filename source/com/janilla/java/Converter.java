@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.json;
+package com.janilla.java;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
@@ -59,7 +59,7 @@ public class Converter {
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object object, Type target) {
 //		IO.println("Converter.convert, object=" + object + ", target=" + target);
-		var c = Reflection.getRawType(target);
+		var c = Java.toClass(target);
 
 		if (object == null || (object instanceof String x && x.isEmpty())) {
 			if (c == Boolean.TYPE)
@@ -86,14 +86,14 @@ public class Converter {
 			case Integer x -> BigDecimal.valueOf(x);
 			case Long x -> BigDecimal.valueOf(x);
 			case String x -> new BigDecimal(x);
-			default -> throw new RuntimeException();
+			default -> throw new IllegalArgumentException();
 			};
 
 		if (c == Boolean.class || c == Boolean.TYPE)
 			return (T) switch (object) {
 			case Boolean _ -> object;
 			case String x -> Boolean.parseBoolean(x);
-			default -> throw new RuntimeException();
+			default -> throw new IllegalArgumentException();
 			};
 
 		if (c == Instant.class)
@@ -104,7 +104,7 @@ public class Converter {
 			case Integer _ -> object;
 			case Long x -> x.intValue();
 			case String x -> Integer.parseInt(x);
-			default -> throw new RuntimeException();
+			default -> throw new IllegalArgumentException();
 			};
 
 		if (c == LocalDate.class)
@@ -118,7 +118,7 @@ public class Converter {
 			case Integer x -> x.longValue();
 			case Long _ -> object;
 			case String x -> Long.parseLong(x);
-			default -> throw new RuntimeException();
+			default -> throw new IllegalArgumentException();
 			};
 
 		if (c == OffsetDateTime.class)
@@ -143,7 +143,7 @@ public class Converter {
 			var n = switch (object) {
 			case String x -> x;
 			case Map<?, ?> x -> (String) x.get("name");
-			default -> throw new RuntimeException();
+			default -> throw new IllegalArgumentException();
 			};
 			@SuppressWarnings("rawtypes")
 			var x = Enum.valueOf((Class) c, n);
@@ -154,7 +154,7 @@ public class Converter {
 			var oo = switch (object) {
 			case Object[] x -> Arrays.stream(x);
 			case Collection<?> x -> x.stream();
-			default -> throw new RuntimeException();
+			default -> throw new IllegalArgumentException();
 			};
 			var t = c.isArray() ? c.componentType() : ((ParameterizedType) target).getActualTypeArguments()[0];
 			oo = oo.map(x -> convert(x, t));
@@ -166,7 +166,7 @@ public class Converter {
 					return (T) oo.mapToInt(x -> (int) x).toArray();
 				if (c.componentType() == Long.TYPE)
 					return (T) oo.mapToLong(x -> (long) x).toArray();
-				return (T) oo.toArray(x -> (Object[]) Array.newInstance(Reflection.getRawType(t), x));
+				return (T) oo.toArray(x -> (Object[]) Array.newInstance(Java.toClass(t), x));
 			}
 			if (c == List.class)
 				return (T) oo.toList();
@@ -181,7 +181,7 @@ public class Converter {
 					var k = convert(x.getKey(), aa[0]);
 					var v = convert(x.getValue(), aa[1]);
 					return new AbstractMap.SimpleImmutableEntry<>(k, v);
-				}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (y, _) -> y, LinkedHashMap::new));
+				}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (_, x) -> x, LinkedHashMap::new));
 			}
 			if (c == Map.Entry.class) {
 				var aa = ((ParameterizedType) target).getActualTypeArguments();
@@ -197,11 +197,11 @@ public class Converter {
 
 	protected Object convertMap(Map<?, ?> map, Class<?> target) {
 //		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
-		var ot = typeResolver != null ? typeResolver.apply(new ObjectAndType(map, target)) : null;
+		var ot = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
 		if (ot != null) {
 			if (target != null && !target.isAssignableFrom(ot.type()))
 				throw new RuntimeException();
-			map = (Map<?, ?>) ot.object();
+			map = (Map<?, ?>) ot.data();
 			target = ot.type();
 		}
 
@@ -218,7 +218,7 @@ public class Converter {
 			var c0 = target.getConstructors()[0];
 //			IO.println("Converter.convertMap, c0=" + c0);
 			var tt = target.isRecord() ? Arrays.stream(target.getRecordComponents()).collect(
-					Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (x, _) -> x, LinkedHashMap::new))
+					Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (_, x) -> x, LinkedHashMap::new))
 					: null;
 			try {
 				if (tt != null) {

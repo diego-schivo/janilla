@@ -53,8 +53,6 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 		this.jwtKey = jwtKey;
 	}
 
-//	public abstract R adminRole();
-
 	@Handle(method = "PUT", path = "(\\d+)")
 	public E update(ID id, E entity, Boolean draft, Boolean autosave, String password) {
 		@SuppressWarnings("unchecked")

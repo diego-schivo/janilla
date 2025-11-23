@@ -1,0 +1,61 @@
+.admin admin-dashboard {
+  &,
+  ul,
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  h4 {
+    background: light-dark(rgb(236, 211, 197), rgb(19, 44, 58));
+    border-radius: 0.25rem;
+    color: light-dark(rgb(219, 91, 32), rgb(36, 164, 223));
+    letter-spacing: -0.375px;
+    padding: 0.625rem;
+  }
+
+  button[name="seed"] {
+    background: transparent;
+    border: none;
+    text-decoration: underline;
+  }
+
+  li ul {
+    gap: 0.5rem;
+  }
+
+  a {
+    align-items: flex-start;
+    background: light-dark(rgb(221, 221, 221), rgb(34, 34, 34));
+    border: 1px solid rgb(60, 60, 60);
+    border-radius: 0.25rem;
+    box-sizing: border-box;
+    display: flex;
+    font-size: 13px;
+    font-weight: 600;
+    justify-content: space-between;
+    min-height: 5rem;
+    padding: 1rem;
+    position: relative;
+    text-decoration: none;
+
+    &:hover {
+      border-color: light-dark(rgb(168, 168, 168), rgb(87, 87, 87));
+    }
+  }
+
+  button[name="create"] {
+    background: transparent;
+    border-radius: 100%;
+    padding: 0.15rem;
+  }
+
+  @media (min-width: 1441px) {
+    li ul {
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+}

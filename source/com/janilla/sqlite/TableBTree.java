@@ -92,7 +92,7 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 		var i = pi.index();
 		var k = (p.getCellCount() != 0 ? p.getCells().getLast().key() : 0) + 1;
 		var oo = row.apply(k);
-		IO.println("TableBTree.insert, k=" + k + ", oo=" + Arrays.toString(oo));
+//		IO.println("TableBTree.insert, k=" + k + ", oo=" + Arrays.toString(oo));
 		var l = (long) oo[0];
 		if (l < k) {
 			var s = search(l);
@@ -126,7 +126,7 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 
 	@Override
 	public boolean delete(Object[] key, Consumer<Stream<Object[]>> rowsOperation) {
-		IO.println("TableBTree.delete, key=" + Arrays.toString(key));
+//		IO.println("TableBTree.delete, key=" + Arrays.toString(key));
 
 		var k = (long) key[0];
 		var s = search(k);

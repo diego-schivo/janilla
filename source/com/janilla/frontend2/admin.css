@@ -1,0 +1,23 @@
+@import "admin-base.css";
+
+@import "admin-array.css";
+@import "admin-bar.css";
+@import "admin-create-first-user.css";
+@import "admin-dashboard.css";
+@import "admin-document.css";
+@import "admin-drawer.css";
+@import "admin-drawer-link.css";
+@import "admin-edit.css";
+@import "admin-fields.css";
+@import "admin-hidden.css";
+@import "admin-join.css";
+@import "admin-list.css";
+@import "admin-login.css";
+@import "admin-radio-group.css";
+@import "admin-relationship.css";
+@import "admin-select.css";
+@import "admin-tabs.css";
+@import "admin-text.css";
+@import "admin-toasts.css";
+@import "admin-unauthorized.css";
+@import "lucide-icon.css";

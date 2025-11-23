@@ -69,21 +69,21 @@ public final class Net {
 		}
 	}
 
-	public static Java.EntryList<String, String> parseEntryList(String string, String delimiter1, String delimiter2) {
-		return string != null ? Arrays.stream(string.split(delimiter1)).map(s -> {
-			var i = s.indexOf(delimiter2);
-			var k = (i >= 0 ? s.substring(0, i) : s).trim();
-			var v = i >= 0 ? s.substring(i + 1).trim() : null;
-			return new AbstractMap.SimpleImmutableEntry<>(urlDecode(k), urlDecode(v));
-		}).reduce(new Java.EntryList<>(), (l, e) -> {
-			l.add(e.getKey(), e.getValue());
-			return l;
-		}, (a, _) -> a) : null;
-	}
-
-	public static Java.EntryList<String, String> parseQueryString(String string) {
-		return parseEntryList(string, "&", "=");
-	}
+//	public static Java.EntryList<String, String> parseEntryList(String string, String delimiter1, String delimiter2) {
+//		return string != null ? Arrays.stream(string.split(delimiter1)).map(s -> {
+//			var i = s.indexOf(delimiter2);
+//			var k = (i >= 0 ? s.substring(0, i) : s).trim();
+//			var v = i >= 0 ? s.substring(i + 1).trim() : null;
+//			return new AbstractMap.SimpleImmutableEntry<>(urlDecode(k), urlDecode(v));
+//		}).reduce(new Java.EntryList<>(), (l, e) -> {
+//			l.add(e.getKey(), e.getValue());
+//			return l;
+//		}, (_, x) -> x) : null;
+//	}
+//
+//	public static Java.EntryList<String, String> parseQueryString(String string) {
+//		return parseEntryList(string, "&", "=");
+//	}
 
 	public static String urlDecode(String string) {
 		return string != null ? URLDecoder.decode(string, StandardCharsets.UTF_8) : null;

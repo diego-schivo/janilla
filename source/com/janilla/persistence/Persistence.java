@@ -38,7 +38,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.janilla.json.TypeResolver;
+import com.janilla.java.TypeResolver;
 import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
 import com.janilla.sqlite.SqliteDatabase;

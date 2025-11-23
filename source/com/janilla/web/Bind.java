@@ -29,8 +29,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.janilla.json.NullTypeResolver;
-import com.janilla.json.TypeResolver;
+import com.janilla.java.NullTypeResolver;
+import com.janilla.java.TypeResolver;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.PARAMETER })

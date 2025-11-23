@@ -50,6 +50,97 @@ export default class CmsCollection extends WebComponent {
 		this.removeEventListener("click", this.handleClick);
 	}
 
+	async updateDisplay() {
+		const p = this.parentElement;
+		const pn = p.tagName.toLowerCase();
+		const n = this.dataset.name;
+		const a = this.closest("cms-admin");
+		const s = this.state;
+		s.data ??= await (async () => {
+			switch (pn) {
+				case "cms-reference":
+				case "cms-document-reference":
+					return p.state.field.data?.id ? [p.state.field.data] : [];
+				case "cms-reference-array":
+					return p.state.field.data;
+				default:
+					return await (await fetch(`${a.dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
+			}
+		})();
+		s.selectionIds ??= [];
+		const hh = a.headers(n);
+		this.appendChild(this.interpolateDom({
+			$template: "",
+			header: !["cms-reference", "cms-document-reference", "cms-reference-array"].includes(pn) ? {
+				$template: "header",
+				title: n.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
+				selection: s.selectionIds?.length ? {
+					$template: "selection",
+					count: s.selectionIds.length
+				} : null
+			} : null,
+			noResults: !s.data?.length ? {
+				$template: "no-results",
+				name: n
+			} : null,
+			table: s.data?.length ? {
+				$template: "table",
+				heads: (() => {
+					const cc = hh.map(x => x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" "));
+					if (!["cms-reference", "cms-document-reference", "dialog", "cms-reference-array"].includes(pn))
+						cc.unshift({
+							$template: "checkbox",
+							checked: s.selectionIds.length === s.data.length
+						});
+					return cc;
+				})().map(x => ({
+					$template: "head",
+					content: x
+				})),
+				rows: s.data.map(x => ({
+					$template: "row",
+					cells: (() => {
+						const cc = hh.map(y => a.cell(x, y));
+						/*
+						if (!cc[0])
+							cc[0] = x.id;
+						cc[0] = {
+							$template: "link",
+							href: `/admin/collections/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${x.id}`,
+							content: cc[0]
+						};
+						*/
+						if (!["cms-reference", "cms-document-reference", "dialog", "cms-reference-array"].includes(pn))
+							cc.unshift({
+								$template: "checkbox",
+								value: x.id,
+								checked: s.selectionIds.includes(x.id)
+							});
+						return cc;
+					})().map(y => ({
+						$template: "cell",
+						content: y
+					}))
+				}))
+			} : null,
+			publishDialog: s.publishDialog ? {
+				$template: "publish-dialog",
+				count: s.selectionIds.length,
+				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
+			} : null,
+			unpublishDialog: s.unpublishDialog ? {
+				$template: "unpublish-dialog",
+				count: s.selectionIds.length,
+				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
+			} : null,
+			deleteDialog: s.deleteDialog ? {
+				$template: "delete-dialog",
+				count: s.selectionIds.length,
+				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
+			} : null
+		}));
+	}
+
 	handleChange = event => {
 		const el = event.target.closest('[type="checkbox"]');
 		if (!el)
@@ -169,94 +260,5 @@ export default class CmsCollection extends WebComponent {
 				this.requestDisplay();
 				break;
 		}
-	}
-
-	async updateDisplay() {
-		const p = this.parentElement;
-		const pn = p.tagName.toLowerCase();
-		const n = this.dataset.name;
-		const a = this.closest("cms-admin");
-		const s = this.state;
-		s.data ??= await (async () => {
-			switch (pn) {
-				case "cms-reference":
-				case "cms-document-reference":
-					return p.state.field.data?.id ? [p.state.field.data] : [];
-				case "cms-reference-array":
-					return p.state.field.data;
-				default:
-					return await (await fetch(`${a.dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`)).json();
-			}
-		})();
-		s.selectionIds ??= [];
-		const hh = a.headers(n);
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			header: !["cms-reference", "cms-document-reference", "cms-reference-array"].includes(pn) ? {
-				$template: "header",
-				title: n.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
-				selection: s.selectionIds?.length ? {
-					$template: "selection",
-					count: s.selectionIds.length
-				} : null
-			} : null,
-			noResults: !s.data?.length ? {
-				$template: "no-results",
-				name: n
-			} : null,
-			table: s.data?.length ? {
-				$template: "table",
-				heads: (() => {
-					const cc = hh.map(x => x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" "));
-					if (!["cms-reference", "cms-document-reference", "dialog", "cms-reference-array"].includes(pn))
-						cc.unshift({
-							$template: "checkbox",
-							checked: s.selectionIds.length === s.data.length
-						});
-					return cc;
-				})().map(x => ({
-					$template: "head",
-					content: x
-				})),
-				rows: s.data.map(x => ({
-					$template: "row",
-					cells: (() => {
-						const cc = hh.map(y => a.cell(x, y));
-						if (!cc[0])
-							cc[0] = x.id;
-						cc[0] = {
-							$template: "link",
-							href: `/admin/collections/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}/${x.id}`,
-							content: cc[0]
-						};
-						if (!["cms-reference", "cms-document-reference", "dialog", "cms-reference-array"].includes(pn))
-							cc.unshift({
-								$template: "checkbox",
-								value: x.id,
-								checked: s.selectionIds.includes(x.id)
-							});
-						return cc;
-					})().map(y => ({
-						$template: "cell",
-						content: y
-					}))
-				}))
-			} : null,
-			publishDialog: s.publishDialog ? {
-				$template: "publish-dialog",
-				count: s.selectionIds.length,
-				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
-			} : null,
-			unpublishDialog: s.unpublishDialog ? {
-				$template: "unpublish-dialog",
-				count: s.selectionIds.length,
-				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
-			} : null,
-			deleteDialog: s.deleteDialog ? {
-				$template: "delete-dialog",
-				count: s.selectionIds.length,
-				name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
-			} : null
-		}));
 	}
 }

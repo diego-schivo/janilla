@@ -26,12 +26,12 @@ import WebComponent from "./web-component.js";
 
 export default class CmsReferenceArray extends WebComponent {
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
-
 	static get templateNames() {
 		return ["cms-reference-array"];
+	}
+
+	static get observedAttributes() {
+		return ["data-array-key", "data-path", "data-updated-at"];
 	}
 
 	constructor() {
@@ -46,6 +46,35 @@ export default class CmsReferenceArray extends WebComponent {
 	disconnectedCallback() {
 		super.disconnectedCallback();
 		this.removeEventListener("click", this.handleClick);
+	}
+
+	async updateDisplay() {
+		const a = this.closest("cms-admin");
+		const p = this.dataset.path;
+		const s = this.state;
+		s.field ??= a.field(p);
+		/*
+		const cn = Object.entries(a.state.schema["Data"]).filter(([k, _]) => k !== "globals")
+			.flatMap(([_, v]) => Object.entries(a.state.schema[v.type]))
+			.find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
+		*/
+		const cn = Object.entries(a.state.schema["Collections"]).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
+		this.appendChild(this.interpolateDom({
+			$template: "",
+			...this.dataset,
+			name: p,
+			collection: cn,
+			ids: s.field.data?.map(x => x.id).join(),
+			inputs: s.field.data?.map((x, i) => ({
+				$template: "input",
+				name: `${p}.${i}`,
+				value: x.id
+			})),
+			dialog: s.dialog ? {
+				$template: "dialog",
+				collection: cn
+			} : null
+		}));
 	}
 
 	handleClick = async event => {
@@ -78,34 +107,5 @@ export default class CmsReferenceArray extends WebComponent {
 			this.requestDisplay();
 			this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
 		}
-	}
-
-	async updateDisplay() {
-		const a = this.closest("cms-admin");
-		const p = this.dataset.path;
-		const s = this.state;
-		s.field ??= a.field(p);
-		/*
-		const cn = Object.entries(a.state.schema["Data"]).filter(([k, _]) => k !== "globals")
-			.flatMap(([_, v]) => Object.entries(a.state.schema[v.type]))
-			.find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
-		*/
-		const cn = Object.entries(a.state.schema["Collections"]).find(([_, v]) => v.elementTypes[0] === this.dataset.type)[0];
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			...this.dataset,
-			name: p,
-			collection: cn,
-			ids: s.field.data?.map(x => x.id).join(),
-			inputs: s.field.data?.map((x, i) => ({
-				$template: "input",
-				name: `${p}.${i}`,
-				value: x.id
-			})),
-			dialog: s.dialog ? {
-				$template: "dialog",
-				collection: cn
-			} : null
-		}));
 	}
 }

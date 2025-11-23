@@ -22,11 +22,26 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.json;
+import WebComponent from "./web-component.js";
 
-public record ObjectAndType(Object object, Class<?> type) {
+export default class AdminBar extends WebComponent {
 
-	public ObjectAndType withType(Class<?> type) {
-		return new ObjectAndType(object, type);
+	static get templateNames() {
+		return ["admin-bar"];
+	}
+
+	static get observedAttributes() {
+		return ["data-user-email"];
+	}
+
+	constructor() {
+		super();
+	}
+
+	async updateDisplay() {
+		this.appendChild(this.interpolateDom({
+			$template: "",
+			...this.dataset
+		}));
 	}
 }

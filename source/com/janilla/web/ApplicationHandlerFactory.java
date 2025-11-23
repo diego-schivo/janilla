@@ -34,13 +34,12 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
-import com.janilla.reflect.ClassAndMethod;
 
 public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected final DiFactory diFactory;
 
-	protected final Collection<ClassAndMethod> methods;
+	protected final Collection<Invocable> methods;
 
 	protected final RenderableFactory renderableFactory;
 
@@ -48,7 +47,7 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected final List<HttpHandlerFactory> handlerFactories;
 
-	public ApplicationHandlerFactory(DiFactory diFactory, Collection<ClassAndMethod> methods,
+	public ApplicationHandlerFactory(DiFactory diFactory, Collection<Invocable> methods,
 			RenderableFactory renderableFactory, Collection<Path> files) {
 		this.diFactory = diFactory;
 		this.methods = methods;

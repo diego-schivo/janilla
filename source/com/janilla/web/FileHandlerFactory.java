@@ -202,7 +202,7 @@ public class FileHandlerFactory implements HttpHandlerFactory {
 			y.archive.path.substring(0, y.archive.path.length() - 4).substring(y.archive.package1.length() + 1)
 					+ y.path;
 		default -> throw new IllegalArgumentException();
-		}, x -> x, (x, _) -> x, LinkedHashMap::new));
+		}, x -> x, (_, x) -> x, LinkedHashMap::new));
 //		IO.println("FileHandlerFactory, files=" + this.files);
 	}
 

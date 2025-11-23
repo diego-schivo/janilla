@@ -26,12 +26,12 @@ import WebComponent from "./web-component.js";
 
 export default class CmsEdit extends WebComponent {
 
-	static get observedAttributes() {
-		return ["data-updated-at"];
-	}
-
 	static get templateNames() {
 		return ["cms-edit"];
+	}
+
+	static get observedAttributes() {
+		return ["data-updated-at"];
 	}
 
 	constructor() {
@@ -52,6 +52,68 @@ export default class CmsEdit extends WebComponent {
 		this.removeEventListener("document-change", this.handleDocumentChange);
 		this.removeEventListener("input", this.handleInput);
 		this.removeEventListener("submit", this.handleSubmit);
+	}
+
+	async updateDisplay() {
+		const a = this.closest("cms-admin");
+		const as = a.state;
+		this.state.versions = Object.hasOwn(as.document, "versionCount");
+		this.state.drafts = Object.hasOwn(as.document, "documentStatus");
+		this.appendChild(this.interpolateDom({
+			$template: "",
+			entries: (() => {
+				const kkvv = [];
+				if (this.state.drafts)
+					kkvv.push(["Status", as.document.documentStatus.name]);
+				if (as.document.updatedAt)
+					kkvv.push(["Last Modified", a.dateTimeFormat.format(new Date(as.document.updatedAt))]);
+				if (as.document.createdAt)
+					kkvv.push(["Created", a.dateTimeFormat.format(new Date(as.document.createdAt))]);
+				return kkvv;
+			})().map(x => ({
+				$template: "entry",
+				key: x[0],
+				value: x[1]
+			})),
+			previewLink: (() => {
+				const h = a.preview(as.document);
+				return h ? {
+					$template: "preview-link",
+					href: h
+				} : null;
+			})(),
+			button: {
+				$template: "button",
+				...(this.state.drafts ? {
+					name: "publish",
+					disabled: as.document.documentStatus === "PUBLISHED" && !this.state.changed,
+					text: "Publish Changes"
+				} : {
+					name: "save",
+					disabled: !this.state.changed,
+					text: "Save"
+				})
+			},
+			select: as.collectionSlug ? {
+				$template: "select",
+				options: [{
+					text: "\u22ee"
+				}, {
+					value: "create",
+					text: "Create New"
+				}, {
+					value: "duplicate",
+					text: "Duplicate"
+				}, {
+					value: "delete",
+					text: "Delete"
+				}].map((x, i) => ({
+					$template: "option",
+					...x,
+					selected: i === 0
+				}))
+			} : null
+		}));
 	}
 
 	handleChange = async event => {
@@ -233,67 +295,5 @@ export default class CmsEdit extends WebComponent {
 			a.requestDisplay();
 		} else
 			a.renderToast(j, "error");
-	}
-
-	async updateDisplay() {
-		const a = this.closest("cms-admin");
-		const as = a.state;
-		this.state.versions = Object.hasOwn(as.document, "versionCount");
-		this.state.drafts = Object.hasOwn(as.document, "documentStatus");
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			entries: (() => {
-				const kkvv = [];
-				if (this.state.drafts)
-					kkvv.push(["Status", as.document.documentStatus.name]);
-				if (as.document.updatedAt)
-					kkvv.push(["Last Modified", a.dateTimeFormat.format(new Date(as.document.updatedAt))]);
-				if (as.document.createdAt)
-					kkvv.push(["Created", a.dateTimeFormat.format(new Date(as.document.createdAt))]);
-				return kkvv;
-			})().map(x => ({
-				$template: "entry",
-				key: x[0],
-				value: x[1]
-			})),
-			previewLink: (() => {
-				const h = a.preview(as.document);
-				return h ? {
-					$template: "preview-link",
-					href: h
-				} : null;
-			})(),
-			button: {
-				$template: "button",
-				...(this.state.drafts ? {
-					name: "publish",
-					disabled: as.document.documentStatus === "PUBLISHED" && !this.state.changed,
-					text: "Publish Changes"
-				} : {
-					name: "save",
-					disabled: !this.state.changed,
-					text: "Save"
-				})
-			},
-			select: as.collectionSlug ? {
-				$template: "select",
-				options: [{
-					text: "\u22ee"
-				}, {
-					value: "create",
-					text: "Create New"
-				}, {
-					value: "duplicate",
-					text: "Duplicate"
-				}, {
-					value: "delete",
-					text: "Delete"
-				}].map((x, i) => ({
-					$template: "option",
-					...x,
-					selected: i === 0
-				}))
-			} : null
-		}));
 	}
 }

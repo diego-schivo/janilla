@@ -28,6 +28,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ResolvedModule;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
@@ -141,6 +144,16 @@ public final class Java {
 		return new AbstractMap.SimpleImmutableEntry<>(k, v);
 	}
 
+	public static Class<?> toClass(Type type) {
+//		IO.println("Java.toClass, type=" + type);
+		return switch (type) {
+		case Class<?> x -> x;
+		case ParameterizedType x -> (Class<?>) x.getRawType();
+		case TypeVariable<?> _ -> null;
+		default -> throw new IllegalArgumentException();
+		};
+	}
+
 	public static FileSystem zipFileSystem(URI uri) {
 		return ZIP_FILE_SYSTEMS.computeIfAbsent(uri.toString(), k -> {
 			try {
@@ -159,34 +172,34 @@ public final class Java {
 		});
 	}
 
-	public static class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
-
-		private static final long serialVersionUID = 2930611377458857452L;
-
-//		public static void main(String[] args) {
-//			var l = new EntryList<String, String>();
-//			l.add("foo", "bar");
-//			l.set("foo", "baz");
-//			IO.println(l);
-//			assert l.equals(List.of(Map.entry("foo", "baz"))) : l;
+//	public static class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
+//
+//		private static final long serialVersionUID = 2930611377458857452L;
+//
+//		public void add(K key, V value) {
+//			add(new AbstractMap.SimpleEntry<>(key, value));
 //		}
-
-		public void add(K key, V value) {
-			add(new AbstractMap.SimpleEntry<>(key, value));
-		}
-
-		public V get(Object key) {
-			return stream().filter(x -> Objects.equals(x.getKey(), key)).findFirst().map(Map.Entry::getValue)
-					.orElse(null);
-		}
-
-		public Stream<V> stream(Object key) {
-			return stream().filter(x -> Objects.equals(x.getKey(), key)).map(Map.Entry::getValue);
-		}
-
-		public void set(K key, V value) {
-			stream().filter(x -> Objects.equals(x.getKey(), key)).findFirst().ifPresentOrElse(x -> x.setValue(value),
-					() -> add(key, value));
-		}
-	}
+//
+//		public V get(Object key) {
+//			return stream().filter(x -> Objects.equals(x.getKey(), key)).findFirst().map(Map.Entry::getValue)
+//					.orElse(null);
+//		}
+//
+//		public Stream<V> stream(Object key) {
+//			return stream().filter(x -> Objects.equals(x.getKey(), key)).map(Map.Entry::getValue);
+//		}
+//
+//		public void set(K key, V value) {
+//			stream().filter(x -> Objects.equals(x.getKey(), key)).findFirst().ifPresentOrElse(x -> x.setValue(value),
+//					() -> add(key, value));
+//		}
+//
+////		public static void main(String[] args) {
+////			var l = new EntryList<String, String>();
+////			l.add("foo", "bar");
+////			l.set("foo", "baz");
+////			IO.println(l);
+////			assert l.equals(List.of(Map.entry("foo", "baz"))) : l;
+////		}
+//	}
 }

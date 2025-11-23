@@ -42,7 +42,8 @@ cms-collection {
   th,
   td {
     min-width: 9.375rem;
-    padding: 1rem;
+    /*padding: 1rem;*/
+    padding: 0.5rem 1rem;
 
     &:has([type="checkbox"]) {
       min-width: unset;
@@ -57,6 +58,13 @@ cms-collection {
     align-items: center;
     display: flex;
     gap: 1rem;
+  }
+
+  code {
+    background: rgb(47, 47, 47);
+    border-radius: 0.25rem;
+    line-height: 1.5rem;
+    padding: 0 0.375rem;
   }
 
   dialog[open] {

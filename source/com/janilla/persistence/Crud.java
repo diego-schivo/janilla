@@ -40,7 +40,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.json.Converter;
+import com.janilla.java.Converter;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -601,7 +601,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	protected void updateIndex(IndexBTree index, Map<Object, Object> remove, Map<Object, Object> add) {
-		IO.println("Crud.updateIndex, remove=" + remove + ", add=" + add);
+//		IO.println("Crud.updateIndex, remove=" + remove + ", add=" + add);
 		if (remove != null)
 			for (var e : remove.entrySet())
 				index.delete(new Object[] { toDatabaseValue(e.getKey()), toDatabaseValue(e.getValue()) }, null);

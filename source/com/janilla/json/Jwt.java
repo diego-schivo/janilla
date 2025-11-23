@@ -38,22 +38,6 @@ import javax.crypto.spec.SecretKeySpec;
 
 public interface Jwt {
 
-	public static void main(String[] args) {
-		var h = Stream.of(Map.entry("alg", "HS256"), Map.entry("typ", "JWT"))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v, _) -> v, LinkedHashMap::new));
-		var p = Stream.of(Map.entry("loggedInAs", "admin"), Map.entry("iat", 1422779638))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v, _) -> v, LinkedHashMap::new));
-		var t = Jwt.generateToken(h, p, "secretkey");
-		IO.println(t);
-		assert t.equals(
-				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mzh9.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI=")
-				: t;
-
-		var q = Jwt.verifyToken(t, "secretkey");
-		IO.println(q);
-		assert q.equals(p) : q;
-	}
-
 	static String generateToken(Map<String, ?> header, Map<String, ?> payload, String key) {
 		if (!header.equals(Map.of("alg", "HS256", "typ", "JWT")))
 			throw new IllegalArgumentException("header=" + header);
@@ -121,5 +105,21 @@ public interface Jwt {
 		@SuppressWarnings("unchecked")
 		var p = (Map<String, ?>) Json.parse(ps);
 		return p;
+	}
+
+	public static void main(String[] args) {
+		var h = Stream.of(Map.entry("alg", "HS256"), Map.entry("typ", "JWT"))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (_, x) -> x, LinkedHashMap::new));
+		var p = Stream.of(Map.entry("loggedInAs", "admin"), Map.entry("iat", 1422779638))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (_, x) -> x, LinkedHashMap::new));
+		var t = Jwt.generateToken(h, p, "secretkey");
+		IO.println(t);
+		assert t.equals(
+				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mzh9.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI=")
+				: t;
+
+		var q = Jwt.verifyToken(t, "secretkey");
+		IO.println(q);
+		assert q.equals(p) : q;
 	}
 }

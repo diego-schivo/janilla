@@ -35,6 +35,8 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 
+import com.janilla.java.Java;
+
 public interface Property {
 
 //	AnnotatedElement annotatedElement();
@@ -139,7 +141,7 @@ public interface Property {
 		var gt0 = getter != null ? getter.getGenericReturnType() : setter.getGenericParameterTypes()[0];
 		var dc = getter != null ? getter.getDeclaringClass() : setter.getDeclaringClass();
 		var gt = gt0 instanceof TypeVariable v && dc != class1 ? Reflection.resolveTypeVariable(v, class1, dc) : gt0;
-		var t = gt != gt0 ? Reflection.getRawType(gt)
+		var t = gt != gt0 ? Java.toClass(gt)
 				: getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
 		return new Property() {
 

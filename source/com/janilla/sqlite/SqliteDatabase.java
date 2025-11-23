@@ -463,7 +463,7 @@ public class SqliteDatabase {
 	}
 
 	public IndexBTree index(String name, String type) {
-		IO.println("SqliteDatabase.index, name=" + name + ", type=" + type);
+//		IO.println("SqliteDatabase.index, name=" + name + ", type=" + type);
 		var o = schema().stream().filter(x -> (type == null || x.type().equals(type)) && x.name().equals(name))
 				.findFirst().get();
 		return new IndexBTree(this, o.root());

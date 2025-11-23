@@ -1,0 +1,109 @@
+.admin admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  header {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+
+    p {
+      button {
+        background: transparent;
+        border: none;
+        text-decoration: underline;
+      }
+
+      @media (max-width: 1440px) {
+        bottom: 1rem;
+        position: fixed;
+      }
+
+      @media (min-width: 1441px) {
+        margin-left: auto;
+      }
+    }
+  }
+
+  h1 {
+    margin: 0;
+  }
+
+  .results {
+    overflow: auto;
+
+    > p {
+      color: light-dark(rgb(114, 114, 114), rgb(141, 141, 141));
+      padding: 1rem;
+    }
+  }
+
+  th,
+  td {
+    min-width: 9.375rem;
+    /*padding: 1rem;*/
+    padding: 0.5rem 1rem;
+
+    &:has([type="checkbox"]) {
+      min-width: unset;
+    }
+  }
+
+  th {
+    color: light-dark(rgb(114, 114, 114), rgb(141, 141, 141));
+  }
+
+  a {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+  }
+
+  code {
+    background: rgb(47, 47, 47);
+    border-radius: 0.25rem;
+    line-height: 1.5rem;
+    padding: 0 0.375rem;
+  }
+
+  dialog[open] {
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2.5rem;
+
+    &,
+    article {
+      display: flex;
+      flex-direction: column;
+    }
+
+    article {
+      gap: 1rem;
+    }
+
+    p {
+      line-height: 1.25rem;
+    }
+
+    div {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    button {
+      line-height: 1.5rem;
+      padding: 0.5rem 1rem;
+
+      &[name^="cancel-"] {
+        background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+        color: light-dark(rgb(74, 74, 74), rgb(181, 181, 181));
+      }
+
+      &[name^="confirm-"] {
+        background: light-dark(rgb(20, 20, 20), rgb(235, 235, 235));
+        color: light-dark(rgb(235, 235, 235), rgb(20, 20, 20));
+      }
+    }
+  }
+}

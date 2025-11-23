@@ -1,0 +1,22 @@
+<div>
+  <select>
+    <!--${option}-->
+    <!--${optgroups}-->
+  </select>
+  <lucide-icon data-name="chevron-down"></lucide-icon>
+</div>
+<!--${inputs}-->
+
+<template id="optgroup">
+  <optgroup label="${label}">
+    <!--${options}-->
+  </optgroup>
+</template>
+
+<template id="option">
+  <option value="${value}" selected="${selected}">${text}</option>
+</template>
+
+<template id="input">
+  <input type="hidden" name="${name}" value="${value}" />
+</template>

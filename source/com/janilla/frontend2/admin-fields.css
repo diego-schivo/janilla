@@ -1,0 +1,39 @@
+.admin admin-fields {
+  > ul {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    /*
+    > li {
+      > div,
+      > label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+    */
+  }
+
+  @media (min-width: 1441px) {
+    display: flex;
+
+    > ul {
+      &:first-child {
+        flex: 1;
+      }
+
+      &:not(:last-of-type) {
+        border-right: 1px solid rgb(47, 47, 47);
+        flex: 0.5;
+        margin-right: 2.5rem;
+        padding-right: 2.5rem;
+      }
+
+      &:nth-child(2) {
+        flex: 0.5;
+      }
+    }
+  }
+}
