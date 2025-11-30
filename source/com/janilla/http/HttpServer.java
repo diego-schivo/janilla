@@ -195,8 +195,8 @@ public class HttpServer extends SecureServer {
 
 		transfer.outLock().lock();
 		try {
-			transfer.out().put(he.encodeFrame(new Frame.Settings(false,
-					List.of(new Setting.Parameter(Setting.Name.MAX_CONCURRENT_STREAMS, 100)))));
+			transfer.out().put(he.encodeFrame(
+					new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100)))));
 			transfer.out().flip();
 			do
 				transfer.write();
@@ -213,22 +213,22 @@ public class HttpServer extends SecureServer {
 			var f = hd.decodeFrame(bb);
 //			IO.println("HttpServer.handleConnection2, f=" + f);
 			switch (f) {
-			case Frame.Data _:
-			case Frame.Headers _:
+			case DataFrame _:
+			case HeadersFrame _:
 				var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
 				ff.add(f);
-				var es = f instanceof Frame.Data x ? x.endStream() : ((Frame.Headers) f).endStream();
+				var es = f instanceof DataFrame x ? x.endStream() : ((HeadersFrame) f).endStream();
 				if (es) {
 					streams.remove(f.streamIdentifier());
 					Thread.startVirtualThread(() -> handleStream(ff, transfer, he));
 				}
 				break;
-			case @SuppressWarnings("unused") Frame.Settings s:
+			case @SuppressWarnings("unused") SettingsFrame s:
 //				IO.println("s=" + s);
 				transfer.outLock().lock();
 				try {
 					transfer.out().clear();
-					transfer.out().put(he.encodeFrame(new Frame.Settings(true, List.of())));
+					transfer.out().put(he.encodeFrame(new SettingsFrame(true, List.of())));
 					transfer.out().flip();
 					do
 						transfer.write();
@@ -237,11 +237,11 @@ public class HttpServer extends SecureServer {
 					transfer.outLock().unlock();
 				}
 				break;
-			case Frame.Ping _:
-			case Frame.Priority _:
-			case Frame.WindowUpdate _:
+			case PingFrame _:
+			case PriorityFrame _:
+			case WindowUpdateFrame _:
 				break;
-			case Frame.Goaway _:
+			case GoawayFrame _:
 				return;
 //			case Frame.RstStream _:
 			default:
@@ -286,13 +286,13 @@ public class HttpServer extends SecureServer {
 		try (var rq = new HttpRequest()) {
 			var si = ff.getFirst().streamIdentifier();
 			var hff = new ArrayList<HeaderField>();
-			var dbb = ByteBuffer.allocate(ff.stream().filter(x -> x instanceof Frame.Data)
-					.mapToInt(x -> ((Frame.Data) x).data().length).sum());
+			var dbb = ByteBuffer.allocate(
+					ff.stream().filter(x -> x instanceof DataFrame).mapToInt(x -> ((DataFrame) x).data().length).sum());
 			for (var f : ff)
-				if (f instanceof Frame.Headers x)
+				if (f instanceof HeadersFrame x)
 					hff.addAll(x.fields());
 				else
-					dbb.put(((Frame.Data) f).data());
+					dbb.put(((DataFrame) f).data());
 			rq.setHeaders(hff);
 //			rq.setBody(IO.toReadableByteChannel(dbb.flip()));
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(dbb.array())));
@@ -315,8 +315,8 @@ public class HttpServer extends SecureServer {
 //						IO.println("HttpServer.handleStream, close");
 						if (closed)
 							return;
-						var f = written == 0 ? new Frame.Headers(false, true, true, si, false, 0, 0, rs.getHeaders())
-								: new Frame.Data(false, true, si, new byte[0]);
+						var f = written == 0 ? new HeadersFrame(false, true, true, si, false, 0, 0, rs.getHeaders())
+								: new DataFrame(false, true, si, new byte[0]);
 						var bb = he.encodeFrame(f);
 						writeFrame(transfer, bb);
 						closed = true;
@@ -331,13 +331,13 @@ public class HttpServer extends SecureServer {
 						while (src.hasRemaining()) {
 							var n = Math.min(src.remaining(), 16384);
 							if (written == 0) {
-								var f = new Frame.Headers(false, true, false, si, false, 0, 0, rs.getHeaders());
+								var f = new HeadersFrame(false, true, false, si, false, 0, 0, rs.getHeaders());
 								var bb = he.encodeFrame(f);
 								writeFrame(transfer, bb);
 							}
 							var bb = new byte[n];
 							src.get(bb);
-							var f = new Frame.Data(false, false, si, bb);
+							var f = new DataFrame(false, false, si, bb);
 							bb = he.encodeFrame(f);
 							writeFrame(transfer, bb);
 							written += n;

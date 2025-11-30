@@ -40,7 +40,7 @@ public class HttpDecoder {
 		if (pl != bytes.length - 9)
 			throw new RuntimeException();
 		var t0 = Byte.toUnsignedInt(bb.get());
-		var fn = Frame.Name.of(t0);
+		var fn = FrameName.of(t0);
 //		if (fn == null)
 //			IO.println("t0=" + t0 + ", t=" + fn);
 		var ff = Byte.toUnsignedInt(bb.get());
@@ -49,14 +49,14 @@ public class HttpDecoder {
 //		IO.println("si=" + si);
 		var f = switch (fn) {
 		case DATA -> {
-			yield new Frame.Data((ff & 0x08) != 0, (ff & 0x01) != 0, si,
+			yield new DataFrame((ff & 0x08) != 0, (ff & 0x01) != 0, si,
 					Arrays.copyOfRange(bb.array(), bb.position(), bb.limit()));
 		}
 		case GOAWAY -> {
 			var lsi = bb.getInt() & 0x8fffffff;
 			var ec = bb.getInt();
 			var add = Arrays.copyOfRange(bb.array(), bb.position(), bb.limit());
-			yield new Frame.Goaway(lsi, ec, add);
+			yield new GoawayFrame(lsi, ec, add);
 		}
 		case HEADERS -> {
 			var p = (ff & 0x20) != 0;
@@ -78,34 +78,34 @@ public class HttpDecoder {
 			while (ii.hasNext())
 				headerDecoder.decode(ii);
 //			IO.println("hd.headerFields=" + hd.headerFields());
-			yield new Frame.Headers(p, (ff & 0x04) != 0, (ff & 0x01) != 0, si, e, sd, w,
+			yield new HeadersFrame(p, (ff & 0x04) != 0, (ff & 0x01) != 0, si, e, sd, w,
 					new ArrayList<>(headerDecoder.headerFields()));
 		}
 		case PING -> {
 			var od = bb.getLong();
-			yield new Frame.Ping((ff & 0x01) != 0, si, od);
+			yield new PingFrame((ff & 0x01) != 0, si, od);
 		}
 		case PRIORITY -> {
 			var i = bb.getInt();
 			var e = (i & 0xf0000000) != 0;
 			var sd = i & 0x8fffffff;
 			var w = Byte.toUnsignedInt(bb.get());
-			yield new Frame.Priority(si, e, sd, w);
+			yield new PriorityFrame(si, e, sd, w);
 		}
 		case RST_STREAM -> {
 			var ec = bb.getInt();
-			yield new Frame.RstStream(si, ec);
+			yield new RstStreamFrame(si, ec);
 		}
 		case SETTINGS -> {
-			var pp = new ArrayList<Setting.Parameter>();
+			var pp = new ArrayList<SettingParameter>();
 			while (bb.hasRemaining())
-				pp.add(new Setting.Parameter(Setting.Name.of(bb.getShort()), bb.getInt()));
-			yield new Frame.Settings((ff & 0x01) != 0, pp);
+				pp.add(new SettingParameter(SettingName.of(bb.getShort()), bb.getInt()));
+			yield new SettingsFrame((ff & 0x01) != 0, pp);
 		}
 		case WINDOW_UPDATE -> {
 			var wsi = bb.getInt() & 0x8fffffff;
 //			IO.println("wsi=" + wsi);
-			yield new Frame.WindowUpdate(si, wsi);
+			yield new WindowUpdateFrame(si, wsi);
 		}
 		default -> throw new RuntimeException(fn.name());
 		};

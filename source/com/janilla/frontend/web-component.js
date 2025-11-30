@@ -24,6 +24,14 @@
  */
 export default class WebComponent extends HTMLElement {
 
+	static get templateNames() {
+		return [];
+	}
+
+	static get observedAttributes() {
+		return [];
+	}
+
 	#initializeTemplating;
 
 	#templating;
@@ -36,25 +44,24 @@ export default class WebComponent extends HTMLElement {
 
 	constructor() {
 		super();
-		if (!this.constructor.templateNames?.length)
-			return;
-		this.#initializeTemplating = Promise.all(this.constructor.templateNames.map(x => getDocumentFragment(x))).then(x => {
-			const documentFragment = x.reduce((y, z) => {
-				y.appendChild(z.cloneNode(true));
-				return y;
-			}, new DocumentFragment());
-			const templates = [...documentFragment.querySelectorAll("template")].map(y => {
-				y.remove();
-				return y;
+		this.#initializeTemplating = Promise.all((this.constructor.templateNames ?? []).map(x => getDocumentFragment(x)))
+			.then(x => {
+				const documentFragment = x.reduce((y, z) => {
+					y.appendChild(z.cloneNode(true));
+					return y;
+				}, new DocumentFragment());
+				const templates = Array.from(documentFragment.querySelectorAll("template")).map(y => {
+					y.remove();
+					return y;
+				});
+				this.#templating = Object.fromEntries([
+					["", compileNode(documentFragment)],
+					...templates.map(y => [y.id, compileNode(y.content)])
+				].map(([k, v]) => [k, {
+					factory: v,
+					functions: []
+				}]));
 			});
-			this.#templating = Object.fromEntries([
-				["", compileNode(documentFragment)],
-				...templates.map(y => [y.id, compileNode(y.content)])
-			].map(([k, v]) => [k, {
-				factory: v,
-				functions: []
-			}]));
-		});
 	}
 
 	connectedCallback() {
@@ -76,27 +83,25 @@ export default class WebComponent extends HTMLElement {
 
 	requestDisplay(delay = 1) {
 		// console.log(`WebComponent(${this.constructor.name}).requestDisplay`);
-		if (this.#displayUpdate.ongoing) {
+		if (this.#displayUpdate.ongoing)
 			this.#displayUpdate.repeat = true;
-			return;
+		else {
+			if (typeof this.#displayUpdate.timeoutID === "number")
+				clearTimeout(this.#displayUpdate.timeoutID);
+			this.#displayUpdate.timeoutID = setTimeout(async () => await this.displayTimeout(), delay);
 		}
-
-		if (typeof this.#displayUpdate.timeoutID === "number")
-			clearTimeout(this.#displayUpdate.timeoutID);
-
-		this.#displayUpdate.timeoutID = setTimeout(async () => await this.displayTimeout(), delay);
 	}
 
 	async displayTimeout() {
 		// console.log(`WebComponent(${this.constructor.name}).displayTimeout`);
-		if (this.#initializeTemplating)
-			await this.#initializeTemplating;
 		this.#displayUpdate.timeoutID = undefined;
 		if (!this.isConnected)
 			return;
 		this.#displayUpdate.ongoing = true;
 		try {
-			await this.updateDisplay();
+			await this.#initializeTemplating;
+			if (!this.#displayUpdate.repeat)
+				await this.updateDisplay();
 		} finally {
 			this.#displayUpdate.ongoing = false;
 		}
@@ -108,11 +113,10 @@ export default class WebComponent extends HTMLElement {
 
 	async updateDisplay() {
 		// console.log(`WebComponent(${this.constructor.name}).updateDisplay`);
-		if (this.#templating)
-			this.appendChild(this.interpolateDom({
-				$template: "",
-				...this.state
-			}));
+		this.appendChild(this.interpolateDom({
+			$template: "",
+			...this.state
+		}));
 	}
 
 	interpolateDom(input) {

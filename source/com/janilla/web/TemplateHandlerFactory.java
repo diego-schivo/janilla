@@ -43,7 +43,7 @@ public class TemplateHandlerFactory implements HttpHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object) {
-		return object instanceof Renderable r && r.renderer().annotation != null ? x -> {
+		return object instanceof Renderable r && r.renderer() != null && r.renderer().annotation != null ? x -> {
 			render(r, x);
 			return true;
 		} : null;

@@ -35,7 +35,7 @@ import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
-import com.janilla.web.MethodHandlerFactory;
+import com.janilla.web.InvocationHandlerFactory;
 
 public abstract class CollectionApi<ID extends Comparable<ID>, E extends Document<ID>> {
 
@@ -93,7 +93,7 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 
 	@Handle(method = "PATCH")
 	public List<E> patch(@Bind(resolver = DollarTypeResolver.class) E entity, @Bind("id") List<ID> ids) {
-		return crud().patch(ids, entity, MethodHandlerFactory.JSON_KEYS.get());
+		return crud().patch(ids, entity, InvocationHandlerFactory.JSON_KEYS.get());
 	}
 
 	@Handle(method = "GET", path = "(\\d+)/versions")

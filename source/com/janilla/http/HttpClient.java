@@ -108,21 +108,21 @@ public class HttpClient {
 				t.write();
 
 			t.out().clear();
-			t.out().put(he.encodeFrame(new Frame.Settings(false,
-					List.of(new Setting.Parameter(Setting.Name.MAX_CONCURRENT_STREAMS, 100),
-							new Setting.Parameter(Setting.Name.INITIAL_WINDOW_SIZE, 10485760),
-							new Setting.Parameter(Setting.Name.ENABLE_PUSH, 0)))));
+			t.out().put(he.encodeFrame(new SettingsFrame(false,
+					List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100),
+							new SettingParameter(SettingName.INITIAL_WINDOW_SIZE, 10485760),
+							new SettingParameter(SettingName.ENABLE_PUSH, 0)))));
 			for (t.out().flip(); t.out().hasRemaining();)
 				t.write();
 
 			var ff = new ArrayList<Frame>();
 			var bb = request.getBody() instanceof ReadableByteChannel x ? Channels.newInputStream(x).readAllBytes()
 					: null;
-			ff.add(new Frame.Headers(false, true, bb == null || bb.length == 0, 1, false, 0, 0, request.getHeaders()));
+			ff.add(new HeadersFrame(false, true, bb == null || bb.length == 0, 1, false, 0, 0, request.getHeaders()));
 			if (bb != null)
 				for (var o = 0; o < bb.length;) {
 					var l = Math.min(bb.length - o, 16384);
-					ff.add(new Frame.Data(false, o + l == bb.length, 1, Arrays.copyOfRange(bb, o, o + l)));
+					ff.add(new DataFrame(false, o + l == bb.length, 1, Arrays.copyOfRange(bb, o, o + l)));
 					o += l;
 				}
 			for (var f : ff) {
@@ -151,20 +151,20 @@ public class HttpClient {
 //				IO.println("HttpClient.send, f=" + f);
 
 				switch (f) {
-				case Frame.Headers x:
+				case HeadersFrame x:
 					ff.add(x);
 					if (x.endStream())
 						es = true;
 					break;
-				case Frame.Data x:
+				case DataFrame x:
 					ff.add(x);
 					if (x.endStream())
 						es = true;
 					break;
-				case Frame.Settings _:
-				case Frame.Ping _:
+				case SettingsFrame _:
+				case PingFrame _:
 //				case Frame.Goaway _:
-				case Frame.WindowUpdate _:
+				case WindowUpdateFrame _:
 					break;
 				default:
 					throw new RuntimeException(f.toString());
@@ -174,13 +174,13 @@ public class HttpClient {
 			R r;
 			try (var rs = new HttpResponse()) {
 				var hh = new ArrayList<HeaderField>();
-				var b = ByteBuffer.allocate(ff.stream().filter(x -> x instanceof Frame.Data)
-						.mapToInt(x -> ((Frame.Data) x).data().length).sum());
+				var b = ByteBuffer.allocate(ff.stream().filter(x -> x instanceof DataFrame)
+						.mapToInt(x -> ((DataFrame) x).data().length).sum());
 				for (var f : ff)
-					if (f instanceof Frame.Headers x)
+					if (f instanceof HeadersFrame x)
 						hh.addAll(x.fields());
 					else
-						b.put(((Frame.Data) f).data());
+						b.put(((DataFrame) f).data());
 				rs.setHeaders(hh);
 				rs.setBody(Channels.newChannel(new ByteArrayInputStream(b.array())));
 //				IO.println("HttpClient.send, rs=" + rs);
@@ -188,7 +188,7 @@ public class HttpClient {
 			}
 
 			t.out().clear();
-			t.out().put(he.encodeFrame(new Frame.Goaway(1, 0, new byte[0])));
+			t.out().put(he.encodeFrame(new GoawayFrame(1, 0, new byte[0])));
 			for (t.out().flip(); t.out().hasRemaining();)
 				t.write();
 

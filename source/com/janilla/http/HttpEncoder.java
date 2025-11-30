@@ -35,12 +35,12 @@ public class HttpEncoder {
 		var bb1 = ByteBuffer.allocate(9);
 		ByteBuffer bb2;
 		switch (frame) {
-		case Frame.Data x:
+		case DataFrame x:
 			pl = x.data().length;
 //			IO.println("pl=" + pl);
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
 			bb1.put((byte) pl);
-			bb1.put((byte) Frame.Name.DATA.type());
+			bb1.put((byte) FrameName.DATA.type());
 			bb1.put((byte) ((x.padded() ? 0x08 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
 			bb1.putInt(x.streamIdentifier());
 			bb1.flip();
@@ -48,11 +48,11 @@ public class HttpEncoder {
 			bb2.put(bb1);
 			bb2.put(x.data());
 			break;
-		case Frame.Goaway x:
+		case GoawayFrame x:
 			pl = 2 * Integer.BYTES + x.additionalDebugData().length;
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
 			bb1.put((byte) pl);
-			bb1.put((byte) Frame.Name.GOAWAY.type());
+			bb1.put((byte) FrameName.GOAWAY.type());
 			bb1.put((byte) 0x00);
 			bb1.putInt(x.streamIdentifier());
 			bb1.flip();
@@ -62,7 +62,7 @@ public class HttpEncoder {
 			bb2.putInt(x.errorCode());
 			bb2.put(x.additionalDebugData());
 			break;
-		case Frame.Headers x:
+		case HeadersFrame x:
 			var he = new HeaderEncoder();
 			var ii = IntStream.builder();
 			pl = 0;
@@ -86,7 +86,7 @@ public class HttpEncoder {
 			}
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
 			bb1.put((byte) pl);
-			bb1.put((byte) Frame.Name.HEADERS.type());
+			bb1.put((byte) FrameName.HEADERS.type());
 			bb1.put((byte) ((x.endHeaders() ? 0x04 : 0x00) | (x.endStream() ? 0x01 : 0x00)));
 			bb1.putInt(x.streamIdentifier());
 			bb1.flip();
@@ -102,11 +102,11 @@ public class HttpEncoder {
 //			throw new RuntimeException();
 //		case Frame.RstStream _:
 //			throw new RuntimeException();
-		case Frame.Settings x:
+		case SettingsFrame x:
 			pl = x.parameters().size() * (Short.BYTES + Integer.BYTES);
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
 			bb1.put((byte) pl);
-			bb1.put((byte) Frame.Name.SETTINGS.type());
+			bb1.put((byte) FrameName.SETTINGS.type());
 			bb1.put((byte) (x.ack() ? 0x01 : 0x00));
 			bb1.putInt(0);
 			bb1.flip();

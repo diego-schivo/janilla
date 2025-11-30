@@ -33,7 +33,7 @@ public class DollarTypeResolver implements TypeResolver {
 	protected final Map<String, Class<?>> parseMap;
 
 	public DollarTypeResolver(Collection<Class<?>> types) {
-		parseMap = types.stream().collect(Collectors.toMap(this::format, x -> x, (_, x) -> x));
+		parseMap = types.stream().collect(Collectors.toMap(this::format, x -> x, (x, _) -> x));
 	}
 
 	@Override

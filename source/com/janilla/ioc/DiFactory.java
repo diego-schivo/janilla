@@ -78,7 +78,8 @@ public class DiFactory {
 					}).findFirst().orElse(null);
 //			IO.println("Factory.create, c=" + c);
 			if (c == null)
-				return _ -> null;
+//				return _ -> null;
+				throw new RuntimeException("type=" + type);
 			var cc = c.getConstructors();
 			if (cc.length != 1)
 				throw new RuntimeException(c + " has " + cc.length + " constructors");

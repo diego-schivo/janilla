@@ -38,6 +38,6 @@ module com.janilla {
 	exports com.janilla.web;
 
 	opens com.janilla.cms;
-//	opens com.janilla.frontend;
 	opens com.janilla.net;
+	opens com.janilla.web;
 }

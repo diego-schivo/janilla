@@ -23,7 +23,6 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 import WebComponent from "./web-component.js";
-import { removeAllChildren } from "./dom-utils.js";
 
 const documents = {};
 const parser = new DOMParser();
@@ -43,10 +42,11 @@ export default class LucideIcon extends WebComponent {
 		if (this.dataset.name === s.name)
 			return;
 		s.name = this.dataset.name;
-		removeAllChildren(this);
+		while (this.firstChild)
+			this.removeChild(this.lastChild);
 		if (!s.name)
 			return;
-		documents[s.name] ??= fetch(`/lucide-0.475.0/icons/${s.name}.svg`).then(x => x.text()).then(x => {
+		documents[s.name] ??= fetch(`/lucide-0.554.0/icons/${s.name}.svg`).then(x => x.text()).then(x => {
 			return parser.parseFromString(x, "image/svg+xml");
 		});
 		const d = await documents[s.name];

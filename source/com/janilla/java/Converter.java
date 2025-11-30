@@ -196,7 +196,7 @@ public class Converter {
 	}
 
 	protected Object convertMap(Map<?, ?> map, Class<?> target) {
-//		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
+		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
 		var ot = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
 		if (ot != null) {
 			if (target != null && !target.isAssignableFrom(ot.type()))

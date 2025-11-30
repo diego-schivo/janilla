@@ -58,14 +58,16 @@ public class Cms {
 			var c = (Class<?>) (t instanceof ParameterizedType pt ? pt.getRawType() : t);
 			return c.getName().substring(c.getPackageName().length() + 1).replace('$', '.');
 		};
-		var skip = Set.of("createdAt", "updatedAt", "documentStatus");
+//		var skip = Set.of("createdAt", "updatedAt", "documentStatus");
+		var skip = Set.of("createdAt", "updatedAt", "documentStatus", "publishedAt");
 		do {
 			var c = q.remove();
 //			IO.println("WebsiteTemplate.schema, c=" + c);
 			var v = c.getAnnotation(Versions.class);
 			var d = v != null && v.drafts();
 			var m2 = new LinkedHashMap<String, Map<String, Object>>();
-			Reflection.properties(c).filter(x -> !(skip.contains(x.name()) || (x.name().equals("publishedAt") && !d)))
+//			Reflection.properties(c).filter(x -> !(skip.contains(x.name()) || (x.name().equals("publishedAt") && !d)))
+			Reflection.properties(c).filter(x -> !skip.contains(x.name()))
 					.forEach(p -> {
 //				IO.println("WebsiteTemplate.schema, x=" + x);
 						var m3 = new LinkedHashMap<String, Object>();

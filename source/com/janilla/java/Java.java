@@ -38,7 +38,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,21 +49,17 @@ import java.util.stream.Stream;
 
 public final class Java {
 
-	private static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.*)!(.*)");
-
-	private static final Map<String, List<Class<?>>> PACKAGE_CLASSES = new ConcurrentHashMap<>();
-
-	private static final Map<String, List<Path>> PACKAGE_PATHS = new ConcurrentHashMap<>();
-
-	private static final Map<String, FileSystem> ZIP_FILE_SYSTEMS = new ConcurrentHashMap<>();
-
 	private Java() {
 		throw new Error("no instances");
 	}
 
 	public static List<Class<?>> getPackageClasses(String package1) {
-		return PACKAGE_CLASSES.computeIfAbsent(package1, k -> {
-			Stream<Class<?>> cc = getPackagePaths(k).stream().map(x -> {
+		IO.println("Java.getPackageClasses, package1=" + package1);
+		class A {
+			private static final Map<String, List<Class<?>>> RESULTS = new ConcurrentHashMap<>();
+		}
+		return A.RESULTS.computeIfAbsent(package1, k -> {
+			Stream<Class<?>> cs = getPackagePaths(k).stream().map(x -> {
 //				IO.println("Java.getPackageClasses, x=" + x);
 				var d = x.getFileSystem() == FileSystems.getDefault()
 						? Stream.iterate(x, y -> y.getParent())
@@ -83,13 +78,19 @@ public final class Java {
 //				IO.println("Java.getPackageClasses, c=" + c);
 				return c;
 			});
-			return cc.filter(Objects::nonNull).toList();
+			var cc = cs.filter(Objects::nonNull).toList();
+			IO.println("Java.getPackageClasses, cc=" + cc);
+			return cc;
 		});
 	}
 
 	public static List<Path> getPackagePaths(String package1) {
 //		IO.println("Java.getPackagePaths, package1=" + package1);
-		return PACKAGE_PATHS.computeIfAbsent(package1, k -> {
+		class A {
+			private static final Map<String, List<Path>> RESULTS = new ConcurrentHashMap<>();
+			private static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.*)!(.*)");
+		}
+		return A.RESULTS.computeIfAbsent(package1, k -> {
 			var n = k.replace('.', '/');
 			return ModuleLayer.boot().configuration().modules().stream().map(ResolvedModule::reference).flatMap(x -> {
 				try (var r = x.open()) {
@@ -99,7 +100,7 @@ public final class Java {
 				}
 			}).map(u -> {
 //				IO.println("Java.getPackagePaths, u=" + u);
-				var m = JAR_URI_PATTERN.matcher(u.toString());
+				var m = A.JAR_URI_PATTERN.matcher(u.toString());
 				var d = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(u);
 //				IO.println("Java.getPackagePaths, d=" + d);
 				return d;
@@ -155,7 +156,10 @@ public final class Java {
 	}
 
 	public static FileSystem zipFileSystem(URI uri) {
-		return ZIP_FILE_SYSTEMS.computeIfAbsent(uri.toString(), k -> {
+		class A {
+			private static final Map<String, FileSystem> RESULTS = new ConcurrentHashMap<>();
+		}
+		return A.RESULTS.computeIfAbsent(uri.toString(), k -> {
 			try {
 				var i = k.lastIndexOf('!');
 				if (i == -1)
@@ -194,7 +198,7 @@ public final class Java {
 //					() -> add(key, value));
 //		}
 //
-////		public static void main(String[] args) {
+	////		public static void main(String[] args) {
 ////			var l = new EntryList<String, String>();
 ////			l.add("foo", "bar");
 ////			l.set("foo", "baz");

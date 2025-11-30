@@ -24,8 +24,6 @@
  */
 package com.janilla.web;
 
-import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -39,20 +37,10 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected final DiFactory diFactory;
 
-	protected final Collection<Invocable> methods;
-
-	protected final RenderableFactory renderableFactory;
-
-	protected final Collection<Path> files;
-
 	protected final List<HttpHandlerFactory> handlerFactories;
 
-	public ApplicationHandlerFactory(DiFactory diFactory, Collection<Invocable> methods,
-			RenderableFactory renderableFactory, Collection<Path> files) {
+	public ApplicationHandlerFactory(DiFactory diFactory) {
 		this.diFactory = diFactory;
-		this.methods = methods;
-		this.renderableFactory = renderableFactory;
-		this.files = files;
 		handlerFactories = buildFactories();
 	}
 
@@ -69,33 +57,33 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 		return null;
 	}
 
+	protected HttpHandlerFactory buildExceptionHandlerFactory() {
+		return diFactory.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this));
+	}
+
 	protected List<HttpHandlerFactory> buildFactories() {
-		return List.of(buildMethodHandlerFactory(), buildTemplateHandlerFactory(), buildFileHandlerFactory(),
-				buildJsonHandlerFactory(), buildExceptionHandlerFactory());
+		return List.of(buildInvocationHandlerFactory(), buildTemplateHandlerFactory(), buildJsonHandlerFactory(),
+				buildFileHandlerFactory(), buildExceptionHandlerFactory());
 	}
 
-	protected HttpHandlerFactory buildMethodHandlerFactory() {
-		return diFactory.create(MethodHandlerFactory.class,
-				Java.hashMap("methods", methods, "targetResolver", (Function<Class<?>, Object>) x -> {
-					var y = diFactory.context();
-//					IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
-					return x.isAssignableFrom(y.getClass()) ? diFactory.context() : diFactory.create(x);
-				}, "renderableFactory", renderableFactory, "rootFactory", this));
-	}
-
-	protected HttpHandlerFactory buildTemplateHandlerFactory() {
-		return diFactory.create(TemplateHandlerFactory.class, Map.of("rootFactory", this));
-	}
-
-	protected HttpHandlerFactory buildFileHandlerFactory() {
-		return diFactory.create(FileHandlerFactory.class, Map.of("files", files, "rootFactory", this));
+	protected FileHandlerFactory buildFileHandlerFactory() {
+		return diFactory.create(FileHandlerFactory.class, Map.of("rootFactory", this));
 	}
 
 	protected HttpHandlerFactory buildJsonHandlerFactory() {
 		return diFactory.create(JsonHandlerFactory.class, Map.of("rootFactory", this));
 	}
 
-	protected HttpHandlerFactory buildExceptionHandlerFactory() {
-		return diFactory.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this));
+	protected HttpHandlerFactory buildInvocationHandlerFactory() {
+		return diFactory.create(InvocationHandlerFactory.class,
+				Java.hashMap("instanceResolver", (Function<Class<?>, Object>) x -> {
+					var y = diFactory.context();
+//					IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
+					return x.isAssignableFrom(y.getClass()) ? diFactory.context() : diFactory.create(x);
+				}, "rootFactory", this));
+	}
+
+	protected HttpHandlerFactory buildTemplateHandlerFactory() {
+		return diFactory.create(TemplateHandlerFactory.class, Map.of("rootFactory", this));
 	}
 }

@@ -1,0 +1,129 @@
+<!--${header}-->
+<div class="results">
+  <!--${noResults}-->
+  <!--${table}-->
+</div>
+<!--${publishDialog}-->
+<!--${unpublishDialog}-->
+<!--${deleteDialog}-->
+
+<template id="header">
+  <header>
+    <h1>${title}</h1>
+    <button name="create">Create New</button>
+    <!--${selection}-->
+  </header>
+</template>
+
+<template id="selection">
+  <p>
+    ${count} selected —
+    <button name="publish">Publish</button>
+    <button name="unpublish">Unpublish</button>
+    <button name="delete">Delete</button>
+  </p>
+</template>
+
+<template id="no-results">
+  <p>No ${name} found.</p>
+</template>
+
+<template id="table">
+  <table>
+    <thead>
+      <tr>
+        <!--${heads}-->
+      </tr>
+    </thead>
+    <tbody>
+      <!--${rows}-->
+    </tbody>
+  </table>
+</template>
+
+<template id="head">
+  <th>
+    <!--${content}-->
+  </th>
+</template>
+
+<template id="row">
+  <tr>
+    <!--${cells}-->
+  </tr>
+</template>
+
+<template id="cell">
+  <td>
+    <!--${content}-->
+  </td>
+</template>
+
+<template id="checkbox">
+  <label class="checkbox">
+    <input type="checkbox" value="${value}" checked="${checked}" class="visually-hidden" />
+    <lucide-icon data-name="check"></lucide-icon>
+  </label>
+</template>
+
+<template id="id">
+  <admin-drawer-link></admin-drawer-link>
+</template>
+
+<template id="link">
+  <a href="${href}">
+    <!--${content}-->
+  </a>
+</template>
+
+<template id="button">
+  <button name="${name}" value="${value}">
+    <!--${content}-->
+  </a>
+</template>
+
+<template id="media">
+  <div class="thumbnail">
+    <img src="${uri}" loading="lazy" />
+  </div>
+  <p>${file.name}</p>
+</template>
+
+<template id="publish-dialog">
+  <dialog open>
+    <article>
+      <h1>Confirm publish</h1>
+      <p>You are about to publish ${count} ${name}</p>
+      <div>
+        <button name="cancel-publish">Cancel</button>
+        <button name="confirm-publish">Confirm</button>
+      </div>
+    </article>
+  </dialog>
+</template>
+
+<template id="unpublish-dialog">
+  <dialog open>
+    <article>
+      <h1>Confirm unpublish</h1>
+      <p>You are about to unpublish ${count} ${name}</p>
+      <div>
+        <button name="cancel-unpublish">Cancel</button>
+        <button name="confirm-unpublish">Confirm</button>
+      </div>
+    </article>
+  </dialog>
+</template>
+
+<template id="delete-dialog">
+  <dialog open>
+    <article>
+      <h1>Confirm deletion</h1>
+      <p>You are about to delete ${count} ${name}</p>
+      <div>
+        <button name="cancel-delete">Cancel</button>
+        <button name="confirm-delete">Confirm</button>
+      </div>
+    </article>
+  </dialog>
+</template>

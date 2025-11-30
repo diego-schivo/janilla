@@ -62,6 +62,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 
 	@Handle(method = "POST", path = "login")
 	public E login(E user, String password, UserHttpExchange exchange) {
+		IO.println("UserApi.login, user=" + user + ", password=" + password);
 		if (user == null || user.email() == null || user.email().isBlank() || password == null || password.isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
 		var u = persistence.database().perform(() -> crud().read(crud().find("email", user.email())), false);
