@@ -77,8 +77,11 @@ export default class WebComponent extends HTMLElement {
 
 	attributeChangedCallback(name, oldValue, newValue) {
 		// console.log(`WebComponent(${this.constructor.name}).attributeChangedCallback`, "name", name, "oldValue", oldValue, "newValue", newValue);
-		if (this.isConnected && newValue !== oldValue)
+		if (this.isConnected && newValue !== oldValue) {
+			if (this.state && Object.keys(this.state).length)
+				this.state = {};
 			this.requestDisplay();
+		}
 	}
 
 	requestDisplay(delay = 1) {

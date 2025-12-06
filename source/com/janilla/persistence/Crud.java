@@ -175,6 +175,8 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				IO.println("oo=" + Arrays.toString(oo));
 				a.e1 = parse((String) oo[oo.length - 1]);
 			});
+//			for (var o : observers)
+//				a.e1 = o.afterRead(a.e1);
 			a.e2 = operator.apply(a.e1);
 			for (var o : observers)
 				a.e2 = o.beforeUpdate(a.e2);

@@ -53,10 +53,7 @@ export default class AdminArray extends WebComponent {
 	async updateDisplay() {
 		const p = this.dataset.path;
 		const s = this.state;
-		s.field ??= (() => {
-			const a = this.closest("admin-element");
-			return a.field(p);
-		})();
+		s.field ??= this.closest("admin-edit").field(p);
 		s.nextKey ??= s.field.data?.length ?? 0;
 		s.items ??= Array.from({ length: s.nextKey }, (_, i) => ({
 			key: i,
@@ -93,8 +90,8 @@ export default class AdminArray extends WebComponent {
 				})),
 				checked: s.items[i].expand,
 				field: {
-					//$template: "fields",
-					$template: "upload",
+					//$template: "upload",
+					$template: s.field.elementTypes[0] === "Long" ? "upload" : "fields",
 					path: `${p}.${i}`,
 					updatedAt: this.dataset.updatedAt,
 					arrayKey: s.items[i].key

@@ -27,12 +27,12 @@ package com.janilla.net;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -42,8 +42,6 @@ import java.util.stream.Stream;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-
-import com.janilla.java.Java;
 
 public final class Net {
 
@@ -105,4 +103,40 @@ public final class Net {
 //	public static String uriString(String pathname, String name1, String value1) {
 //		return pathname + "?" + (value1 != null ? urlEncode(name1) + "=" + urlEncode(value1) : urlEncode(name1));
 //	}
+
+	protected URI uri(String string) {
+		return uri(string, (Object[][]) null);
+	}
+
+	public static URI uri(String string, String name, Object value) {
+		return uri(string, new Object[] { name, value });
+	}
+
+	public static URI uri(String string, String name1, Object value1, String name2, Object value2) {
+		return uri(string, new Object[] { name1, value1 }, new Object[] { name2, value2 });
+	}
+
+	public static URI uri(String string, String name1, Object value1, String name2, Object value2, String name3,
+			Object value3) {
+		return uri(string, new Object[] { name1, value1 }, new Object[] { name2, value2 },
+				new Object[] { name3, value3 });
+	}
+
+	public static URI uri(String string, String name1, Object value1, String name2, Object value2, String name3,
+			Object value3, String name4, Object value4) {
+		return uri(string, new Object[] { name1, value1 }, new Object[] { name2, value2 },
+				new Object[] { name3, value3 }, new Object[] { name4, value4 });
+	}
+
+	public static URI uri(String string, Object[]... pairs) {
+		var b = new StringBuilder();
+		if (string != null && !string.isEmpty())
+			b.append(string);
+		var s = pairs != null ? Arrays.stream(pairs).filter(x -> x[1] != null)
+				.map(x -> Net.urlEncode(x[0].toString()) + "=" + Net.urlEncode(x[1].toString()))
+				.collect(Collectors.joining("&")) : null;
+		if (s != null && !s.isEmpty())
+			b.append(string != null && string.indexOf('?') != -1 ? '&' : '?').append(s);
+		return URI.create(b.toString());
+	}
 }

@@ -279,6 +279,7 @@ export default class CmsAdmin extends WebComponent {
 					$template: "id",
 					...object
 				};
+			case "createdAt":
 			case "updatedAt":
 				return this.dateTimeFormat.format(new Date(x));
 		}

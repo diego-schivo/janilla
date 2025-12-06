@@ -52,8 +52,6 @@ export default class AdminJoinField extends WebComponent {
 
 	async updateDisplay() {
 		const p = this.dataset.path;
-		if (["gallery"].includes(p))
-			return;
 		const s = this.state;
 		s.field = this.closest("admin-edit").field(p);
 		const a = this.closest("admin-element");
