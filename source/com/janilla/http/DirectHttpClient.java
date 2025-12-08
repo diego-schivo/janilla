@@ -31,12 +31,14 @@ import java.io.UncheckedIOException;
 import java.nio.channels.Channels;
 import java.util.function.Function;
 
+import javax.net.ssl.SSLContext;
+
 public class DirectHttpClient extends HttpClient {
 
 	protected final HttpServer server;
 
 	public DirectHttpClient(HttpServer server) {
-		super(null);
+		super((SSLContext) null);
 		this.server = server;
 	}
 

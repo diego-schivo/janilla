@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,7 +49,25 @@ import com.janilla.net.SecureTransfer;
 
 public class HttpClient {
 
+	private static SSLContext sslContext(String protocol) {
+		try {
+			var sc = SSLContext.getInstance(protocol);
+			sc.init(null, null, null);
+			return sc;
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	protected final SSLContext sslContext;
+
+	public HttpClient() {
+		this(sslContext("TLSv1.3"));
+	}
+
+	public HttpClient(String protocol) {
+		this(sslContext(protocol));
+	}
 
 	public HttpClient(SSLContext sslContext) {
 		this.sslContext = sslContext;

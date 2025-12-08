@@ -82,6 +82,7 @@ public class HttpServer extends SecureServer {
 	}
 
 	protected void handleConnection1(SecureTransfer transfer) throws IOException {
+		IO.println("HttpServer.handleConnection1");
 		for (;;) {
 //			IO.println("st.in().position()=" + st.in().position());
 			var sb = Stream.<String>builder();
@@ -104,7 +105,7 @@ public class HttpServer extends SecureServer {
 				transfer.in().get(bb);
 				transfer.in().compact();
 				var s = new String(bb, 0, i - 1);
-//				IO.println("s=" + s);
+				IO.println("s=" + s);
 				if (!s.isEmpty())
 					sb.add(s);
 				else
@@ -124,6 +125,7 @@ public class HttpServer extends SecureServer {
 					}
 				}
 				var cl = rq.getHeaderValue("Content-Length");
+				IO.println("HttpServer.handleConnection1, cl=" + cl);
 				if (cl != null) {
 					var bb = new byte[Integer.parseInt(cl)];
 					for (var i = 0; i < bb.length;) {
@@ -134,6 +136,7 @@ public class HttpServer extends SecureServer {
 						transfer.in().get(bb, i, n);
 						transfer.in().compact();
 						i += n;
+						IO.println("HttpServer.handleConnection1, i=" + i);
 					}
 					rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
 				}
@@ -174,6 +177,7 @@ public class HttpServer extends SecureServer {
 	}
 
 	protected void handleConnection2(SecureTransfer transfer) throws IOException {
+		IO.println("HttpServer.handleConnection2");
 		while (transfer.in().position() < 24) {
 			if (transfer.read() == -1)
 				return;

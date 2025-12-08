@@ -129,7 +129,7 @@ public interface Property {
 	static Property of(Class<?> class1, Method getter, Method setter) {
 //		IO.println("Property.of, class1=" + class1 + ", getter=" + getter + ", setter=" + setter);
 		var n = getter != null ? name(getter) : name(setter);
-//		IO.println("n=" + n);
+//		IO.println("Property.of, n=" + n);
 		MethodHandle g, s;
 		try {
 			var l = MethodHandles.publicLookup();

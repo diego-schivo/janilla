@@ -86,6 +86,7 @@ public class Reflection {
 	}
 
 	protected static <T> T copy(Function<String, Object> source, T destination, Predicate<String> filter) {
+//		IO.println("Reflection.copy, source=" + source + ", destination=" + destination);
 		var c = destination.getClass();
 		var s = propertyNames(c);
 		if (filter != null)
@@ -95,14 +96,42 @@ public class Reflection {
 			return destination;
 		var vv = kk.stream().map(k -> {
 			var v = source.apply(k);
-			return v != SKIP_COPY ? new AbstractMap.SimpleImmutableEntry<>(k, v) : null;
-		}).filter(Objects::nonNull).collect(HashMap::new, (m, kv) -> m.put(kv.getKey(), kv.getValue()), Map::putAll);
+			return v != SKIP_COPY ? Java.mapEntry(k, v) : null;
+//		}).filter(Objects::nonNull).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		}).filter(Objects::nonNull).collect(HashMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
 		if (vv.isEmpty())
 			return destination;
 		if (c.isRecord()) {
-			var aa = Arrays.stream(c.getRecordComponents()).map(
-					x -> vv.containsKey(x.getName()) ? vv.get(x.getName()) : property(c, x.getName()).get(destination))
-					.toArray();
+			var aa = Arrays.stream(c.getRecordComponents()).map(x -> {
+//				IO.println("Reflection.copy, x=" + x);
+				if (vv.containsKey(x.getName()))
+					return vv.get(x.getName());
+				var p = property(c, x.getName());
+//				return p != null ? p.get(destination) : null;
+				if (p != null)
+					return p.get(destination);
+//				Field f;
+//				try {
+//					f = c.getDeclaredField(x.getName());
+//				} catch (NoSuchFieldException e) {
+//					f = null;
+//				}
+//				if (f != null && f.isAnnotationPresent(Flat.class)) {
+//					var c0 = x.getType().getConstructors()[0];
+//					Object d;
+//					try {
+//						d = c0.newInstance(IntStream.range(0, c0.getParameterCount()).mapToObj(_ -> null).toArray());
+//					} catch (ReflectiveOperationException e) {
+//						throw new RuntimeException(e);
+//					}
+//					return copy(source, d, filter);
+//				}
+				try {
+					return x.getAccessor().invoke(destination);
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
+			}).toArray();
 			try {
 				@SuppressWarnings("unchecked")
 				var t = (T) c.getConstructors()[0].newInstance(aa);
@@ -118,7 +147,7 @@ public class Reflection {
 		return destination;
 	}
 
-	private static Map<String, Property> propertyMap(Class<?> type) {
+	protected static Map<String, Property> propertyMap(Class<?> type) {
 //		IO.println("Reflection.compute, class1=" + class1);
 		class A {
 			private static final Map<Class<?>, Map<String, Property>> RESULTS = new ConcurrentHashMap<>();
@@ -203,7 +232,7 @@ public class Reflection {
 						} catch (NoSuchFieldException e) {
 							f = null;
 						}
-						if (f != null && f.isAnnotationPresent(Flatten.class)) {
+						if (f != null && f.isAnnotationPresent(Flat.class)) {
 							var m = A.RESULTS.get(f.getType());
 							if (m == null)
 								m = propertyMap(f.getType());
@@ -252,6 +281,7 @@ public class Reflection {
 	}
 
 	public static Map<String, Type> getActualTypeArguments(Class<?> target, Class<?> superClass) {
+		IO.println("Reflection.getActualTypeArguments, target=" + target + ", superClass=" + superClass);
 		class A {
 			private static final Map<Class<?>, Map<Class<?>, Map<String, Type>>> RESULTS = new ConcurrentHashMap<>();
 		}
@@ -260,7 +290,7 @@ public class Reflection {
 			Map<String, Type> m = null;
 			for (var c = target; c != superClass; c = c.getSuperclass()) {
 				var pp = c.getSuperclass().getTypeParameters();
-				var aa = ((ParameterizedType) c.getGenericSuperclass()).getActualTypeArguments();
+				var aa = c.getGenericSuperclass() instanceof ParameterizedType x ? x.getActualTypeArguments() : null;
 				var m0 = m;
 				m = IntStream.range(0, pp.length).<Map<String, Type>>collect(LinkedHashMap::new,
 						(x, i) -> x.put(pp[i].getName(), aa[i] instanceof TypeVariable v ? m0.get(v.getName()) : aa[i]),

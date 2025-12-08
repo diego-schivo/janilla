@@ -127,8 +127,9 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				var oo = x.findFirst().orElse(null);
 				a.e = oo != null ? parse((String) oo[oo.length - 1]) : null;
 			});
-			for (var o : observers)
-				a.e = o.afterRead(a.e);
+			if (a.e != null)
+				for (var o : observers)
+					a.e = o.afterRead(a.e);
 			return a.e;
 		}, false);
 	}
@@ -151,8 +152,9 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 //					IO.println("Crud.read, oo=" + Arrays.toString(oo));
 					a.e = oo != null ? parse((String) oo[oo.length - 1]) : null;
 				});
-				for (var o : observers)
-					a.e = o.afterRead(a.e);
+				if (a.e != null)
+					for (var o : observers)
+						a.e = o.afterRead(a.e);
 //				IO.println("Crud.read, a.e=" + a.e);
 				return a.e;
 			}).toList();

@@ -25,6 +25,7 @@
 package com.janilla.java;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -46,11 +47,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.janilla.reflect.Flat;
 import com.janilla.reflect.Reflection;
 
 public class Converter {
 
 	protected final TypeResolver typeResolver;
+
+	public Converter() {
+		this(null);
+	}
 
 	public Converter(TypeResolver typeResolver) {
 		this.typeResolver = typeResolver;
@@ -189,14 +195,14 @@ public class Converter {
 				var v = convert(m.get("value"), aa[1]);
 				return (T) new AbstractMap.SimpleImmutableEntry<>(k, v);
 			}
-			return (T) convertMap(m, c);
+			return (T) convertMap(m, c, typeResolver);
 		}
 
 		return (T) object;
 	}
 
-	protected Object convertMap(Map<?, ?> map, Class<?> target) {
-		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
+	protected Object convertMap(Map<?, ?> map, Class<?> target, TypeResolver typeResolver) {
+//		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
 		var ot = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
 		if (ot != null) {
 			if (target != null && !target.isAssignableFrom(ot.type()))
@@ -215,7 +221,8 @@ public class Converter {
 			} else
 				o = null;
 		} else {
-			var c0 = target.getConstructors()[0];
+			var c0 = target.getConstructors().length != 0 ? target.getConstructors()[0]
+					: target.getDeclaredConstructors()[0];
 //			IO.println("Converter.convertMap, c0=" + c0);
 			var tt = target.isRecord() ? Arrays.stream(target.getRecordComponents()).collect(
 					Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (_, x) -> x, LinkedHashMap::new))
@@ -223,8 +230,26 @@ public class Converter {
 			try {
 				if (tt != null) {
 					var m = map;
-					var oo = tt.entrySet().stream().map(x -> convert(m.get(x.getKey()), x.getValue())).toArray();
-					o = c0.newInstance(oo);
+					var t = target;
+					var oo = tt.entrySet().stream().map(x -> {
+						if (m.containsKey(x.getKey()))
+							return convert(m.get(x.getKey()), x.getValue());
+						Field f;
+						try {
+							f = t.getDeclaredField(x.getKey());
+						} catch (NoSuchFieldException e) {
+							f = null;
+						}
+						return (f != null && f.isAnnotationPresent(Flat.class))
+								? convertMap(m, (Class<?>) x.getValue(), null)
+								: null;
+					}).toArray();
+					try {
+						o = c0.newInstance(oo);
+					} catch (IllegalAccessException e) {
+						c0.setAccessible(true);
+						o = c0.newInstance(oo);
+					}
 				} else {
 					o = c0.newInstance();
 					for (var x : map.entrySet()) {

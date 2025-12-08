@@ -24,9 +24,20 @@
  */
 package com.janilla.http;
 
+import java.net.URI;
+import java.util.Base64;
+
 import com.janilla.net.Net;
 
 public class HttpRequest extends HttpMessage {
+
+	public HttpRequest() {
+	}
+
+	public HttpRequest(String method, URI uri) {
+		setMethod(method);
+		setUri(uri);
+	}
 
 	public String getMethod() {
 		return getHeaderValue(":method");
@@ -70,5 +81,15 @@ public class HttpRequest extends HttpMessage {
 		var t = getTarget();
 		var i = t != null ? t.indexOf('?') : -1;
 		return i != -1 ? t.substring(i + 1) : null;
+	}
+
+	public void setUri(URI uri) {
+		setScheme(uri.getScheme());
+		setAuthority(uri.getAuthority());
+		setTarget(uri.getPath());
+	}
+
+	public void setBasicAuthorization(String string) {
+		setHeaderValue("authorization", "Basic " + Base64.getEncoder().encodeToString(string.getBytes()));
 	}
 }

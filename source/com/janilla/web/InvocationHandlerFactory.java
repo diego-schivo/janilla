@@ -103,7 +103,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		for (var tm : invocables) {
 			var t = tm.type();
 			var m = tm.method();
-//			IO.println("MethodHandlerFactory, m=" + m + ", c=" + c);
+//			IO.println("InvocationHandlerFactory, m=" + m + ", c=" + c);
 			var h1 = t.getAnnotation(Handle.class);
 			var p1 = h1 != null ? h1.path() : null;
 			var h2 = m.getAnnotation(Handle.class);
@@ -112,6 +112,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 				if (p2.startsWith("/"))
 					p1 = null;
 				var p = Stream.of(p1, p2).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("/"));
+//				IO.println("InvocationHandlerFactory, p=" + p);
 				var i = groups.computeIfAbsent(p, _ -> {
 					var o = oo.computeIfAbsent(t, x -> {
 						if (instanceResolver != null)
@@ -200,14 +201,14 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	public static final ScopedValue<Set<String>> JSON_KEYS = ScopedValue.newInstance();
 
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
-//		IO.println("MethodHandlerFactory.handle, invocation=" + invocation);
+//		IO.println("InvocationHandlerFactory.handle, invocation=" + invocation);
 
 		var o = ScopedValue.where(JSON_KEYS, new HashSet<>()).call(() -> {
 			var h = Reflection.methodHandle(invocation.method());
 			var oo = Stream
 					.concat(Stream.of(invocation.object()), Arrays.stream(resolveArguments(invocation, exchange)))
 					.toArray();
-//		IO.println("MethodHandlerFactory.handle, aa=" + Arrays.toString(aa));
+//		IO.println("InvocationHandlerFactory.handle, aa=" + Arrays.toString(aa));
 			try {
 				return h.invokeWithArguments(oo);
 			} catch (Throwable e) {
@@ -270,8 +271,8 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 				if (result == null)
 					try {
 						var ch = rq.getBody();
-						result = Optional.ofNullable(ch instanceof ReadableByteChannel y
-								? new String(Channels.newInputStream(y).readAllBytes())
+						result = Optional.ofNullable(ch instanceof ReadableByteChannel x
+								? new String(Channels.newInputStream(x).readAllBytes())
 								: null);
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
@@ -287,16 +288,16 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 			case "application/x-www-form-urlencoded":
 				qs = Stream.of(qs, bs.get()).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("&"));
 				break;
-			case "application/json":
-				var s = bs.get();
-				var o = s != null ? Json.parse(s) : null;
-				if (o instanceof Map<?, ?> m && !m.isEmpty())
-					qs = Stream.concat(Stream.of(qs), m.entrySet().stream().map(x -> {
-						var y = x.getValue();
-						return y instanceof Boolean || y instanceof Number || y instanceof String ? x.getKey() + "=" + y
-								: null;
-					})).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("&"));
-				break;
+//			case "application/json":
+//				var s = bs.get();
+//				var o = s != null ? Json.parse(s) : null;
+//				if (o instanceof Map<?, ?> m && !m.isEmpty())
+//					qs = Stream.concat(Stream.of(qs), m.entrySet().stream().map(x -> {
+//						var y = x.getValue();
+//						return y instanceof Boolean || y instanceof Number || y instanceof String ? x.getKey() + "=" + y
+//								: null;
+//					})).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("&"));
+//				break;
 			}
 		}
 
@@ -323,32 +324,12 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 			return resolveArgument(x, exchange, vv, bs2, cs);
 		}).toArray();
 		return Stream.of(oo1, oo2).flatMap(Arrays::stream).toArray();
-
-//		var m = invocation.method();
-//		var gg = invocation.regexGroups();
-//		var aa = new Object[invocation.parameterTypes().length];
-//		var ggl = gg != null ? gg.length : 0;
-//		for (var i = 0; i < aa.length; i++) {
-//			var g = i < ggl ? gg[i] : null;
-//			var b = i < ggl ? null : bb[i];
-//			var n = Stream.of(b != null ? b.parameter() : null, b != null ? b.value() : null, pp[i].getName())
-//					.filter(x -> x != null && !x.isEmpty()).findFirst().orElse(null);
-//			var qs2 = qs;
-//			var bs2 = i == ggl || (invocation.parameterTypes()[i] instanceof Class<?> x && x.isRecord()) ? bs : null;
-//			Supplier<Converter> cs = () -> converter(b != null ? b.resolver() : null);
-//			aa[i] = resolveArgument(invocation.parameterTypes()[i], exchange,
-//					i < ggl ? (g != null ? new String[] { g } : null)
-		////							: qs2 != null && n != null ? qs2.stream(n).toArray(String[]::new) : null,
-//							: null,
-		////					i >= ggl ? qs : null,
-//					bs2, cs);
-//		}
-//		return aa;
 	}
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values,
 //			EntryList<String, String> entries, 
 			Supplier<String> body, Supplier<Converter> converter) {
+		IO.println("InvocationHandlerFactory.resolveArgument, type=" + type);
 		var c = type instanceof Class<?> x ? x : null;
 
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
@@ -368,7 +349,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 				if (body == null)
 					break;
 				var b = body.get();
-//				IO.println("MethodHandlerFactory.resolveArgument, b=" + b);
+//				IO.println("InvocationHandlerFactory.resolveArgument, b=" + b);
 				if (b == null)
 					return null;
 				var o = Json.parse(b);
@@ -440,7 +421,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected Object parseParameter(String[] strings, Type type) {
-//		IO.println("MethodHandlerFactory.parseParameter, strings=" + Arrays.toString(strings) + ", type=" + type);
+//		IO.println("InvocationHandlerFactory.parseParameter, strings=" + Arrays.toString(strings) + ", type=" + type);
 		var c = Java.toClass(type);
 		var o = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
@@ -457,7 +438,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected void render(Renderable<?> renderable, HttpExchange exchange) {
-//		IO.println("MethodHandlerFactory.render, renderable=" + renderable);
+//		IO.println("InvocationHandlerFactory.render, renderable=" + renderable);
 		var h = rootFactory.createHandler(renderable);
 		if (h != null)
 			h.handle(exchange);
@@ -554,7 +535,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 //		}
 //	}
 //	var c = new C();
-//	var f1 = new MethodHandlerFactory();
+//	var f1 = new InvocationHandlerFactory();
 //	f1.setToInvocation(r -> {
 //		var u = r.getURI();
 //		var p = u.getPath();

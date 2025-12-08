@@ -54,7 +54,7 @@ public abstract class HttpMessage implements Closeable {
 	}
 
 	public Stream<HeaderField> getHeaders(String name) {
-		return headers != null ? headers.stream().filter(x -> x.name().equals(name)) : Stream.empty();
+		return headers != null ? headers.stream().filter(x -> x.name().equalsIgnoreCase(name)) : Stream.empty();
 	}
 
 	public HeaderField getHeader(String name) {
@@ -67,7 +67,7 @@ public abstract class HttpMessage implements Closeable {
 		else {
 			var i = 0;
 			for (var x : headers) {
-				if (x.name().equals(header.name())) {
+				if (x.name().equalsIgnoreCase(header.name())) {
 					headers.set(i, header);
 					return;
 				}

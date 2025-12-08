@@ -54,7 +54,7 @@ public final class Java {
 	}
 
 	public static List<Class<?>> getPackageClasses(String package1) {
-		IO.println("Java.getPackageClasses, package1=" + package1);
+//		IO.println("Java.getPackageClasses, package1=" + package1);
 		class A {
 			private static final Map<String, List<Class<?>>> RESULTS = new ConcurrentHashMap<>();
 		}
@@ -79,7 +79,7 @@ public final class Java {
 				return c;
 			});
 			var cc = cs.filter(Objects::nonNull).toList();
-			IO.println("Java.getPackageClasses, cc=" + cc);
+//			IO.println("Java.getPackageClasses, cc=" + cc);
 			return cc;
 		});
 	}
