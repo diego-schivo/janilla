@@ -24,6 +24,7 @@
  */
 package com.janilla.reflect;
 
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
@@ -151,97 +152,104 @@ public class Reflection {
 //		IO.println("Reflection.compute, class1=" + class1);
 		class A {
 			private static final Map<Class<?>, Map<String, Property>> RESULTS = new ConcurrentHashMap<>();
-		}
-		return A.RESULTS.computeIfAbsent(type, class1 -> {
-			if (!Modifier.isPublic(class1.getModifiers())) {
-				if (Map.Entry.class.isAssignableFrom(class1))
-					class1 = Map.Entry.class;
-				else if (Supplier.class.isAssignableFrom(class1))
-					class1 = Supplier.class;
-				else
-					throw new IllegalArgumentException();
-			}
-			var c = class1;
-			var rcc = c.getRecordComponents();
-			var mm = new HashMap<String, Member[]>();
-			if (rcc != null)
-				for (var x : rcc) {
-					mm.computeIfAbsent(x.getName(), k -> {
-						Method g;
+
+			private static Map<String, Property> compute(Class<?> c) {
+				if (!Modifier.isPublic(c.getModifiers())) {
+					if (Map.Entry.class.isAssignableFrom(c))
+						c = Map.Entry.class;
+					else if (Supplier.class.isAssignableFrom(c))
+						c = Supplier.class;
+					else
+						throw new IllegalArgumentException();
+				}
+				var c0 = c;
+
+				var rcc = c.getRecordComponents();
+				var mm = new HashMap<String, Member[]>();
+				if (rcc != null)
+					for (var x : rcc) 
+						mm.computeIfAbsent(x.getName(), k -> {
+							Method g;
+							try {
+								g = c0.getMethod(k);
+							} catch (NoSuchMethodException e) {
+								throw new RuntimeException(e);
+							}
+							return new Member[] { g, null };
+						});
+
+				for (var m : c.getMethods()) {
+					if (mm.containsKey(m.getName()) || Modifier.isStatic(m.getModifiers())
+							|| m.getDeclaringClass() == Object.class
+							|| Set.of("hashCode", "toString").contains(m.getName()))
+						continue;
+
+					var g = m.getReturnType() != Void.TYPE && m.getParameterCount() == 0
+							&& !(m.getName().startsWith("with") && m.getReturnType() == c) ? m : null;
+					var s = m.getReturnType() == Void.TYPE && m.getParameterCount() == 1 ? m : null;
+
+					if (g != null || s != null) {
+						var k = Property.name(m);
+						var gs = mm.computeIfAbsent(k, _ -> new Member[2]);
+						if (g != null)
+							gs[0] = g;
+						if (s != null)
+							gs[1] = s;
+					}
+				}
+
+				for (var f : c.getFields()) {
+					if (!Modifier.isStatic(f.getModifiers()))
+						mm.computeIfAbsent(Property.name(f), _ -> new Member[] { f });
+				}
+
+				if (c.isArray())
+					mm.computeIfAbsent("length", _ -> {
+						Method m;
 						try {
-							g = c.getMethod(k);
+							m = Array.class.getMethod("getLength", Object.class);
 						} catch (NoSuchMethodException e) {
 							throw new RuntimeException(e);
 						}
-						return new Member[] { g, null };
+						return new Member[] { m, null };
 					});
-				}
-			for (var m : c.getMethods()) {
-				if (mm.containsKey(m.getName()) || Modifier.isStatic(m.getModifiers())
-						|| m.getDeclaringClass() == Object.class
-						|| Set.of("hashCode", "toString").contains(m.getName()))
-					continue;
-				var g = m.getReturnType() != Void.TYPE && m.getParameterCount() == 0 ? m : null;
-				var s = m.getReturnType() == Void.TYPE && m.getParameterCount() == 1 ? m : null;
-				if (g != null && g.getName().startsWith("with") && g.getReturnType() == c)
-					g = null;
-				if (g != null || s != null) {
-					var k = Property.name(m);
-					var b = mm.computeIfAbsent(k, _ -> new Member[2]);
-					if (g != null)
-						b[0] = g;
-					if (s != null)
-						b[1] = s;
-				}
+
+				var oo = rcc != null ? IntStream.range(0, rcc.length).boxed()
+						.collect(Collectors.toMap(i -> rcc[i].getName(), i -> i + 1)) : null;
+				return mm.values().stream().map(
+						x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of(c0, (Method) x[0], (Method) x[1]))
+						.map(x -> {
+							Field f;
+							try {
+								f = c0.getDeclaredField(x.name());
+							} catch (NoSuchFieldException e) {
+								f = null;
+							}
+							var o = f != null ? f.getAnnotation(Order.class) : null;
+							return new AbstractMap.SimpleImmutableEntry<>(x,
+									o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(x.name()) : null);
+						}).sorted(Comparator.comparing(Map.Entry::getValue,
+								Comparator.nullsLast(Comparator.naturalOrder())))
+						.map(Map.Entry::getKey).flatMap(x -> {
+							Field f;
+							try {
+								f = c0.getDeclaredField(x.name());
+							} catch (NoSuchFieldException e) {
+								f = null;
+							}
+							if (f != null && f.isAnnotationPresent(Flat.class)) {
+								var m = A.RESULTS.get(f.getType());
+								if (m == null)
+//									m = propertyMap(f.getType());
+									m = compute(f.getType());
+								return m.values().stream().filter(y -> !mm.containsKey(y.name()))
+										.map(y -> Property.of(x, y));
+							}
+							return Stream.of(x);
+						}).collect(Collectors.toMap(Property::name, p -> p, (_, x) -> x, LinkedHashMap::new));
 			}
-			for (var f : c.getFields()) {
-				if (Modifier.isStatic(f.getModifiers()))
-					continue;
-				mm.computeIfAbsent(Property.name(f), _ -> new Member[] { f });
-			}
-			if (c.isArray())
-				mm.computeIfAbsent("length", _ -> {
-					Method m;
-					try {
-						m = Array.class.getMethod("getLength", Object.class);
-					} catch (NoSuchMethodException e) {
-						throw new RuntimeException(e);
-					}
-					return new Member[] { m, null };
-				});
-			var oo = rcc != null ? IntStream.range(0, rcc.length).boxed()
-					.collect(Collectors.toMap(i -> rcc[i].getName(), i -> i + 1)) : null;
-			return mm.values().stream()
-					.map(x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of(c, (Method) x[0], (Method) x[1]))
-					.map(x -> {
-						Field f;
-						try {
-							f = c.getDeclaredField(x.name());
-						} catch (NoSuchFieldException e) {
-							f = null;
-						}
-						var o = f != null ? f.getAnnotation(Order.class) : null;
-						return new AbstractMap.SimpleImmutableEntry<>(x,
-								o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(x.name()) : null);
-					})
-					.sorted(Comparator.comparing(Map.Entry::getValue, Comparator.nullsLast(Comparator.naturalOrder())))
-					.map(Map.Entry::getKey).flatMap(x -> {
-						Field f;
-						try {
-							f = c.getDeclaredField(x.name());
-						} catch (NoSuchFieldException e) {
-							f = null;
-						}
-						if (f != null && f.isAnnotationPresent(Flat.class)) {
-							var m = A.RESULTS.get(f.getType());
-							if (m == null)
-								m = propertyMap(f.getType());
-							return m.values().stream().filter(y -> !mm.containsKey(y.name()))
-									.map(y -> Property.of(x, y));
-						}
-						return Stream.of(x);
-					}).collect(Collectors.toMap(Property::name, p -> p, (_, x) -> x, LinkedHashMap::new));
-		});
+		}
+		return A.RESULTS.computeIfAbsent(type, A::compute);
 	}
 
 	public static Type resolveTypeVariable(TypeVariable<?> variable, Class<?> class1, Class<?> superclassOrInterface) {
@@ -259,13 +267,13 @@ public class Reflection {
 		return pt.getActualTypeArguments()[i];
 	}
 
-	public static Type[] getActualParameterTypes(Method method, Class<?> target) {
+	public static Type[] actualParameterTypes(Method method, Class<?> target) {
+//		IO.println("Reflection.actualParameterTypes, method=" + method + ", target=" + target);
 		class A {
 			private static final Map<Method, Map<Class<?>, Type[]>> RESULTS = new ConcurrentHashMap<>();
 		}
-		var m1 = A.RESULTS.computeIfAbsent(method, _ -> new ConcurrentHashMap<>());
-		return m1.computeIfAbsent(target, _ -> {
-			var m = getActualTypeArguments(target, method.getDeclaringClass());
+		return A.RESULTS.computeIfAbsent(method, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target, _ -> {
+			var m = actualTypeArguments(target, method.getDeclaringClass());
 			return Arrays.stream(method.getGenericParameterTypes()).map(x -> {
 				switch (x) {
 				case TypeVariable<?> v:
@@ -280,36 +288,94 @@ public class Reflection {
 		});
 	}
 
-	public static Map<String, Type> getActualTypeArguments(Class<?> target, Class<?> superClass) {
-		IO.println("Reflection.getActualTypeArguments, target=" + target + ", superClass=" + superClass);
+	private static Object NULL = new Object();
+
+	public static Map<String, Type> actualTypeArguments(Class<?> target, Class<?> superClass) {
+//		IO.println("Reflection.actualTypeArguments, target=" + target + ", superClass=" + superClass);
 		class A {
-			private static final Map<Class<?>, Map<Class<?>, Map<String, Type>>> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Class<?>, Map<Class<?>, Object>> RESULTS = new ConcurrentHashMap<>();
 		}
-		var m1 = A.RESULTS.computeIfAbsent(target, _ -> new ConcurrentHashMap<>());
-		return m1.computeIfAbsent(superClass, _ -> {
+		var o = A.RESULTS.computeIfAbsent(target, _ -> new ConcurrentHashMap<>()).computeIfAbsent(superClass, _ -> {
 			Map<String, Type> m = null;
 			for (var c = target; c != superClass; c = c.getSuperclass()) {
 				var pp = c.getSuperclass().getTypeParameters();
 				var aa = c.getGenericSuperclass() instanceof ParameterizedType x ? x.getActualTypeArguments() : null;
-				var m0 = m;
-				m = IntStream.range(0, pp.length).<Map<String, Type>>collect(LinkedHashMap::new,
-						(x, i) -> x.put(pp[i].getName(), aa[i] instanceof TypeVariable v ? m0.get(v.getName()) : aa[i]),
-						Map::putAll);
+				var m2 = new LinkedHashMap<String, Type>();
+				for (var i = 0; i < pp.length; i++)
+					m2.put(pp[i].getName(), aa[i] instanceof TypeVariable v ? m.get(v.getName()) : aa[i]);
+				m = m2;
 			}
-			return m;
+			return m != null ? m : NULL;
 		});
+		@SuppressWarnings("unchecked")
+		var m = o != NULL ? (Map<String, Type>) o : null;
+		return m;
+	}
+
+	public static Method bridgeMethod(Method method) {
+//		IO.println("Reflection.bridgeMethod, method=" + method);
+		if (method.isBridge())
+			throw new IllegalArgumentException();
+		class A {
+			private static final Map<Method, Object> RESULTS = new ConcurrentHashMap<>();
+		}
+		var o = A.RESULTS.computeIfAbsent(method, _ -> {
+			var n1 = method.getName();
+			var t1 = method.getReturnType();
+			var tt1 = method.getParameterTypes();
+			m2: for (var m2 : method.getDeclaringClass().getMethods()) {
+				var n2 = m2.isBridge() ? m2.getName() : null;
+				var t2 = Objects.equals(n2, n1) ? m2.getReturnType() : null;
+				var tt2 = t2 != null && t2.isAssignableFrom(t1) ? m2.getParameterTypes() : null;
+				if (tt2 != null && tt2.length == tt1.length) {
+					for (var i = 0; i < tt2.length; i++)
+						if (!tt2[i].isAssignableFrom(tt1[i]))
+							continue m2;
+					return m2;
+				}
+			}
+			return NULL;
+		});
+		return o != NULL ? (Method) o : null;
+	}
+
+	public static <T extends Annotation> T inheritedAnnotation(Method method, Class<T> annotation) {
+//		IO.println("Reflection.inheritedAnnotation, method=" + method + ", annotation=" + annotation);
+		class A {
+			private static final Map<Method, Map<Class<?>, Object>> RESULTS = new ConcurrentHashMap<>();
+		}
+		var o = A.RESULTS.computeIfAbsent(method, _ -> new ConcurrentHashMap<>()).computeIfAbsent(annotation,
+				_ -> Stream.iterate(method, x -> {
+					var s = x.getDeclaringClass().getSuperclass();
+					if (s != null) {
+						var b = x.isBridge() ? x : bridgeMethod(x);
+						try {
+							return s.getMethod(x.getName(), (b != null ? b : x).getParameterTypes());
+						} catch (NoSuchMethodException e) {
+						}
+					}
+					return null;
+				}).takeWhile(Objects::nonNull).map(x -> (Object) x.getAnnotation(annotation)).filter(Objects::nonNull)
+						.findFirst().orElse(NULL));
+		@SuppressWarnings("unchecked")
+		var t = o != NULL ? (T) o : null;
+		return t;
 	}
 
 	public static MethodHandle methodHandle(Method method) {
+//		IO.println("Reflection.methodHandle, method=" + method);
 		class A {
-			private static final Map<Method, MethodHandle> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Method, Object> RESULTS = new ConcurrentHashMap<>();
 		}
-		return A.RESULTS.computeIfAbsent(method, x -> {
+		var o = A.RESULTS.computeIfAbsent(method, _ -> {
 			try {
-				return MethodHandles.publicLookup().unreflect(x);
+				return MethodHandles.publicLookup().unreflect(method);
 			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
+				return new RuntimeException(e);
 			}
 		});
+		if (o instanceof RuntimeException e)
+			throw e;
+		return (MethodHandle) o;
 	}
 }

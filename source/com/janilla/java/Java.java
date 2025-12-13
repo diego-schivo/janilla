@@ -31,6 +31,7 @@ import java.lang.module.ResolvedModule;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
@@ -151,6 +152,7 @@ public final class Java {
 		case Class<?> x -> x;
 		case ParameterizedType x -> (Class<?>) x.getRawType();
 		case TypeVariable<?> _ -> null;
+		case WildcardType _ -> Object.class;
 		default -> throw new IllegalArgumentException();
 		};
 	}
@@ -198,12 +200,8 @@ public final class Java {
 //					() -> add(key, value));
 //		}
 //
-	////		public static void main(String[] args) {
-////			var l = new EntryList<String, String>();
-////			l.add("foo", "bar");
-////			l.set("foo", "baz");
-////			IO.println(l);
-////			assert l.equals(List.of(Map.entry("foo", "baz"))) : l;
-////		}
+	//// public static void main(String[] args) { var l = new EntryList<String,
+	/// String>(); l.add("foo", "bar"); l.set("foo", "baz"); IO.println(l); assert
+	/// l.equals(List.of(Map.entry("foo", "baz"))) : l; }
 //	}
 }

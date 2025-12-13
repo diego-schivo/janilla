@@ -9,11 +9,12 @@ public class UriQueryBuilder {
 	protected final StringBuilder builder = new StringBuilder();
 
 	public UriQueryBuilder append(String name, String value) {
-		if (!builder.isEmpty())
-			builder.append('&');
-		builder.append(URLEncoder.encode(name, StandardCharsets.UTF_8)).append('=');
-		if (value != null)
-			builder.append(URLEncoder.encode(value, StandardCharsets.UTF_8));
+		if (value != null) {
+			if (!builder.isEmpty())
+				builder.append('&');
+			builder.append(URLEncoder.encode(name, StandardCharsets.UTF_8)).append('=')
+					.append(URLEncoder.encode(value, StandardCharsets.UTF_8));
+		}
 		return this;
 	}
 

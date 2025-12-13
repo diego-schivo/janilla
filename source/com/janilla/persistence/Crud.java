@@ -451,7 +451,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				for (var k : e.getValue()) {
 					var b = new B();
 					i.select(new Object[] { k }, x -> b.vvi = x.iterator());
-					b.v = b.vvi.hasNext() ? b.vvi.next() : null;
+					b.v = b.vvi != null && b.vvi.hasNext() ? b.vvi.next() : null;
 					bb.add(b);
 				}
 				var a = new A();
@@ -467,7 +467,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 						return null;
 					@SuppressWarnings("unchecked")
 					var l = (ID) b.v[b.v.length - 1];
-					b.v = b.vvi.hasNext() ? b.vvi.next() : null;
+					b.v = b.vvi != null && b.vvi.hasNext() ? b.vvi.next() : null;
 					return l;
 				}).skip(1).takeWhile(Objects::nonNull).iterator();
 				a.l = a.lli.hasNext() ? a.lli.next() : null;

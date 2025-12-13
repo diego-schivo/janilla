@@ -101,18 +101,19 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		groups = new LinkedHashMap<>();
 		var oo = new HashMap<Class<?>, Object>();
 		for (var tm : invocables) {
+//			IO.println("InvocationHandlerFactory, tm=" + tm);
 			var t = tm.type();
 			var m = tm.method();
-//			IO.println("InvocationHandlerFactory, m=" + m + ", c=" + c);
 			var h1 = t.getAnnotation(Handle.class);
 			var p1 = h1 != null ? h1.path() : null;
-			var h2 = m.getAnnotation(Handle.class);
+			var h2 = Reflection.inheritedAnnotation(m, Handle.class);
 			var p2 = h2 != null ? h2.path() : null;
+//			IO.println("InvocationHandlerFactory, h1=" + h1 + ", h2=" + h2);
 			if (p2 != null) {
 				if (p2.startsWith("/"))
 					p1 = null;
 				var p = Stream.of(p1, p2).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("/"));
-//				IO.println("InvocationHandlerFactory, p=" + p);
+//				IO.println("InvocationHandlerFactory, p=" + p + ", m=" + m + ", h2=" + h2);
 				var i = groups.computeIfAbsent(p, _ -> {
 					var o = oo.computeIfAbsent(t, x -> {
 						if (instanceResolver != null)
@@ -123,16 +124,11 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 							throw new RuntimeException(e);
 						}
 					});
-					return new InvocationGroup(o, new HashSet<>());
+					return new InvocationGroup(o, new LinkedHashMap<>());
 				});
-//				MethodHandle h;
-//				try {
-//					h = MethodHandles.publicLookup().unreflect(m);
-//				} catch (IllegalAccessException e) {
-//					throw new RuntimeException(e);
-//				}
-//				i.methodHandles().put(m, h);
-				i.methods().add(m);
+				var m2 = i.methods().compute(h2.method(),
+						(_, x) -> x == null || x.getDeclaringClass().isAssignableFrom(m.getDeclaringClass()) ? m : x);
+//				IO.println("InvocationHandlerFactory, m2=" + m2);
 			}
 		}
 
@@ -148,16 +144,19 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		if (object instanceof HttpRequest r) {
 			var m1 = Objects.requireNonNullElse(r.getMethod(), "");
 			var s = invocationGroups(r.getPath()).map(i -> {
-				Method m = null;
-				for (var x : i.methods()) {
-					var m2 = Objects.requireNonNullElse(x.getAnnotation(Handle.class).method(), "");
-					if (m2.equalsIgnoreCase(m1)) {
-						m = x;
-						break;
-					}
-					if (m2.isEmpty())
-						m = x;
-				}
+//				Method m = null;
+//				for (var x : i.methods().entrySet()) {
+//					var m2 = Objects.requireNonNullElse(x.getValue().method(), "");
+//					if (m2.equalsIgnoreCase(m1)) {
+//						m = x.getKey();
+//						break;
+//					}
+//					if (m2.isEmpty())
+//						m = x.getKey();
+//				}
+				var m = i.methods().get(m1);
+				if (m == null && !m1.isEmpty())
+					m = i.methods().get("");
 				return m != null ? new Invocation(i.object(), m,
 //								Reflection.getActualParameterTypes(m, i.object().getClass()),
 						i.regexGroups()) : null;
@@ -302,7 +301,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		}
 
 		var ii = IntStream.iterate(0, x -> x + 1).iterator();
-		var ptt = Reflection.getActualParameterTypes(invocation.method(), invocation.object().getClass());
+		var ptt = Reflection.actualParameterTypes(invocation.method(), invocation.object().getClass());
 		var oo1 = Arrays.stream(invocation.regexGroups()).map(x -> {
 			var i = ii.nextInt();
 			return resolveArgument(ptt[i], exchange, new String[] { x }, null, () -> converter(null));
@@ -329,7 +328,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values,
 //			EntryList<String, String> entries, 
 			Supplier<String> body, Supplier<Converter> converter) {
-		IO.println("InvocationHandlerFactory.resolveArgument, type=" + type);
+//		IO.println("InvocationHandlerFactory.resolveArgument, type=" + type);
 		var c = type instanceof Class<?> x ? x : null;
 
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
@@ -444,7 +443,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 			h.handle(exchange);
 	}
 
-	protected record InvocationGroup(Object object, Set<Method> methods, String... regexGroups) {
+	protected record InvocationGroup(Object object, Map<String, Method> methods, String... regexGroups) {
 
 		public InvocationGroup withRegexGroups(String... regexGroups) {
 			return new InvocationGroup(object, methods, regexGroups);

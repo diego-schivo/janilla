@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 public record Query(String[][] parameters) {
 
 	public Stream<String> values(String name) {
-		return Arrays.stream(parameters).filter(x -> x[0].equals(name)).map(x -> x[1]);
+		return Arrays.stream(parameters).filter(x -> x[0].equals(name)).map(x -> x.length > 1 ? x[1] : null);
 	}
 
 	public static Query create(String string) {
