@@ -145,6 +145,7 @@ public class HttpClient {
 					o += l;
 				}
 			for (var f : ff) {
+				IO.println("HttpClient.send, f=" + f);
 				t.out().clear();
 				t.out().put(he.encodeFrame(f));
 				for (t.out().flip(); t.out().hasRemaining();)

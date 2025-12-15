@@ -36,11 +36,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import com.janilla.ioc.DiFactory;
 import com.janilla.net.SecureServer;
 import com.janilla.net.SecureTransfer;
 import com.janilla.web.HandleException;
@@ -51,9 +53,12 @@ public class HttpServer extends SecureServer {
 
 	protected final HttpHandler handler;
 
-	public HttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler) {
+	protected final DiFactory diFactory;
+
+	public HttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler, DiFactory diFactory) {
 		super(sslContext, endpoint);
 		this.handler = handler;
+		this.diFactory = diFactory;
 	}
 
 	@Override
@@ -358,21 +363,27 @@ public class HttpServer extends SecureServer {
 	}
 
 	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		record R(HttpRequest request, HttpResponse response, Exception exception) implements HttpExchange {
+		var x = diFactory != null
+				? diFactory.create(HttpExchange.class, Map.of("request", request, "response", response))
+				: null;
+		if (x != null)
+			return x;
+
+		record E(HttpRequest request, HttpResponse response, Exception exception) implements HttpExchange {
 
 			@Override
 			public HttpExchange withException(Exception exception) {
-				return new R(request, response, exception);
+				return new E(request, response, exception);
 			}
 		}
-		return new R(request, response, null);
+		return new E(request, response, null);
 	}
 
-	protected boolean handleExchange(HttpExchange ex) {
+	protected boolean handleExchange(HttpExchange exchange) {
 		var k = true;
 		Exception e;
 		try {
-			k = handler.handle(ex);
+			k = handler.handle(exchange);
 			e = null;
 		} catch (HandleException x) {
 			e = x.getCause();
@@ -387,8 +398,8 @@ public class HttpServer extends SecureServer {
 		if (e != null)
 			try {
 				e.printStackTrace();
-				ex = ex.withException(e);
-				k = handler.handle(ex);
+				exchange = exchange.withException(e);
+				k = handler.handle(exchange);
 			} catch (RuntimeException x) {
 				if (x.getCause() instanceof Error y)
 					throw y;

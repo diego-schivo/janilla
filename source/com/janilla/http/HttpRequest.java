@@ -86,7 +86,10 @@ public class HttpRequest extends HttpMessage {
 	public void setUri(URI uri) {
 		setScheme(uri.getScheme());
 		setAuthority(uri.getAuthority());
-		setTarget(uri.getPath());
+		var b = new StringBuilder(uri.getPath());
+		if (uri.getQuery() != null && !uri.getQuery().isEmpty())
+			b.append('?').append(uri.getQuery());
+		setTarget(b.toString());
 	}
 
 	public void setBasicAuthorization(String string) {
