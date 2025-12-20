@@ -117,12 +117,15 @@ public class HttpClient {
 			var he = new HttpEncoder();
 			var hd = new HttpDecoder();
 
-			t.out().put("""
-					PRI * HTTP/2.0\r
-					\r
-					SM\r
-					\r
-					""".getBytes());
+			class A {
+				private static final byte[] CONNECTION_PREFACE_PREFIX = """
+						PRI * HTTP/2.0\r
+						\r
+						SM\r
+						\r
+						""".getBytes();
+			}
+			t.out().put(A.CONNECTION_PREFACE_PREFIX);
 			for (t.out().flip(); t.out().hasRemaining();)
 				t.write();
 

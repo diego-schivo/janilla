@@ -24,9 +24,11 @@
  */
 package com.janilla.java;
 
-public record TypedData(Object data, Class<?> type) {
+import java.lang.reflect.Type;
 
-	public TypedData withType(Class<?> type) {
+public record TypedData(Object data, Type type) {
+
+	public TypedData withType(Type type) {
 		return new TypedData(data, type);
 	}
 }

@@ -24,8 +24,10 @@
  */
 package com.janilla.ioc;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -80,10 +82,9 @@ public class DiFactory {
 			if (c == null)
 //				return _ -> null;
 				throw new RuntimeException("type=" + type);
-			var cc = c.getConstructors();
-			if (cc.length != 1)
-				throw new RuntimeException(c + " has " + cc.length + " constructors");
-			var c0 = cc[0];
+			var c0 = Arrays.stream(c.getConstructors())
+					.sorted(Comparator.<Constructor<?>>comparingInt(Constructor::getParameterCount).reversed())
+					.findFirst().orElseThrow();
 //			IO.println("Factory.create, c0 = " + c0);
 			var o = context.get();
 			if (o != null && c.getEnclosingClass() == o.getClass())

@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import com.janilla.http.HttpExchange;
 import com.janilla.json.Jwt;
 import com.janilla.persistence.Persistence;
+import com.janilla.reflect.Flat;
 import com.janilla.reflect.Reflection;
 import com.janilla.web.BadRequestException;
 import com.janilla.web.Bind;
@@ -51,6 +52,20 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	protected UserApi(Class<E> type, Predicate<HttpExchange> drafts, Persistence persistence, String jwtKey) {
 		super(type, drafts, persistence);
 		this.jwtKey = jwtKey;
+	}
+
+	public record CreateData<E>(@Flat E user, String password) {
+
+		public CreateData<E> withUser(E user) {
+			return new CreateData<>(user, password);
+		}
+	}
+
+	@Handle(method = "POST")
+	public E create(CreateData<E> data) {
+		@SuppressWarnings("unchecked")
+		var e = (E) data.user().withPassword(data.password());
+		return super.create(e);
 	}
 
 	@Handle(method = "PUT", path = "(\\d+)")

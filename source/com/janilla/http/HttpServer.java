@@ -55,6 +55,10 @@ public class HttpServer extends SecureServer {
 
 	protected final DiFactory diFactory;
 
+	public HttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler) {
+		this(sslContext, endpoint, handler, null);
+	}
+
 	public HttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler, DiFactory diFactory) {
 		super(sslContext, endpoint);
 		this.handler = handler;
@@ -63,11 +67,11 @@ public class HttpServer extends SecureServer {
 
 	@Override
 	protected SSLEngine createSslEngine() {
-		var se = super.createSslEngine();
-		var spp = se.getSSLParameters();
-		spp.setApplicationProtocols(new String[] { "h2", "http/1.1" });
-		se.setSSLParameters(spp);
-		return se;
+		var e = super.createSslEngine();
+		var pp = e.getSSLParameters();
+		pp.setApplicationProtocols(new String[] { "h2", "http/1.1" });
+		e.setSSLParameters(pp);
+		return e;
 	}
 
 	@Override
@@ -78,16 +82,16 @@ public class HttpServer extends SecureServer {
 		} while (transfer.in().position() < 16);
 //		IO.println("bb=" + new String(st.in().array(), 0, 16));
 
-		var ap = transfer.engine().getApplicationProtocol();
-//		IO.println("ap=" + ap);
-		if (ap.equals("h2"))
+		var p = transfer.engine().getApplicationProtocol();
+//		IO.println("p=" + p);
+		if (p.equals("h2"))
 			handleConnection2(transfer);
 		else
 			handleConnection1(transfer);
 	}
 
 	protected void handleConnection1(SecureTransfer transfer) throws IOException {
-		IO.println("HttpServer.handleConnection1");
+//		IO.println("HttpServer.handleConnection1");
 		for (;;) {
 //			IO.println("st.in().position()=" + st.in().position());
 			var sb = Stream.<String>builder();
@@ -110,7 +114,7 @@ public class HttpServer extends SecureServer {
 				transfer.in().get(bb);
 				transfer.in().compact();
 				var s = new String(bb, 0, i - 1);
-				IO.println("s=" + s);
+//				IO.println("s=" + s);
 				if (!s.isEmpty())
 					sb.add(s);
 				else
@@ -130,7 +134,7 @@ public class HttpServer extends SecureServer {
 					}
 				}
 				var cl = rq.getHeaderValue("Content-Length");
-				IO.println("HttpServer.handleConnection1, cl=" + cl);
+//				IO.println("HttpServer.handleConnection1, cl=" + cl);
 				if (cl != null) {
 					var bb = new byte[Integer.parseInt(cl)];
 					for (var i = 0; i < bb.length;) {
@@ -141,7 +145,7 @@ public class HttpServer extends SecureServer {
 						transfer.in().get(bb, i, n);
 						transfer.in().compact();
 						i += n;
-						IO.println("HttpServer.handleConnection1, i=" + i);
+//						IO.println("HttpServer.handleConnection1, i=" + i);
 					}
 					rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
 				}
@@ -182,7 +186,7 @@ public class HttpServer extends SecureServer {
 	}
 
 	protected void handleConnection2(SecureTransfer transfer) throws IOException {
-		IO.println("HttpServer.handleConnection2");
+//		IO.println("HttpServer.handleConnection2");
 		while (transfer.in().position() < 24) {
 			if (transfer.read() == -1)
 				return;
@@ -191,12 +195,15 @@ public class HttpServer extends SecureServer {
 		var cp = new byte[24];
 		transfer.in().get(cp);
 //		IO.println("cp=" + new String(cp));
-		if (!Arrays.equals(cp, """
-				PRI * HTTP/2.0\r
-				\r
-				SM\r
-				\r
-				""".getBytes()))
+		class A {
+			private static final byte[] CONNECTION_PREFACE_PREFIX = """
+					PRI * HTTP/2.0\r
+					\r
+					SM\r
+					\r
+					""".getBytes();
+		}
+		if (!Arrays.equals(cp, A.CONNECTION_PREFACE_PREFIX))
 			throw new RuntimeException();
 
 		var he = new HttpEncoder();

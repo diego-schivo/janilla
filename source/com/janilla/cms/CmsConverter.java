@@ -24,6 +24,7 @@
  */
 package com.janilla.cms;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 import com.janilla.java.Converter;
@@ -36,7 +37,7 @@ public class CmsConverter extends Converter {
 	}
 
 	@Override
-	protected Object convertMap(Map<?, ?> map, Class<?> target, TypeResolver typeResolver) {
+	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
 		if (target == DocumentReference.class) {
 			var d = (Document<?>) super.convertMap(map, null, typeResolver);
 			return new DocumentReference<>(d.getClass(), d.id());

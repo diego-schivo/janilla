@@ -195,24 +195,26 @@ public class Converter {
 				var v = convert(m.get("value"), aa[1]);
 				return (T) new AbstractMap.SimpleImmutableEntry<>(k, v);
 			}
-			return (T) convertMap(m, c, typeResolver);
+			return (T) convertMap(m, target, typeResolver);
 		}
 
 		return (T) object;
 	}
 
-	protected Object convertMap(Map<?, ?> map, Class<?> target, TypeResolver typeResolver) {
+	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
 //		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
+		var c = Java.toClass(target);
 		var ot = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
 		if (ot != null) {
-			if (target != null && !target.isAssignableFrom(ot.type()))
+			if (c != null && !c.isAssignableFrom(Java.toClass(ot.type())))
 				throw new RuntimeException();
 			map = (Map<?, ?>) ot.data();
 			target = ot.type();
+			c = Java.toClass(target);
 		}
 
 		Object o;
-		if (target.isEnum()) {
+		if (c.isEnum()) {
 			var n = (String) map.get("name");
 			if (n != null && !n.isEmpty()) {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -221,16 +223,15 @@ public class Converter {
 			} else
 				o = null;
 		} else {
-			var c0 = target.getConstructors().length != 0 ? target.getConstructors()[0]
-					: target.getDeclaredConstructors()[0];
+			var t0 = target;
+			var c0 = c.getConstructors().length != 0 ? c.getConstructors()[0] : c.getDeclaredConstructors()[0];
 //			IO.println("Converter.convertMap, c0=" + c0);
-			var tt = target.isRecord() ? Arrays.stream(target.getRecordComponents()).collect(
-					Collectors.toMap(x -> x.getName(), x -> x.getGenericType(), (_, x) -> x, LinkedHashMap::new))
-					: null;
+			var tt = c.isRecord() ? Arrays.stream(c.getRecordComponents()).collect(Collectors.toMap(x -> x.getName(),
+					x -> Reflection.actualType(x, t0), (_, x) -> x, LinkedHashMap::new)) : null;
 			try {
 				if (tt != null) {
 					var m = map;
-					var t = target;
+					var t = c;
 					var oo = tt.entrySet().stream().map(x -> {
 						if (m.containsKey(x.getKey()))
 							return convert(m.get(x.getKey()), x.getValue());
@@ -240,8 +241,7 @@ public class Converter {
 						} catch (NoSuchFieldException e) {
 							f = null;
 						}
-						return (f != null && f.isAnnotationPresent(Flat.class))
-								? convertMap(m, (Class<?>) x.getValue(), null)
+						return (f != null && f.isAnnotationPresent(Flat.class)) ? convertMap(m, x.getValue(), null)
 								: null;
 					}).toArray();
 					try {

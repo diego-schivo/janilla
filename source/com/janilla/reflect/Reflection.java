@@ -33,6 +33,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.AbstractMap;
@@ -55,17 +56,17 @@ import com.janilla.java.Java;
 
 public class Reflection {
 
-	public static Stream<String> propertyNames(Class<?> class1) {
+	public static Stream<String> propertyNames(Type class1) {
 //		IO.println("Reflection.properties, class1=" + class1);
 		return propertyMap(class1).keySet().stream();
 	}
 
-	public static Stream<Property> properties(Class<?> class1) {
+	public static Stream<Property> properties(Type class1) {
 //		IO.println("Reflection.properties, class1=" + class1);
 		return propertyMap(class1).values().stream();
 	}
 
-	public static Property property(Class<?> class1, String name) {
+	public static Property property(Type class1, String name) {
 //		IO.println("Reflection.property, class1=" + class1 + ", name=" + name);
 		return propertyMap(class1).get(name);
 	}
@@ -148,12 +149,13 @@ public class Reflection {
 		return destination;
 	}
 
-	protected static Map<String, Property> propertyMap(Class<?> type) {
+	protected static Map<String, Property> propertyMap(Type type) {
 //		IO.println("Reflection.compute, class1=" + class1);
 		class A {
-			private static final Map<Class<?>, Map<String, Property>> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Type, Map<String, Property>> RESULTS = new ConcurrentHashMap<>();
 
-			private static Map<String, Property> compute(Class<?> c) {
+			private static Map<String, Property> compute(Type t) {
+				var c = Java.toClass(t);
 				if (!Modifier.isPublic(c.getModifiers())) {
 					if (Map.Entry.class.isAssignableFrom(c))
 						c = Map.Entry.class;
@@ -167,7 +169,7 @@ public class Reflection {
 				var rcc = c.getRecordComponents();
 				var mm = new HashMap<String, Member[]>();
 				if (rcc != null)
-					for (var x : rcc) 
+					for (var x : rcc)
 						mm.computeIfAbsent(x.getName(), k -> {
 							Method g;
 							try {
@@ -238,10 +240,11 @@ public class Reflection {
 								f = null;
 							}
 							if (f != null && f.isAnnotationPresent(Flat.class)) {
-								var m = A.RESULTS.get(f.getType());
+								var ft = actualType(f, t);
+								var m = A.RESULTS.get(ft);
 								if (m == null)
 //									m = propertyMap(f.getType());
-									m = compute(f.getType());
+									m = compute(ft);
 								return m.values().stream().filter(y -> !mm.containsKey(y.name()))
 										.map(y -> Property.of(x, y));
 							}
@@ -288,16 +291,67 @@ public class Reflection {
 		});
 	}
 
+	public static Type actualType(RecordComponent recordComponent, Type target) {
+		class A {
+			private static final Map<RecordComponent, Map<Type, Type>> RESULTS = new ConcurrentHashMap<>();
+		}
+		return A.RESULTS.computeIfAbsent(recordComponent, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target, _ -> {
+			var m = actualTypeArguments(target, recordComponent.getDeclaringRecord());
+			var x = recordComponent.getGenericType();
+			switch (x) {
+			case TypeVariable<?> v:
+				return m.get(v.getName());
+			case ParameterizedType t:
+				return new SimpleParameterizedType(t.getRawType(),
+						Arrays.stream(t.getActualTypeArguments())
+								.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toArray(Type[]::new),
+						null);
+			default:
+				return x;
+			}
+		});
+	}
+
+	public static Type actualType(Field field, Type target) {
+		class A {
+			private static final Map<Field, Map<Type, Type>> RESULTS = new ConcurrentHashMap<>();
+		}
+		return A.RESULTS.computeIfAbsent(field, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target, _ -> {
+			var m = actualTypeArguments(target, field.getDeclaringClass());
+			var x = field.getGenericType();
+			switch (x) {
+			case TypeVariable<?> v:
+				return m.get(v.getName());
+			case ParameterizedType t:
+				return new SimpleParameterizedType(t.getRawType(),
+						Arrays.stream(t.getActualTypeArguments())
+								.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toArray(Type[]::new),
+						null);
+			default:
+				return x;
+			}
+		});
+	}
+
 	private static Object NULL = new Object();
 
-	public static Map<String, Type> actualTypeArguments(Class<?> target, Class<?> superClass) {
+	public static Map<String, Type> actualTypeArguments(Type target, Class<?> superClass) {
 //		IO.println("Reflection.actualTypeArguments, target=" + target + ", superClass=" + superClass);
 		class A {
-			private static final Map<Class<?>, Map<Class<?>, Object>> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Type, Map<Class<?>, Object>> RESULTS = new ConcurrentHashMap<>();
 		}
 		var o = A.RESULTS.computeIfAbsent(target, _ -> new ConcurrentHashMap<>()).computeIfAbsent(superClass, _ -> {
+			var c0 = Java.toClass(target);
 			Map<String, Type> m = null;
-			for (var c = target; c != superClass; c = c.getSuperclass()) {
+			if (target instanceof ParameterizedType x) {
+				var pp = c0.getTypeParameters();
+				var aa = x.getActualTypeArguments();
+				var m2 = new LinkedHashMap<String, Type>();
+				for (var i = 0; i < pp.length; i++)
+					m2.put(pp[i].getName(), aa[i] instanceof TypeVariable v ? m.get(v.getName()) : aa[i]);
+				m = m2;
+			}
+			for (var c = c0; c != superClass; c = c.getSuperclass()) {
 				var pp = c.getSuperclass().getTypeParameters();
 				var aa = c.getGenericSuperclass() instanceof ParameterizedType x ? x.getActualTypeArguments() : null;
 				var m2 = new LinkedHashMap<String, Type>();
