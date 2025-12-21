@@ -37,10 +37,10 @@ public class DollarTypeResolver implements TypeResolver {
 	}
 
 	@Override
-	public TypedData apply(TypedData ot) {
-		var o = ot.data() instanceof Map<?, ?> x ? x.get("$type") : null;
+	public TypedData apply(TypedData typedData) {
+		var o = typedData.data() instanceof Map<?, ?> x ? x.get("$type") : null;
 		var t = o instanceof String x ? parse(x) : null;
-		return t != null ? ot.withType(t) : null;
+		return t != null ? typedData.withType(t) : null;
 	}
 
 	@Override

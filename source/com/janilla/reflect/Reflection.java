@@ -275,62 +275,43 @@ public class Reflection {
 		class A {
 			private static final Map<Method, Map<Class<?>, Type[]>> RESULTS = new ConcurrentHashMap<>();
 		}
-		return A.RESULTS.computeIfAbsent(method, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target, _ -> {
-			var m = actualTypeArguments(target, method.getDeclaringClass());
-			return Arrays.stream(method.getGenericParameterTypes()).map(x -> {
-				switch (x) {
-				case TypeVariable<?> v:
-					return m.get(v.getName());
-				case ParameterizedType t:
-					return new SimpleParameterizedType(t.getRawType(), Arrays.stream(t.getActualTypeArguments())
-							.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toArray(Type[]::new), null);
-				default:
-					return x;
-				}
-			}).toArray(Type[]::new);
-		});
+		return A.RESULTS.computeIfAbsent(method, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target,
+				_ -> Arrays.stream(method.getGenericParameterTypes())
+						.map(x -> actualType(x, target, method.getDeclaringClass())).toArray(Type[]::new));
 	}
 
 	public static Type actualType(RecordComponent recordComponent, Type target) {
+//		IO.println("Reflection.actualType, recordComponent=" + recordComponent + ", target=" + target);
 		class A {
 			private static final Map<RecordComponent, Map<Type, Type>> RESULTS = new ConcurrentHashMap<>();
 		}
-		return A.RESULTS.computeIfAbsent(recordComponent, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target, _ -> {
-			var m = actualTypeArguments(target, recordComponent.getDeclaringRecord());
-			var x = recordComponent.getGenericType();
-			switch (x) {
-			case TypeVariable<?> v:
-				return m.get(v.getName());
-			case ParameterizedType t:
-				return new SimpleParameterizedType(t.getRawType(),
-						Arrays.stream(t.getActualTypeArguments())
-								.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toArray(Type[]::new),
-						null);
-			default:
-				return x;
-			}
-		});
+		return A.RESULTS.computeIfAbsent(recordComponent, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target,
+				_ -> actualType(recordComponent.getGenericType(), target, recordComponent.getDeclaringRecord()));
 	}
 
 	public static Type actualType(Field field, Type target) {
+//		IO.println("Reflection.actualType, field=" + field + ", target=" + target);
 		class A {
 			private static final Map<Field, Map<Type, Type>> RESULTS = new ConcurrentHashMap<>();
 		}
-		return A.RESULTS.computeIfAbsent(field, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target, _ -> {
-			var m = actualTypeArguments(target, field.getDeclaringClass());
-			var x = field.getGenericType();
-			switch (x) {
-			case TypeVariable<?> v:
-				return m.get(v.getName());
-			case ParameterizedType t:
-				return new SimpleParameterizedType(t.getRawType(),
-						Arrays.stream(t.getActualTypeArguments())
-								.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toArray(Type[]::new),
-						null);
-			default:
-				return x;
-			}
-		});
+		return A.RESULTS.computeIfAbsent(field, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target,
+				_ -> actualType(field.getGenericType(), target, field.getDeclaringClass()));
+	}
+
+	protected static Type actualType(Type type, Type target, Class<?> superClass) {
+//		IO.println("Reflection.actualType, type=" + type + ", target=" + target + ", superClass=" + superClass);
+		if (target == superClass)
+			return type;
+		var m = actualTypeArguments(target, superClass);
+		switch (type) {
+		case TypeVariable<?> v:
+			return m.get(v.getName());
+		case ParameterizedType t:
+			return new SimpleParameterizedType(t.getRawType(), Arrays.stream(t.getActualTypeArguments())
+					.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toList());
+		default:
+			return type;
+		}
 	}
 
 	private static Object NULL = new Object();

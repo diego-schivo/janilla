@@ -328,7 +328,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values,
 //			EntryList<String, String> entries, 
 			Supplier<String> body, Supplier<Converter> converter) {
-		IO.println("InvocationHandlerFactory.resolveArgument, type=" + type);
+//		IO.println("InvocationHandlerFactory.resolveArgument, type=" + type);
 //		var c = type instanceof Class<?> x ? x : null;
 		var c = Java.toClass(type);
 

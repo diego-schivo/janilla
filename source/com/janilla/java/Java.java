@@ -151,7 +151,7 @@ public final class Java {
 		return switch (type) {
 		case Class<?> x -> x;
 		case ParameterizedType x -> (Class<?>) x.getRawType();
-		case TypeVariable<?> _ -> null;
+		case TypeVariable<?> _ -> Object.class;
 		case WildcardType _ -> Object.class;
 		default -> throw new IllegalArgumentException();
 		};

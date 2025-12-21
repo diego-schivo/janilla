@@ -26,14 +26,9 @@ package com.janilla.reflect;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.List;
 
-public record SimpleParameterizedType(Type rawType, Type[] actualTypeArguments, Type ownerType)
-		implements ParameterizedType {
-
-	@Override
-	public Type[] getActualTypeArguments() {
-		return actualTypeArguments;
-	}
+public record SimpleParameterizedType(Type rawType, List<Type> actualTypeArguments) implements ParameterizedType {
 
 	@Override
 	public Type getRawType() {
@@ -41,7 +36,12 @@ public record SimpleParameterizedType(Type rawType, Type[] actualTypeArguments, 
 	}
 
 	@Override
+	public Type[] getActualTypeArguments() {
+		return actualTypeArguments.toArray(Type[]::new);
+	}
+
+	@Override
 	public Type getOwnerType() {
-		return ownerType;
+		return null;
 	}
 }

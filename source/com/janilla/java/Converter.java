@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.janilla.json.Json;
 import com.janilla.reflect.Flat;
 import com.janilla.reflect.Reflection;
 
@@ -65,6 +66,7 @@ public class Converter {
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object object, Type target) {
 //		IO.println("Converter.convert, object=" + object + ", target=" + target);
+//		IO.println(Json.format(object));
 		var c = Java.toClass(target);
 
 		if (object == null || (object instanceof String x && x.isEmpty())) {
@@ -203,13 +205,14 @@ public class Converter {
 
 	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
 //		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
+//		IO.println(Json.format(map));
 		var c = Java.toClass(target);
-		var ot = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
-		if (ot != null) {
-			if (c != null && !c.isAssignableFrom(Java.toClass(ot.type())))
+		var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
+		if (td != null) {
+			if (c != null && !c.isAssignableFrom(Java.toClass(td.type())))
 				throw new RuntimeException();
-			map = (Map<?, ?>) ot.data();
-			target = ot.type();
+			map = (Map<?, ?>) td.data();
+			target = td.type();
 			c = Java.toClass(target);
 		}
 
