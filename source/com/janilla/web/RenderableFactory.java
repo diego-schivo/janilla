@@ -35,12 +35,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import com.janilla.ioc.DiFactory;
+
 public class RenderableFactory {
 
 	protected static final Pattern TEMPLATE_ELEMENT = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>",
 			Pattern.DOTALL);
 
 	protected final Map<String, Map<String, String>> templates = new ConcurrentHashMap<>();
+
+	protected final DiFactory diFactory;
+
+	public RenderableFactory() {
+		this(null);
+	}
+
+	public RenderableFactory(DiFactory diFactory) {
+		this.diFactory = diFactory;
+	}
 
 	public String template(String key1, String key2) {
 		return Optional.ofNullable(templates.get(key1)).map(x -> x.get(key2)).orElse(null);
@@ -76,8 +88,9 @@ public class RenderableFactory {
 	}
 
 	protected <T> Renderer<T> createRenderer(Class<Renderer<T>> c) {
+		var x = diFactory.create(c);
 		try {
-			return c.getConstructor().newInstance();
+			return x != null ? x : c.getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException("c=" + c, e);
 		}

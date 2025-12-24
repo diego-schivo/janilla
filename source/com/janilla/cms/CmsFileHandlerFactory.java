@@ -47,83 +47,61 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin {
-  :where(admin-create-first-user,
-  admin-forgot-password,
-  admin-login,
-  admin-reset-password) {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    justify-content: center;
-    max-width: 30rem;
-    width: 100%;
-  
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-  
-      @media (min-width: 1441px) {
-        gap: 1.25rem;
-      }
-    }
-  
-    img {
-      margin: 0 auto 2.5rem;
-      width: 12rem;
-    }
-  
-    h1 {
-      font-size: 1.625rem;
-    }
+package com.janilla.cms;
 
-    ul {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-  
-    label {
-      &:has([required]) span::after {
-        color: var(--color-10);
-        content: " *";
-      }
-    }
-    
-    input,
-    .button {
-      border-radius: 3px;
-      box-sizing: border-box;
-      height: 40px;  
-      padding: 0.5rem 1rem;
-    }
-    
-    input {
-      background: var(--background-5);
-      border: 1px solid var(--border-1);
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-      &:focus {
-        border: 1px solid rgb(141, 141, 141);
-      }
-    }
-  
-    a {
-      text-decoration: underline;
-    }
-  
-    .button {
-      align-self: auto;
-      background: var(--background-12);
-      color: var(--color-8);
-  
-      &:hover {
-        background: var(--background-10);
-      }
-  
-      @media (min-width: 1441px) {
-        margin-bottom: 1.5rem;
-      }
-    }
-  }
+import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpRequest;
+import com.janilla.http.HttpResponse;
+import com.janilla.web.FileHandlerFactory;
+
+public abstract class CmsFileHandlerFactory implements FileHandlerFactory {
+
+	protected final Path directory;
+
+	public CmsFileHandlerFactory(Path directory) {
+		this.directory = directory;
+	}
+
+	@Override
+	public HttpHandler createHandler(Object object) {
+		var p = object instanceof HttpRequest x ? x.getPath() : null;
+		var n = p != null && p.startsWith("/api/images/") ? p.substring("/api/images/".length()) : null;
+		if (n == null)
+			return null;
+		var f = directory.resolve(n);
+		return Files.exists(f) ? x -> handle(f, x.response()) : null;
+	}
+
+	public static boolean handle(Path file, HttpResponse response) {
+		response.setStatus(200);
+		response.setHeaderValue("cache-control", "max-age=3600");
+		var n = file.getFileName().toString();
+		switch (n.substring(n.lastIndexOf('.') + 1)) {
+		case "ico":
+			response.setHeaderValue("content-type", "image/x-icon");
+			break;
+		case "svg":
+			response.setHeaderValue("content-type", "image/svg+xml");
+			break;
+		}
+		try {
+			response.setHeaderValue("content-length", String.valueOf(Files.size(file)));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		try (var in = Files.newInputStream(file);
+				var out = Channels.newOutputStream((WritableByteChannel) response.getBody())) {
+			in.transferTo(out);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		return true;
+	}
 }

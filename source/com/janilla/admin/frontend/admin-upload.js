@@ -99,7 +99,7 @@ export default class AdminUpload extends WebComponent {
             } : null,
             drawer: s.drawer === "list" ? {
                 $template: "list-drawer",
-                collectionSlug: "media"
+                slug: "media"
             } : s.drawer === "edit" ? {
                 $template: "edit-drawer",
                 title: s.field.data?.file?.name,

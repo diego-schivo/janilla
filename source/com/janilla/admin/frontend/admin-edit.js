@@ -80,11 +80,12 @@ export default class AdminEdit extends WebComponent {
     }
 
     async updateDisplay() {
-        const a = this.closest("admin-element");
         const s = this.state;
+        const a = this.closest("app-element");
         s.document ??= await (await fetch([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"))).json();
-        this.state.versions = Object.hasOwn(s.document, "versionCount");
-        this.state.drafts = Object.hasOwn(s.document, "documentStatus");
+        s.versions = Object.hasOwn(s.document, "versionCount");
+        s.drafts = Object.hasOwn(s.document, "documentStatus");
+        const a2 = this.closest("admin-element");
         this.appendChild(this.interpolateDom({
             $template: "",
             entries: (() => {
@@ -94,9 +95,9 @@ export default class AdminEdit extends WebComponent {
                 if (s.drafts)
                     kkvv.push(["Status", s.document.documentStatus.name]);
                 if (s.document.updatedAt)
-                    kkvv.push(["Last Modified", a.dateTimeFormat.format(new Date(s.document.updatedAt))]);
+                    kkvv.push(["Last Modified", a2.dateTimeFormat.format(new Date(s.document.updatedAt))]);
                 if (s.document.createdAt)
-                    kkvv.push(["Created", a.dateTimeFormat.format(new Date(s.document.createdAt))]);
+                    kkvv.push(["Created", a2.dateTimeFormat.format(new Date(s.document.createdAt))]);
                 return kkvv;
             })().map(x => ({
                 $template: "entry",
@@ -104,7 +105,7 @@ export default class AdminEdit extends WebComponent {
                 value: x[1]
             })),
             previewLink: (() => {
-                const h = a.preview(s.document);
+                const h = a2.preview(s.document);
                 return h ? {
                     $template: "preview-link",
                     href: h
@@ -112,13 +113,13 @@ export default class AdminEdit extends WebComponent {
             })(),
             button: {
                 $template: "button",
-                ...(this.state.drafts ? {
+                ...(s.drafts ? {
                     name: "publish",
-                    disabled: s.document.documentStatus === "PUBLISHED" && !this.state.changed,
+                    disabled: s.document.documentStatus === "PUBLISHED" && !s.changed,
                     text: "Publish Changes"
                 } : {
                     name: "save",
-                    disabled: !this.state.changed,
+                    disabled: !s.changed,
                     text: "Save"
                 })
             },
@@ -253,7 +254,7 @@ export default class AdminEdit extends WebComponent {
 
     field(path, document) {
         const a = this.closest("admin-element");
-        const t = a.state.schema["Globals"][this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")]?.type
+        const t = a.state.schema["Globals"]?.[this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")]?.type
             ?? a.state.schema["Collections"][this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")].elementTypes[0];
         return a.field(path, {
             type: t,

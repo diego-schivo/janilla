@@ -56,7 +56,7 @@ export default class Admin extends WebComponent {
     }
 
     static get observedAttributes() {
-        return ["data-api-url", "data-path", "data-user-id", "data-user-admin"];
+        return ["data-user", "data-path"];
     }
 
     dateTimeFormat = new Intl.DateTimeFormat("en-US", {
@@ -81,44 +81,45 @@ export default class Admin extends WebComponent {
     }
 
     async updateDisplay() {
-        const p = this.dataset.path === "/account" && this.dataset.userAdmin !== undefined
-            ? `/collections/users/${this.dataset.userId}`
+        const a = this.closest("app-element");
+		const ua = a.user?.roles?.some(x => x.name === "ADMIN");
+        const p = this.dataset.path === "/account" && ua
+            ? `/collections/users/${a.user.id}`
             : this.dataset.path;
         const s = this.state;
         s.pathSegments = p.length > 1 ? p.substring(1).split("/") : [];
 
-        const a = this.closest("app-element");
-        if (this.dataset.userId) {
+        if (a.user) {
             if (["/create-first-user", "/forgot", "/login"].includes(p) || p.startsWith("/reset/")) {
                 a.navigate(new URL("/admin", location.href));
                 return;
             }
 
             if (p === "/logout") {
-                await fetch(`${this.dataset.apiUrl}/users/logout`, { method: "POST" });
+                await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
                 a.user = j;
                 a.navigate(new URL("/admin", location.href));
                 return;
             }
 
-            if (p !== "/unauthorized" && this.dataset.userAdmin === undefined) {
+            if (p !== "/unauthorized" && !ua) {
                 a.navigate(new URL("/admin/unauthorized", location.href));
                 return;
             }
 
-            if (this.dataset.userAdmin !== undefined)
-                s.schema ??= await (await fetch(`${this.dataset.apiUrl}/schema`)).json();
+            if (ua)
+                s.schema ??= await (await fetch(`${a.dataset.apiUrl}/schema`)).json();
 
             switch (s.pathSegments[0]) {
                 case "collections":
                     s.collectionSlug = s.pathSegments[1];
                     s.documentType = s.schema["Collections"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].elementTypes[0];
-                    s.documentUrl = s.pathSegments.length >= 3 ? `${this.dataset.apiUrl}/${s.collectionSlug}/${s.pathSegments[2]}` : null;
+                    s.documentUrl = s.pathSegments.length >= 3 ? `${a.dataset.apiUrl}/${s.collectionSlug}/${s.pathSegments[2]}` : null;
                     break;
                 case "globals":
                     s.globalSlug = s.pathSegments[1];
                     s.documentType = s.schema["Globals"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].type;
-                    s.documentUrl = s.pathSegments.length >= 2 ? `${this.dataset.apiUrl}/${s.globalSlug}` : null;
+                    s.documentUrl = s.pathSegments.length >= 2 ? `${a.dataset.apiUrl}/${s.globalSlug}` : null;
                     break;
             }
 
@@ -154,7 +155,7 @@ export default class Admin extends WebComponent {
         })) : null;
         this.appendChild(this.interpolateDom({
             $template: "",
-            p: this.dataset.userAdmin !== undefined ? {
+            p: ua ? {
                 $template: "p",
                 checked: true
             } : null,
@@ -162,7 +163,7 @@ export default class Admin extends WebComponent {
                 $template: "aside",
                 groups: gg
             } : null,
-            header: this.dataset.userAdmin !== undefined ? {
+            header: ua ? {
                 $template: "header",
                 items: (() => {
                     const xx = [];
@@ -237,7 +238,7 @@ export default class Admin extends WebComponent {
                     case "collections":
                         return s.pathSegments.length === 2 ? {
                             $template: "list",
-                            collectionSlug: s.pathSegments[1]
+                            slug: s.pathSegments[1]
                         } : s.document ? {
                             $template: "document",
                             subview: s.documentSubview,
@@ -272,7 +273,7 @@ export default class Admin extends WebComponent {
                     this.querySelector("dialog").close();
                     break;
                 case "logout":
-                    await fetch(`${this.dataset.apiUrl}/users/logout`, { method: "POST" });
+                    await fetch(`${this.closest("app-element").dataset.apiUrl}/users/logout`, { method: "POST" });
                     this.dispatchEvent(new CustomEvent("user-change", { bubbles: true }));
                     history.pushState({}, "", "/admin");
                     dispatchEvent(new CustomEvent("popstate"));

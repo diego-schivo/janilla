@@ -158,7 +158,7 @@ export default class AdminRelationshipField extends WebComponent {
 		}
 		el = event.target.closest("select");
 		if (el) {
-			const a = this.closest("admin-element");
+			const a = this.closest("app-element");
 			s.options ??= Object.fromEntries(await Promise.all((s.field.referenceTypes ?? [s.field.referenceType]).map(t => {
 				const n = Object.entries(a.state.schema["Collections"]).find(([_, v]) => v.elementTypes[0] === t)[0];
 				return fetch(`${a.dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`).then(x => x.json()).then(x => [t, x]);

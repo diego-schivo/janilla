@@ -141,15 +141,15 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Handle(method = "POST", path = "first-register")
-	public E firstRegister(E user, String password, String confirmPassword, UserHttpExchange exchange) {
-		if (user == null || user.email() == null || user.email().isBlank() || password == null || password.isBlank()
-				|| !password.equals(confirmPassword))
+	public E firstRegister(CreateData<E> data, UserHttpExchange exchange) {
+		if (data == null || data.user() == null || data.user().email() == null || data.user().email().isBlank()
+				|| data.password() == null || data.password().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
 		var u = persistence.database().perform(() -> {
 			if (crud().count() != 0)
 				throw new ForbiddenException("You are not allowed to perform this action.");
 			@SuppressWarnings("unchecked")
-			var e = (E) user.withPassword(password); // .withRoles(Set.of(adminRole()));
+			var e = (E) data.user().withPassword(data.password());
 			return crud().create(e);
 		}, true);
 		var h = Map.of("alg", "HS256", "typ", "JWT");

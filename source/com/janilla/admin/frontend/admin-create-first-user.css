@@ -48,4 +48,24 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 .admin admin-create-first-user {
+  h1 {
+    font-size: 1.5625rem;
+  }
+
+  ul {
+    gap: 1rem;
+  }
+
+  label {
+    font-size: 0.8125rem;
+  }
+
+  input {
+    font-size: 0.75rem;
+  }
+
+  .button {
+    height: auto;
+    margin-top: 2rem;
+  }
 }
