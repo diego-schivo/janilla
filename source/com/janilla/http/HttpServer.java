@@ -373,17 +373,7 @@ public class HttpServer extends SecureServer {
 		var x = diFactory != null
 				? diFactory.create(HttpExchange.class, Map.of("request", request, "response", response))
 				: null;
-		if (x != null)
-			return x;
-
-		record E(HttpRequest request, HttpResponse response, Exception exception) implements HttpExchange {
-
-			@Override
-			public HttpExchange withException(Exception exception) {
-				return new E(request, response, exception);
-			}
-		}
-		return new E(request, response, null);
+		return x != null ? x : new SimpleHttpExchange(request, response);
 	}
 
 	protected boolean handleExchange(HttpExchange exchange) {

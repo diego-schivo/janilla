@@ -1,0 +1,42 @@
+<!--${table}-->
+<!--${drawer}-->
+
+<template id="table">
+  <table>
+    <thead>
+      <!--${headRow}-->
+    </thead>
+    <tbody>
+      <!--${bodyRows}-->
+    </tbody>
+  </table>
+</template>
+
+<template id="table-row">
+  <tr>
+    <!--${cells}-->
+  </tr>
+</template>
+
+<template id="table-header-cell">
+  <th>
+    <!--${content}-->
+  </th>
+</template>
+
+<template id="table-data-cell">
+  <td>
+    <!--${content}-->
+  </td>
+</template>
+
+<template id="id">
+  <input type="hidden" name="${path}" value="${id}" />
+  <admin-drawer-link data-id="${id}"></admin-drawer-link>
+</template>
+
+<template id="drawer">
+  <admin-drawer>
+    <admin-edit slot="content" data-slug="${slug}" data-id="${id}"></admin-edit>
+  </admin-drawer>
+</template>

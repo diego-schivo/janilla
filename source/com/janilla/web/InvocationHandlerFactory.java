@@ -221,6 +221,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 				}
 			}
 		});
+//		IO.println("InvocationHandlerFactory.handle, o=" + o);
 
 		var rs = exchange.response();
 		if (rs.getStatus() != 0)

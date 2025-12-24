@@ -1,0 +1,27 @@
+<template id="create">
+  <input id="${name}" type="file" name="${name}" class="visually-hidden" />
+  <!--${dropzone}-->
+  <!--${input}-->
+</template>
+
+<template id="dropzone">
+  <div class="dropzone">
+    <label for="${name}" class="button">Select a file</label>
+    or
+    <button type="button" name="paste" class="button">Paste URL</button>
+  </div>
+</template>
+
+<template id="input">
+  <input value="${value}" />
+</template>
+
+<template id="update">
+  <div class="thumbnail">
+    <img src="/api/media/file/${data.name}" loading="lazy" />
+  </div>
+  <p>${data.name}</p>
+  <button type="button" name="remove">
+    <lucide-icon data-name="x"></lucide-icon>
+  </button>
+</template>

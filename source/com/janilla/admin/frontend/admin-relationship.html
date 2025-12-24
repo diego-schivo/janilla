@@ -1,0 +1,50 @@
+<div class="select">
+  <ul class="values">
+    <!--${values}-->
+  </ul>
+  <div class="indicators">
+    <button type="button" name="clear">
+      <lucide-icon data-name="x"></lucide-icon>
+    </button>
+    <div class="dropdown">
+      <select autocomplete="off">
+        <option disabled selected></option>
+        <!--${options}-->
+      </select>
+      <lucide-icon data-name="chevron-down"></lucide-icon>
+    </div>
+  </div>
+</div>
+<div class="add-new">
+  <button type="button" name="add-new">
+    <lucide-icon data-name="plus"></lucide-icon>
+  </button>
+</div>
+<!--${hiddens}-->
+<!--${drawer}-->
+
+<template id="value">
+  <li>
+    <span>${label}</span>
+    <button type="button" name="edit" value="${id}">
+      <lucide-icon data-name="square-pen"></lucide-icon>
+    </button>
+    <button type="button" name="remove" value="${id}">
+      <lucide-icon data-name="x"></lucide-icon>
+    </button>
+  </li>
+</template>
+
+<template id="option">
+  <option value="${value}">${text}</option>
+</template>
+
+<template id="hidden">
+  <input type="hidden" name="${name}" value="${value}" />
+</template>
+
+<template id="drawer">
+  <admin-drawer>
+    <admin-edit slot="content" data-slug="${slug}" data-id="${id}"></admin-edit>
+  </admin-drawer>
+</template>

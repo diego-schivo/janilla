@@ -1,0 +1,31 @@
+<h4>Welcome to your dashboard!</h4>
+<p>
+  <button type="button" name="seed" class="button">Seed your database</button>
+</p>
+<ul>
+  <!--${groups}-->
+</ul>
+
+<template id="group">
+  <li>
+    <h2>${title}</h2>
+    <ul>
+      <!--${cards}-->
+    </ul>
+  </li>
+</template>
+
+<template id="card">
+  <li>
+    <a href="${href}">
+      ${text}
+      <!--${button}-->
+    </a>
+  </li>
+</template>
+
+<template id="button">
+  <button type="button" name="create" class="button" data-type="${type}">
+    <lucide-icon data-name="plus"></lucide-icon>
+  </button>
+</template>

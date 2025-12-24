@@ -23,7 +23,7 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 module com.janilla {
-
+	exports com.janilla.admin.frontend;
 	exports com.janilla.cms;
 	exports com.janilla.frontend;
 	exports com.janilla.http;

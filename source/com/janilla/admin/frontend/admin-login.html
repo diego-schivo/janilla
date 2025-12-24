@@ -1,0 +1,33 @@
+<form>
+  <div>
+    <img src="/images/janilla-logo-light.svg" loading="lazy" />
+    <!--
+    <p>
+      <strong>Welcome to your dashboard!</strong>
+      This is where site admins will log in to manage your website.
+    </p>
+    -->
+    <p>
+      <strong>Welcome to your dashboard!</strong>
+      This is where site admins will log in to manage your store.
+      Customers will need to <a href="http://localhost:3000/login">log in to the site instead</a>
+      to access their user account, order history, and more.
+    </p>
+  </div>
+  <ul>
+    <li class="field">
+      <label>
+        <span>Email</span>
+        <input type="email" name="email" required />
+      </label>
+    </li>
+    <li class="field">
+      <label>
+        <span>Password</span>
+        <input type="password" name="password" required />
+      </label>
+      <a href="/admin/forgot">Forgot password?</a>
+    </li>
+  </ul>
+  <button class="button primary">Login</button>
+</form>

@@ -1,0 +1,55 @@
+<!--${valueList}-->
+<div>
+  <!--${select}-->
+  <lucide-icon data-name="chevron-down"></lucide-icon>
+</div>
+<!--${inputs}-->
+
+<template id="control">
+  <div class="control">
+    <!--${valueList}-->
+  </div>
+</template>
+
+<template id="value">
+  <span>${label}</span>
+  <button name="edit" value="${id}">
+    <lucide-icon data-name="square-pen"></lucide-icon>
+  </button>
+  <button name="remove" value="${id}">
+    <lucide-icon data-name="x"></lucide-icon>
+  </button>
+</template>
+
+<template id="list">
+  <ul>
+    <!--${items}-->
+  </ul>
+</template>
+
+<template id="item">
+  <li>
+    <!--${content}-->
+  </li>
+</template>
+
+<template id="select">
+  <select name="${name}" multiple="${multiple}">
+    <!--${options}-->
+    <!--${optgroups}-->
+  </select>
+</template>
+
+<template id="optgroup">
+  <optgroup label="${label}">
+    <!--${options}-->
+  </optgroup>
+</template>
+
+<template id="option">
+  <option value="${value}" selected="${selected}">${text}</option>
+</template>
+
+<template id="input">
+  <input type="hidden" name="${name}" value="${value}" />
+</template>

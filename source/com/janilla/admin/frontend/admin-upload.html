@@ -1,0 +1,43 @@
+<!--${input}-->
+<!--${card}-->
+<!--${dropzone}-->
+<!--${drawer}-->
+
+<template id="input">
+  <input type="hidden" name="${name}" value="${value}" />
+</template>
+
+<template id="card">
+  <article class="card">
+    <div class="thumbnail">
+      <img src="${uri}" loading="lazy" />
+    </div>
+    <p>${file.name}</p>
+    <button type="button" name="edit">
+      <lucide-icon data-name="square-pen"></lucide-icon>
+    </button>
+    <button type="button" name="remove">
+      <lucide-icon data-name="x"></lucide-icon>
+    </button>
+  </article>
+</template>
+
+<template id="dropzone">
+  <div class="dropzone">
+    <button type="button" name="create" class="button">Create new</button>
+    or
+    <button type="button" name="choose" class="button">Choose from existing</button>
+  </div>
+</template>
+
+<template id="list-drawer">
+  <admin-drawer data-title="${collectionSlug}">
+    <admin-list slot="content" data-collection-slug="${collectionSlug}"></admin-list>
+  </admin-drawer>
+</template>
+
+<template id="edit-drawer">
+  <admin-drawer data-title="${title}" data-id="${id}">
+    <admin-edit slot="content" data-slug="${slug}" data-id="${id}"></admin-edit>
+  </admin-drawer>
+</template>

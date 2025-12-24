@@ -41,7 +41,7 @@ public @interface Index {
 
 	Class<? extends BiFunction<Class<?>, String, Function<Object, Object>>> keyGetter() default Keyword.class;
 
-	String sort() default "";
+//	String sort() default "";
 
 	public static class Keyword implements BiFunction<Class<?>, String, Function<Object, Object>> {
 

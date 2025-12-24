@@ -1,0 +1,17 @@
+<link href="/admin.css" rel="stylesheet" />
+<div class="admin">
+  <dialog>
+    <header>
+      <h2>${title}</h2>
+      <button type="button" name="close">
+        <lucide-icon data-name="x"></lucide-icon>
+      </button>
+    </header>
+    <!--${idLabel}-->
+    <slot name="content"></slot>
+  </dialog>
+</div>
+
+<template id="id-label">
+  <p class="id-label">ID: ${id}</p>
+</template>

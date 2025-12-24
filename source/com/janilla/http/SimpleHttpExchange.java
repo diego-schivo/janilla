@@ -24,7 +24,7 @@
  */
 package com.janilla.http;
 
-public abstract class BaseHttpExchange implements HttpExchange {
+public class SimpleHttpExchange implements HttpExchange {
 
 	protected final HttpRequest request;
 
@@ -32,7 +32,7 @@ public abstract class BaseHttpExchange implements HttpExchange {
 
 	protected Exception exception;
 
-	public BaseHttpExchange(HttpRequest request, HttpResponse response) {
+	public SimpleHttpExchange(HttpRequest request, HttpResponse response) {
 		this.request = request;
 		this.response = response;
 	}
@@ -50,5 +50,11 @@ public abstract class BaseHttpExchange implements HttpExchange {
 	@Override
 	public Exception exception() {
 		return exception;
+	}
+
+	@Override
+	public HttpExchange withException(Exception exception) {
+		this.exception = exception;
+		return this;
 	}
 }

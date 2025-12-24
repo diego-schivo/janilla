@@ -27,9 +27,9 @@ package com.janilla.ioc;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -71,6 +71,7 @@ public class DiFactory {
 	}
 
 	public <T> T create(Class<T> type, Map<String, Object> arguments) {
+//		IO.println("Factory.create, type=" + type + ", arguments=" + arguments);
 		var f = factories.computeIfAbsent(type, k -> {
 			var c = Stream.concat(types.stream(), Stream.of(k)).filter(x -> !Modifier.isAbstract(x.getModifiers()))
 					.filter(k::isAssignableFrom).filter(x -> {
@@ -82,37 +83,60 @@ public class DiFactory {
 			if (c == null)
 //				return _ -> null;
 				throw new RuntimeException("type=" + type);
-			var c0 = Arrays.stream(c.getConstructors())
-					.sorted(Comparator.<Constructor<?>>comparingInt(Constructor::getParameterCount).reversed())
-					.findFirst().orElseThrow();
+//			var c0 = Arrays.stream(c.getConstructors())
+//					.sorted(Comparator.<Constructor<?>>comparingInt(Constructor::getParameterCount).reversed())
+//					.findFirst().orElseThrow();
 //			IO.println("Factory.create, c0 = " + c0);
+			var cc = c.getConstructors();
 			var o = context.get();
-			if (o != null && c.getEnclosingClass() == o.getClass())
-				return aa -> {
-					try {
-						var aa2 = Stream.concat(Stream.of(o), Arrays.stream(c0.getParameters()).skip(1).map(x -> {
-							if (aa != null && aa.containsKey(x.getName()))
-								return aa.get(x.getName());
-							var p = Reflection.property(o.getClass(), x.getName());
-							return p != null ? p.get(o) : null;
-						})).toArray();
-						@SuppressWarnings("unchecked")
-						var t = (T) c0.newInstance(aa2);
-						return Reflection.copy(o, t);
-					} catch (ReflectiveOperationException e) {
-						throw new RuntimeException(e);
-					}
-				};
+			var oe = o != null && c.getEnclosingClass() == o.getClass();
+//			if (oe)
+//				return aa -> {
+//					try {
+//						var aa2 = Stream.concat(Stream.of(o), Arrays.stream(c0.getParameters()).skip(1).map(x -> {
+//							if (aa != null && aa.containsKey(x.getName()))
+//								return aa.get(x.getName());
+//							var p = Reflection.property(o.getClass(), x.getName());
+//							return p != null ? p.get(o) : null;
+//						})).toArray();
+//						@SuppressWarnings("unchecked")
+//						var t = (T) c0.newInstance(aa2);
+//						return Reflection.copy(o, t);
+//					} catch (ReflectiveOperationException e) {
+//						throw new RuntimeException(e);
+//					}
+//				};
 			return aa -> {
 				try {
-					var aa2 = Arrays.stream(c0.getParameters()).map(x -> {
-						if (aa != null && aa.containsKey(x.getName()))
-							return aa.get(x.getName());
-						var p = o != null ? Reflection.property(o.getClass(), x.getName()) : null;
-						return p != null ? p.get(o) : null;
-					}).toArray();
+					Constructor<?> c1 = null;
+					Object[] aa1 = null;
+					var n1 = -1;
+					for (var c2 : cc) {
+						var pp = Arrays.stream(c2.getParameters());
+						if (oe)
+							pp.skip(1);
+						var aa2 = pp.map(x -> {
+							if (aa != null && aa.containsKey(x.getName()))
+								return aa.get(x.getName());
+							var p = o != null ? Reflection.property(o.getClass(), x.getName()) : null;
+							return p != null ? p.get(o) : null;
+						}).toArray();
+						var n2 = (int) Arrays.stream(aa2).filter(Objects::nonNull).count();
+						if (n2 > n1) {
+							c1 = c2;
+							aa1 = aa2;
+							n1 = n2;
+						}
+					}
+//					IO.println("Factory.create, c1 = " + c1);
+					if (oe) {
+						var oo = new Object[1 + aa1.length];
+						oo[0] = o;
+						System.arraycopy(aa1, 0, oo, 1, aa1.length);
+						aa1 = oo;
+					}
 					@SuppressWarnings("unchecked")
-					var t = (T) c0.newInstance(aa2);
+					var t = (T) c1.newInstance(aa1);
 					if (o != null)
 						t = Reflection.copy(o, t);
 					return t;

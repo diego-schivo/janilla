@@ -267,7 +267,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	public long count(String index, Object key) {
 		var n = Stream.of(type.getSimpleName(), index).filter(x -> x != null && !x.isEmpty())
 				.collect(Collectors.joining("."));
-		return persistence.database().perform(() -> persistence.database().index(n).count(key), false);
+		return persistence.database().perform(() -> persistence.database().index(n).count(toDatabaseValue(key)), false);
 	}
 
 	protected BTree<?, ?> bTree() {
@@ -284,7 +284,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				ID e;
 			}
 			var a = new A();
-			persistence.database().index(n).select(new Object[] { key }, x -> {
+			persistence.database().index(n).select(new Object[] { toDatabaseValue(key) }, x -> {
 				var oo = x.findFirst().orElse(null);
 				@SuppressWarnings("unchecked")
 				var e = oo != null ? (idHelper != null ? idHelper.fromDatabaseValue(oo[1]) : (ID) oo[1]) : null;
@@ -310,7 +310,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			return persistence.database().perform(() -> {
 				var t = persistence.database().index(n);
 				@SuppressWarnings("unchecked")
-				var ii = (List<ID>) t.ids(keys[0]).boxed().toList();
+				var ii = (List<ID>) t.ids(toDatabaseValue(keys[0])).boxed().toList();
 				return ii;
 			}, false);
 		}
@@ -323,7 +323,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			return (List<A>) Arrays.stream(keys).map(k -> {
 				var a = new A();
 //				a.vv = i.list(k).iterator();
-				i.select(new Object[] { k }, x -> a.vv = x.iterator());
+				i.select(new Object[] { toDatabaseValue(k) }, x -> a.vv = x.iterator());
 				a.v = a.vv.hasNext() ? a.vv.next() : null;
 				return a;
 			}).toList();
@@ -366,12 +366,12 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			return persistence.database().perform(() -> {
 				var t = persistence.database().index(n);
 				@SuppressWarnings("unchecked")
-				var ii = (Stream<ID>) t.ids(keys[0]).boxed();
+				var ii = (Stream<ID>) t.ids(toDatabaseValue(keys[0])).boxed();
 				if (skip > 0)
 					ii = ii.skip(skip);
 				if (limit >= 0)
 					ii = ii.limit(limit);
-				return new IdPage<>(ii.toList(), t.count(keys[0]));
+				return new IdPage<>(ii.toList(), t.count(toDatabaseValue(keys[0])));
 			}, false);
 		}
 		class A {
@@ -384,9 +384,9 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			return (List<A>) Arrays.stream(keys).map(k -> {
 				var a = new A();
 //				a.vv = i.list(k).iterator();
-				i.select(new Object[] { k }, x -> a.vv = x.iterator());
+				i.select(new Object[] { toDatabaseValue(k) }, x -> a.vv = x.iterator());
 				a.v = a.vv.hasNext() ? a.vv.next() : null;
-				a.l = i.count(k);
+				a.l = i.count(toDatabaseValue(k));
 				return a;
 			}).toList();
 		}, false);
