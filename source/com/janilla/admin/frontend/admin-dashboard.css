@@ -48,37 +48,35 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 .admin admin-dashboard {
-  &,
-  ul,
-  li {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .groups,
+  .cards {
     display: flex;
     flex-direction: column;
+  }
+
+  .groups {
     gap: 1rem;
+    padding: 0.375rem;
+
+    > li {
+      display: flex;
+      flex-direction: column;
+      gap: 1.1538rem;
+    }
   }
 
-  h4 {
-    background: var(--background-7);
-    border-radius: 0.25rem;
-    color: var(--color-5);
-    letter-spacing: -0.375px;
-    padding: 0.625rem;
-  }
-
-  button[name="seed"] {
-    background: transparent;
-    border: none;
-    text-decoration: underline;
-  }
-
-  li ul {
+  .cards {
     gap: 0.5rem;
-  }
 
   a {
     align-items: flex-start;
     background: var(--background-5);
-    border: 1px solid var(--border-1);
-    border-radius: 0.25rem;
+    border: 1px solid rgb(60, 60, 60);
+    border-radius: 0.1875rem;
     box-sizing: border-box;
     display: flex;
     font-size: 13px;
@@ -92,6 +90,7 @@
     &:hover {
       border-color: rgb(87, 87, 87);
     }
+  }
   }
 
   button[name="create"] {

@@ -71,13 +71,12 @@ export default class AdminDashboard extends WebComponent {
 
     async updateDisplay() {
         const a = this.closest("admin-element");
-        const s = a.state.schema;
         this.appendChild(this.interpolateDom({
             $template: "",
             groups: a.dashboardGroups().map(g => ({
                 $template: "group",
                 title: g.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
-                cards: Object.entries(s[s["Data"][g].type]).map(([k, v]) => {
+                cards: Object.entries(a.state.schema[a.state.schema["Data"][g].type]).map(([k, v]) => {
                     return {
                         $template: "card",
                         href: `/admin/${g === "globals" ? g : "collections"}/${k.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`,
