@@ -58,7 +58,7 @@ admin-versions {
   }
 
   th {
-    color: rgb(141, 141, 141);
+    color: var(--color-2);
   }
 
   a {

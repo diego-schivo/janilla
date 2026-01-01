@@ -53,7 +53,7 @@ admin-version {
   gap: 1rem;
 
   > p {
-    color: rgb(128, 128, 128);
+    color: var(--color-6);
   }
 
   h2 {
@@ -91,13 +91,13 @@ admin-version {
       padding: 0.5rem 1rem;
 
       &[name="cancel"] {
-        background: rgb(0, 0, 0);
-        color: rgb(181, 181, 181);
+        background: var(--background-10);
+        color: var(--color-5);
       }
 
       &[name="confirm"] {
-        background: rgb(235, 235, 235);
-        color: rgb(20, 20, 20);
+        background: var(--background-11);
+        color: var(--color-3);
       }
     }
   }
