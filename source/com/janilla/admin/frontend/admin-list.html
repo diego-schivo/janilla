@@ -10,7 +10,7 @@
 <template id="header">
   <header>
     <h1>${title}</h1>
-    <button name="create" class="button">Create New</button>
+    <button type="button" name="create" class="button">Create New</button>
     <!--${selection}-->
   </header>
 </template>
@@ -18,9 +18,9 @@
 <template id="selection">
   <p>
     ${count} selected —
-    <button name="publish" class="button" class="button">Publish</button>
-    <button name="unpublish" class="button">Unpublish</button>
-    <button name="delete" class="button">Delete</button>
+    <button type="button" name="publish" class="button">Publish</button>
+    <button type="button" name="unpublish" class="button">Unpublish</button>
+    <button type="button" name="delete" class="button">Delete</button>
   </p>
 </template>
 
@@ -77,9 +77,9 @@
 </template>
 
 <template id="button">
-  <button name="${name}" value="${value}" class="button">
+  <button type="button" name="${name}" value="${value}" class="button">
     <!--${content}-->
-  </a>
+  </button>
 </template>
 
 <template id="media">
@@ -95,8 +95,8 @@
       <h1>Confirm publish</h1>
       <p>You are about to publish ${count} ${name}</p>
       <div>
-        <button name="cancel-publish" class="button">Cancel</button>
-        <button name="confirm-publish" class="button">Confirm</button>
+        <button type="button" name="cancel-publish" class="button">Cancel</button>
+        <button type="button" name="confirm-publish" class="button">Confirm</button>
       </div>
     </article>
   </dialog>
@@ -108,8 +108,8 @@
       <h1>Confirm unpublish</h1>
       <p>You are about to unpublish ${count} ${name}</p>
       <div>
-        <button name="cancel-unpublish" class="button">Cancel</button>
-        <button name="confirm-unpublish" class="button">Confirm</button>
+        <button type="button" name="cancel-unpublish" class="button">Cancel</button>
+        <button type="button" name="confirm-unpublish" class="button">Confirm</button>
       </div>
     </article>
   </dialog>
@@ -121,8 +121,8 @@
       <h1>Confirm deletion</h1>
       <p>You are about to delete ${count} ${name}</p>
       <div>
-        <button name="cancel-delete" class="button">Cancel</button>
-        <button name="confirm-delete" class="button">Confirm</button>
+        <button type="button" name="cancel-delete" class="button">Cancel</button>
+        <button type="button" name="confirm-delete" class="button">Confirm</button>
       </div>
     </article>
   </dialog>

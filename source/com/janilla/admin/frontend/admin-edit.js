@@ -148,61 +148,56 @@ export default class AdminEdit extends WebComponent {
 
     handleChange = async event => {
         const el = event.target;
-        if (el.matches("select:not([name])")) {
-            event.stopPropagation();
-            const a = this.closest("admin-element");
-            const as = a.state;
-            let r, j;
-            switch (el.value) {
-                case "create":
-                    r = await fetch(`${a.dataset.apiUrl}/${as.collectionSlug}`, {
-                        method: "POST",
-                        credentials: "include",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({ $type: as.documentType })
-                    });
-                    j = await r.json();
-                    if (r.ok) {
-                        history.pushState({}, "", `/admin/collections/${as.collectionSlug}/${j.id}`);
-                        dispatchEvent(new CustomEvent("popstate"));
-                    } else
-                        a.error(j);
-                    break;
-                case "duplicate":
-                    for (const [k, v] of [...new FormData(this.querySelector("form")).entries()]) {
-                        const i = k.lastIndexOf(".");
-                        let f = a.field(k.substring(0, i));
-                        a.initField(f);
-                        f.data[k.substring(i + 1)] = v;
-                    }
-                    r = await fetch(`${a.dataset.apiUrl}/${as.collectionSlug}`, {
-                        method: "POST",
-                        credentials: "include",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify(as.document)
-                    });
-                    j = await r.json();
-                    if (r.ok) {
-                        history.pushState({}, "", `/admin/collections/${as.collectionSlug}/${j.id}`);
-                        dispatchEvent(new CustomEvent("popstate"));
-                    } else
-                        a.error(j);
-                    break;
-                case "delete":
-                    r = await fetch(as.documentUrl, {
-                        method: "DELETE",
-                        credentials: "include"
-                    });
-                    j = await r.json();
-                    if (r.ok) {
-                        const re = this.closest("app-element");
-                        if (j.$type === "User" && j.id === re.state.user.id)
-                            delete re.state.computeState;
-                        history.pushState({}, "", `/admin/${as.pathSegments.slice(0, 2).join("/")}`);
-                        dispatchEvent(new CustomEvent("popstate"));
-                    } else
-                        a.error(j);
-                    break;
+        const a = this.closest("app-element");
+        const a2 = this.closest("admin-element");
+        switch (el.closest("select:not([name])")?.value) {
+            case "create": {
+                const r = await fetch(`${a.dataset.apiUrl}/${a2.state.collectionSlug}`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ $type: a2.state.documentType })
+                });
+                const j = await r.json();
+                if (r.ok)
+                    a.navigate(new URL(`/admin/collections/${a2.state.collectionSlug}/${j.id}`, location.href));
+                else
+                    a2.error(j);
+                break;
+            }
+            case "duplicate": {
+                for (const [k, v] of [...new FormData(this.querySelector("form")).entries()]) {
+                    const i = k.lastIndexOf(".");
+                    const f = a2.field(k.substring(0, i));
+                    a2.initField(f);
+                    f.data[k.substring(i + 1)] = v;
+                }
+                const r = await fetch(`${a.dataset.apiUrl}/${a2.state.collectionSlug}`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify(a2.state.document)
+                });
+                const j = await r.json();
+                if (r.ok)
+                    a.navigate(new URL(`/admin/collections/${a2.state.collectionSlug}/${j.id}`, location.href));
+                else
+                    a2.error(j);
+                break;
+            }
+            case "delete": {
+                const r = await fetch(a2.state.documentUrl, {
+                    method: "DELETE",
+                    credentials: "include"
+                });
+                const j = await r.json();
+                if (r.ok) {
+                    if (j.$type === "User" && j.id === a.user.id)
+                        a.user = null;
+                    a.navigate(new URL(`/admin/${a2.state.pathSegments.slice(0, 2).join("/")}`, location.href));
+                } else
+                    a2.error(j);
+                break;
             }
         }
     }
@@ -238,16 +233,16 @@ export default class AdminEdit extends WebComponent {
     }
 
     async autoSaveTimeout() {
-        const as = this.autoSave;
-        as.timeoutID = undefined;
-        as.ongoing = true;
+        const s = this.state;
+        s.autoSave.timeoutID = undefined;
+        s.autoSave.ongoing = true;
         try {
             await this.saveDocument(true);
         } finally {
-            as.ongoing = false;
+            s.autoSave.ongoing = false;
         }
-        if (as.repeat) {
-            as.repeat = false;
+        if (s.autoSave.repeat) {
+            s.autoSave.repeat = false;
             this.requestAutoSave(0);
         }
     }
@@ -264,20 +259,22 @@ export default class AdminEdit extends WebComponent {
     }
 
     async reloadFieldData(path) {
-        const a = this.closest("admin-element");
+        const a = this.closest("app-element");
+        const a2 = this.closest("admin-element");
         const d = await (await fetch([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"))).json();
-        a.setFieldData(this.field(path), this.field(path, d).data);
+        a2.setFieldData(this.field(path), this.field(path, d).data);
     }
 
     requestAutoSave(delay = 1000) {
-        const as = (this.autoSave ??= {});
-        if (as.ongoing) {
-            as.repeat = true;
-            return;
+        const s = this.state;
+        s.autoSave ??= {};
+        if (s.autoSave.ongoing)
+            s.autoSave.repeat = true;
+        else {
+            if (typeof s.autoSave.timeoutId === "number")
+                clearTimeout(s.autoSave.timeoutId);
+            s.autoSave.timeoutId = setTimeout(() => this.autoSaveTimeout(), delay);
         }
-        if (typeof as.timeoutID === "number")
-            clearTimeout(as.timeoutID);
-        as.timeoutID = setTimeout(async () => await this.autoSaveTimeout(), delay);
     }
 
     async saveDocument(auto) {
@@ -294,7 +291,8 @@ export default class AdminEdit extends WebComponent {
                 return 0;
             }));
         const fee = Array.from(m.entries()).filter(([_, x]) => x instanceof File);
-        const a = this.closest("admin-element");
+        const a = this.closest("app-element");
+        const a2 = this.closest("admin-element");
         if (fee.length) {
             const fd = new FormData();
             for (const [k, v] of fee)
@@ -310,14 +308,14 @@ export default class AdminEdit extends WebComponent {
         for (const [kk, v] of m) {
             //console.log("k", k, "v", v);
             const k = kk.join(".");
-            a.setValue(o, k, v, this.field(k));
+            a2.setValue(o, k, v, this.field(k));
         }
         const s = this.state;
         s.document = {};
         for (const [k, v] of o) {
             //console.log("k", k, "v", v);
             const f = this.field(k);
-            a.initField(f.parent);
+            a2.initField(f.parent);
             f.parent.data[k.substring(k.lastIndexOf(".") + 1)] = v;
         }
         //console.log("s", s);
@@ -334,35 +332,35 @@ export default class AdminEdit extends WebComponent {
         });
         const j = await r.json();
         if (r.ok) {
-            if (this.dispatchEvent(new CustomEvent("documentsaved", {
-                bubbles: true,
-                cancelable: true,
-                detail: j
-            }))) {
-                delete s.changed;
-                if (!auto)
-                    a.success("Updated successfully.");
-                const f = (x, y) => {
-                    //console.log("x", JSON.stringify(x, null, "\t"), "y", JSON.stringify(y, null, "\t"));
-                    for (const [k, v] of Object.entries(x))
-                        if (Array.isArray(v)) {
-                            y[k] ??= [];
-                            for (let i = 0;i < v.length;i++)
-                                if (v[i] !== null && typeof v[i] === "object" && y[k][i] !== null && typeof y[k][i] === "object")
-                                    f(v[i], y[k][i]);
-                                else
-                                    y[k][i] = v[i];
-                        } else if (v !== null && typeof v === "object" && y[k] !== null && typeof y[k] === "object")
-                            f(v, y[k]);
-                        else
-                            y[k] = v;
-                };
-                //console.log("s.document", s.document);
-                f(j, s.document);
-                //console.log("s.document", s.document);
-                //a.requestDisplay();
-            }
+            //if (this.dispatchEvent(new CustomEvent("documentsaved", {
+            //bubbles: true,
+            //cancelable: true,
+            //detail: j
+            //}))) {
+            delete s.changed;
+            if (!auto)
+                a2.success("Updated successfully.");
+            const f = (x, y) => {
+                //console.log("x", JSON.stringify(x, null, "\t"), "y", JSON.stringify(y, null, "\t"));
+                for (const [k, v] of Object.entries(x))
+                    if (Array.isArray(v)) {
+                        y[k] ??= [];
+                        for (let i = 0;i < v.length;i++)
+                            if (v[i] !== null && typeof v[i] === "object" && y[k][i] !== null && typeof y[k][i] === "object")
+                                f(v[i], y[k][i]);
+                            else
+                                y[k][i] = v[i];
+                    } else if (v !== null && typeof v === "object" && y[k] !== null && typeof y[k] === "object")
+                        f(v, y[k]);
+                    else
+                        y[k] = v;
+            };
+            //console.log("s.document", s.document);
+            f(j, s.document);
+            //console.log("s.document", s.document);
+            //}
+			a2.currentDocument = j;
         } else
-            a.error(j);
+            a2.error(j);
     }
 }

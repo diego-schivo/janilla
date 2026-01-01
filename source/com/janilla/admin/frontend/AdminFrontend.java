@@ -59,7 +59,7 @@ public class AdminFrontend {
 				"admin-document", "admin-drawer", "admin-drawer-link", "admin-edit", "admin-fields", "admin-file",
 				"admin-hidden", "admin-join", "admin-list", "admin-login", "admin-radio-group", "admin-relationship",
 				"admin-rich-text", "admin-select", "admin-slug", "admin-tabs", "admin-text", "admin-unauthorized",
-				"admin-upload", "admin-variant-options", "lucide-icon", "toaster")
+				"admin-upload", "admin-version", "admin-versions", "lucide-icon", "toaster")
 				.forEach(x -> map.put(x, "/" + x + ".js"));
 	}
 }

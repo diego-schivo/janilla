@@ -110,7 +110,7 @@ export default class AdminTabs extends WebComponent {
 			event.stopPropagation();
 			const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
 			const s = this.state;
-			if (this.dispatchEvent(new CustomEvent("select-tab", {
+			if (this.dispatchEvent(new CustomEvent("tabselected", {
 				bubbles: true,
 				cancelable: true,
 				detail: {

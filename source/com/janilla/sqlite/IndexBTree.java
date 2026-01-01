@@ -65,14 +65,15 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 		if (key.length == 0)
 			return count(true);
 		var x = search(key);
-		if (x.found() == -1)
-			return 0l;
-		var p = x.path().getLast();
-		return 1 + (p.page()).getCells().stream().skip(p.index()).filter(c -> {
-			var ii = new int[] { -1 };
-			return Record.fromBytes(payloadBuffers((PayloadCell) c)).limit(key.length)
-					.allMatch(k -> Objects.equals(k, key[++ii[0]]));
-		}).count();
+//		if (x.found() == -1)
+//			return 0l;
+//		var p = x.path().getLast();
+//		return 1 + p.page().getCells().stream().skip(p.index()).filter(c -> {
+//			var ii = new int[] { -1 };
+//			return Record.fromBytes(payloadBuffers((PayloadCell) c)).limit(key.length)
+//					.allMatch(k -> Objects.equals(k, key[++ii[0]]));
+//		}).count();
+		return x.rows().count();
 	}
 
 	@Override
@@ -204,7 +205,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 		var n = rootNumber;
 		var f = -1;
 		var pp = new BTreePath(this);
-		f: for (var i = 0;; i++) {
+		i: for (var i = 0;; i++) {
 			var p = BTreePage.read(n, database);
 			var ci = 0;
 			for (var c : p.getCells()) {
@@ -215,9 +216,9 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 					pp.add(new BTreePosition(p, ci));
 					if (c instanceof InteriorCell c2) {
 						n = c2.leftChildPointer();
-						continue f;
+						continue i;
 					} else
-						break f;
+						break i;
 				}
 				ci++;
 			}

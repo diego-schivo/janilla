@@ -2,7 +2,7 @@
   <!--${items}-->
 </ul>
 <div contenteditable></div>
-<input type="hidden" name="${path}" value="${data}" />
+<!--${input}-->
 
 <template id="item">
   <li>
@@ -10,4 +10,8 @@
       <lucide-icon data-name="${name}"></lucide-icon>
     </button>
   </li>
+</template>
+
+<template id="input">
+  <input type="hidden" name="${name}" value="${value}" />
 </template>

@@ -65,19 +65,18 @@
 :root:has(.admin) {
   color-scheme: light dark;
   --background-1: rgb(20, 20, 20);
-  --background-2: rgb(60, 60, 60);
-  --background-3: rgb(248, 250, 252);
-  --background-4: rgba(248, 250, 252, 0.9);
-  --background-5: rgb(34, 34, 34);
-  --background-6: #0d74b6;
-  --background-7: rgb(19, 44, 58);
-  --background-8: rgb(47, 47, 47);
-  --background-9: rgba(20, 20, 20, 0.3);
-  --background-10: rgb(181, 181, 181);
-  --background-11: rgb(0, 0, 0);
-  --background-12: rgb(235, 235, 235);
-  --background-13: rgb(0, 31, 15);
-  --background-14: rgb(64, 32, 29);
+  --background-2: rgb(34, 34, 34);
+  --background-3: #0d74b6;
+  --background-4: rgb(60, 60, 60);
+  --background-5: rgb(248, 250, 252);
+  --background-6: rgba(248, 250, 252, 0.9);
+  --background-7: rgb(47, 47, 47);
+  --background-8: rgba(20, 20, 20, 0.3);
+  --background-9: rgb(181, 181, 181);
+  --background-10: rgb(0, 0, 0);
+  --background-11: rgb(235, 235, 235);
+  --background-12: rgb(0, 31, 15);
+  --background-13: rgb(64, 32, 29);
   --border-1: rgb(60, 60, 60);
   --border-2: rgba(255, 255, 255, 0.1);
   --border-3: rgb(74, 74, 74);
@@ -85,23 +84,21 @@
   --border-5: rgb(255, 255, 255);
   --border-6: rgb(87, 87, 87);
   --color-1: rgb(235, 235, 235);
-  --color-2: rgb(15, 23, 42);
-  --color-3: rgb(248, 250, 252);
-  --color-4: rgb(141, 141, 141);
-  --color-5: rgb(36, 164, 223);
+  --color-2: rgb(141, 141, 141);
+  --color-3: rgb(20, 20, 20);
+  --color-4: rgb(248, 250, 252);
+  --color-5: rgb(181, 181, 181);
   --color-6: rgb(128, 128, 128);
   --color-7: rgb(255, 255, 255);
-  --color-8: rgb(20, 20, 20);
-  --color-9: rgb(181, 181, 181);
-  --color-10: rgb(218, 75, 72);
-  --color-11: rgb(125, 204, 248);
-  --color-12: rgb(89, 243, 166);
-  --color-13: rgb(254, 193, 188);
-}
+  --color-8: rgb(218, 75, 72);
+  --color-9: rgb(125, 204, 248);
+  --color-10: rgb(89, 243, 166);
+  --color-11: rgb(254, 193, 188);
 
-html:has(.admin) {
-  background: rgb(20, 20, 20);
-  -webkit-font-smoothing: antialiased;
+  html {
+    background: var(--background-1);
+    -webkit-font-smoothing: antialiased;
+  }
 
   body {
     color: var(--color-1);
@@ -121,12 +118,6 @@ html:has(.admin) {
 }
 
 .admin {
-  /*button,
-  label {
-    all: unset;
-  }
-  */
-
   a,
   button,
   input,
@@ -215,7 +206,7 @@ html:has(.admin) {
   input,
   select,
   textarea {
-    background: var(--background-5);
+    background: var(--background-2);
     border: 1px solid var(--border-1);
     border-radius: 0.1875rem;
     outline: none;
@@ -240,7 +231,7 @@ html:has(.admin) {
       }
 
       lucide-icon {
-        background: var(--background-5);
+        background: var(--background-2);
         border: 1px solid var(--border-1);
         border-radius: 0.1875rem;
       }
@@ -280,7 +271,7 @@ html:has(.admin) {
   }
 
   tbody > tr:nth-child(odd) {
-    background: var(--background-5);
+    background: var(--background-2);
   }
 
   textarea {
@@ -407,7 +398,7 @@ html:has(.admin) {
         margin-left: auto;
 
         lucide-icon {
-          background: var(--background-6);
+          background: var(--background-3);
           border-radius: 9999px;
           padding: 0.25rem;
         }
@@ -415,8 +406,8 @@ html:has(.admin) {
     }
   }
 
-  > div > aside {
-  /*> dialog[open] {*/
+  > div > aside,
+  > dialog[open] {
     &,
     li:has(ul),
     ul {
@@ -430,7 +421,7 @@ html:has(.admin) {
     }
 
     label {
-      color: var(--color-4);
+      color: var(--color-2);
       display: flex;
       justify-content: space-between;
       margin: 0.25rem 0;
@@ -460,7 +451,7 @@ html:has(.admin) {
   }
 
   .button {
-    background: var(--background-2);
+    background: var(--background-4);
     border: 1px solid var(--border-1);
     border-radius: 0.25rem;
     cursor: pointer;
@@ -486,23 +477,23 @@ html:has(.admin) {
     }
 
     &.primary {
-      background: var(--background-3);
+      background: var(--background-5);
       /*color: var(--color-2);*/
-      color: rgb(20, 20, 20);
+      color: var(--color-3);
 
       &[disabled] {
         opacity: 0.5;
       }
 
       &:not([disabled]):hover {
-        background: var(--background-4);
+        background: var(--background-6);
       }
     }
 
     &.secondary {
       border: 1px solid var(--border-2);
       background: var(--background-1);
-      color: var(--color-3);
+      color: var(--color-4);
     }
   }
 

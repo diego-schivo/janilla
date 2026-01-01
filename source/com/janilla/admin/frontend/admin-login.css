@@ -86,7 +86,7 @@
   
     label {
       &:has([required]) span::after {
-        color: var(--color-10);
+        color: var(--color-8);
         content: " *";
       }
     }
@@ -100,11 +100,11 @@
     }
     
     input {
-      background: var(--background-5);
+      background: var(--background-2);
       border: 1px solid var(--border-1);
 
       &:focus {
-        border: 1px solid rgb(141, 141, 141);
+        border: 1px solid var(--border-4);
       }
     }
   
@@ -114,11 +114,11 @@
   
     .button {
       align-self: auto;
-      background: var(--background-12);
-      color: var(--color-8);
+      background: var(--background-11);
+      color: var(--color-3);
   
       &:hover {
-        background: var(--background-10);
+        background: var(--background-9);
       }
   
       @media (min-width: 1441px) {

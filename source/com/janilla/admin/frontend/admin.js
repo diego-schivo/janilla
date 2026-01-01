@@ -68,21 +68,30 @@ export default class Admin extends WebComponent {
         super();
     }
 
+    get currentDocument() {
+        return this.state.document;
+    }
+
+    set currentDocument(document) {
+        this.state.document = document;
+        this.dispatchEvent(new CustomEvent("documentchanged", { detail: document }));
+    }
+
     connectedCallback() {
         super.connectedCallback();
         this.addEventListener("click", this.handleClick);
-        this.addEventListener("select-tab", this.handleSelectTab);
+        this.addEventListener("tabselected", this.handleTabSelected);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener("click", this.handleClick);
-        this.removeEventListener("select-tab", this.handleSelectTab);
+        this.removeEventListener("tabselected", this.handleTabSelected);
     }
 
     async updateDisplay() {
         const a = this.closest("app-element");
-		const ua = a.user?.roles?.some(x => x.name === "ADMIN");
+        const ua = a.user?.roles?.some(x => x.name === "ADMIN");
         const p = this.dataset.path === "/account" && ua
             ? `/collections/users/${a.user.id}`
             : this.dataset.path;
@@ -137,9 +146,8 @@ export default class Admin extends WebComponent {
                     : s.documentUrl}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
             ]);
         } else if (!["/create-first-user", "/forgot", "/login", "/reset"].includes(p) && !p.startsWith("/reset/")) {
-            // location.href = "/admin/login";
-            history.pushState({}, "", "/admin/login");
-            dispatchEvent(new CustomEvent("popstate"));
+            const j = await (await fetch(`${a.dataset.apiUrl}/users?limit=1`)).json();
+            a.navigate(new URL(j.length ? "/admin/login" : "/admin/create-first-user", location.href));
             return;
         }
 
@@ -259,6 +267,7 @@ export default class Admin extends WebComponent {
                 groups: gg
             } : null
         }));
+		this.querySelector("dialog").close();
     }
 
     handleClick = async event => {
@@ -272,27 +281,27 @@ export default class Admin extends WebComponent {
                 case "close-menu":
                     this.querySelector("dialog").close();
                     break;
-                case "logout":
-                    await fetch(`${this.closest("app-element").dataset.apiUrl}/users/logout`, { method: "POST" });
-                    this.dispatchEvent(new CustomEvent("user-change", { bubbles: true }));
-                    history.pushState({}, "", "/admin");
-                    dispatchEvent(new CustomEvent("popstate"));
+                case "logout": {
+                    const a = this.closest("app-element");
+                    await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
+                    a.user = null;
+                    a.navigate(new URL("/admin", location.href));
                     break;
+                }
             }
         }
     }
 
-    handleSelectTab = event => {
-        if (event.detail.name !== "document-subview")
-            return;
-        event.preventDefault();
-        const v = event.detail.value;
-        const s = this.state;
-        const nn = s.pathSegments.slice(0, 3);
-        if (v !== "edit")
-            nn.push(v);
-        history.pushState({}, "", `/admin/${nn.join("/")}`);
-        dispatchEvent(new CustomEvent("popstate"));
+    handleTabSelected = event => {
+        if (event.detail.name === "document-subview") {
+            event.preventDefault();
+            const v = event.detail.value;
+            const s = this.state;
+            const nn = s.pathSegments.slice(0, s.collectionSlug ? 3 : 2);
+            if (v !== "edit")
+                nn.push(v);
+            this.closest("app-element").navigate(new URL(`/admin/${nn.join("/")}`, location.href));
+        }
     }
 
     cell(object, key) {

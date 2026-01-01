@@ -130,6 +130,7 @@ public class CmsPersistence extends Persistence {
 	protected void createStoresAndIndexes() {
 		database.perform(() -> {
 			super.createStoresAndIndexes();
+
 			for (var t : configuration.cruds().keySet()) {
 				var v = t.getAnnotation(Versions.class);
 				if (v != null) {
@@ -150,6 +151,7 @@ public class CmsPersistence extends Persistence {
 						}
 				}
 			}
+
 			return null;
 		}, true);
 	}

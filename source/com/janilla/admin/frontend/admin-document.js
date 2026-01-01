@@ -51,67 +51,78 @@ import WebComponent from "web-component";
 
 export default class AdminDocument extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-document"];
-	}
+    static get templateNames() {
+        return ["admin-document"];
+    }
 
-	static get observedAttributes() {
-		return ["data-subview", "data-updated-at"];
-	}
+    static get observedAttributes() {
+        return ["data-subview", "data-updated-at"];
+    }
 
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
-	async updateDisplay() {
-		const a = this.closest("admin-element");
-		const as = a.state;
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			title: (() => {
-				let t = a.title(as.document);
-				if (!t?.length)
-					t = as.pathSegments[2];
-				return t;
-			})(),
-			tabs: [
-				"edit",
-				Object.hasOwn(as.document, "versionCount") ? "versions" : null,
-				"api"
-			].filter(x => x).join(),
-			tab: (() => {
-				switch (this.dataset.subview) {
-					case "default":
-						return "edit";
-					case "version":
-						return "versions";
-					default:
-						return this.dataset.subview;
-				}
-			})(),
-			editButton: { $template: "edit-button" },
-			versionsButton: Object.hasOwn(as.document, "versionCount") ? {
-				$template: "versions-button",
-				count: as.document.versionCount
-			} : null,
-			apiButton: { $template: "api-button" },
-			editPanel: this.dataset.subview === "default" ? (() => {
-				return {
-					$template: "edit-panel",
-					slug: as.pathSegments[1],
-					id: as.pathSegments[2],
-					updatedAt: this.dataset.updatedAt
-				};
-			})() : null,
-			versionsPanel: ["versions", "version"].includes(this.dataset.subview) ? {
-				$template: "versions-panel",
-				versionsView: this.dataset.subview === "versions" ? { $template: "versions" } : null,
-				versionView: this.dataset.subview === "version" ? { $template: "version" } : null
-			} : null,
-			apiPanel: this.dataset.subview === "api" ? {
-				$template: "api-panel",
-				json: JSON.stringify(as.document, null, "  ")
-			} : null
-		}));
-	}
+    connectedCallback() {
+        super.connectedCallback();
+        const s = this.state;
+        s.admin = this.closest("admin-element");
+        s.admin.addEventListener("documentchanged", this.handleDocumentChanged);
+    }
+
+    disconnectedCallback() {
+        const s = this.state;
+        super.disconnectedCallback();
+        s.admin?.removeEventListener("documentchanged", this.handleDocumentChanged);
+    }
+
+    async updateDisplay() {
+        const a = this.closest("admin-element");
+        {
+            const x = ({
+                edit: "Editing",
+                versions: "Versions",
+                api: "API"
+            })[a.state.pathSegments[a.state.collectionSlug ? 3 : 2] ?? "edit"];
+            document.title = `${x} - ${a.state.document.$type} - Janilla`;
+        }
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            title: [a.title(a.state.document)].map(x => x?.length ? x : a.state.pathSegments[2])[0],
+            tabs: [
+                "edit",
+                Object.hasOwn(a.state.document, "versionCount") ? "versions" : null,
+                "api"
+            ].filter(x => x).join(),
+            tab: [({
+                default: "edit",
+                version: "versions"
+            })[this.dataset.subview]].map(x => x ?? this.dataset.subview)[0],
+            editButton: { $template: "edit-button" },
+            versionsButton: Object.hasOwn(a.state.document, "versionCount") ? {
+                $template: "versions-button",
+                count: a.state.document.versionCount
+            } : null,
+            apiButton: { $template: "api-button" },
+            editPanel: this.dataset.subview === "default" ? {
+                $template: "edit-panel",
+                slug: a.state.pathSegments[1],
+                id: a.state.pathSegments[2],
+                updatedAt: this.dataset.updatedAt
+            } : null,
+            versionsPanel: ["versions", "version"].includes(this.dataset.subview) ? {
+                $template: "versions-panel",
+                versions: this.dataset.subview === "versions" ? { $template: "versions" } : null,
+                version: this.dataset.subview === "version" ? { $template: "version" } : null
+            } : null,
+            apiPanel: this.dataset.subview === "api" ? {
+                $template: "api-panel",
+                json: JSON.stringify(a.state.document, null, "  ")
+            } : null
+        }));
+    }
+
+    handleDocumentChanged = () => {
+        this.requestDisplay();
+    }
 }

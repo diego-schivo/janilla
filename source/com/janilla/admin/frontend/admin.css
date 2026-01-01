@@ -73,6 +73,8 @@
 @import "admin-text.css";
 @import "admin-unauthorized.css";
 @import "admin-upload.css";
+@import "admin-version.css";
+@import "admin-versions.css";
 @import "lucide-icon.css";
 @import "toaster.css";
 

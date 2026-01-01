@@ -1,0 +1,20 @@
+admin-versions {
+  div:has(> table) {
+    overflow: auto;
+  }
+
+  th,
+  td {
+    padding: 1rem;
+  }
+
+  th {
+    color: rgb(141, 141, 141);
+  }
+
+  a {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+  }
+}

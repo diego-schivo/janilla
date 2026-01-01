@@ -79,6 +79,7 @@ export default class AdminLogin extends WebComponent {
         event.preventDefault();
 
         const a = this.closest("app-element");
+        const a2 = this.closest("admin-element");
         const r = await fetch(`${a.dataset.apiUrl}/users/login`, {
             method: "POST",
             credentials: "include",
@@ -90,6 +91,6 @@ export default class AdminLogin extends WebComponent {
             a.user = j;
             a.navigate(new URL("/admin", location.href));
         } else
-            a.error(j);
+            a2.error(j);
     }
 }

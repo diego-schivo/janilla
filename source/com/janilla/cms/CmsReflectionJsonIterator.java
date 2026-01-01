@@ -75,7 +75,8 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 	@Override
 	public Iterator<JsonToken<?>> newValueIterator(Object object) {
 		var o = stack().peek();
-		if (o instanceof Map.Entry<?, ?> kv && stack().stream().filter(x -> x instanceof Document).distinct().count() < 4) {
+		if (o instanceof Map.Entry<?, ?> kv
+				&& stack().stream().filter(x -> x instanceof Document).distinct().count() < 4) {
 			var n = (String) kv.getKey();
 			if (object instanceof Long l) {
 				o = stack().pop();
@@ -129,18 +130,20 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 
 		@Override
 		protected Stream<Entry<String, Object>> entries(Class<?> class0) {
-			var kkvv = super.entries(class0);
+			var ee = super.entries(class0);
 			var v = class0.getAnnotation(Versions.class);
 			if (v == null || !v.drafts())
-				kkvv = kkvv.filter(kv -> kv.getKey() != "documentStatus");
+				ee = ee.filter(x -> x.getKey() != "documentStatus");
 			if (v != null) {
 				var n = Version.class.getSimpleName() + "<" + class0.getSimpleName() + ">.documentId";
-				var vc = persistence.database()
-						.perform(() -> persistence.database().index(n).count(((Document<?>) value).id()), false);
-				var kv = Map.entry("versionCount", (Object) vc);
-				kkvv = Stream.concat(kkvv, Stream.of(kv));
+				var c = persistence.database().perform(() -> {
+					var i = persistence.database().index(n);
+					var d = (Document<?>) value;
+					return i.count(d.id());
+				}, false);
+				ee = Stream.concat(ee, Stream.of(Map.entry("versionCount", c)));
 			}
-			return kkvv;
+			return ee;
 		}
 	}
 }

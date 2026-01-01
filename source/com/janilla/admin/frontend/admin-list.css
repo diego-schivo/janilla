@@ -83,7 +83,7 @@
     overflow: auto;
 
     > p {
-      color: var(--color-4);
+      color: var(--color-2);
       padding: 1rem;
     }
   }
@@ -100,7 +100,7 @@
   }
 
   th {
-    color: var(--color-4);
+    color: var(--color-2);
   }
 
   a {
@@ -110,7 +110,7 @@
   }
 
   code {
-    background: var(--background-8);
+    background: var(--background-7);
     border-radius: 0.25rem;
     line-height: 1.5rem;
     padding: 0 0.375rem;
@@ -145,13 +145,13 @@
       padding: 0.5rem 1rem;
 
       &[name^="cancel-"] {
-        background: var(--background-11);
-        color: var(--color-9);
+        background: var(--background-10);
+        color: var(--color-5);
       }
 
       &[name^="confirm-"] {
-        background: var(--background-12);
-        color: var(--color-8);
+        background: var(--background-11);
+        color: var(--color-3);
       }
     }
   }

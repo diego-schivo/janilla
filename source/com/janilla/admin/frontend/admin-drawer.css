@@ -78,9 +78,9 @@
   }
 
   .id-label {
-    background: rgb(47, 47, 47);
+    background: var(--background-7);
     border-radius: 0.25rem;
-    color: rgb(181, 181, 181);
+    color: var(--color-5);
     display: flex;
     font-size: 1rem;
     padding: 0.25rem 0.5rem;

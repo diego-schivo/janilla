@@ -76,17 +76,19 @@ export default class AdminList extends WebComponent {
     }
 
     async updateDisplay() {
+        const t = this.dataset.slug.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ");
+        document.title = `${t} - Janilla`;
         const s = this.state;
         const a = this.closest("app-element");
         s.data ??= await (await fetch(`${a.dataset.apiUrl}/${this.dataset.slug}`)).json();
         s.selectionIds ??= [];
-		const a2 = this.closest("admin-element");
+        const a2 = this.closest("admin-element");
         const hh = a2.headers(this.dataset.slug);
         this.appendChild(this.interpolateDom({
             $template: "",
             header: {
                 $template: "header",
-                title: this.dataset.slug.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
+                title: t,
                 selection: s.selectionIds?.length ? {
                     $template: "selection",
                     count: s.selectionIds.length
@@ -179,111 +181,102 @@ export default class AdminList extends WebComponent {
     }
 
     handleClick = async event => {
-        const b = event.target.closest("button");
-        if (b) {
-            event.preventDefault();
-            event.stopPropagation();
-            const a = this.closest("app-element");
-            const n = this.dataset.name;
-            const s = this.state;
-            let u;
-            switch (b.name) {
-                case "select":
-                    this.dispatchEvent(new CustomEvent("documentselected", {
-                        bubbles: true,
-                        detail: s.data.find(x => x.id == b.value)
-                    }));
-                    break;
-                case "cancel-delete":
-                    delete s.deleteDialog;
-                    this.requestDisplay();
-                    break;
-                case "cancel-publish":
-                    delete s.publishDialog;
-                    this.requestDisplay();
-                    break;
-                case "cancel-unpublish":
-                    delete s.unpublishDialog;
-                    this.requestDisplay();
-                    break;
-                case "confirm-delete":
-                    u = new URL(`/api/${n}`, location.href);
-                    Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
-                    const j = await (await fetch(u, {
-                        method: "DELETE",
-                        credentials: "include"
-                    })).json();
-                    if (j.some(x => x.$type === "User" && x.id === re.state.user.id)) {
-                        delete re.state.computeState;
-                        history.pushState({}, "", `/admin/collections/${n}`);
-                        dispatchEvent(new CustomEvent("popstate"));
-                    } else {
-                        delete s.deleteDialog;
-                        delete s.data;
-                        this.requestDisplay();
-                    }
-                    break;
-                case "confirm-publish":
-                    u = new URL(`/api/${n}`, location.href);
-                    Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
-                    await (await fetch(u, {
-                        method: "PATCH",
-                        credentials: "include",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({
-                            $type: a.state.schema["Collections"][n].elementTypes[0],
-                            documentStatus: "PUBLISHED"
-                        })
-                    })).json();
-                    delete s.publishDialog;
-                    this.requestDisplay();
-                    break;
-                case "confirm-unpublish":
-                    u = new URL(`/api/${n}`, location.href);
-                    Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
-                    await (await fetch(u, {
-                        method: "PATCH",
-                        credentials: "include",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({
-                            $type: a.state.schema["Collections"][n].elementTypes[0],
-                            documentStatus: "DRAFT"
-                        })
-                    })).json();
-                    delete s.unpublishDialog;
-                    this.requestDisplay();
-                    break;
-                case "create":
-                    const d = await (await fetch(`${a.dataset.apiUrl}/${n}`, {
-                        method: "POST",
-                        credentials: "include",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({ $type: a.state.schema["Collections"][n].elementTypes[0] })
-                        /*
-                        body: JSON.stringify({
-                            $type: Object.entries(a.state.schema["Data"])
-                                .filter(([k, _]) => k !== "globals")
-                                .map(([_, v]) => a.state.schema[v.type][n])
-                                .find(x => x).elementTypes[0]
-                        })
-                        */
-                    })).json();
-                    history.pushState({}, "", `/admin/collections/${n}/${d.id}`);
+        const el = event.target.closest("button");
+        const a = this.closest("app-element");
+        const a2 = this.closest("admin-element");
+        const n = this.dataset.slug;
+        const s = this.state;
+        switch (el?.name) {
+            case "select":
+                this.dispatchEvent(new CustomEvent("documentselected", {
+                    bubbles: true,
+                    detail: s.data.find(x => x.id == b.value)
+                }));
+                break;
+            case "cancel-delete":
+                delete s.deleteDialog;
+                this.requestDisplay();
+                break;
+            case "cancel-publish":
+                delete s.publishDialog;
+                this.requestDisplay();
+                break;
+            case "cancel-unpublish":
+                delete s.unpublishDialog;
+                this.requestDisplay();
+                break;
+            case "confirm-delete": {
+                const u = new URL(`${a.dataset.apiUrl}/${n}`, location.href);
+                Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
+                const j = await (await fetch(u, {
+                    method: "DELETE",
+                    credentials: "include"
+                })).json();
+                if (j.some(x => x.$type === "User" && x.id === re.state.user.id)) {
+                    delete re.state.computeState;
+                    history.pushState({}, "", `/admin/collections/${n}`);
                     dispatchEvent(new CustomEvent("popstate"));
-                    break;
-                case "delete":
-                    s.deleteDialog = true;
+                } else {
+                    delete s.deleteDialog;
+                    delete s.data;
                     this.requestDisplay();
-                    break;
-                case "publish":
-                    s.publishDialog = true;
-                    this.requestDisplay();
-                    break;
-                case "unpublish":
-                    s.unpublishDialog = true;
-                    this.requestDisplay();
-                    break;
+                }
+                break;
             }
+            case "confirm-publish": {
+                const u = new URL(`${a.dataset.apiUrl}/${n}`, location.href);
+                Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
+                await (await fetch(u, {
+                    method: "PATCH",
+                    credentials: "include",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                        $type: a.state.schema["Collections"][n].elementTypes[0],
+                        documentStatus: "PUBLISHED"
+                    })
+                })).json();
+                delete s.publishDialog;
+                this.requestDisplay();
+                break;
+            }
+            case "confirm-unpublish": {
+                const u = new URL(`${a.dataset.apiUrl}/${n}`, location.href);
+                Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
+                await (await fetch(u, {
+                    method: "PATCH",
+                    credentials: "include",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                        $type: a.state.schema["Collections"][n].elementTypes[0],
+                        documentStatus: "DRAFT"
+                    })
+                })).json();
+                delete s.unpublishDialog;
+                this.requestDisplay();
+                break;
+            }
+            case "create": {
+                const j = await (await fetch(`${a.dataset.apiUrl}/${n}`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ $type: a2.state.schema["Collections"][n].elementTypes[0] })
+                })).json();
+                a.navigate(new URL(`/admin/collections/${n}/${j.id}`, location.href));
+                break;
+            }
+            case "delete":
+                s.deleteDialog = true;
+                this.requestDisplay();
+                break;
+            case "publish":
+                s.publishDialog = true;
+                this.requestDisplay();
+                break;
+            case "unpublish":
+                s.unpublishDialog = true;
+                this.requestDisplay();
+                break;
         }
     }
 }

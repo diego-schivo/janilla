@@ -55,8 +55,8 @@
 
   .card {
     align-items: center;
-    background: rgb(34, 34, 34);
-    border: 1px solid rgb(60, 60, 60);
+    background: var(--background-2);
+    border: 1px solid var(--border-1);
     border-radius: 0.1875rem;
     display: flex;
     flex-direction: row;
@@ -69,7 +69,7 @@
   }
 
   .dropzone {
-    border: 1px dotted rgb(141, 141, 141);
+    border: 1px dotted var(--border-4);
     border-radius: 0.1875rem;
     padding: 1rem;
   }

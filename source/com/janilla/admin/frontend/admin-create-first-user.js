@@ -51,54 +51,53 @@ import WebComponent from "web-component";
 
 export default class AdminCreateFirstUser extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-create-first-user"];
-	}
+    static get templateNames() {
+        return ["admin-create-first-user"];
+    }
 
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("submit", this.handleSubmit);
-	}
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("submit", this.handleSubmit);
+    }
 
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("submit", this.handleSubmit);
-	}
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("submit", this.handleSubmit);
+    }
 
-	async updateDisplay() {
-		document.title = "Create first user - Janilla";
-		this.appendChild(this.interpolateDom({ $template: "" }));
-	}
+    async updateDisplay() {
+        document.title = "Create first user - Janilla";
+        this.appendChild(this.interpolateDom({ $template: "" }));
+    }
 
-	handleSubmit = async event => {
-		event.preventDefault();
-		event.stopPropagation();
-		const a = this.closest("admin-element");
-		const o = Array.from(new FormData(event.target).entries()).reduce((x, y) => {
-			if (y[0] === "roles")
-				(x[y[0]] ??= []).push(y[1]);
-			else
-				x[y[0]] = y[1];
-			return x;
-		}, {});
-		const r = await fetch(`${a.dataset.apiUrl}/users/first-register`, {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify(o)
-		});
-		const j = await r.json();
-		if (r.ok) {
-			this.dispatchEvent(new CustomEvent("user-change", {
-				bubbles: true,
-				detail: { user: j }
-			}));
-			history.pushState({}, "", "/admin");
-			dispatchEvent(new CustomEvent("popstate"));
-		} else
-			a.error(j);
-	}
+    handleSubmit = async event => {
+        const f = event.target;
+        event.preventDefault();
+
+        const a = this.closest("app-element");
+        const a2 = this.closest("admin-element");
+        const o = Array.from(new FormData(event.target).entries()).reduce((x, y) => {
+            if (y[0] === "roles")
+                (x[y[0]] ??= []).push(y[1]);
+            else
+                x[y[0]] = y[1];
+            return x;
+        }, {});
+        const r = await fetch(`${a.dataset.apiUrl}/users/first-register`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(o)
+        });
+        const j = await r.json();
+        if (r.ok) {
+            a.user = j;
+            a.navigate(new URL("/admin", location.href));
+        } else
+            a2.error(j);
+    }
 }

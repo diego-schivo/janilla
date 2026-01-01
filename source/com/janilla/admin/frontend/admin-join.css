@@ -56,7 +56,7 @@
   }
 
   th {
-    color: var(--color-4);
+    color: var(--color-2);
   }
 
   td:not(:first-child) {

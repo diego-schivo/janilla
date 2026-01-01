@@ -62,7 +62,7 @@
     > div {
       align-items: center;
       backdrop-filter: blur(8px);
-      background: var(--background-9);
+      background: var(--background-8);
       border-bottom: 1px solid rgb(47, 47, 47);
       display: flex;
       gap: 1rem;
@@ -135,8 +135,8 @@
         }
 
         &[name="publish"] {
-          background: var(--background-10);
-          color: var(--color-8);
+          background: var(--background-9);
+          color: var(--color-3);
         }
       }
 

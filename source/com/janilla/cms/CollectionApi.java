@@ -95,10 +95,13 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 
 	@Handle(method = "PUT", path = "(\\d+)")
 	public E update(ID id, @Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
-		var s = Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
+//		IO.println("CollectionApi.update, id=" + id + ", entity=" + entity + ", draft=" + draft + ", autosave="
+//				+ autosave);
+		var s = draft != null && draft.booleanValue() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);
-		return crud().update(id, entity, updateInclude(entity), !Boolean.TRUE.equals(autosave));
+		var nv = !(autosave != null&&autosave.booleanValue()); 
+		return crud().update(id, entity, updateInclude(entity), nv);
 	}
 
 	@Handle(method = "DELETE", path = "(\\d+)")

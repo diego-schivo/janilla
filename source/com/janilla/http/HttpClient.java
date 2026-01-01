@@ -78,7 +78,7 @@ public class HttpClient {
 	}
 
 	public Object getJson(URI uri, String cookie) {
-		IO.println("HttpClient.getJson, uri=" + uri + ", cookie=" + cookie);
+//		IO.println("HttpClient.getJson, uri=" + uri + ", cookie=" + cookie);
 		var rq = new HttpRequest();
 		rq.setMethod("GET");
 		rq.setTarget(
@@ -90,7 +90,7 @@ public class HttpClient {
 		return send(rq, rs -> {
 			try (var x = Channels.newInputStream((ReadableByteChannel) rs.getBody())) {
 				var s = new String(x.readAllBytes());
-				IO.println("HttpClient.getJson, s=" + s);
+//				IO.println("HttpClient.getJson, s=" + s);
 				return Json.parse(s);
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);

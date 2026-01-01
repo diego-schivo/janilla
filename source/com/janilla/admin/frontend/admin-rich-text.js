@@ -51,101 +51,110 @@ import WebComponent from "web-component";
 
 export default class AdminRichText extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-rich-text"];
-	}
+    static get templateNames() {
+        return ["admin-rich-text"];
+    }
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("click", this.handleClick);
-		this.addEventListener("keyup", this.handleKeyUp);
-		this.addEventListener("input", this.handleInput);
-	}
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("click", this.handleClick);
+        //this.addEventListener("keyup", this.handleKeyUp);
+        this.addEventListener("input", this.handleInput);
+    }
 
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("click", this.handleClick);
-		this.removeEventListener("keyup", this.handleKeyUp);
-		this.removeEventListener("input", this.handleInput);
-	}
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("click", this.handleClick);
+        //this.removeEventListener("keyup", this.handleKeyUp);
+        this.removeEventListener("input", this.handleInput);
+    }
 
-	async updateDisplay() {
-		const p = this.dataset.path;
-		const f = this.closest("admin-edit").field(p);
-		const ce = this.querySelector("[contenteditable]");
-		const h = this.querySelector('[type="hidden"]');
-		const v = h?.value;
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			items: ["type", "heading-1", "heading-2", "heading-3", "heading-4", "bold", "italic", "underline", "link"].map(x => ({
-				$template: "item",
-				name: x,
-				class: ["bold", "italic", "underline"].includes(x) && document.queryCommandState(x) ? "active" : null
-			})),
-			path: p,
-			data: f.data
-		}));
-		if (!ce)
-			this.querySelector("[contenteditable]").innerHTML = f.data ?? "";
-		if (h && h.value !== v)
-			h.dispatchEvent(new InputEvent("input", {
-				view: window,
-				bubbles: true,
-				cancelable: true
-			}));
-	}
-
-	handleClick = event => {
-		const b = event.target.closest("button");
-		const ce = event.target.closest("[contenteditable]");
-		if (b) {
-			event.stopPropagation();
-			switch (b.name) {
-				case "type":
-					document.execCommand("formatBlock", false, "<p>");
-					break;
-				case "heading-1":
-				case "heading-2":
-				case "heading-3":
-				case "heading-4":
-					document.execCommand("formatBlock", false, `<h${b.name.charAt(b.name.length - 1)}>`);
-					break;
-				case "bold":
-				case "italic":
-				case "underline":
-					document.execCommand(b.name);
-					break;
-				case "link":
-					const u = prompt("URL");
-					if (u)
-						document.execCommand("createLink", false, u);
-					break;
+    async updateDisplay() {
+		const s = this.state;
+        const p = this.dataset.path;
+        s.field ??= this.closest("admin-edit").field(p);
+        const d = this.querySelector("div");
+        const i = this.querySelector("input");
+        const v = i?.value;
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            items: ["type", "heading-1", "heading-2", "heading-3", "heading-4", "bold", "italic", "underline", "link"].map(x => ({
+                $template: "item",
+                name: x,
+                class: ["bold", "italic", "underline"].includes(x) && document.queryCommandState(x) ? "active" : null
+            })),
+			input: {
+				$template: "input",
+				name: p,
+				value: d?.innerHTML ?? s.field.data
 			}
-		} else if (!ce)
-			return;
-		this.requestDisplay();
-	}
+        }));
+        if (!d)
+            this.querySelector("div").innerHTML = s.field.data ?? "";
+        if (i && i.value !== v)
+            i.dispatchEvent(new InputEvent("input", {
+                view: window,
+                bubbles: true,
+                cancelable: true
+            }));
+    }
 
+    handleClick = event => {
+        const b = event.target.closest("button");
+        if (b) {
+            switch (b.name) {
+                case "type":
+                    document.execCommand("formatBlock", false, "<p>");
+                    break;
+                case "heading-1":
+                case "heading-2":
+                case "heading-3":
+                case "heading-4":
+                    document.execCommand("formatBlock", false, `<h${b.name.charAt(b.name.length - 1)}>`);
+                    break;
+                case "bold":
+                case "italic":
+                case "underline":
+                    document.execCommand(b.name);
+                    break;
+                case "link":
+                    const u = prompt("URL");
+                    if (u)
+                        document.execCommand("createLink", false, u);
+                    break;
+            }
+            this.requestDisplay();
+        }
+
+        /*
+        const ce = event.target.closest("[contenteditable]");
+        if (ce)
+            this.requestDisplay();
+        */
+    }
+
+    /*
 	handleKeyUp = event => {
-		const ce = event.target.closest("[contenteditable]");
-		if (!ce)
-			return;
-		this.requestDisplay();
-	}
+        const ce = event.target.closest("[contenteditable]");
+        if (ce)
+            this.requestDisplay();
+    }
+	*/
 
-	handleInput = event => {
-		const ce = event.target.closest("[contenteditable]");
-		if (!ce)
-			return;
-		if (!ce.firstElementChild)
-			document.execCommand("formatBlock", false, "<p>");
-	}
+    handleInput = event => {
+        const d = event.target.closest("div");
+        if (d) {
+            if (!d.firstElementChild)
+                document.execCommand("formatBlock", false, "<p>");
+            this.requestDisplay();
+        }
+    }
 }

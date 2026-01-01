@@ -60,7 +60,7 @@ toaster-element {
   }
 
   li {
-    background: var(--background-8);
+    background: var(--background-7);
     border: 1px solid var(--border-6);
     border-radius: 0.25rem;
     color: var(--color-1);
@@ -69,15 +69,15 @@ toaster-element {
   }
 
   .success {
-    background: var(--background-13);
+    background: var(--background-12);
     border-color: rgb(0, 61, 28);
-    color: var(--color-12);
+    color: var(--color-10);
   }
 
   .error {
-    background: var(--background-14);
+    background: var(--background-13);
     border-color: rgb(123, 41, 39);
-    color: var(--color-13);
+    color: var(--color-11);
   }
 
   @media (max-width: 1440px) {

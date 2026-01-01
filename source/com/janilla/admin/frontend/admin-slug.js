@@ -51,50 +51,56 @@ import WebComponent from "web-component";
 
 export default class AdminSlug extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-slug"];
-	}
+    static get templateNames() {
+        return ["admin-slug"];
+    }
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
-	connectedCallback() {
-		super.connectedCallback();
-		const s = this.state;
-		s.edit = this.closest("admin-edit");
-		s.edit.addEventListener("input", this.handleInput);
-	}
+    connectedCallback() {
+        super.connectedCallback();
+        const s = this.state;
+        s.edit = this.closest("admin-edit");
+        s.edit.addEventListener("input", this.handleInput);
+    }
 
-	disconnectedCallback() {
-		const s = this.state;
-		s.edit.removeEventListener("input", this.handleInput);
-		super.disconnectedCallback();
-	}
+    disconnectedCallback() {
+        const s = this.state;
+        s.edit.removeEventListener("input", this.handleInput);
+        super.disconnectedCallback();
+    }
 
-	async updateDisplay() {
-		const s = this.state;
-		const p = this.dataset.path;
-		s.field ??= s.edit.field(p);
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			input: {
-				$template: "input",
-				name: p,
-				value: s.field.data
-			}
-		}));
-	}
+    async updateDisplay() {
+        const s = this.state;
+        const p = this.dataset.path;
+        s.field ??= s.edit.field(p);
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            inputs: [{
+                $template: "input",
+                name: p,
+                value: s.field.data
+            }, {
+                $template: "input",
+                type: "hidden",
+                name: p,
+                value: s.field.data,
+                disabled: true
+            }]
+        }));
+    }
 
-	handleInput = event => {
-		const el = event.target.closest('input[name="title"]');
-		if (el) {
-			this.state.field.data = el.value.split(/\W+/).filter(x => x).map(x => x.toLowerCase()).join("-");
-			this.requestDisplay();
-		}
-	}
+    handleInput = event => {
+        const el = event.target.closest('input[name="title"]');
+        if (el) {
+            this.state.field.data = el.value.split(/\W+/).filter(x => x).map(x => x.toLowerCase()).join("-");
+            this.requestDisplay();
+        }
+    }
 }

@@ -70,6 +70,7 @@ export default class AdminDashboard extends WebComponent {
     }
 
     async updateDisplay() {
+        document.title = "Dashboard - Janilla";
         const a = this.closest("admin-element");
         this.appendChild(this.interpolateDom({
             $template: "",

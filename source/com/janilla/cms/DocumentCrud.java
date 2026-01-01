@@ -61,11 +61,11 @@ import com.janilla.persistence.IdHelper;
 import com.janilla.persistence.Persistence;
 import com.janilla.reflect.Reflection;
 
-public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> extends Crud<ID, E> {
+public class DocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> extends Crud<ID, D> {
 
 	protected final String versionTable;
 
-	public DocumentCrud(Class<E> type, IdHelper<ID> idHelper, Persistence persistence) {
+	public DocumentCrud(Class<D> type, IdHelper<ID> idHelper, Persistence persistence) {
 		super(type, idHelper, persistence);
 		versionTable = type.isAnnotationPresent(Versions.class)
 				? Version.class.getSimpleName() + "<" + type.getSimpleName() + ">"
@@ -73,54 +73,56 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 	}
 
 	@Override
-	public E create(E entity) {
-//		IO.println("DocumentCrud.create, entity=" + entity);
+	public D create(D document) {
+//		IO.println("DocumentCrud.create, document=" + document);
 		return versionTable != null ? persistence.database().perform(() -> {
-			var e = super.create(entity);
-			var vv = new ArrayList<Version<ID, E>>(1);
+			var d = super.create(document);
+			class A {
+				Version<ID, D> v;
+			}
+			var a = new A();
 			persistence.database().table(versionTable).insert(x -> {
 				@SuppressWarnings("unchecked")
 				var id = (ID) Long.valueOf(x);
-				var v = new Version<>(id, e);
-				vv.add(v);
-				return new Object[] { x, format(v) };
+				a.v = new Version<>(id, d);
+				return new Object[] { x, format(a.v) };
 			});
-//			IO.println("DocumentCrud.create, vv=" + vv);
-			updateVersionIndexes(null, vv, e.id());
-			return e;
-		}, true) : super.create(entity);
+			IO.println("DocumentCrud.create, a.v=" + a.v);
+			updateVersionIndexes(null, List.of(a.v), d.id());
+			return d;
+		}, true) : super.create(document);
 	}
 
-	public E read(ID id, boolean drafts) {
+	public D read(ID id, boolean drafts) {
 //		IO.println("DocumentCrud.read, id=" + id + ", drafts=" + drafts);
 		if (id == null)
 			return null;
 		return versionTable != null && drafts ? persistence.database().perform(() -> {
-			var e = read(id);
-			// IO.println("e=" + e);
-			if (e != null) {
+			var d = read(id);
+			// IO.println("d=" + d);
+			if (d != null) {
 				var i = persistence.database().index(versionTable + ".documentId");
 				class A {
 					ID id;
 				}
 				var a = new A();
 				i.select(new Object[] { id }, x -> {
-					var oo = x.findFirst().get();
+					var oo = x.reduce((_, y) -> y).get();
 //					IO.println("oo=" + Arrays.toString(oo));
 					@SuppressWarnings("unchecked")
-					var id2 = (ID) oo[oo.length - 1];
-					a.id = id2;
+					var o = (ID) oo[1];
+					a.id = o;
 				});
 				var v = readVersion(a.id);
 //				IO.println("DocumentCrud.read, v=" + v);
-				if (v != null && v.document().updatedAt().isAfter(e.updatedAt()))
-					e = v.document();
+				if (v != null && v.document().updatedAt().isAfter(d.updatedAt()))
+					d = v.document();
 			}
-			return e;
+			return d;
 		}, false) : read(id);
 	}
 
-	public List<E> read(List<ID> ids, boolean drafts) {
+	public List<D> read(List<ID> ids, boolean drafts) {
 //		IO.println("DocumentCrud.read, ids=" + ids + ", drafts=" + drafts);
 		if (ids == null || ids.isEmpty())
 			return List.of();
@@ -129,179 +131,180 @@ public class DocumentCrud<ID extends Comparable<ID>, E extends Document<ID>> ext
 				: read(ids);
 	}
 
-	public E update(ID id, E entity, Set<String> include, boolean newVersion) {
-		IO.println("DocumentCrud.update, id=" + id + ", entity=" + entity + ", include=" + include + ", newVersion"
-				+ newVersion);
+	public D update(ID id, D document, Set<String> include, boolean newVersion) {
+//		IO.println("DocumentCrud.update, id=" + id + ", document=" + document + ", include=" + include + ", newVersion"
+//				+ newVersion);
 		var exclude = Set.of("id", "createdAt", "updatedAt");
 		return versionTable != null ? persistence.database().perform(() -> {
-			var e1 = read(id, true);
-			E e2;
 			class A {
+				D d1 = read(id, true);
+				D d2;
 				boolean nv = newVersion;
-				ID id;
+				ID id2;
+				Version<ID, D> v1;
+				Version<ID, D> v2;
 			}
 			var a = new A();
-			switch (entity.documentStatus()) {
+			switch (document.documentStatus()) {
 			case DRAFT:
-				e2 = Reflection.copy(Map.of("updatedAt", Instant.now()), Reflection.copy(entity, e1,
-						x -> (include == null || include.contains(x)) && !exclude.contains(x)));
-				if (e2.documentStatus() != e1.documentStatus())
+				a.d2 = Reflection.copy(document, a.d1,
+						x -> (include == null || include.contains(x)) && !exclude.contains(x));
+				a.d2 = Reflection.copy(Map.of("updatedAt", Instant.now()), a.d2);
+				if (a.d2.documentStatus() != a.d1.documentStatus())
 					a.nv = true;
 				break;
 			case PUBLISHED:
-				e2 = update(id, x -> {
-					var s1 = x.documentStatus();
-					x = Reflection.copy(entity, e1,
+				a.d2 = update(id, x -> {
+					var d2 = Reflection.copy(document, a.d1,
 							y -> (include == null || include.contains(y)) && !exclude.contains(y));
-					if (x.documentStatus() != s1)
+					if (d2.documentStatus() != x.documentStatus())
 						a.nv = true;
-					return x;
+					return d2;
 				});
 				break;
 			default:
 				throw new RuntimeException();
 			}
-			var vv1 = new ArrayList<Version<ID, E>>(1);
-			var vv2 = new ArrayList<Version<ID, E>>(1);
+
 			if (a.nv)
 				persistence.database().table(versionTable).insert(x -> {
 					@SuppressWarnings("unchecked")
 					var id2 = (ID) Long.valueOf(x);
-					var v = new Version<>(id2, e2);
-					vv2.add(v);
-					return new Object[] { x, format(v) };
+					a.v2 = new Version<>(id2, a.d2);
+					return new Object[] { x, format(a.v2) };
 				});
 			else {
 				var i = persistence.database().index(versionTable + ".documentId");
 				i.select(new Object[] { id }, x -> {
-					var oo = x.findFirst().get();
+					var oo = x.reduce((_, y) -> y).get();
 					@SuppressWarnings("unchecked")
-					var id2 = (ID) oo[oo.length - 1];
-					a.id = id2;
+					var o = (ID) oo[1];
+					a.id2 = o;
 				});
-				persistence.database().table(versionTable).delete(new Object[] { a.id }, x -> {
-					var oo = x.findFirst().get();
+				persistence.database().table(versionTable).delete(new Object[] { a.id2 }, x -> {
+					var oo = x.reduce((_, y) -> y).get();
 					IO.println("oo=" + Arrays.toString(oo));
 					@SuppressWarnings("unchecked")
-					var v1 = (Version<ID, E>) parse((String) oo[1], Version.class);
-					vv1.add(v1);
+					var v1 = (Version<ID, D>) parse((String) oo[1], Version.class);
+					a.v1 = v1;
 				});
 				persistence.database().table(versionTable).insert(_ -> {
-					var v2 = new Version<>(a.id, e2);
-					vv2.add(v2);
-					return new Object[] { a.id, format(v2) };
+					a.v2 = new Version<>(a.id2, a.d2);
+					return new Object[] { a.id2, format(a.v2) };
 				});
 			}
-			updateVersionIndexes(vv1, vv2, id);
-			return e2;
+//			IO.println("DocumentCrud.update, a.v2=" + a.v2);
+			updateVersionIndexes(a.v1 != null ? List.of(a.v1) : null, List.of(a.v2), id);
+			return a.d2;
 		}, true)
-				: update(id, x -> Reflection.copy(entity, x,
+				: update(id, x -> Reflection.copy(document, x,
 						y -> (include == null || include.contains(y)) && !exclude.contains(y)));
 	}
 
 	@Override
-	public E delete(ID id) {
+	public D delete(ID id) {
 		return versionTable != null ? persistence.database().perform(() -> {
-			var e = super.delete(id);
+			var d = super.delete(id);
 			var ids = new ArrayList<ID>();
 			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, x -> x.map(oo -> {
 				@SuppressWarnings("unchecked")
-				var id2 = (ID) oo[oo.length - 1];
-				return id2;
+				var o = (ID) oo[1];
+				return o;
 			}).forEach(ids::add));
-			var vv = new ArrayList<Version<ID, E>>(ids.size());
-			for (var id2 : ids)
-				persistence.database().table(versionTable).delete(new Object[] { id2 }, x -> {
-					@SuppressWarnings("unchecked")
-					var v = (Version<ID, E>) parse((String) x.findFirst().get()[1], Version.class);
-					vv.add(v);
-				});
+			var t = persistence.database().table(versionTable);
+			var vv = new ArrayList<Version<ID, D>>(ids.size());
+			ids.forEach(x -> t.delete(new Object[] { x }, y -> {
+				var oo = y.findFirst().get();
+				@SuppressWarnings("unchecked")
+				var v = (Version<ID, D>) parse((String) oo[1], Version.class);
+				vv.add(v);
+			}));
 			updateVersionIndexes(vv, null, id);
-			return e;
+			return d;
 		}, true) : super.delete(id);
 	}
 
-	public List<E> patch(List<ID> ids, E entity, Set<String> include) {
+	public List<D> patch(List<ID> ids, D document, Set<String> include) {
 		if (ids == null || ids.isEmpty())
 			return List.of();
-		return persistence.database()
-				.perform(() -> ids.stream().map(x -> update(x, entity, include, versionTable != null)).toList(), true);
+		return persistence.database().perform(
+				() -> ids.stream().map(x -> update(x, document, include, versionTable != null)).toList(), true);
 	}
 
-	public List<Version<ID, E>> readVersions(ID id) {
+	public List<Version<ID, D>> readVersions(ID id) {
 		return persistence.database().perform(() -> {
 			var ids = new ArrayList<ID>();
 			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, x -> x.map(oo -> {
 				@SuppressWarnings("unchecked")
-				var id2 = (ID) oo[1];
-				return id2;
+				var y = (ID) oo[1];
+				return y;
 			}).forEach(ids::add));
-			var vv = new ArrayList<Version<ID, E>>(ids.size());
-			for (var id2 : ids)
-				persistence.database().table(versionTable).select(new Object[] { id2 }, x -> {
-					@SuppressWarnings("unchecked")
-					var v = (Version<ID, E>) parse((String) x.findFirst().get()[1], Version.class);
-					vv.add(v);
-				});
+			var vv = new ArrayList<Version<ID, D>>(ids.size());
+			ids.forEach(x -> persistence.database().table(versionTable).select(new Object[] { x }, y -> {
+				var oo = y.findFirst().get();
+				@SuppressWarnings("unchecked")
+				var v = (Version<ID, D>) parse((String) oo[1], Version.class);
+				vv.add(v);
+			}));
 			return vv;
 		}, false);
 	}
 
-	public Version<ID, E> readVersion(ID versionId) {
+	public Version<ID, D> readVersion(ID versionId) {
 		return persistence.database().perform(() -> {
-			var vv = new ArrayList<Version<ID, E>>(1);
+			class A {
+				Version<ID, D> v;
+			}
+			var a = new A();
 			persistence.database().table(versionTable).select(new Object[] { versionId }, x -> {
 				var oo = x.findFirst().get();
 //				IO.println("oo=" + Arrays.toString(oo));
 				@SuppressWarnings("unchecked")
-				var v = (Version<ID, E>) parse((String) oo[1], Version.class);
-				vv.add(v);
+				var v = (Version<ID, D>) parse((String) oo[1], Version.class);
+				a.v = v;
 			});
-			return !vv.isEmpty() ? vv.getFirst() : null;
+			return a.v;
 		}, false);
 	}
 
-	public E restoreVersion(ID versionId, DocumentStatus status) {
+	public D restoreVersion(ID versionId, DocumentStatus status) {
 		return persistence.database().perform(() -> {
 			var v1 = readVersion(versionId);
-			var e = update(v1.document().id(), x -> {
-				x = v1.document();
+			var d = update(v1.document().id(), _ -> {
+				var x = v1.document();
 				if (status != x.documentStatus())
 					x = Reflection.copy(Map.of("documentStatus", status), x);
 				return x;
 			});
-			var l = persistence.database().table(versionTable).insert(x -> {
-				@SuppressWarnings("unchecked")
-				var id = (ID) Long.valueOf(x);
-				var v = new Version<>(id, e);
-				return new Object[] { x, format(v) };
-			});
-			persistence.database().index(versionTable + ".documentId").insert(new Object[] { e.id(), e.updatedAt(), l },
-					null);
-			return e;
+			persistence.database().index(versionTable + ".documentId")
+					.insert(new Object[] { d.id(), persistence.database().table(versionTable).insert(x -> {
+						@SuppressWarnings("unchecked")
+						var id = (ID) Long.valueOf(x);
+						var v = new Version<>(id, d);
+						return new Object[] { x, format(v) };
+					}) }, null);
+			return d;
 		}, true);
 	}
 
-	protected void updateVersionIndexes(Iterable<Version<ID, E>> vv1, Iterable<Version<ID, E>> vv2, ID id) {
+	protected void updateVersionIndexes(List<Version<ID, D>> vv1, List<Version<ID, D>> vv2, ID id) {
 		class A {
-			E e1;
-			E e2;
+			D d1;
+			D d2;
 		}
 		var a = new A();
 		var i = persistence.database().index(versionTable + ".documentId");
 		if (vv1 != null)
 			for (var v : vv1) {
-				i.delete(new Object[] { id, v.document().updatedAt().toString(), v.id() }, null);
-				if (a.e1 == null)
-					a.e1 = v.document();
+				i.delete(new Object[] { id, v.id() }, null);
+				a.d1 = v.document();
 			}
 		if (vv2 != null)
 			for (var v : vv2) {
-				i.insert(new Object[] { id, v.document().updatedAt().toString(), v.id() }, null);
-				if (a.e2 == null)
-					a.e2 = v.document();
+				i.insert(new Object[] { id, v.id() }, null);
+				a.d2 = v.document();
 			}
-		updateIndexes(a.e1, a.e2, id,
+		updateIndexes(a.d1, a.d2, id,
 				x -> persistence.database().index(type.getSimpleName() + "." + x + "Draft", "table"));
 	}
 }
