@@ -47,19 +47,49 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.admin.frontend;
+import WebComponent from "web-component";
 
-import java.util.Map;
-import java.util.stream.Stream;
+export default class AdminVersions extends WebComponent {
 
-public class AdminFrontend {
+    static get templateNames() {
+        return ["admin-versions"];
+    }
 
-	public static void putImports(Map<String, String> map) {
-		Stream.of("admin", "admin-array", "admin-bar", "admin-checkbox", "admin-create-first-user", "admin-dashboard",
-				"admin-document", "admin-drawer", "admin-drawer-link", "admin-edit", "admin-fields", "admin-file",
-				"admin-hidden", "admin-join", "admin-list", "admin-login", "admin-radio-group", "admin-relationship",
-				"admin-rich-text", "admin-select", "admin-slug", "admin-tabs", "admin-text", "admin-unauthorized",
-				"admin-upload", "admin-version", "admin-versions", "lucide-icon", "toaster")
-				.forEach(x -> map.put(x, "/" + x + ".js"));
-	}
+    constructor() {
+        super();
+    }
+
+    async updateDisplay() {
+        const a = this.closest("admin-element");
+        const hh = ["updatedAt", "id", "documentStatus"];
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            heads: hh.map(x => ({
+                $template: "head",
+                text: x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" ")
+            })),
+            rows: a.state.versions.map(v => ({
+                $template: "row",
+                cells: hh.map(k => [(k.startsWith("document") ? v.document : v)[k]]
+                    .map(x => {
+                        switch (k) {
+                            case "documentStatus":
+                                return x.name;
+                            case "updatedAt":
+                                return a.dateTimeFormat.format(new Date(x));
+                            default:
+                                return x;
+                        }
+                    })
+                [0]).map((x, i) => ({
+                    $template: "cell",
+                    content: i === 0 ? {
+                        $template: "link",
+                        href: `/admin${a.dataset.path}/${v.id}`,
+                        content: x
+                    } : x
+                }))
+            }))
+        }));
+    }
 }

@@ -47,14 +47,23 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-lucide-icon {
-  aspect-ratio: 1;
-  display: block;
-  width: 1rem;
+admin-versions {
+  div:has(> table) {
+    overflow: auto;
+  }
 
-  svg {
-    display: block;
-    height: 100%;
-    width: 100%;
+  th,
+  td {
+    padding: 1rem;
+  }
+
+  th {
+    color: rgb(141, 141, 141);
+  }
+
+  a {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
   }
 }

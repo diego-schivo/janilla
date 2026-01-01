@@ -94,7 +94,8 @@ export default class AdminDashboard extends WebComponent {
 
     handleClick = async event => {
         const el = event.target.closest("button");
-        const a = this.closest("admin-element");
+		const a = this.closest("app-element");
+        const a2 = this.closest("admin-element");
         switch (el?.name) {
             case "create": {
                 const t = el.closest("a").getAttribute("href").split("/").at(-1);
@@ -109,7 +110,7 @@ export default class AdminDashboard extends WebComponent {
                     history.pushState({}, "", `/admin/collections/${t}/${j.id}`);
                     dispatchEvent(new CustomEvent("popstate"));
                 } else
-                    a.error(j);
+                    a2.error(j);
                 break;
             }
             case "seed": {
@@ -118,9 +119,9 @@ export default class AdminDashboard extends WebComponent {
                     credentials: "include"
                 });
                 if (r.ok)
-                    a.success("Database seeded!");
+                    a2.success("Database seeded!");
                 else
-                    a.error(await r.json());
+                    a2.error(await r.json());
                 break;
             }
         }

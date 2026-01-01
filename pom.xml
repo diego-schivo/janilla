@@ -6,7 +6,6 @@
 	<artifactId>janilla</artifactId>
 	<version>8.0.0-SNAPSHOT</version>
 	<properties>
-		<maven.compiler.enablePreview>false</maven.compiler.enablePreview>
 		<maven.compiler.parameters>true</maven.compiler.parameters>
 		<maven.compiler.release>25</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -44,7 +43,7 @@
 						<configuration>
 							<url>https://github.com/vercel/geist-font/releases/download/1.6.0/geist-font-1.6.0.zip</url>
 							<unpack>false</unpack>
-							<outputDirectory>${project.build.directory}/classes/com/janilla/admin/frontend</outputDirectory>
+							<outputDirectory>${project.build.directory}/classes/com/janilla/frontend</outputDirectory>
 							<sha256>784a8ea7d16e1dd71ceaad52f6f92d557ae58fd76c292b9f6d370085df936f53</sha256>
 						</configuration>
 					</execution>
@@ -55,10 +54,10 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<url>https://github.com/lucide-icons/lucide/releases/download/0.561.0/lucide-icons-0.561.0.zip</url>
+							<url>https://github.com/lucide-icons/lucide/releases/download/0.562.0/lucide-icons-0.562.0.zip</url>
 							<unpack>false</unpack>
-							<outputDirectory>${project.build.directory}/classes/com/janilla/admin/frontend</outputDirectory>
-							<sha256>01a6fd97258284ff0d3d4ff904cc6098f050ead1d23bb77b1cf09a2000c52ecc</sha256>
+							<outputDirectory>${project.build.directory}/classes/com/janilla/frontend</outputDirectory>
+							<sha256>bf4db856555194a2d8b855fc72169892f28f5bcab10222db2cada11e8966581a</sha256>
 						</configuration>
 					</execution>
 				</executions>
@@ -97,7 +96,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>3.3.1</version>
+						<version>3.4.0</version>
 						<executions>
 							<execution>
 								<id>attach-sources</id>

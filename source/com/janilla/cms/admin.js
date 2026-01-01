@@ -267,7 +267,7 @@ export default class Admin extends WebComponent {
                 groups: gg
             } : null
         }));
-		this.querySelector("dialog").close();
+		this.querySelector("dialog")?.close();
     }
 
     handleClick = async event => {
