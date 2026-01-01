@@ -20,8 +20,9 @@ You can add Janilla as a dependency to your project by copy/pasting the snippet 
 We provide several example applications showing how to use the library: 
 
 - [Next.js App Router Course porting](https://github.com/diego-schivo/janilla-acme-dashboard)
-- [Payload Blank Template porting](https://github.com/diego-schivo/janilla-templates/tree/main/blank)
-- [Payload Website Template porting](https://github.com/diego-schivo/janilla-templates/tree/main/website)
+- [Payload Blank Template porting](https://github.com/diego-schivo/janilla-blank-template)
+- [Payload Ecommerce Template porting](https://github.com/diego-schivo/janilla-ecommerce-template)
+- [Payload Website Template porting](https://github.com/diego-schivo/janilla-website-template)
 - [React Router Address Book Tutorial porting](https://github.com/diego-schivo/janilla-address-book)
 - [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla-conduit)
 - [Spring Petclinic porting](https://github.com/diego-schivo/janilla-petclinic)
