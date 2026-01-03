@@ -181,6 +181,14 @@ public class HttpClient {
 					break;
 				case DataFrame x:
 					ff.add(x);
+
+					for (var id : new int[] { f.streamIdentifier(), 0 }) {
+						t.out().clear();
+						t.out().put(he.encodeFrame(new WindowUpdateFrame(id, x.data().length)));
+						for (t.out().flip(); t.out().hasRemaining();)
+							t.write();
+					}
+
 					if (x.endStream())
 						es = true;
 					break;

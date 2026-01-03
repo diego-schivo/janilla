@@ -87,7 +87,7 @@ public class DocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> ext
 				a.v = new Version<>(id, d);
 				return new Object[] { x, format(a.v) };
 			});
-			IO.println("DocumentCrud.create, a.v=" + a.v);
+//			IO.println("DocumentCrud.create, a.v=" + a.v);
 			updateVersionIndexes(null, List.of(a.v), d.id());
 			return d;
 		}, true) : super.create(document);

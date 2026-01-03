@@ -64,7 +64,7 @@ import com.janilla.java.Java;
 import com.janilla.java.NullTypeResolver;
 import com.janilla.java.TypeResolver;
 import com.janilla.json.Json;
-import com.janilla.net.Query;
+import com.janilla.net.UriQueryBuilder;
 import com.janilla.reflect.Property;
 import com.janilla.reflect.Reflection;
 
@@ -85,16 +85,8 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	public InvocationHandlerFactory(List<Invocable> invocables, Function<Class<?>, Object> instanceResolver,
 			Comparator<Invocation> invocationComparator, RenderableFactory renderableFactory,
 			HttpHandlerFactory rootFactory) {
-//		this.instanceResolver = Objects.requireNonNullElseGet(instanceResolver, () -> x -> {
-//			try {
-//				return x.getConstructor().newInstance();
-//			} catch (ReflectiveOperationException e) {
-//				throw new RuntimeException(e);
-//			}
-//		});
 		this.instanceResolver = instanceResolver;
 		this.invocationComparator = invocationComparator;
-//		this.renderableFactory = Objects.requireNonNullElseGet(renderableFactory, RenderableFactory::new);
 		this.renderableFactory = renderableFactory;
 		this.rootFactory = rootFactory;
 
@@ -144,16 +136,6 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		if (object instanceof HttpRequest r) {
 			var m1 = Objects.requireNonNullElse(r.getMethod(), "");
 			var s = invocationGroups(r.getPath()).map(i -> {
-//				Method m = null;
-//				for (var x : i.methods().entrySet()) {
-//					var m2 = Objects.requireNonNullElse(x.getValue().method(), "");
-//					if (m2.equalsIgnoreCase(m1)) {
-//						m = x.getKey();
-//						break;
-//					}
-//					if (m2.isEmpty())
-//						m = x.getKey();
-//				}
 				var m = i.methods().get(m1);
 				if (m == null && !m1.isEmpty())
 					m = i.methods().get("");
@@ -264,20 +246,19 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		var rq = exchange.request();
 		var bs = new Supplier<String>() {
 
-			private Optional<String> result;
+			private Optional<String> body;
 
 			@Override
 			public String get() {
-				if (result == null)
+				if (body == null)
 					try {
-						var ch = rq.getBody();
-						result = Optional.ofNullable(ch instanceof ReadableByteChannel x
+						body = Optional.ofNullable(rq.getBody() instanceof ReadableByteChannel x
 								? new String(Channels.newInputStream(x).readAllBytes())
 								: null);
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
-				return result.orElse(null);
+				return body.orElse(null);
 			}
 		};
 
@@ -312,16 +293,16 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 				.map(x -> Arrays.stream(x).filter(y -> y.annotationType() == Bind.class).findFirst().orElse(null))
 				.toArray(Bind[]::new);
 		var pp = invocation.method().getParameters();
-		var q = qs != null ? Query.create(qs) : null;
-		var oo2 = Arrays.stream(ptt).skip(oo1.length).map(x -> {
+		var q = qs != null ? new UriQueryBuilder(qs) : null;
+		var oo2 = Arrays.stream(ptt).skip(oo1.length).map(pt -> {
 			var i = ii.nextInt();
 			var n = Stream
 					.of(bb[i] != null ? bb[i].parameter() : null, bb[i] != null ? bb[i].value() : null, pp[i].getName())
-					.filter(y -> y != null && !y.isEmpty()).findFirst().orElse(null);
+					.filter(x -> x != null && !x.isEmpty()).findFirst().orElse(null);
 			var vv = q != null ? q.values(n).toArray(String[]::new) : null;
-			var bs2 = i == oo1.length || (x instanceof Class<?> c && c.isRecord()) ? bs : null;
+			var bs2 = i == oo1.length || (pt instanceof Class<?> c && c.isRecord()) ? bs : null;
 			Supplier<Converter> cs = () -> converter(bb[i] != null ? bb[i].resolver() : null);
-			return resolveArgument(x, exchange, vv, bs2, cs);
+			return resolveArgument(pt, exchange, vv, bs2, cs);
 		}).toArray();
 		return Stream.of(oo1, oo2).flatMap(Arrays::stream).toArray();
 	}
@@ -330,7 +311,6 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 //			EntryList<String, String> entries, 
 			Supplier<String> body, Supplier<Converter> converter) {
 //		IO.println("InvocationHandlerFactory.resolveArgument, type=" + type);
-//		var c = type instanceof Class<?> x ? x : null;
 		var c = Java.toClass(type);
 
 		if (c != null && HttpExchange.class.isAssignableFrom(c))

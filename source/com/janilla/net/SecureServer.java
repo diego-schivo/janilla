@@ -53,6 +53,7 @@ public abstract class SecureServer {
 	}
 
 	public void serve() {
+//		IO.println("SecureServer.serve");
 		Thread.startVirtualThread(() -> {
 			for (;;) {
 				try {
@@ -67,7 +68,7 @@ public abstract class SecureServer {
 			sch.socket().bind(endpoint);
 			for (;;) {
 				var ch = sch.accept();
-//				IO.println("ch=" + ch + ", ch.isBlocking()=" + ch.isBlocking());
+//				IO.println("SecureServer.serve, ch=" + ch + ", ch.isBlocking()=" + ch.isBlocking());
 				lastUsed.put(ch, new ThreadAndMillis(Thread.startVirtualThread(() -> {
 					try (var _ = ch) {
 						handleConnection(new CustomTransfer(ch, createSslEngine()));

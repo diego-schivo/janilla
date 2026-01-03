@@ -48,6 +48,7 @@ public class HttpEncoder {
 			bb2.put(bb1);
 			bb2.put(x.data());
 			break;
+
 		case GoawayFrame x:
 			pl = 2 * Integer.BYTES + x.additionalDebugData().length;
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
@@ -62,6 +63,7 @@ public class HttpEncoder {
 			bb2.putInt(x.errorCode());
 			bb2.put(x.additionalDebugData());
 			break;
+
 		case HeadersFrame x:
 			var he = new HeaderEncoder();
 			var ii = IntStream.builder();
@@ -96,12 +98,14 @@ public class HttpEncoder {
 			for (var j = 0; j < pl; j++)
 				bb2.put((byte) i.nextInt());
 			break;
+
 //		case Frame.Ping _:
 //			throw new RuntimeException();
 //		case Frame.Priority _:
 //			throw new RuntimeException();
 //		case Frame.RstStream _:
 //			throw new RuntimeException();
+
 		case SettingsFrame x:
 			pl = x.parameters().size() * (Short.BYTES + Integer.BYTES);
 			bb1.putShort((short) ((pl >>> 8) & 0xffff));
@@ -117,8 +121,20 @@ public class HttpEncoder {
 				bb2.putInt(y.value());
 			}
 			break;
-//		case Frame.WindowUpdate _:
-//			throw new RuntimeException();
+
+		case WindowUpdateFrame x:
+			pl = Integer.BYTES;
+			bb1.putShort((short) ((pl >>> 8) & 0xffff));
+			bb1.put((byte) pl);
+			bb1.put((byte) FrameName.WINDOW_UPDATE.type());
+			bb1.put((byte) 0x00);
+			bb1.putInt(x.streamIdentifier());
+			bb1.flip();
+			bb2 = ByteBuffer.allocate(bb1.remaining() + pl);
+			bb2.put(bb1);
+			bb2.putInt(x.windowSizeIncrement());
+			break;
+
 		default:
 			throw new RuntimeException();
 		}

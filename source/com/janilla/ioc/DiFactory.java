@@ -81,31 +81,11 @@ public class DiFactory {
 					}).findFirst().orElse(null);
 //			IO.println("Factory.create, c=" + c);
 			if (c == null)
-//				return _ -> null;
-				throw new RuntimeException("type=" + type);
-//			var c0 = Arrays.stream(c.getConstructors())
-//					.sorted(Comparator.<Constructor<?>>comparingInt(Constructor::getParameterCount).reversed())
-//					.findFirst().orElseThrow();
-//			IO.println("Factory.create, c0 = " + c0);
+//				throw new RuntimeException("type=" + type);
+				return _ -> null;
 			var cc = c.getConstructors();
 			var o = context.get();
-			var oe = o != null && c.getEnclosingClass() == o.getClass();
-//			if (oe)
-//				return aa -> {
-//					try {
-//						var aa2 = Stream.concat(Stream.of(o), Arrays.stream(c0.getParameters()).skip(1).map(x -> {
-//							if (aa != null && aa.containsKey(x.getName()))
-//								return aa.get(x.getName());
-//							var p = Reflection.property(o.getClass(), x.getName());
-//							return p != null ? p.get(o) : null;
-//						})).toArray();
-//						@SuppressWarnings("unchecked")
-//						var t = (T) c0.newInstance(aa2);
-//						return Reflection.copy(o, t);
-//					} catch (ReflectiveOperationException e) {
-//						throw new RuntimeException(e);
-//					}
-//				};
+			var oe = o != null && c.getEnclosingClass() == o.getClass() && !Modifier.isStatic(c.getModifiers());
 			return aa -> {
 				try {
 					Constructor<?> c1 = null;
@@ -113,9 +93,7 @@ public class DiFactory {
 					var n1 = -1;
 					for (var c2 : cc) {
 						var pp = Arrays.stream(c2.getParameters());
-						if (oe)
-							pp.skip(1);
-						var aa2 = pp.map(x -> {
+						var aa2 = (oe ? pp.skip(1) : pp).map(x -> {
 							if (aa != null && aa.containsKey(x.getName()))
 								return aa.get(x.getName());
 							var p = o != null ? Reflection.property(o.getClass(), x.getName()) : null;

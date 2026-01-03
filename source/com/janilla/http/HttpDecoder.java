@@ -36,15 +36,15 @@ public class HttpDecoder {
 	public Frame decodeFrame(byte[] bytes) {
 		var bb = ByteBuffer.wrap(bytes);
 		var pl = (Short.toUnsignedInt(bb.getShort()) << 8) | Byte.toUnsignedInt(bb.get());
-//		IO.println("pl=" + pl);
+//		IO.println("HttpDecoder.decodeFrame, pl=" + pl);
 		if (pl != bytes.length - 9)
 			throw new RuntimeException();
 		var t0 = Byte.toUnsignedInt(bb.get());
 		var fn = FrameName.of(t0);
 //		if (fn == null)
-//			IO.println("t0=" + t0 + ", t=" + fn);
+//			IO.println("HttpDecoder.decodeFrame, t0=" + t0 + ", t=" + fn);
 		var ff = Byte.toUnsignedInt(bb.get());
-//		IO.println("ff=" + ff);
+//		IO.println("HttpDecoder.decodeFrame, ff=" + ff);
 		var si = bb.getInt() & 0x8fffffff;
 //		IO.println("si=" + si);
 		var f = switch (fn) {
@@ -77,7 +77,7 @@ public class HttpDecoder {
 					.takeWhile(x -> x != -1).iterator();
 			while (ii.hasNext())
 				headerDecoder.decode(ii);
-//			IO.println("hd.headerFields=" + hd.headerFields());
+//			IO.println("HttpDecoder.decodeFrame, hd.headerFields=" + hd.headerFields());
 			yield new HeadersFrame(p, (ff & 0x04) != 0, (ff & 0x01) != 0, si, e, sd, w,
 					new ArrayList<>(headerDecoder.headerFields()));
 		}
@@ -104,7 +104,7 @@ public class HttpDecoder {
 		}
 		case WINDOW_UPDATE -> {
 			var wsi = bb.getInt() & 0x8fffffff;
-//			IO.println("wsi=" + wsi);
+//			IO.println("HttpDecoder.decodeFrame, wsi=" + wsi);
 			yield new WindowUpdateFrame(si, wsi);
 		}
 		default -> throw new RuntimeException(fn.name());

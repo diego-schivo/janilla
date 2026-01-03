@@ -76,6 +76,7 @@ public class HttpServer extends SecureServer {
 
 	@Override
 	protected void handleConnection(SecureTransfer transfer) throws IOException {
+//		IO.println("HttpServer.handleConnection");
 		do {
 			if (transfer.read() == -1)
 				return;
@@ -233,13 +234,31 @@ public class HttpServer extends SecureServer {
 			case HeadersFrame _:
 				var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
 				ff.add(f);
+
+				if (f instanceof DataFrame df) {
+					transfer.outLock().lock();
+					try {
+						for (var id : new int[] { f.streamIdentifier(), 0 }) {
+							transfer.out().clear();
+							transfer.out().put(he.encodeFrame(new WindowUpdateFrame(id, df.data().length)));
+							transfer.out().flip();
+							do
+								transfer.write();
+							while (transfer.out().hasRemaining());
+						}
+					} finally {
+						transfer.outLock().unlock();
+					}
+				}
+
 				var es = f instanceof DataFrame x ? x.endStream() : ((HeadersFrame) f).endStream();
 				if (es) {
 					streams.remove(f.streamIdentifier());
 					Thread.startVirtualThread(() -> handleStream(ff, transfer, he));
 				}
 				break;
-			case @SuppressWarnings("unused") SettingsFrame s:
+
+			case SettingsFrame _:
 //				IO.println("s=" + s);
 				transfer.outLock().lock();
 				try {
@@ -253,12 +272,15 @@ public class HttpServer extends SecureServer {
 					transfer.outLock().unlock();
 				}
 				break;
+
 			case PingFrame _:
 			case PriorityFrame _:
 			case WindowUpdateFrame _:
 				break;
+
 			case GoawayFrame _:
 				return;
+
 //			case Frame.RstStream _:
 			default:
 				throw new RuntimeException(f.toString());
@@ -298,21 +320,21 @@ public class HttpServer extends SecureServer {
 		}
 	}
 
-	protected void handleStream(List<Frame> ff, SecureTransfer transfer, HttpEncoder he) {
+	protected void handleStream(List<Frame> frames, SecureTransfer transfer, HttpEncoder encoder) {
 		try (var rq = new HttpRequest()) {
-			var si = ff.getFirst().streamIdentifier();
+			var id = frames.getFirst().streamIdentifier();
 			var hff = new ArrayList<HeaderField>();
-			var dbb = ByteBuffer.allocate(
-					ff.stream().filter(x -> x instanceof DataFrame).mapToInt(x -> ((DataFrame) x).data().length).sum());
-			for (var f : ff)
+			var dbb = ByteBuffer.allocate(frames.stream().filter(x -> x instanceof DataFrame)
+					.mapToInt(x -> ((DataFrame) x).data().length).sum());
+			for (var f : frames)
 				if (f instanceof HeadersFrame x)
 					hff.addAll(x.fields());
 				else
 					dbb.put(((DataFrame) f).data());
 			rq.setHeaders(hff);
-//			rq.setBody(IO.toReadableByteChannel(dbb.flip()));
+//			IO.println("HttpServer.handleStream, " + rq.getMethod() + " " + rq.getScheme() + "://" + rq.getAuthority()
+//					+ rq.getTarget());
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(dbb.array())));
-//			IO.println("HttpServer.handleStream, rq=" + rq.getTarget());
 			try (var rs = new HttpResponse()) {
 				rs.setStatus(0);
 				rs.setBody(new WritableByteChannel() {
@@ -331,9 +353,9 @@ public class HttpServer extends SecureServer {
 //						IO.println("HttpServer.handleStream, close");
 						if (closed)
 							return;
-						var f = written == 0 ? new HeadersFrame(false, true, true, si, false, 0, 0, rs.getHeaders())
-								: new DataFrame(false, true, si, new byte[0]);
-						var bb = he.encodeFrame(f);
+						var f = written == 0 ? new HeadersFrame(false, true, true, id, false, 0, 0, rs.getHeaders())
+								: new DataFrame(false, true, id, new byte[0]);
+						var bb = encoder.encodeFrame(f);
 						writeFrame(transfer, bb);
 						closed = true;
 					}
@@ -347,14 +369,14 @@ public class HttpServer extends SecureServer {
 						while (src.hasRemaining()) {
 							var n = Math.min(src.remaining(), 16384);
 							if (written == 0) {
-								var f = new HeadersFrame(false, true, false, si, false, 0, 0, rs.getHeaders());
-								var bb = he.encodeFrame(f);
+								var f = new HeadersFrame(false, true, false, id, false, 0, 0, rs.getHeaders());
+								var bb = encoder.encodeFrame(f);
 								writeFrame(transfer, bb);
 							}
 							var bb = new byte[n];
 							src.get(bb);
-							var f = new DataFrame(false, false, si, bb);
-							bb = he.encodeFrame(f);
+							var f = new DataFrame(false, false, id, bb);
+							bb = encoder.encodeFrame(f);
 							writeFrame(transfer, bb);
 							written += n;
 						}
@@ -363,6 +385,8 @@ public class HttpServer extends SecureServer {
 				});
 				var ex = createExchange(rq, rs);
 				ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
+//				IO.println("HttpServer.handleStream, " + rq.getMethod() + " " + rq.getScheme() + "://"
+//						+ rq.getAuthority() + rq.getTarget() + " " + rs.getStatus());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

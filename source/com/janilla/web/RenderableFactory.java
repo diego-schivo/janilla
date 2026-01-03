@@ -88,7 +88,7 @@ public class RenderableFactory {
 	}
 
 	protected <T> Renderer<T> createRenderer(Class<Renderer<T>> c) {
-		var x = diFactory.create(c);
+		var x = diFactory != null ? diFactory.create(c) : null;
 		try {
 			return x != null ? x : c.getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {

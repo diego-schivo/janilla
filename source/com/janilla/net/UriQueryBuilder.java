@@ -25,26 +25,49 @@
 package com.janilla.net;
 
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class UriQueryBuilder {
 
-	protected final StringBuilder builder = new StringBuilder();
+	protected final List<String[]> parameters = new ArrayList<>();
+
+	public UriQueryBuilder() {
+	}
+
+	public UriQueryBuilder(String rawQuery) {
+		if (rawQuery != null && !rawQuery.isEmpty())
+			for (var s : rawQuery.split("&")) {
+				var ss = s.split("=", 2);
+				append(URLDecoder.decode(ss[0], StandardCharsets.UTF_8),
+						URLDecoder.decode(ss[1], StandardCharsets.UTF_8));
+			}
+	}
 
 	public UriQueryBuilder append(String name, String value) {
-		if (value != null) {
-			if (!builder.isEmpty())
-				builder.append('&');
-			builder.append(URLEncoder.encode(name, StandardCharsets.UTF_8)).append('=')
-					.append(URLEncoder.encode(value, StandardCharsets.UTF_8));
-		}
+		if (value != null)
+			parameters.add(new String[] { name, value });
 		return this;
+	}
+
+	public UriQueryBuilder delete(String name) {
+		parameters.removeIf(x -> x[0].equals(name));
+		return this;
+	}
+
+	public Stream<String> values(String name) {
+		return parameters.stream().filter(x -> x[0].equals(name)).map(x -> x.length == 2 ? x[1] : null);
 	}
 
 	@Override
 	public String toString() {
-		return builder.toString();
+		return parameters.stream().map(x -> URLEncoder.encode(x[0], StandardCharsets.UTF_8) + "="
+				+ URLEncoder.encode(x[1], StandardCharsets.UTF_8)).collect(Collectors.joining("&"));
 	}
 
 	public static void main(String[] args) {

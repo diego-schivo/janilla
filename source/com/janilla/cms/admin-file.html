@@ -1,3 +1,5 @@
+<!--${content}-->
+
 <template id="create">
   <input id="${name}" type="file" name="${name}" class="visually-hidden" />
   <!--${dropzone}-->
@@ -18,7 +20,7 @@
 
 <template id="update">
   <div class="thumbnail">
-    <img src="/api/media/file/${data.name}" loading="lazy" />
+    <img src="${src}" loading="lazy" />
   </div>
   <p>${data.name}</p>
   <button type="button" name="remove">

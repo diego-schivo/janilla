@@ -60,6 +60,7 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.web.FileHandlerFactory;
+import com.janilla.web.NotFoundException;
 
 public abstract class CmsFileHandlerFactory implements FileHandlerFactory {
 
@@ -80,6 +81,9 @@ public abstract class CmsFileHandlerFactory implements FileHandlerFactory {
 	}
 
 	public static boolean handle(Path file, HttpResponse response) {
+		if (!Files.exists(file))
+			throw new NotFoundException();
+
 		response.setStatus(200);
 		response.setHeaderValue("cache-control", "max-age=3600");
 		var n = file.getFileName().toString();
@@ -96,6 +100,7 @@ public abstract class CmsFileHandlerFactory implements FileHandlerFactory {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+
 		try (var in = Files.newInputStream(file);
 				var out = Channels.newOutputStream((WritableByteChannel) response.getBody())) {
 			in.transferTo(out);

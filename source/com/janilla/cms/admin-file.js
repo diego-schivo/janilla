@@ -66,41 +66,56 @@ export default class AdminFile extends WebComponent {
     connectedCallback() {
         super.connectedCallback();
         this.addEventListener("change", this.handleChange);
+        this.addEventListener("click", this.handleClick);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener("change", this.handleChange);
+        this.removeEventListener("click", this.handleClick);
     }
 
     async updateDisplay() {
-        const p = this.dataset.path;
         const s = this.state;
-		s.field ??= this.closest("admin-edit").field(p);
-        this.appendChild(this.interpolateDom(s.field.data ? {
-            $template: "update",
-            data: s.field.data
-        } : {
-            $template: "create",
-            name: p,
-            dropzone: !s.file ? {
-                $template: "dropzone",
-                name: p
-            } : null,
-            input: s.file ? {
-                $template: "input",
-                value: s.file.name
-            } : null
+        const p = this.dataset.path;
+        s.field = this.closest("admin-edit").field(p);
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            content: s.field.data ? {
+                $template: "update",
+				src: `${this.closest("app-element").dataset.apiUrl}/media/file/${s.field.data.name}`,
+                data: s.field.data
+            } : {
+                $template: "create",
+                name: p,
+                dropzone: !s.file ? {
+                    $template: "dropzone",
+                    name: p
+                } : null,
+                input: s.file ? {
+                    $template: "input",
+                    value: s.file.name
+                } : null
+            }
         }));
     }
 
     handleChange = event => {
-        // console.log("event", event);
         const el = event.target.closest('[type="file"]');
         if (el) {
-            const s = this.state;
-            s.file = el.files[0];
+            this.state.file = el.files[0];
             this.requestDisplay();
+        }
+    }
+
+    handleClick = event => {
+        const el = event.target.closest("button");
+        const s = this.state;
+        switch (el?.name) {
+            case "remove":
+                this.closest("admin-element").setFieldData(s.field, null);
+                this.requestDisplay();
+                break;
         }
     }
 }

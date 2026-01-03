@@ -146,17 +146,17 @@ export default class AdminList extends WebComponent {
             publishDialog: s.publishDialog ? {
                 $template: "publish-dialog",
                 count: s.selectionIds.length,
-                name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
+                name: this.dataset.slug.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
             } : null,
             unpublishDialog: s.unpublishDialog ? {
                 $template: "unpublish-dialog",
                 count: s.selectionIds.length,
-                name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
+                name: this.dataset.slug.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
             } : null,
             deleteDialog: s.deleteDialog ? {
                 $template: "delete-dialog",
                 count: s.selectionIds.length,
-                name: this.dataset.name.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
+                name: this.dataset.slug.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
             } : null
         }));
     }
