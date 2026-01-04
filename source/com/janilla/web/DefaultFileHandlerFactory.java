@@ -211,6 +211,7 @@ public class DefaultFileHandlerFactory implements FileHandlerFactory {
 			throw new UncheckedIOException(e);
 		}
 	}
+
 //	public static void main(String[] args) throws Exception {
 //	var f = new FileHandlerFactory();
 //	f.setToInputStream(u -> u.getPath().equals("/test.html") ? new ByteArrayInputStream("""

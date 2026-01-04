@@ -63,7 +63,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected final Persistence persistence;
 
-	protected final Map<String, Persistence.IndexEntryGetter> indexEntryGetters = new LinkedHashMap<>();
+	protected final Map<String, IndexEntryGetter> indexEntryGetters = new LinkedHashMap<>();
 
 	protected final List<CrudObserver<E>> observers = new ArrayList<>();
 

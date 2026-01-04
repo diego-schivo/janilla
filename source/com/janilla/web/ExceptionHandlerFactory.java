@@ -30,6 +30,25 @@ import com.janilla.http.HttpHandlerFactory;
 
 public class ExceptionHandlerFactory implements HttpHandlerFactory {
 
+	@Override
+	public HttpHandler createHandler(Object object) {
+		if (object instanceof Exception e) {
+			var er = e.getClass().getAnnotation(Error.class);
+//			IO.println("ExceptionHandlerFactory.createHandler, er=" + er);
+			return x -> handle(er, x);
+		}
+		return null;
+	}
+
+	protected boolean handle(Error error, HttpExchange exchange) {
+		var rs = exchange.response();
+		var s = error != null ? error.code() : 500;
+//		IO.println("ExceptionHandlerFactory.handle, s=" + s);
+		rs.setStatus(s);
+		rs.setHeaderValue("cache-control", "no-cache");
+		return true;
+	}
+
 //	public static void main(String[] args) throws Exception {
 //		var f = new ExceptionHandlerFactory();
 //
@@ -60,23 +79,4 @@ public class ExceptionHandlerFactory implements HttpHandlerFactory {
 //				\r
 //				""") : t;
 //	}
-
-	@Override
-	public HttpHandler createHandler(Object object) {
-		if (object instanceof Exception e) {
-			var er = e.getClass().getAnnotation(Error.class);
-//			IO.println("ExceptionHandlerFactory.createHandler, er=" + er);
-			return x -> handle(er, x);
-		}
-		return null;
-	}
-
-	protected boolean handle(Error error, HttpExchange exchange) {
-		var rs = exchange.response();
-		var s = error != null ? error.code() : 500;
-//		IO.println("ExceptionHandlerFactory.handle, s=" + s);
-		rs.setStatus(s);
-		rs.setHeaderValue("cache-control", "no-cache");
-		return true;
-	}
 }

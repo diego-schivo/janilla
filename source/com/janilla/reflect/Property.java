@@ -39,7 +39,6 @@ import com.janilla.java.Java;
 
 public interface Property {
 
-//	AnnotatedElement annotatedElement();
 	Member member();
 
 	Class<?> type();
@@ -68,10 +67,6 @@ public interface Property {
 		}
 		return new Property() {
 
-//			@Override
-//			public AnnotatedElement annotatedElement() {
-//				return field;
-//			}
 			@Override
 			public Member member() {
 				return field;
@@ -141,14 +136,9 @@ public interface Property {
 		var gt0 = getter != null ? getter.getGenericReturnType() : setter.getGenericParameterTypes()[0];
 		var dc = getter != null ? getter.getDeclaringClass() : setter.getDeclaringClass();
 		var gt = gt0 instanceof TypeVariable v && dc != class1 ? Reflection.resolveTypeVariable(v, class1, dc) : gt0;
-		var t = gt != gt0 ? Java.toClass(gt)
-				: getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
+		var t = gt != gt0 ? Java.toClass(gt) : getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
 		return new Property() {
 
-//			@Override
-//			public AnnotatedElement annotatedElement() {
-//				return getter != null ? getter : setter;
-//			}
 			@Override
 			public Member member() {
 				return getter != null ? getter : setter;
@@ -214,10 +204,6 @@ public interface Property {
 	static Property of(Property property1, Property property2) {
 		return new Property() {
 
-//			@Override
-//			public AnnotatedElement annotatedElement() {
-//				return property2.annotatedElement();
-//			}
 			@Override
 			public Member member() {
 				return property2.member();

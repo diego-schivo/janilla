@@ -18,49 +18,6 @@
 				</excludes>
 			</resource>
 		</resources>
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>io.github.download-maven-plugin</groupId>
-					<artifactId>download-maven-plugin</artifactId>
-					<version>2.0.0</version>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-		<plugins>
-			<plugin>
-				<groupId>io.github.download-maven-plugin</groupId>
-				<artifactId>download-maven-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>install-geist-font</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>wget</goal>
-						</goals>
-						<configuration>
-							<url>https://github.com/vercel/geist-font/releases/download/1.6.0/geist-font-1.6.0.zip</url>
-							<unpack>false</unpack>
-							<outputDirectory>${project.build.directory}/classes/com/janilla/frontend</outputDirectory>
-							<sha256>784a8ea7d16e1dd71ceaad52f6f92d557ae58fd76c292b9f6d370085df936f53</sha256>
-						</configuration>
-					</execution>
-					<execution>
-						<id>install-lucide-icons</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>wget</goal>
-						</goals>
-						<configuration>
-							<url>https://github.com/lucide-icons/lucide/releases/download/0.562.0/lucide-icons-0.562.0.zip</url>
-							<unpack>false</unpack>
-							<outputDirectory>${project.build.directory}/classes/com/janilla/frontend</outputDirectory>
-							<sha256>bf4db856555194a2d8b855fc72169892f28f5bcab10222db2cada11e8966581a</sha256>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
 	</build>
 	<name>Janilla</name>
 	<description>A full web solution stack packed into a single lightweight library</description>

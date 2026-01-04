@@ -88,24 +88,24 @@ public class HtmlRenderer<T> extends Renderer<T> {
 					var av = new AnnotatedValue(null, value);
 					if (!e.isEmpty())
 						for (var k : e.split("\\.")) {
-							if (av.value == null)
+							if (av.value() == null)
 								break;
 							av = evaluate(av, k);
 //							IO.println("Renderer.interpolate, k=" + k + ", av=" + av);
 //							if (k.equals("selected"))
 //								IO.println("debugger");
 						}
-					var v = av.value;
+					var v = av.value();
 					vv.add(v);
 					var r = v instanceof Renderable<?> z ? z
-							: v != null && !(e.isEmpty() && av.annotated == null)
-									? renderableFactory.createRenderable(av.annotated, v)
+							: v != null && !(e.isEmpty() && av.annotated() == null)
+									? renderableFactory.createRenderable(av.annotated(), v)
 									: null;
 					var iis = v instanceof Iterator || v instanceof Iterable || v instanceof Stream;
 					if (r != null) {
 						if (r.renderer().templateKey1 == null)
 							r.renderer().templateKey1 = templateKey1;
-						if (iis && av.annotated instanceof AnnotatedParameterizedType apt)
+						if (iis && av.annotated() instanceof AnnotatedParameterizedType apt)
 							r.renderer().elementType = apt.getAnnotatedActualTypeArguments()[0];
 						v = r.get();
 					} else if (iis) {
@@ -155,7 +155,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 	protected AnnotatedValue evaluate(AnnotatedValue input, String key) {
 		AnnotatedElement ae;
 		Object v;
-		switch (input.value) {
+		switch (input.value()) {
 		case Function<?, ?> y:
 			ae = null;
 			@SuppressWarnings("unchecked")
@@ -167,13 +167,10 @@ public class HtmlRenderer<T> extends Renderer<T> {
 			v = y.get(key);
 			break;
 		default:
-			var p = Reflection.property(input.value.getClass(), key);
+			var p = Reflection.property(input.value().getClass(), key);
 			ae = p != null ? p.annotatedType() : null;
-			v = p != null ? p.get(input.value) : null;
+			v = p != null ? p.get(input.value()) : null;
 		}
 		return new AnnotatedValue(ae, v);
-	}
-
-	public record AnnotatedValue(AnnotatedElement annotated, Object value) {
 	}
 }

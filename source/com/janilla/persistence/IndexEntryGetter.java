@@ -22,18 +22,23 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.net;
+package com.janilla.persistence;
 
-import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.function.Function;
 
-public record Query(String[][] parameters) {
+public class IndexEntryGetter {
 
-	public Stream<String> values(String name) {
-		return Arrays.stream(parameters).filter(x -> x[0].equals(name)).map(x -> x.length > 1 ? x[1] : null);
+		protected Function<Object, Object> keyGetter;
+
+//		protected Property sortGetter;
+
+		protected Map.Entry<Object, Object> getIndexEntry(Object entity, Comparable<?> id)
+				throws ReflectiveOperationException {
+			var k = keyGetter != null ? keyGetter.apply(entity) : null;
+//			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
+			var v = id;
+			return keyGetter == null || k != null ? new AbstractMap.SimpleImmutableEntry<>(k, v) : null;
+		}
 	}
-
-	public static Query create(String string) {
-		return new Query(Arrays.stream(string.split("&")).map(x -> x.split("=")).toArray(String[][]::new));
-	}
-}

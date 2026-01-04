@@ -177,31 +177,4 @@ public final class Java {
 			}
 		});
 	}
-
-//	public static class EntryList<K, V> extends ArrayList<Map.Entry<K, V>> {
-//
-//		private static final long serialVersionUID = 2930611377458857452L;
-//
-//		public void add(K key, V value) {
-//			add(new AbstractMap.SimpleEntry<>(key, value));
-//		}
-//
-//		public V get(Object key) {
-//			return stream().filter(x -> Objects.equals(x.getKey(), key)).findFirst().map(Map.Entry::getValue)
-//					.orElse(null);
-//		}
-//
-//		public Stream<V> stream(Object key) {
-//			return stream().filter(x -> Objects.equals(x.getKey(), key)).map(Map.Entry::getValue);
-//		}
-//
-//		public void set(K key, V value) {
-//			stream().filter(x -> Objects.equals(x.getKey(), key)).findFirst().ifPresentOrElse(x -> x.setValue(value),
-//					() -> add(key, value));
-//		}
-//
-	//// public static void main(String[] args) { var l = new EntryList<String,
-	/// String>(); l.add("foo", "bar"); l.set("foo", "baz"); IO.println(l); assert
-	/// l.equals(List.of(Map.entry("foo", "baz"))) : l; }
-//	}
 }

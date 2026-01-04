@@ -26,13 +26,8 @@ package com.janilla.persistence;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Modifier;
-import java.util.AbstractMap;
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -52,7 +47,7 @@ public class Persistence {
 
 	protected final TypeResolver typeResolver;
 
-	protected final Configuration configuration = new Configuration();
+	protected final PersistenceConfiguration configuration = new PersistenceConfiguration();
 
 	public Persistence(SqliteDatabase database, Collection<Class<? extends Entity<?>>> types,
 			TypeResolver typeResolver) {
@@ -162,35 +157,5 @@ public class Persistence {
 			}
 			return null;
 		}, true);
-	}
-
-	protected static class Configuration {
-
-		protected Map<Class<?>, Crud<?, ?>> cruds = new LinkedHashMap<>();
-
-		protected Set<String> indexes = new LinkedHashSet<>();
-
-		public Map<Class<?>, Crud<?, ?>> cruds() {
-			return cruds;
-		}
-
-		public Set<String> indexes() {
-			return indexes;
-		}
-	}
-
-	protected static class IndexEntryGetter {
-
-		protected Function<Object, Object> keyGetter;
-
-//		protected Property sortGetter;
-
-		protected Map.Entry<Object, Object> getIndexEntry(Object entity, Comparable<?> id)
-				throws ReflectiveOperationException {
-			var k = keyGetter != null ? keyGetter.apply(entity) : null;
-//			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
-			var v = id;
-			return keyGetter == null || k != null ? new AbstractMap.SimpleImmutableEntry<>(k, v) : null;
-		}
 	}
 }
