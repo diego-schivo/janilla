@@ -256,13 +256,17 @@ export default class AdminList extends WebComponent {
                 break;
             }
             case "create": {
-                const j = await (await fetch(`${a.dataset.apiUrl}/${n}`, {
+                const r = await fetch(`${a.dataset.apiUrl}/${n}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({ $type: a2.state.schema["Collections"][n].elementTypes[0] })
-                })).json();
-                a.navigate(new URL(`/admin/collections/${n}/${j.id}`, location.href));
+                });
+                const j = await r.json();
+                if (r.ok)
+                    a.navigate(new URL(`/admin/collections/${n}/${j.id}`, location.href));
+                else
+                    a2.error(j);
                 break;
             }
             case "delete":

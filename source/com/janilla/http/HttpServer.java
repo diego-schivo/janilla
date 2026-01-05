@@ -235,10 +235,11 @@ public class HttpServer extends SecureServer {
 				var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
 				ff.add(f);
 
-				if (f instanceof DataFrame df) {
+				if (f instanceof DataFrame df && df.data().length != 0) {
 					transfer.outLock().lock();
 					try {
 						for (var id : new int[] { f.streamIdentifier(), 0 }) {
+//							IO.println("HttpServer.handleConnection2, id=" + id + ", df.data().length=" + df.data().length);
 							transfer.out().clear();
 							transfer.out().put(he.encodeFrame(new WindowUpdateFrame(id, df.data().length)));
 							transfer.out().flip();

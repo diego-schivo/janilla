@@ -49,10 +49,10 @@
  */
 import WebComponent from "web-component";
 
-export default class AdminCreateFirstUser extends WebComponent {
+export default class AdminForgotPassword extends WebComponent {
 
     static get templateNames() {
-        return ["admin-create-first-user"];
+        return ["admin-forgot-password"];
     }
 
     constructor() {
@@ -70,8 +70,13 @@ export default class AdminCreateFirstUser extends WebComponent {
     }
 
     async updateDisplay() {
-        document.title = "Create first user - Janilla";
-        this.appendChild(this.interpolateDom({ $template: "" }));
+        document.title = "Forgot password - Janilla";
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            content: {
+                $template: this.state.submitted ? "submitted" : "form"
+            }
+        }));
     }
 
     handleSubmit = async event => {
@@ -87,7 +92,7 @@ export default class AdminCreateFirstUser extends WebComponent {
                 x[y[0]] = y[1];
             return x;
         }, {});
-        const r = await fetch(`${a.dataset.apiUrl}/users/first-register`, {
+        const r = await fetch(`${a.dataset.apiUrl}/users/forgot-password`, {
             method: "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },
@@ -95,8 +100,8 @@ export default class AdminCreateFirstUser extends WebComponent {
         });
         const j = await r.json();
         if (r.ok) {
-            a.user = j;
-            a.navigate(new URL("/admin", location.href));
+            this.state.submitted = true;
+            this.requestDisplay();
         } else
             a2.error(j);
     }
