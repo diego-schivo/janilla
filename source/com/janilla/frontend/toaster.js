@@ -30,10 +30,6 @@ export default class Toaster extends WebComponent {
         return ["toaster"];
     }
 
-    static get observedAttributes() {
-        return [];
-    }
-
     constructor() {
         super();
     }

@@ -22,14 +22,15 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.frontend;
+import WebComponent from "web-component";
 
-import java.util.Map;
-import java.util.stream.Stream;
+export default class JanillaLogo extends WebComponent {
 
-public class Frontend {
+    static get templateNames() {
+        return ["janilla-logo"];
+    }
 
-	public static void putImports(Map<String, String> map) {
-		Stream.of("janilla-logo", "lucide-icon", "toaster", "web-component").forEach(x -> map.put(x, "/" + x + ".js"));
-	}
+    constructor() {
+        super();
+    }
 }
