@@ -47,44 +47,29 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-@font-face {
-  font-family: Geist;
-  src: url(/geist-font-1.6.0/geist-font-1.6.0/fonts/Geist/webfonts/Geist[wght].woff2) format('woff2');
-  font-display: swap;
-  font-weight: 100 900;
-}
-
-@font-face {
-  font-family: GeistMono;
-  src: url(/geist-font-1.6.0/geist-font-1.6.0/fonts/GeistMono/webfonts/GeistMono[wght].woff2) format('woff2');
-  font-display: swap;
-  font-weight: 100 900;
-}
-
-
 :root:has(.admin) {
   color-scheme: light dark;
-  --background-1: rgb(20, 20, 20);
-  --background-2: rgb(34, 34, 34);
+  --background-1: light-dark(rgba(0, 0, 0, 0), rgb(20, 20, 20));
+  --background-2: light-dark(rgb(245, 245, 245), rgb(34, 34, 34));
   --background-3: #0d74b6;
   --background-4: rgb(60, 60, 60);
-  --background-5: rgb(248, 250, 252);
+  --background-5: light-dark(rgb(47, 47, 47), rgb(248, 250, 252));
   --background-6: rgba(248, 250, 252, 0.9);
   --background-7: rgb(47, 47, 47);
   --background-8: rgba(20, 20, 20, 0.3);
   --background-9: rgb(181, 181, 181);
   --background-10: rgb(0, 0, 0);
   --background-11: rgb(235, 235, 235);
-  --border-1: rgb(60, 60, 60);
+  --border-1: light-dark(rgb(221, 221, 221), rgb(60, 60, 60));
   --border-2: rgba(255, 255, 255, 0.1);
   --border-3: rgb(74, 74, 74);
   --border-4: rgb(141, 141, 141);
   --border-5: rgb(255, 255, 255);
-  --color-1: rgb(235, 235, 235);
+  --color-1: light-dark(rgb(47, 47, 47), rgb(235, 235, 235));
   --color-2: rgb(141, 141, 141);
-  --color-3: rgb(20, 20, 20);
+  --color-3: light-dark(rgb(255, 255, 255), rgb(20, 20, 20));
   --color-4: rgb(248, 250, 252);
-  --color-5: rgb(181, 181, 181);
+  --color-5: light-dark(rgb(47, 47, 47), rgb(181, 181, 181));
   --color-6: rgb(128, 128, 128);
   --color-7: rgb(255, 255, 255);
   --color-8: rgb(218, 75, 72);

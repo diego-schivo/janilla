@@ -45,14 +45,14 @@ toaster-element {
 
   .success {
     background: rgb(0, 61, 28);
-    border-color: rgb(0, 61, 28);
+    border: 1px solid rgb(0, 61, 28);
     color: rgb(255, 255, 255);
   }
 
   .error {
-    background: rgb(123, 41, 39);
-    border-color: rgb(123, 41, 39);
-    color: rgb(255, 255, 255);
+    background: light-dark(rgb(252, 229, 227), rgb(123, 41, 39));
+    border: 1px solid light-dark(rgb(253, 177, 170), rgb(123, 41, 39));
+    color: rgb(105, 39, 37);
   }
 
   @media (max-width: 1440px) {

@@ -72,25 +72,31 @@
   .cards {
     gap: 0.5rem;
 
-  a {
-    align-items: flex-start;
-    background: var(--background-2);
-    border: 1px solid var(--border-1);
-    border-radius: 0.1875rem;
-    box-sizing: border-box;
-    display: flex;
-    font-size: 13px;
-    font-weight: 600;
-    justify-content: space-between;
-    min-height: 5rem;
-    padding: 1rem;
-    position: relative;
-    text-decoration: none;
-
-    &:hover {
-      border-color: rgb(87, 87, 87);
+    @media (min-width: 1441px) {
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(5, 1fr);
     }
-  }
+
+    a {
+      align-items: flex-start;
+      background: var(--background-2);
+      border: 1px solid var(--border-1);
+      border-radius: 0.1875rem;
+      box-sizing: border-box;
+      display: flex;
+      font-size: 13px;
+      font-weight: 600;
+      justify-content: space-between;
+      min-height: 5rem;
+      padding: 1rem;
+      position: relative;
+      text-decoration: none;
+  
+      &:hover {
+        border-color: rgb(87, 87, 87);
+      }
+    }
   }
 
   button[name="create"] {

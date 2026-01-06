@@ -30,6 +30,6 @@ import java.util.stream.Stream;
 public class Frontend {
 
 	public static void putImports(Map<String, String> map) {
-		Stream.of("janilla-logo", "lucide-icon", "toaster", "web-component").forEach(x -> map.put(x, "/" + x + ".js"));
+		Stream.of("janilla-logo", "toaster", "web-component").forEach(x -> map.put(x, "/" + x + ".js"));
 	}
 }

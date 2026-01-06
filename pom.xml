@@ -38,8 +38,7 @@
 	</developers>
 	<scm>
 		<connection>scm:git:git://github.com/diego-schivo/janilla.git</connection>
-		<developerConnection>
-			scm:git:ssh://git@github.com/diego-schivo/janilla.git</developerConnection>
+		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla.git</developerConnection>
 		<url>https://github.com/diego-schivo/janilla</url>
 		<tag>HEAD</tag>
 	</scm>

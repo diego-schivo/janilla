@@ -105,7 +105,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 
 	@Handle(method = "POST", path = "login")
 	public E login(LoginData data, UserHttpExchange exchange) {
-		IO.println("UserApi.login, data=" + data);
+//		IO.println("UserApi.login, data=" + data);
 		if (data == null || data.email() == null || data.email().isBlank() || data.password() == null
 				|| data.password().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
