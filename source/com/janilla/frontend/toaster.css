@@ -39,20 +39,20 @@ toaster-element {
     border: 1px solid rgb(255, 255, 255);
     border-radius: 0.25rem;
     color: rgb(255, 255, 255);
-    font-weight: 600;
+    /*font-weight: 600;*/
     padding: 1rem;
   }
 
   .success {
-    background: rgb(0, 61, 28);
-    border: 1px solid rgb(0, 61, 28);
-    color: rgb(255, 255, 255);
+    background: light-dark(rgb(236, 253, 243), rgb(0, 31, 15));
+    border: 1px solid light-dark(rgb(211, 253, 229), rgb(0, 61, 28));
+    color: light-dark(rgb(0, 138, 46), rgb(89, 243, 166));
   }
 
   .error {
-    background: light-dark(rgb(252, 229, 227), rgb(123, 41, 39));
+    background: light-dark(rgb(252, 229, 227), rgb(64, 32, 29));
     border: 1px solid light-dark(rgb(253, 177, 170), rgb(123, 41, 39));
-    color: rgb(105, 39, 37);
+    color: light-dark(rgb(105, 39, 37), rgb(254, 193, 188));
   }
 
   @media (max-width: 1440px) {

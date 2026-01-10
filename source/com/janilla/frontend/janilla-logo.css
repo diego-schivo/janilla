@@ -22,47 +22,6 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "web-component";
-
-export default class Toaster extends WebComponent {
-
-    static get templateNames() {
-        return ["toaster"];
-    }
-
-    constructor() {
-        super();
-    }
-
-    async updateDisplay() {
-        this.appendChild(this.interpolateDom({
-            $template: "",
-            items: this.state.items?.map(x => ({
-                $template: "item",
-                ...x
-            }))
-        }));
-    }
-
-    success(message) {
-        this.push(message, 'success');
-    }
-
-    error(message) {
-        this.push(message, 'error');
-    }
-
-    push(message, type) {
-        const s = this.state;
-        const o = {
-            message,
-            type
-        };
-        (s.items ??= []).push(o);
-        this.requestDisplay();
-		setTimeout(() => {
-            s.items.splice(s.items.findIndex(x => x === o), 1);
-            this.requestDisplay();
-        }, 4000);
-    }
+janilla-logo {
+  display: block;
 }
