@@ -33,6 +33,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
@@ -93,16 +94,24 @@ public final class Java {
 		}
 		return A.RESULTS.computeIfAbsent(package1, k -> {
 			var n = k.replace('.', '/');
-			return ModuleLayer.boot().configuration().modules().stream().map(ResolvedModule::reference).flatMap(x -> {
-				try (var r = x.open()) {
-					return r.find(n).stream();
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			}).map(u -> {
+			var uu = Java.class.getModule().isNamed() ? ModuleLayer.boot().configuration().modules().stream()
+					.map(ResolvedModule::reference).flatMap(x -> {
+						try (var r = x.open()) {
+							return r.find(n).stream();
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					}) : Thread.currentThread().getContextClassLoader().resources(n).map(x -> {
+						try {
+							return x.toURI();
+						} catch (URISyntaxException e) {
+							throw new RuntimeException(e);
+						}
+					});
+			return uu.map(x -> {
 //				IO.println("Java.getPackagePaths, u=" + u);
-				var m = A.JAR_URI_PATTERN.matcher(u.toString());
-				var d = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(u);
+				var m = A.JAR_URI_PATTERN.matcher(x.toString());
+				var d = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(x);
 //				IO.println("Java.getPackagePaths, d=" + d);
 				return d;
 			}).flatMap(x -> {

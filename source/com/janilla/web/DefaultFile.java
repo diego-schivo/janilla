@@ -24,7 +24,15 @@
  */
 package com.janilla.web;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
 public record DefaultFile(Module module, URI uri, String package1, String path, long size) implements File {
+
+	public InputStream newInputStream() throws IOException {
+		var n = path.substring(1);
+		return module != null ? module.getResourceAsStream(n)
+				: Thread.currentThread().getContextClassLoader().getResourceAsStream(n);
+	}
 }

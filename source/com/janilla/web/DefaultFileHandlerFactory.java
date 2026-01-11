@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.module.ResolvedModule;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileSystems;
@@ -40,6 +41,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,31 +72,45 @@ public class DefaultFileHandlerFactory implements FileHandlerFactory {
 				var n0 = x.getFileName().toString();
 				var i = n0.lastIndexOf('.');
 				var ex = i != -1 ? n0.substring(i + 1).toLowerCase() : null;
+
+				class B {
+
+					private Module m;
+
+					private URI u;
+
+					private B(String n) {
+						if (Java.class.getModule().isNamed())
+							ModuleLayer.boot().configuration().modules().stream().map(ResolvedModule::reference)
+									.map(x -> {
+										try (var r = x.open()) {
+											var u = r.find(n).orElse(null);
+											return u != null ? Map.entry(x, u) : null;
+										} catch (IOException e) {
+											throw new UncheckedIOException(e);
+										}
+									}).filter(Objects::nonNull).findFirst().ifPresent(x -> {
+										m = ModuleLayer.boot().findModule(x.getKey().descriptor().name()).get();
+										u = x.getValue();
+									});
+						else
+							Optional.ofNullable(Thread.currentThread().getContextClassLoader().getResource(n))
+									.ifPresent(x -> {
+										try {
+											u = x.toURI();
+										} catch (URISyntaxException e) {
+											throw new RuntimeException(e);
+										}
+									});
+					}
+				}
+
 				if (ex == null)
 					;
 				else if (EXTENSIONS.contains(ex)) {
 					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
 					var n = x.toString().replace(java.io.File.separatorChar, '/');
-					class B {
-
-						private Module m;
-
-						private URI u;
-					}
-					var b = ModuleLayer.boot().configuration().modules().stream().map(ResolvedModule::reference)
-							.map(y -> {
-								try (var r = y.open()) {
-									var o = r.find(n);
-									if (o.isEmpty())
-										return null;
-									var z = new B();
-									z.u = o.get();
-									z.m = ModuleLayer.boot().findModule(y.descriptor().name()).get();
-									return z;
-								} catch (IOException e) {
-									throw new UncheckedIOException(e);
-								}
-							}).filter(Objects::nonNull).findFirst().get();
+					var b = new B(n);
 					var f = d.resolve(x);
 					var r = new DefaultFile(b.m, b.u, p, "/" + n, Files.size(f));
 //					IO.println("r=" + r);
@@ -102,26 +118,7 @@ public class DefaultFileHandlerFactory implements FileHandlerFactory {
 				} else if (ex.equals("zip")) {
 					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
 					var n = x.toString().replace(java.io.File.separatorChar, '/');
-					class B {
-
-						private Module m;
-
-						private URI u;
-					}
-					var b = ModuleLayer.boot().configuration().modules().stream().map(ResolvedModule::reference)
-							.map(y -> {
-								try (var r = y.open()) {
-									var o = r.find(n);
-									if (o.isEmpty())
-										return null;
-									var z = new B();
-									z.u = o.get();
-									z.m = ModuleLayer.boot().findModule(y.descriptor().name()).get();
-									return z;
-								} catch (IOException e) {
-									throw new UncheckedIOException(e);
-								}
-							}).filter(Objects::nonNull).findFirst().get();
+					var b = new B(n);
 					var v = b.u.toString();
 					if (!v.startsWith("jar:"))
 						b.u = URI.create("jar:" + v);
@@ -193,7 +190,7 @@ public class DefaultFileHandlerFactory implements FileHandlerFactory {
 		rs.setHeaderValue("content-length", String.valueOf(file.size()));
 
 		try (var in = switch (file) {
-		case DefaultFile x -> x.module().getResourceAsStream(x.path().substring(1));
+		case DefaultFile x -> x.newInputStream();
 		case ZipEntryFile x -> {
 			var u = x.archive().uri();
 //			IO.println("FileHandlerFactory.handle, u=" + u);
