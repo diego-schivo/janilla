@@ -70,7 +70,8 @@ public final class Java {
 				x = d.relativize(x);
 				var n = x.toString();
 				n = n.endsWith(".class") ? n.substring(0, n.length() - ".class".length()) : null;
-				n = n != null ? n.replace(File.separatorChar, '.') : null;
+				n = n != null ? n.replace(File.separatorChar, '/') : null;
+				n = n != null ? n.replace('/', '.') : null;
 				Class<?> c;
 				try {
 					c = n != null ? Class.forName(n) : null;

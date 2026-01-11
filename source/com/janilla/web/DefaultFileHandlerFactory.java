@@ -108,7 +108,7 @@ public class DefaultFileHandlerFactory implements FileHandlerFactory {
 				if (ex == null)
 					;
 				else if (EXTENSIONS.contains(ex)) {
-					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
+					var p = x.getParent().toString().replace(java.io.File.separatorChar, '/').replace('/', '.');
 					var n = x.toString().replace(java.io.File.separatorChar, '/');
 					var b = new B(n);
 					var f = d.resolve(x);
@@ -116,7 +116,7 @@ public class DefaultFileHandlerFactory implements FileHandlerFactory {
 //					IO.println("r=" + r);
 					rr.add(r);
 				} else if (ex.equals("zip")) {
-					var p = x.getParent().toString().replace(java.io.File.separatorChar, '.');
+					var p = x.getParent().toString().replace(java.io.File.separatorChar, '/').replace('/', '.');
 					var n = x.toString().replace(java.io.File.separatorChar, '/');
 					var b = new B(n);
 					var v = b.u.toString();
