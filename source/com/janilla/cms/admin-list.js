@@ -212,10 +212,9 @@ export default class AdminList extends WebComponent {
                     method: "DELETE",
                     credentials: "include"
                 })).json();
-                if (j.some(x => x.$type === "User" && x.id === re.state.user.id)) {
-                    delete re.state.computeState;
-                    history.pushState({}, "", `/admin/collections/${n}`);
-                    dispatchEvent(new CustomEvent("popstate"));
+                if (j.some(x => x.$type === "User" && x.id === a.currentUser.id)) {
+                    a.currentUser = null;
+					a.navigate(new URL(`/admin/collections/${n}`, location.href));
                 } else {
                     delete s.deleteDialog;
                     delete s.data;

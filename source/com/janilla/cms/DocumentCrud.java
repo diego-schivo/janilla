@@ -196,9 +196,13 @@ public class DocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> ext
 //			IO.println("DocumentCrud.update, a.v2=" + a.v2);
 			updateVersionIndexes(a.v1 != null ? List.of(a.v1) : null, List.of(a.v2), id);
 			return a.d2;
-		}, true)
-				: update(id, x -> Reflection.copy(document, x,
-						y -> (include == null || include.contains(y)) && !exclude.contains(y)));
+		}, true) : update(id, d1 -> {
+//			IO.println("d1=" + d1);
+			var d2 = Reflection.copy(document, d1,
+					x -> (include == null || include.contains(x)) && !exclude.contains(x));
+//			IO.println("d2=" + d2);
+			return d2;
+		});
 	}
 
 	@Override

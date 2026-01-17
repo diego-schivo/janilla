@@ -148,7 +148,7 @@ public class HttpClient {
 					o += l;
 				}
 			for (var f : ff) {
-				IO.println("HttpClient.send, f=" + f);
+//				IO.println("HttpClient.send, f=" + f);
 				t.out().clear();
 				t.out().put(he.encodeFrame(f));
 				for (t.out().flip(); t.out().hasRemaining();)
@@ -229,20 +229,20 @@ public class HttpClient {
 				t.write();
 			while (!e.isOutboundDone());
 
-			var ci = true;
-			do {
+//			var ci = true;
+//			do {
 //				IO.println("HttpClient.send, ci=" + ci);
-				var n = t.read();
+//				var n = t.read();
 //				IO.println("HttpClient.send, n=" + n);
-				if (n == -1) {
-					ci = false;
-					break;
-				}
-			} while (!e.isInboundDone());
-			if (ci) {
+//				if (n == -1) {
+//					ci = false;
+//					break;
+//				}
+//			} while (!e.isInboundDone());
+//			if (ci) {
 //				IO.println("HttpClient.send, closeInbound");
-				e.closeInbound();
-			}
+//				e.closeInbound();
+//			}
 			return r;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);

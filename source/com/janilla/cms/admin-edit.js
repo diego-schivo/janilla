@@ -192,8 +192,8 @@ export default class AdminEdit extends WebComponent {
                 });
                 const j = await r.json();
                 if (r.ok) {
-                    if (j.$type === "User" && j.id === a.user.id)
-                        a.user = null;
+                    if (j.$type === "User" && j.id === a.currentUser.id)
+                        a.currentUser = null;
                     a.navigate(new URL(`/admin/${a2.state.pathSegments.slice(0, 2).join("/")}`, location.href));
                 } else
                     a2.error(j);

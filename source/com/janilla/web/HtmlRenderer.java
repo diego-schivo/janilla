@@ -31,12 +31,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterators;
-import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -44,133 +44,113 @@ import com.janilla.reflect.Reflection;
 
 public class HtmlRenderer<T> extends Renderer<T> {
 
-	protected static final Pattern COMMENT = Pattern.compile("<!--(\\$\\{.*?\\})-->");
-
-	protected static final Pattern ATTRIBUTE = Pattern.compile("[\\w-]+=\"([^\"]*?\\$\\{.*?\\}.*?)\"");
-
-	protected static final Pattern TEXT = Pattern.compile("(\\$\\{.*?\\})");
+	protected static final Pattern ATTRIBUTE_COMMENT_TEXT = Pattern.compile(
+			String.join("|", "[\\w-]+=\"([^\"]*?\\$\\{.*?\\}.*?)\"", "<!--(\\$\\{.*?\\})-->", "(\\$\\{.*?\\})"));
 
 	protected static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{(.*?)\\}");
 
 	@Override
 	public String apply(T value) {
-		var t = Objects.requireNonNullElse(template(value), "${}");
-		for (var i = 0; i < 3; i++) {
-			var p = switch (i) {
-			case 0 -> COMMENT;
-			case 1 -> ATTRIBUTE;
-			case 2 -> TEXT;
-			default -> throw new IndexOutOfBoundsException(i);
-			};
-			record A(MatchResult mr, Object[] vv) {
-			}
-			BiFunction<String, A, String> f = switch (i) {
-			case 0, 2 -> (s, _) -> s;
-			case 1 -> (s, a) -> {
-				var g = a.mr.group();
-				var g1 = a.mr.group(1);
-				if (a.vv.length == 1 && a.vv[0] instanceof Boolean b) {
+		var t = template(value);
+		var s = ATTRIBUTE_COMMENT_TEXT.matcher(t).replaceAll(x -> {
+			var i = IntStream.rangeClosed(1, x.groupCount()).filter(y -> x.group(y) != null).findFirst().getAsInt();
+			var av = new AnnotatedValue(null, value);
+			var vv = new ArrayList<>();
+			var s2 = PLACEHOLDER.matcher(x.group(i))
+					.replaceAll(y -> Matcher.quoteReplacement(string(av, y.group(1), vv::add)));
+			if (i == 1) {
+				var g = x.group();
+				var g1 = x.group(1);
+				if (vv.size() == 1 && vv.getFirst() instanceof Boolean b) {
 					if (!b)
 						return "";
 					if (g1.startsWith("${") && g1.indexOf("}") == g1.length() - 1)
-						s = "";
+						s2 = "";
 				}
-				var o = a.mr.start(1) - a.mr.start();
-				return g.substring(0, o) + s + g.substring(o + g1.length());
-			};
-			default -> throw new RuntimeException();
-			};
-			t = p.matcher(t).replaceAll(x -> {
-				var gs = x.group(1);
-				var vv = new ArrayList<>();
-				var s = PLACEHOLDER.matcher(gs).replaceAll(y -> {
-					var e = y.group(1);
-					var av = new AnnotatedValue(null, value);
-					if (!e.isEmpty())
-						for (var k : e.split("\\.")) {
-							if (av.value() == null)
-								break;
-							av = evaluate(av, k);
-//							IO.println("Renderer.interpolate, k=" + k + ", av=" + av);
-//							if (k.equals("selected"))
-//								IO.println("debugger");
-						}
-					var v = av.value();
-					vv.add(v);
-					var r = v instanceof Renderable<?> z ? z
-							: v != null && !(e.isEmpty() && av.annotated() == null)
-									? renderableFactory.createRenderable(av.annotated(), v)
-									: null;
-					var iis = v instanceof Iterator || v instanceof Iterable || v instanceof Stream;
-					if (r != null) {
-						if (r.renderer().templateKey1 == null)
-							r.renderer().templateKey1 = templateKey1;
-						if (iis && av.annotated() instanceof AnnotatedParameterizedType apt)
-							r.renderer().elementType = apt.getAnnotatedActualTypeArguments()[0];
-						v = r.get();
-					} else if (iis) {
-						var w = switch (v) {
-						case Stream<?> z -> z;
-						case Iterable<?> z -> StreamSupport.stream(z.spliterator(), false);
-						case Iterator<?> z -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(z, 0), false);
-						default -> throw new RuntimeException();
-						};
-						var d = annotation != null ? annotation.delimiter() : null;
-						var c = d != null && !d.isEmpty() ? Collectors.joining(d) : Collectors.joining();
-						v = w.map(z -> {
-							var r2 = renderableFactory.createRenderable(elementType, z);
-							if (r2.renderer().templateKey1 == null)
-								r2.renderer().templateKey1 = templateKey1;
-							return r2.get();
-						}).collect(c);
-					}
-					return Matcher.quoteReplacement(Objects.toString(v, ""));
-				});
-				s = f.apply(s, new A(x, vv.toArray()));
-//				IO.println("Renderer.interpolate, s=" + s);
-				return Matcher.quoteReplacement(s);
-			});
-		}
-		return t;
+				var o = x.start(1) - x.start();
+				s2 = g.substring(0, o) + s2 + g.substring(o + g1.length());
+			}
+//			IO.println("Renderer.interpolate, s=" + s);
+			return Matcher.quoteReplacement(s2);
+		});
+		return s;
 	}
 
 	protected String template(T value) {
-		var k = annotation != null ? annotation.template() : null;
-		if (k == null || k.isEmpty())
-			return null;
-		String k1, k2;
-		if (k.endsWith(".html")) {
-			k1 = k;
-			k2 = "";
-		} else {
-			k1 = templateKey1;
-			k2 = k;
+		var t = "${}";
+		if (annotation != null && !annotation.template().isEmpty()) {
+			var k1 = annotation.template();
+			var k2 = "";
+			if (!annotation.template().endsWith(".html")) {
+				k1 = templateKey1;
+				k2 = annotation.template();
+			}
+			t = renderableFactory.template(k1, k2);
+			if (t == null)
+				throw new NullPointerException(k1 + ", " + k2);
 		}
-		var t = renderableFactory.template(k1, k2);
-		if (t == null)
-			throw new NullPointerException(k1 + ", " + k2);
 		return t;
 	}
 
-	protected AnnotatedValue evaluate(AnnotatedValue input, String key) {
-		AnnotatedElement ae;
+	protected String string(AnnotatedValue input, String expression, Consumer<Object> consumer) {
+		if (!expression.isEmpty())
+			for (var k : expression.split("\\.")) {
+				if (input.value() == null)
+					break;
+				input = annotatedValue(input.value(), k);
+//						IO.println("Renderer.interpolate, k=" + k + ", av=" + av);
+			}
+		var v = input.value();
+		consumer.accept(v);
+		var r = v instanceof Renderable<?> x ? x
+				: v != null && !(expression.isEmpty() && input.annotated() == null)
+						? renderableFactory.createRenderable(input.annotated(), v)
+						: null;
+		var m = v instanceof Iterator || v instanceof Iterable || v instanceof Stream;
+		if (r != null) {
+			if (r.renderer().templateKey1 == null)
+				r.renderer().templateKey1 = templateKey1;
+			if (m && input.annotated() instanceof AnnotatedParameterizedType x)
+				r.renderer().elementType = x.getAnnotatedActualTypeArguments()[0];
+			v = r.get();
+		} else if (m) {
+			var vv = switch (v) {
+			case Stream<?> x -> x;
+			case Iterable<?> x -> StreamSupport.stream(x.spliterator(), false);
+			case Iterator<?> x -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(x, 0), false);
+			default -> throw new RuntimeException();
+			};
+			var d = annotation != null ? annotation.delimiter() : null;
+			var c = d != null && !d.isEmpty() ? Collectors.joining(d) : Collectors.joining();
+			v = vv.map(x -> {
+				var r2 = renderableFactory.createRenderable(elementType, x);
+				if (r2.renderer().templateKey1 == null)
+					r2.renderer().templateKey1 = templateKey1;
+				return r2.get();
+			}).collect(c);
+		}
+		return Objects.toString(v, "");
+	}
+
+	protected AnnotatedValue annotatedValue(Object input, String key) {
+		AnnotatedElement a;
 		Object v;
-		switch (input.value()) {
-		case Function<?, ?> y:
-			ae = null;
+		switch (input) {
+		case Function<?, ?> x:
+			a = null;
 			@SuppressWarnings("unchecked")
-			var f = (Function<String, ?>) y;
+			var f = (Function<String, ?>) x;
 			v = f.apply(key);
 			break;
-		case Map<?, ?> y:
-			ae = null;
-			v = y.get(key);
+		case Map<?, ?> x:
+			a = null;
+			v = x.get(key);
 			break;
 		default:
-			var p = Reflection.property(input.value().getClass(), key);
-			ae = p != null ? p.annotatedType() : null;
-			v = p != null ? p.get(input.value()) : null;
+			var p = Reflection.property(input.getClass(), key);
+			a = p != null ? p.annotatedType() : null;
+			v = p != null ? p.get(input) : null;
 		}
-		return new AnnotatedValue(ae, v);
+		return new AnnotatedValue(a, v);
 	}
 }

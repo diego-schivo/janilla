@@ -95,7 +95,7 @@ export default class AdminCreateFirstUser extends WebComponent {
         });
         const j = await r.json();
         if (r.ok) {
-            a.user = j;
+            a.currentUser = j;
             a.navigate(new URL("/admin", location.href));
         } else
             a2.error(j);

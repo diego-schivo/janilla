@@ -160,7 +160,13 @@ export default class WebComponent extends HTMLElement {
 const documentFragments = {};
 
 const getDocumentFragment = async name => {
-	documentFragments[name] ??= fetch(`/${name}.html`).then(x => {
+	documentFragments[name] ??= (() => {
+		const el = document.getElementById(name);
+		if (el) {
+			el.remove();
+			return el.content;
+		}
+		return fetch(`/${name}.html`).then(x => {
 		if (!x.ok)
 			throw new Error(`Failed to fetch /${name}.html: ${x.status} ${x.statusText}`);
 		return x.text();
@@ -169,6 +175,7 @@ const getDocumentFragment = async name => {
 		template.innerHTML = x;
 		return template.content;
 	});
+	})();
 	return await documentFragments[name];
 };
 

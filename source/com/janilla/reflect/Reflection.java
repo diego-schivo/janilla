@@ -99,7 +99,6 @@ public class Reflection {
 		var vv = kk.stream().map(k -> {
 			var v = source.apply(k);
 			return v != SKIP_COPY ? Java.mapEntry(k, v) : null;
-//		}).filter(Objects::nonNull).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		}).filter(Objects::nonNull).collect(HashMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
 		if (vv.isEmpty())
 			return destination;
@@ -109,25 +108,24 @@ public class Reflection {
 				if (vv.containsKey(x.getName()))
 					return vv.get(x.getName());
 				var p = property(c, x.getName());
-//				return p != null ? p.get(destination) : null;
 				if (p != null)
 					return p.get(destination);
-//				Field f;
-//				try {
-//					f = c.getDeclaredField(x.getName());
-//				} catch (NoSuchFieldException e) {
-//					f = null;
-//				}
-//				if (f != null && f.isAnnotationPresent(Flat.class)) {
-//					var c0 = x.getType().getConstructors()[0];
-//					Object d;
-//					try {
-//						d = c0.newInstance(IntStream.range(0, c0.getParameterCount()).mapToObj(_ -> null).toArray());
-//					} catch (ReflectiveOperationException e) {
-//						throw new RuntimeException(e);
-//					}
-//					return copy(source, d, filter);
-//				}
+
+				try {
+					var f = c.getDeclaredField(x.getName());
+					if (f != null && f.isAnnotationPresent(Flat.class)) {
+						var aa2 = Arrays.stream(f.getType().getRecordComponents()).map(x2 -> {
+							if (vv.containsKey(x2.getName()))
+								return vv.get(x2.getName());
+							var p2 = property(c, x2.getName());
+							return p2 != null ? p2.get(destination) : null;
+						}).toArray();
+						return f.getType().getConstructors()[0].newInstance(aa2);
+					}
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
+
 				try {
 					return x.getAccessor().invoke(destination);
 				} catch (ReflectiveOperationException e) {

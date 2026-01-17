@@ -100,7 +100,7 @@ public abstract class CollectionApi<ID extends Comparable<ID>, E extends Documen
 		var s = draft != null && draft.booleanValue() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != entity.documentStatus())
 			entity = Reflection.copy(Map.of("documentStatus", s), entity);
-		var nv = !(autosave != null&&autosave.booleanValue()); 
+		var nv = !(autosave != null && autosave.booleanValue());
 		return crud().update(id, entity, updateInclude(entity), nv);
 	}
 

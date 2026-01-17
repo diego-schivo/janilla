@@ -91,14 +91,14 @@ export default class Admin extends WebComponent {
 
     async updateDisplay() {
         const a = this.closest("app-element");
-        const ua = a.user?.roles?.some(x => x.name === "ADMIN");
+        const ua = a.currentUser?.roles?.some(x => x.name === "ADMIN");
         const p = this.dataset.path === "/account" && ua
-            ? `/collections/users/${a.user.id}`
+            ? `/collections/users/${a.currentUser.id}`
             : this.dataset.path;
         const s = this.state;
         s.pathSegments = p.length > 1 ? p.substring(1).split("/") : [];
 
-        if (a.user) {
+        if (a.currentUser) {
             if (["/create-first-user", "/forgot", "/login"].includes(p) || p.startsWith("/reset/")) {
                 a.navigate(new URL("/admin", location.href));
                 return;
@@ -106,7 +106,7 @@ export default class Admin extends WebComponent {
 
             if (p === "/logout") {
                 await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
-                a.user = j;
+                a.currentUser = null;
                 a.navigate(new URL("/admin", location.href));
                 return;
             }
@@ -151,16 +151,16 @@ export default class Admin extends WebComponent {
             return;
         }
 
-        const gg = s.schema ? Object.entries(s.schema["Data"]).map(([k, v]) => ({
+        const gg = this.dashboardGroups().map(g => ({
             $template: "group",
-            label: k.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
+            label: g.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
             checked: true,
-            links: Object.keys(s.schema[v.type]).map(x => ({
+            links: Object.keys(s.schema[s.schema["Data"][g].type]).map(x => ({
                 $template: "link",
-                href: `/admin/${k}/${x}`,
+                href: `/admin/${g}/${x}`,
                 text: x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" ")
             }))
-        })) : null;
+        }));
         this.appendChild(this.interpolateDom({
             $template: "",
             p: ua ? {
@@ -267,7 +267,7 @@ export default class Admin extends WebComponent {
                 groups: gg
             } : null
         }));
-		this.querySelector("dialog")?.close();
+        this.querySelector("dialog")?.close();
     }
 
     handleClick = async event => {
@@ -284,8 +284,10 @@ export default class Admin extends WebComponent {
                 case "logout": {
                     const a = this.closest("app-element");
                     await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
-                    a.user = null;
-                    a.navigate(new URL("/admin", location.href));
+                    a.currentUser = null;
+					this.querySelector("dialog").close();
+                    this.success("You have been logged out successfully.");
+                    a.navigate(new URL("/admin/login", location.href));
                     break;
                 }
             }
@@ -382,7 +384,8 @@ export default class Admin extends WebComponent {
     }
 
     dashboardGroups() {
-        return Object.keys(this.state.schema["Data"]);
+        const s = this.state;
+        return s.schema ? Object.keys(s.schema["Data"]) : [];
     }
 
     field(path, root) {

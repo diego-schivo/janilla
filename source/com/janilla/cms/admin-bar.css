@@ -48,29 +48,6 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 admin-bar {
-  /*
-  align-items: center;
-  display: flex;
-  font-size: small;
-  gap: 0.625rem;
-  padding: 0.5rem 2rem;
-
-  a {
-    color: rgb(255, 255, 255);
-    text-decoration: none;
-
-    &:nth-child(2) {
-      min-width: 3.125rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &:nth-child(3) {
-      margin-left: auto;
-    }
-  }
-  */
   background: rgb(0, 0, 0);
   display: flex;
   font-size: 0.8125rem;
@@ -78,7 +55,10 @@ admin-bar {
 
   nav {
     box-sizing: border-box;
+    /*
     max-width: 76.125rem;
+    */
+    max-width: 86rem;
     padding: 0.5rem 2rem;
     width: 100%;
   }

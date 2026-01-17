@@ -39,7 +39,7 @@ import com.janilla.ioc.DiFactory;
 
 public class RenderableFactory {
 
-	protected static final Pattern TEMPLATE_ELEMENT = Pattern.compile("<template id=\"([\\w-]+)\">(.*?)</template>",
+	protected static final Pattern TEMPLATE_ELEMENT = Pattern.compile("<ssr-template id=\"([\\w-]+)\">(.*?)</ssr-template>",
 			Pattern.DOTALL);
 
 	protected final Map<String, Map<String, String>> templates = new ConcurrentHashMap<>();
@@ -70,11 +70,12 @@ public class RenderableFactory {
 		if (t != null && t.endsWith(".html")) {
 			templates.computeIfAbsent(t, k -> {
 				var m = new ConcurrentHashMap<String, String>();
-				try (var s = getResourceAsStream(value, k)) {
-					if (s == null)
+				try (var in = getResourceAsStream(value, k)) {
+					if (in == null)
 						throw new NullPointerException(k);
-					m.put("", TEMPLATE_ELEMENT.matcher(new String(s.readAllBytes())).replaceAll(y -> {
-						m.put(y.group(1), y.group(2));
+					var s = new String(in.readAllBytes());
+					m.put("", TEMPLATE_ELEMENT.matcher(s).replaceAll(x -> {
+						m.put(x.group(1), x.group(2));
 						return "";
 					}));
 				} catch (IOException e) {
