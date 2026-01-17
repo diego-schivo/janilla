@@ -60,7 +60,7 @@ export default class Toaster extends WebComponent {
         };
         (s.items ??= []).push(o);
         this.requestDisplay();
-		setTimeout(() => {
+        setTimeout(() => {
             s.items.splice(s.items.findIndex(x => x === o), 1);
             this.requestDisplay();
         }, 4000);
