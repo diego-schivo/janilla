@@ -183,7 +183,7 @@ public class DocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> ext
 				});
 				persistence.database().table(versionTable).delete(new Object[] { a.id2 }, x -> {
 					var oo = x.reduce((_, y) -> y).get();
-					IO.println("oo=" + Arrays.toString(oo));
+//					IO.println("oo=" + Arrays.toString(oo));
 					@SuppressWarnings("unchecked")
 					var v1 = (Version<ID, D>) parse((String) oo[1], Version.class);
 					a.v1 = v1;

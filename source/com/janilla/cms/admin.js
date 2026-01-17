@@ -167,7 +167,7 @@ export default class Admin extends WebComponent {
                 $template: "p",
                 checked: true
             } : null,
-            aside: gg ? {
+            aside: gg.length ? {
                 $template: "aside",
                 groups: gg
             } : null,
@@ -262,7 +262,7 @@ export default class Admin extends WebComponent {
                         return { $template: s.schema ? "dashboard" : "loading" };
                 }
             })(),
-            dialog: gg ? {
+            dialog: gg.length ? {
                 $template: "dialog",
                 groups: gg
             } : null

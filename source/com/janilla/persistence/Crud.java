@@ -174,7 +174,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			var kk = new Object[] { idHelper != null ? idHelper.toDatabaseValue(id) : id };
 			t.delete(kk, rr -> {
 				var oo = rr.findFirst().get();
-				IO.println("oo=" + Arrays.toString(oo));
+//				IO.println("oo=" + Arrays.toString(oo));
 				a.e1 = parse((String) oo[oo.length - 1]);
 			});
 //			for (var o : observers)
