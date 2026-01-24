@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.reflect;
+package com.janilla.java;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -34,8 +34,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-
-import com.janilla.java.Java;
+import java.util.Arrays;
 
 public interface Property {
 
@@ -56,6 +55,8 @@ public interface Property {
 	boolean canGet();
 
 	boolean canSet();
+
+	boolean derived();
 
 	static Property of(Field field) {
 		var n = name(field);
@@ -115,6 +116,11 @@ public interface Property {
 			}
 
 			@Override
+			public boolean derived() {
+				return false;
+			}
+
+			@Override
 			public String toString() {
 				return n;
 			}
@@ -137,6 +143,7 @@ public interface Property {
 		var dc = getter != null ? getter.getDeclaringClass() : setter.getDeclaringClass();
 		var gt = gt0 instanceof TypeVariable v && dc != class1 ? Reflection.resolveTypeVariable(v, class1, dc) : gt0;
 		var t = gt != gt0 ? Java.toClass(gt) : getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
+		var d = class1.isRecord() && !Arrays.stream(class1.getRecordComponents()).anyMatch(x -> x.getName().equals(n));
 		return new Property() {
 
 			@Override
@@ -195,6 +202,11 @@ public interface Property {
 			}
 
 			@Override
+			public boolean derived() {
+				return d;
+			}
+
+			@Override
 			public String toString() {
 				return n;
 			}
@@ -247,6 +259,11 @@ public interface Property {
 			@Override
 			public boolean canSet() {
 				return property2.canSet();
+			}
+
+			@Override
+			public boolean derived() {
+				return property2.derived();
 			}
 		};
 	}

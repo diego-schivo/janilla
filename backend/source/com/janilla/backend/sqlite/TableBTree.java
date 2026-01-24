@@ -39,8 +39,6 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import com.janilla.backend.io.TransactionalByteChannel;
-
 public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 
 	public TableBTree(SqliteDatabase database, long rootNumber) {

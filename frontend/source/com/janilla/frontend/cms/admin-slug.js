@@ -65,19 +65,19 @@ export default class AdminSlug extends WebComponent {
 
     connectedCallback() {
         super.connectedCallback();
-        const s = this.state;
+        const s = this.customState;
         s.edit = this.closest("admin-edit");
         s.edit.addEventListener("input", this.handleInput);
     }
 
     disconnectedCallback() {
-        const s = this.state;
+        const s = this.customState;
         s.edit.removeEventListener("input", this.handleInput);
         super.disconnectedCallback();
     }
 
     async updateDisplay() {
-        const s = this.state;
+        const s = this.customState;
         const p = this.dataset.path;
         s.field ??= s.edit.field(p);
         this.appendChild(this.interpolateDom({
@@ -99,7 +99,7 @@ export default class AdminSlug extends WebComponent {
     handleInput = event => {
         const el = event.target.closest('input[name="title"]');
         if (el) {
-            this.state.field.data = el.value.split(/\W+/).filter(x => x).map(x => x.toLowerCase()).join("-");
+            this.customState.field.data = el.value.split(/\W+/).filter(x => x).map(x => x.toLowerCase()).join("-");
             this.requestDisplay();
         }
     }

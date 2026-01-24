@@ -22,37 +22,26 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.io;
+package com.janilla.java;
 
 import java.io.IOException;
-import java.nio.channels.SeekableByteChannel;
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 
-public class FilterSeekableByteChannel<C extends SeekableByteChannel> extends FilterByteChannel<C>
-		implements SeekableByteChannel {
+public class FilterByteChannel<C extends ByteChannel> extends FilterChannel<C> implements ByteChannel {
 
-	public FilterSeekableByteChannel(C channel) {
+	public FilterByteChannel(C channel) {
 		super(channel);
 	}
 
 	@Override
-	public long position() throws IOException {
-		return channel.position();
+	public int read(ByteBuffer dst) throws IOException {
+		return channel.read(dst);
 	}
 
 	@Override
-	public SeekableByteChannel position(long newPosition) throws IOException {
-		channel.position(newPosition);
-		return this;
-	}
-
-	@Override
-	public long size() throws IOException {
-		return channel.size();
-	}
-
-	@Override
-	public SeekableByteChannel truncate(long size) throws IOException {
-		channel.truncate(size);
-		return this;
+	public int write(ByteBuffer src) throws IOException {
+//		IO.println("src=" + src);
+		return channel.write(src);
 	}
 }

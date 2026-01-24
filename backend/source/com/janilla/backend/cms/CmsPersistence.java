@@ -49,81 +49,39 @@
  */
 package com.janilla.backend.cms;
 
-import java.lang.reflect.Modifier;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.CrudObserver;
 import com.janilla.backend.persistence.Entity;
 import com.janilla.backend.persistence.Persistence;
-import com.janilla.backend.persistence.Store;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.java.TypeResolver;
-import com.janilla.reflect.Reflection;
 
 public class CmsPersistence extends Persistence {
 
-	protected static final CrudObserver DOCUMENT_OBSERVER = new CrudObserver() {
+	protected static final DocumentObserver<?> DOCUMENT_OBSERVER = new DocumentObserver<>();
 
-		@Override
-		public Entity beforeCreate(Entity entity) {
-			var d = (Document<?>) entity;
-			var i = Instant.now();
-			var v = d.getClass().getAnnotation(Versions.class);
-			var m = Map.<String, Object>of("createdAt", i, "updatedAt", i);
-			if (d.documentStatus() == null) {
-				m = new HashMap<>(m);
-				m.put("documentStatus", v != null && v.drafts() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
-			}
-			return Reflection.copy(m, entity);
-		}
-
-		@Override
-		public Entity beforeUpdate(Entity entity) {
-			var d = (Document<?>) entity;
-			var i = Instant.now();
-			var m = Map.<String, Object>of("updatedAt", i);
-			if (d.documentStatus() == DocumentStatus.PUBLISHED) {
-				m = new HashMap<>(m);
-				m.put("publishedAt", i);
-			}
-			return Reflection.copy(m, entity);
-		}
-	};
-
-	public CmsPersistence(SqliteDatabase database, Collection<Class<? extends Entity<?>>> types,
+	public CmsPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 			TypeResolver typeResolver) {
-		super(database, types, typeResolver);
+		super(database, storables, typeResolver);
 	}
-
-//	@Override
-//	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
-//		super.configure(type);
-//		var v = type.getAnnotation(Versions.class);
-//		if (v != null && v.drafts())
-//			for (var k : configuration.indexes().toArray(String[]::new)) {
-//				var ss = k.split("_");
-//				if (ss[0].equals(type.getSimpleName()))
-//					configuration.indexes().add(k + "Draft");
-//			}
-//	}
 
 	@Override
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		if (!Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
-				&& type.isAnnotationPresent(Store.class)) {
-			@SuppressWarnings("unchecked")
-			var t = (Class<? extends Document<?>>) type;
-			@SuppressWarnings({ "rawtypes", "unchecked" })
-			var c = (Crud<?, E>) new DocumentCrud(t, idConverter(t), this);
-			c.observers().add(DOCUMENT_OBSERVER);
-			return c;
-		}
-		return null;
+//		if (!Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
+//				&& type.isAnnotationPresent(Store.class)) {
+		@SuppressWarnings("unchecked")
+		var t = (Class<? extends Document<?>>) type;
+		@SuppressWarnings({ "rawtypes", "unchecked" })
+		var c = (Crud<?, E>) new DocumentCrud(t, idConverter(t), this);
+		@SuppressWarnings("unchecked")
+		var o = (CrudObserver<E>) DOCUMENT_OBSERVER;
+		c.observers().add(o);
+		return c;
+//		}
+//		return null;
 	}
 
 	@Override

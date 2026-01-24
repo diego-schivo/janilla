@@ -65,13 +65,13 @@ export default class AdminDocument extends WebComponent {
 
     connectedCallback() {
         super.connectedCallback();
-        const s = this.state;
+        const s = this.customState;
         s.admin = this.closest("admin-element");
         s.admin.addEventListener("documentchanged", this.handleDocumentChanged);
     }
 
     disconnectedCallback() {
-        const s = this.state;
+        const s = this.customState;
         super.disconnectedCallback();
         s.admin?.removeEventListener("documentchanged", this.handleDocumentChanged);
     }
@@ -83,15 +83,15 @@ export default class AdminDocument extends WebComponent {
                 edit: "Editing",
                 versions: "Versions",
                 api: "API"
-            })[a.state.pathSegments[a.state.collectionSlug ? 3 : 2] ?? "edit"];
-            document.title = `${x} - ${a.state.document.$type} - Janilla`;
+            })[a.customState.pathSegments[a.customState.collectionSlug ? 3 : 2] ?? "edit"];
+            document.title = `${x} - ${a.customState.document.$type} - Janilla`;
         }
         this.appendChild(this.interpolateDom({
             $template: "",
-            title: [a.title(a.state.document)].map(x => x?.length ? x : a.state.pathSegments[2])[0],
+            title: [a.title(a.customState.document)].map(x => x?.length ? x : a.customState.pathSegments[2])[0],
             tabs: [
                 "edit",
-                Object.hasOwn(a.state.document, "versionCount") ? "versions" : null,
+                Object.hasOwn(a.customState.document, "versionCount") ? "versions" : null,
                 "api"
             ].filter(x => x).join(),
             tab: [({
@@ -99,15 +99,15 @@ export default class AdminDocument extends WebComponent {
                 version: "versions"
             })[this.dataset.subview]].map(x => x ?? this.dataset.subview)[0],
             editButton: { $template: "edit-button" },
-            versionsButton: Object.hasOwn(a.state.document, "versionCount") ? {
+            versionsButton: Object.hasOwn(a.customState.document, "versionCount") ? {
                 $template: "versions-button",
-                count: a.state.document.versionCount
+                count: a.customState.document.versionCount
             } : null,
             apiButton: { $template: "api-button" },
             editPanel: this.dataset.subview === "default" ? {
                 $template: "edit-panel",
-                slug: a.state.pathSegments[1],
-                id: a.state.pathSegments[2],
+                slug: a.customState.pathSegments[1],
+                id: a.customState.pathSegments[2],
                 updatedAt: this.dataset.updatedAt
             } : null,
             versionsPanel: ["versions", "version"].includes(this.dataset.subview) ? {
@@ -117,7 +117,7 @@ export default class AdminDocument extends WebComponent {
             } : null,
             apiPanel: this.dataset.subview === "api" ? {
                 $template: "api-panel",
-                json: JSON.stringify(a.state.document, null, "  ")
+                json: JSON.stringify(a.customState.document, null, "  ")
             } : null
         }));
     }

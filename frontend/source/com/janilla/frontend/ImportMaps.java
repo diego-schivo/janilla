@@ -22,30 +22,17 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.io;
+package com.janilla.frontend;
 
-import java.io.IOException;
-import java.nio.channels.Channel;
+import java.util.Map;
 
-public class FilterChannel<C extends Channel> implements Channel {
+public class ImportMaps {
 
-	protected final C channel;
-
-	public FilterChannel(C channel) {
-		this.channel = channel;
-	}
-
-	public C channel() {
-		return channel;
-	}
-
-	@Override
-	public boolean isOpen() {
-		return channel.isOpen();
-	}
-
-	@Override
-	public void close() throws IOException {
-		channel.close();
+	public static void putImports(Map<String, String> map) {
+		class A {
+			private static final String[] MODULES = { "janilla-logo", "toaster", "web-component" };
+		}
+		for (var x : A.MODULES)
+			map.put(x, "/" + x + ".js");
 	}
 }

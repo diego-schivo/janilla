@@ -76,7 +76,7 @@ export default class AdminFile extends WebComponent {
     }
 
     async updateDisplay() {
-        const s = this.state;
+        const s = this.customState;
         const p = this.dataset.path;
         s.field = this.closest("admin-edit").field(p);
         this.appendChild(this.interpolateDom({
@@ -103,14 +103,14 @@ export default class AdminFile extends WebComponent {
     handleChange = event => {
         const el = event.target.closest('[type="file"]');
         if (el) {
-            this.state.file = el.files[0];
+            this.customState.file = el.files[0];
             this.requestDisplay();
         }
     }
 
     handleClick = event => {
         const el = event.target.closest("button");
-        const s = this.state;
+        const s = this.customState;
         switch (el?.name) {
             case "remove":
                 this.closest("admin-element").setFieldData(s.field, null);

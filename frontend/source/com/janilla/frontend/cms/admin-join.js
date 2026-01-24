@@ -77,11 +77,11 @@ export default class AdminJoinField extends WebComponent {
 
 	async updateDisplay() {
 		const p = this.dataset.path;
-		const s = this.state;
+		const s = this.customState;
 		s.field = this.closest("admin-edit").field(p);
 		const a = this.closest("admin-element");
 
-		s.slug = Object.entries(a.state.schema["Collections"])
+		s.slug = Object.entries(a.customState.schema["Collections"])
 			.find(([_, v]) => v.elementTypes[0] === s.field.referenceType)[0]
 			.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-");
 		const hh = a.headers(s.slug);
@@ -108,15 +108,15 @@ export default class AdminJoinField extends WebComponent {
 					}))
 				}))
 			},
-			drawer: this.state.drawer ? {
+			drawer: this.customState.drawer ? {
 				$template: "drawer",
-				...this.state.drawer
+				...this.customState.drawer
 			} : null
 		}));
 	}
 
 	handleOpenDrawer = event => {
-		const s = this.state;
+		const s = this.customState;
 		s.drawer = {
 			slug: s.slug,
 			id: event.detail.id
@@ -126,7 +126,7 @@ export default class AdminJoinField extends WebComponent {
 
 	handleCloseDrawer = async () => {
 		await this.closest("admin-edit").reloadFieldData(this.dataset.path);
-		delete this.state.drawer;
+		delete this.customState.drawer;
 		this.requestDisplay();
 	}
 }

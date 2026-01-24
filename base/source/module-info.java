@@ -29,7 +29,6 @@ module com.janilla.base {
 	exports com.janilla.java;
 	exports com.janilla.json;
 	exports com.janilla.net;
-	exports com.janilla.reflect;
 	exports com.janilla.web;
 
 	opens com.janilla.net;

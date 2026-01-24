@@ -56,65 +56,65 @@ import java.util.function.Predicate;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.DollarTypeResolver;
-import com.janilla.reflect.Reflection;
+import com.janilla.java.Reflection;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 
-public abstract class GlobalApi<ID extends Comparable<ID>, E extends Document<ID>> {
+public abstract class GlobalApi<ID extends Comparable<ID>, D extends Document<ID>> {
 
-	protected final Class<E> type;
+	protected final Class<D> type;
 
 	protected final Predicate<HttpExchange> drafts;
 
 	protected final Persistence persistence;
 
-	protected GlobalApi(Class<E> type, Predicate<HttpExchange> drafts, Persistence persistence) {
+	protected GlobalApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence) {
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;
 	}
 
 	@Handle(method = "POST")
-	public E create(@Bind(resolver = DollarTypeResolver.class) E entity) {
-		return crud().create(entity);
+	public D create(@Bind(resolver = DollarTypeResolver.class) D document) {
+		return crud().create(document);
 	}
 
 	@Handle(method = "GET")
-	public E read(HttpExchange exchange) {
+	public D read(HttpExchange exchange) {
 		return crud().read(id(), drafts.test(exchange));
 	}
 
 	@Handle(method = "PUT")
-	public E update(@Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
+	public D update(@Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
-		if (s != entity.documentStatus())
-			entity = Reflection.copy(Map.of("documentStatus", s), entity);
-		return crud().update(id(), entity, null, !Boolean.TRUE.equals(autosave));
+		if (s != document.documentStatus())
+			document = Reflection.copy(Map.of("documentStatus", s), document);
+		return crud().update(id(), document, null, !Boolean.TRUE.equals(autosave));
 	}
 
 	@Handle(method = "DELETE")
-	public E delete() {
+	public D delete() {
 		return crud().delete(id());
 	}
 
 	@Handle(method = "GET", path = "versions")
-	public List<Version<ID, E>> readVersions() {
+	public List<Version<ID, D>> readVersions() {
 		return crud().readVersions(id());
 	}
 
 	@Handle(method = "GET", path = "versions/(\\d+)")
-	public Version<ID, E> readVersion(ID versionId) {
+	public Version<ID, D> readVersion(ID versionId) {
 		return crud().readVersion(versionId);
 	}
 
 	@Handle(method = "POST", path = "versions/(\\d+)")
-	public E restoreVersion(ID versionId, Boolean draft) {
+	public D restoreVersion(ID versionId, Boolean draft) {
 		return crud().restoreVersion(versionId,
 				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 	}
 
-	protected DocumentCrud<ID, E> crud() {
-		return (DocumentCrud<ID, E>) persistence.crud(type);
+	protected DocumentCrud<ID, D> crud() {
+		return (DocumentCrud<ID, D>) persistence.crud(type);
 	}
 
 	protected abstract ID id();

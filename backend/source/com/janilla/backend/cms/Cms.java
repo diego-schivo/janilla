@@ -68,12 +68,13 @@ import java.util.stream.IntStream;
 
 import com.janilla.http.HttpRequest;
 import com.janilla.http.MultipartFormData;
+import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
-import com.janilla.reflect.Reflection;
+import com.janilla.java.Reflection;
 
 public class Cms {
 
-	public static Map<String, Map<String, Map<String, Object>>> schema(Class<?> dataClass) {
+	public static Map<String, Map<String, Map<String, Object>>> schema(Class<?> dataClass, DiFactory diFactory) {
 		var m1 = new HashMap<String, Map<String, Map<String, Object>>>();
 		var q = new ArrayDeque<Class<?>>();
 		q.add(dataClass);
@@ -88,8 +89,8 @@ public class Cms {
 		do {
 			var c = q.remove();
 //			IO.println("WebsiteTemplate.schema, c=" + c);
-			var v = c.getAnnotation(Versions.class);
-			var d = v != null && v.drafts();
+//			var v = c.getAnnotation(Versions.class);
+//			var d = v != null && v.drafts();
 			var m2 = new LinkedHashMap<String, Map<String, Object>>();
 //			Reflection.properties(c).filter(x -> !(skip.contains(x.name()) || (x.name().equals("publishedAt") && !d)))
 			Reflection.properties(c).filter(x -> !skip.contains(x.name())).forEach(p -> {
@@ -99,6 +100,7 @@ public class Cms {
 				List<Class<?>> cc;
 				if (p.type() == List.class) {
 					var c2 = Java.toClass(((ParameterizedType) p.genericType()).getActualTypeArguments()[0]);
+					c2 = diFactory.actualType(c2);
 					var apt = p.annotatedType() instanceof AnnotatedParameterizedType y ? y : null;
 					var ta = apt != null ? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class) : null;
 					if (c2 == Long.class) {

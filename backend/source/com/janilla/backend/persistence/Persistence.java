@@ -25,8 +25,7 @@
 package com.janilla.backend.persistence;
 
 import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Modifier;
-import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -35,26 +34,26 @@ import java.util.stream.Stream;
 
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
+import com.janilla.java.Property;
+import com.janilla.java.Reflection;
 import com.janilla.java.TypeResolver;
-import com.janilla.reflect.Property;
-import com.janilla.reflect.Reflection;
 
 public class Persistence {
 
 	protected final SqliteDatabase database;
 
-	protected final Collection<Class<? extends Entity<?>>> types;
+	protected final List<Class<? extends Entity<?>>> storables;
 
 	protected final TypeResolver typeResolver;
 
 	protected final PersistenceConfiguration configuration = new PersistenceConfiguration();
 
-	public Persistence(SqliteDatabase database, Collection<Class<? extends Entity<?>>> types,
+	public Persistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 			TypeResolver typeResolver) {
 		this.database = database;
-		this.types = types;
+		this.storables = storables;
 		this.typeResolver = typeResolver;
-		for (var t : types)
+		for (var t : storables)
 			configure(t);
 		if (database.schema().isEmpty())
 			createStoresAndIndexes();
@@ -128,8 +127,9 @@ public class Persistence {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		return !Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
-				&& type.isAnnotationPresent(Store.class) ? new Crud(type, idConverter(type), this) : null;
+//		return !Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
+//				&& type.isAnnotationPresent(Store.class) ? new Crud(type, idConverter(type), this) : null;
+		return new Crud(type, idConverter(type), this);
 	}
 
 	public <ID extends Comparable<ID>> IdHelper<ID> idConverter(Class<?> type) {

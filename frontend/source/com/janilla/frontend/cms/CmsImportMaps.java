@@ -50,16 +50,19 @@
 package com.janilla.frontend.cms;
 
 import java.util.Map;
-import java.util.stream.Stream;
 
-public class CmsFrontend {
+public class CmsImportMaps {
 
 	public static void putImports(Map<String, String> map) {
-		Stream.of("admin", "admin-array", "admin-bar", "admin-checkbox", "admin-create-first-user", "admin-dashboard",
-				"admin-document", "admin-drawer", "admin-drawer-link", "admin-edit", "admin-fields", "admin-file",
-				"admin-forgot-password", "admin-hidden", "admin-join", "admin-list", "admin-login", "admin-radio-group",
-				"admin-relationship", "admin-rich-text", "admin-select", "admin-slug", "admin-tabs", "admin-text",
-				"admin-unauthorized", "admin-upload", "admin-version", "admin-versions")
-				.forEach(x -> map.put(x, "/" + x + ".js"));
+		class A {
+			private static final String[] MODULES = { "admin", "admin-array", "admin-bar", "admin-checkbox",
+					"admin-create-first-user", "admin-dashboard", "admin-document", "admin-drawer", "admin-drawer-link",
+					"admin-edit", "admin-fields", "admin-file", "admin-forgot-password", "admin-hidden", "admin-join",
+					"admin-list", "admin-login", "admin-radio-group", "admin-relationship", "admin-rich-text",
+					"admin-select", "admin-slug", "admin-tabs", "admin-text", "admin-unauthorized", "admin-upload",
+					"admin-version", "admin-versions" };
+		}
+		for (var x : A.MODULES)
+			map.put(x, "/" + x + ".js");
 	}
 }

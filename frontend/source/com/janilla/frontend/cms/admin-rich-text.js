@@ -78,7 +78,7 @@ export default class AdminRichText extends WebComponent {
     }
 
     async updateDisplay() {
-		const s = this.state;
+		const s = this.customState;
         const p = this.dataset.path;
         s.field ??= this.closest("admin-edit").field(p);
         const d = this.querySelector("div");

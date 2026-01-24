@@ -31,6 +31,7 @@ import java.net.InetSocketAddress;
 import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.security.GeneralSecurityException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -55,6 +56,17 @@ public class SmtpClient {
 
 	protected final SSLContext sslContext;
 
+	public SmtpClient(String host, int port, String username, String password) {
+		SSLContext c;
+		try {
+			c = SSLContext.getInstance("TLSv1.3");
+			c.init(null, null, null);
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException(e);
+		}
+		this(host, port, username, password, c);
+	}
+
 	public SmtpClient(String host, int port, String username, String password, SSLContext sslContext) {
 		this.host = host;
 		this.port = port;
@@ -66,13 +78,6 @@ public class SmtpClient {
 	private static final Pattern EMAIL = Pattern.compile("<(.*?)>");
 
 	public void sendMail(OffsetDateTime date, String from, String to, String subject, String message) {
-//		SSLContext c;
-//		try {
-//			c = SSLContext.getInstance("TLSv1.3");
-//			c.init(null, null, null);
-//		} catch (GeneralSecurityException e) {
-//			throw new RuntimeException(e);
-//		}
 		try (var ch = SocketChannel.open()) {
 			ch.connect(new InetSocketAddress(InetAddress.getByName(host), port));
 			var e = sslContext.createSSLEngine();
@@ -107,7 +112,8 @@ public class SmtpClient {
 				}
 				t.read();
 				t.in().flip();
-				var b = cd.decode(t.in());
+//				var b = 
+				cd.decode(t.in());
 //				IO.println("SmtpClient.sendMail, b=" + b);
 				t.in().compact();
 			}

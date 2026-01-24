@@ -40,7 +40,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import com.janilla.reflect.Reflection;
+import com.janilla.java.Reflection;
 
 public class HtmlRenderer<T> extends Renderer<T> {
 

@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.net;
+package com.janilla.java;
 
 import java.net.URI;
 import java.net.URLDecoder;

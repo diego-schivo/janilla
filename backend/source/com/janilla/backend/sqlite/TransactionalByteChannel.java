@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.io;
+package com.janilla.backend.sqlite;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,6 +32,8 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.janilla.java.FilterSeekableByteChannel;
 
 public class TransactionalByteChannel extends FilterSeekableByteChannel<SeekableByteChannel> {
 

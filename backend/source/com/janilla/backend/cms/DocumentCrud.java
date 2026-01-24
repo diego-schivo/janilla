@@ -51,7 +51,6 @@ package com.janilla.backend.cms;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,7 +58,7 @@ import java.util.Set;
 import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.IdHelper;
 import com.janilla.backend.persistence.Persistence;
-import com.janilla.reflect.Reflection;
+import com.janilla.java.Reflection;
 
 public class DocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> extends Crud<ID, D> {
 

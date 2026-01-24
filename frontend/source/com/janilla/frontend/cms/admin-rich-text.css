@@ -82,8 +82,21 @@ admin-rich-text {
       }
     }
 
+    h1 {
+      font-family: -apple-system, "system-ui", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.125;
+    }
+
     p {
       display: block;
+    }
+
+    a {
+      border-bottom: 1px dotted rgb(125, 204, 248);
+      color: rgb(125, 204, 248);
+      text-decoration: none;
     }
 
     ul {

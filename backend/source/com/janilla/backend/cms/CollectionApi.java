@@ -57,94 +57,94 @@ import java.util.function.Predicate;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.DollarTypeResolver;
-import com.janilla.reflect.Reflection;
+import com.janilla.java.Reflection;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationHandlerFactory;
 
-public abstract class CollectionApi<ID extends Comparable<ID>, E extends Document<ID>> {
+public abstract class CollectionApi<ID extends Comparable<ID>, D extends Document<ID>> {
 
-	protected final Class<E> type;
+	protected final Class<D> type;
 
 	protected final Predicate<HttpExchange> drafts;
 
 	protected final Persistence persistence;
 
-	protected CollectionApi(Class<E> type, Predicate<HttpExchange> drafts, Persistence persistence) {
+	protected CollectionApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence) {
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;
 	}
 
 	@Handle(method = "POST")
-	public E create(@Bind(resolver = DollarTypeResolver.class) E entity) {
-		return crud().create(entity);
+	public D create(@Bind(resolver = DollarTypeResolver.class) D document) {
+		return crud().create(document);
 	}
 
 	@Handle(method = "GET")
-	public List<E> read(Long skip, Long limit) {
+	public List<D> read(Long skip, Long limit) {
 		var s = skip != null ? skip.longValue() : 0;
 		var l = limit != null ? limit.longValue() : -1;
 		return crud().read(s != 0 || l != -1 ? crud().list(s, l).ids() : crud().list());
 	}
 
 	@Handle(method = "GET", path = "(\\d+)")
-	public E read(ID id, HttpExchange exchange) {
+	public D read(ID id, HttpExchange exchange) {
 		return crud().read(id, drafts.test(exchange));
 	}
 
 	@Handle(method = "PUT", path = "(\\d+)")
-	public E update(ID id, @Bind(resolver = DollarTypeResolver.class) E entity, Boolean draft, Boolean autosave) {
-//		IO.println("CollectionApi.update, id=" + id + ", entity=" + entity + ", draft=" + draft + ", autosave="
+	public D update(ID id, @Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
+//		IO.println("CollectionApi.update, id=" + id + ", document=" + document + ", draft=" + draft + ", autosave="
 //				+ autosave);
 		var s = draft != null && draft.booleanValue() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
-		if (s != entity.documentStatus())
-			entity = Reflection.copy(Map.of("documentStatus", s), entity);
+		if (s != document.documentStatus())
+			document = Reflection.copy(Map.of("documentStatus", s), document);
 		var nv = !(autosave != null && autosave.booleanValue());
-		return crud().update(id, entity, updateInclude(entity), nv);
+		return crud().update(id, document, updateInclude(document), nv);
 	}
 
 	@Handle(method = "DELETE", path = "(\\d+)")
-	public E delete(ID id) {
+	public D delete(ID id) {
 		return crud().delete(id);
 	}
 
 	@Handle(method = "DELETE")
-	public List<E> delete(@Bind("id") List<ID> ids) {
+	public List<D> delete(@Bind("id") List<ID> ids) {
 		return crud().delete(ids);
 	}
 
 	@Handle(method = "PATCH", path = "(\\d+)")
-	public E patch(ID id, @Bind(resolver = DollarTypeResolver.class) E entity) {
-		return patch(entity, List.of(id)).getFirst();
+	public D patch(ID id, @Bind(resolver = DollarTypeResolver.class) D document) {
+		return patch(document, List.of(id)).getFirst();
 	}
 
 	@Handle(method = "PATCH")
-	public List<E> patch(@Bind(resolver = DollarTypeResolver.class) E entity, @Bind("id") List<ID> ids) {
-		return crud().patch(ids, entity, InvocationHandlerFactory.JSON_KEYS.get());
+	public List<D> patch(@Bind(resolver = DollarTypeResolver.class) D document, @Bind("id") List<ID> ids) {
+		return crud().patch(ids, document, InvocationHandlerFactory.JSON_KEYS.get());
 	}
 
 	@Handle(method = "GET", path = "(\\d+)/versions")
-	public List<Version<ID, E>> readVersions(ID id) {
+	public List<Version<ID, D>> readVersions(ID id) {
 		return crud().readVersions(id);
 	}
 
 	@Handle(method = "GET", path = "versions/(\\d+)")
-	public Version<ID, E> readVersion(ID versionId) {
+	public Version<ID, D> readVersion(ID versionId) {
 		return crud().readVersion(versionId);
 	}
 
 	@Handle(method = "POST", path = "versions/(\\d+)")
-	public E restoreVersion(ID versionId, Boolean draft) {
+	public D restoreVersion(ID versionId, Boolean draft) {
 		return crud().restoreVersion(versionId,
 				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 	}
 
-	protected DocumentCrud<ID, E> crud() {
-		return (DocumentCrud<ID, E>) persistence.crud(type);
+	protected DocumentCrud<ID, D> crud() {
+		return (DocumentCrud<ID, D>) persistence.crud(type);
 	}
 
-	protected Set<String> updateInclude(E entity) {
+	protected Set<String> updateInclude(D document) {
 		return null;
 	}
 }

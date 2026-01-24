@@ -24,7 +24,7 @@
  */
 package com.janilla.java;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -32,8 +32,8 @@ public class DollarTypeResolver implements TypeResolver {
 
 	protected final Map<String, Class<?>> parseMap;
 
-	public DollarTypeResolver(Collection<Class<?>> types) {
-		parseMap = types.stream().collect(Collectors.toMap(this::format, x -> x, (x, _) -> x));
+	public DollarTypeResolver(List<Class<?>> resolvables) {
+		parseMap = resolvables.stream().collect(Collectors.toMap(this::format, x -> x, (_, x) -> x));
 	}
 
 	@Override

@@ -51,22 +51,34 @@ import WebComponent from "web-component";
 
 export default class AdminBar extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-bar"];
-	}
+    static get templateNames() {
+        return ["admin-bar"];
+    }
 
-	static get observedAttributes() {
-		return ["data-user-email"];
-	}
+    constructor() {
+        super();
+    }
 
-	constructor() {
-		super();
-	}
+    async updateDisplay() {
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            links: this.links().map(x => ({
+                $template: "link",
+                ...x
+            }))
+        }));
+    }
 
-	async updateDisplay() {
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			...this.dataset
-		}));
-	}
+    links() {
+        return [{
+            href: "/admin",
+            text: "Dashboard"
+        }, {
+            href: "/admin/account",
+            text: this.closest("app-element").currentUser.email
+        }, {
+            href: "/admin/logout",
+            text: "Logout"
+        }];
+    }
 }

@@ -25,9 +25,9 @@
 package com.janilla.http;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-
-import com.janilla.net.Net;
 
 public class HttpRequest extends HttpMessage {
 
@@ -74,7 +74,7 @@ public class HttpRequest extends HttpMessage {
 	public String getPath() {
 		var t = getTarget();
 		var i = t != null ? t.indexOf('?') : -1;
-		return Net.urlDecode(i != -1 ? t.substring(0, i) : t);
+		return URLDecoder.decode(i != -1 ? t.substring(0, i) : t, StandardCharsets.UTF_8);
 	}
 
 	public String getQuery() {

@@ -96,7 +96,8 @@ public class IndexRebalancer implements Runnable {
 				var x = page instanceof InteriorPage ? new IndexInteriorPage(database, database.newPageBuffer())
 						: new IndexLeafPage(database, database.newPageBuffer());
 				x.setCellContentAreaStart(database.usableSize());
-				((List) x.getCells()).addAll(cc2.subList(i2, i2 += ll[li]));
+//				((List) x.getCells()).addAll(cc2.subList(i2, i2 += ll[li]));
+				x.getCells().addAll(cc2.subList(i2, i2 += ll[li]));
 				if (x instanceof IndexInteriorPage y)
 					y.setRightMostPointer(i2 != cc2.size() ? ((IndexInteriorCell) cc2.get(i2)).leftChildPointer()
 							: ((IndexInteriorPage) rr[rr.length - 1].p).getRightMostPointer());

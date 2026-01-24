@@ -38,16 +38,16 @@ import com.janilla.java.Java;
 
 public class DefaultFileHandlerFactory implements FileHandlerFactory {
 
-	protected final FileMap fileMap;
+	protected final ResourceMap resourceMap;
 
-	public DefaultFileHandlerFactory(FileMap fileMap) {
-		this.fileMap = fileMap;
+	public DefaultFileHandlerFactory(ResourceMap resourceMap) {
+		this.resourceMap = resourceMap;
 	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest rq) {
-			var f = fileMap.get(rq.getPath());
+			var f = resourceMap.get(rq.getPath());
 			if (f != null)
 				return x -> {
 					handle(f, x);
@@ -57,7 +57,7 @@ public class DefaultFileHandlerFactory implements FileHandlerFactory {
 		return null;
 	}
 
-	protected void handle(File file, HttpExchange exchange) {
+	protected void handle(Resource file, HttpExchange exchange) {
 //		IO.println("FileHandlerFactory.handle, file=" + file);
 		var rs = exchange.response();
 		rs.setStatus(200);
@@ -79,8 +79,8 @@ public class DefaultFileHandlerFactory implements FileHandlerFactory {
 		rs.setHeaderValue("content-length", String.valueOf(file.size()));
 
 		try (var in = switch (file) {
-		case DefaultFile x -> x.newInputStream();
-		case ZipEntryFile x -> {
+		case DefaultResource x -> x.newInputStream();
+		case ZipEntryResource x -> {
 			var u = x.archive().uri();
 //			IO.println("FileHandlerFactory.handle, u=" + u);
 			var s = u.toString();

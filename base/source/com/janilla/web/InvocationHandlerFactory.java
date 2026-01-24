@@ -62,11 +62,11 @@ import com.janilla.http.HttpResponse;
 import com.janilla.java.Converter;
 import com.janilla.java.Java;
 import com.janilla.java.NullTypeResolver;
+import com.janilla.java.Property;
+import com.janilla.java.Reflection;
 import com.janilla.java.TypeResolver;
+import com.janilla.java.UriQueryBuilder;
 import com.janilla.json.Json;
-import com.janilla.net.UriQueryBuilder;
-import com.janilla.reflect.Property;
-import com.janilla.reflect.Reflection;
 
 public class InvocationHandlerFactory implements HttpHandlerFactory {
 
@@ -90,9 +90,46 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		this.renderableFactory = renderableFactory;
 		this.rootFactory = rootFactory;
 
-		groups = new LinkedHashMap<>();
-		var oo = new HashMap<Class<?>, Object>();
-		for (var tm : invocables) {
+//		groups = new LinkedHashMap<>();
+//		var oo = new HashMap<Class<?>, Object>();
+//		for (var tm : invocables) {
+		//// IO.println("InvocationHandlerFactory, tm=" + tm);
+//			var t = tm.type();
+//			var m = tm.method();
+//			var h1 = t.getAnnotation(Handle.class);
+//			var p1 = h1 != null ? h1.path() : null;
+//			var h2 = Reflection.inheritedAnnotation(m, Handle.class);
+//			var p2 = h2 != null ? h2.path() : null;
+		//// IO.println("InvocationHandlerFactory, h1=" + h1 + ", h2=" + h2);
+//			if (p2 != null) {
+//				if (p2.startsWith("/"))
+//					p1 = null;
+//				var p = Stream.of(p1, p2).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("/"));
+		//// IO.println("InvocationHandlerFactory, p=" + p + ", m=" + m + ", h2=" + h2);
+//				var i = groups.computeIfAbsent(p, _ -> {
+//					var o = oo.computeIfAbsent(t, x -> {
+//						if (instanceResolver != null)
+//							return instanceResolver.apply(x);
+//						try {
+//							return x.getConstructor().newInstance();
+//						} catch (ReflectiveOperationException e) {
+//							throw new RuntimeException(e);
+//						}
+//					});
+//					return new InvocationGroup(o, new LinkedHashMap<>());
+//				});
+		//// var m2 =
+//				i.methods().compute(h2.method(),
+//						(_, x) -> x == null || x.getDeclaringClass().isAssignableFrom(m.getDeclaringClass()) ? m : x);
+		//// IO.println("InvocationHandlerFactory, m2=" + m2);
+//			}
+//		}
+
+		record A(String m1, Method m2) {
+		}
+		record B(String p, Class<?> t, List<A> aa) {
+		}
+		var bb = invocables.stream().map(tm -> {
 //			IO.println("InvocationHandlerFactory, tm=" + tm);
 			var t = tm.type();
 			var m = tm.method();
@@ -106,23 +143,33 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 					p1 = null;
 				var p = Stream.of(p1, p2).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("/"));
 //				IO.println("InvocationHandlerFactory, p=" + p + ", m=" + m + ", h2=" + h2);
-				var i = groups.computeIfAbsent(p, _ -> {
-					var o = oo.computeIfAbsent(t, x -> {
-						if (instanceResolver != null)
-							return instanceResolver.apply(x);
-						try {
-							return x.getConstructor().newInstance();
-						} catch (ReflectiveOperationException e) {
-							throw new RuntimeException(e);
-						}
-					});
-					return new InvocationGroup(o, new LinkedHashMap<>());
-				});
-				var m2 = i.methods().compute(h2.method(),
-						(_, x) -> x == null || x.getDeclaringClass().isAssignableFrom(m.getDeclaringClass()) ? m : x);
-//				IO.println("InvocationHandlerFactory, m2=" + m2);
+				return new B(p, tm.type(), new ArrayList<>(List.of(new A(h2.method(), tm.method()))));
+			} else
+				return null;
+		}).filter(Objects::nonNull).collect(Collectors.toMap(B::p, x -> x, (x, y) -> {
+			if (x.t == y.t) {
+				x.aa.addAll(y.aa);
+				return x;
 			}
-		}
+			return y;
+		}, LinkedHashMap::new));
+		var oo = new HashMap<Class<?>, Object>();
+		groups = bb.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
+			var b = x.getValue();
+			var o = oo.computeIfAbsent(b.t, y -> {
+				if (instanceResolver != null)
+					return instanceResolver.apply(y);
+				try {
+					return y.getConstructor().newInstance();
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			return new InvocationGroup(o,
+					b.aa.stream().collect(Collectors.toMap(y -> y.m1, y -> y.m2,
+							(y1, y2) -> y1.getDeclaringClass().isAssignableFrom(y2.getDeclaringClass()) ? y2 : y1,
+							LinkedHashMap::new)));
+		}));
 
 		var kk = groups.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).toList();
 		regexGroups = kk.stream().sorted(Comparator.comparingInt((String x) -> x.indexOf('(')).reversed())
@@ -355,7 +402,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 					var tt = Arrays.stream(c.getRecordComponents()).collect(
 							Collectors.toMap(x -> x.getName(), x -> x.getType(), (_, x) -> x, LinkedHashMap::new));
 					var aa = tt.entrySet().stream().map(x -> {
-						var n = x.getKey();
+//						var n = x.getKey();
 						var t = x.getValue();
 						return resolveArgument(t, exchange,
 //								entries != null

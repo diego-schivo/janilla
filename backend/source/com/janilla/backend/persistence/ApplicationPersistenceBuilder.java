@@ -32,8 +32,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
-import com.janilla.backend.io.TransactionalByteChannel;
 import com.janilla.backend.sqlite.SqliteDatabase;
+import com.janilla.backend.sqlite.TransactionalByteChannel;
 import com.janilla.ioc.DiFactory;
 
 public class ApplicationPersistenceBuilder {

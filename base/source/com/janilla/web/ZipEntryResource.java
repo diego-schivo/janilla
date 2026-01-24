@@ -22,26 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.io;
+package com.janilla.web;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-
-public class FilterByteChannel<C extends ByteChannel> extends FilterChannel<C> implements ByteChannel {
-
-	public FilterByteChannel(C channel) {
-		super(channel);
-	}
-
-	@Override
-	public int read(ByteBuffer dst) throws IOException {
-		return channel.read(dst);
-	}
-
-	@Override
-	public int write(ByteBuffer src) throws IOException {
-//		IO.println("src=" + src);
-		return channel.write(src);
-	}
+public record ZipEntryResource(DefaultResource archive, String path, long size) implements Resource {
 }

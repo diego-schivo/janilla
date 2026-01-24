@@ -68,7 +68,7 @@ export default class AdminVersions extends WebComponent {
                 $template: "head",
                 text: x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" ")
             })),
-            rows: a.state.versions.map(v => ({
+            rows: a.customState.versions.map(v => ({
                 $template: "row",
                 cells: hh.map(k => [(k.startsWith("document") ? v.document : v)[k]]
                     .map(x => {

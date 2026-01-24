@@ -80,7 +80,7 @@ export default class AdminEdit extends WebComponent {
     }
 
     async updateDisplay() {
-        const s = this.state;
+        const s = this.customState;
         const a = this.closest("app-element");
         s.document ??= await (await fetch([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"))).json();
         s.versions = Object.hasOwn(s.document, "versionCount");
@@ -152,15 +152,15 @@ export default class AdminEdit extends WebComponent {
         const a2 = this.closest("admin-element");
         switch (el.closest("select:not([name])")?.value) {
             case "create": {
-                const r = await fetch(`${a.dataset.apiUrl}/${a2.state.collectionSlug}`, {
+                const r = await fetch(`${a.dataset.apiUrl}/${a2.customState.collectionSlug}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
-                    body: JSON.stringify({ $type: a2.state.documentType })
+                    body: JSON.stringify({ $type: a2.customState.documentType })
                 });
                 const j = await r.json();
                 if (r.ok)
-                    a.navigate(new URL(`/admin/collections/${a2.state.collectionSlug}/${j.id}`, location.href));
+                    a.navigate(new URL(`/admin/collections/${a2.customState.collectionSlug}/${j.id}`, location.href));
                 else
                     a2.error(j);
                 break;
@@ -172,21 +172,21 @@ export default class AdminEdit extends WebComponent {
                     a2.initField(f);
                     f.data[k.substring(i + 1)] = v;
                 }
-                const r = await fetch(`${a.dataset.apiUrl}/${a2.state.collectionSlug}`, {
+                const r = await fetch(`${a.dataset.apiUrl}/${a2.customState.collectionSlug}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
-                    body: JSON.stringify(a2.state.document)
+                    body: JSON.stringify(a2.customState.document)
                 });
                 const j = await r.json();
                 if (r.ok)
-                    a.navigate(new URL(`/admin/collections/${a2.state.collectionSlug}/${j.id}`, location.href));
+                    a.navigate(new URL(`/admin/collections/${a2.customState.collectionSlug}/${j.id}`, location.href));
                 else
                     a2.error(j);
                 break;
             }
             case "delete": {
-                const r = await fetch(a2.state.documentUrl, {
+                const r = await fetch(a2.customState.documentUrl, {
                     method: "DELETE",
                     credentials: "include"
                 });
@@ -194,7 +194,7 @@ export default class AdminEdit extends WebComponent {
                 if (r.ok) {
                     if (j.$type === "User" && j.id === a.currentUser.id)
                         a.currentUser = null;
-                    a.navigate(new URL(`/admin/${a2.state.pathSegments.slice(0, 2).join("/")}`, location.href));
+                    a.navigate(new URL(`/admin/${a2.customState.pathSegments.slice(0, 2).join("/")}`, location.href));
                 } else
                     a2.error(j);
                 break;
@@ -203,7 +203,7 @@ export default class AdminEdit extends WebComponent {
     }
 
     handleDocumentChange = () => {
-        const s = this.state;
+        const s = this.customState;
         //delete s.document;
         if (!s.changed) {
             s.changed = true;
@@ -215,7 +215,7 @@ export default class AdminEdit extends WebComponent {
 
     handleInput = event => {
         const el = event.target;
-        const s = this.state;
+        const s = this.customState;
         if (el.matches("[name]")) {
             event.stopPropagation();
             if (!s.changed) {
@@ -233,7 +233,7 @@ export default class AdminEdit extends WebComponent {
     }
 
     async autoSaveTimeout() {
-        const s = this.state;
+        const s = this.customState;
         s.autoSave.timeoutID = undefined;
         s.autoSave.ongoing = true;
         try {
@@ -249,12 +249,12 @@ export default class AdminEdit extends WebComponent {
 
     field(path, document) {
         const a = this.closest("admin-element");
-        const t = a.state.schema["Globals"]?.[this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")]?.type
-            ?? a.state.schema["Collections"][this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")].elementTypes[0];
+        const t = a.customState.schema["Globals"]?.[this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")]?.type
+            ?? a.customState.schema["Collections"][this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")].elementTypes[0];
         return a.field(path, {
             type: t,
-            properties: a.state.schema[t],
-            data: document ?? this.state.document
+            properties: a.customState.schema[t],
+            data: document ?? this.customState.document
         });
     }
 
@@ -266,7 +266,7 @@ export default class AdminEdit extends WebComponent {
     }
 
     requestAutoSave(delay = 1000) {
-        const s = this.state;
+        const s = this.customState;
         s.autoSave ??= {};
         if (s.autoSave.ongoing)
             s.autoSave.repeat = true;
@@ -278,7 +278,7 @@ export default class AdminEdit extends WebComponent {
     }
 
     async saveDocument(auto) {
-        //console.log('this.closest("admin-element").state.document', this.closest("admin-element").state.document);
+        //console.log('this.closest("admin-element").customState.document', this.closest("admin-element").customState.document);
         const m = new Map(Array.from(new FormData(this.querySelector("form")).entries())
             .map(([k, v]) => [k.split("."), v]).sort(([k1, _], [k2, __]) => {
                 if (k1.length !== k2.length)
@@ -310,7 +310,7 @@ export default class AdminEdit extends WebComponent {
             const k = kk.join(".");
             a2.setValue(o, k, v, this.field(k));
         }
-        const s = this.state;
+        const s = this.customState;
         s.document = {};
         for (const [k, v] of o) {
             //console.log("k", k, "v", v);

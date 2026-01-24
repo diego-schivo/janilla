@@ -48,12 +48,13 @@ import com.janilla.backend.sqlite.RecordColumn;
 import com.janilla.backend.sqlite.TableBTree;
 import com.janilla.backend.sqlite.TableLeafCell;
 import com.janilla.java.Converter;
+import com.janilla.java.Property;
+import com.janilla.java.Reflection;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.json.ReflectionValueIterator;
 import com.janilla.json.TokenIterationContext;
-import com.janilla.reflect.Reflection;
 
 public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
@@ -640,6 +641,11 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 		protected Iterator<JsonToken<?>> newIterator() {
 			return value instanceof Class<?> c ? context.newStringIterator(persistence.typeResolver.format(c))
 					: super.newIterator();
+		}
+
+		@Override
+		protected boolean test(Property property) {
+			return super.test(property) && !property.derived();
 		}
 	}
 }

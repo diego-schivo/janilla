@@ -77,7 +77,7 @@ export default class AdminArray extends WebComponent {
 
 	async updateDisplay() {
 		const p = this.dataset.path;
-		const s = this.state;
+		const s = this.customState;
 		s.field ??= this.closest("admin-edit").field(p);
 		s.nextKey ??= s.field.data?.length ?? 0;
 		s.items ??= Array.from({ length: s.nextKey }, (_, i) => ({
@@ -136,7 +136,7 @@ export default class AdminArray extends WebComponent {
 
 	handleChange = event => {
 		const el = event.target;
-		const s = this.state;
+		const s = this.customState;
 		//if (el.matches("[name]"))
 		if (el.matches("select:not([name])")) {
 			event.stopPropagation();
@@ -184,7 +184,7 @@ export default class AdminArray extends WebComponent {
 		const el = event.target.closest("button");
 		if (el) {
 			event.stopPropagation();
-			const s = this.state;
+			const s = this.customState;
 			switch (el.name) {
 				case "add":
 					if (s.field.elementTypes.length === 1) {

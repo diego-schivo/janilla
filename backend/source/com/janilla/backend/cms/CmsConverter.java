@@ -65,7 +65,9 @@ public class CmsConverter extends Converter {
 	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
 		if (target == DocumentReference.class) {
 			var d = (Document<?>) super.convertMap(map, null, typeResolver);
-			return new DocumentReference(d.getClass(), d.id());
+			@SuppressWarnings({ "rawtypes", "unchecked" })
+			var r = new DocumentReference(d.getClass(), d.id());
+			return r;
 		}
 		return super.convertMap(map, target, typeResolver);
 	}

@@ -22,16 +22,26 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.reflect;
+package com.janilla.java;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.List;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD })
-public @interface Order {
+public record SimpleParameterizedType(Type rawType, List<Type> actualTypeArguments) implements ParameterizedType {
 
-	int value();
+	@Override
+	public Type getRawType() {
+		return rawType;
+	}
+
+	@Override
+	public Type[] getActualTypeArguments() {
+		return actualTypeArguments.toArray(Type[]::new);
+	}
+
+	@Override
+	public Type getOwnerType() {
+		return null;
+	}
 }

@@ -37,7 +37,7 @@ export default class Toaster extends WebComponent {
     async updateDisplay() {
         this.appendChild(this.interpolateDom({
             $template: "",
-            items: this.state.items?.map(x => ({
+            items: this.customState.items?.map(x => ({
                 $template: "item",
                 ...x
             }))
@@ -53,7 +53,7 @@ export default class Toaster extends WebComponent {
     }
 
     push(message, type) {
-        const s = this.state;
+        const s = this.customState;
         const o = {
             message,
             type

@@ -22,26 +22,11 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.reflect;
+package com.janilla.web;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.List;
+public interface Resource {
 
-public record SimpleParameterizedType(Type rawType, List<Type> actualTypeArguments) implements ParameterizedType {
+	String path();
 
-	@Override
-	public Type getRawType() {
-		return rawType;
-	}
-
-	@Override
-	public Type[] getActualTypeArguments() {
-		return actualTypeArguments.toArray(Type[]::new);
-	}
-
-	@Override
-	public Type getOwnerType() {
-		return null;
-	}
+	long size();
 }

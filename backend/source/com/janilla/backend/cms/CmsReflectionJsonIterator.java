@@ -57,11 +57,11 @@ import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Reflection;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.json.ReflectionValueIterator;
 import com.janilla.json.TokenIterationContext;
-import com.janilla.reflect.Reflection;
 
 public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 

@@ -71,11 +71,11 @@ export default class AdminVersion extends WebComponent {
 
     async updateDisplay() {
         const a = this.closest("admin-element");
-        const t = a.dateTimeFormat.format(new Date(a.state.version.updatedAt));
+        const t = a.dateTimeFormat.format(new Date(a.customState.version.updatedAt));
         this.appendChild(this.interpolateDom({
             $template: "",
             title: t,
-            json: JSON.stringify(a.state.version.document, null, "  "),
+            json: JSON.stringify(a.customState.version.document, null, "  "),
             dialog: {
                 $template: "dialog",
                 dateTime: t
@@ -92,12 +92,12 @@ export default class AdminVersion extends WebComponent {
             case "confirm": {
                 const a = this.closest("app-element");
                 const a2 = this.closest("admin-element");
-                const j = await (await fetch(`${a2.state.collectionSlug
-                    ? a2.state.documentUrl.substring(0, a2.state.documentUrl.lastIndexOf("/"))
-                    : a2.state.documentUrl}/versions/${a2.state.version.id}`, { method: "POST" })).json();
+                const j = await (await fetch(`${a2.customState.collectionSlug
+                    ? a2.customState.documentUrl.substring(0, a2.customState.documentUrl.lastIndexOf("/"))
+                    : a2.customState.documentUrl}/versions/${a2.customState.version.id}`, { method: "POST" })).json();
                 a2.currentDocument = j;
                 a2.renderToast("Restored successfully.");
-                a.navigate(`/admin/${a2.state.pathSegments.slice(0, 3).join("/")}`);
+                a.navigate(`/admin/${a2.customState.pathSegments.slice(0, 3).join("/")}`);
                 break;
             }
             case "restore":

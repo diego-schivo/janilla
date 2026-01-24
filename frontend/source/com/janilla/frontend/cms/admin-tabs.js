@@ -75,13 +75,13 @@ export default class AdminTabs extends WebComponent {
 	}
 
 	attributeChangedCallback(name, oldValue, newValue) {
-		if (newValue !== oldValue && this.state)
-			delete this.state.tab;
+		if (newValue !== oldValue && this.customState)
+			delete this.customState.tab;
 		super.attributeChangedCallback(name, oldValue, newValue);
 	}
 
 	async updateDisplay() {
-		const s = this.state;
+		const s = this.customState;
 		s.tabs = this.dataset.tabs.split(",");
 		s.tab ??= this.dataset.tab ?? s.tabs[0];
 		this.shadowRoot.appendChild(this.interpolateDom({
@@ -109,7 +109,7 @@ export default class AdminTabs extends WebComponent {
 		if (b?.role === "tab") {
 			event.stopPropagation();
 			const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
-			const s = this.state;
+			const s = this.customState;
 			if (this.dispatchEvent(new CustomEvent("tabselected", {
 				bubbles: true,
 				cancelable: true,

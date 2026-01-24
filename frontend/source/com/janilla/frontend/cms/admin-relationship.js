@@ -51,124 +51,148 @@ import WebComponent from "web-component";
 
 export default class AdminRelationshipField extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-relationship"];
-	}
+    static get templateNames() {
+        return ["admin-relationship"];
+    }
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("change", this.handleChange);
-		this.addEventListener("click", this.handleClick);
-		this.addEventListener("close-drawer", this.handleCloseDrawer);
-	}
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("change", this.handleChange);
+        this.addEventListener("click", this.handleClick);
+        this.addEventListener("close-drawer", this.handleCloseDrawer);
+    }
 
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("change", this.handleChange);
-		this.removeEventListener("click", this.handleClick);
-		this.removeEventListener("close-drawer", this.handleCloseDrawer);
-	}
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("change", this.handleChange);
+        this.removeEventListener("click", this.handleClick);
+        this.removeEventListener("close-drawer", this.handleCloseDrawer);
+    }
 
-	async updateDisplay() {
-		const p = this.dataset.path;
-		if (["variantOptions", "variants", "cart.items"].includes(p))
-			return;
-		const s = this.state;
-		s.field ??= this.closest("admin-edit").field(p);
-		s.complex ??= s.field.type === "DocumentReference";
-		const m = s.field.type === "List";
-		const a = this.closest("admin-element");
-		s.data ??= Array.isArray(s.field.data) ? s.field.data : s.field.data ? [s.field.data] : [];
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			values: s.data.map(x => ({
-				$template: "value",
-				label: a.title(x),
-				id: x.id
-			})),
-			options: s.options ? Object.values(s.options)[0].filter(x => !s.data?.some(y => y.id === x.id)).map(x => ({
-				$template: "option",
-				value: x.id,
-				text: a.title(x)
-			})) : null,
-			hiddens: s.data?.map(x => ({
-				$template: "hidden",
-				name: p,
-				value: x.id
-			})),
-			drawer: s.drawer ? {
-				$template: "drawer",
-				...s.drawer
-			} : null
-		}));
-	}
+    async updateDisplay() {
+        const p = this.dataset.path;
+        //		if (["variantOptions", "variants", "cart.items"].includes(p))
+        //			return;
+        const s = this.customState;
+        s.field ??= this.closest("admin-edit").field(p);
+        s.complex ??= s.field.type === "DocumentReference";
+        //		const m = s.field.type === "List";
+        const a = this.closest("admin-element");
+        s.data ??= Array.isArray(s.field.data) ? s.field.data
+            : s.field.data ? [s.field.data] : [];
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            values: s.data.map(x => ({
+                $template: "value",
+                label: a.title(x),
+                value: `${x.$type}:${x.id}`
+            })),
+            /*
+            options: s.options ? Object.values(s.options)[0].filter(x => !s.data.some(y => y.id === x.id)).map(x => ({
+                $template: "option",
+                value: x.id,
+                text: a.title(x)
+            })) : null,
+            */
+            optgroups: s.options && Object.keys(s.options).length > 1 ? Object.entries(s.options).map(x => ({
+                $template: "optgroup",
+                label: x[0],
+                options: x[1].map(y => ({
+                    $template: "option",
+                    value: `${x[0]}:${y.id}`,
+                    text: a.title(y)
+                }))
+            })) : null,
+            hiddens: s.complex ? s.data.flatMap(x => Object.entries({
+                $type: "DocumentReference",
+                type: x.$type,
+                id: x.id
+            })).map(x => ({
+                $template: "hidden",
+                name: `${p}.${x[0]}`,
+                value: x[1]
+            })) : s.data.map(x => ({
+                $template: "hidden",
+                name: p,
+                value: x.id
+            })),
+            drawer: s.drawer ? {
+                $template: "drawer",
+                ...s.drawer
+            } : null
+        }));
+    }
 
-	handleChange = event => {
-		const el = event.target.closest("select");
-		if (el) {
-			const s = this.state;
-			s.data = Object.values(s.options)[0].filter(x => x.id == el.value || s.data?.some(y => y.id === x.id));
-			el.selectedIndex = 0;
-			this.requestDisplay();
-		}
-	}
+    handleChange = event => {
+        const el = event.target.closest("select");
+        if (el) {
+            const s = this.customState;
+            //s.data = Object.values(s.options)[0].filter(x => x.id == el.value || s.data.some(y => y.id === x.id));
+            s.data = Object.values(s.options).flatMap(x => x)
+                .filter(x => `${x.$type}:${x.id}` === el.value || s.data.some(y => y.$type == x.$type && y.id === x.id));
+            el.selectedIndex = 0;
+            this.requestDisplay();
+        }
+    }
 
-	handleClick = async event => {
-		let el = event.target.closest("button");
-		const a = this.closest("admin-element");
-		const s = this.state;
-		switch (el?.name) {
-			case "add-new": {
-				const t = s.field.referenceTypes?.[0] ?? s.field.referenceType;
-				s.drawer = {
-					slug: Object.entries(a.state.schema["Collections"])
-						.find(([_, v]) => v.elementTypes[0] === t)[0]
-						.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")
-				};
-				this.requestDisplay();
-				break;
-			}
-			case "clear":
-				s.data = [];
-				this.requestDisplay();
-				break;
-			case "edit": {
-				const t = s.data.find(x => x.id == el.value).$type;
-				s.drawer = {
-					slug: Object.entries(a.state.schema["Collections"])
-						.find(([_, v]) => v.elementTypes[0] === t)[0]
-						.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-"),
-					id: el.value
-				};
-				this.requestDisplay();
-				break;
-			}
-			case "remove":
-				s.data = s.data.filter(x => x.id != el.value);
-				this.requestDisplay();
-				break;
-		}
-		el = event.target.closest("select");
-		if (el) {
-			const a = this.closest("app-element");
-			s.options ??= Object.fromEntries(await Promise.all((s.field.referenceTypes ?? [s.field.referenceType]).map(t => {
-				const n = Object.entries(a.state.schema["Collections"]).find(([_, v]) => v.elementTypes[0] === t)[0];
-				return fetch(`${a.dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`).then(x => x.json()).then(x => [t, x]);
-			})));
-			this.requestDisplay();
-		}
-	}
+    handleClick = async event => {
+        let el = event.target.closest("button");
+        const a = this.closest("admin-element");
+        const s = this.customState;
+        switch (el?.name) {
+            case "add-new": {
+                const t = s.field.referenceTypes?.[0] ?? s.field.referenceType;
+                s.drawer = {
+                    slug: Object.entries(a.customState.schema["Collections"])
+                        .find(([_, v]) => v.elementTypes[0] === t)[0]
+                        .split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")
+                };
+                this.requestDisplay();
+                break;
+            }
+            case "clear":
+                s.data = [];
+                this.requestDisplay();
+                break;
+            case "edit": {
+                const t = s.data.find(x => x.id == el.value).$type;
+                s.drawer = {
+                    slug: Object.entries(a.customState.schema["Collections"])
+                        .find(([_, v]) => v.elementTypes[0] === t)[0]
+                        .split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-"),
+                    id: el.value
+                };
+                this.requestDisplay();
+                break;
+            }
+            case "remove":
+                s.data = s.data.filter(x => x.id != el.value);
+                this.requestDisplay();
+                break;
+        }
 
-	handleCloseDrawer = async () => {
-		delete this.state.drawer;
-		this.requestDisplay();
-	}
+        el = event.target.closest("select");
+        if (el) {
+            const a1 = this.closest("app-element");
+            const a2 = this.closest("admin-element");
+            s.options ??= Object.fromEntries(await Promise.all((s.field.referenceTypes ?? [s.field.referenceType]).map(t => {
+                const n = Object.entries(a2.customState.schema["Collections"]).find(([_, v]) => v.elementTypes[0] === t)[0];
+                return fetch(`${a1.dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`).then(x => x.json()).then(x => [t, x]);
+            })));
+            this.requestDisplay();
+        }
+    }
+
+    handleCloseDrawer = async () => {
+        delete this.customState.drawer;
+        this.requestDisplay();
+    }
 }

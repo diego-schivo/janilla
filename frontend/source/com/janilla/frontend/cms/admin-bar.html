@@ -1,13 +1,11 @@
 <nav>
   <ul>
-    <li>
-      <a href="/admin">Dashboard</a>
-    </li>
-    <li>
-      <a href="/admin/account">${userEmail}</a>
-    </li>
-    <li>
-      <a href="/admin/logout">Logout</a>
-    </li>
+    <!--${links}-->
   </ul>
 </nav>
+
+<template id="link">
+  <li>
+    <a href="${href}" target="${target}">${text}</a>
+  </li>
+</template>

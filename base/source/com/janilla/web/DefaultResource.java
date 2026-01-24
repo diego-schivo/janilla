@@ -24,5 +24,15 @@
  */
 package com.janilla.web;
 
-public record ZipEntryFile(DefaultFile archive, String path, long size) implements File {
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+
+public record DefaultResource(Module module, URI uri, String package1, String path, long size) implements Resource {
+
+	public InputStream newInputStream() throws IOException {
+		var n = path.substring(1);
+		return module != null ? module.getResourceAsStream(n)
+				: Thread.currentThread().getContextClassLoader().getResourceAsStream(n);
+	}
 }

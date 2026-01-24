@@ -55,9 +55,6 @@ admin-bar {
 
   nav {
     box-sizing: border-box;
-    /*
-    max-width: 76.125rem;
-    */
     max-width: 86rem;
     padding: 0.5rem 2rem;
     width: 100%;

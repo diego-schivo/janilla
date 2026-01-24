@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.reflect;
+package com.janilla.java;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
@@ -51,8 +51,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import com.janilla.java.Java;
 
 public class Reflection {
 
@@ -327,7 +325,8 @@ public class Reflection {
 				var aa = x.getActualTypeArguments();
 				var m2 = new LinkedHashMap<String, Type>();
 				for (var i = 0; i < pp.length; i++)
-					m2.put(pp[i].getName(), aa[i] instanceof TypeVariable v ? m.get(v.getName()) : aa[i]);
+					m2.put(pp[i].getName(),
+							aa[i] instanceof TypeVariable v ? (m != null ? m.get(v.getName()) : null) : aa[i]);
 				m = m2;
 			}
 			for (var c = c0; c != superClass; c = c.getSuperclass()) {

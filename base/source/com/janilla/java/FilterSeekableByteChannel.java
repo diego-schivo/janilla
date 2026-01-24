@@ -22,17 +22,37 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.web;
+package com.janilla.java;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
+import java.nio.channels.SeekableByteChannel;
 
-public record DefaultFile(Module module, URI uri, String package1, String path, long size) implements File {
+public class FilterSeekableByteChannel<C extends SeekableByteChannel> extends FilterByteChannel<C>
+		implements SeekableByteChannel {
 
-	public InputStream newInputStream() throws IOException {
-		var n = path.substring(1);
-		return module != null ? module.getResourceAsStream(n)
-				: Thread.currentThread().getContextClassLoader().getResourceAsStream(n);
+	public FilterSeekableByteChannel(C channel) {
+		super(channel);
+	}
+
+	@Override
+	public long position() throws IOException {
+		return channel.position();
+	}
+
+	@Override
+	public SeekableByteChannel position(long newPosition) throws IOException {
+		channel.position(newPosition);
+		return this;
+	}
+
+	@Override
+	public long size() throws IOException {
+		return channel.size();
+	}
+
+	@Override
+	public SeekableByteChannel truncate(long size) throws IOException {
+		channel.truncate(size);
+		return this;
 	}
 }

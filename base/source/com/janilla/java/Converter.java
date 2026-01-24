@@ -47,10 +47,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.janilla.json.Json;
-import com.janilla.reflect.Flat;
-import com.janilla.reflect.Reflection;
-
 public class Converter {
 
 	protected final TypeResolver typeResolver;
@@ -208,9 +204,10 @@ public class Converter {
 //		IO.println(Json.format(map));
 		var c = Java.toClass(target);
 		var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
+//		IO.println("td=" + td);
 		if (td != null) {
 			if (c != null && !c.isAssignableFrom(Java.toClass(td.type())))
-				throw new RuntimeException();
+				throw new RuntimeException("c=" + c + ", td.type()=" + td.type());
 			map = (Map<?, ?>) td.data();
 			target = td.type();
 			c = Java.toClass(target);

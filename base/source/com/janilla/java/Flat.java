@@ -22,14 +22,14 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.frontend;
+package com.janilla.java;
 
-import java.util.Map;
-import java.util.stream.Stream;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class Frontend {
-
-	public static void putImports(Map<String, String> map) {
-		Stream.of("janilla-logo", "toaster", "web-component").forEach(x -> map.put(x, "/" + x + ".js"));
-	}
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.FIELD })
+public @interface Flat {
 }

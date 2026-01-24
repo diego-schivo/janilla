@@ -22,7 +22,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.io;
+package com.janilla.backend.sqlite;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -81,7 +81,7 @@ export default class AdminUpload extends WebComponent {
 
     async updateDisplay() {
         const p = this.dataset.path;
-        const s = this.state;
+        const s = this.customState;
         s.field = this.closest("admin-edit").field(p);
         this.appendChild(this.interpolateDom({
             $template: "",
@@ -111,7 +111,7 @@ export default class AdminUpload extends WebComponent {
 
     handleClick = event => {
         const el = event.target.closest("button");
-        const s = this.state;
+        const s = this.customState;
         switch (el?.name) {
             case "choose":
                 s.drawer = "list";
@@ -131,21 +131,21 @@ export default class AdminUpload extends WebComponent {
 
 	handleDocumentSaved = event => {
 	    event.preventDefault();
-	    const s = this.state;
+	    const s = this.customState;
 	    this.closest("admin-element").setFieldData(s.field, event.detail);
 	    delete s.drawer;
 	    this.requestDisplay();
 	}
 
     handleDocumentSelected = event => {
-        const s = this.state;
+        const s = this.customState;
         this.closest("admin-element").setFieldData(s.field, event.detail);
         delete s.drawer;
         this.requestDisplay();
     }
 
     handleDrawerClosed = () => {
-        delete this.state.drawer;
+        delete this.customState.drawer;
         this.requestDisplay();
     }
 }

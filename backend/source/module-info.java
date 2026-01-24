@@ -25,7 +25,6 @@
 module com.janilla.backend {
 
 	exports com.janilla.backend.cms;
-	exports com.janilla.backend.io;
 	exports com.janilla.backend.persistence;
 	exports com.janilla.backend.smtp;
 	exports com.janilla.backend.sqlite;

@@ -41,8 +41,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.janilla.backend.io.TransactionalByteChannel;
-
 public class SqliteDatabase {
 
 	public static void main(String[] args) {

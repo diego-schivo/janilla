@@ -26,6 +26,7 @@ package com.janilla.java;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.module.ResolvedModule;
 import java.lang.reflect.ParameterizedType;
@@ -39,6 +40,8 @@ import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +51,10 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 public final class Java {
 
@@ -88,12 +95,12 @@ public final class Java {
 	}
 
 	public static List<Path> getPackagePaths(String package1) {
-//		IO.println("Java.getPackagePaths, package1=" + package1);
 		class A {
 			private static final Map<String, List<Path>> RESULTS = new ConcurrentHashMap<>();
 			private static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.*)!(.*)");
 		}
 		return A.RESULTS.computeIfAbsent(package1, k -> {
+//			IO.println("Java.getPackagePaths, k=" + k);
 			var n = k.replace('.', '/');
 			var uu = Java.class.getModule().isNamed() ? ModuleLayer.boot().configuration().modules().stream()
 					.map(ResolvedModule::reference).flatMap(x -> {
@@ -110,7 +117,7 @@ public final class Java {
 						}
 					});
 			return uu.map(x -> {
-//				IO.println("Java.getPackagePaths, u=" + u);
+//				IO.println("Java.getPackagePaths, x=" + x);
 				var m = A.JAR_URI_PATTERN.matcher(x.toString());
 				var d = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(x);
 //				IO.println("Java.getPackagePaths, d=" + d);
@@ -186,5 +193,36 @@ public final class Java {
 				throw new UncheckedIOException(e);
 			}
 		});
+	}
+
+	public static void generateKeyPair(Path keyStore, String password) {
+		try {
+			new ProcessBuilder("keytool",
+//			new ProcessBuilder("/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home/bin/keytool",
+					"-genkeypair", "-dname", "cn=localhost", "-keyalg", "rsa", "-keystore", keyStore.toString(),
+					"-storepass", password, "-ext", "san=dns:localhost,ip:127.0.0.1").start().waitFor();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	public static SSLContext sslContext(InputStream keyStore, char[] password) {
+		try {
+			var ks = KeyStore.getInstance("PKCS12");
+			ks.load(keyStore, password);
+			var kmf = KeyManagerFactory.getInstance("SunX509");
+			kmf.init(ks, password);
+			var tmf = TrustManagerFactory.getInstance("SunX509");
+			tmf.init(ks);
+			var c = SSLContext.getInstance("TLSv1.3");
+			c.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+			return c;
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

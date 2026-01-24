@@ -77,7 +77,7 @@ export default class AdminDashboard extends WebComponent {
             groups: a.dashboardGroups().map(g => ({
                 $template: "group",
                 title: g.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
-                cards: Object.entries(a.state.schema[a.state.schema["Data"][g].type]).map(([k, v]) => {
+                cards: Object.entries(a.customState.schema[a.customState.schema["Data"][g].type]).map(([k, v]) => {
                     return {
                         $template: "card",
                         href: `/admin/${g === "globals" ? g : "collections"}/${k.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`,
@@ -94,10 +94,11 @@ export default class AdminDashboard extends WebComponent {
 
     handleClick = async event => {
         const el = event.target.closest("button");
-		const a = this.closest("app-element");
+        const a = this.closest("app-element");
         const a2 = this.closest("admin-element");
         switch (el?.name) {
             case "create": {
+                /*
                 const t = el.closest("a").getAttribute("href").split("/").at(-1);
                 const r = await fetch(`${a.dataset.apiUrl}/${t}`, {
                     method: "POST",
@@ -106,11 +107,13 @@ export default class AdminDashboard extends WebComponent {
                     body: JSON.stringify({ $type: el.dataset.type })
                 });
                 const j = await r.json();
-                if (r.ok) {
-                    history.pushState({}, "", `/admin/collections/${t}/${j.id}`);
-                    dispatchEvent(new CustomEvent("popstate"));
-                } else
+                if (r.ok)
+                    a.navigate(new URL(`/admin/collections/${t}/${j.id}`, location.href));
+                else
                     a2.error(j);
+                */
+                const n = el.closest("a").getAttribute("href").split("/").at(-1);
+                await a2.createDocument(n);
                 break;
             }
             case "seed": {

@@ -27,34 +27,35 @@ package com.janilla.ioc;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import com.janilla.reflect.Reflection;
+import com.janilla.java.Reflection;
 
 public class DiFactory {
 
 	protected final List<Class<?>> types;
 
-	protected final Supplier<Object> context;
+	protected Object context;
 
 	protected final String name;
 
+	protected final Map<Class<?>, Class<?>> actualTypes = new HashMap<>();
+
 	protected final Map<Class<?>, Function<Map<String, Object>, ?>> factories = new ConcurrentHashMap<>();
 
-	public DiFactory(List<Class<?>> types, Supplier<Object> context) {
-		this(types, context, null);
+	public DiFactory(List<Class<?>> types) {
+		this(types, null);
 	}
 
-	public DiFactory(List<Class<?>> types, Supplier<Object> context, String name) {
-//		IO.println("Factory, types=" + types);
+	public DiFactory(List<Class<?>> types, String name) {
+//		IO.println("DiFactory, types=" + types);
 		this.types = types;
-		this.context = context;
 		this.name = name;
 	}
 
@@ -63,7 +64,32 @@ public class DiFactory {
 	}
 
 	public Object context() {
-		return context.get();
+		return context;
+	}
+
+	public DiFactory context(Object context) {
+		if (this.context != null)
+			throw new IllegalStateException();
+		this.context = context;
+		return this;
+	}
+
+	public <T, U extends T> Class<U> actualType(Class<T> type) {
+		if (!actualTypes.containsKey(type))
+			synchronized (actualTypes) {
+				if (!actualTypes.containsKey(type))
+					actualTypes.put(type,
+							Stream.concat(Stream.of(type), types.stream())
+									.filter(x -> !Modifier.isAbstract(x.getModifiers())).filter(type::isAssignableFrom)
+									.filter(x -> {
+										var a = x.getAnnotation(Context.class);
+										var nn = a != null ? a.value() : null;
+										return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
+									}).reduce((_, x) -> x).orElse(null));
+			}
+		@SuppressWarnings("unchecked")
+		Class<U> x = (Class<U>) actualTypes.get(type);
+		return x;
 	}
 
 	public <T> T create(Class<T> type) {
@@ -71,97 +97,93 @@ public class DiFactory {
 	}
 
 	public <T> T create(Class<T> type, Map<String, Object> arguments) {
-//		IO.println("Factory.create, type=" + type + ", arguments=" + arguments);
+//		IO.println("DiFactory.create, type=" + type + ", arguments=" + arguments);
 		var f = factories.computeIfAbsent(type, k -> {
-			var c = Stream.concat(types.stream(), Stream.of(k)).filter(x -> !Modifier.isAbstract(x.getModifiers()))
-					.filter(k::isAssignableFrom).filter(x -> {
-						var a = x.getAnnotation(Context.class);
-						var nn = a != null ? a.value() : null;
-						return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
-					}).findFirst().orElse(null);
-//			IO.println("Factory.create, c=" + c);
-			if (c == null)
+			var t = actualType(k);
+//			IO.println("DiFactory.create, c=" + c);
+			if (t == null)
 //				throw new RuntimeException("type=" + type);
 				return _ -> null;
-			var cc = c.getConstructors();
-			var o = context.get();
-			var oe = o != null && c.getEnclosingClass() == o.getClass() && !Modifier.isStatic(c.getModifiers());
-			return aa -> {
-				try {
-					Constructor<?> c1 = null;
-					Object[] aa1 = null;
-					var n1 = -1;
-					for (var c2 : cc) {
-						var pp = Arrays.stream(c2.getParameters());
-						var aa2 = (oe ? pp.skip(1) : pp).map(x -> {
-							if (aa != null && aa.containsKey(x.getName()))
-								return aa.get(x.getName());
-							var p = o != null ? Reflection.property(o.getClass(), x.getName()) : null;
-							return p != null ? p.get(o) : null;
-						}).toArray();
-						var n2 = (int) Arrays.stream(aa2).filter(Objects::nonNull).count();
-						if (n2 > n1) {
-							c1 = c2;
-							aa1 = aa2;
-							n1 = n2;
-						}
-					}
-//					IO.println("Factory.create, c1 = " + c1);
-					if (oe) {
-						var oo = new Object[1 + aa1.length];
-						oo[0] = o;
-						System.arraycopy(aa1, 0, oo, 1, aa1.length);
-						aa1 = oo;
-					}
-					@SuppressWarnings("unchecked")
-					var t = (T) c1.newInstance(aa1);
-					if (o != null)
-						t = Reflection.copy(o, t);
-					return t;
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
-			};
+			var cc = t.getConstructors();
+			var o = context;// .get();
+			var oe = !Modifier.isStatic(t.getModifiers()) && o != null && t.getEnclosingClass() == o.getClass();
+			return aa -> newInstance(cc, aa, o, oe);
 		});
 		@SuppressWarnings("unchecked")
 		var t = (T) f.apply(arguments);
 		return t;
 	}
 
-	public static void main(String[] args) {
-		var z = new Foo("a");
-		var f = new DiFactory(List.of(Foo.C.class), () -> z);
-		var x1 = f.create(Foo.I.class, Map.of("s2", "b"));
-		IO.println("x1=" + x1);
-		var x2 = f.create(Foo.I.class, Map.of("s2", "c"));
-		IO.println("x2=" + x2);
+	protected <T> T newInstance(Constructor<?>[] constructors, Map<String, Object> arguments, Object context,
+			boolean enclosed) {
+		record R(Constructor<?> c, Object[] aa, int n) {
+		}
+		try {
+			var r = new R(null, null, -1);
+			for (var c : constructors) {
+				var pp = Arrays.stream(c.getParameters());
+				var aa = (enclosed ? pp.skip(1) : pp).map(x -> {
+					if (arguments != null && arguments.containsKey(x.getName()))
+						return arguments.get(x.getName());
+					var p = context != null ? Reflection.property(context.getClass(), x.getName()) : null;
+					return p != null ? p.get(context) : null;
+				}).toArray();
+				var n = (int) Arrays.stream(aa).filter(Objects::nonNull).count();
+				if (n > r.n || (n == r.n && c.getParameterCount() < r.c.getParameterCount()))
+					r = new R(c, aa, n);
+			}
+//			IO.println("DiFactory.create, c1 = " + c1);
+			if (enclosed) {
+				var aa = new Object[1 + r.aa.length];
+				aa[0] = context;
+				System.arraycopy(r.aa, 0, aa, 1, r.aa.length);
+				r = new R(r.c, aa, r.n);
+			}
+//			IO.println("r=" + r);
+			@SuppressWarnings("unchecked")
+			var t = (T) r.c.newInstance(r.aa);
+//			if (context != null)
+//				t = Reflection.copy(context, t);
+			return t;
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	public static class Foo {
-
-		public final String s1;
-
-		public Foo(String s1) {
-			this.s1 = s1;
-		}
-
-		public interface I {
-		}
-
-		public class C implements I {
-
-			public String s1;
-
-			private final String s2;
-
-			public C(String s2) {
-				this.s2 = s2;
-			}
-
-			@Override
-			public String toString() {
-				return s1 + s2;
-			}
-		}
-	}
+//	public static void main(String[] args) {
+//		var z = new Foo("a");
+//		var f = new DiFactory(List.of(Foo.C.class), () -> z);
+//		var x1 = f.create(Foo.I.class, Map.of("s2", "b"));
+//		IO.println("x1=" + x1);
+//		var x2 = f.create(Foo.I.class, Map.of("s2", "c"));
+//		IO.println("x2=" + x2);
+//	}
+//
+//	public static class Foo {
+//
+//		public final String s1;
+//
+//		public Foo(String s1) {
+//			this.s1 = s1;
+//		}
+//
+//		public interface I {
+//		}
+//
+//		public class C implements I {
+//
+//			public String s1;
+//
+//			private final String s2;
+//
+//			public C(String s2) {
+//				this.s2 = s2;
+//			}
+//
+//			@Override
+//			public String toString() {
+//				return s1 + s2;
+//			}
+//		}
+//	}
 }

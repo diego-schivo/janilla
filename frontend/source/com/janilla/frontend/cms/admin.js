@@ -69,11 +69,11 @@ export default class Admin extends WebComponent {
     }
 
     get currentDocument() {
-        return this.state.document;
+        return this.customState.document;
     }
 
     set currentDocument(document) {
-        this.state.document = document;
+        this.customState.document = document;
         this.dispatchEvent(new CustomEvent("documentchanged", { detail: document }));
     }
 
@@ -95,7 +95,7 @@ export default class Admin extends WebComponent {
         const p = this.dataset.path === "/account" && ua
             ? `/collections/users/${a.currentUser.id}`
             : this.dataset.path;
-        const s = this.state;
+        const s = this.customState;
         s.pathSegments = p.length > 1 ? p.substring(1).split("/") : [];
 
         if (a.currentUser) {
@@ -123,6 +123,10 @@ export default class Admin extends WebComponent {
                 case "collections":
                     s.collectionSlug = s.pathSegments[1];
                     s.documentType = s.schema["Collections"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].elementTypes[0];
+                    if (s.pathSegments[2] === "create") {
+                        await this.createDocument(s.collectionSlug);
+                        return;
+                    }
                     s.documentUrl = s.pathSegments.length >= 3 ? `${a.dataset.apiUrl}/${s.collectionSlug}/${s.pathSegments[2]}` : null;
                     break;
                 case "globals":
@@ -139,12 +143,17 @@ export default class Admin extends WebComponent {
                 s.versionId = parseInt(s.versionId);
             }
             await Promise.all([
-                s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : { $type: s.documentType }) : null,
+                //s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : { $type: s.documentType }) : null,
+                s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : null) : null,
                 s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`).then(async x => s.versions = await x.json()) : null,
                 s.documentSubview === "version" ? fetch(`${s.collectionSlug
                     ? s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/"))
                     : s.documentUrl}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
             ]);
+            if (s.documentUrl && !s.document) {
+                const nn = s.pathSegments.slice(0, s.collectionSlug ? 2 : 1);
+                a.navigate(new URL(`/admin/${nn.join("/")}`, location.href));
+            }
         } else if (!["/create-first-user", "/forgot", "/login", "/reset"].includes(p) && !p.startsWith("/reset/")) {
             const j = await (await fetch(`${a.dataset.apiUrl}/users?limit=1`)).json();
             a.navigate(new URL(j.length ? "/admin/login" : "/admin/create-first-user", location.href));
@@ -285,7 +294,7 @@ export default class Admin extends WebComponent {
                     const a = this.closest("app-element");
                     await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
                     a.currentUser = null;
-					this.querySelector("dialog").close();
+                    this.querySelector("dialog").close();
                     this.success("You have been logged out successfully.");
                     a.navigate(new URL("/admin/login", location.href));
                     break;
@@ -298,7 +307,7 @@ export default class Admin extends WebComponent {
         if (event.detail.name === "document-subview") {
             event.preventDefault();
             const v = event.detail.value;
-            const s = this.state;
+            const s = this.customState;
             const nn = s.pathSegments.slice(0, s.collectionSlug ? 3 : 2);
             if (v !== "edit")
                 nn.push(v);
@@ -383,13 +392,28 @@ export default class Admin extends WebComponent {
         }
     }
 
+    async createDocument(n) {
+        const a = this.closest("app-element");
+        const r = await fetch(`${a.dataset.apiUrl}/${n}`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ $type: this.customState.schema["Collections"][n].elementTypes[0] })
+        });
+        const j = await r.json();
+        if (r.ok)
+            a.navigate(new URL(`/admin/collections/${n}/${j.id}`, location.href));
+        else
+            this.error(j);
+    }
+
     dashboardGroups() {
-        const s = this.state;
+        const s = this.customState;
         return s.schema ? Object.keys(s.schema["Data"]) : [];
     }
 
     field(path, root) {
-        const s = this.state;
+        const s = this.customState;
         let f = root ?? {
             type: s.documentType,
             properties: s.schema[s.documentType],
@@ -434,7 +458,8 @@ export default class Admin extends WebComponent {
     }
 
     formProperties(field) {
-        return field.properties ? Object.entries(field.properties).filter(([k, _]) => k !== "uri") : [];
+        return field.properties ? Object.entries(field.properties)//.filter(([k, _]) => k !== "uri") 
+		: [];
     }
 
     headers(documentSlug) {
@@ -524,7 +549,7 @@ export default class Admin extends WebComponent {
     }
 
     title(document) {
-        const s = this.state;
+        const s = this.customState;
         if (Object.values(s.schema.Globals ?? {}).some(x => x.type === document.$type))
             return document.$type.split(/(?=[A-Z])/).join(" ");
         switch (document.$type) {

@@ -60,9 +60,9 @@ import java.util.stream.Collectors;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Flat;
+import com.janilla.java.Reflection;
 import com.janilla.json.Jwt;
-import com.janilla.reflect.Flat;
-import com.janilla.reflect.Reflection;
 import com.janilla.web.BadRequestException;
 import com.janilla.web.Bind;
 import com.janilla.web.ForbiddenException;

@@ -24,6 +24,7 @@
  */
 package com.janilla.web;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -41,36 +42,41 @@ import java.util.stream.Stream;
 
 import com.janilla.java.Java;
 
-public class FileMap extends HashMap<String, File> {
+public class ResourceMap extends HashMap<String, Resource> {
 
 	private static final long serialVersionUID = -334340699116362752L;
 
 	protected static final Set<String> EXTENSIONS = Set.of("avif", "css", "html", "ico", "jpg", "js", "png", "svg",
 			"ttf", "webp", "woff", "woff2");
 
-	public FileMap(List<Path> paths) {
-//		IO.println("FileMap, paths=" + paths);
-		for (var x : paths) {
-//			IO.println("x.getFileSystem()=" + (x.getFileSystem() == FileSystems.getDefault()));
-			var d = x.getFileSystem() == FileSystems.getDefault()
-					? Stream.iterate(x, y -> y.getParent())
-							.dropWhile(y -> !y.getFileName().toString().equals("classes")).findFirst().get()
-					: x.getFileSystem().getRootDirectories().iterator().next();
-			x = d.relativize(x);
+	public ResourceMap(List<Path> paths) {
+//		IO.println("ResourceMap, paths=" + paths);
+		for (var p : paths) {
+			var d = p.getFileSystem() == FileSystems.getDefault()
+					? Stream.iterate(p, x -> x.getParent())
+							.dropWhile(x -> !x.getFileName().toString().equals("classes")).findFirst().get()
+					: p.getFileSystem().getRootDirectories().iterator().next();
+			p = d.relativize(p);
+//			IO.println("ResourceMap, p=" + p);
 			try {
-				var n0 = x.getFileName().toString();
-				var i = n0.lastIndexOf('.');
-				var ex = i != -1 ? n0.substring(i + 1).toLowerCase() : null;
+				String ex;
+				{
+					var n = p.getFileName().toString();
+					var i = n.lastIndexOf('.');
+					ex = i != -1 ? n.substring(i + 1).toLowerCase() : null;
+				}
+				if (ex == null)
+					continue;
 
 				class A {
-					private static DefaultFile moduleUri(String name) {
+					private static DefaultResource moduleAndUri(String name) {
 						if (Java.class.getModule().isNamed())
 							for (var m : ModuleLayer.boot().configuration().modules())
 								try (var r = m.reference().open()) {
 									var u = r.find(name);
 									if (u.isPresent()) {
-										return new DefaultFile(ModuleLayer.boot().findModule(m.name()).get(), u.get(),
-												null, null, 0);
+										return new DefaultResource(ModuleLayer.boot().findModule(m.name()).get(),
+												u.get(), null, null, 0);
 									}
 								} catch (IOException e) {
 									throw new UncheckedIOException(e);
@@ -79,7 +85,7 @@ public class FileMap extends HashMap<String, File> {
 							var x = Thread.currentThread().getContextClassLoader().getResource(name);
 							if (x != null)
 								try {
-									return new DefaultFile(null, x.toURI(), null, null, 0);
+									return new DefaultResource(null, x.toURI(), null, null, 0);
 								} catch (URISyntaxException e) {
 									throw new RuntimeException(e);
 								}
@@ -88,36 +94,37 @@ public class FileMap extends HashMap<String, File> {
 					}
 				}
 
-				if (ex == null)
-					;
-				else if (EXTENSIONS.contains(ex)) {
-					var p = x.getParent().toString().replace(java.io.File.separatorChar, '/').replace('/', '.');
-					var n = x.toString().replace(java.io.File.separatorChar, '/');
-					var mu = A.moduleUri(n);
-					var f = d.resolve(x);
-					var r = new DefaultFile(mu.module(), mu.uri(), p, "/" + n, Files.size(f));
+				if (EXTENSIONS.contains(ex)) {
+					var p2 = p.getParent().toString().replace(File.separatorChar, '/').replace('/', '.');
+					var n = p.toString().replace(File.separatorChar, '/');
+					var mu = A.moduleAndUri(n);
+					var f = d.resolve(p);
+					var r = new DefaultResource(mu.module(), mu.uri(), p2, "/" + n, Files.size(f));
 //					IO.println("r=" + r);
 					put(r.path().substring(r.package1().length() + 1), r);
 				} else if (ex.equals("zip")) {
-					var p = x.getParent().toString().replace(java.io.File.separatorChar, '/').replace('/', '.');
-					var n = x.toString().replace(java.io.File.separatorChar, '/');
-					var mu = A.moduleUri(n);
+					var p2 = p.getParent().toString().replace(File.separatorChar, '/').replace('/', '.');
+					var n = p.toString().replace(File.separatorChar, '/');
+					var mu = A.moduleAndUri(n);
 					var u = mu.uri();
 					if (!u.toString().startsWith("jar:"))
 						u = URI.create("jar:" + u);
 					var fs = Java.zipFileSystem(u);
-					var f = d.resolve(x);
-					var a = new DefaultFile(mu.module(), u, p, "/" + n, Files.size(f));
+					var f = d.resolve(p);
+					var a = new DefaultResource(mu.module(), u, p2, "/" + n, Files.size(f));
 					Files.walkFileTree(fs.getPath("/"), new SimpleFileVisitor<>() {
 
 						@Override
 						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 //							IO.println("file=" + file);
-							var n = file.getFileName().toString();
-							var i = n.lastIndexOf('.');
-							var ex = i != -1 ? n.substring(i + 1).toLowerCase() : null;
+							String ex;
+							{
+								var n = file.getFileName().toString();
+								var i = n.lastIndexOf('.');
+								ex = i != -1 ? n.substring(i + 1).toLowerCase() : null;
+							}
 							if (ex != null && EXTENSIONS.contains(ex)) {
-								var r = new ZipEntryFile(a, file.toString(), Files.size(file));
+								var r = new ZipEntryResource(a, file.toString(), Files.size(file));
 //								IO.println("r=" + r);
 								put(r.archive().path().substring(0, r.archive().path().length() - 4)
 										.substring(r.archive().package1().length() + 1) + r.path(), r);
@@ -130,6 +137,6 @@ public class FileMap extends HashMap<String, File> {
 				throw new UncheckedIOException(e);
 			}
 		}
-//		IO.println("FileMap=" + this);
+//		IO.println("ResourceMap=" + this);
 	}
 }

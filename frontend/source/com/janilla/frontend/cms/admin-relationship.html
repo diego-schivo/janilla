@@ -8,8 +8,8 @@
     </button>
     <div class="dropdown">
       <select autocomplete="off">
-        <option disabled selected></option>
-        <!--${options}-->
+		<option disabled selected></option>
+        <!--${optgroups}-->
       </select>
       <lucide-icon data-name="chevron-down"></lucide-icon>
     </div>
@@ -26,13 +26,19 @@
 <template id="value">
   <li>
     <span>${label}</span>
-    <button type="button" name="edit" value="${id}">
+    <button type="button" name="edit" value="${value}">
       <lucide-icon data-name="square-pen"></lucide-icon>
     </button>
-    <button type="button" name="remove" value="${id}">
+    <button type="button" name="remove" value="${value}">
       <lucide-icon data-name="x"></lucide-icon>
     </button>
   </li>
+</template>
+
+<template id="optgroup">
+  <optgroup label="${label}">
+    <!--${options}-->
+  </optgroup>
 </template>
 
 <template id="option">

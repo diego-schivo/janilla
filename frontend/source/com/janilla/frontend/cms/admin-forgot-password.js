@@ -74,7 +74,7 @@ export default class AdminForgotPassword extends WebComponent {
         this.appendChild(this.interpolateDom({
             $template: "",
             content: {
-                $template: this.state.submitted ? "submitted" : "form"
+                $template: this.customState.submitted ? "submitted" : "form"
             }
         }));
     }
@@ -100,7 +100,7 @@ export default class AdminForgotPassword extends WebComponent {
         });
         const j = await r.json();
         if (r.ok) {
-            this.state.submitted = true;
+            this.customState.submitted = true;
             this.requestDisplay();
         } else
             a2.error(j);

@@ -33,8 +33,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.janilla.reflect.Property;
-import com.janilla.reflect.Reflection;
+import com.janilla.java.Property;
+import com.janilla.java.Reflection;
 
 public class ReflectionValueIterator extends ValueIterator {
 
@@ -69,15 +69,19 @@ public class ReflectionValueIterator extends ValueIterator {
 
 	protected Stream<Map.Entry<String, Object>> entries(Class<?> type) {
 //		IO.println("ReflectionValueIterator.entries, type=" + type);
-		var kkvv = type.isEnum() ? Stream.of(Map.<String, Object>entry("name", ((Enum<?>) value).name()))
-				: Reflection.properties(type).filter(Property::canGet).map(x -> {
+		var ee = type.isEnum() ? Stream.of(Map.entry("name", (Object) ((Enum<?>) value).name()))
+				: Reflection.properties(type).filter(this::test).map(x -> {
 //					IO.println("ReflectionValueIterator.entries, x=" + x + ", value=" + value);
 					return (Map.Entry<String, Object>) new AbstractMap.SimpleImmutableEntry<>(x.name(), x.get(value));
 				});
 		if (((ReflectionJsonIterator) context).includeType) {
 			var x = (Object) type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');
-			kkvv = Stream.concat(Stream.of(Map.entry("$type", x)), kkvv);
+			ee = Stream.concat(Stream.of(Map.entry("$type", x)), ee);
 		}
-		return kkvv;
+		return ee;
+	}
+
+	protected boolean test(Property property) {
+		return property.canGet();
 	}
 }

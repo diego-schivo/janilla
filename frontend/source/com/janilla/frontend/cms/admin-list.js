@@ -78,7 +78,7 @@ export default class AdminList extends WebComponent {
     async updateDisplay() {
         const t = this.dataset.slug.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ");
         document.title = `${t} - Janilla`;
-        const s = this.state;
+        const s = this.customState;
         const a = this.closest("app-element");
         s.data ??= await (await fetch(`${a.dataset.apiUrl}/${this.dataset.slug}`)).json();
         s.selectionIds ??= [];
@@ -165,7 +165,7 @@ export default class AdminList extends WebComponent {
         const el = event.target.closest('[type="checkbox"]');
         if (!el)
             return;
-        const s = this.state;
+        const s = this.customState;
         if (el.matches("[value]")) {
             const id = parseInt(el.value);
             const i = s.selectionIds.indexOf(id);
@@ -185,7 +185,7 @@ export default class AdminList extends WebComponent {
         const a = this.closest("app-element");
         const a2 = this.closest("admin-element");
         const n = this.dataset.slug;
-        const s = this.state;
+        const s = this.customState;
         switch (el?.name) {
             case "select":
                 this.dispatchEvent(new CustomEvent("documentselected", {
@@ -230,7 +230,7 @@ export default class AdminList extends WebComponent {
                     credentials: "include",
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({
-                        $type: a.state.schema["Collections"][n].elementTypes[0],
+                        $type: a.customState.schema["Collections"][n].elementTypes[0],
                         documentStatus: "PUBLISHED"
                     })
                 })).json();
@@ -246,7 +246,7 @@ export default class AdminList extends WebComponent {
                     credentials: "include",
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({
-                        $type: a.state.schema["Collections"][n].elementTypes[0],
+                        $type: a.customState.schema["Collections"][n].elementTypes[0],
                         documentStatus: "DRAFT"
                     })
                 })).json();
@@ -255,18 +255,21 @@ export default class AdminList extends WebComponent {
                 break;
             }
             case "create": {
-                const r = await fetch(`${a.dataset.apiUrl}/${n}`, {
+                /*
+				const r = await fetch(`${a.dataset.apiUrl}/${n}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
-                    body: JSON.stringify({ $type: a2.state.schema["Collections"][n].elementTypes[0] })
+                    body: JSON.stringify({ $type: a2.customState.schema["Collections"][n].elementTypes[0] })
                 });
                 const j = await r.json();
                 if (r.ok)
                     a.navigate(new URL(`/admin/collections/${n}/${j.id}`, location.href));
                 else
                     a2.error(j);
-                break;
+                */
+				await a2.createDocument(n);
+				break;
             }
             case "delete":
                 s.deleteDialog = true;

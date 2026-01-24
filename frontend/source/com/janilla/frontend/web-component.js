@@ -66,20 +66,20 @@ export default class WebComponent extends HTMLElement {
 
     connectedCallback() {
         // console.log(`WebComponent(${this.constructor.name}).connectedCallback`);
-        this.state = {};
+        this.customState = {};
         this.requestDisplay();
     }
 
     disconnectedCallback() {
         // console.log(`WebComponent(${this.constructor.name}).disconnectedCallback`);
-        delete this.state;
+        delete this.customState;
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
         // console.log(`WebComponent(${this.constructor.name}).attributeChangedCallback`, "name", name, "oldValue", oldValue, "newValue", newValue);
         if (this.isConnected && newValue !== oldValue) {
-            if (this.state && Object.keys(this.state).length)
-                this.state = {};
+            if (this.customState && Object.keys(this.customState).length)
+                this.customState = {};
             this.requestDisplay();
         }
     }
@@ -118,7 +118,7 @@ export default class WebComponent extends HTMLElement {
         // console.log(`WebComponent(${this.constructor.name}).updateDisplay`);
         this.appendChild(this.interpolateDom({
             $template: "",
-            ...this.state
+            ...this.customState
         }));
     }
 
