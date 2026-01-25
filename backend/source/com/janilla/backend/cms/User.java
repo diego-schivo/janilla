@@ -69,4 +69,6 @@ public interface User<ID extends Comparable<ID>, R extends UserRole> extends Doc
 	User<ID, R> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
 
 	User<ID, R> withRoles(Set<R> roles);
+
+	boolean hasRole(R role);
 }
