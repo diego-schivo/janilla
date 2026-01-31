@@ -4,24 +4,34 @@
     <p>To begin, create your first user.</p>
   </div>
   <ul>
-    <li class="field">
-      <label>
-        <span>Email</span>
-        <input type="email" name="email" required />
-      </label>
-    </li>
-    <li class="field">
-      <label>
-        <span>New Password</span>
-        <input type="password" name="password" required />
-      </label>
-    </li>
-    <li class="field">
-      <label>
-        <span>Confirm Password</span>
-        <input type="password" name="confirmPassword" required />
-      </label>
-    </li>
+    <!--${fields}-->
   </ul>
   <button class="button primary">Create</button>
 </form>
+
+<template id="email">
+  <li class="field">
+    <label>
+      <span>Email</span>
+      <input type="email" name="email" required />
+    </label>
+  </li>
+</template>
+
+<template id="password">
+  <li class="field">
+    <label>
+      <span>New Password</span>
+      <input type="password" name="password" required />
+    </label>
+  </li>
+</template>
+
+<template id="confirm-password">
+  <li class="field">
+    <label>
+      <span>Confirm Password</span>
+      <input type="password" name="confirmPassword" required />
+    </label>
+  </li>
+</template>

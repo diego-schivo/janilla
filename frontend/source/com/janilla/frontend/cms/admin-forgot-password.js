@@ -51,12 +51,12 @@ import WebComponent from "web-component";
 
 export default class AdminForgotPassword extends WebComponent {
 
-    static get templateNames() {
-        return ["admin-forgot-password"];
+    static get moduleUrl() {
+        return import.meta.url;
     }
 
-    constructor() {
-        super();
+    static get templateNames() {
+        return ["admin-forgot-password"];
     }
 
     connectedCallback() {

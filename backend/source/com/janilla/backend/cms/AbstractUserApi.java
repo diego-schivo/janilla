@@ -69,34 +69,34 @@ import com.janilla.web.ForbiddenException;
 import com.janilla.web.Handle;
 import com.janilla.web.UnauthorizedException;
 
-public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E extends User<ID, R>>
-		extends CollectionApi<ID, E> {
+public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<ID, R>, R extends UserRole>
+		extends CollectionApi<ID, U> {
 
 	protected final String jwtKey;
 
-	protected UserApi(Class<E> type, Predicate<HttpExchange> drafts, Persistence persistence, String jwtKey) {
+	protected AbstractUserApi(Class<U> type, Predicate<HttpExchange> drafts, Persistence persistence, String jwtKey) {
 		super(type, drafts, persistence);
 		this.jwtKey = jwtKey;
 	}
 
-	public record CreateData<E>(@Flat E user, String password) {
+	public record CreateData<U>(@Flat U user, String password) {
 
-		public CreateData<E> withUser(E user) {
+		public CreateData<U> withUser(U user) {
 			return new CreateData<>(user, password);
 		}
 	}
 
 	@Handle(method = "POST")
-	public E create(CreateData<E> data) {
+	public U create(CreateData<U> data) {
 		@SuppressWarnings("unchecked")
-		var e = (E) data.user().withPassword(data.password());
+		var e = (U) data.user().withPassword(data.password());
 		return super.create(e);
 	}
 
 	@Handle(method = "PUT", path = "(\\d+)")
-	public E update(ID id, E entity, Boolean draft, Boolean autosave, String password) {
+	public U update(ID id, U entity, Boolean draft, Boolean autosave, String password) {
 		@SuppressWarnings("unchecked")
-		var e = (E) entity.withPassword(password);
+		var e = (U) entity.withPassword(password);
 		return super.update(id, e, draft, autosave);
 	}
 
@@ -104,7 +104,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Handle(method = "POST", path = "login")
-	public E login(LoginData data, UserHttpExchange exchange) {
+	public U login(LoginData data, UserHttpExchange<U> exchange) {
 //		IO.println("UserApi.login, data=" + data);
 		if (data == null || data.email() == null || data.email().isBlank() || data.password() == null
 				|| data.password().isBlank())
@@ -122,18 +122,16 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Handle(method = "POST", path = "logout")
-	public void logout(UserHttpExchange exchange) {
+	public void logout(UserHttpExchange<U> exchange) {
 		exchange.setSessionCookie(null);
 	}
 
 	@Handle(method = "GET", path = "me")
-	public E me(UserHttpExchange exchange) {
-		@SuppressWarnings("unchecked")
-		var e = (E) exchange.sessionUser();
-		return e;
+	public U me(UserHttpExchange<U> exchange) {
+		return exchange.sessionUser();
 	}
 
-	public E read(String email) {
+	public U read(String email) {
 		return email != null ? persistence.database().perform(() -> {
 			var c = persistence.crud(type);
 			return c.read(c.find("email", email));
@@ -141,7 +139,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Handle(method = "POST", path = "first-register")
-	public E firstRegister(CreateData<E> data, UserHttpExchange exchange) {
+	public U firstRegister(CreateData<U> data, UserHttpExchange<U> exchange) {
 		if (data == null || data.user() == null || data.user().email() == null || data.user().email().isBlank()
 				|| data.password() == null || data.password().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
@@ -149,7 +147,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 			if (crud().count() != 0)
 				throw new ForbiddenException("You are not allowed to perform this action.");
 			@SuppressWarnings("unchecked")
-			var e = (E) data.user().withPassword(data.password());
+			var e = (U) data.user().withPassword(data.password());
 			return crud().create(e);
 		}, true);
 		var h = Map.of("alg", "HS256", "typ", "JWT");
@@ -160,7 +158,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Handle(method = "POST", path = "forgot-password")
-	public void forgotPassword(E user) {
+	public void forgotPassword(U user) {
 		if (user == null || user.email() == null || user.email().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
 		var u = persistence.database().perform(() -> {
@@ -170,7 +168,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 			var t = UUID.randomUUID().toString().replace("-", "");
 			return crud().update(x.id(), y -> {
 				@SuppressWarnings("unchecked")
-				var e = (E) y.withResetPassword(t, Instant.now().plus(1, ChronoUnit.HOURS));
+				var e = (U) y.withResetPassword(t, Instant.now().plus(1, ChronoUnit.HOURS));
 				return e;
 			});
 		}, true);
@@ -195,7 +193,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Handle(method = "POST", path = "reset-password")
-	public E resetPassword(String token, String password, String confirmPassword, UserHttpExchange exchange) {
+	public U resetPassword(String token, String password, String confirmPassword, UserHttpExchange<U> exchange) {
 		if (token == null || token.isBlank() || password == null || password.isBlank()
 				|| !password.equals(confirmPassword))
 			throw new BadRequestException("Please correct invalid fields.");
@@ -207,7 +205,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 				throw new ForbiddenException("Token is either invalid or has expired.");
 			return crud().update(x.id(), y -> {
 				@SuppressWarnings("unchecked")
-				var e = (E) y.withResetPassword(null, null).withPassword(password);
+				var e = (U) y.withResetPassword(null, null).withPassword(password);
 				return e;
 			});
 		}, true);
@@ -219,12 +217,12 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Override
-	public E delete(ID id) {
+	public U delete(ID id) {
 		throw new RuntimeException();
 	}
 
 	@Handle(method = "DELETE", path = "(\\d+)")
-	public E delete(ID id, UserHttpExchange exchange) {
+	public U delete(ID id, UserHttpExchange<U> exchange) {
 		var u = exchange.sessionUser();
 		var x = super.delete(id);
 		if (id == u.id())
@@ -233,12 +231,12 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Override
-	public List<E> delete(List<ID> ids) {
+	public List<U> delete(List<ID> ids) {
 		throw new RuntimeException();
 	}
 
 	@Handle(method = "DELETE")
-	public List<E> delete(@Bind("id") List<ID> ids, UserHttpExchange exchange) {
+	public List<U> delete(@Bind("id") List<ID> ids, UserHttpExchange<U> exchange) {
 		var u = exchange.sessionUser();
 		var x = super.delete(ids);
 		if (ids.contains(u.id()))
@@ -247,7 +245,7 @@ public abstract class UserApi<ID extends Comparable<ID>, R extends UserRole, E e
 	}
 
 	@Override
-	protected Set<String> updateInclude(E entity) {
+	protected Set<String> updateInclude(U entity) {
 		var nn = Set.of("salt", "hash");
 		return entity.salt() == null
 				? Reflection.propertyNames(type).filter(x -> !nn.contains(x)).collect(Collectors.toSet())

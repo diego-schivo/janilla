@@ -50,6 +50,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -62,13 +64,14 @@ public final class Java {
 		throw new Error("no instances");
 	}
 
-	public static List<Class<?>> getPackageClasses(String package1) {
-//		IO.println("Java.getPackageClasses, package1=" + package1);
+	public static List<Class<?>> getPackageClasses(String package1, boolean recursive) {
+//		IO.println("Java.getPackageClasses, package1=" + package1 + ", recursive=" + recursive);
 		class A {
 			private static final Map<String, List<Class<?>>> RESULTS = new ConcurrentHashMap<>();
 		}
-		return A.RESULTS.computeIfAbsent(package1, k -> {
-			Stream<Class<?>> cs = getPackagePaths(k).stream().map(x -> {
+		var pp = getPackagePaths(package1, false).toList();
+		return A.RESULTS.computeIfAbsent(package1, _ -> {
+			Stream<Class<?>> s = pp.stream().map(x -> {
 //				IO.println("Java.getPackageClasses, x=" + x);
 				var d = x.getFileSystem() == FileSystems.getDefault()
 						? Stream.iterate(x, y -> y.getParent())
@@ -88,24 +91,29 @@ public final class Java {
 //				IO.println("Java.getPackageClasses, c=" + c);
 				return c;
 			});
-			var cc = cs.filter(Objects::nonNull).toList();
+			s = s.filter(Objects::nonNull);
+			if (recursive)
+				s = Stream.concat(s, pp.stream().filter(Java::isDirectory)
+						.flatMap(x -> getPackageClasses(package1 + '.' + x.getFileName().toString(), true).stream()));
+			var cc = s.toList();
 //			IO.println("Java.getPackageClasses, cc=" + cc);
 			return cc;
 		});
 	}
 
-	public static List<Path> getPackagePaths(String package1) {
+	public static Stream<Path> getPackagePaths(String package1, boolean recursive) {
+//		IO.println("Java.getPackagePaths, package1=" + package1 + ", recursive=" + recursive);
 		class A {
-			private static final Map<String, List<Path>> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<String, Map<Path, List<Path>>> RESULTS = new ConcurrentHashMap<>();
 			private static final Pattern JAR_URI_PATTERN = Pattern.compile("(jar:.*)!(.*)");
 		}
-		return A.RESULTS.computeIfAbsent(package1, k -> {
+		var r = A.RESULTS.computeIfAbsent(package1, k -> {
 //			IO.println("Java.getPackagePaths, k=" + k);
 			var n = k.replace('.', '/');
 			var uu = Java.class.getModule().isNamed() ? ModuleLayer.boot().configuration().modules().stream()
 					.map(ResolvedModule::reference).flatMap(x -> {
-						try (var r = x.open()) {
-							return r.find(n).stream();
+						try (var y = x.open()) {
+							return y.find(n).stream();
 						} catch (IOException e) {
 							throw new UncheckedIOException(e);
 						}
@@ -122,17 +130,39 @@ public final class Java {
 				var d = m.matches() ? zipFileSystem(URI.create(m.group(1))).getPath(m.group(2)) : Path.of(x);
 //				IO.println("Java.getPackagePaths, d=" + d);
 				return d;
-			}).flatMap(x -> {
+			}).collect(Collectors.toMap(x -> x, x -> {
 //				IO.println("Java.getPackagePaths, x=" + x);
-				try (var yy = Files.walk(x)) {
+//				try (var yy = Files.walk(x)) {
+				try (var yy = Files.list(x)) {
 					var pp = yy.toList();
 //					IO.println("Java.getPackagePaths, pp=" + pp);
-					return pp.stream();
+					return pp;
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
-			}).toList();
+			}));
 		});
+//		IO.println("Java.getPackagePaths, r=" + r);
+		if (recursive) {
+			var ss = Stream.<String>builder();
+			return IntStream.range(0, 2).mapToObj(i -> i == 0 ? r.entrySet().stream()
+					.flatMap(x -> Stream.concat(Stream.of(x.getKey()), x.getValue().stream().filter(y -> {
+						if (isDirectory(y)) {
+							ss.add(y.getFileName().toString());
+							return false;
+						}
+						return true;
+					}))) : ss.build().distinct().flatMap(x -> getPackagePaths(package1 + "." + x, true)))
+					.flatMap(x -> x);
+		}
+		return r.values().stream().flatMap(List::stream);
+	}
+
+	protected static boolean isDirectory(Path path) {
+		class A {
+			private static final Map<Path, Boolean> RESULTS = new ConcurrentHashMap<>();
+		}
+		return A.RESULTS.computeIfAbsent(path, Files::isDirectory);
 	}
 
 	public static <K, V> Map<K, V> hashMap(K k1, V v1, K k2, V v2) {

@@ -51,12 +51,12 @@ import WebComponent from "web-component";
 
 export default class AdminBar extends WebComponent {
 
-    static get templateNames() {
-        return ["admin-bar"];
+    static get moduleUrl() {
+        return import.meta.url;
     }
 
-    constructor() {
-        super();
+    static get templateNames() {
+        return ["admin-bar"];
     }
 
     async updateDisplay() {

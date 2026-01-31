@@ -51,12 +51,12 @@ import WebComponent from "web-component";
 
 export default class AdminVersions extends WebComponent {
 
-    static get templateNames() {
-        return ["admin-versions"];
+    static get moduleUrl() {
+        return import.meta.url;
     }
 
-    constructor() {
-        super();
+    static get templateNames() {
+        return ["admin-versions"];
     }
 
     async updateDisplay() {

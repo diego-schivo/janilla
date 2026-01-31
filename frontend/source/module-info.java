@@ -24,9 +24,6 @@
  */
 module com.janilla.frontend {
 
-	exports com.janilla.frontend;
-	exports com.janilla.frontend.cms;
-
 	opens com.janilla.frontend;
 	opens com.janilla.frontend.cms;
 

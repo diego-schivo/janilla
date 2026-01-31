@@ -95,7 +95,7 @@
   }
 }
 
-.admin {
+:where(.admin) {
   a,
   button,
   input,
@@ -494,7 +494,7 @@
     width: 1px;
   }
 
-  :where(.thumbnail) {
+  .thumbnail {
     width: 2.5rem;
     height: 2.5rem;
 
@@ -507,5 +507,13 @@
 
   input.visually-hidden:is(:focus, :focus-within) + label {
     outline: thin dotted;
+  }
+
+  toaster-element {
+    .success {
+      background: rgb(19, 44, 58);
+      border-color: rgb(17, 76, 105);
+      color: rgb(156, 216, 253);
+    }
   }
 }

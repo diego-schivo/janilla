@@ -51,9 +51,9 @@ public class HttpClient {
 
 	private static SSLContext sslContext(String protocol) {
 		try {
-			var sc = SSLContext.getInstance(protocol);
-			sc.init(null, null, null);
-			return sc;
+			var c = SSLContext.getInstance(protocol);
+			c.init(null, null, null);
+			return c;
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(e);
 		}
@@ -62,7 +62,7 @@ public class HttpClient {
 	protected final SSLContext sslContext;
 
 	public HttpClient() {
-		this(sslContext("TLSv1.3"));
+		this("TLSv1.3");
 	}
 
 	public HttpClient(String protocol) {
@@ -100,22 +100,24 @@ public class HttpClient {
 
 	public <R> R send(HttpRequest request, Function<HttpResponse, R> function) {
 		try (var ch = SocketChannel.open()) {
-			var a = request.getHeaderValue(":authority");
-			var i = a.indexOf(':');
-			var h = i != -1 ? a.substring(0, i) : a;
-			var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : 443;
+			{
+				var a = request.getHeaderValue(":authority");
+				var i = a.indexOf(':');
+				var h = i != -1 ? a.substring(0, i) : a;
+				var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : 443;
 //			IO.println("HttpClient.send, h=" + h + ", p=" + p);
-			ch.connect(new InetSocketAddress(h, p));
+				ch.connect(new InetSocketAddress(h, p));
+			}
 
-			var e = sslContext.createSSLEngine();
-			e.setUseClientMode(true);
-			var pp = e.getSSLParameters();
-			pp.setApplicationProtocols(new String[] { "h2" });
-			e.setSSLParameters(pp);
-
-			var t = new SecureTransfer(ch, e);
-			var he = new HttpEncoder();
-			var hd = new HttpDecoder();
+			SecureTransfer t;
+			{
+				var en = sslContext.createSSLEngine();
+				en.setUseClientMode(true);
+				var pp = en.getSSLParameters();
+				pp.setApplicationProtocols(new String[] { "h2" });
+				en.setSSLParameters(pp);
+				t = new SecureTransfer(ch, en);
+			}
 
 			class A {
 				private static final byte[] CONNECTION_PREFACE_PREFIX = """
@@ -128,6 +130,9 @@ public class HttpClient {
 			t.out().put(A.CONNECTION_PREFACE_PREFIX);
 			for (t.out().flip(); t.out().hasRemaining();)
 				t.write();
+
+			var he = new HttpEncoder();
+			var hd = new HttpDecoder();
 
 			t.out().clear();
 			t.out().put(he.encodeFrame(new SettingsFrame(false,
@@ -224,10 +229,10 @@ public class HttpClient {
 				t.write();
 
 //			IO.println("HttpClient.send, closeOutbound");
-			e.closeOutbound();
+			t.engine().closeOutbound();
 			do
 				t.write();
-			while (!e.isOutboundDone());
+			while (!t.engine().isOutboundDone());
 
 //			var ci = true;
 //			do {

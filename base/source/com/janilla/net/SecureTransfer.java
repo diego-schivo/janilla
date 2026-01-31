@@ -34,7 +34,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
-public class SecureTransfer {
+public class SecureTransfer implements Transfer {
 
 	protected final ByteChannel channel;
 
@@ -81,6 +81,7 @@ public class SecureTransfer {
 		return engine;
 	}
 
+	@Override
 	public int read() throws IOException {
 		inLock.lock();
 		try {
@@ -100,6 +101,7 @@ public class SecureTransfer {
 		}
 	}
 
+	@Override
 	public void write() throws IOException {
 		outLock.lock();
 		try {

@@ -90,41 +90,6 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		this.renderableFactory = renderableFactory;
 		this.rootFactory = rootFactory;
 
-//		groups = new LinkedHashMap<>();
-//		var oo = new HashMap<Class<?>, Object>();
-//		for (var tm : invocables) {
-		//// IO.println("InvocationHandlerFactory, tm=" + tm);
-//			var t = tm.type();
-//			var m = tm.method();
-//			var h1 = t.getAnnotation(Handle.class);
-//			var p1 = h1 != null ? h1.path() : null;
-//			var h2 = Reflection.inheritedAnnotation(m, Handle.class);
-//			var p2 = h2 != null ? h2.path() : null;
-		//// IO.println("InvocationHandlerFactory, h1=" + h1 + ", h2=" + h2);
-//			if (p2 != null) {
-//				if (p2.startsWith("/"))
-//					p1 = null;
-//				var p = Stream.of(p1, p2).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("/"));
-		//// IO.println("InvocationHandlerFactory, p=" + p + ", m=" + m + ", h2=" + h2);
-//				var i = groups.computeIfAbsent(p, _ -> {
-//					var o = oo.computeIfAbsent(t, x -> {
-//						if (instanceResolver != null)
-//							return instanceResolver.apply(x);
-//						try {
-//							return x.getConstructor().newInstance();
-//						} catch (ReflectiveOperationException e) {
-//							throw new RuntimeException(e);
-//						}
-//					});
-//					return new InvocationGroup(o, new LinkedHashMap<>());
-//				});
-		//// var m2 =
-//				i.methods().compute(h2.method(),
-//						(_, x) -> x == null || x.getDeclaringClass().isAssignableFrom(m.getDeclaringClass()) ? m : x);
-		//// IO.println("InvocationHandlerFactory, m2=" + m2);
-//			}
-//		}
-
 		record A(String m1, Method m2) {
 		}
 		record B(String p, Class<?> t, List<A> aa) {

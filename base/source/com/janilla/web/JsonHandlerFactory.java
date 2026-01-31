@@ -28,16 +28,28 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.util.Collections;
 import java.util.Iterator;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
+import com.janilla.ioc.DiFactory;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 
 public class JsonHandlerFactory implements HttpHandlerFactory {
+
+	protected final DiFactory diFactory;
+
+	public JsonHandlerFactory() {
+		this(null);
+	}
+
+	public JsonHandlerFactory(DiFactory diFactory) {
+		this.diFactory = diFactory;
+	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {
@@ -50,6 +62,8 @@ public class JsonHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected void render(Object object, HttpExchange exchange) {
+//		IO.println("JsonHandlerFactory.render, object=" + object);
+
 		var rs = exchange.response();
 		rs.setHeaderValue("content-type", "application/json");
 
@@ -67,6 +81,8 @@ public class JsonHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected Iterator<JsonToken<?>> buildJsonIterator(Object object, HttpExchange exchange) {
-		return new ReflectionJsonIterator(object, false);
+		return diFactory != null
+				? diFactory.create(ReflectionJsonIterator.class, Collections.singletonMap("object", object))
+				: new ReflectionJsonIterator(object);
 	}
 }

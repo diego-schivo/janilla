@@ -33,6 +33,10 @@ public class ReflectionJsonIterator extends JsonIterator {
 
 	protected final boolean includeType;
 
+	public ReflectionJsonIterator(Object object) {
+		this(object, false);
+	}
+
 	public ReflectionJsonIterator(Object object, boolean includeType) {
 		super(object);
 		this.includeType = includeType;

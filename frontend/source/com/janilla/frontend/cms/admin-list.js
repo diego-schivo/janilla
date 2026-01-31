@@ -51,16 +51,16 @@ import WebComponent from "web-component";
 
 export default class AdminList extends WebComponent {
 
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
     static get templateNames() {
         return ["admin-list"];
     }
 
     static get observedAttributes() {
         return ["data-slug", "data-enable-selection"];
-    }
-
-    constructor() {
-        super();
     }
 
     connectedCallback() {
@@ -214,7 +214,7 @@ export default class AdminList extends WebComponent {
                 })).json();
                 if (j.some(x => x.$type === "User" && x.id === a.currentUser.id)) {
                     a.currentUser = null;
-					a.navigate(new URL(`/admin/collections/${n}`, location.href));
+                    a.navigate(new URL(`/admin/collections/${n}`, location.href));
                 } else {
                     delete s.deleteDialog;
                     delete s.data;
@@ -256,7 +256,7 @@ export default class AdminList extends WebComponent {
             }
             case "create": {
                 /*
-				const r = await fetch(`${a.dataset.apiUrl}/${n}`, {
+                const r = await fetch(`${a.dataset.apiUrl}/${n}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
@@ -268,8 +268,8 @@ export default class AdminList extends WebComponent {
                 else
                     a2.error(j);
                 */
-				await a2.createDocument(n);
-				break;
+                await a2.createDocument(n);
+                break;
             }
             case "delete":
                 s.deleteDialog = true;

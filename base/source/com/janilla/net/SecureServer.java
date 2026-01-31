@@ -26,9 +26,11 @@ package com.janilla.net;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.channels.ByteChannel;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,16 +38,17 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLHandshakeException;
 
 public abstract class SecureServer {
 
-	protected static final int TIMEOUT_MILLIS = 10 * 1000;
+	protected static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
 
 	protected final SSLContext sslContext;
 
 	protected final SocketAddress endpoint;
 
-	protected final Map<SocketChannel, ThreadAndMillis> lastUsed = new ConcurrentHashMap<>();
+	protected final Map<SocketChannel, ThreadAndInstant> lastUsed = new ConcurrentHashMap<>();
 
 	public SecureServer(SSLContext sslContext, SocketAddress endpoint) {
 		this.sslContext = sslContext;
@@ -54,72 +57,48 @@ public abstract class SecureServer {
 
 	public void serve() {
 //		IO.println("SecureServer.serve");
-		Thread.startVirtualThread(() -> {
+		Thread.startVirtualThread(this::shutdownConnections);
+
+		try (var s = ServerSocketChannel.open()) {
+			s.socket().bind(endpoint);
 			for (;;) {
-				try {
-					TimeUnit.SECONDS.sleep(1);
-				} catch (InterruptedException e) {
-					break;
-				}
-				shutdownConnections();
-			}
-		});
-		try (var sch = ServerSocketChannel.open()) {
-			sch.socket().bind(endpoint);
-			for (;;) {
-				var ch = sch.accept();
+				var ch = s.accept();
 //				IO.println("SecureServer.serve, ch=" + ch + ", ch.isBlocking()=" + ch.isBlocking());
-				lastUsed.put(ch, new ThreadAndMillis(Thread.startVirtualThread(() -> {
-					try (var _ = ch) {
-						handleConnection(new CustomTransfer(ch, createSslEngine()));
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}), System.currentTimeMillis()));
+				var th = Thread.startVirtualThread(() -> handleConnection(ch));
+				lastUsed.put(ch, new ThreadAndInstant(th, Instant.now()));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	protected void shutdownConnections() {
-		Map<SocketChannel, ThreadAndMillis> m = new HashMap<>();
-//			IO.println("SecureServer.shutdownConnections, lastUsed=" + lastUsed.size());
-		var ms = System.currentTimeMillis();
-		for (var it = lastUsed.entrySet().iterator(); it.hasNext();) {
-			var kv = it.next();
-			if (ms >= kv.getValue().millis + TIMEOUT_MILLIS) {
-				it.remove();
-				m.put(kv.getKey(), kv.getValue());
-			}
-		}
-		for (var kv : m.entrySet()) {
-			var ch = kv.getKey();
-			var th = kv.getValue().thread;
-//			IO.println("SecureServer.shutdownConnections, sc=" + sc);
+	protected void handleConnection(SocketChannel channel) {
+		try (var ch = channel) {
+			handleConnection(new FilterTransfer(new SecureTransfer(ch, createSslEngine()) {
 
-//			String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^\\d.]", "");
-//			try {
-//				Runtime.getRuntime().exec("jcmd " + pid + " Thread.dump_to_file -format=json dump.json");
-//			} catch (IOException e) {
-//				throw new UncheckedIOException(e);
-//			}
-
-			if (th.isAlive()) {
-//				IO.println("SecureServer.shutdownConnections, th=" + th);
-				th.interrupt();
-			}
-
-			if (ch.isOpen()) {
-//				IO.println("SecureServer.shutdownConnections, ch=" + ch);
-				try {
-					ch.shutdownInput();
-					ch.shutdownOutput();
-					ch.close();
-				} catch (IOException e) {
-					e.printStackTrace();
+				@Override
+				public int read() throws IOException {
+					updateLastUsed(ch);
+					try {
+						return super.read();
+					} finally {
+						updateLastUsed(ch);
+					}
 				}
-			}
+
+				@Override
+				public void write() throws IOException {
+					try {
+						super.write();
+					} finally {
+						updateLastUsed(ch);
+					}
+				}
+			}));
+		} catch (SSLHandshakeException | ClosedByInterruptException e) {
+			IO.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -129,36 +108,59 @@ public abstract class SecureServer {
 		return x;
 	}
 
-	protected abstract void handleConnection(SecureTransfer transfer) throws IOException;
+	protected abstract void handleConnection(Transfer transfer) throws IOException;
 
-	protected class CustomTransfer extends SecureTransfer {
-
-		public CustomTransfer(ByteChannel channel, SSLEngine engine) {
-			super(channel, engine);
-		}
-
-		@Override
-		public int read() throws IOException {
-			updateLastUsed();
-			var n = super.read();
-			updateLastUsed();
-			return n;
-		}
-
-		@Override
-		public void write() throws IOException {
-			updateLastUsed();
-			super.write();
-			updateLastUsed();
-		}
-
-		protected void updateLastUsed() throws IOException {
-			if (lastUsed.computeIfPresent((SocketChannel) channel,
-					(_, v) -> new ThreadAndMillis(v.thread, System.currentTimeMillis())) == null)
-				throw new IOException();
-		}
+	protected ThreadAndInstant updateLastUsed(SocketChannel channel) {
+		return lastUsed.computeIfPresent(channel, (_, x) -> new ThreadAndInstant(x.thread(), Instant.now()));
 	}
 
-	protected record ThreadAndMillis(Thread thread, long millis) {
+	protected void shutdownConnections() {
+		for (;;) {
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				break;
+			}
+
+			Map<SocketChannel, ThreadAndInstant> m = new HashMap<>();
+//			IO.println("SecureServer.shutdownConnections, lastUsed=" + lastUsed.size());
+			var i0 = Instant.now().minus(CONNECTION_TIMEOUT);
+			for (var it = lastUsed.entrySet().iterator(); it.hasNext();) {
+				var kv = it.next();
+				var i = kv.getValue().instant();
+				if (!i.isAfter(i0)) {
+					it.remove();
+					m.put(kv.getKey(), kv.getValue());
+				}
+			}
+			for (var kv : m.entrySet()) {
+				var ch = kv.getKey();
+				var th = kv.getValue().thread();
+				IO.println("SecureServer.shutdownConnections, ch=" + ch);
+
+//			String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^\\d.]", "");
+//			try {
+//				Runtime.getRuntime().exec("jcmd " + pid + " Thread.dump_to_file -format=json dump.json");
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+
+				if (th.isAlive()) {
+//				IO.println("SecureServer.shutdownConnections, th=" + th);
+					th.interrupt();
+				}
+
+				if (ch.isOpen()) {
+//				IO.println("SecureServer.shutdownConnections, ch=" + ch);
+					try {
+						ch.shutdownInput();
+						ch.shutdownOutput();
+						ch.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
 	}
 }

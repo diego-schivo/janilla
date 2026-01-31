@@ -51,16 +51,16 @@ import WebComponent from "web-component";
 
 export default class AdminEdit extends WebComponent {
 
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
     static get templateNames() {
         return ["admin-edit"];
     }
 
     static get observedAttributes() {
         return ["data-updated-at"];
-    }
-
-    constructor() {
-        super();
     }
 
     connectedCallback() {

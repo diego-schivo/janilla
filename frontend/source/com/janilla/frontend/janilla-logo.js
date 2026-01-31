@@ -26,11 +26,11 @@ import WebComponent from "web-component";
 
 export default class JanillaLogo extends WebComponent {
 
-    static get templateNames() {
-        return ["janilla-logo"];
+    static get moduleUrl() {
+        return import.meta.url;
     }
 
-    constructor() {
-        super();
+    static get templateNames() {
+        return ["janilla-logo"];
     }
 }

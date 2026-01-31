@@ -51,16 +51,16 @@ import WebComponent from "web-component";
 
 export default class AdminFile extends WebComponent {
 
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
     static get templateNames() {
         return ["admin-file"];
     }
 
     static get observedAttributes() {
         return ["data-array-key", "data-path", "data-updated-at"];
-    }
-
-    constructor() {
-        super();
     }
 
     connectedCallback() {

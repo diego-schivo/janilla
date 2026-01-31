@@ -224,7 +224,11 @@ public class Converter {
 				o = null;
 		} else {
 			var t0 = target;
-			var c0 = c.getConstructors().length != 0 ? c.getConstructors()[0] : c.getDeclaredConstructors()[0];
+			var c0 = c.getConstructors().length != 0 ? c.getConstructors()[0] : null;
+			if (c0 == null)
+				c0 = c.getDeclaredConstructors().length != 0 ? c.getDeclaredConstructors()[0] : null;
+			if (c0 == null)
+				throw new NullPointerException(c.toString());
 //			IO.println("Converter.convertMap, c0=" + c0);
 			var tt = c.isRecord() ? Arrays.stream(c.getRecordComponents()).collect(Collectors.toMap(x -> x.getName(),
 					x -> Reflection.actualType(x, t0), (_, x) -> x, LinkedHashMap::new)) : null;

@@ -51,12 +51,12 @@ import WebComponent from "web-component";
 
 export default class AdminDashboard extends WebComponent {
 
-    static get templateNames() {
-        return ["admin-dashboard"];
+    static get moduleUrl() {
+        return import.meta.url;
     }
 
-    constructor() {
-        super();
+    static get templateNames() {
+        return ["admin-dashboard"];
     }
 
     connectedCallback() {

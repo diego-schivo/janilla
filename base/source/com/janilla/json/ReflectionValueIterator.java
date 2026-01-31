@@ -59,7 +59,7 @@ public class ReflectionValueIterator extends ValueIterator {
 			if (tt == null) {
 				var c = Modifier.isPublic(value.getClass().getModifiers()) ? value.getClass() : switch (value) {
 				case Map.Entry<?, ?> _ -> Map.Entry.class;
-				default -> throw new RuntimeException();
+				default -> throw new IllegalArgumentException(value.toString());
 				};
 				tt = context.newObjectIterator(entries(c).iterator());
 			}

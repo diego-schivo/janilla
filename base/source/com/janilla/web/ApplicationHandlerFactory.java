@@ -26,6 +26,7 @@ package com.janilla.web;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 import com.janilla.http.HttpHandler;
@@ -58,7 +59,7 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected HttpHandlerFactory buildExceptionHandlerFactory() {
-		return diFactory.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this));
+		return Objects.requireNonNull(diFactory.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this)));
 	}
 
 	protected List<HttpHandlerFactory> buildFactories() {
@@ -67,23 +68,23 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected FileHandlerFactory buildFileHandlerFactory() {
-		return diFactory.create(FileHandlerFactory.class, Map.of("rootFactory", this));
+		return Objects.requireNonNull(diFactory.create(FileHandlerFactory.class, Map.of("rootFactory", this)));
 	}
 
 	protected HttpHandlerFactory buildJsonHandlerFactory() {
-		return diFactory.create(JsonHandlerFactory.class, Map.of("rootFactory", this));
+		return Objects.requireNonNull(diFactory.create(JsonHandlerFactory.class, Map.of("rootFactory", this)));
 	}
 
 	protected HttpHandlerFactory buildInvocationHandlerFactory() {
-		return diFactory.create(InvocationHandlerFactory.class,
+		return Objects.requireNonNull(diFactory.create(InvocationHandlerFactory.class,
 				Java.hashMap("instanceResolver", (Function<Class<?>, Object>) x -> {
 					var y = diFactory.context();
 //					IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
 					return x.isAssignableFrom(y.getClass()) ? diFactory.context() : diFactory.create(x);
-				}, "rootFactory", this));
+				}, "rootFactory", this)));
 	}
 
 	protected HttpHandlerFactory buildTemplateHandlerFactory() {
-		return diFactory.create(TemplateHandlerFactory.class, Map.of("rootFactory", this));
+		return Objects.requireNonNull(diFactory.create(TemplateHandlerFactory.class, Map.of("rootFactory", this)));
 	}
 }

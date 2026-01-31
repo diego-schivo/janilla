@@ -51,12 +51,12 @@ import WebComponent from "web-component";
 
 export default class AdminCreateFirstUser extends WebComponent {
 
-    static get templateNames() {
-        return ["admin-create-first-user"];
+    static get moduleUrl() {
+        return import.meta.url;
     }
 
-    constructor() {
-        super();
+    static get templateNames() {
+        return ["admin-create-first-user"];
     }
 
     connectedCallback() {
@@ -71,7 +71,18 @@ export default class AdminCreateFirstUser extends WebComponent {
 
     async updateDisplay() {
         document.title = "Create first user - Janilla";
-        this.appendChild(this.interpolateDom({ $template: "" }));
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            fields: this.fields()
+        }));
+    }
+
+    fields() {
+        return [
+            { $template: "email" },
+            { $template: "password" },
+            { $template: "confirm-password" }
+        ];
     }
 
     handleSubmit = async event => {

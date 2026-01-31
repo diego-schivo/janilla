@@ -51,6 +51,10 @@ import WebComponent from "web-component";
 
 export default class Admin extends WebComponent {
 
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
     static get templateNames() {
         return ["admin"];
     }
@@ -63,10 +67,6 @@ export default class Admin extends WebComponent {
         dateStyle: "medium",
         timeStyle: "medium"
     });
-
-    constructor() {
-        super();
-    }
 
     get currentDocument() {
         return this.customState.document;

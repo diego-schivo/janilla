@@ -85,6 +85,7 @@ public class JsonIterator extends TokenIterationContext implements Iterator<Json
 		else
 			x = iterator.next();
 		hasNext = null;
+//		IO.println("JsonIterator.next, x=" + x);
 		return x;
 	}
 }

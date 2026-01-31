@@ -37,15 +37,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 import com.janilla.ioc.DiFactory;
+import com.janilla.net.FilterTransfer;
 import com.janilla.net.SecureServer;
 import com.janilla.net.SecureTransfer;
+import com.janilla.net.Transfer;
 import com.janilla.web.HandleException;
+import com.janilla.web.NotFoundException;
 
 public class HttpServer extends SecureServer {
 
@@ -75,27 +77,28 @@ public class HttpServer extends SecureServer {
 	}
 
 	@Override
-	protected void handleConnection(SecureTransfer transfer) throws IOException {
+	protected void handleConnection(Transfer transfer) throws IOException {
+		var t = (SecureTransfer) (transfer instanceof FilterTransfer x ? x.transfer() : transfer);
 //		IO.println("HttpServer.handleConnection");
-		do {
-			if (transfer.read() == -1)
+		do
+			if (t.read() == -1)
 				return;
-		} while (transfer.in().position() < 16);
+		while (t.in().position() < 16);
 //		IO.println("bb=" + new String(st.in().array(), 0, 16));
 
-		var p = transfer.engine().getApplicationProtocol();
+		var p = t.engine().getApplicationProtocol();
 //		IO.println("p=" + p);
 		if (p.equals("h2"))
-			handleConnection2(transfer);
+			handleConnection2(t);
 		else
-			handleConnection1(transfer);
+			handleConnection1(t);
 	}
 
 	protected void handleConnection1(SecureTransfer transfer) throws IOException {
 //		IO.println("HttpServer.handleConnection1");
 		for (;;) {
 //			IO.println("st.in().position()=" + st.in().position());
-			var sb = Stream.<String>builder();
+			var ll = new ArrayList<String>();
 			for (;;) {
 				int i = 0, b1 = -1, b2;
 				for (;; i++, b1 = b2) {
@@ -114,23 +117,23 @@ public class HttpServer extends SecureServer {
 				var bb = new byte[i + 1];
 				transfer.in().get(bb);
 				transfer.in().compact();
-				var s = new String(bb, 0, i - 1);
+				var l = new String(bb, 0, i - 1);
 //				IO.println("s=" + s);
-				if (!s.isEmpty())
-					sb.add(s);
+				if (!l.isEmpty())
+					ll.add(l);
 				else
 					break;
 			}
 			try (var rq = new HttpRequest()) {
 				{
 					var i = 0;
-					for (var s : sb.build().toList()) {
+					for (var l : ll) {
 						if (i == 0) {
-							var ss = s.split(" ", 3);
+							var ss = l.split(" ", 3);
 							rq.setMethod(ss[0].trim());
 							rq.setTarget(ss[1].trim());
 						} else
-							rq.setHeader(HeaderField.fromLine(s));
+							rq.setHeader(HeaderField.fromLine(l));
 						i++;
 					}
 				}
@@ -156,14 +159,14 @@ public class HttpServer extends SecureServer {
 					rs.setBody(Channels.newChannel(baos));
 					var ex = createExchange(rq, rs);
 					ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
-					sb = Stream.<String>builder();
-					sb.add("HTTP/1.1 " + rs.getStatus() + " OK");
+					ll.clear();
+					ll.add("HTTP/1.1 " + rs.getStatus() + " OK");
 					for (var h : rs.getHeaders())
 						if (!h.name().startsWith(":"))
-							sb.add(h.toLine());
-					sb.add("");
-					for (var s : sb.build().toList()) {
-						transfer.out().put((s + "\r\n").getBytes());
+							ll.add(h.toLine());
+					ll.add("");
+					for (var l : ll) {
+						transfer.out().put((l + "\r\n").getBytes());
 						transfer.out().flip();
 						do
 							transfer.write();
@@ -186,15 +189,15 @@ public class HttpServer extends SecureServer {
 		}
 	}
 
-	protected void handleConnection2(SecureTransfer transfer) throws IOException {
+	protected void handleConnection2(Transfer transfer0) throws IOException {
 //		IO.println("HttpServer.handleConnection2");
-		while (transfer.in().position() < 24) {
-			if (transfer.read() == -1)
+		var t = (SecureTransfer) transfer0;
+		while (t.in().position() < 24)
+			if (t.read() == -1)
 				return;
-		}
-		transfer.in().flip();
+		t.in().flip();
 		var cp = new byte[24];
-		transfer.in().get(cp);
+		t.in().get(cp);
 //		IO.println("cp=" + new String(cp));
 		class A {
 			private static final byte[] CONNECTION_PREFACE_PREFIX = """
@@ -207,24 +210,31 @@ public class HttpServer extends SecureServer {
 		if (!Arrays.equals(cp, A.CONNECTION_PREFACE_PREFIX))
 			throw new RuntimeException();
 
+//		class B {
+//			private static void write(SecureTransfer t, byte[] bb) throws IOException {
+//				t.outLock().lock();
+//				try {
+		//// IO.println("HttpServer.handleConnection2, id=" + id + ", df.data().length="
+		/// + df.data().length);
+//					t.out().clear();
+//					t.out().put(bb);
+//					t.out().flip();
+//					do
+//						t.write();
+//					while (t.out().hasRemaining());
+//				} finally {
+//					t.outLock().unlock();
+//				}
+//			}
+//		}
 		var he = new HttpEncoder();
 		var hd = new HttpDecoder();
-
-		transfer.outLock().lock();
-		try {
-			transfer.out().put(he.encodeFrame(
-					new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100)))));
-			transfer.out().flip();
-			do
-				transfer.write();
-			while (transfer.out().hasRemaining());
-		} finally {
-			transfer.outLock().unlock();
-		}
+		writeFrame(t, he.encodeFrame(
+				new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100)))));
 
 		var streams = new HashMap<Integer, List<Frame>>();
 		for (;;) {
-			var bb = readFrame(transfer);
+			var bb = readFrame(t);
 			if (bb == null)
 				break;
 			var f = hd.decodeFrame(bb);
@@ -236,42 +246,22 @@ public class HttpServer extends SecureServer {
 				ff.add(f);
 
 				if (f instanceof DataFrame df && df.data().length != 0) {
-					transfer.outLock().lock();
-					try {
-						for (var id : new int[] { f.streamIdentifier(), 0 }) {
+					t.outLock().lock();
+					for (var id : new int[] { f.streamIdentifier(), 0 }) {
 //							IO.println("HttpServer.handleConnection2, id=" + id + ", df.data().length=" + df.data().length);
-							transfer.out().clear();
-							transfer.out().put(he.encodeFrame(new WindowUpdateFrame(id, df.data().length)));
-							transfer.out().flip();
-							do
-								transfer.write();
-							while (transfer.out().hasRemaining());
-						}
-					} finally {
-						transfer.outLock().unlock();
+						writeFrame(t, he.encodeFrame(new WindowUpdateFrame(id, df.data().length)));
 					}
 				}
 
 				var es = f instanceof DataFrame x ? x.endStream() : ((HeadersFrame) f).endStream();
 				if (es) {
 					streams.remove(f.streamIdentifier());
-					Thread.startVirtualThread(() -> handleStream(ff, transfer, he));
+					Thread.startVirtualThread(() -> handleStream(ff, t, he));
 				}
 				break;
 
 			case SettingsFrame _:
-//				IO.println("s=" + s);
-				transfer.outLock().lock();
-				try {
-					transfer.out().clear();
-					transfer.out().put(he.encodeFrame(new SettingsFrame(true, List.of())));
-					transfer.out().flip();
-					do
-						transfer.write();
-					while (transfer.out().hasRemaining());
-				} finally {
-					transfer.outLock().unlock();
-				}
+				writeFrame(t, he.encodeFrame(new SettingsFrame(true, List.of())));
 				break;
 
 			case PingFrame _:
@@ -282,42 +272,13 @@ public class HttpServer extends SecureServer {
 			case GoawayFrame _:
 				return;
 
-//			case Frame.RstStream _:
+			case RstStreamFrame _:
+				streams.remove(f.streamIdentifier());
+				break;
+
 			default:
 				throw new RuntimeException(f.toString());
 			}
-		}
-	}
-
-	protected byte[] readFrame(SecureTransfer transfer) throws IOException {
-		transfer.inLock().lock();
-		try {
-			if (transfer.in().remaining() < 3) {
-				transfer.in().compact();
-				do {
-					if (transfer.read() == -1)
-						return null;
-				} while (transfer.in().position() < 3);
-				transfer.in().flip();
-			}
-			var l = (Short.toUnsignedInt(transfer.in().getShort(transfer.in().position())) << 8)
-					| Byte.toUnsignedInt(transfer.in().get(transfer.in().position() + Short.BYTES));
-//			IO.println("HttpServer.readFrame, l=" + l);
-			if (l > 16384)
-				throw new RuntimeException();
-			var bb = new byte[9 + l];
-//			IO.println("transfer.in().remaining() " + transfer.in().remaining());
-			if (transfer.in().remaining() < bb.length) {
-				transfer.in().compact();
-				do
-					transfer.read();
-				while (transfer.in().position() < bb.length);
-				transfer.in().flip();
-			}
-			transfer.in().get(bb);
-			return bb;
-		} finally {
-			transfer.inLock().unlock();
 		}
 	}
 
@@ -363,7 +324,7 @@ public class HttpServer extends SecureServer {
 
 					@Override
 					public int write(ByteBuffer src) throws IOException {
-//						IO.println("HttpServer.handleStream, write");
+//						IO.println("HttpServer.handleStream, WritableByteChannel.write");
 						if (closed)
 							throw new IOException("closed");
 						var w = written;
@@ -371,17 +332,17 @@ public class HttpServer extends SecureServer {
 							var n = Math.min(src.remaining(), 16384);
 							if (written == 0) {
 								var f = new HeadersFrame(false, true, false, id, false, 0, 0, rs.getHeaders());
-								var bb = encoder.encodeFrame(f);
-								writeFrame(transfer, bb);
+								writeFrame(transfer, encoder.encodeFrame(f));
 							}
 							var bb = new byte[n];
 							src.get(bb);
 							var f = new DataFrame(false, false, id, bb);
-							bb = encoder.encodeFrame(f);
-							writeFrame(transfer, bb);
+							writeFrame(transfer, encoder.encodeFrame(f));
 							written += n;
 						}
-						return (int) (written - w);
+						var n = (int) (written - w);
+//						IO.println("HttpServer.handleStream, WritableByteChannel.write, n=" + n);
+						return n;
 					}
 				});
 				var ex = createExchange(rq, rs);
@@ -419,7 +380,10 @@ public class HttpServer extends SecureServer {
 //		IO.println("HttpServer.handleExchange, e=" + e);
 		if (e != null)
 			try {
-				e.printStackTrace();
+				if (e instanceof NotFoundException)
+					IO.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+				else
+					e.printStackTrace();
 				exchange = exchange.withException(e);
 				k = handler.handle(exchange);
 			} catch (RuntimeException x) {
@@ -431,13 +395,46 @@ public class HttpServer extends SecureServer {
 		return k;
 	}
 
-	protected void writeFrame(SecureTransfer transfer, byte[] bb) throws IOException {
+	protected byte[] readFrame(SecureTransfer transfer) throws IOException {
+		transfer.inLock().lock();
+		try {
+			if (transfer.in().remaining() < 3) {
+				transfer.in().compact();
+				do
+					if (transfer.read() == -1)
+						return null;
+				while (transfer.in().position() < 3);
+				transfer.in().flip();
+			}
+			var l = (Short.toUnsignedInt(transfer.in().getShort(transfer.in().position())) << 8)
+					| Byte.toUnsignedInt(transfer.in().get(transfer.in().position() + Short.BYTES));
+//			IO.println("HttpServer.readFrame, l=" + l);
+			if (l > 16384)
+				throw new RuntimeException();
+			var bb = new byte[9 + l];
+//			IO.println("in.remaining() " + in.remaining());
+			if (transfer.in().remaining() < bb.length) {
+				transfer.in().compact();
+				do
+					transfer.read();
+				while (transfer.in().position() < bb.length);
+				transfer.in().flip();
+			}
+			transfer.in().get(bb);
+			return bb;
+		} finally {
+			transfer.inLock().unlock();
+		}
+	}
+
+	protected void writeFrame(SecureTransfer transfer, byte[] bytes) throws IOException {
+//		IO.println("HttpServer.writeFrame, bytes=" + bytes.length);
 		transfer.outLock().lock();
 		try {
 			transfer.out().clear();
-			for (var o = 0; o < bb.length;) {
-				var l = Math.min(bb.length - o, transfer.out().remaining());
-				transfer.out().put(bb, o, l);
+			for (var o = 0; o < bytes.length;) {
+				var l = Math.min(bytes.length - o, transfer.out().remaining());
+				transfer.out().put(bytes, o, l);
 				if (!transfer.out().hasRemaining()) {
 					transfer.out().flip();
 					do
@@ -447,11 +444,11 @@ public class HttpServer extends SecureServer {
 				}
 				o += l;
 			}
-			transfer.out().flip();
-			while (transfer.out().hasRemaining())
+			for (transfer.out().flip(); transfer.out().hasRemaining();)
 				transfer.write();
 		} finally {
 			transfer.outLock().unlock();
 		}
+//		IO.println("HttpServer.writeFrame");
 	}
 }

@@ -75,14 +75,3 @@
 @import "admin-upload.css";
 @import "admin-version.css";
 @import "admin-versions.css";
-@import "janilla-logo.css";
-@import "lucide-icon.css";
-@import "toaster.css";
-
-.admin toaster-element {
-  .success {
-    background: rgb(19, 44, 58);
-    border-color: rgb(17, 76, 105);
-    color: rgb(156, 216, 253);
-  }
-}

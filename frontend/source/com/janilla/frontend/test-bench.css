@@ -1,0 +1,47 @@
+.test-bench {
+	display: flex;
+}
+
+.test-launcher {
+	flex-basis: 20rem;
+
+	form,
+	ul {
+		display: flex;
+		flex-direction: column;
+		row-gap: .5rem;
+	}
+	
+	form {
+		row-gap: 1rem;
+	}
+	
+	ul {
+		row-gap: .5rem;
+	}
+	
+	.ongoing {
+		color: olive;
+	}
+	
+	.succeeded {
+		color: green;
+	}
+	
+	.failed {
+		color: red;
+	}
+}
+
+.test-runner {
+	flex-grow: 1;
+
+	iframe {
+		border: none;
+		display: block;
+		height: 100vh;
+		margin: 0;
+		padding: 0;
+		width: 100%;
+	}
+}

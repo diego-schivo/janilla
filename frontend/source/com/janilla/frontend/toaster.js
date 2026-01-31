@@ -26,12 +26,12 @@ import WebComponent from "web-component";
 
 export default class Toaster extends WebComponent {
 
-    static get templateNames() {
-        return ["toaster"];
+    static get moduleUrl() {
+        return import.meta.url;
     }
 
-    constructor() {
-        super();
+    static get templateNames() {
+        return ["toaster"];
     }
 
     async updateDisplay() {

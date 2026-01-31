@@ -24,6 +24,10 @@
  */
 export default class WebComponent extends HTMLElement {
 
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
     static get templateNames() {
         return [];
     }
@@ -44,7 +48,7 @@ export default class WebComponent extends HTMLElement {
 
     constructor() {
         super();
-        this.#initializeTemplating = Promise.all((this.constructor.templateNames ?? []).map(x => getDocumentFragment(x)))
+        this.#initializeTemplating = Promise.all((this.constructor.templateNames ?? []).map(x => this.getDocumentFragment(x)))
             .then(x => {
                 const documentFragment = x.reduce((y, z) => {
                     y.appendChild(z.cloneNode(true));
@@ -63,6 +67,30 @@ export default class WebComponent extends HTMLElement {
                 }]));
             });
     }
+
+    async getDocumentFragment(name) {
+        const n = this.constructor.moduleUrl
+            ? new URL(name, this.constructor.moduleUrl).pathname.substring(1)
+            : name;
+        //console.log(name, this.constructor.moduleUrl, n);
+        documentFragments[n] ??= (() => {
+            const el = document.getElementById(n);
+            if (el) {
+                el.remove();
+                return el.content;
+            }
+            return fetch(`/${n}.html`).then(x => {
+                if (!x.ok)
+                    throw new Error(`Failed to fetch /${n}.html: ${x.status} ${x.statusText}`);
+                return x.text();
+            }).then(x => {
+                const template = document.createElement("template");
+                template.innerHTML = x;
+                return template.content;
+            });
+        })();
+        return await documentFragments[n];
+    };
 
     connectedCallback() {
         // console.log(`WebComponent(${this.constructor.name}).connectedCallback`);
@@ -158,26 +186,6 @@ export default class WebComponent extends HTMLElement {
 }
 
 const documentFragments = {};
-
-const getDocumentFragment = async name => {
-    documentFragments[name] ??= (() => {
-        const el = document.getElementById(name);
-        if (el) {
-            el.remove();
-            return el.content;
-        }
-        return fetch(`/${name}.html`).then(x => {
-            if (!x.ok)
-                throw new Error(`Failed to fetch /${name}.html: ${x.status} ${x.statusText}`);
-            return x.text();
-        }).then(x => {
-            const template = document.createElement("template");
-            template.innerHTML = x;
-            return template.content;
-        });
-    })();
-    return await documentFragments[name];
-};
 
 const evaluate = (expression, context) => {
     let value = context;
