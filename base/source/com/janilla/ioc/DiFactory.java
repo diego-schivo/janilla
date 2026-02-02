@@ -116,6 +116,8 @@ public class DiFactory {
 
 	protected <T> T newInstance(Constructor<?>[] constructors, Map<String, Object> arguments, Object context,
 			boolean enclosed) {
+//		IO.println("DiFactory.newInstance, constructors= " + Arrays.toString(constructors) + ", arguments=" + arguments
+//				+ ", context=" + context + ", enclosed=" + enclosed);
 		record R(Constructor<?> c, Object[] aa, int n) {
 		}
 		try {
@@ -132,18 +134,15 @@ public class DiFactory {
 				if (n > r.n || (n == r.n && c.getParameterCount() < r.c.getParameterCount()))
 					r = new R(c, aa, n);
 			}
-//			IO.println("DiFactory.create, c1 = " + c1);
 			if (enclosed) {
 				var aa = new Object[1 + r.aa.length];
 				aa[0] = context;
 				System.arraycopy(r.aa, 0, aa, 1, r.aa.length);
 				r = new R(r.c, aa, r.n);
 			}
-//			IO.println("r=" + r);
+//			IO.println("DiFactory.newInstance, r=" + r);
 			@SuppressWarnings("unchecked")
 			var t = (T) r.c.newInstance(r.aa);
-//			if (context != null)
-//				t = Reflection.copy(context, t);
 			return t;
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);

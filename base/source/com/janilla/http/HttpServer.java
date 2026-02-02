@@ -210,23 +210,6 @@ public class HttpServer extends SecureServer {
 		if (!Arrays.equals(cp, A.CONNECTION_PREFACE_PREFIX))
 			throw new RuntimeException();
 
-//		class B {
-//			private static void write(SecureTransfer t, byte[] bb) throws IOException {
-//				t.outLock().lock();
-//				try {
-		//// IO.println("HttpServer.handleConnection2, id=" + id + ", df.data().length="
-		/// + df.data().length);
-//					t.out().clear();
-//					t.out().put(bb);
-//					t.out().flip();
-//					do
-//						t.write();
-//					while (t.out().hasRemaining());
-//				} finally {
-//					t.outLock().unlock();
-//				}
-//			}
-//		}
 		var he = new HttpEncoder();
 		var hd = new HttpDecoder();
 		writeFrame(t, he.encodeFrame(
@@ -245,13 +228,11 @@ public class HttpServer extends SecureServer {
 				var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
 				ff.add(f);
 
-				if (f instanceof DataFrame df && df.data().length != 0) {
-					t.outLock().lock();
+				if (f instanceof DataFrame df && df.data().length != 0)
 					for (var id : new int[] { f.streamIdentifier(), 0 }) {
 //							IO.println("HttpServer.handleConnection2, id=" + id + ", df.data().length=" + df.data().length);
 						writeFrame(t, he.encodeFrame(new WindowUpdateFrame(id, df.data().length)));
 					}
-				}
 
 				var es = f instanceof DataFrame x ? x.endStream() : ((HeadersFrame) f).endStream();
 				if (es) {
@@ -430,10 +411,12 @@ public class HttpServer extends SecureServer {
 	protected void writeFrame(SecureTransfer transfer, byte[] bytes) throws IOException {
 //		IO.println("HttpServer.writeFrame, bytes=" + bytes.length);
 		transfer.outLock().lock();
+//		IO.println("HttpServer.writeFrame, lock");
 		try {
 			transfer.out().clear();
 			for (var o = 0; o < bytes.length;) {
 				var l = Math.min(bytes.length - o, transfer.out().remaining());
+//				IO.println("HttpServer.writeFrame, l=" + l);
 				transfer.out().put(bytes, o, l);
 				if (!transfer.out().hasRemaining()) {
 					transfer.out().flip();
@@ -443,12 +426,13 @@ public class HttpServer extends SecureServer {
 					transfer.out().clear();
 				}
 				o += l;
+//				IO.println("HttpServer.writeFrame, o=" + o);
 			}
 			for (transfer.out().flip(); transfer.out().hasRemaining();)
 				transfer.write();
 		} finally {
 			transfer.outLock().unlock();
+//			IO.println("HttpServer.writeFrame, unlock");
 		}
-//		IO.println("HttpServer.writeFrame");
 	}
 }
