@@ -8,4 +8,6 @@
 		<artifactId>janilla</artifactId>
 		<version>9.0.0-SNAPSHOT</version>
 	</parent>
+	<name>Janilla Base</name>
+	<description>The foundation of Janilla Web Solution Stack</description>
 </project>

@@ -15,4 +15,6 @@
 		<artifactId>janilla</artifactId>
 		<version>9.0.0-SNAPSHOT</version>
 	</parent>
+	<name>Janilla Frontend</name>
+	<description>The frontend of Janilla Web Solution Stack</description>
 </project>
