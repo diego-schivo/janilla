@@ -94,8 +94,9 @@ public class TableRebalancer implements Runnable {
 				p = page instanceof InteriorPage ? new TableInteriorPage(database, database.newPageBuffer())
 						: new TableLeafPage(database, database.newPageBuffer());
 				p.setCellContentAreaStart(database.usableSize());
-//				((List) p.getCells()).addAll(cc2.subList(i2, i2 += ll[li]));
-				p.getCells().addAll(cc2.subList(i2, i2 += ll[li]));
+				@SuppressWarnings("unchecked")
+				var cc = (List<KeyCell>) p.getCells();
+				cc.addAll(cc2.subList(i2, i2 += ll[li]));
 				if (p instanceof TableInteriorPage x)
 					x.setRightMostPointer(i2 != cc2.size() ? ((TableInteriorCell) cc2.get(i2)).leftChildPointer()
 							: ((TableInteriorPage) rr[rr.length - 1].p).getRightMostPointer());
