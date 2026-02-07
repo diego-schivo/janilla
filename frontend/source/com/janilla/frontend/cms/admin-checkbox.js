@@ -51,29 +51,29 @@ import WebComponent from "web-component";
 
 export default class AdminCheckbox extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-checkbox"];
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
+    static get templateNames() {
+        return ["admin-checkbox"];
+    }
 
-	constructor() {
-		super();
-	}
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	async updateDisplay() {
-		const p = this.dataset.path;
-		const f = this.closest("admin-edit").field(p);
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			input: {
-				$template: "input",
-				name: p,
-				checked: f.data
-			},
-			text: p.substring(p.lastIndexOf(".") + 1).split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ")
-		}));
-	}
+    async updateDisplay() {
+        const p = this.dataset.path;
+        const f = this.closest("admin-edit").field(p);
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            input: {
+                $template: "input",
+                name: p,
+                checked: f.data
+            },
+            text: p.substring(p.lastIndexOf(".") + 1).split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ")
+        }));
+    }
 }

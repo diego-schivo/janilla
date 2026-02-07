@@ -59,10 +59,10 @@ import java.nio.file.Path;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.web.FileHandlerFactory;
+import com.janilla.web.ResourceHandlerFactory;
 import com.janilla.web.NotFoundException;
 
-public abstract class CmsFileHandlerFactory implements FileHandlerFactory {
+public abstract class CmsFileHandlerFactory implements ResourceHandlerFactory {
 
 	protected final Path directory;
 

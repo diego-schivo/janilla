@@ -51,25 +51,29 @@ import WebComponent from "web-component";
 
 export default class AdminHidden extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-hidden"];
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
+    static get templateNames() {
+        return ["admin-hidden"];
+    }
 
-	constructor() {
-		super();
-	}
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	async updateDisplay() {
-		const p = this.dataset.path;
-		const f = this.closest("admin-edit").field(p);
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			path: p,
-			data: f.data
-		}));
-	}
+    constructor() {
+        super();
+    }
+
+    async updateDisplay() {
+        const p = this.dataset.path;
+        const f = this.closest("admin-edit").field(p);
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            path: p,
+            data: f.data
+        }));
+    }
 }

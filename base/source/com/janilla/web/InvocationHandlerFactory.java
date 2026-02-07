@@ -26,7 +26,6 @@ package com.janilla.web;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.channels.Channels;
@@ -37,8 +36,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,9 +44,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -70,98 +65,27 @@ import com.janilla.json.Json;
 
 public class InvocationHandlerFactory implements HttpHandlerFactory {
 
-	protected final Function<Class<?>, Object> instanceResolver;
-
-	protected final Comparator<Invocation> invocationComparator;
+	protected final InvocationResolver invocationResolver;
 
 	protected final RenderableFactory renderableFactory;
 
 	protected final HttpHandlerFactory rootFactory;
 
-	protected final Map<String, InvocationGroup> groups;
-
-	protected final Map<Pattern, InvocationGroup> regexGroups;
-
-	public InvocationHandlerFactory(List<Invocable> invocables, Function<Class<?>, Object> instanceResolver,
-			Comparator<Invocation> invocationComparator, RenderableFactory renderableFactory,
+	public InvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
 			HttpHandlerFactory rootFactory) {
-		this.instanceResolver = instanceResolver;
-		this.invocationComparator = invocationComparator;
+		this.invocationResolver = invocationResolver;
 		this.renderableFactory = renderableFactory;
 		this.rootFactory = rootFactory;
-
-		record A(String m1, Method m2) {
-		}
-		record B(String p, Class<?> t, List<A> aa) {
-		}
-		var bb = invocables.stream().map(tm -> {
-//			IO.println("InvocationHandlerFactory, tm=" + tm);
-			var t = tm.type();
-			var m = tm.method();
-			var h1 = t.getAnnotation(Handle.class);
-			var p1 = h1 != null ? h1.path() : null;
-			var h2 = Reflection.inheritedAnnotation(m, Handle.class);
-			var p2 = h2 != null ? h2.path() : null;
-//			IO.println("InvocationHandlerFactory, h1=" + h1 + ", h2=" + h2);
-			if (p2 != null) {
-				if (p2.startsWith("/"))
-					p1 = null;
-				var p = Stream.of(p1, p2).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("/"));
-//				IO.println("InvocationHandlerFactory, p=" + p + ", m=" + m + ", h2=" + h2);
-				return new B(p, tm.type(), new ArrayList<>(List.of(new A(h2.method(), tm.method()))));
-			} else
-				return null;
-		}).filter(Objects::nonNull).collect(Collectors.toMap(B::p, x -> x, (x, y) -> {
-			if (x.t == y.t) {
-				x.aa.addAll(y.aa);
-				return x;
-			}
-			return y;
-		}, LinkedHashMap::new));
-		var oo = new HashMap<Class<?>, Object>();
-		groups = bb.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
-			var b = x.getValue();
-			var o = oo.computeIfAbsent(b.t, y -> {
-				if (instanceResolver != null)
-					return instanceResolver.apply(y);
-				try {
-					return y.getConstructor().newInstance();
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
-			});
-			return new InvocationGroup(o,
-					b.aa.stream().collect(Collectors.toMap(y -> y.m1, y -> y.m2,
-							(y1, y2) -> y1.getDeclaringClass().isAssignableFrom(y2.getDeclaringClass()) ? y2 : y1,
-							LinkedHashMap::new)));
-		}));
-
-		var kk = groups.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).toList();
-		regexGroups = kk.stream().sorted(Comparator.comparingInt((String x) -> x.indexOf('(')).reversed())
-				.collect(Collectors.toMap(k -> Pattern.compile(k), groups::get, (_, x) -> x, LinkedHashMap::new));
-		groups.keySet().removeAll(kk);
-//		IO.println("m=" + m + "\nx=" + x);
 	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest r) {
-			var m1 = Objects.requireNonNullElse(r.getMethod(), "");
-			var s = invocationGroups(r.getPath()).map(i -> {
-				var m = i.methods().get(m1);
-				if (m == null && !m1.isEmpty())
-					m = i.methods().get("");
-				return m != null ? new Invocation(i.object(), m,
-//								Reflection.getActualParameterTypes(m, i.object().getClass()),
-						i.regexGroups()) : null;
-			}).filter(Objects::nonNull);
-			if (invocationComparator != null)
-				s = s.sorted(invocationComparator);
-			var l = s.toList();
-			if (!l.isEmpty())
+			var ii = invocationResolver.lookup(r.getMethod(), r.getPath()).toList();
+			if (!ii.isEmpty())
 				return x -> {
 					NotFoundException e = null;
-					for (var i : l)
+					for (var i : ii)
 						try {
 							return handle(i, x);
 						} catch (NotFoundException e2) {
@@ -171,24 +95,6 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 				};
 		}
 		return null;
-	}
-
-	protected Stream<InvocationGroup> invocationGroups(String path) {
-//		IO.println(Thread.currentThread().getName() + " AnnotationDrivenToMethodInvocation invocations1=" + i
-//				+ ", invocations2=" + j);
-		if (path == null)
-			return Stream.empty();
-		var a = Optional.ofNullable(groups.get(path)).stream();
-		var b = regexGroups.entrySet().stream().map(x -> {
-			var m = x.getKey().matcher(path);
-			if (m.matches()) {
-				var ig = x.getValue();
-				var ss = IntStream.range(1, 1 + m.groupCount()).mapToObj(m::group).toArray(String[]::new);
-				return ss.length != 0 ? ig.withRegexGroups(ss) : ig;
-			}
-			return null;
-		}).filter(Objects::nonNull);
-		return Stream.concat(a, b);
 	}
 
 	public static final ScopedValue<Set<String>> JSON_KEYS = ScopedValue.newInstance();
@@ -435,13 +341,6 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		var h = rootFactory.createHandler(renderable);
 		if (h != null)
 			h.handle(exchange);
-	}
-
-	protected record InvocationGroup(Object object, Map<String, Method> methods, String... regexGroups) {
-
-		public InvocationGroup withRegexGroups(String... regexGroups) {
-			return new InvocationGroup(object, methods, regexGroups);
-		}
 	}
 
 	public static class EntryTree extends LinkedHashMap<String, Object> {

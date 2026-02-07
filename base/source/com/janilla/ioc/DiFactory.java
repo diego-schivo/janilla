@@ -118,10 +118,10 @@ public class DiFactory {
 			boolean enclosed) {
 //		IO.println("DiFactory.newInstance, constructors= " + Arrays.toString(constructors) + ", arguments=" + arguments
 //				+ ", context=" + context + ", enclosed=" + enclosed);
-		record R(Constructor<?> c, Object[] aa, int n) {
+		record R(Constructor<?> c, Object[] aa, boolean f, int n) {
 		}
 		try {
-			var r = new R(null, null, -1);
+			var r = new R(null, null, false, -1);
 			for (var c : constructors) {
 				var pp = Arrays.stream(c.getParameters());
 				var aa = (enclosed ? pp.skip(1) : pp).map(x -> {
@@ -131,14 +131,15 @@ public class DiFactory {
 					return p != null ? p.get(context) : null;
 				}).toArray();
 				var n = (int) Arrays.stream(aa).filter(Objects::nonNull).count();
-				if (n > r.n || (n == r.n && c.getParameterCount() < r.c.getParameterCount()))
-					r = new R(c, aa, n);
+				var f = Arrays.stream(aa).anyMatch(x -> x instanceof DiFactory);
+				if (f != r.f ? f : n > r.n || (n == r.n && c.getParameterCount() < r.c.getParameterCount()))
+					r = new R(c, aa, f, n);
 			}
 			if (enclosed) {
 				var aa = new Object[1 + r.aa.length];
 				aa[0] = context;
 				System.arraycopy(r.aa, 0, aa, 1, r.aa.length);
-				r = new R(r.c, aa, r.n);
+				r = new R(r.c, aa, r.f, r.n);
 			}
 //			IO.println("DiFactory.newInstance, r=" + r);
 			@SuppressWarnings("unchecked")

@@ -63,7 +63,7 @@ public abstract class SecureServer {
 			s.socket().bind(endpoint);
 			for (;;) {
 				var ch = s.accept();
-//				IO.println("SecureServer.serve, ch=" + ch + ", ch.isBlocking()=" + ch.isBlocking());
+//				IO.println("SecureServer.serve, ch=" + ch);
 				var th = Thread.startVirtualThread(() -> handleConnection(ch));
 				lastUsed.put(ch, new ThreadAndInstant(th, Instant.now()));
 			}
@@ -136,7 +136,7 @@ public abstract class SecureServer {
 			for (var kv : m.entrySet()) {
 				var ch = kv.getKey();
 				var th = kv.getValue().thread();
-				IO.println("SecureServer.shutdownConnections, ch=" + ch);
+//				IO.println("SecureServer.shutdownConnections, ch=" + ch);
 
 //			String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^\\d.]", "");
 //			try {

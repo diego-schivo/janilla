@@ -40,7 +40,26 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected final List<HttpHandlerFactory> handlerFactories;
 
+	protected final InvocationResolver invocationResolver;
+
+	protected final RenderableFactory renderableFactory;
+
+	protected final ResourceMap resourceMap;
+
+	public ApplicationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
+			ResourceMap resourceMap) {
+		this(invocationResolver, renderableFactory, resourceMap, null);
+	}
+
 	public ApplicationHandlerFactory(DiFactory diFactory) {
+		this(null, null, null, diFactory);
+	}
+
+	protected ApplicationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
+			ResourceMap resourceMap, DiFactory diFactory) {
+		this.invocationResolver = invocationResolver;
+		this.renderableFactory = renderableFactory;
+		this.resourceMap = resourceMap;
 		this.diFactory = diFactory;
 		handlerFactories = buildFactories();
 	}
@@ -59,7 +78,9 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected HttpHandlerFactory buildExceptionHandlerFactory() {
-		return Objects.requireNonNull(diFactory.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this)));
+		return diFactory != null
+				? Objects.requireNonNull(diFactory.create(ExceptionHandlerFactory.class, Map.of("rootFactory", this)))
+				: new ExceptionHandlerFactory();
 	}
 
 	protected List<HttpHandlerFactory> buildFactories() {
@@ -67,24 +88,30 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 				buildFileHandlerFactory(), buildExceptionHandlerFactory());
 	}
 
-	protected FileHandlerFactory buildFileHandlerFactory() {
-		return Objects.requireNonNull(diFactory.create(FileHandlerFactory.class, Map.of("rootFactory", this)));
+	protected ResourceHandlerFactory buildFileHandlerFactory() {
+		return diFactory != null
+				? Objects.requireNonNull(diFactory.create(ResourceHandlerFactory.class, Map.of("rootFactory", this)))
+				: new DefaultResourceHandlerFactory(resourceMap);
 	}
 
 	protected HttpHandlerFactory buildJsonHandlerFactory() {
-		return Objects.requireNonNull(diFactory.create(JsonHandlerFactory.class, Map.of("rootFactory", this)));
+		return diFactory != null
+				? Objects.requireNonNull(diFactory.create(JsonHandlerFactory.class, Map.of("rootFactory", this)))
+				: new JsonHandlerFactory();
 	}
 
 	protected HttpHandlerFactory buildInvocationHandlerFactory() {
-		return Objects.requireNonNull(diFactory.create(InvocationHandlerFactory.class,
+		return diFactory != null ? Objects.requireNonNull(diFactory.create(InvocationHandlerFactory.class,
 				Java.hashMap("instanceResolver", (Function<Class<?>, Object>) x -> {
 					var y = diFactory.context();
 //					IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
 					return x.isAssignableFrom(y.getClass()) ? diFactory.context() : diFactory.create(x);
-				}, "rootFactory", this)));
+				}, "rootFactory", this))) : new InvocationHandlerFactory(invocationResolver, renderableFactory, this);
 	}
 
 	protected HttpHandlerFactory buildTemplateHandlerFactory() {
-		return Objects.requireNonNull(diFactory.create(TemplateHandlerFactory.class, Map.of("rootFactory", this)));
+		return diFactory != null
+				? Objects.requireNonNull(diFactory.create(TemplateHandlerFactory.class, Map.of("rootFactory", this)))
+				: new TemplateHandlerFactory();
 	}
 }

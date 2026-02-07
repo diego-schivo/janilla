@@ -48,8 +48,7 @@ public class Persistence {
 
 	protected final PersistenceConfiguration configuration = new PersistenceConfiguration();
 
-	public Persistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-			TypeResolver typeResolver) {
+	public Persistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, TypeResolver typeResolver) {
 		this.database = database;
 		this.storables = storables;
 		this.typeResolver = typeResolver;
@@ -67,10 +66,10 @@ public class Persistence {
 		return typeResolver;
 	}
 
-	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> class1) {
-		@SuppressWarnings("unchecked")
-		var c = (Crud<ID, E>) configuration.cruds.get(class1);
-		return c;
+	@SuppressWarnings("unchecked")
+	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> type) {
+//		IO.println("Persistence.crud, type=" + type);
+		return (Crud<ID, E>) configuration.cruds.get(type);
 	}
 
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {

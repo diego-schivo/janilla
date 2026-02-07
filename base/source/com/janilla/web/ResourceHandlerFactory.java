@@ -26,5 +26,5 @@ package com.janilla.web;
 
 import com.janilla.http.HttpHandlerFactory;
 
-public interface FileHandlerFactory extends HttpHandlerFactory {
+public interface ResourceHandlerFactory extends HttpHandlerFactory {
 }

@@ -51,76 +51,80 @@ import WebComponent from "web-component";
 
 export default class AdminTabs extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-tabs"];
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get observedAttributes() {
-		return ["data-name", "data-tabs", "data-tab", "data-no-buttons", "data-no-panels"];
-	}
+    static get templateNames() {
+        return ["admin-tabs"];
+    }
 
-	constructor() {
-		super();
-		this.attachShadow({ mode: "open" });
-	}
+    static get observedAttributes() {
+        return ["data-name", "data-tabs", "data-tab", "data-no-buttons", "data-no-panels"];
+    }
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("click", this.handleClick);
-	}
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+    }
 
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("click", this.handleClick);
-	}
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("click", this.handleClick);
+    }
 
-	attributeChangedCallback(name, oldValue, newValue) {
-		if (newValue !== oldValue && this.customState)
-			delete this.customState.tab;
-		super.attributeChangedCallback(name, oldValue, newValue);
-	}
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("click", this.handleClick);
+    }
 
-	async updateDisplay() {
-		const s = this.customState;
-		s.tabs = this.dataset.tabs.split(",");
-		s.tab ??= this.dataset.tab ?? s.tabs[0];
-		this.shadowRoot.appendChild(this.interpolateDom({
-			$template: "",
-			tablist: this.dataset.noButtons === undefined ? {
-				$template: "tablist",
-				buttons: s.tabs.map(x => ({
-					$template: "button",
-					panel: this.dataset.name,
-					tab: x,
-					selected: `${x === s.tab}`
-				}))
-			} : null,
-			panels: this.dataset.noPanels === undefined ? s.tabs.map(x => ({
-				$template: "panel",
-				panel: this.dataset.name,
-				tab: x,
-				hidden: x !== s.tab
-			})) : null
-		}));
-	}
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (newValue !== oldValue && this.customState)
+            delete this.customState.tab;
+        super.attributeChangedCallback(name, oldValue, newValue);
+    }
 
-	handleClick = async event => {
-		const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
-		if (b?.role === "tab") {
-			event.stopPropagation();
-			const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
-			const s = this.customState;
-			if (this.dispatchEvent(new CustomEvent("tabselected", {
-				bubbles: true,
-				cancelable: true,
-				detail: {
-					name: this.dataset.name,
-					value: s.tabs[i]
-				}
-			}))) {
-				s.tab = s.tabs[i];
-				this.requestDisplay();
-			}
-		}
-	}
+    async updateDisplay() {
+        const s = this.customState;
+        s.tabs = this.dataset.tabs.split(",");
+        s.tab ??= this.dataset.tab ?? s.tabs[0];
+        this.shadowRoot.appendChild(this.interpolateDom({
+            $template: "",
+            tablist: this.dataset.noButtons === undefined ? {
+                $template: "tablist",
+                buttons: s.tabs.map(x => ({
+                    $template: "button",
+                    panel: this.dataset.name,
+                    tab: x,
+                    selected: `${x === s.tab}`
+                }))
+            } : null,
+            panels: this.dataset.noPanels === undefined ? s.tabs.map(x => ({
+                $template: "panel",
+                panel: this.dataset.name,
+                tab: x,
+                hidden: x !== s.tab
+            })) : null
+        }));
+    }
+
+    handleClick = async event => {
+        const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
+        if (b?.role === "tab") {
+            event.stopPropagation();
+            const i = Array.prototype.findIndex.call(b.parentElement.children, x => x === b);
+            const s = this.customState;
+            if (this.dispatchEvent(new CustomEvent("tabselected", {
+                bubbles: true,
+                cancelable: true,
+                detail: {
+                    name: this.dataset.name,
+                    value: s.tabs[i]
+                }
+            }))) {
+                s.tab = s.tabs[i];
+                this.requestDisplay();
+            }
+        }
+    }
 }

@@ -30,43 +30,44 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Map;
 
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TransactionalByteChannel;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.TypeResolver;
 
-public class ApplicationPersistenceBuilder {
+public class PersistenceBuilder {
 
 	protected final Path databaseFile;
 
-	protected final DiFactory diFactory;
-
-	protected Persistence persistence;
-
-	public ApplicationPersistenceBuilder(Path databaseFile, DiFactory diFactory) {
+	public PersistenceBuilder(Path databaseFile) {
 		this.databaseFile = databaseFile;
-		this.diFactory = diFactory;
 	}
 
-	public Persistence build() {
+	public Persistence build(List<Class<? extends Entity<?>>> storables, TypeResolver typeResolver) {
+		var d = createDatabase();
+		return new Persistence(d, storables, typeResolver);
+	}
+
+	public Persistence build(DiFactory diFactory) {
+		var d = createDatabase();
+		return diFactory.create(Persistence.class, Map.of("database", d));
+	}
+
+	protected SqliteDatabase createDatabase() {
+		TransactionalByteChannel ch;
 		try {
-			TransactionalByteChannel ch;
-			{
-				var d = Files.createDirectories(databaseFile.getParent());
-				var f1 = d.resolve(databaseFile.getFileName());
-				var f2 = d.resolve(databaseFile.getFileName() + ".transaction");
-				ch = new TransactionalByteChannel(
-						FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ,
-								StandardOpenOption.WRITE),
-						FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ,
-								StandardOpenOption.WRITE));
-			}
-			var d = new SqliteDatabase(ch, 4096, 0);
-			persistence = diFactory.create(Persistence.class, Map.of("database", d));
-			return persistence;
+			var d = Files.createDirectories(databaseFile.getParent());
+			var f1 = d.resolve(databaseFile.getFileName());
+			var f2 = d.resolve(databaseFile.getFileName() + ".transaction");
+			ch = new TransactionalByteChannel(
+					FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
+					FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE));
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+		return new SqliteDatabase(ch, 4096, 0);
 	}
 }

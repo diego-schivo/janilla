@@ -51,82 +51,91 @@ import WebComponent from "web-component";
 
 export default class AdminJoinField extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-join"];
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
+    static get templateNames() {
+        return ["admin-join"];
+    }
 
-	constructor() {
-		super();
-	}
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("open-drawer", this.handleOpenDrawer);
-		this.addEventListener("close-drawer", this.handleCloseDrawer);
-	}
+    constructor() {
+        super();
+    }
 
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("open-drawer", this.handleOpenDrawer);
-		this.removeEventListener("close-drawer", this.handleCloseDrawer);
-	}
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("open-drawer", this.handleOpenDrawer);
+        this.addEventListener("close-drawer", this.handleCloseDrawer);
+    }
 
-	async updateDisplay() {
-		const p = this.dataset.path;
-		const s = this.customState;
-		s.field = this.closest("admin-edit").field(p);
-		const a = this.closest("admin-element");
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("open-drawer", this.handleOpenDrawer);
+        this.removeEventListener("close-drawer", this.handleCloseDrawer);
+    }
 
-		s.slug = Object.entries(a.customState.schema["Collections"])
-			.find(([_, v]) => v.elementTypes[0] === s.field.referenceType)[0]
-			.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-");
-		const hh = a.headers(s.slug);
+    async updateDisplay() {
+        const p = this.dataset.path;
+        const s = this.customState;
+        s.field = this.closest("admin-edit").field(p);
+        const a = this.closest("admin-element");
 
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			table: {
-				$template: "table",
-				headRow: {
-					$template: "table-row",
-					cells: hh.map(x => ({
-						$template: "table-header-cell",
-						content: x
-					}))
-				},
-				bodyRows: s.field.data?.map(x => ({
-					$template: "table-row",
-					cells: hh.map(y => a.cell(x, y)).map(y => ({
-						$template: "table-data-cell",
-						content: typeof y === "object" ? {
-							path: p,
-							...y
-						} : y
-					}))
-				}))
-			},
-			drawer: this.customState.drawer ? {
-				$template: "drawer",
-				...this.customState.drawer
-			} : null
-		}));
-	}
+        s.slug = Object.entries(a.customState.schema["Collections"])
+            .find(([_, v]) => v.elementTypes[0] === s.field.referenceType)[0]
+            .split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-");
+        const hh = a.headers(s.slug);
 
-	handleOpenDrawer = event => {
-		const s = this.customState;
-		s.drawer = {
-			slug: s.slug,
-			id: event.detail.id
-		};
-		this.requestDisplay();
-	}
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            table: {
+                $template: "table",
+                headRow: {
+                    $template: "table-row",
+                    cells: hh.map(x => ({
+                        $template: "table-header-cell",
+                        content: x
+                    }))
+                },
+                bodyRows: s.field.data?.map(x => ({
+                    $template: "table-row",
+                    cells: hh.map(y => a.cell(x, y)).map(y => ({
+                        $template: "table-data-cell",
+                        content: typeof y === "object" ? {
+                            path: p,
+                            ...y
+                        } : y
+                    }))
+                }))
+            },
+            hiddens: s.field.data?.map(x => ({
+                $template: "hidden",
+                name: p,
+                value: x.id
+            })),
+            drawer: this.customState.drawer ? {
+                $template: "drawer",
+                ...this.customState.drawer
+            } : null
+        }));
+    }
 
-	handleCloseDrawer = async () => {
-		await this.closest("admin-edit").reloadFieldData(this.dataset.path);
-		delete this.customState.drawer;
-		this.requestDisplay();
-	}
+    handleOpenDrawer = event => {
+        const s = this.customState;
+        s.drawer = {
+            slug: s.slug,
+            id: event.detail.id
+        };
+        this.requestDisplay();
+    }
+
+    handleCloseDrawer = async () => {
+        await this.closest("admin-edit").reloadFieldData(this.dataset.path);
+        delete this.customState.drawer;
+        this.requestDisplay();
+    }
 }

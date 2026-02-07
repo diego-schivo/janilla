@@ -36,18 +36,18 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.java.Java;
 
-public class DefaultFileHandlerFactory implements FileHandlerFactory {
+public class DefaultResourceHandlerFactory implements ResourceHandlerFactory {
 
 	protected final ResourceMap resourceMap;
 
-	public DefaultFileHandlerFactory(ResourceMap resourceMap) {
+	public DefaultResourceHandlerFactory(ResourceMap resourceMap) {
 		this.resourceMap = resourceMap;
 	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest rq) {
-			var f = resourceMap.get(rq.getPath());
+			var f = resourceMap != null ? resourceMap.get(rq.getPath()) : null;
 			if (f != null)
 				return x -> {
 					handle(f, x);

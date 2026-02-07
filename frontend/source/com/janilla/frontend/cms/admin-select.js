@@ -51,37 +51,41 @@ import WebComponent from "web-component";
 
 export default class AdminSelect extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-select"];
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
+    static get templateNames() {
+        return ["admin-select"];
+    }
 
-	constructor() {
-		super();
-	}
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	async updateDisplay() {
-		const p = this.dataset.path;
-		const f = this.closest("admin-edit").field(p);
-		const oo = this.closest("admin-element").options(f);
-		// console.log("f", f, "oo", oo);
-		const m = f.type === "Set";
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			name: p,
-			multiple: m,
-			options: (m ? oo : [null, ...oo]).map(x => ({
-				$template: "option",
-				value: x,
-				selected: m
-					? f.data?.some(y => y.name === x)
-					: x == f.data?.name,
-				text: x
-			})),
-			icon: !m ? { $template: "icon" } : null
-		}));
-	}
+    constructor() {
+        super();
+    }
+
+    async updateDisplay() {
+        const p = this.dataset.path;
+        const f = this.closest("admin-edit").field(p);
+        const oo = this.closest("admin-element").options(f);
+        // console.log("f", f, "oo", oo);
+        const m = f.type === "Set";
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            name: p,
+            multiple: m,
+            options: (m ? oo : [null, ...oo]).map(x => ({
+                $template: "option",
+                value: x,
+                selected: m
+                    ? f.data?.some(y => y.name === x)
+                    : x == f.data?.name,
+                text: x
+            })),
+            icon: !m ? { $template: "icon" } : null
+        }));
+    }
 }

@@ -1,4 +1,5 @@
 <!--${table}-->
+<!--${hiddens}-->
 <!--${drawer}-->
 
 <template id="table">
@@ -30,9 +31,8 @@
   </td>
 </template>
 
-<template id="id">
-  <input type="hidden" name="${path}" value="${id}" />
-  <admin-drawer-link data-id="${id}"></admin-drawer-link>
+<template id="hidden">
+  <input type="hidden" name="${name}" value="${value}" />
 </template>
 
 <template id="drawer">

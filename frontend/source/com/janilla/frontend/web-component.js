@@ -250,7 +250,7 @@ const compileNode = rootNode => {
                                 const nodes0 = (v.originalChildNodes ??= [...v.childNodes]);
                                 if (!v.firstChild && nodes0.length) {
                                     for (let ps = nodes0[0].previousSibling;ps;ps = ps.previousSibling)
-                                        if (ps instanceof Comment) {
+                                        if (ps instanceof Comment && ps.insertedNodes) {
                                             const nn1 = ps.insertedNodes;
                                             const nn2 = nn1.filter(x => !nodes0.includes(x));
                                             if (nn2.length < nn1.length)
@@ -268,13 +268,27 @@ const compileNode = rootNode => {
                             return v;
                         });
                         for (const n of nodes1)
-                            if (!nodes2.includes(n) && n.parentNode === nodeCopy.parentNode)
-                                n.parentNode.removeChild(n);
+                            if (!nodes2.includes(n) && n.parentNode === nodeCopy.parentNode) {
+                                const s = new Set();
+                                for (const a = [n];a.length;) {
+                                    const x = a.shift();
+                                    s.add(x);
+                                    if (x instanceof Comment && x.insertedNodes)
+                                        a.push(...x.insertedNodes);
+                                }
+                                s.forEach(x => x instanceof Element ? x.remove() : x.parentNode.removeChild(x));
+                            }
+                        let ps = referenceNode?.previousSibling ?? nodeCopy;
                         for (let i = nodes2.length - 1;i >= 0;i--) {
                             const n = nodes2[i];
-                            if (n !== referenceNode?.previousSibling)
-                                nodeCopy.parentNode.insertBefore(n, referenceNode);
-                            referenceNode = n;
+                            let a = true;
+                            for (;ps !== nodeCopy;ps = ps.previousSibling)
+                                if (ps === n) {
+                                    a = false;
+                                    break;
+                                }
+                            if (a)
+                                nodeCopy.after(n);
                         }
                         nodeCopy.insertedNodes = nodes2;
                     };
@@ -356,9 +370,9 @@ const compileNode = rootNode => {
         const rootNodeCopy = rootNode.cloneNode(true);
         if (rootNodeCopy instanceof DocumentFragment)
             rootNodeCopy.originalChildNodes = [...rootNodeCopy.childNodes];
-        const interpolators = interpolatorBuilders.map(build => build(rootNodeCopy));
+        const interpolators = interpolatorBuilders.map(x => x(rootNodeCopy));
         return context => {
-            interpolators.forEach(interpolate => interpolate(context));
+            interpolators.forEach(x => x(context));
             return rootNodeCopy;
         };
     };

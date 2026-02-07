@@ -35,11 +35,11 @@ import com.janilla.http.HttpHandlerFactory;
 
 public class TemplateHandlerFactory implements HttpHandlerFactory {
 
-	protected final Object application;
-
-	public TemplateHandlerFactory(Object application) {
-		this.application = application;
-	}
+//	protected final Object application;
+//
+//	public TemplateHandlerFactory(Object application) {
+//		this.application = application;
+//	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {

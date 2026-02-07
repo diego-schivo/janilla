@@ -22,8 +22,8 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "./web-component.js";
-import tests from "./tests.js";
+import WebComponent from "web-component";
+import tests from "tests";
 
 export default class TestBench extends WebComponent {
 
