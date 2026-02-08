@@ -5,29 +5,29 @@
 
 ### What it does
 
-This zero-dependencies Java library provides a [solution stack](https://en.wikipedia.org/wiki/Solution_stack) to develop web applications and more.
+This zero-dependencies Java library collection provides a [solution stack](https://en.wikipedia.org/wiki/Solution_stack) to develop web applications and more.
 
 ### Why it is useful
 
 Janilla aims to facilitate creating web applications that are straightforward to write, clean to read and easy to debug.
  
-If you are familiar with modern [Java SE](https://docs.oracle.com/en/java/javase/23/index.html) and [MDN Web Docs](https://developer.mozilla.org/), then you already have most of the skills you need to start your new project with Janilla.
+If you are familiar with modern [Java SE](https://docs.oracle.com/en/java/javase/25/index.html) and [MDN Web Docs](https://developer.mozilla.org/), then you already have most of the skills you need to start your new project with Janilla.
 
 ### How you can get started
 
-You can add Janilla as a dependency to your project by copy/pasting the snippet from [Maven Central](https://central.sonatype.com/artifact/com.janilla/janilla).
+You can add Janilla libraries as dependencies to your project by copy/pasting the snippets from [Maven Central](https://central.sonatype.com/namespace/com.janilla).
 
-We provide several example applications showing how to use the library: 
+We provide several example applications showing how to use the stack: 
 
-- [Next.js App Router Course porting](https://github.com/diego-schivo/janilla-acme-dashboard)
-- [Payload Blank Template porting](https://github.com/diego-schivo/janilla-blank-template)
-- [Payload Ecommerce Template porting](https://github.com/diego-schivo/janilla-ecommerce-template)
-- [Payload Website Template porting](https://github.com/diego-schivo/janilla-website-template)
-- [React Router Address Book Tutorial porting](https://github.com/diego-schivo/janilla-address-book)
-- [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla-conduit)
-- [Spring Petclinic porting](https://github.com/diego-schivo/janilla-petclinic)
 - [TodoMVC implementation](https://github.com/diego-schivo/janilla-todomvc)
-- [Janilla website](https://github.com/diego-schivo/janilla-website)
+- [Spring Petclinic porting](https://github.com/diego-schivo/janilla-petclinic)
+- [React Router Address Book Tutorial porting](https://github.com/diego-schivo/janilla-address-book)
+- [Next.js App Router Course porting](https://github.com/diego-schivo/janilla-acme-dashboard)
+- [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla-conduit)
+- [Payload Blank Template porting](https://github.com/diego-schivo/janilla-blank-template)
+- [Payload Website Template porting](https://github.com/diego-schivo/janilla-website-template)
+- [Payload Ecommerce Template porting](https://github.com/diego-schivo/janilla-ecommerce-template)
+- [Janilla.com website](https://github.com/diego-schivo/janilla-com)
 
 <!-- [Next.js Commerce (partial) porting](https://github.com/diego-schivo/janilla-acmestore) -->
 <!-- [Microsoft eShopOnWeb porting](https://github.com/diego-schivo/janilla-eshopweb) -->
@@ -36,7 +36,7 @@ We provide several example applications showing how to use the library:
 <!-- [Adyen Payment Examples (partial) porting](https://github.com/diego-schivo/janilla-payment) -->
 <!-- [htmx Examples porting](https://github.com/diego-schivo/janilla-uxpatterns) -->
 
-Video tutorials are available on [Janilla YouTube Channel](https://www.youtube.com/@janilla).
+<!-- Video tutorials are available on [Janilla YouTube Channel](https://www.youtube.com/@janilla). -->
 
 ### Where you can get help
 
