@@ -25,8 +25,8 @@
 			</resource>
 		</resources>
 	</build>
-	<name>Janilla</name>
-	<description>A full web solution stack packed into three lightweight libraries (base, backend, frontend)</description>
+	<name>janilla</name>
+	<description>Janilla</description>
 	<url>https://github.com/diego-schivo/janilla</url>
 	<licenses>
 		<license>

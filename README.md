@@ -9,7 +9,7 @@ This zero-dependencies Java library collection provides a [solution stack](https
 
 ### Why it is useful
 
-Janilla aims to facilitate creating web applications that are straightforward to write, clean to read and easy to debug.
+Janilla aims to facilitate creating lightweight, overengineering-free web applications that are straightforward to write, clean to read and easy to debug.
  
 If you are familiar with modern [Java SE](https://docs.oracle.com/en/java/javase/25/index.html) and [MDN Web Docs](https://developer.mozilla.org/), then you already have most of the skills you need to start your new project with Janilla.
 

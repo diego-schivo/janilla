@@ -13,6 +13,6 @@
 		<artifactId>janilla</artifactId>
 		<version>9.0.1-SNAPSHOT</version>
 	</parent>
-	<name>Janilla Frontend</name>
-	<description>The frontend of Janilla Web Solution Stack</description>
+	<name>janilla-frontend</name>
+	<description>Janilla Frontend</description>
 </project>
