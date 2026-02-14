@@ -51,33 +51,40 @@ public class HtmlRenderer<T> extends Renderer<T> {
 
 	@Override
 	public String apply(T value) {
-		var t = template(value);
-		var s = ATTRIBUTE_COMMENT_TEXT.matcher(t).replaceAll(x -> {
-			var i = IntStream.rangeClosed(1, x.groupCount()).filter(y -> x.group(y) != null).findFirst().getAsInt();
+		var in1 = template(value);
+		return ATTRIBUTE_COMMENT_TEXT.matcher(in1).replaceAll(mr1 -> {
+			var i = IntStream.rangeClosed(1, mr1.groupCount()).filter(x -> mr1.group(x) != null).findFirst().getAsInt();
+			var in2 = mr1.group(i);
+//			IO.println(x.group() + " " + i);
 			var av = new AnnotatedValue(null, value);
-			var vv = new ArrayList<>();
-			var s2 = PLACEHOLDER.matcher(x.group(i))
-					.replaceAll(y -> Matcher.quoteReplacement(string(av, y.group(1), vv::add)));
+			var oo = new ArrayList<>();
+			var s = PLACEHOLDER.matcher(in2).replaceAll(mr2 -> {
+				var x = evaluate(av, mr2.group(1), oo::add);
+				if (i != 2)
+					x = x.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("'", "&#x27;")
+							.replace("\"", "&quot;");
+				return Matcher.quoteReplacement(x);
+			});
+//			IO.println(s2);
 			if (i == 1) {
-				var g = x.group();
-				var g1 = x.group(1);
-				if (vv.size() == 1 && vv.getFirst() instanceof Boolean b) {
+				var g = mr1.group();
+				var g1 = mr1.group(1);
+				if (oo.size() == 1 && oo.getFirst() instanceof Boolean b) {
 					if (!b)
 						return "";
 					if (g1.startsWith("${") && g1.indexOf("}") == g1.length() - 1)
-						s2 = "";
+						s = "";
 				}
-				var o = x.start(1) - x.start();
-				s2 = g.substring(0, o) + s2 + g.substring(o + g1.length());
+				var o = mr1.start(1) - mr1.start();
+				s = g.substring(0, o) + s + g.substring(o + g1.length());
 			}
 //			IO.println("Renderer.interpolate, s=" + s);
-			return Matcher.quoteReplacement(s2);
+			return Matcher.quoteReplacement(s);
 		});
-		return s;
 	}
 
 	protected String template(T value) {
-		var t = "${}";
+		var t = "<!--${}-->";
 		if (annotation != null && !annotation.template().isEmpty()) {
 			var k1 = annotation.template();
 			var k2 = "";
@@ -92,16 +99,17 @@ public class HtmlRenderer<T> extends Renderer<T> {
 		return t;
 	}
 
-	protected String string(AnnotatedValue input, String expression, Consumer<Object> consumer) {
+	protected String evaluate(AnnotatedValue input, String expression, Consumer<Object> consumer) {
 		if (!expression.isEmpty())
 			for (var k : expression.split("\\.")) {
 				if (input.value() == null)
 					break;
-				input = annotatedValue(input.value(), k);
+				input = evaluate(input.value(), k);
 //						IO.println("Renderer.interpolate, k=" + k + ", av=" + av);
 			}
 		var v = input.value();
 		consumer.accept(v);
+
 		var r = v instanceof Renderable<?> x ? x
 				: v != null && !(expression.isEmpty() && input.annotated() == null)
 						? renderableFactory.createRenderable(input.annotated(), v)
@@ -132,7 +140,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 		return Objects.toString(v, "");
 	}
 
-	protected AnnotatedValue annotatedValue(Object input, String key) {
+	protected AnnotatedValue evaluate(Object input, String key) {
 		AnnotatedElement a;
 		Object v;
 		switch (input) {

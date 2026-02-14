@@ -313,9 +313,12 @@ const compileNode = rootNode => {
                             // console.log("text", text, "isExpression", isExpression, "value", value, "stringValue", stringValue);
                             if (!isExpression)
                                 ;
-                            else if (value == null || value === false)
-                                attributeCopy.ownerElement?.removeAttributeNode(attributeCopy);
-                            else if (!attributeCopy.ownerElement)
+                            else if (value == null || value === false) {
+                                if (attributeCopy.ownerElement)
+                                    attributeCopy.ownerElement.removeAttributeNode(attributeCopy);
+                                else
+                                    element.removeAttribute(attributeCopy.name);
+                            } else if (!attributeCopy.ownerElement)
                                 element.setAttributeNode(attributeCopy);
                             if (stringValue !== attributeCopy.value)
                                 attributeCopy.value = value === true ? "" : stringValue;

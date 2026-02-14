@@ -36,7 +36,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -54,19 +53,19 @@ import java.util.stream.Stream;
 
 public class Reflection {
 
-	public static Stream<String> propertyNames(Type class1) {
-//		IO.println("Reflection.properties, class1=" + class1);
-		return propertyMap(class1).keySet().stream();
+	public static Stream<String> propertyNames(Type type) {
+//		IO.println("Reflection.properties, type=" + type);
+		return propertyMap(type).keySet().stream();
 	}
 
-	public static Stream<Property> properties(Type class1) {
-//		IO.println("Reflection.properties, class1=" + class1);
-		return propertyMap(class1).values().stream();
+	public static Stream<Property> properties(Type type) {
+//		IO.println("Reflection.properties, type=" + type);
+		return propertyMap(type).values().stream();
 	}
 
-	public static Property property(Type class1, String name) {
-//		IO.println("Reflection.property, class1=" + class1 + ", name=" + name);
-		return propertyMap(class1).get(name);
+	public static Property property(Type type, String name) {
+//		IO.println("Reflection.property, type=" + type + ", name=" + name);
+		return propertyMap(type).get(name);
 	}
 
 	public static <T> T copy(Object source, T destination) {
@@ -146,7 +145,7 @@ public class Reflection {
 	}
 
 	protected static Map<String, Property> propertyMap(Type type) {
-//		IO.println("Reflection.compute, class1=" + class1);
+//		IO.println("Reflection.propertyMap, type=" + type);
 		class A {
 			private static final Map<Type, Map<String, Property>> RESULTS = new ConcurrentHashMap<>();
 
@@ -224,7 +223,7 @@ public class Reflection {
 								f = null;
 							}
 							var o = f != null ? f.getAnnotation(Order.class) : null;
-							return new AbstractMap.SimpleImmutableEntry<>(x,
+							return Java.mapEntry(x,
 									o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(x.name()) : null);
 						}).sorted(Comparator.comparing(Map.Entry::getValue,
 								Comparator.nullsLast(Comparator.naturalOrder())))

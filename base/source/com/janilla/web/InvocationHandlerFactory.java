@@ -33,17 +33,14 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -145,7 +142,8 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 				throw new UncheckedIOException(e);
 			}
 		} else if (o instanceof URI x) {
-			rs.setStatus(307);
+//			rs.setStatus(307);
+			rs.setStatus(303);
 			rs.setHeaderValue("cache-control", "no-cache");
 			rs.setHeaderValue("location", x.toString());
 		} else {
@@ -266,7 +264,16 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 				////				t.setTypeResolver(typeResolver);
 //				entries.forEach(t::add);
 //				return t.convert(c);
-				throw new RuntimeException();
+				if (body == null)
+					break;
+				var b = body.get();
+//				IO.println("InvocationHandlerFactory.resolveArgument, b=" + b);
+				if (b == null)
+					return null;
+				var q = new UriQueryBuilder(b);
+				var m = q.names().collect(Collectors.toMap(x -> x, x -> q.values(x).findFirst().orElse(null),
+						(x, _) -> x, LinkedHashMap::new));
+				return converter.get().convert(m, type);
 			}
 			default:
 				if (c.isRecord()) {
@@ -315,9 +322,9 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		return null;
 	}
 
-	protected EntryTree createEntryTree() {
-		return new EntryTree();
-	}
+//	protected EntryTree createEntryTree() {
+//		return new EntryTree();
+//	}
 
 	protected Object parseParameter(String[] strings, Type type) {
 //		IO.println("InvocationHandlerFactory.parseParameter, strings=" + Arrays.toString(strings) + ", type=" + type);
@@ -343,80 +350,80 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 			h.handle(exchange);
 	}
 
-	public static class EntryTree extends LinkedHashMap<String, Object> {
-
-		private static final long serialVersionUID = 2351446498774467936L;
-
-		public void add(Map.Entry<String, String> entry) {
-			Map<String, Object> m = this;
-			var ss = entry.getKey().split("\\.");
-			for (var i = 0; i < ss.length; i++) {
-				if (ss[i].endsWith("]")) {
-					var ss2 = ss[i].split("\\[", 2);
-					var i2 = Integer.parseInt(ss2[1].substring(0, ss2[1].length() - 1));
-					if (i2 < 0 || i2 >= 1000)
-						throw new RuntimeException();
-					@SuppressWarnings("unchecked")
-					var l = (List<Object>) m.computeIfAbsent(ss2[0], _ -> new ArrayList<Object>());
-					while (l.size() <= i2)
-						l.add(null);
-					if (i < ss.length - 1) {
-						@SuppressWarnings("unchecked")
-						var m2 = (Map<String, Object>) l.get(i2);
-						if (m2 == null) {
-							m2 = new LinkedHashMap<String, Object>();
-							l.set(i2, m2);
-						}
-						m = m2;
-					} else
-						l.set(i2, entry.getValue());
-				} else if (i < ss.length - 1) {
-					@SuppressWarnings("unchecked")
-					var o = (Map<String, Object>) m.computeIfAbsent(ss[i], _ -> new LinkedHashMap<String, Object>());
-					m = o;
-				} else
-					m.put(ss[i], entry.getValue());
-			}
-		}
-
-		public <T> T convert(Class<T> target) {
-			return convert(this, target);
-		}
-
-		protected <T> T convert(Map<String, Object> map, Class<T> target) {
-			if (map.containsKey("$type"))
-				try {
-					@SuppressWarnings("unchecked")
-					var c = (Class<T>) Class.forName(target.getPackageName() + "." + map.get("$type"));
-					if (!target.isAssignableFrom(c))
-						throw new RuntimeException();
-					target = c;
-				} catch (ClassNotFoundException e) {
-					throw new RuntimeException(e);
-				}
-			BiFunction<String, Type, Object> c = (name, type) -> new Converter(null).convert(map.get(name), type);
-			try {
-				if (target.isRecord()) {
-					var oo = new ArrayList<Object>();
-					for (var x : target.getRecordComponents())
-						oo.add(c.apply(x.getName(), x.getGenericType()));
-					@SuppressWarnings("unchecked")
-					var t = (T) target.getConstructors()[0].newInstance(oo.toArray());
-					return t;
-				}
-				var z = target;
-				var t = z.getConstructor().newInstance();
-				Reflection.properties(z).forEach(x -> {
-					var o = c.apply(x.name(), x.genericType());
-					if (o != null)
-						x.set(t, o);
-				});
-				return t;
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
-			}
-		}
-	}
+//	public static class EntryTree extends LinkedHashMap<String, Object> {
+//
+//		private static final long serialVersionUID = 2351446498774467936L;
+//
+//		public void add(Map.Entry<String, String> entry) {
+//			Map<String, Object> m = this;
+//			var ss = entry.getKey().split("\\.");
+//			for (var i = 0; i < ss.length; i++) {
+//				if (ss[i].endsWith("]")) {
+//					var ss2 = ss[i].split("\\[", 2);
+//					var i2 = Integer.parseInt(ss2[1].substring(0, ss2[1].length() - 1));
+//					if (i2 < 0 || i2 >= 1000)
+//						throw new RuntimeException();
+//					@SuppressWarnings("unchecked")
+//					var l = (List<Object>) m.computeIfAbsent(ss2[0], _ -> new ArrayList<Object>());
+//					while (l.size() <= i2)
+//						l.add(null);
+//					if (i < ss.length - 1) {
+//						@SuppressWarnings("unchecked")
+//						var m2 = (Map<String, Object>) l.get(i2);
+//						if (m2 == null) {
+//							m2 = new LinkedHashMap<String, Object>();
+//							l.set(i2, m2);
+//						}
+//						m = m2;
+//					} else
+//						l.set(i2, entry.getValue());
+//				} else if (i < ss.length - 1) {
+//					@SuppressWarnings("unchecked")
+//					var o = (Map<String, Object>) m.computeIfAbsent(ss[i], _ -> new LinkedHashMap<String, Object>());
+//					m = o;
+//				} else
+//					m.put(ss[i], entry.getValue());
+//			}
+//		}
+//
+//		public <T> T convert(Class<T> target) {
+//			return convert(this, target);
+//		}
+//
+//		protected <T> T convert(Map<String, Object> map, Class<T> target) {
+//			if (map.containsKey("$type"))
+//				try {
+//					@SuppressWarnings("unchecked")
+//					var c = (Class<T>) Class.forName(target.getPackageName() + "." + map.get("$type"));
+//					if (!target.isAssignableFrom(c))
+//						throw new RuntimeException();
+//					target = c;
+//				} catch (ClassNotFoundException e) {
+//					throw new RuntimeException(e);
+//				}
+//			BiFunction<String, Type, Object> c = (name, type) -> new Converter(null).convert(map.get(name), type);
+//			try {
+//				if (target.isRecord()) {
+//					var oo = new ArrayList<Object>();
+//					for (var x : target.getRecordComponents())
+//						oo.add(c.apply(x.getName(), x.getGenericType()));
+//					@SuppressWarnings("unchecked")
+//					var t = (T) target.getConstructors()[0].newInstance(oo.toArray());
+//					return t;
+//				}
+//				var z = target;
+//				var t = z.getConstructor().newInstance();
+//				Reflection.properties(z).forEach(x -> {
+//					var o = c.apply(x.name(), x.genericType());
+//					if (o != null)
+//						x.set(t, o);
+//				});
+//				return t;
+//			} catch (ReflectiveOperationException e) {
+//				throw new RuntimeException(e);
+//			}
+//		}
+//	}
 
 //	public static void main(String[] args) throws Exception {
 //	class C {

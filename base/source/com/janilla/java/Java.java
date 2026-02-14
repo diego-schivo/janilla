@@ -43,10 +43,12 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -62,6 +64,12 @@ public final class Java {
 
 	private Java() {
 		throw new Error("no instances");
+	}
+
+	public static <E> ArrayList<E> arrayList(E e) {
+		var x = new ArrayList<E>(1);
+		x.add(e);
+		return x;
 	}
 
 	public static List<Class<?>> getPackageClasses(String package1, boolean recursive) {
@@ -165,14 +173,14 @@ public final class Java {
 		return A.RESULTS.computeIfAbsent(path, Files::isDirectory);
 	}
 
-	public static <K, V> Map<K, V> hashMap(K k1, V v1, K k2, V v2) {
+	public static <K, V> HashMap<K, V> hashMap(K k1, V v1, K k2, V v2) {
 		var x = HashMap.<K, V>newHashMap(2);
 		x.put(k1, v1);
 		x.put(k2, v2);
 		return x;
 	}
 
-	public static <K, V> Map<K, V> hashMap(K k1, V v1, K k2, V v2, K k3, V v3) {
+	public static <K, V> HashMap<K, V> hashMap(K k1, V v1, K k2, V v2, K k3, V v3) {
 		var x = HashMap.<K, V>newHashMap(3);
 		x.put(k1, v1);
 		x.put(k2, v2);
@@ -180,7 +188,7 @@ public final class Java {
 		return x;
 	}
 
-	public static <K, V> Map<K, V> hashMap(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
+	public static <K, V> HashMap<K, V> hashMap(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
 		var x = HashMap.<K, V>newHashMap(4);
 		x.put(k1, v1);
 		x.put(k2, v2);
@@ -189,7 +197,19 @@ public final class Java {
 		return x;
 	}
 
-	public static <K, V> Entry<K, V> mapEntry(K k, V v) {
+	public static <E> HashSet<E> hashSet(E e) {
+		var x = new HashSet<E>(1);
+		x.add(e);
+		return x;
+	}
+
+	public static <E> LinkedHashSet<E> linkedHashSet(E e) {
+		var x = new LinkedHashSet<E>(1);
+		x.add(e);
+		return x;
+	}
+
+	public static <K, V> Map.Entry<K, V> mapEntry(K k, V v) {
 		return new AbstractMap.SimpleImmutableEntry<>(k, v);
 	}
 

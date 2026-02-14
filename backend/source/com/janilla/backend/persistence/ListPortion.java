@@ -22,15 +22,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "./web-component.js";
+package com.janilla.backend.persistence;
 
-export default class JanillaLogo extends WebComponent {
+import java.util.List;
 
-    static get moduleUrl() {
-        return import.meta.url;
-    }
+public record ListPortion<E>(List<E> elements, long totalSize) {
 
-    static get templateNames() {
-        return ["janilla-logo"];
-    }
+	private static ListPortion<?> EMPTY = new ListPortion<>(List.of(), 0);
+
+	@SuppressWarnings("unchecked")
+	public static <E> ListPortion<E> empty() {
+		return (ListPortion<E>) EMPTY;
+	}
 }

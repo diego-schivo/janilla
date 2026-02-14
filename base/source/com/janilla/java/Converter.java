@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -184,14 +183,14 @@ public class Converter {
 				return (T) m.entrySet().stream().map(x -> {
 					var k = convert(x.getKey(), aa[0]);
 					var v = convert(x.getValue(), aa[1]);
-					return new AbstractMap.SimpleImmutableEntry<>(k, v);
+					return Java.mapEntry(k, v);
 				}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (_, x) -> x, LinkedHashMap::new));
 			}
 			if (c == Map.Entry.class) {
 				var aa = ((ParameterizedType) target).getActualTypeArguments();
 				var k = convert(m.get("key"), aa[0]);
 				var v = convert(m.get("value"), aa[1]);
-				return (T) new AbstractMap.SimpleImmutableEntry<>(k, v);
+				return (T) Java.mapEntry(k, v);
 			}
 			return (T) convertMap(m, target, typeResolver);
 		}
@@ -237,16 +236,17 @@ public class Converter {
 					var m = map;
 					var t = c;
 					var oo = tt.entrySet().stream().map(x -> {
-						if (m.containsKey(x.getKey()))
-							return convert(m.get(x.getKey()), x.getValue());
+						var n2 = x.getKey();
+						var t2 = x.getValue();
+						if (m.containsKey(n2))
+							return convert(m.get(n2), t2);
 						Field f;
 						try {
-							f = t.getDeclaredField(x.getKey());
+							f = t.getDeclaredField(n2);
 						} catch (NoSuchFieldException e) {
 							f = null;
 						}
-						return (f != null && f.isAnnotationPresent(Flat.class)) ? convertMap(m, x.getValue(), null)
-								: null;
+						return (f != null && f.isAnnotationPresent(Flat.class)) ? convertMap(m, t2, null) : null;
 					}).toArray();
 					try {
 						o = c0.newInstance(oo);

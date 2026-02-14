@@ -39,6 +39,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import com.janilla.java.Java;
+
 public class ValueIterator extends TokenIterator {
 
 	protected final Object value;
@@ -99,7 +101,7 @@ public class ValueIterator extends TokenIterator {
 		case List<?> x -> {
 			@SuppressWarnings("unchecked")
 			var l = (List<Object>) x;
-			yield context.newArrayIterator(l.iterator());
+			yield context.newArrayIterator(l.stream());
 		}
 		case Locale x -> context.newStringIterator(x.toLanguageTag());
 		case LocalDate x -> context.newStringIterator(x.toString());
@@ -107,10 +109,10 @@ public class ValueIterator extends TokenIterator {
 		case Map<?, ?> x -> context.newObjectIterator(x.entrySet().stream().map(y -> {
 			@SuppressWarnings("unchecked")
 			var z = y.getKey() instanceof Locale l
-					? new AbstractMap.SimpleImmutableEntry<String, Object>(l.toLanguageTag(), y.getValue())
+					? Java.<String, Object>mapEntry(l.toLanguageTag(), y.getValue())
 					: (Map.Entry<String, Object>) y;
 			return z;
-		}).iterator());
+		}));
 		case Number x -> context.newNumberIterator(x);
 		case OffsetDateTime x -> context.newStringIterator(x.toString());
 		case Path x -> context.newStringIterator(x.toString().replace(File.separatorChar, '/'));

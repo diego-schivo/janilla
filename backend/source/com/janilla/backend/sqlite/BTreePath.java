@@ -66,13 +66,12 @@ public class BTreePath extends ArrayList<BTreePosition> {
 									: ((InteriorCell) pi.cell()).leftChildPointer()
 							: 0;
 					break;
-				} else if (isEmpty())
-					return false;
-				else {
+				} else if (!isEmpty()) {
 					pi = getLast();
 					if (pi.index() < pi.page().getCellCount())
 						return true;
-				}
+				} else
+					return false;
 			}
 
 		while (n != 0) {
@@ -81,6 +80,36 @@ public class BTreePath extends ArrayList<BTreePosition> {
 			n = p instanceof InteriorPage<?> x
 					? x.getCellCount() != 0 ? x.getCells().getFirst().leftChildPointer() : x.getRightMostPointer()
 					: 0;
+		}
+
+		return true;
+	}
+
+	public boolean previous() {
+		long n;
+		if (isEmpty())
+			n = bTree.rootNumber();
+		else
+			for (;;) {
+				var pi = removeLast();
+				var i = pi.index() - 1;
+				if (i >= 0) {
+					n = pi.page() instanceof InteriorPage ? ((InteriorCell) pi.cell()).leftChildPointer() : 0;
+					pi = new BTreePosition(pi.page(), i);
+					add(pi);
+					break;
+				} else if (!isEmpty()) {
+					pi = getLast();
+					if (pi.index() < pi.page().getCellCount())
+						return true;
+				} else
+					return false;
+			}
+
+		while (n != 0) {
+			var p = BTreePage.read(n, bTree.database);
+			add(new BTreePosition(p, p.getCellCount() - (p instanceof InteriorPage ? 0 : 1)));
+			n = p instanceof InteriorPage<?> x ? x.getRightMostPointer() : 0;
 		}
 
 		return true;

@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -46,23 +47,31 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 		return rootNumber;
 	}
 
-	public abstract boolean select(Object[] key, Consumer<Stream<Object[]>> rowsOperation);
+	public abstract boolean select(Object[] key, boolean reverse, Consumer<Stream<Stream<Object>>> rowsOperation);
 
-	public abstract long count(Object... key);
+	public abstract long count(Object[] key);
 
 	public abstract boolean insert(Object[] key, Object[] data);
 
-	public abstract boolean delete(Object[] key, Consumer<Stream<Object[]>> rowsOperation);
+	public abstract boolean delete(Object[] key, Consumer<Stream<Stream<Object>>> rowsOperation);
 
-	public abstract Stream<? extends Cell> cells();
-
-	public Stream<Object[]> rows() {
-		return cells().filter(x -> x instanceof PayloadCell).map(x -> row((PayloadCell) x));
+	public Stream<? extends Cell> cells() {
+		return cells(false);
 	}
 
-	public Object[] row(PayloadCell cell) {
+	public abstract Stream<? extends Cell> cells(boolean reverse);
+
+	public Stream<Stream<Object>> rows() {
+		return rows(false);
+	}
+
+	public Stream<Stream<Object>> rows(boolean reverse) {
+		return cells(reverse).filter(x -> x instanceof PayloadCell).map(x -> row((PayloadCell) x));
+	}
+
+	public Stream<Object> row(PayloadCell cell) {
 //		IO.println("cell.start()=" + cell.start());
-		return Record.fromBytes(payloadBuffers(cell)).map(RecordColumn::toObject).toArray();
+		return Record.fromBytes(payloadBuffers(cell)).map(RecordColumn::toObject);
 	}
 
 	public Stream<ByteBuffer> payloadBuffers(PayloadCell cell) {
@@ -131,22 +140,25 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 //		}
 //	}
 
-	protected Stream<? extends BTreePage<?>> pages() {
-		return pages(rootNumber);
+	protected Stream<? extends BTreePage<?>> pages(boolean reverse) {
+		return pages(rootNumber, reverse);
 	}
 
-	protected Stream<? extends BTreePage<?>> pages(long number) {
+	protected Stream<? extends BTreePage<?>> pages(long number, boolean reverse) {
 		var p = BTreePage.read(number, database);
 		// IO.println("p=" + p + ", " + p.getCellCount());
 		var s = Stream.of(p);
-		if (p instanceof InteriorPage<?> x)
-			s = Stream.concat(s, LongStream.concat(x.getCells().stream().mapToLong(InteriorCell::leftChildPointer),
-					LongStream.of(x.getRightMostPointer())).boxed().flatMap(this::pages));
+		if (p instanceof InteriorPage<?> p2) {
+			var l = p2.getCellCount();
+			var pp = IntStream.rangeClosed(0, l).map(x -> reverse ? l - x : x)
+					.mapToLong(x -> x == l ? p2.getRightMostPointer() : p2.getCells().get(x).leftChildPointer());
+			s = Stream.concat(s, pp.boxed().flatMap(x -> pages(x, reverse)));
+		}
 		return s;
 	}
 
-	protected Stream<LP> leafPages() {
-		return pages().filter(x -> !(x instanceof InteriorPage)).map(x -> {
+	protected Stream<LP> leafPages(boolean reverse) {
+		return pages(reverse).filter(x -> !(x instanceof InteriorPage)).map(x -> {
 			@SuppressWarnings("unchecked")
 			var y = (LP) x;
 			return y;
@@ -154,23 +166,31 @@ public abstract class BTree<LP extends BTreePage<LC>, LC extends Cell> {
 	}
 
 	protected long count(boolean all) {
-		return (all ? pages() : leafPages()).mapToLong(BTreePage::getCellCount).sum();
+		return (all ? pages(false) : leafPages(false)).mapToLong(BTreePage::getCellCount).sum();
 	}
 
-	protected Stream<? extends Cell> cells(boolean all) {
-		return all ? cells(rootNumber) : leafPages().flatMap(p -> p.getCells().stream());
-	}
-
-	protected Stream<? extends Cell> cells(long number) {
-		var p = BTreePage.read(number, database);
-		var s = p.getCells().stream().flatMap(c -> {
-			var s2 = Stream.of(c);
-			if (c instanceof InteriorCell x)
-				s2 = Stream.concat(cells(x.leftChildPointer()), s2);
-			return s2;
+	protected Stream<? extends Cell> cells(boolean all, boolean reverse) {
+		return all ? cells(rootNumber, reverse) : leafPages(reverse).flatMap(p -> {
+			var l = p.getCellCount();
+			return IntStream.range(0, l).map(x -> reverse ? l - 1 - x : x).mapToObj(p.getCells()::get);
 		});
-		if (p instanceof InteriorPage x)
-			s = Stream.concat(s, cells(x.getRightMostPointer()));
+	}
+
+	protected Stream<? extends Cell> cells(long number, boolean reverse) {
+		var p = BTreePage.read(number, database);
+		var l = p.getCellCount();
+		var s = IntStream.range(0, l).map(x -> reverse ? l - 1 - x : x).mapToObj(p.getCells()::get).flatMap(c -> {
+			var s1 = Stream.of(c);
+			if (c instanceof InteriorCell x) {
+				var s2 = cells(x.leftChildPointer(), reverse);
+				s1 = reverse ? Stream.concat(s1, s2) : Stream.concat(s2, s1);
+			}
+			return s1;
+		});
+		if (p instanceof InteriorPage x) {
+			var s2 = cells(x.getRightMostPointer(), reverse);
+			s = reverse ? Stream.concat(s2, s) : Stream.concat(s, s2);
+		}
 		return s;
 	}
 }

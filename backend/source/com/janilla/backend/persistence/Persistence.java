@@ -27,6 +27,7 @@ package com.janilla.backend.persistence;
 import java.lang.reflect.AnnotatedElement;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -88,39 +89,18 @@ public class Persistence {
 			if (i == null)
 				continue;
 
-//			var t = p != null ? p.genericType() : null;
-//			var ii = new IndexFactory<K, V>();
-//			ii.keyConverter = keyConverter(t);
-//			if (ii.keyConverter == null)
-//				throw new NullPointerException("No keyConverter for index on " + p + " (" + t + ")");
-
-//			var s = i.sort();
-//			if (s.startsWith("+") || s.startsWith("-"))
-//				s = s.substring(1);
-//			var sp = !s.isEmpty() ? Reflection.property(type, s) : null;
-//			IO.println("Persistence.configure, sp=" + sp);
-//			if (sp != null && sp.type() != null) {
-//				@SuppressWarnings("unchecked")
-//				var h = (ByteConverter<V>) ByteConverter.of(type, i.sort(), "id");
-//				ii.valueConverter = h;
-//			} else {
-//			@SuppressWarnings("unchecked")
-//			var h = (ByteConverter<V>) ByteConverter.of(type, "id");
-//			ii.valueConverter = h;
-//			}
 			var k = type.getSimpleName() + (p != null ? "." + p.name() : "");
 			configuration.indexes.add(k);
 
-			var ieg = new IndexEntryGetter();
-			BiFunction<Class<?>, String, Function<Object, Object>> kgf;
+			BiFunction<Class<?>, String, Function<?, Set<List<Object>>>> kgf;
 			try {
 				kgf = i.keyGetter().getConstructor().newInstance();
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
-			ieg.keyGetter = p != null ? kgf.apply(type, p.name()) : null;
-//			ieg.sortGetter = sp;
-			c.indexEntryGetters.put(p != null ? p.name() : null, ieg);
+			@SuppressWarnings("unchecked")
+			var f = (Function<E, Set<List<Object>>>) kgf.apply(type, p.name());
+			c.indexEntryGetters.put(p.name(), f);
 		}
 	}
 
@@ -140,16 +120,24 @@ public class Persistence {
 
 	protected void createStoresAndIndexes() {
 		database.perform(() -> {
-			for (var x : configuration.cruds.entrySet())
-				database.createTable(x.getKey().getSimpleName(), Stream.concat(
-						Stream.of(new TableColumn("id", "INTEGER", true), new TableColumn("content", "TEXT", false)),
-						x.getValue().indexEntryGetters.keySet().stream().filter(Objects::nonNull)
-								.map(y -> new TableColumn(y,
-										Number.class.isAssignableFrom(Reflection.property(x.getKey(), y).type())
-												? "INTEGER"
+			for (var tc : configuration.cruds.entrySet()) {
+				var t = tc.getKey();
+				var c = tc.getValue();
+				database.createTable(t.getSimpleName(),
+						Stream.concat(
+								Stream.of(new TableColumn("id",
+										Number.class.isAssignableFrom(Reflection.property(t, "id").type()) ? "INTEGER"
 												: "TEXT",
-										false)))
-						.toArray(TableColumn[]::new), x.getValue().idHelper != null);
+										true), new TableColumn("content", "TEXT", false)),
+								c.indexEntryGetters.keySet().stream().filter(Objects::nonNull)
+										.map(x -> new TableColumn(x,
+												Number.class.isAssignableFrom(Reflection.property(t, x).type())
+														? "INTEGER"
+														: "TEXT",
+												false)))
+								.toArray(TableColumn[]::new),
+						c.idHelper != null);
+			}
 			for (var k : configuration.indexes) {
 				var ss = k.split("\\.");
 				database.createIndex(k, ss[0], ss.length == 2 ? ss[1] : "id");

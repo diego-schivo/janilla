@@ -49,6 +49,14 @@ public class UriQueryBuilder {
 			}
 	}
 
+	public Stream<String> names() {
+		return parameters.stream().map(x -> x[0]).distinct();
+	}
+
+	public Stream<String> values(String name) {
+		return parameters.stream().filter(x -> x[0].equals(name)).map(x -> x.length == 2 ? x[1] : null);
+	}
+
 	public UriQueryBuilder append(String name, String value) {
 		if (value != null)
 			parameters.add(new String[] { name, value });
@@ -58,10 +66,6 @@ public class UriQueryBuilder {
 	public UriQueryBuilder delete(String name) {
 		parameters.removeIf(x -> x[0].equals(name));
 		return this;
-	}
-
-	public Stream<String> values(String name) {
-		return parameters.stream().filter(x -> x[0].equals(name)).map(x -> x.length == 2 ? x[1] : null);
 	}
 
 	@Override

@@ -46,18 +46,18 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	}
 
 	@Override
-	public boolean select(Object[] key, Consumer<Stream<Object[]>> rowsOperation) {
+	public boolean select(Object[] key, boolean reverse, Consumer<Stream<Stream<Object>>> rowsOperation) {
 		var k = (long) key[0];
 		var s = search(k);
 		if (s.found() != s.path().size() - 1)
 			return false;
 		if (rowsOperation != null)
-			rowsOperation.accept(Stream.<Object[]>of(row((PayloadCell) s.path().getLast().cell())));
+			rowsOperation.accept(Stream.<Stream<Object>>of(row((PayloadCell) s.path().getLast().cell())));
 		return true;
 	}
 
 	@Override
-	public long count(Object... keys) {
+	public long count(Object[] keys) {
 		if (keys.length == 0)
 			return count(false);
 		throw new RuntimeException();
@@ -123,7 +123,7 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	}
 
 	@Override
-	public boolean delete(Object[] key, Consumer<Stream<Object[]>> rowsOperation) {
+	public boolean delete(Object[] key, Consumer<Stream<Stream<Object>>> rowsOperation) {
 //		IO.println("TableBTree.delete, key=" + Arrays.toString(key));
 
 		var k = (long) key[0];
@@ -134,7 +134,7 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 		{
 			var pi = s.path().removeLast();
 			if (rowsOperation != null)
-				rowsOperation.accept(Stream.<Object[]>of(row((PayloadCell) pi.cell())));
+				rowsOperation.accept(Stream.<Stream<Object>>of(row((PayloadCell) pi.cell())));
 
 			var p = (TableLeafPage) pi.page();
 			var i = pi.index();
@@ -152,26 +152,34 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 		return true;
 	}
 
-	public LongStream keys() {
-		return cells().mapToLong(x -> ((TableLeafCell) x).key());
+	public LongStream keys(boolean reverse) {
+		return cells(reverse).mapToLong(x -> ((TableLeafCell) x).key());
 	}
 
 	@Override
-	public Stream<? extends Cell> cells() {
-		return cells(false);
+	public Stream<? extends Cell> cells(boolean reverse) {
+		return cells(false, reverse);
 	}
 
 	@Override
-	public Object[] row(PayloadCell cell) {
+	public Stream<Object> row(PayloadCell cell) {
 		var oo = super.row(cell);
-		if (oo[0] == null)
-			oo[0] = ((TableLeafCell) cell).key();
-		else {
-			var oo2 = new Object[oo.length + 1];
-			oo2[0] = ((TableLeafCell) cell).key();
-			System.arraycopy(oo, 0, oo2, 1, oo.length);
-			oo = oo2;
-		}
+//		if (oo[0] == null)
+//			oo[0] = ((TableLeafCell) cell).key();
+//		else {
+//			var oo2 = new Object[oo.length + 1];
+//			oo2[0] = ((TableLeafCell) cell).key();
+//			System.arraycopy(oo, 0, oo2, 1, oo.length);
+//			oo = oo2;
+//		}
+		var i = new int[1];
+		oo = oo.flatMap(x -> {
+			if (i[0]++ == 0) {
+				var k = ((TableLeafCell) cell).key();
+				return x != null ? Stream.of(k, x) : Stream.of(k);
+			}
+			return Stream.of(x);
+		});
 		return oo;
 	}
 
@@ -204,10 +212,7 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 				break;
 		}
 //		IO.println("TableBTree.search, f=" + f);
-		return new Search(pp, f);
-	}
-
-	public record Search(BTreePath path, int found) {
+		return new Search(pp, f, null);
 	}
 
 	public static void main(String[] args) {
@@ -318,13 +323,14 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 				while (p.next()) {
 					IO.print(Arrays.toString(p.stream().mapToInt(BTreePosition::index).toArray()));
 					var c = p.getLast().cell();
-					IO.println(c instanceof PayloadCell x ? Arrays.toString(t.row(x)) : ((KeyCell) c).key());
+					IO.println(c instanceof PayloadCell x ? Arrays.toString(t.row(x).toArray()) : ((KeyCell) c).key());
 				}
 				return null;
 			}, false);
 			d.perform(() -> {
 				try {
-					Files.write(Path.of("ex1b.txt"), d.table("t1").rows().map(Arrays::toString).toList());
+					Files.write(Path.of("ex1b.txt"),
+							d.table("t1").rows().map(x -> Arrays.toString(x.toArray())).toList());
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}

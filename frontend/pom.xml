@@ -5,13 +5,13 @@
 		<dependency>
 			<groupId>com.janilla</groupId>
 			<artifactId>janilla-base</artifactId>
-			<version>9.0.1-SNAPSHOT</version>
+			<version>10.0.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 	<parent>
 		<groupId>com.janilla</groupId>
 		<artifactId>janilla</artifactId>
-		<version>9.0.1-SNAPSHOT</version>
+		<version>10.0.0-SNAPSHOT</version>
 	</parent>
 	<name>janilla-frontend</name>
 	<description>Janilla Frontend</description>

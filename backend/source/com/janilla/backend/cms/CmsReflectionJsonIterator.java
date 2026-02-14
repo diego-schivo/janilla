@@ -139,7 +139,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 				var c = persistence.database().perform(() -> {
 					var i = persistence.database().index(n);
 					var d = (Document<?>) value;
-					return i.count(d.id());
+					return i.count(new Object[] { d.id() });
 				}, false);
 				ee = Stream.concat(ee, Stream.of(Map.entry("versionCount", c)));
 			}

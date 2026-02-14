@@ -143,7 +143,9 @@ public interface Property {
 		var dc = getter != null ? getter.getDeclaringClass() : setter.getDeclaringClass();
 		var gt = gt0 instanceof TypeVariable v && dc != class1 ? Reflection.resolveTypeVariable(v, class1, dc) : gt0;
 		var t = gt != gt0 ? Java.toClass(gt) : getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
-		var d = class1.isRecord() && !Arrays.stream(class1.getRecordComponents()).anyMatch(x -> x.getName().equals(n));
+		var d = class1.isRecord() && !Arrays.stream(class1.getRecordComponents())
+//				.filter(x -> x.getType() != Optional.class)
+				.anyMatch(x -> x.getName().equals(n));
 		return new Property() {
 
 			@Override

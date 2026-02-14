@@ -47,7 +47,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "web-component";
+import WebComponent from "base/web-component";
 
 export default class AdminList extends WebComponent {
 

@@ -463,7 +463,7 @@ public class SqliteDatabase {
 	public IndexBTree index(String name, String type) {
 //		IO.println("SqliteDatabase.index, name=" + name + ", type=" + type);
 		var o = schema().stream().filter(x -> (type == null || x.type().equals(type)) && x.name().equals(name))
-				.findFirst().get();
+				.findFirst().orElseThrow(() -> new IllegalArgumentException(name + " (type=" + type + ")"));
 		return new IndexBTree(this, o.root());
 	}
 
@@ -482,6 +482,9 @@ public class SqliteDatabase {
 				try {
 					t = operation.get();
 					c = true;
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//					throw e;
 				} finally {
 					if (!p && write) {
 						if (c)
@@ -519,7 +522,10 @@ public class SqliteDatabase {
 
 	public List<SchemaObject> schema() {
 		var t = new TableBTree(this, 1);
-		return t.rows().map(x -> new SchemaObject((Long) x[0], (String) x[1], (String) x[2], (String) x[3], (Long) x[4],
-				(String) x[5])).toList();
+		return t.rows().map(x -> {
+			var oo = x.toArray();
+			return new SchemaObject((Long) oo[0], (String) oo[1], (String) oo[2], (String) oo[3], (Long) oo[4],
+					(String) oo[5]);
+		}).toList();
 	}
 }

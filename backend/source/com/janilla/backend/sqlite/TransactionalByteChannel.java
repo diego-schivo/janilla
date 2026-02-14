@@ -31,11 +31,146 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 
 import com.janilla.java.FilterSeekableByteChannel;
 
 public class TransactionalByteChannel extends FilterSeekableByteChannel<SeekableByteChannel> {
+
+	protected final SeekableByteChannel transactionChannel;
+
+	protected Transaction transaction;
+
+	public TransactionalByteChannel(SeekableByteChannel channel, SeekableByteChannel transactionChannel)
+			throws IOException {
+		super(channel);
+		this.transactionChannel = transactionChannel;
+		rollbackTransaction();
+	}
+
+	public SeekableByteChannel transactionChannel() {
+		return transactionChannel;
+	}
+
+	public void startTransaction() throws IOException {
+		transaction = new Transaction(new ArrayList<>(), channel.size());
+	}
+
+	public void commitTransaction() throws IOException {
+		transaction = null;
+		transactionChannel.truncate(0);
+	}
+
+	public void rollbackTransaction() throws IOException {
+		transaction = null;
+		var s = transactionChannel.size();
+		if (s == 0)
+			return;
+		var b = ByteBuffer.allocate((int) Math.min(s, 16384));
+		transactionChannel.position(0);
+		for (var p1 = 0L; p1 < s;) {
+			if (b.position() < Long.BYTES + Integer.BYTES) {
+				b.limit((int) Math.min(s - (p1 + b.position()), b.capacity()));
+				transactionChannel.read(b);
+				if (b.hasRemaining())
+					throw new IOException();
+			}
+
+			var p2 = b.getLong(0);
+			var l = b.getInt(Long.BYTES);
+			if (l < 0) {
+				l = -l;
+				channel.truncate(p2);
+				p2 -= l;
+			}
+
+			var p0 = b.position();
+			b.limit(Math.min(Long.BYTES + Integer.BYTES + l, p0));
+			b.position(Long.BYTES + Integer.BYTES);
+			channel.position(p2);
+			for (var n = 0; n < l;) {
+				if (!b.hasRemaining()) {
+					b.limit((int) Math.min(s - (p1 + Long.BYTES + Integer.BYTES + n), b.capacity()));
+					b.position(0);
+					transactionChannel.read(b);
+					if (b.hasRemaining())
+						throw new IOException();
+					p0 = b.position();
+					b.limit(Math.min(l - n, p0));
+					b.position(0);
+				}
+				if (l - n < b.remaining())
+					b.limit(b.position() + l - n);
+				n += channel.write(b);
+				if (b.hasRemaining())
+					throw new IOException();
+			}
+			b.limit(p0);
+			b.compact();
+			p1 += Long.BYTES + Integer.BYTES + l;
+		}
+		transactionChannel.truncate(0);
+	}
+
+	@Override
+	public int write(ByteBuffer src) throws IOException {
+		extracted(src);
+		return super.write(src);
+	}
+
+	@Override
+	public SeekableByteChannel truncate(long size) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void close() throws IOException {
+		super.close();
+		transactionChannel.close();
+	}
+
+	protected void extracted(ByteBuffer src) throws IOException {
+		if (!src.hasRemaining())
+			return;
+
+		var p = channel.position();
+		if (p >= transaction.startSize())
+			return;
+
+		Iterator<Range> rr;
+		{
+			var r = new Range(p, Math.min(p + src.remaining(), transaction.startSize()));
+			rr = Range.union(transaction.writeRanges(), r).iterator();
+		}
+		if (!rr.hasNext())
+			return;
+
+		do {
+			var r = rr.next();
+			var l = (int) (r.to() - r.from());
+			var b = ByteBuffer.allocate(Long.BYTES + Integer.BYTES + l);
+
+			if (r.to() == transaction.startSize()) {
+				b.putLong(r.to());
+				b.putInt(-l);
+			} else {
+				b.putLong(r.from());
+				b.putInt(l);
+			}
+
+			channel.position(r.from());
+			channel.read(b);
+			if (b.hasRemaining())
+				throw new IOException();
+
+			b.flip();
+			transactionChannel.write(b);
+			if (b.hasRemaining())
+				throw new IOException();
+		} while (rr.hasNext());
+
+		channel.position(p);
+	}
 
 	public static void main(String[] args) throws Exception {
 		var f1 = Files.createTempFile("foo", "");
@@ -69,119 +204,5 @@ public class TransactionalByteChannel extends FilterSeekableByteChannel<Seekable
 
 			new ProcessBuilder("hexdump", "-C", f1.toString()).inheritIO().start().waitFor();
 		}
-	}
-
-	protected SeekableByteChannel transactionChannel;
-
-	protected Transaction transaction;
-
-	public TransactionalByteChannel(SeekableByteChannel channel, SeekableByteChannel transactionChannel)
-			throws IOException {
-		super(channel);
-		this.transactionChannel = transactionChannel;
-		rollbackTransaction();
-	}
-
-	public SeekableByteChannel transactionChannel() {
-		return transactionChannel;
-	}
-
-	public void startTransaction() throws IOException {
-		transaction = new Transaction(new ArrayList<>(), channel.size());
-	}
-
-	public void commitTransaction() throws IOException {
-		transaction = null;
-		transactionChannel.truncate(0);
-	}
-
-	public void rollbackTransaction() throws IOException {
-		transaction = null;
-		var s = transactionChannel.size();
-		if (s == 0)
-			return;
-		var b = ByteBuffer.allocate((int) Math.min(s, 16384));
-		transactionChannel.position(0);
-		for (var p = 0L; p < s;) {
-			if (b.position() < Long.BYTES + Integer.BYTES) {
-				b.limit(b.capacity());
-				transactionChannel.read(b);
-				if (b.hasRemaining())
-					throw new IOException();
-			}
-
-			var q = b.getLong(0);
-			var l = b.getInt(Long.BYTES);
-			if (l < 0) {
-				channel.truncate(q);
-				q += l;
-				l = -l;
-			}
-
-			var z = b.position();
-			b.limit(Math.min(z, Long.BYTES + Integer.BYTES + l));
-			b.position(Long.BYTES + Integer.BYTES);
-			channel.position(q);
-			for (var n = 0; n < l;) {
-				if (!b.hasRemaining()) {
-					b.clear();
-					transactionChannel.read(b);
-					if (b.hasRemaining())
-						throw new IOException();
-					z = b.position();
-					b.limit(Math.min(z, l - n));
-					b.position(0);
-				}
-				if (l - n < b.remaining())
-					b.limit(b.position() + l - n);
-				n += channel.write(b);
-				if (b.hasRemaining())
-					throw new IOException();
-			}
-			b.limit(z);
-			b.compact();
-			p += Long.BYTES + Integer.BYTES + l;
-		}
-		transactionChannel.truncate(0);
-	}
-
-	@Override
-	public int write(ByteBuffer src) throws IOException {
-		if (src.hasRemaining()) {
-			var p = channel.position();
-			if (p < transaction.startSize)
-				for (var rr = Range.union(transaction.writeRanges,
-						new Range(p, Math.min(p + src.remaining(), transaction.startSize))).iterator(); rr.hasNext();) {
-					var r = rr.next();
-					var l = (int) (r.to() - r.from());
-					var b = ByteBuffer.allocate(Long.BYTES + Integer.BYTES + l);
-					b.putLong(r.to() == transaction.startSize ? r.to() : r.from());
-					b.putInt(r.to() == transaction.startSize ? -l : l);
-					channel.position(r.from());
-					channel.read(b);
-					if (b.hasRemaining())
-						throw new IOException();
-					b.flip();
-					transactionChannel.write(b);
-					if (b.hasRemaining())
-						throw new IOException();
-					channel.position(p);
-				}
-		}
-		return super.write(src);
-	}
-
-	@Override
-	public SeekableByteChannel truncate(long size) throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void close() throws IOException {
-		super.close();
-		transactionChannel.close();
-	}
-
-	protected record Transaction(List<Range> writeRanges, long startSize) {
 	}
 }

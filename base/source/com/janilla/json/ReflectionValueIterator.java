@@ -25,7 +25,6 @@
 package com.janilla.json;
 
 import java.lang.reflect.Modifier;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -33,6 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.janilla.java.Java;
 import com.janilla.java.Property;
 import com.janilla.java.Reflection;
 
@@ -48,12 +48,12 @@ public class ReflectionValueIterator extends ValueIterator {
 		if (tt == null) {
 			tt = switch (value) {
 			case byte[] x -> context.newStringIterator(Base64.getEncoder().encodeToString(x));
-			case double[] x -> context.newArrayIterator(Arrays.stream(x).boxed().iterator());
-			case int[] x -> context.newArrayIterator(Arrays.stream(x).boxed().iterator());
-			case long[] x -> context.newArrayIterator(Arrays.stream(x).boxed().iterator());
-			case Object[] x -> context.newArrayIterator(Arrays.stream(x).iterator());
-			case Collection<?> x -> context.newArrayIterator(x.iterator());
-			case Stream<?> x -> context.newArrayIterator(x.iterator());
+			case double[] x -> context.newArrayIterator(Arrays.stream(x).boxed());
+			case int[] x -> context.newArrayIterator(Arrays.stream(x).boxed());
+			case long[] x -> context.newArrayIterator(Arrays.stream(x).boxed());
+			case Object[] x -> context.newArrayIterator(Arrays.stream(x));
+			case Collection<?> x -> context.newArrayIterator(x.stream());
+			case Stream<?> x -> context.newArrayIterator(x);
 			default -> null;
 			};
 			if (tt == null) {
@@ -61,7 +61,7 @@ public class ReflectionValueIterator extends ValueIterator {
 				case Map.Entry<?, ?> _ -> Map.Entry.class;
 				default -> throw new IllegalArgumentException(value.toString());
 				};
-				tt = context.newObjectIterator(entries(c).iterator());
+				tt = context.newObjectIterator(entries(c));
 			}
 		}
 		return tt;
@@ -72,7 +72,7 @@ public class ReflectionValueIterator extends ValueIterator {
 		var ee = type.isEnum() ? Stream.of(Map.entry("name", (Object) ((Enum<?>) value).name()))
 				: Reflection.properties(type).filter(this::test).map(x -> {
 //					IO.println("ReflectionValueIterator.entries, x=" + x + ", value=" + value);
-					return (Map.Entry<String, Object>) new AbstractMap.SimpleImmutableEntry<>(x.name(), x.get(value));
+					return (Map.Entry<String, Object>) Java.mapEntry(x.name(), x.get(value));
 				});
 		if (((ReflectionJsonIterator) context).includeType) {
 			var x = (Object) type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');

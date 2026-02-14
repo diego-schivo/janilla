@@ -37,7 +37,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
@@ -47,22 +46,18 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 	}
 
 	@Override
-	public boolean select(Object[] key, Consumer<Stream<Object[]>> rowsOperation) {
-		var s = search(key);
-		if (s.found() == -1)
-			return false;
-
+	public boolean select(Object[] key, boolean reverse, Consumer<Stream<Stream<Object>>> rowsOperation) {
+		var s = search(key, reverse);
 		if (rowsOperation != null)
 			rowsOperation.accept(s.rows());
-
-		return true;
+		return s.found() != -1;
 	}
 
 	@Override
-	public long count(Object... key) {
+	public long count(Object[] key) {
 		if (key.length == 0)
 			return count(true);
-		var x = search(key);
+		var x = search(key, false);
 //		if (x.found() == -1)
 //			return 0l;
 //		var p = x.path().getLast();
@@ -76,9 +71,9 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 
 	@Override
 	public boolean insert(Object[] key, Object[] data) {
-//		IO.println("IndexBTree.insert, key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data));
+		IO.println("IndexBTree.insert, key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data));
 
-		var s = search(key);
+		var s = search(key, false);
 		if (s.found() != -1)
 			return false;
 
@@ -109,15 +104,17 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 	}
 
 	@Override
-	public boolean delete(Object[] key, Consumer<Stream<Object[]>> rowsOperation) {
+	public boolean delete(Object[] key, Consumer<Stream<Stream<Object>>> rowsOperation) {
 //		IO.println("IndexBTree.delete, key=" + Arrays.toString(key));
 
-		var s = search(key);
+		var s = search(key, false);
 		if (s.found() == -1)
 			return false;
 
-		if (rowsOperation != null)
+		if (rowsOperation != null) {
+			s = s.withPath((BTreePath) s.path().clone());
 			rowsOperation.accept(s.rows());
+		}
 
 		IndexLeafCell c;
 		if (s.found() == s.path().size() - 1)
@@ -142,7 +139,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 					* (8 + p.getCells().stream().mapToInt(x -> Short.BYTES + x.size()).sum()) < database.usableSize()) {
 				new IndexRebalancer(s.path(), p, p.getCells()).run();
 				if (c != null)
-					s = search(key);
+					s = search(key, false);
 			} else
 				database.writePageBuffer(s.path().pointer(s.path().size()), p.buffer());
 		}
@@ -177,67 +174,81 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 		return true;
 	}
 
-	public LongStream ids(Object... key) {
+//	public Stream<?> ids(Object... key) {
+//		return ids(key, false);
+//	}
+
+	public Stream<?> ids(Object[] key, boolean reverse) {
 		if (key.length == 0)
-			return cells().mapToLong(
-					c -> (long) Record.fromBytes(payloadBuffers((PayloadCell) c)).reduce((_, x) -> x).get().toObject());
-		var s = search(key);
+			return cells(reverse)
+					.map(c -> Record.fromBytes(payloadBuffers((PayloadCell) c)).reduce((_, x) -> x).get().toObject());
+		var s = search(key, reverse);
 		if (s.found() == -1)
-			return LongStream.empty();
+			return Stream.empty();
 		var p = s.path().getLast();
-		return IntStream.range(p.index(), p.page().getCellCount()).mapToLong(ci -> {
+		return IntStream.range(p.index(), p.page().getCellCount()).mapToObj(ci -> {
 			var c = p.page().getCells().get(ci);
 			return compare(c, key) == 0
-					? (long) Record.fromBytes(payloadBuffers((PayloadCell) c)).reduce((_, x) -> x).get().toObject()
-					: 0;
-		}).takeWhile(x -> x != 0);
+					? Record.fromBytes(payloadBuffers((PayloadCell) c)).reduce((_, x) -> x).get().toObject()
+					: null;
+		}).takeWhile(x -> x != null);
 	}
 
 	@Override
-	public Stream<? extends Cell> cells() {
-		return cells(true);
+	public Stream<? extends Cell> cells(boolean reverse) {
+		return cells(true, reverse);
 	}
 
-	protected Search search(Object... key) {
+	protected Search search(Object[] key, boolean reverse) {
 //		IO.println("IndexBTree.search, key=" + Arrays.toString(key));
 		var n = rootNumber;
-		var f = -1;
-		var pp = new BTreePath(this);
+		var s = new Search(new BTreePath(this), -1, null);
+
 		i: for (var i = 0;; i++) {
 			var p = BTreePage.read(n, database);
-			var ci = 0;
-			for (var c : p.getCells()) {
+			var ci = reverse ? p.getCellCount() - 1 : 0;
+			Cell c0 = null;
+
+			for (var it = p.getCells().listIterator(reverse ? ci + 1 : ci); reverse ? it.hasPrevious()
+					: it.hasNext();) {
+				var c = reverse ? it.previous() : it.next();
 				var d = compare(c, key);
 				if (d == 0)
-					f = i;
-				if (d >= 0) {
-					pp.add(new BTreePosition(p, ci));
-					if (c instanceof InteriorCell c2) {
-						n = c2.leftChildPointer();
+					s = s.withFound(i);
+
+				if (reverse ? d <= 0 : d >= 0) {
+					s.path().add(new BTreePosition(p, ci));
+					if (p instanceof InteriorPage p2) {
+						n = reverse ? c0 != null ? ((InteriorCell) c0).leftChildPointer() : p2.getRightMostPointer()
+								: ((InteriorCell) c).leftChildPointer();
 						continue i;
 					} else
 						break i;
 				}
-				ci++;
+
+				if (reverse)
+					ci--;
+				else
+					ci++;
+				c0 = c;
 			}
-			pp.add(new BTreePosition(p, ci));
+			s.path().add(new BTreePosition(p, ci));
+
 			if (p instanceof InteriorPage p2)
-				n = p2.getRightMostPointer();
+				n = reverse ? ((InteriorCell) c0).leftChildPointer() : p2.getRightMostPointer();
 			else
 				break;
 		}
 //		IO.println("IndexBTree.search, f=" + f);
-		var rr = f != -1 ? Stream.iterate(pp, x -> x.next() ? x : null).takeWhile(Objects::nonNull).filter(x -> {
-			var pi = x.getLast();
-			return pi.index() != pi.page().getCellCount();
-		}).map(x -> {
-			var c = x.getLast().cell();
-			return compare(c, key) == 0 ? row((PayloadCell) c) : null;
-		}).takeWhile(Objects::nonNull) : Stream.<Object[]>empty();
-		return new Search(pp, f, rr);
-	}
-
-	public record Search(BTreePath path, int found, Stream<Object[]> rows) {
+		s = s.withRows(s.found() != -1 ? Stream.iterate(s.path(), x -> (reverse ? x.previous() : x.next()) ? x : null)
+				.takeWhile(Objects::nonNull).filter(x -> {
+					var pi = x.getLast();
+					return pi.index() != pi.page().getCellCount();
+				}).map(x -> {
+					var c = x.getLast().cell();
+					return compare(c, key) == 0 ? row((PayloadCell) c) : null;
+				}).takeWhile(Objects::nonNull) : Stream.<Stream<Object>>empty());
+		return s;
 	}
 
 	protected int compare(Cell cell, Object[] keys) {
@@ -356,13 +367,14 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 				while (p.next()) {
 					IO.print(Arrays.toString(p.stream().mapToInt(BTreePosition::index).toArray()));
 					var c = p.getLast().cell();
-					IO.println(c instanceof PayloadCell x ? Arrays.toString(t.row(x)) : "-");
+					IO.println(c instanceof PayloadCell x ? Arrays.toString(t.row(x).toArray()) : "-");
 				}
 				return null;
 			}, false);
 			d.perform(() -> {
 				try {
-					Files.write(Path.of("ex1b.txt"), d.index("t1", "table").rows().map(Arrays::toString).toList());
+					Files.write(Path.of("ex1b.txt"),
+							d.index("t1", "table").rows().map(x -> Arrays.toString(x.toArray())).toList());
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}

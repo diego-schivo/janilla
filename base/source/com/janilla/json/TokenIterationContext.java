@@ -28,6 +28,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public abstract class TokenIterationContext {
 
@@ -37,8 +38,8 @@ public abstract class TokenIterationContext {
 		return stack;
 	}
 
-	public Iterator<JsonToken<?>> newArrayIterator(Iterator<?> elements) {
-		return new ArrayIterator(this, elements);
+	public Iterator<JsonToken<?>> newArrayIterator(Stream<?> elements) {
+		return new ArrayIterator(this, elements.iterator());
 	}
 
 	public Iterator<JsonToken<?>> newBooleanIterator(Boolean value) {
@@ -53,8 +54,8 @@ public abstract class TokenIterationContext {
 		return new NumberIterator(value);
 	}
 
-	public Iterator<JsonToken<?>> newObjectIterator(Iterator<Map.Entry<String, Object>> entries) {
-		return new ObjectIterator(this, entries);
+	public Iterator<JsonToken<?>> newObjectIterator(Stream<Map.Entry<String, Object>> entries) {
+		return new ObjectIterator(this, entries.iterator());
 	}
 
 	public Iterator<JsonToken<?>> newStringIterator(String value) {

@@ -22,23 +22,15 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.persistence;
-
-import java.util.AbstractMap;
-import java.util.Map;
-import java.util.function.Function;
-
-public class IndexEntryGetter {
-
-		protected Function<Object, Object> keyGetter;
-
-//		protected Property sortGetter;
-
-		protected Map.Entry<Object, Object> getIndexEntry(Object entity, Comparable<?> id)
-				throws ReflectiveOperationException {
-			var k = keyGetter != null ? keyGetter.apply(entity) : null;
-//			var v = sortGetter != null ? new Object[] { sortGetter.get(entity), id } : new Object[] { id };
-			var v = id;
-			return keyGetter == null || k != null ? new AbstractMap.SimpleImmutableEntry<>(k, v) : null;
-		}
-	}
+//package com.janilla.backend.persistence;
+//
+//import java.util.function.Function;
+//
+//public class IndexEntryGetter {
+//
+//	protected Function<Object, Object> keyGetter;
+//
+//	public Object getIndexEntry(Object entity) {
+//		return keyGetter.apply(entity);
+//	}
+//}
