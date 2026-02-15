@@ -28,68 +28,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import com.janilla.java.Java;
-import com.janilla.java.Property;
-import com.janilla.java.Reflection;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
+@Target({ ElementType.FIELD, ElementType.METHOD })
 public @interface Index {
 
-	Class<? extends BiFunction<Class<?>, String, Function<?, Set<List<Object>>>>> keyGetter() default Keyword.class;
+	String name() default "";
 
-	public static class Keyword implements BiFunction<Class<?>, String, Function<?, Set<List<Object>>>> {
+	String[] properties() default {};
 
-		@Override
-		public Function<?, Set<List<Object>>> apply(Class<?> class1, String name) {
-			class A {
-				private static final Map<Class<?>, Map<String, Function<?, Set<List<Object>>>>> RESULTS = new ConcurrentHashMap<>();
-			}
-			return A.RESULTS.computeIfAbsent(class1, _ -> new ConcurrentHashMap<>()).computeIfAbsent(name, _ -> {
-				var p1 = Reflection.property(class1, name);
-				var p2 = !p1.type().getPackageName().startsWith("java.") ? Reflection.property(p1.type(), "id") : null;
-				var p = p2 != null ? Property.of(p1, p2) : p1;
-				return x -> {
-					var o = p.get(x);
-					if (o != null)
-						switch (o) {
-						case Collection<?> oo:
-							return oo.stream().map(y -> Java.arrayList((Object) y))
-									.collect(Collectors.toCollection(LinkedHashSet::new));
-						default:
-							return Java.hashSet(Java.arrayList(o));
-						}
-					else
-						return Set.of();
-				};
-			});
-		}
-	}
-
-//	public static class KeywordSet extends Keyword {
-//
-//		public static Pattern space = Pattern.compile("\\s+");
-//
-//		@Override
-//		public Function<Object, Object> apply(Class<?> t, String u) {
-//			var f = super.apply(t, u);
-//			return o -> {
-//				var s = (String) f.apply(o);
-//				if (s == null)
-//					return Collections.emptyList();
-//				var l = space.splitAsStream(s.toLowerCase()).distinct().sorted().toList();
-//				return l;
-//			};
-//		}
-//	}
+//	Class<? extends IndexKeyGetterFactory> keyGetterFactory() default DefaultIndexKeyGetterFactory.class;
 }

@@ -62,11 +62,11 @@ import com.janilla.http.HttpResponse;
 import com.janilla.web.ResourceHandlerFactory;
 import com.janilla.web.NotFoundException;
 
-public abstract class CmsFileHandlerFactory implements ResourceHandlerFactory {
+public abstract class CmsResourceHandlerFactory implements ResourceHandlerFactory {
 
 	protected final Path directory;
 
-	public CmsFileHandlerFactory(Path directory) {
+	public CmsResourceHandlerFactory(Path directory) {
 		this.directory = directory;
 	}
 

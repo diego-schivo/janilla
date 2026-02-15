@@ -71,7 +71,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 
 	@Override
 	public boolean insert(Object[] key, Object[] data) {
-		IO.println("IndexBTree.insert, key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data));
+//		IO.println("IndexBTree.insert, key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data));
 
 		var s = search(key, false);
 		if (s.found() != -1)

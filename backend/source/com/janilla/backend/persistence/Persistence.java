@@ -27,10 +27,8 @@ package com.janilla.backend.persistence;
 import java.lang.reflect.AnnotatedElement;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.backend.sqlite.SqliteDatabase;
@@ -89,25 +87,22 @@ public class Persistence {
 			if (i == null)
 				continue;
 
-			var k = type.getSimpleName() + (p != null ? "." + p.name() : "");
+			var n = Stream.of(!i.name().isEmpty() ? i.name() : null,
+					i.properties().length != 0 ? i.properties()[0] : null, p != null ? p.name() : null)
+					.filter(x -> x != null).findFirst().get();
+//			IO.println("n=" + n);
+			var k = Stream.of(type.getSimpleName(), n).filter(x -> x != null).collect(Collectors.joining("."));
+//			IO.println("k=" + k);
 			configuration.indexes.add(k);
 
-			BiFunction<Class<?>, String, Function<?, Set<List<Object>>>> kgf;
-			try {
-				kgf = i.keyGetter().getConstructor().newInstance();
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
-			}
-			@SuppressWarnings("unchecked")
-			var f = (Function<E, Set<List<Object>>>) kgf.apply(type, p.name());
-			c.indexEntryGetters.put(p.name(), f);
+			var g = new DefaultIndexKeyGetterFactory().keyGetter(type,
+					i.properties().length != 0 ? i.properties() : new String[] { p.name() });
+			c.indexKeyGetters.put(n, g);
 		}
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-//		return !Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
-//				&& type.isAnnotationPresent(Store.class) ? new Crud(type, idConverter(type), this) : null;
 		return new Crud(type, idConverter(type), this);
 	}
 
@@ -129,7 +124,7 @@ public class Persistence {
 										Number.class.isAssignableFrom(Reflection.property(t, "id").type()) ? "INTEGER"
 												: "TEXT",
 										true), new TableColumn("content", "TEXT", false)),
-								c.indexEntryGetters.keySet().stream().filter(Objects::nonNull)
+								c.indexKeyGetters.keySet().stream().filter(Objects::nonNull)
 										.map(x -> new TableColumn(x,
 												Number.class.isAssignableFrom(Reflection.property(t, x).type())
 														? "INTEGER"

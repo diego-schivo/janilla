@@ -66,7 +66,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
 	protected final Persistence persistence;
 
-	protected final Map<String, Function<E, Set<List<Object>>>> indexEntryGetters = new LinkedHashMap<>();
+	protected final Map<String, IndexKeyGetter> indexKeyGetters = new LinkedHashMap<>();
 
 	protected final List<CrudObserver<E>> observers = new ArrayList<>();
 
@@ -111,7 +111,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				}));
 				a.i = y;
 			}
-			updateIndexes(null, entity);
+			updateIndexes(null, a.e);
 			for (var o : observers)
 				o.afterCreate(a.e);
 			return a.e;
@@ -352,21 +352,26 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				return a;
 			}).toList();
 
-			return Stream.iterate((ID) null, _ -> {
+			var ii = Stream.iterate((ID) null, _ -> {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
-				Comparator<A> z = (a1, a2) -> {
-					var c1 = a1.v != null ? (Comparable) a1.v[0] : null;
-					var c2 = a2.v != null ? (Comparable) a2.v[0] : null;
+				Comparator<A> c = (a1, a2) -> {
+					var c1 = a1.v != null ? (Comparable) a1.v[1] : null;
+					var c2 = a2.v != null ? (Comparable) a2.v[1] : null;
 					return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
 				};
 				var s = aa.stream();
-				var a = (reverse ? s.max(z) : s.min(z)).orElse(null);
+				var a = (reverse ? s.max(c) : s.min(c)).orElse(null);
 				if (a == null || a.v == null)
 					return null;
 				var v = a.v;
 				a.v = a.vv.hasNext() ? a.vv.next() : null;
 				return fromDatabaseId(v[v.length - 1]);
-			}).skip(1 + skip).takeWhile(Objects::nonNull).limit(limit).toList();
+			}).skip(1).takeWhile(Objects::nonNull);
+			if (skip > 0)
+				ii = ii.skip(skip);
+			if (limit >= 0)
+				ii = ii.limit(limit);
+			return ii.toList();
 		}, false);
 	}
 
@@ -518,13 +523,13 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 			var s1 = im1 != null ? im1.get(k) : null;
 			var s2 = im2 != null ? im2.get(k) : null;
 			if (!Objects.equals(s1, s2)) {
-				IO.println("k=" + k);
+//				IO.println("k=" + k);
 				if (s1 != null && !s1.isEmpty() && s2 != null && !s2.isEmpty()) {
 					var s = new HashSet<>(s1);
 					s1.removeAll(s2);
 					s2.removeAll(s);
 				}
-				updateIndex(index.apply(k), s1, s2);
+				updateIndex(index.apply(k), s1, s2, (entity1 != null ? entity1 : entity2).id());
 			}
 		}
 	}
@@ -536,18 +541,22 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	}
 
 	protected Map<String, Set<List<Object>>> getIndexMap(E entity) {
-		return indexEntryGetters.entrySet().stream().collect(
-				Collectors.toMap(x -> x.getKey(), x -> x.getValue().apply(entity), (x, _) -> x, LinkedHashMap::new));
+		return indexKeyGetters.entrySet().stream().collect(
+				Collectors.toMap(x -> x.getKey(), x -> x.getValue().keys(entity), (x, _) -> x, LinkedHashMap::new));
 	}
 
-	protected void updateIndex(IndexBTree index, Set<List<Object>> remove, Set<List<Object>> add) {
+	protected void updateIndex(IndexBTree index, Set<List<Object>> remove, Set<List<Object>> add, ID id) {
 //		IO.println("Crud.updateIndex, remove=" + remove + ", add=" + add);
 		if (remove != null)
 			for (var oo : remove)
-				index.delete(oo.stream().map(this::toDatabaseValue).toArray(), null);
+				index.delete(
+						Stream.concat(oo.stream().map(this::toDatabaseValue), Stream.of(toDatabaseId(id))).toArray(),
+						null);
 		if (add != null)
 			for (var oo : add)
-				index.insert(oo.stream().map(this::toDatabaseValue).toArray(), null);
+				index.insert(
+						Stream.concat(oo.stream().map(this::toDatabaseValue), Stream.of(toDatabaseId(id))).toArray(),
+						null);
 	}
 
 	@SuppressWarnings("unchecked")

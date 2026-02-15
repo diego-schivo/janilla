@@ -31,7 +31,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.AbstractMap;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -108,8 +107,7 @@ public class ValueIterator extends TokenIterator {
 		case LocalDateTime x -> context.newStringIterator(x.toString());
 		case Map<?, ?> x -> context.newObjectIterator(x.entrySet().stream().map(y -> {
 			@SuppressWarnings("unchecked")
-			var z = y.getKey() instanceof Locale l
-					? Java.<String, Object>mapEntry(l.toLanguageTag(), y.getValue())
+			var z = y.getKey() instanceof Locale l ? Java.<String, Object>mapEntry(l.toLanguageTag(), y.getValue())
 					: (Map.Entry<String, Object>) y;
 			return z;
 		}));

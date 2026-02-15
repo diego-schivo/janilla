@@ -223,9 +223,8 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		return Stream.of(oo1, oo2).flatMap(Arrays::stream).toArray();
 	}
 
-	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values,
-//			EntryList<String, String> entries, 
-			Supplier<String> body, Supplier<Converter> converter) {
+	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values, Supplier<String> body,
+			Supplier<Converter> converter) {
 //		IO.println("InvocationHandlerFactory.resolveArgument, type=" + type);
 		var c = Java.toClass(type);
 
@@ -280,18 +279,13 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 					var tt = Arrays.stream(c.getRecordComponents()).collect(
 							Collectors.toMap(x -> x.getName(), x -> x.getType(), (_, x) -> x, LinkedHashMap::new));
 					var aa = tt.entrySet().stream().map(x -> {
-//						var n = x.getKey();
 						var t = x.getValue();
-						return resolveArgument(t, exchange,
-//								entries != null
-//										? entries.stream().filter(y -> y.getKey().equals(n)).map(Map.Entry::getValue)
-//												.toArray(String[]::new)
-//										: null,
-//								entries,
-								null, body, null);
+						return resolveArgument(t, exchange, null, body, null);
 					}).toArray();
+//					IO.println("InvocationHandlerFactory.resolveArgument, aa=" + Arrays.toString(aa));
 					try {
-						return c.getConstructors()[0].newInstance(aa);
+						return Arrays.stream(aa).anyMatch(x -> x != null) ? c.getConstructors()[0].newInstance(aa)
+								: null;
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
