@@ -72,14 +72,12 @@ public final class Java {
 		return x;
 	}
 
-	public static void generateKeyPair(Path keyStore, String password) {
+	public static void generateKeyPair(String commonName, Path keyStore, String password,
+			String subjectAlternativeName) {
 		IO.println("Java.generateKeyPair, keyStore=" + keyStore + ", password=" + password);
 		try {
-//			new ProcessBuilder("keytool",
-			var x = new ProcessBuilder("/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home/bin/keytool",
-					"-genkeypair", "-dname", "cn=*.janilla.local", "-keyalg", "rsa", "-keystore", keyStore.toString(),
-					"-storepass", password, "-ext",
-					"san=dns:janilla.local,ip:127.0.0.1,dns:acmedashboard.janilla.local,dns:addressbook.janilla.local,dns:blanktemplate.janilla.local,dns:conduit.janilla.local,dns:ecommercetemplate.janilla.local,dns:petclinic.janilla.local,dns:todomvc.janilla.local,dns:websitetemplate.janilla.local")
+			var x = new ProcessBuilder("keytool", "-genkeypair", "-dname", "cn=" + commonName, "-keyalg", "rsa",
+					"-keystore", keyStore.toString(), "-storepass", password, "-ext", "san=" + subjectAlternativeName)
 					.inheritIO().start().waitFor();
 			if (x != 0)
 				throw new RuntimeException(String.valueOf(x));
