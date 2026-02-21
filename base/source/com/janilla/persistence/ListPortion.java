@@ -22,16 +22,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.persistence;
+package com.janilla.persistence;
 
 import java.util.List;
 
-public record IdPage<ID>(List<ID> ids, long total) {
+public record ListPortion<E>(List<E> elements, long totalSize) {
 
-	private static IdPage<?> EMPTY = new IdPage<>(List.of(), 0);
+	private static ListPortion<?> EMPTY = new ListPortion<>(List.of(), 0);
 
 	@SuppressWarnings("unchecked")
-	public static <ID> IdPage<ID> empty() {
-		return (IdPage<ID>) EMPTY;
+	public static <E> ListPortion<E> empty() {
+		return (ListPortion<E>) EMPTY;
 	}
 }

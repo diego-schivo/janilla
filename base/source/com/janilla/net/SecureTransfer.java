@@ -55,7 +55,7 @@ public class SecureTransfer implements Transfer {
 	public SecureTransfer(ByteChannel channel, SSLEngine engine) {
 		this.channel = channel;
 		this.engine = engine;
-		in = ByteBuffer.allocate(engine.getSession().getApplicationBufferSize());
+		in = ByteBuffer.allocate(engine.getSession().getApplicationBufferSize() + 50);
 		out = ByteBuffer.allocate(in.capacity());
 		in0 = ByteBuffer.allocate(engine.getSession().getPacketBufferSize());
 		out0 = ByteBuffer.allocate(in0.capacity());
@@ -86,16 +86,18 @@ public class SecureTransfer implements Transfer {
 		inLock.lock();
 		try {
 			var p = in.position();
-			while (!engine.isInboundDone()) {
+			int n = engine.isInboundDone() ? -1 : 0;
+			while (n != -1) {
 				handshake();
-				if (!in.hasRemaining() || in.position() > p)
-					return in.position() - p;
-				var n = read0();
+				if (in.position() != p || !in.hasRemaining())
+					break;
+				n = read0();
 //				IO.println("SecureTransfer.read, n=" + n);
-				if (n == -1)
+				if (n == 0)
 					break;
 			}
-			return -1;
+			var d = in.position() - p;
+			return d != 0 ? d : n;
 		} finally {
 			inLock.unlock();
 		}

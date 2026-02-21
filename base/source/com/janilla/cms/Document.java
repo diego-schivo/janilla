@@ -47,11 +47,11 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.cms;
+package com.janilla.cms;
 
 import java.time.Instant;
 
-import com.janilla.backend.persistence.Entity;
+import com.janilla.persistence.Entity;
 
 public interface Document<ID extends Comparable<ID>> extends Entity<ID> {
 

@@ -36,6 +36,8 @@ import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.java.Property;
 import com.janilla.java.Reflection;
 import com.janilla.java.TypeResolver;
+import com.janilla.persistence.Entity;
+import com.janilla.persistence.Index;
 
 public class Persistence {
 
@@ -68,7 +70,7 @@ public class Persistence {
 	@SuppressWarnings("unchecked")
 	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> type) {
 //		IO.println("Persistence.crud, type=" + type);
-		return (Crud<ID, E>) configuration.cruds.get(type);
+		return (Crud<ID, E>) Objects.requireNonNull(configuration.cruds.get(type), "type=" + type);
 	}
 
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {

@@ -35,8 +35,16 @@ public class HttpRequest extends HttpMessage {
 	}
 
 	public HttpRequest(String method, URI uri) {
-		setMethod(method);
-		setUri(uri);
+		this(method, uri, null);
+	}
+
+	public HttpRequest(String method, URI uri, String cookie) {
+		if (method != null && !method.isEmpty())
+			setMethod(method);
+		if (uri != null)
+			setUri(uri);
+		if (cookie != null && !cookie.isEmpty())
+			setCookie(cookie);
 	}
 
 	public String getMethod() {
@@ -83,16 +91,24 @@ public class HttpRequest extends HttpMessage {
 		return i != -1 ? t.substring(i + 1) : null;
 	}
 
+	public URI getUri() {
+		return URI.create(getScheme() + "://" + getAuthority() + getTarget());
+	}
+
 	public void setUri(URI uri) {
 		setScheme(uri.getScheme());
 		setAuthority(uri.getAuthority());
-		var b = new StringBuilder(uri.getPath());
-		if (uri.getQuery() != null && !uri.getQuery().isEmpty())
-			b.append('?').append(uri.getQuery());
+		var b = new StringBuilder(uri.getRawPath());
+		if (uri.getRawQuery() != null && !uri.getRawQuery().isEmpty())
+			b.append('?').append(uri.getRawQuery());
 		setTarget(b.toString());
 	}
 
-	public void setBasicAuthorization(String string) {
-		setHeaderValue("authorization", "Basic " + Base64.getEncoder().encodeToString(string.getBytes()));
+	public void setBasicAuthorization(String credentials) {
+		setHeaderValue("authorization", "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes()));
+	}
+
+	public void setCookie(String cookie) {
+		setHeaderValue("cookie", cookie);
 	}
 }

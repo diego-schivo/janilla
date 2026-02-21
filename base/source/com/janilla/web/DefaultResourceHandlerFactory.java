@@ -46,15 +46,11 @@ public class DefaultResourceHandlerFactory implements ResourceHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object) {
-		if (object instanceof HttpRequest rq) {
-			var f = resourceMap != null ? resourceMap.get(rq.getPath()) : null;
-			if (f != null)
-				return x -> {
-					handle(f, x);
-					return true;
-				};
-		}
-		return null;
+		var f = resourceMap != null && object instanceof HttpRequest r ? resourceMap.get(r.getPath()) : null;
+		return f != null ? x -> {
+			handle(f, x);
+			return true;
+		} : null;
 	}
 
 	protected void handle(Resource file, HttpExchange exchange) {

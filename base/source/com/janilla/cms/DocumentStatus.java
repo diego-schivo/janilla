@@ -47,17 +47,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.cms;
+package com.janilla.cms;
 
-import java.time.Instant;
+public enum DocumentStatus {
 
-public record Version<ID extends Comparable<ID>, E extends Document<ID>>(ID id, E document) {
-
-	public Instant updatedAt() {
-		return document.updatedAt();
-	}
-
-	public DocumentStatus documentStatus() {
-		return document.documentStatus();
-	}
+	DRAFT, PUBLISHED
 }

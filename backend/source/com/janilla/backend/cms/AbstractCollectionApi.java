@@ -55,6 +55,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.CollectionApi;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
+import com.janilla.cms.Version;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.Reflection;
@@ -62,7 +66,8 @@ import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationHandlerFactory;
 
-public abstract class CollectionApi<ID extends Comparable<ID>, D extends Document<ID>> {
+public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends Document<ID>>
+		implements CollectionApi<ID, D> {
 
 	protected final Class<D> type;
 
@@ -70,29 +75,33 @@ public abstract class CollectionApi<ID extends Comparable<ID>, D extends Documen
 
 	protected final Persistence persistence;
 
-	protected CollectionApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence) {
+	protected AbstractCollectionApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence) {
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;
 	}
 
+	@Override
 	@Handle(method = "POST")
 	public D create(@Bind(resolver = DollarTypeResolver.class) D document) {
 		return crud().create(document);
 	}
 
+	@Override
 	@Handle(method = "GET")
 	public List<D> read(Long skip, Long limit) {
 		var s = skip != null ? skip.longValue() : 0;
 		var l = limit != null ? limit.longValue() : -1;
-		return crud().read(s != 0 || l != -1 ? crud().list(s, l).ids() : crud().list());
+		return crud().read(s != 0 || l != -1 ? crud().list(s, l).elements() : crud().list());
 	}
 
+	@Override
 	@Handle(method = "GET", path = "(\\d+)")
 	public D read(ID id, HttpExchange exchange) {
 		return crud().read(id, drafts.test(exchange));
 	}
 
+	@Override
 	@Handle(method = "PUT", path = "(\\d+)")
 	public D update(ID id, @Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
 //		IO.println("CollectionApi.update, id=" + id + ", document=" + document + ", draft=" + draft + ", autosave="
@@ -104,36 +113,43 @@ public abstract class CollectionApi<ID extends Comparable<ID>, D extends Documen
 		return crud().update(id, document, updateInclude(document), nv);
 	}
 
+	@Override
 	@Handle(method = "DELETE", path = "(\\d+)")
 	public D delete(ID id) {
 		return crud().delete(id);
 	}
 
+	@Override
 	@Handle(method = "DELETE")
 	public List<D> delete(@Bind("id") List<ID> ids) {
 		return crud().delete(ids);
 	}
 
+	@Override
 	@Handle(method = "PATCH", path = "(\\d+)")
 	public D patch(ID id, @Bind(resolver = DollarTypeResolver.class) D document) {
 		return patch(document, List.of(id)).getFirst();
 	}
 
+	@Override
 	@Handle(method = "PATCH")
 	public List<D> patch(@Bind(resolver = DollarTypeResolver.class) D document, @Bind("id") List<ID> ids) {
 		return crud().patch(ids, document, InvocationHandlerFactory.JSON_KEYS.get());
 	}
 
+	@Override
 	@Handle(method = "GET", path = "(\\d+)/versions")
 	public List<Version<ID, D>> readVersions(ID id) {
 		return crud().readVersions(id);
 	}
 
+	@Override
 	@Handle(method = "GET", path = "versions/(\\d+)")
 	public Version<ID, D> readVersion(ID versionId) {
 		return crud().readVersion(versionId);
 	}
 
+	@Override
 	@Handle(method = "POST", path = "versions/(\\d+)")
 	public D restoreVersion(ID versionId, Boolean draft) {
 		return crud().restoreVersion(versionId,

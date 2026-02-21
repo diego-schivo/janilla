@@ -153,6 +153,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 			var r = renderableFactory != null
 					? renderableFactory.createRenderable(invocation.method().getAnnotatedReturnType(), o)
 					: new Renderable<>(o, null);
+//			IO.println("InvocationHandlerFactory.handle, r=" + r);
 			render(r, exchange);
 		}
 		return true;
@@ -269,10 +270,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 //				IO.println("InvocationHandlerFactory.resolveArgument, b=" + b);
 				if (b == null)
 					return null;
-				var q = new UriQueryBuilder(b);
-				var m = q.names().collect(Collectors.toMap(x -> x, x -> q.values(x).findFirst().orElse(null),
-						(x, _) -> x, LinkedHashMap::new));
-				return converter.get().convert(m, type);
+				return converter.get().convert(new UriQueryBuilder(b).toMap(), type);
 			}
 			default:
 				if (c.isRecord()) {

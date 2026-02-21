@@ -49,9 +49,11 @@
  */
 package com.janilla.backend.cms;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import com.janilla.cms.Document;
 import com.janilla.java.Converter;
 import com.janilla.java.TypeResolver;
 
@@ -63,8 +65,9 @@ public class CmsConverter extends Converter {
 
 	@Override
 	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
-		if (target == DocumentReference.class) {
-			var d = (Document<?>) super.convertMap(map, null, typeResolver);
+		if (target instanceof ParameterizedType x && x.getRawType() == DocumentReference.class) {
+			var d = (Document<?>) super.convertMap(Map.of("$type", map.get("type"), "id", map.get("id")), null,
+					typeResolver);
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			var r = new DocumentReference(d.getClass(), d.id());
 			return r;

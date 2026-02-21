@@ -22,16 +22,14 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.persistence;
+package com.janilla.persistence;
 
-import java.util.List;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public record ListPortion<E>(List<E> elements, long totalSize) {
-
-	private static ListPortion<?> EMPTY = new ListPortion<>(List.of(), 0);
-
-	@SuppressWarnings("unchecked")
-	public static <E> ListPortion<E> empty() {
-		return (ListPortion<E>) EMPTY;
-	}
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.TYPE })
+public @interface Store {
 }

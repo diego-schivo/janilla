@@ -124,6 +124,9 @@ public class HttpServer extends SecureServer {
 				else
 					break;
 			}
+
+			handleEndHeaders1(ll);
+
 			try (var rq = new HttpRequest()) {
 				{
 					var i = 0;
@@ -137,6 +140,7 @@ public class HttpServer extends SecureServer {
 						i++;
 					}
 				}
+
 				var cl = rq.getHeaderValue("Content-Length");
 //				IO.println("HttpServer.handleConnection1, cl=" + cl);
 				if (cl != null) {
@@ -189,15 +193,18 @@ public class HttpServer extends SecureServer {
 		}
 	}
 
-	protected void handleConnection2(Transfer transfer0) throws IOException {
+	protected void handleEndHeaders1(List<String> lines) {
+	}
+
+	protected void handleConnection2(Transfer transfer) throws IOException {
 //		IO.println("HttpServer.handleConnection2");
-		var t = (SecureTransfer) transfer0;
-		while (t.in().position() < 24)
-			if (t.read() == -1)
+		var st = (SecureTransfer) transfer;
+		while (st.in().position() < 24)
+			if (st.read() == -1)
 				return;
-		t.in().flip();
+		st.in().flip();
 		var cp = new byte[24];
-		t.in().get(cp);
+		st.in().get(cp);
 //		IO.println("cp=" + new String(cp));
 		class A {
 			private static final byte[] CONNECTION_PREFACE_PREFIX = """
@@ -210,17 +217,16 @@ public class HttpServer extends SecureServer {
 		if (!Arrays.equals(cp, A.CONNECTION_PREFACE_PREFIX))
 			throw new RuntimeException();
 
-		var he = new HttpEncoder();
-		var hd = new HttpDecoder();
-		writeFrame(t, he.encodeFrame(
-				new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100)))));
+		var ft = new FrameTransfer(st);
+		ft.writeFrame(new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100),
+				new SettingParameter(SettingName.ENABLE_PUSH, 0))));
 
 		var streams = new HashMap<Integer, List<Frame>>();
 		for (;;) {
-			var bb = readFrame(t);
-			if (bb == null)
+			var f = ft.readFrame();
+			if (f == null)
 				break;
-			var f = hd.decodeFrame(bb);
+
 //			IO.println("HttpServer.handleConnection2, f=" + f);
 			switch (f) {
 			case DataFrame _:
@@ -228,21 +234,25 @@ public class HttpServer extends SecureServer {
 				var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
 				ff.add(f);
 
-				if (f instanceof DataFrame df && df.data().length != 0)
-					for (var id : new int[] { f.streamIdentifier(), 0 }) {
-//							IO.println("HttpServer.handleConnection2, id=" + id + ", df.data().length=" + df.data().length);
-						writeFrame(t, he.encodeFrame(new WindowUpdateFrame(id, df.data().length)));
-					}
+				var df = f instanceof DataFrame x ? x : null;
+				var hf = f instanceof HeadersFrame x ? x : null;
 
-				var es = f instanceof DataFrame x ? x.endStream() : ((HeadersFrame) f).endStream();
-				if (es) {
+				if (df != null && df.data().length != 0)
+					for (var id : new int[] { f.streamIdentifier(), 0 })
+						ft.writeFrame(new WindowUpdateFrame(id, 9 + df.data().length));
+
+				if (hf != null && hf.endHeaders())
+					handleEndHeaders2(ff, ft);
+
+				if (df != null ? df.endStream() : hf.endStream()) {
 					streams.remove(f.streamIdentifier());
-					Thread.startVirtualThread(() -> handleStream(ff, t, he));
+					handleEndStream(ff, ft);
 				}
 				break;
 
-			case SettingsFrame _:
-				writeFrame(t, he.encodeFrame(new SettingsFrame(true, List.of())));
+			case SettingsFrame x:
+				if (!x.ack())
+					ft.writeFrame(new SettingsFrame(true, List.of()));
 				break;
 
 			case PingFrame _:
@@ -263,7 +273,14 @@ public class HttpServer extends SecureServer {
 		}
 	}
 
-	protected void handleStream(List<Frame> frames, SecureTransfer transfer, HttpEncoder encoder) {
+	protected void handleEndHeaders2(List<Frame> frames, FrameTransfer transfer) {
+	}
+
+	protected void handleEndStream(List<Frame> frames, FrameTransfer transfer) {
+		Thread.startVirtualThread(() -> handleStream(frames, transfer));
+	}
+
+	protected void handleStream(List<Frame> frames, FrameTransfer transfer) {
 		try (var rq = new HttpRequest()) {
 			var id = frames.getFirst().streamIdentifier();
 			var hff = new ArrayList<HeaderField>();
@@ -296,10 +313,11 @@ public class HttpServer extends SecureServer {
 //						IO.println("HttpServer.handleStream, close");
 						if (closed)
 							return;
-						var f = written == 0 ? new HeadersFrame(false, true, true, id, false, 0, 0, rs.getHeaders())
-								: new DataFrame(false, true, id, new byte[0]);
-						var bb = encoder.encodeFrame(f);
-						writeFrame(transfer, bb);
+						transfer.writeFrame(
+								written == 0 ? new HeadersFrame(false, true, true, id, false, 0, 0, rs.getHeaders())
+										: new DataFrame(false, true, id, new byte[0]));
+//						var bb = encoder.encodeFrame(f);
+//						writeFrame(transfer, bb);
 						closed = true;
 					}
 
@@ -312,13 +330,14 @@ public class HttpServer extends SecureServer {
 						while (src.hasRemaining()) {
 							var n = Math.min(src.remaining(), 16384);
 							if (written == 0) {
-								var f = new HeadersFrame(false, true, false, id, false, 0, 0, rs.getHeaders());
-								writeFrame(transfer, encoder.encodeFrame(f));
+								transfer.writeFrame(
+										new HeadersFrame(false, true, false, id, false, 0, 0, rs.getHeaders()));
+//								writeFrame(transfer, encoder.encodeFrame(f));
 							}
 							var bb = new byte[n];
 							src.get(bb);
-							var f = new DataFrame(false, false, id, bb);
-							writeFrame(transfer, encoder.encodeFrame(f));
+							transfer.writeFrame(new DataFrame(false, false, id, bb));
+//							writeFrame(transfer, encoder.encodeFrame(f));
 							written += n;
 						}
 						var n = (int) (written - w);
@@ -338,12 +357,16 @@ public class HttpServer extends SecureServer {
 
 	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 		var x = diFactory != null
-				? diFactory.create(HttpExchange.class, Map.of("request", request, "response", response))
+				? diFactory.create(diFactory.actualType(HttpExchange.class),
+						Map.of("request", request, "response", response))
 				: null;
 		return x != null ? x : new SimpleHttpExchange(request, response);
 	}
 
 	protected boolean handleExchange(HttpExchange exchange) {
+		if (exchange == null)
+			throw new NullPointerException();
+
 		var k = true;
 		Exception e;
 		try {
@@ -376,63 +399,63 @@ public class HttpServer extends SecureServer {
 		return k;
 	}
 
-	protected byte[] readFrame(SecureTransfer transfer) throws IOException {
-		transfer.inLock().lock();
-		try {
-			if (transfer.in().remaining() < 3) {
-				transfer.in().compact();
-				do
-					if (transfer.read() == -1)
-						return null;
-				while (transfer.in().position() < 3);
-				transfer.in().flip();
-			}
-			var l = (Short.toUnsignedInt(transfer.in().getShort(transfer.in().position())) << 8)
-					| Byte.toUnsignedInt(transfer.in().get(transfer.in().position() + Short.BYTES));
-//			IO.println("HttpServer.readFrame, l=" + l);
-			if (l > 16384)
-				throw new RuntimeException();
-			var bb = new byte[9 + l];
-//			IO.println("in.remaining() " + in.remaining());
-			if (transfer.in().remaining() < bb.length) {
-				transfer.in().compact();
-				do
-					transfer.read();
-				while (transfer.in().position() < bb.length);
-				transfer.in().flip();
-			}
-			transfer.in().get(bb);
-			return bb;
-		} finally {
-			transfer.inLock().unlock();
-		}
-	}
-
-	protected void writeFrame(SecureTransfer transfer, byte[] bytes) throws IOException {
-//		IO.println("HttpServer.writeFrame, bytes=" + bytes.length);
-		transfer.outLock().lock();
-//		IO.println("HttpServer.writeFrame, lock");
-		try {
-			transfer.out().clear();
-			for (var o = 0; o < bytes.length;) {
-				var l = Math.min(bytes.length - o, transfer.out().remaining());
-//				IO.println("HttpServer.writeFrame, l=" + l);
-				transfer.out().put(bytes, o, l);
-				if (!transfer.out().hasRemaining()) {
-					transfer.out().flip();
-					do
-						transfer.write();
-					while (transfer.out().hasRemaining());
-					transfer.out().clear();
-				}
-				o += l;
-//				IO.println("HttpServer.writeFrame, o=" + o);
-			}
-			for (transfer.out().flip(); transfer.out().hasRemaining();)
-				transfer.write();
-		} finally {
-			transfer.outLock().unlock();
-//			IO.println("HttpServer.writeFrame, unlock");
-		}
-	}
+//	protected byte[] readFrame(SecureTransfer transfer) throws IOException {
+//		transfer.inLock().lock();
+//		try {
+//			if (transfer.in().remaining() < 3) {
+//				transfer.in().compact();
+//				do
+//					if (transfer.read() == -1)
+//						return null;
+//				while (transfer.in().position() < 3);
+//				transfer.in().flip();
+//			}
+//			var l = (Short.toUnsignedInt(transfer.in().getShort(transfer.in().position())) << 8)
+//					| Byte.toUnsignedInt(transfer.in().get(transfer.in().position() + Short.BYTES));
+	//// IO.println("HttpServer.readFrame, l=" + l);
+//			if (l > 16384)
+//				throw new RuntimeException();
+//			var bb = new byte[9 + l];
+	//// IO.println("in.remaining() " + in.remaining());
+//			if (transfer.in().remaining() < bb.length) {
+//				transfer.in().compact();
+//				do
+//					transfer.read();
+//				while (transfer.in().position() < bb.length);
+//				transfer.in().flip();
+//			}
+//			transfer.in().get(bb);
+//			return bb;
+//		} finally {
+//			transfer.inLock().unlock();
+//		}
+//	}
+//
+//	protected void writeFrame(SecureTransfer transfer, byte[] bytes) throws IOException {
+	//// IO.println("HttpServer.writeFrame, bytes=" + bytes.length);
+//		transfer.outLock().lock();
+	//// IO.println("HttpServer.writeFrame, lock");
+//		try {
+//			transfer.out().clear();
+//			for (var o = 0; o < bytes.length;) {
+//				var l = Math.min(bytes.length - o, transfer.out().remaining());
+	//// IO.println("HttpServer.writeFrame, l=" + l);
+//				transfer.out().put(bytes, o, l);
+//				if (!transfer.out().hasRemaining()) {
+//					transfer.out().flip();
+//					do
+//						transfer.write();
+//					while (transfer.out().hasRemaining());
+//					transfer.out().clear();
+//				}
+//				o += l;
+	//// IO.println("HttpServer.writeFrame, o=" + o);
+//			}
+//			for (transfer.out().flip(); transfer.out().hasRemaining();)
+//				transfer.write();
+//		} finally {
+//			transfer.outLock().unlock();
+	//// IO.println("HttpServer.writeFrame, unlock");
+//		}
+//	}
 }

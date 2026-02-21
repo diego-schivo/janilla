@@ -29,7 +29,9 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,6 +68,40 @@ public class UriQueryBuilder {
 	public UriQueryBuilder delete(String name) {
 		parameters.removeIf(x -> x[0].equals(name));
 		return this;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public Map<String, ?> toMap() {
+		Map<String, ?> m = new LinkedHashMap<>();
+		names().forEach(n -> {
+			var v = values(n).findFirst().orElse(null);
+			var m1 = (Map) m;
+			var ss = n.split("\\.");
+			for (var i = 0; i < ss.length; i++) {
+				if (ss[i].endsWith("]")) {
+					var ss2 = ss[i].split("\\[", 2);
+					var i2 = Integer.parseInt(ss2[1].substring(0, ss2[1].length() - 1));
+					if (i2 < 0 || i2 >= 1000)
+						throw new RuntimeException();
+					var l = (List) m1.computeIfAbsent(ss2[0], _ -> new ArrayList());
+					while (l.size() <= i2)
+						l.add(null);
+					if (i < ss.length - 1) {
+						var m2 = (Map) l.get(i2);
+						if (m2 == null) {
+							m2 = new LinkedHashMap<>();
+							l.set(i2, m2);
+						}
+						m1 = m2;
+					} else
+						l.set(i2, v);
+				} else if (i < ss.length - 1)
+					m1 = (Map) m1.computeIfAbsent(ss[i], _ -> new LinkedHashMap<>());
+				else
+					m1.put(ss[i], v);
+			}
+		});
+		return m;
 	}
 
 	@Override

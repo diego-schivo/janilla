@@ -24,6 +24,7 @@
  */
 package com.janilla.backend.persistence;
 
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -32,7 +33,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -57,6 +57,8 @@ import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.json.ReflectionValueIterator;
 import com.janilla.json.TokenIterationContext;
+import com.janilla.persistence.Entity;
+import com.janilla.persistence.ListPortion;
 
 public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
@@ -134,42 +136,19 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				var oo = x.findFirst().orElse(null);
 				a.e = oo != null ? parse((String) oo.reduce((_, y) -> y).get()) : null;
 			});
-			if (a.e != null) {
-				if (depth > 0) {
-					@SuppressWarnings({ "rawtypes", "unchecked" })
-					var m = Reflection.properties(a.e.getClass()).filter(Property::canGet).map(p -> {
-						var o = p.get(a.e);
-						var t = o != null ? (Class) p.type() : null;
-						var c = t != null ? persistence.crud(t) : null;
-						var z = c != null ? (Comparable) Reflection.property(p.type(), "id").get(o) : null;
-						return z != null ? Java.mapEntry(p.name(), c.read(z, depth - 1)) : null;
-					}).filter(Objects::nonNull).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-					if (!m.isEmpty())
-						a.e = Reflection.copy(m, a.e);
-				}
-
+			a.e = populate(a.e, depth);
+			if (a.e != null)
 				for (var o : observers)
 					a.e = o.afterRead(a.e);
-			}
 			return a.e;
 		}, false);
 	}
 
-//	protected Object populate(Object e, int depth) {
-//		if (depth > 0) {
-//			for (var p : Reflection.properties(e.getClass()).filter(x -> x.canGet() && x.canSet()).toList()) {
-//				var o = p.get(e);
-//				if (o != null && Reflection.property(o.getClass(), "id") != null) {
-//					var o2 = populate(o, depth - 1);
-	//// if (o2 != o) e = p.set(e, o2);
-//				}
-//			}
-//		}
-//		Reflection.copy(e, null);
-//		return e;
-//	}
-
 	public List<E> read(List<ID> ids) {
+		return read(ids, 0);
+	}
+
+	public List<E> read(List<ID> ids, int depth) {
 //		IO.println("Crud.read, ids=" + ids);
 		if (ids == null || ids.isEmpty())
 			return List.of();
@@ -186,7 +165,9 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 					var oo = y.findFirst().orElse(null);
 //					IO.println("Crud.read, oo=" + Arrays.toString(oo));
 					a.e = oo != null ? parse((String) oo.reduce((_, z) -> z).get()) : null;
+//					IO.println("Crud.read, a.e=" + a.e);
 				});
+				a.e = populate(a.e, depth);
 				if (a.e != null)
 					for (var o : observers)
 						a.e = o.afterRead(a.e);
@@ -255,7 +236,6 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	public List<ID> list() {
 		return persistence.database().perform(() -> {
 			var t = bTree();
-//			IO.println("t=" + t);
 			return t.cells().map(c -> {
 				var o = switch (c) {
 				case TableLeafCell x -> x.key();
@@ -270,7 +250,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 		}, false);
 	}
 
-	public IdPage<ID> list(long skip, long limit) {
+	public ListPortion<ID> list(long skip, long limit) {
 //		IO.println("Crud.list, skip=" + skip + ", limit=" + limit);
 		return persistence.database().perform(() -> {
 			var t = bTree();
@@ -279,7 +259,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				cc = cc.skip(skip);
 			if (limit >= 0)
 				cc = cc.limit(limit);
-			return new IdPage<>(cc.map(c -> {
+			return new ListPortion<>(cc.map(c -> {
 				var o = switch (c) {
 				case TableLeafCell c2 -> c2.key();
 				case PayloadCell c2 ->
@@ -393,7 +373,7 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 		}, false);
 	}
 
-	public IdPage<ID> filter(String index, Predicate<Object> operation, long skip, long limit) {
+	public ListPortion<ID> filter(String index, Predicate<Object> operation, long skip, long limit) {
 		return persistence.database().perform(() -> {
 			var t = getIndex(index);
 			@SuppressWarnings("unchecked")
@@ -404,11 +384,11 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 				s = s.skip(skip);
 			if (limit >= 0)
 				s = s.limit(limit);
-			return new IdPage<>(s.toList(), ii.size());
+			return new ListPortion<>(s.toList(), ii.size());
 		}, false);
 	}
 
-	public IdPage<ID> filter(Map<String, Object[]> keys, long skip, long limit) {
+	public ListPortion<ID> filter(Map<String, Object[]> keys, long skip, long limit) {
 		var ee = keys.entrySet().stream().filter(x -> x.getValue() != null && x.getValue().length > 0).toList();
 		if (ee.isEmpty())
 			return list(skip, limit);
@@ -491,15 +471,19 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 					llb.add(x);
 				}
 			}).count();
-			return new IdPage<>(llb.build().toList(), t);
+			return new ListPortion<>(llb.build().toList(), t);
 		}, false);
 	}
 
 	protected String format(Object object) {
-		return Json.format(new CustomReflectionJsonIterator(object, true));
+//		IO.println("Crud.format, object=" + object);
+		var s = Json.format(new CustomReflectionJsonIterator(object, true));
+//		IO.println("Crud.format, s=" + s);
+		return s;
 	}
 
 	protected E parse(String string) {
+//		IO.println("Crud.parse, string=" + string);
 		return parse(string, type);
 	}
 
@@ -592,6 +576,36 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 		return idHelper != null ? idHelper.toDatabaseValue(id) : id;
 	}
 
+	protected E populate(E entity, int depth) {
+//		IO.println("Crud.populate, entity=" + entity + ", depth=" + depth);
+		@SuppressWarnings({ "rawtypes", "unchecked" })
+		var m = entity != null && depth > 0
+				? Reflection.properties(entity.getClass()).filter(Property::canGet).map(p -> {
+//					IO.println("Crud.populate, p=" + p + " (" + p.type() + ")" + (p.type() == List.class));
+					if (p.type() == List.class) {
+						var t = p.genericType() instanceof ParameterizedType pt ? (Class) pt.getActualTypeArguments()[0]
+								: null;
+						var c = t != null ? persistence.crud(t) : null;
+						var n = c != null
+								? Reflection.properties(t).filter(x -> x.type().isAssignableFrom(entity.getClass()))
+										.findFirst().map(x -> x.name()).orElse(null)
+								: null;
+						var l = n != null ? c.read(c.filter(n, new Object[] { entity.id() }), depth - 1)
+								: c != null
+										? c.read(((List<Entity<?>>) p.get(entity)).stream().map(x -> x.id()).toList())
+										: null;
+						return l != null ? Java.mapEntry(p.name(), l) : null;
+					}
+
+					var c = persistence.crud((Class) p.type());
+					var o = c != null ? p.get(entity) : null;
+					var i = o != null ? (Comparable) Reflection.property(p.type(), "id").get(o) : null;
+					return i != null ? Java.mapEntry(p.name(), c.read(i, depth - 1)) : null;
+				}).filter(Objects::nonNull).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+				: null;
+		return m != null && !m.isEmpty() ? Reflection.copy(m, entity) : entity;
+	}
+
 	protected class CustomReflectionJsonIterator extends ReflectionJsonIterator {
 
 		public CustomReflectionJsonIterator(Object object, boolean includeType) {
@@ -621,20 +635,25 @@ public class Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 					: super.newIterator();
 		}
 
-		@Override
-		protected Stream<Entry<String, Object>> entries(Class<?> type) {
-			var ee = super.entries(type).filter(x -> x.getValue() != null);
-			if (context.stack().size() >= 3) {
-				var l = ee.toList();
-				var e = l.stream().filter(x -> x.getKey().equals("id")).findFirst().orElse(null);
-				ee = e != null ? Stream.of(e) : l.stream();
-			}
-			return ee;
-		}
+//		@Override
+//		protected Stream<Entry<String, Object>> entries(Class<?> type) {
+//			var ee = super.entries(type).filter(x -> x.getValue() != null);
+//			if (context.stack().size() >= 3) {
+//				var l = ee.toList();
+//				var e = l.stream().filter(x -> x.getKey().equals("id")).findFirst().orElse(null);
+//				ee = e != null ? Stream.of(e) : l.stream();
+//			}
+//			return ee;
+//		}
 
 		@Override
 		protected boolean test(Property property) {
-			return super.test(property) && !property.derived();
+			return super.test(property) && foo(property, this);
 		}
+	}
+
+	protected boolean foo(Property property, CustomReflectionValueIterator valueIterator) {
+		return !property.derived() && !(valueIterator.context().stack().size() >= 3
+				&& valueIterator.value() instanceof Entity && !property.name().equals("id"));
 	}
 }

@@ -26,6 +26,8 @@ package com.janilla.backend.persistence;
 
 import java.util.UUID;
 
+import com.janilla.persistence.Entity;
+
 public class StringIdHelper implements IdHelper<String> {
 
 	@Override

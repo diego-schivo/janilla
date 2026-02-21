@@ -55,6 +55,10 @@ public class ValueIterator extends TokenIterator {
 		this.value = value;
 	}
 
+	public Object value() {
+		return value;
+	}
+
 	@Override
 	protected boolean computeHasNext() {
 		while (token == null && (iterator == null || !iterator.hasNext()) && state != 3) {

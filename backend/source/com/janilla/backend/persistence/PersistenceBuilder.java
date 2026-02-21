@@ -37,6 +37,7 @@ import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TransactionalByteChannel;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.TypeResolver;
+import com.janilla.persistence.Entity;
 
 public class PersistenceBuilder {
 
@@ -53,7 +54,7 @@ public class PersistenceBuilder {
 
 	public Persistence build(DiFactory diFactory) {
 		var d = createDatabase();
-		return diFactory.create(Persistence.class, Map.of("database", d));
+		return diFactory.create(diFactory.actualType(Persistence.class), Map.of("database", d));
 	}
 
 	protected SqliteDatabase createDatabase() {
@@ -68,6 +69,6 @@ public class PersistenceBuilder {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-		return new SqliteDatabase(ch, 4096, 0);
+		return new SqliteDatabase(ch, 4096, 0, 1000);
 	}
 }

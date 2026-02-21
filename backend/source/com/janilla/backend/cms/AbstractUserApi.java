@@ -70,7 +70,7 @@ import com.janilla.web.Handle;
 import com.janilla.web.UnauthorizedException;
 
 public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<ID, R>, R extends UserRole>
-		extends CollectionApi<ID, U> {
+		extends AbstractCollectionApi<ID, U> {
 
 	protected final String jwtKey;
 

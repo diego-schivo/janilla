@@ -39,8 +39,8 @@ import com.janilla.ioc.DiFactory;
 
 public class RenderableFactory {
 
-	protected static final Pattern TEMPLATE_ELEMENT = Pattern.compile("<ssr-template id=\"([\\w-]+)\">(.*?)</ssr-template>",
-			Pattern.DOTALL);
+	protected static final Pattern TEMPLATE_ELEMENT = Pattern
+			.compile("<ssr-template id=\"([\\w-]+)\">(.*?)</ssr-template>", Pattern.DOTALL);
 
 	protected final Map<String, Map<String, String>> templates = new ConcurrentHashMap<>();
 
@@ -88,12 +88,13 @@ public class RenderableFactory {
 		return new Renderable<>(value, r);
 	}
 
-	protected <T> Renderer<T> createRenderer(Class<Renderer<T>> c) {
-		var x = diFactory != null ? diFactory.create(c) : null;
+	protected <T> Renderer<T> createRenderer(Class<Renderer<T>> class1) {
+//		IO.println("RenderableFactory.createRenderer, class1=" + class1);
+		var x = diFactory != null ? diFactory.create(class1) : null;
 		try {
-			return x != null ? x : c.getConstructor().newInstance();
+			return x != null ? x : class1.getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException("c=" + c, e);
+			throw new RuntimeException("class1=" + class1, e);
 		}
 	}
 

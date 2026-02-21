@@ -27,10 +27,10 @@ package com.janilla.ioc;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -45,7 +45,7 @@ public class DiFactory {
 
 	protected final String name;
 
-	protected final Map<Class<?>, Class<?>> actualTypes = new HashMap<>();
+	protected final Map<Class<?>, Optional<Class<?>>> actualTypes = new ConcurrentHashMap<>();
 
 	protected final Map<Class<?>, Function<Map<String, Object>, ?>> factories = new ConcurrentHashMap<>();
 
@@ -74,22 +74,14 @@ public class DiFactory {
 		return this;
 	}
 
+	@SuppressWarnings("unchecked")
 	public <T, U extends T> Class<U> actualType(Class<T> type) {
-		if (!actualTypes.containsKey(type))
-			synchronized (actualTypes) {
-				if (!actualTypes.containsKey(type))
-					actualTypes.put(type,
-							Stream.concat(Stream.of(type), types.stream())
-									.filter(x -> !Modifier.isAbstract(x.getModifiers())).filter(type::isAssignableFrom)
-									.filter(x -> {
-										var a = x.getAnnotation(Context.class);
-										var nn = a != null ? a.value() : null;
-										return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
-									}).reduce((_, x) -> x).orElse(null));
-			}
-		@SuppressWarnings("unchecked")
-		Class<U> x = (Class<U>) actualTypes.get(type);
-		return x;
+		return (Class<U>) actualTypes.computeIfAbsent(type, _ -> Stream.concat(Stream.of(type), types.stream())
+				.filter(x -> !Modifier.isAbstract(x.getModifiers())).filter(type::isAssignableFrom).filter(x -> {
+					var a = x.getAnnotation(Context.class);
+					var nn = a != null ? a.value() : null;
+					return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
+				}).reduce((_, x) -> x)).orElse(null);
 	}
 
 	public <T> T create(Class<T> type) {
@@ -98,15 +90,15 @@ public class DiFactory {
 
 	public <T> T create(Class<T> type, Map<String, Object> arguments) {
 //		IO.println("DiFactory.create, type=" + type + ", arguments=" + arguments);
-		var f = factories.computeIfAbsent(type, k -> {
-			var t = actualType(k);
+		if (type == null)
+			return null;
+		var f = factories.computeIfAbsent(type, _ -> {
 //			IO.println("DiFactory.create, c=" + c);
-			if (t == null)
-//				throw new RuntimeException("type=" + type);
-				return _ -> null;
-			var cc = t.getConstructors();
+//			if (t == null)
+//				return _ -> null;
+			var cc = type.getConstructors();
 			var o = context;// .get();
-			var oe = !Modifier.isStatic(t.getModifiers()) && o != null && t.getEnclosingClass() == o.getClass();
+			var oe = !Modifier.isStatic(type.getModifiers()) && o != null && type.getEnclosingClass() == o.getClass();
 			return aa -> newInstance(cc, aa, o, oe);
 		});
 		@SuppressWarnings("unchecked")
@@ -116,7 +108,7 @@ public class DiFactory {
 
 	protected <T> T newInstance(Constructor<?>[] constructors, Map<String, Object> arguments, Object context,
 			boolean enclosed) {
-//		IO.println("DiFactory.newInstance, constructors= " + Arrays.toString(constructors) + ", arguments=" + arguments
+//		IO.println("DiFactory.newInstance, constructors=" + Arrays.toString(constructors) + ", arguments=" + arguments
 //				+ ", context=" + context + ", enclosed=" + enclosed);
 		record R(Constructor<?> c, Object[] aa, boolean f, int n) {
 		}
@@ -153,9 +145,9 @@ public class DiFactory {
 //	public static void main(String[] args) {
 //		var z = new Foo("a");
 //		var f = new DiFactory(List.of(Foo.C.class), () -> z);
-//		var x1 = f.create(Foo.I.class, Map.of("s2", "b"));
+//		var x1 = f.create(f.actualType(Foo.I.class), Map.of("s2", "b"));
 //		IO.println("x1=" + x1);
-//		var x2 = f.create(Foo.I.class, Map.of("s2", "c"));
+//		var x2 = f.create(f.actualType(Foo.I.class), Map.of("s2", "c"));
 //		IO.println("x2=" + x2);
 //	}
 //

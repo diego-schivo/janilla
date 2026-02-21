@@ -57,6 +57,8 @@ import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.Document;
+import com.janilla.cms.Version;
 import com.janilla.java.Reflection;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -74,6 +76,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 
 	@Override
 	public Iterator<JsonToken<?>> newValueIterator(Object object) {
+//		IO.println("CmsReflectionJsonIterator.newValueIterator, object=" + object);
 		var o = stack().peek();
 		if (o instanceof Map.Entry<?, ?> kv
 				&& stack().stream().filter(x -> x instanceof Document).distinct().count() < 4) {

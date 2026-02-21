@@ -24,6 +24,8 @@
  */
 package com.janilla.backend.persistence;
 
+import com.janilla.persistence.Entity;
+
 public interface IdHelper<ID extends Comparable<ID>> {
 
 	ID random(Entity<ID> entity);

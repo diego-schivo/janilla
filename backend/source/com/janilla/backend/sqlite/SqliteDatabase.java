@@ -105,7 +105,7 @@ public class SqliteDatabase {
 						StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE),
 				FileChannel.open(Path.of("ex1b.transaction"), StandardOpenOption.CREATE, StandardOpenOption.READ,
 						StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE))) {
-			var d = new SqliteDatabase(ch, 512, 12);
+			var d = new SqliteDatabase(ch, 512, 12, 100);
 			for (var x : ss) {
 				IO.println(x);
 				var i = Integer.parseInt(x.substring(1));
@@ -203,16 +203,19 @@ public class SqliteDatabase {
 
 	protected final int reservedBytes;
 
+	protected final Cache<Long, byte[]> pageCache;
+
 	protected final DatabaseHeader header = new DatabaseHeader(ByteBuffer.allocate(100));
 
 	protected final Lock performLock = new ReentrantLock();
 
 	protected final AtomicBoolean performing = new AtomicBoolean();
 
-	public SqliteDatabase(TransactionalByteChannel channel, int pageSize, int reservedBytes) {
+	public SqliteDatabase(TransactionalByteChannel channel, int pageSize, int reservedBytes, int pageCacheCapacity) {
 		this.channel = channel;
 		this.pageSize = pageSize;
 		this.reservedBytes = reservedBytes;
+		pageCache = new Cache<>(pageCacheCapacity);
 
 		try {
 			if (channel.size() == 0)
@@ -281,6 +284,7 @@ public class SqliteDatabase {
 	}
 
 	public void readHeader() {
+//		IO.println("SqliteDatabase.readHeader");
 		try {
 			header.buffer().clear();
 			channel.position(0);
@@ -292,6 +296,7 @@ public class SqliteDatabase {
 	}
 
 	public void writeHeader() {
+//		IO.println("SqliteDatabase.writeHeader");
 		try {
 			header.buffer().clear();
 			channel.position(0);
@@ -303,28 +308,40 @@ public class SqliteDatabase {
 	}
 
 	public void readPageBuffer(long number, ByteBuffer buffer) {
+//		IO.println("SqliteDatabase.readPageBuffer, number=" + number);
+//		var t1 = System.nanoTime();
 		buffer.clear();
-		try {
+		var bb = pageCache.get(number);
+		if (bb != null)
+			buffer.put(bb);
+		else {
 			var s = header.getPageSize();
-			channel.position((number - 1) * s);
-			if (channel.read(buffer) != s)
-				throw new IOException();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
+			try {
+				channel.position((number - 1) * s);
+				if (channel.read(buffer) != s)
+					throw new IOException();
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+			pageCache.put(number, Arrays.copyOf(buffer.array(), s));
 		}
 		buffer.position(number == 1 ? 100 : 0);
+//		var t2 = System.nanoTime();
+//		IO.println("SqliteDatabase.readPageBuffer, " + (bb != null) + ", " + (t2 - t1));
 	}
 
 	public void writePageBuffer(long number, ByteBuffer buffer) {
+//		IO.println("SqliteDatabase.writePageBuffer, number=" + number);
 		buffer.clear();
+		var s = header.getPageSize();
 		try {
-			var s = header.getPageSize();
 			channel.position((number - 1) * s);
 			if (channel.write(buffer) != s)
 				throw new IOException();
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+		pageCache.put(number, Arrays.copyOf(buffer.array(), s));
 		buffer.position(number == 1 ? 100 : 0);
 
 		if (number > header.getSize()) {

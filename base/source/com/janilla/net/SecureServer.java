@@ -42,6 +42,8 @@ import javax.net.ssl.SSLHandshakeException;
 
 public abstract class SecureServer {
 
+	public static final ScopedValue<SocketChannel> SOCKET_CHANNEL = ScopedValue.newInstance();
+
 	protected static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
 
 	protected final SSLContext sslContext;
@@ -64,7 +66,8 @@ public abstract class SecureServer {
 			for (;;) {
 				var ch = s.accept();
 //				IO.println("SecureServer.serve, ch=" + ch);
-				var th = Thread.startVirtualThread(() -> handleConnection(ch));
+				var th = Thread.startVirtualThread(
+						() -> ScopedValue.where(SOCKET_CHANNEL, ch).run(() -> handleConnection(ch)));
 				lastUsed.put(ch, new ThreadAndInstant(th, Instant.now()));
 			}
 		} catch (Exception e) {

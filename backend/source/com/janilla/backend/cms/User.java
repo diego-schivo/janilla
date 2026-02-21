@@ -52,6 +52,8 @@ package com.janilla.backend.cms;
 import java.time.Instant;
 import java.util.Set;
 
+import com.janilla.cms.Document;
+
 public interface User<ID extends Comparable<ID>, R extends UserRole> extends Document<ID> {
 
 	String email();

@@ -24,6 +24,8 @@
  */
 package com.janilla.backend.persistence;
 
+import com.janilla.persistence.Entity;
+
 public interface CrudObserver<E extends Entity<?>> {
 
 	default E beforeCreate(E entity) {

@@ -72,6 +72,24 @@ public final class Java {
 		return x;
 	}
 
+	public static void generateKeyPair(Path keyStore, String password) {
+		IO.println("Java.generateKeyPair, keyStore=" + keyStore + ", password=" + password);
+		try {
+//			new ProcessBuilder("keytool",
+			var x = new ProcessBuilder("/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home/bin/keytool",
+					"-genkeypair", "-dname", "cn=*.janilla.local", "-keyalg", "rsa", "-keystore", keyStore.toString(),
+					"-storepass", password, "-ext",
+					"san=dns:janilla.local,ip:127.0.0.1,dns:acmedashboard.janilla.local,dns:addressbook.janilla.local,dns:blanktemplate.janilla.local,dns:conduit.janilla.local,dns:ecommercetemplate.janilla.local,dns:petclinic.janilla.local,dns:todomvc.janilla.local,dns:websitetemplate.janilla.local")
+					.inheritIO().start().waitFor();
+			if (x != 0)
+				throw new RuntimeException(String.valueOf(x));
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
 	public static List<Class<?>> getPackageClasses(String package1, boolean recursive) {
 //		IO.println("Java.getPackageClasses, package1=" + package1 + ", recursive=" + recursive);
 		class A {
@@ -213,6 +231,24 @@ public final class Java {
 		return new AbstractMap.SimpleImmutableEntry<>(k, v);
 	}
 
+	public static SSLContext sslContext(InputStream keyStore, char[] password) {
+		try {
+			var ks = KeyStore.getInstance("PKCS12");
+			ks.load(keyStore, password);
+			var kmf = KeyManagerFactory.getInstance("SunX509");
+			kmf.init(ks, password);
+			var tmf = TrustManagerFactory.getInstance("SunX509");
+			tmf.init(ks);
+			var c = SSLContext.getInstance("TLSv1.3");
+			c.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+			return c;
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
 	public static Class<?> toClass(Type type) {
 //		IO.println("Java.toClass, type=" + type);
 		return switch (type) {
@@ -225,6 +261,7 @@ public final class Java {
 	}
 
 	public static FileSystem zipFileSystem(URI uri) {
+//		IO.println("Java.zipFileSystem, uri=" + uri);
 		class A {
 			private static final Map<String, FileSystem> RESULTS = new ConcurrentHashMap<>();
 		}
@@ -243,36 +280,5 @@ public final class Java {
 				throw new UncheckedIOException(e);
 			}
 		});
-	}
-
-	public static void generateKeyPair(Path keyStore, String password) {
-		try {
-			new ProcessBuilder("keytool",
-//			new ProcessBuilder("/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home/bin/keytool",
-					"-genkeypair", "-dname", "cn=localhost", "-keyalg", "rsa", "-keystore", keyStore.toString(),
-					"-storepass", password, "-ext", "san=dns:localhost,ip:127.0.0.1").start().waitFor();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
-
-	public static SSLContext sslContext(InputStream keyStore, char[] password) {
-		try {
-			var ks = KeyStore.getInstance("PKCS12");
-			ks.load(keyStore, password);
-			var kmf = KeyManagerFactory.getInstance("SunX509");
-			kmf.init(ks, password);
-			var tmf = TrustManagerFactory.getInstance("SunX509");
-			tmf.init(ks);
-			var c = SSLContext.getInstance("TLSv1.3");
-			c.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-			return c;
-		} catch (GeneralSecurityException e) {
-			throw new RuntimeException(e);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
 	}
 }

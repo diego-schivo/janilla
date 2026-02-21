@@ -53,11 +53,13 @@ import java.util.List;
 
 import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.CrudObserver;
-import com.janilla.backend.persistence.Entity;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
+import com.janilla.cms.Document;
+import com.janilla.cms.Version;
 import com.janilla.java.TypeResolver;
+import com.janilla.persistence.Entity;
 
 public class CmsPersistence extends Persistence {
 

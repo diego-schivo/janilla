@@ -54,6 +54,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.janilla.backend.persistence.CrudObserver;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
 import com.janilla.java.Reflection;
 
 public class DocumentObserver<D extends Document<?>> implements CrudObserver<D> {

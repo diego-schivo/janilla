@@ -292,7 +292,7 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 						StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE),
 				FileChannel.open(Path.of("ex1b.transaction"), StandardOpenOption.CREATE, StandardOpenOption.READ,
 						StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE))) {
-			var d = new SqliteDatabase(ch, 512, 12);
+			var d = new SqliteDatabase(ch, 512, 12, 100);
 			d.perform(() -> {
 				d.createTable("t1", new TableColumn[] { new TableColumn("a", "INTEGER", true),
 						new TableColumn("b", "TEXT", false) }, false);

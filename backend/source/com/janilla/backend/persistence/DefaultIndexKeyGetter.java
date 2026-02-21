@@ -20,15 +20,18 @@ public class DefaultIndexKeyGetter implements IndexKeyGetter {
 
 	@Override
 	public Set<List<Object>> keys(Object object) {
+//		IO.println("DefaultIndexKeyGetter.keys, object=" + object);
 		var l = Arrays.stream(properties).map(p -> {
+//			IO.println("DefaultIndexKeyGetter.keys, p=" + p);
 			var o = p.get(object);
-			return o instanceof Collection c ? List.of(c.toArray()) : List.of(o);
+//			IO.println("DefaultIndexKeyGetter.keys, o=" + o);
+			return o instanceof Collection c ? c.toArray() : new Object[] { o };
 		}).toList();
-		var ss = l.stream().mapToInt(List::size).toArray();
+		var ss = l.stream().mapToInt(x -> x.length).toArray();
 		var s = Arrays.stream(ss).reduce((x, y) -> x * y).getAsInt();
 		var ii = new int[ss.length];
 		return IntStream.range(0, s).mapToObj(_ -> {
-			var k = IntStream.range(0, ii.length).mapToObj(i -> l.get(i).get(ii[i])).toList();
+			var k = IntStream.range(0, ii.length).mapToObj(i -> l.get(i)[ii[i]]).toList();
 			for (var i = ii.length - 1; i >= 0; i--) {
 				if (++ii[i] != ss[i])
 					break;

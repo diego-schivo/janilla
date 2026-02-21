@@ -49,5 +49,7 @@
  */
 package com.janilla.backend.cms;
 
+import com.janilla.cms.Document;
+
 public record DocumentReference<ID extends Comparable<ID>, T extends Document<ID>>(Class<T> type, ID id) {
 }

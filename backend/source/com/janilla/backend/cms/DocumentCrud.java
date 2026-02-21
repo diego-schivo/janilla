@@ -58,6 +58,10 @@ import java.util.Set;
 import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.IdHelper;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
+import com.janilla.cms.Version;
+import com.janilla.java.Property;
 import com.janilla.java.Reflection;
 
 public class DocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> extends Crud<ID, D> {
@@ -310,5 +314,10 @@ public class DocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> ext
 				a.d2 = v.document();
 			}
 		updateIndexes(a.d1, a.d2, x -> persistence.database().index(type.getSimpleName() + "." + x + "Draft", "table"));
+	}
+
+	@Override
+	protected boolean foo(Property property, CustomReflectionValueIterator valueIterator) {
+		return super.foo(property, valueIterator) || valueIterator.context().stack().peekLast() instanceof Version;
 	}
 }

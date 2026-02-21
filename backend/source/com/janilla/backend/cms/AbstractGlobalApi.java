@@ -49,7 +49,84 @@
  */
 package com.janilla.backend.cms;
 
-public enum DocumentStatus {
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 
-	DRAFT, PUBLISHED
+import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
+import com.janilla.cms.GlobalApi;
+import com.janilla.cms.Version;
+import com.janilla.http.HttpExchange;
+import com.janilla.java.DollarTypeResolver;
+import com.janilla.java.Reflection;
+import com.janilla.web.Bind;
+import com.janilla.web.Handle;
+
+public abstract class AbstractGlobalApi<ID extends Comparable<ID>, D extends Document<ID>> implements GlobalApi<ID, D> {
+
+	protected final Class<D> type;
+
+	protected final Predicate<HttpExchange> drafts;
+
+	protected final Persistence persistence;
+
+	protected AbstractGlobalApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence) {
+		this.type = type;
+		this.drafts = drafts;
+		this.persistence = persistence;
+	}
+
+	@Override
+	@Handle(method = "POST")
+	public D create(@Bind(resolver = DollarTypeResolver.class) D document) {
+		return crud().create(document);
+	}
+
+	@Override
+	@Handle(method = "GET")
+	public D read(HttpExchange exchange) {
+		return crud().read(id(), drafts.test(exchange));
+	}
+
+	@Override
+	@Handle(method = "PUT")
+	public D update(@Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
+		var s = Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
+		if (s != document.documentStatus())
+			document = Reflection.copy(Map.of("documentStatus", s), document);
+		return crud().update(id(), document, null, !Boolean.TRUE.equals(autosave));
+	}
+
+	@Override
+	@Handle(method = "DELETE")
+	public D delete() {
+		return crud().delete(id());
+	}
+
+	@Override
+	@Handle(method = "GET", path = "versions")
+	public List<Version<ID, D>> readVersions() {
+		return crud().readVersions(id());
+	}
+
+	@Override
+	@Handle(method = "GET", path = "versions/(\\d+)")
+	public Version<ID, D> readVersion(ID versionId) {
+		return crud().readVersion(versionId);
+	}
+
+	@Override
+	@Handle(method = "POST", path = "versions/(\\d+)")
+	public D restoreVersion(ID versionId, Boolean draft) {
+		return crud().restoreVersion(versionId,
+				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
+	}
+
+	protected DocumentCrud<ID, D> crud() {
+		return (DocumentCrud<ID, D>) persistence.crud(type);
+	}
+
+	protected abstract ID id();
 }

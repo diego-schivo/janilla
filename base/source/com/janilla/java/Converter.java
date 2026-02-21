@@ -201,7 +201,7 @@ public class Converter {
 	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
 //		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
 //		IO.println(Json.format(map));
-		var c = Java.toClass(target);
+		var c = target != null ? Java.toClass(target) : null;
 		var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
 //		IO.println("td=" + td);
 		if (td != null) {

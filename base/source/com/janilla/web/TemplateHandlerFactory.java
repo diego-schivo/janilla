@@ -35,12 +35,6 @@ import com.janilla.http.HttpHandlerFactory;
 
 public class TemplateHandlerFactory implements HttpHandlerFactory {
 
-//	protected final Object application;
-//
-//	public TemplateHandlerFactory(Object application) {
-//		this.application = application;
-//	}
-
 	@Override
 	public HttpHandler createHandler(Object object) {
 		return object instanceof Renderable r && r.renderer() != null && r.renderer().annotation != null ? x -> {
@@ -49,7 +43,8 @@ public class TemplateHandlerFactory implements HttpHandlerFactory {
 		} : null;
 	}
 
-	protected void render(Renderable<?> input, HttpExchange exchange) {
+	protected void render(Renderable<?> renderable, HttpExchange exchange) {
+//		IO.println("TemplateHandlerFactory.render, renderable=" + renderable);
 		var rs = exchange.response();
 		if (rs.getStatus() == 0)
 			rs.setStatus(200);
@@ -57,7 +52,7 @@ public class TemplateHandlerFactory implements HttpHandlerFactory {
 			rs.setHeaderValue("cache-control", "no-cache");
 		if (rs.getHeader("content-type") == null)
 			rs.setHeaderValue("content-type", "text/html");
-		var s = input.get();
+		var s = renderable.get();
 		if (s != null) {
 			var bb = s.getBytes();
 			rs.setHeaderValue("content-length", String.valueOf(bb.length));

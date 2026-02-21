@@ -24,6 +24,8 @@
  */
 module com.janilla.base {
 
+	exports com.janilla.cms;
+	exports com.janilla.persistence;
 	exports com.janilla.http;
 	exports com.janilla.ioc;
 	exports com.janilla.java;

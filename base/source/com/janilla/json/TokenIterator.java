@@ -37,6 +37,10 @@ public abstract class TokenIterator implements Iterator<JsonToken<?>> {
 		this.context = context;
 	}
 
+	public TokenIterationContext context() {
+		return context;
+	}
+
 	@Override
 	public final boolean hasNext() {
 		if (hasNext == null)
