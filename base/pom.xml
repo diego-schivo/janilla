@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.janilla</groupId>
 		<artifactId>janilla</artifactId>
-		<version>10.0.0-SNAPSHOT</version>
+		<version>10.0.0</version>
 	</parent>
 	<name>janilla-base</name>
 	<description>Janilla Base</description>
