@@ -63,10 +63,6 @@ export default class AdminArray extends WebComponent {
         return ["data-array-key", "data-path", "data-updated-at"];
     }
 
-    constructor() {
-        super();
-    }
-
     connectedCallback() {
         super.connectedCallback();
         this.addEventListener("change", this.handleChange);

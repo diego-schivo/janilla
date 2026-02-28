@@ -63,10 +63,6 @@ export default class AdminFields extends WebComponent {
         return ["data-array-key", "data-path", "data-updated-at"];
     }
 
-    constructor() {
-        super();
-    }
-
     async updateDisplay() {
         const a = this.closest("admin-element");
         const p = this.dataset.path;

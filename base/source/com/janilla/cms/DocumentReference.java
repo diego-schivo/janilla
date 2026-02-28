@@ -47,29 +47,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "base/web-component";
-
-export default class AdminHidden extends WebComponent {
-
-    static get moduleUrl() {
-        return import.meta.url;
-    }
-
-    static get templateNames() {
-        return ["admin-hidden"];
-    }
-
-    static get observedAttributes() {
-        return ["data-array-key", "data-path", "data-updated-at"];
-    }
-
-    async updateDisplay() {
-        const p = this.dataset.path;
-        const f = this.closest("admin-edit").field(p);
-        this.appendChild(this.interpolateDom({
-            $template: "",
-            path: p,
-            data: f.data
-        }));
-    }
-}
+//package com.janilla.cms;
+//
+//public record DocumentReference<ID extends Comparable<ID>, T extends Document<ID>>(Class<T> type, ID id) {
+//}

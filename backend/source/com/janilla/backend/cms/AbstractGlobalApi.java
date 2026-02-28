@@ -72,10 +72,13 @@ public abstract class AbstractGlobalApi<ID extends Comparable<ID>, D extends Doc
 
 	protected final Persistence persistence;
 
-	protected AbstractGlobalApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence) {
+	protected final ID id;
+
+	protected AbstractGlobalApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence, ID id) {
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;
+		this.id = id;
 	}
 
 	@Override
@@ -86,8 +89,8 @@ public abstract class AbstractGlobalApi<ID extends Comparable<ID>, D extends Doc
 
 	@Override
 	@Handle(method = "GET")
-	public D read(HttpExchange exchange) {
-		return crud().read(id(), drafts.test(exchange));
+	public D read(Integer depth, HttpExchange exchange) {
+		return crud().read(id, drafts.test(exchange), depth != null ? depth : 0);
 	}
 
 	@Override
@@ -96,19 +99,19 @@ public abstract class AbstractGlobalApi<ID extends Comparable<ID>, D extends Doc
 		var s = Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != document.documentStatus())
 			document = Reflection.copy(Map.of("documentStatus", s), document);
-		return crud().update(id(), document, null, !Boolean.TRUE.equals(autosave));
+		return crud().update(id, document, null, !Boolean.TRUE.equals(autosave));
 	}
 
 	@Override
 	@Handle(method = "DELETE")
 	public D delete() {
-		return crud().delete(id());
+		return crud().delete(id);
 	}
 
 	@Override
 	@Handle(method = "GET", path = "versions")
 	public List<Version<ID, D>> readVersions() {
-		return crud().readVersions(id());
+		return crud().readVersions(id);
 	}
 
 	@Override
@@ -124,9 +127,7 @@ public abstract class AbstractGlobalApi<ID extends Comparable<ID>, D extends Doc
 				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 	}
 
-	protected DocumentCrud<ID, D> crud() {
-		return (DocumentCrud<ID, D>) persistence.crud(type);
+	protected DefaultDocumentCrud<ID, D> crud() {
+		return (DefaultDocumentCrud<ID, D>) persistence.crud(type);
 	}
-
-	protected abstract ID id();
 }

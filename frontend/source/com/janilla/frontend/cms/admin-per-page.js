@@ -49,89 +49,48 @@
  */
 import WebComponent from "base/web-component";
 
-export default class AdminJoin extends WebComponent {
+export default class AdminPerPage extends WebComponent {
 
     static get moduleUrl() {
         return import.meta.url;
     }
 
     static get templateNames() {
-        return ["admin-join"];
+        return ["admin-per-page"];
     }
 
     static get observedAttributes() {
-        return ["data-array-key", "data-path", "data-updated-at"];
+        return ["data-limit"];
     }
 
     connectedCallback() {
         super.connectedCallback();
-        this.addEventListener("open-drawer", this.handleOpenDrawer);
-        this.addEventListener("drawerclosed", this.handleDrawerClosed);
+        this.addEventListener("change", this.handleChange);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        this.removeEventListener("open-drawer", this.handleOpenDrawer);
-        this.removeEventListener("drawerclosed", this.handleDrawerClosed);
+        this.removeEventListener("change", this.handleChange);
     }
 
     async updateDisplay() {
-        const p = this.dataset.path;
-        const s = this.customState;
-        s.field = this.closest("admin-edit").field(p);
-        const a = this.closest("admin-element");
-
-        s.slug = Object.entries(a.customState.schema["Collections"])
-            .find(([_, v]) => v.elementTypes[0] === s.field.referenceType)[0]
-            .split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-");
-        const hh = a.headers(s.slug);
-
+		const l = parseInt(this.dataset.limit);
         this.appendChild(this.interpolateDom({
             $template: "",
-            table: {
-                $template: "table",
-                headRow: {
-                    $template: "table-row",
-                    cells: hh.map(x => ({
-                        $template: "table-header-cell",
-                        content: x
-                    }))
-                },
-                bodyRows: s.field.data?.map(x => ({
-                    $template: "table-row",
-                    cells: hh.map(y => a.cell(x, y)).map(y => ({
-                        $template: "table-data-cell",
-                        content: typeof y === "object" ? {
-                            path: p,
-                            ...y
-                        } : y
-                    }))
-                }))
-            },
-            hiddens: s.field.data?.map(x => ({
-                $template: "hidden",
-                name: p,
-                value: x.id
-            })),
-            drawer: this.customState.drawer ? {
-                $template: "drawer",
-                ...this.customState.drawer
-            } : null
+			options: [5, 10, 25, 50, 100].map(x => ({
+				$template: "option",
+				value: x,
+				selected: x === l
+			}))
         }));
     }
 
-    handleOpenDrawer = event => {
-        const s = this.customState;
-        s.drawer = {
-            slug: s.slug,
-            id: event.detail.id
-        };
-        this.requestDisplay();
-    }
-
-    handleDrawerClosed = async () => {
-        await this.closest("admin-edit").reloadFieldData(this.dataset.path);
-        delete this.customState.drawer;
-        this.requestDisplay();
+    handleChange = event => {
+        const el = event.target.closest("select");
+        if (el)
+            this.dispatchEvent(new CustomEvent("limitselected", {
+                bubbles: true,
+                detail: parseInt(el.value)
+            }));
     }
 }

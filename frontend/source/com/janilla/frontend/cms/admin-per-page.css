@@ -47,29 +47,48 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "base/web-component";
+.admin :where(admin-per-page) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
 
-export default class AdminHidden extends WebComponent {
+  select {
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 0;
 
-    static get moduleUrl() {
-        return import.meta.url;
+    &::picker-icon {
+      display: none;
+    }
+  }
+
+  button {
+    font-weight: 700;
+  }
+
+  selectedcontent {
+    lucide-icon {
+      display: none;
+    }
+  }
+
+  option {
+    &:checked {
+      background: light-dark(rgb(241, 245, 249), rgb(30, 41, 59));
+      
+      lucide-icon {
+        visibility: visible;
+      }
     }
 
-    static get templateNames() {
-        return ["admin-hidden"];
+    &::checkmark {
+      content: none;
     }
 
-    static get observedAttributes() {
-        return ["data-array-key", "data-path", "data-updated-at"];
+    lucide-icon {
+      visibility: hidden;
     }
-
-    async updateDisplay() {
-        const p = this.dataset.path;
-        const f = this.closest("admin-edit").field(p);
-        this.appendChild(this.interpolateDom({
-            $template: "",
-            path: p,
-            data: f.data
-        }));
-    }
+  }
 }

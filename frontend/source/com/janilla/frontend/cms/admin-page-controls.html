@@ -1,0 +1,15 @@
+<!--${pagination}-->
+<!--${info}-->
+<!--${perPage}-->
+
+<template id="pagination">
+  <admin-pagination data-page="${page}" data-total-pages="${totalPages}"></admin-pagination>
+</template>
+
+<template id="info">
+  <div class="info">${docStart}-${docEnd} of ${totalDocs}</div>
+</template>
+
+<template id="per-page">
+  <admin-per-page data-limit="${limit}"></admin-per-page>
+</template>

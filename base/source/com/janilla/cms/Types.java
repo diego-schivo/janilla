@@ -47,29 +47,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "base/web-component";
+package com.janilla.cms;
 
-export default class AdminHidden extends WebComponent {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    static get moduleUrl() {
-        return import.meta.url;
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.TYPE_USE })
+public @interface Types {
 
-    static get templateNames() {
-        return ["admin-hidden"];
-    }
-
-    static get observedAttributes() {
-        return ["data-array-key", "data-path", "data-updated-at"];
-    }
-
-    async updateDisplay() {
-        const p = this.dataset.path;
-        const f = this.closest("admin-edit").field(p);
-        this.appendChild(this.interpolateDom({
-            $template: "",
-            path: p,
-            data: f.data
-        }));
-    }
+	Class<?>[] value();
 }

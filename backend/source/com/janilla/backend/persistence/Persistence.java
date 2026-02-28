@@ -26,8 +26,10 @@ package com.janilla.backend.persistence;
 
 import java.lang.reflect.AnnotatedElement;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,7 +72,17 @@ public class Persistence {
 	@SuppressWarnings("unchecked")
 	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> type) {
 //		IO.println("Persistence.crud, type=" + type);
-		return (Crud<ID, E>) Objects.requireNonNull(configuration.cruds.get(type), "type=" + type);
+//		return (Crud<ID, E>) Objects.requireNonNull(configuration.cruds.get(type), "type=" + type);
+		class A {
+			private static final Map<Class<?>, Crud<?, ?>> RESULTS = new ConcurrentHashMap<>();
+		}
+		return (Crud<ID, E>) A.RESULTS.computeIfAbsent(type, _ -> {
+			var c = configuration.cruds.get(type);
+			if (c == null)
+				c = configuration.cruds.entrySet().stream().filter(x -> type.isAssignableFrom(x.getKey())).findFirst()
+						.map(x -> x.getValue()).get();
+			return c;
+		});
 	}
 
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
@@ -99,13 +111,13 @@ public class Persistence {
 
 			var g = new DefaultIndexKeyGetterFactory().keyGetter(type,
 					i.properties().length != 0 ? i.properties() : new String[] { p.name() });
-			c.indexKeyGetters.put(n, g);
+			((DefaultCrud<?, E>) c).indexKeyGetters.put(n, g);
 		}
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		return new Crud(type, idConverter(type), this);
+		return new DefaultCrud(type, idConverter(type), this);
 	}
 
 	public <ID extends Comparable<ID>> IdHelper<ID> idConverter(Class<?> type) {
@@ -119,7 +131,7 @@ public class Persistence {
 		database.perform(() -> {
 			for (var tc : configuration.cruds.entrySet()) {
 				var t = tc.getKey();
-				var c = tc.getValue();
+				var c = (DefaultCrud<?, ?>) tc.getValue();
 				database.createTable(t.getSimpleName(),
 						Stream.concat(
 								Stream.of(new TableColumn("id",

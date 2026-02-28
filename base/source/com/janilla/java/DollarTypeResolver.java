@@ -34,26 +34,28 @@ public class DollarTypeResolver implements TypeResolver {
 
 	public DollarTypeResolver(List<Class<?>> resolvables) {
 		parseMap = resolvables.stream().collect(Collectors.toMap(this::format, x -> x, (_, x) -> x));
+//		IO.println("DollarTypeResolver, parseMap=" + parseMap);
 	}
 
 	@Override
 	public TypedData apply(TypedData typedData) {
 		var o = typedData.data() instanceof Map<?, ?> x ? x.get("$type") : null;
 		var t = o instanceof String x ? parse(x) : null;
+//		IO.println("o=" + o + ", t=" + t);
 		return t != null ? typedData.withType(t) : null;
 	}
 
 	@Override
 	public Class<?> parse(String string) {
-		var x = parseMap.get(string);
+		var c = parseMap.get(string);
 //		IO.println("DollarTypeResolver.parse, string=" + string + ", c=" + c);
-		return x;
+		return c;
 	}
 
 	@Override
 	public String format(Class<?> type) {
-		var x = type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');
-//		IO.println("DollarTypeResolver.format, class1=" + class1 + ", x=" + x);
-		return x;
+		var s = type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');
+//		IO.println("DollarTypeResolver.format, type=" + type + ", s=" + s);
+		return s;
 	}
 }

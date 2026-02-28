@@ -51,31 +51,31 @@ import WebComponent from "base/web-component";
 
 export default class AdminRadioGroup extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-radio-group"];
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get observedAttributes() {
-		return ["data-array-key", "data-path", "data-updated-at"];
-	}
+    static get templateNames() {
+        return ["admin-radio-group"];
+    }
 
-	constructor() {
-		super();
-	}
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	async updateDisplay() {
-		const a = this.closest("admin-element");
-		const p = this.dataset.path;
-		const f = a.field(p);
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			options: a.options(f).map(x => ({
-				$template: "option",
-				name: p,
-				value: x,
-				checked: x == f.data?.name,
-				text: x
-			}))
-		}));
-	}
+    async updateDisplay() {
+        const a = this.closest("admin-element");
+        const p = this.dataset.path;
+        const f = a.field(p);
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            options: a.options(f).map(x => ({
+                $template: "option",
+                name: p,
+                value: x,
+                checked: x == f.data?.name,
+                text: x
+            }))
+        }));
+    }
 }

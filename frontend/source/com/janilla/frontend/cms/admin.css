@@ -64,6 +64,9 @@
 @import "admin-join.css";
 @import "admin-list.css";
 @import "admin-login.css";
+@import "admin-page-controls.css";
+@import "admin-pagination.css";
+@import "admin-per-page.css";
 @import "admin-radio-group.css";
 @import "admin-relationship.css";
 @import "admin-rich-text.css";

@@ -67,6 +67,8 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
+import com.janilla.cms.Document;
+import com.janilla.cms.Types;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.MultipartFormData;
 import com.janilla.java.Java;
@@ -128,7 +130,8 @@ public class Cms {
 							m3.put("referenceType", n.apply(ta.value()[0]));
 					}
 					cc = List.of();
-				} else if (p.type() == DocumentReference.class) {
+//				} else if (p.type() == DocumentReference.class) {
+				} else if (p.type() == Document.class) {
 					var ta = p.annotatedType().getAnnotation(Types.class);
 					if (ta != null)
 						m3.put("referenceTypes", Arrays.stream(ta.value()).map(n).toList());

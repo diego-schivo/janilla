@@ -47,16 +47,20 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.cms;
+.admin :where(admin-pagination) {
+  display: flex;
+  gap: 0.5rem;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+  .button {
+    align-items: center;
+    display: flex;
+    height: 1.875rem;
+    line-height: 0.9;
+    padding: 0.625rem;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE_USE })
-public @interface Types {
-
-	Class<?>[] value();
+    &:not(.active) {
+      background: transparent;
+      border: none;
+    }
+  }
 }

@@ -80,8 +80,8 @@
   </li>
 </template>
 
-<template id="icon">
-  <lucide-icon data-name="${name}"></lucide-icon>
+<template id="logo">
+  <janilla-logo></janilla-logo>
 </template>
 
 <template id="loading">
@@ -105,7 +105,11 @@
 </template>
 
 <template id="list">
-  <admin-list data-slug="${slug}" data-enable-selection="true"></admin-list>
+  <admin-list data-slug="${slug}" data-enable-selection="true"
+      data-search="${search}"
+      data-page="${page}"
+      data-limit="${limit}">
+  </admin-list>
 </template>
 
 <template id="login">

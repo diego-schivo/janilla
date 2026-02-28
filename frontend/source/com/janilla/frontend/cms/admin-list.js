@@ -60,19 +60,25 @@ export default class AdminList extends WebComponent {
     }
 
     static get observedAttributes() {
-        return ["data-slug", "data-enable-selection"];
+        return ["data-slug", "data-enable-selection", "data-search", "data-page", "data-limit"];
     }
 
     connectedCallback() {
         super.connectedCallback();
         this.addEventListener("change", this.handleChange);
         this.addEventListener("click", this.handleClick);
+        this.addEventListener("limitselected", this.handleLimitSelected);
+        this.addEventListener("pageselected", this.handlePageSelected);
+        this.addEventListener("searchchanged", this.handleSearchChanged);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener("change", this.handleChange);
         this.removeEventListener("click", this.handleClick);
+        this.removeEventListener("limitselected", this.handleLimitSelected);
+        this.removeEventListener("pageselected", this.handlePageSelected);
+        this.removeEventListener("searchchanged", this.handleSearchChanged);
     }
 
     async updateDisplay() {
@@ -80,7 +86,21 @@ export default class AdminList extends WebComponent {
         document.title = `${t} - Janilla`;
         const s = this.customState;
         const a = this.closest("app-element");
-        s.data ??= await (await fetch(`${a.dataset.apiUrl}/${this.dataset.slug}`)).json();
+        const u = new URL(`${a.dataset.apiUrl}/${this.dataset.slug}`, location.href);
+
+        const l = parseInt(this.dataset.limit);
+        {
+            const s1 = this.dataset.search;
+            if (s1?.length)
+                u.searchParams.append("search", s1);
+            u.searchParams.append("reverse", true);
+            const s2 = (parseInt(this.dataset.page) - 1) * l;
+            if (s2)
+                u.searchParams.append("skip", s2);
+            u.searchParams.append("limit", l);
+        }
+
+        s.data ??= (await (await fetch(u)).json());
         s.selectionIds ??= [];
         const a2 = this.closest("admin-element");
         const hh = a2.headers(this.dataset.slug);
@@ -94,25 +114,26 @@ export default class AdminList extends WebComponent {
                     count: s.selectionIds.length
                 } : null
             },
-            noResults: !s.data?.length ? {
+            searchBar: { $template: "search-bar" },
+            noResults: !s.data?.totalSize ? {
                 $template: "no-results",
                 name: this.dataset.slug
             } : null,
-            table: s.data?.length ? {
+            table: s.data?.totalSize ? {
                 $template: "table",
                 heads: (() => {
                     const cc = hh.map(x => x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" "));
                     if (this.dataset.enableSelection === "true")
                         cc.unshift({
                             $template: "checkbox",
-                            checked: s.selectionIds.length === s.data.length
+                            checked: s.selectionIds.length === s.data.elements.length
                         });
                     return cc;
                 })().map(x => ({
                     $template: "head",
                     content: x
                 })),
-                rows: s.data.map(x => ({
+                rows: s.data.elements.map(x => ({
                     $template: "row",
                     cells: (() => {
                         const cc = hh.map(y => a2.cell(x, y));
@@ -143,6 +164,13 @@ export default class AdminList extends WebComponent {
                     }))
                 }))
             } : null,
+            pageControls: s.data.totalSize ? {
+                $template: "page-controls",
+                page: this.dataset.page,
+                totalPages: Math.ceil(s.data.totalSize / l),
+                limit: l,
+                totalDocs: s.data.totalSize
+            } : null,
             publishDialog: s.publishDialog ? {
                 $template: "publish-dialog",
                 count: s.selectionIds.length,
@@ -159,6 +187,7 @@ export default class AdminList extends WebComponent {
                 name: this.dataset.slug.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
             } : null
         }));
+		this.querySelector("admin-search-filter").setAttribute("data-search", this.dataset.search);
     }
 
     handleChange = event => {
@@ -284,5 +313,28 @@ export default class AdminList extends WebComponent {
                 this.requestDisplay();
                 break;
         }
+    }
+
+    handleLimitSelected = event => {
+        this.navigate(this.dataset.search, 1, event.detail);
+    }
+
+    handlePageSelected = event => {
+        this.navigate(this.dataset.search, event.detail, parseInt(this.dataset.limit));
+    }
+
+    handleSearchChanged = event => {
+        this.navigate(event.detail, 1, parseInt(this.dataset.limit));
+    }
+
+    navigate(search, page, limit) {
+        const u = new URL(`/admin/collections/${this.dataset.slug}`, location.href);
+        if (typeof search === "string" && search.length)
+            u.searchParams.append("search", search);
+        if (typeof page === "number" && page > 1)
+            u.searchParams.append("page", page);
+        if (typeof limit === "number" && limit >= 0)
+            u.searchParams.append("limit", limit);
+        this.closest("app-element").navigate(u);
     }
 }

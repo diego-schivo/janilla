@@ -62,6 +62,7 @@ import com.janilla.cms.Version;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.Reflection;
+import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationHandlerFactory;
@@ -75,10 +76,14 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 
 	protected final Persistence persistence;
 
-	protected AbstractCollectionApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence) {
+	protected final String searchIndex;
+
+	protected AbstractCollectionApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence,
+			String searchIndex) {
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;
+		this.searchIndex = searchIndex;
 	}
 
 	@Override
@@ -88,17 +93,20 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	}
 
 	@Override
-	@Handle(method = "GET")
-	public List<D> read(Long skip, Long limit) {
-		var s = skip != null ? skip.longValue() : 0;
-		var l = limit != null ? limit.longValue() : -1;
-		return crud().read(s != 0 || l != -1 ? crud().list(s, l).elements() : crud().list());
+	@Handle(method = "GET", path = "(\\d+)")
+	public D read(ID id, Integer depth, HttpExchange exchange) {
+		return crud().read(id, drafts.test(exchange), depth != null ? depth : 0);
 	}
 
 	@Override
-	@Handle(method = "GET", path = "(\\d+)")
-	public D read(ID id, HttpExchange exchange) {
-		return crud().read(id, drafts.test(exchange));
+	@Handle(method = "GET")
+	public ListPortion<D> read(String search, Boolean reverse, Long skip, Long limit, Integer depth) {
+		var s1 = search != null && !search.isBlank() ? search.strip().toLowerCase() : null;
+		var r = reverse != null && reverse.booleanValue();
+		var s2 = skip != null ? skip.longValue() : 0;
+		var l = limit != null ? limit.longValue() : -1;
+		return (s1 != null ? crud().filterAndCount(searchIndex, x -> ((String) x).toLowerCase().contains(s1), r, s2, l)
+				: crud().listAndCount(r, s2, l)).map(x -> crud().read(x, depth != null ? depth : 0));
 	}
 
 	@Override
@@ -156,8 +164,8 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 	}
 
-	protected DocumentCrud<ID, D> crud() {
-		return (DocumentCrud<ID, D>) persistence.crud(type);
+	protected DefaultDocumentCrud<ID, D> crud() {
+		return (DefaultDocumentCrud<ID, D>) persistence.crud(type);
 	}
 
 	protected Set<String> updateInclude(D document) {

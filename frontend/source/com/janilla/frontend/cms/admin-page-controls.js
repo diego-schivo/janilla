@@ -49,89 +49,42 @@
  */
 import WebComponent from "base/web-component";
 
-export default class AdminJoin extends WebComponent {
+export default class AdminPageControls extends WebComponent {
 
     static get moduleUrl() {
         return import.meta.url;
     }
 
     static get templateNames() {
-        return ["admin-join"];
+        return ["admin-page-controls"];
     }
 
     static get observedAttributes() {
-        return ["data-array-key", "data-path", "data-updated-at"];
-    }
-
-    connectedCallback() {
-        super.connectedCallback();
-        this.addEventListener("open-drawer", this.handleOpenDrawer);
-        this.addEventListener("drawerclosed", this.handleDrawerClosed);
-    }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this.removeEventListener("open-drawer", this.handleOpenDrawer);
-        this.removeEventListener("drawerclosed", this.handleDrawerClosed);
+        return ["data-page", "data-total-pages", "data-limit", "data-total-docs"];
     }
 
     async updateDisplay() {
-        const p = this.dataset.path;
-        const s = this.customState;
-        s.field = this.closest("admin-edit").field(p);
-        const a = this.closest("admin-element");
-
-        s.slug = Object.entries(a.customState.schema["Collections"])
-            .find(([_, v]) => v.elementTypes[0] === s.field.referenceType)[0]
-            .split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-");
-        const hh = a.headers(s.slug);
-
+        const p = parseInt(this.dataset.page);
+        const tp = parseInt(this.dataset.totalPages);
+        const l = parseInt(this.dataset.limit);
+        const td = parseInt(this.dataset.totalDocs);
         this.appendChild(this.interpolateDom({
             $template: "",
-            table: {
-                $template: "table",
-                headRow: {
-                    $template: "table-row",
-                    cells: hh.map(x => ({
-                        $template: "table-header-cell",
-                        content: x
-                    }))
-                },
-                bodyRows: s.field.data?.map(x => ({
-                    $template: "table-row",
-                    cells: hh.map(y => a.cell(x, y)).map(y => ({
-                        $template: "table-data-cell",
-                        content: typeof y === "object" ? {
-                            path: p,
-                            ...y
-                        } : y
-                    }))
-                }))
+            pagination: tp !== 1 ? {
+                $template: "pagination",
+                page: p,
+                totalPages: this.dataset.totalPages
+            } : null,
+            info: {
+                $template: "info",
+                docStart: (p - 1) * l + 1,
+                docEnd: Math.min(p * l, td),
+                totalDocs: td
             },
-            hiddens: s.field.data?.map(x => ({
-                $template: "hidden",
-                name: p,
-                value: x.id
-            })),
-            drawer: this.customState.drawer ? {
-                $template: "drawer",
-                ...this.customState.drawer
-            } : null
+            perPage: {
+                $template: "per-page",
+				limit: l
+            }
         }));
-    }
-
-    handleOpenDrawer = event => {
-        const s = this.customState;
-        s.drawer = {
-            slug: s.slug,
-            id: event.detail.id
-        };
-        this.requestDisplay();
-    }
-
-    handleDrawerClosed = async () => {
-        await this.closest("admin-edit").reloadFieldData(this.dataset.path);
-        delete this.customState.drawer;
-        this.requestDisplay();
     }
 }

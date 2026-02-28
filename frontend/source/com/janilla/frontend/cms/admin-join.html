@@ -35,6 +35,10 @@
   <input type="hidden" name="${name}" value="${value}" />
 </template>
 
+<template id="id">
+  <admin-drawer-link data-id="${id}"></admin-drawer-link>
+</template>
+
 <template id="drawer">
   <admin-drawer>
     <admin-edit slot="content" data-slug="${slug}" data-id="${id}"></admin-edit>

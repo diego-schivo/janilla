@@ -58,6 +58,7 @@ import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.cms.Document;
 import com.janilla.cms.Version;
+import com.janilla.cms.Versions;
 import com.janilla.java.TypeResolver;
 import com.janilla.persistence.Entity;
 
@@ -77,7 +78,7 @@ public class CmsPersistence extends Persistence {
 		@SuppressWarnings("unchecked")
 		var t = (Class<? extends Document<?>>) type;
 		@SuppressWarnings({ "rawtypes", "unchecked" })
-		var c = (Crud<?, E>) new DocumentCrud(t, idConverter(t), this);
+		var c = (Crud<?, E>) new DefaultDocumentCrud(t, idConverter(t), this);
 		@SuppressWarnings("unchecked")
 		var o = (CrudObserver<E>) DOCUMENT_OBSERVER;
 		c.observers().add(o);

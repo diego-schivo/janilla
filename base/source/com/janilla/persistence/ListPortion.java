@@ -25,6 +25,7 @@
 package com.janilla.persistence;
 
 import java.util.List;
+import java.util.function.Function;
 
 public record ListPortion<E>(List<E> elements, long totalSize) {
 
@@ -33,5 +34,22 @@ public record ListPortion<E>(List<E> elements, long totalSize) {
 	@SuppressWarnings("unchecked")
 	public static <E> ListPortion<E> empty() {
 		return (ListPortion<E>) EMPTY;
+	}
+
+	public static <E> ListPortion<E> of(List<E> list) {
+		return of(list, 0, -1);
+	}
+
+	public static <E> ListPortion<E> of(List<E> list, long skip, long limit) {
+		var s = list.stream();
+		if (skip > 0)
+			s = s.skip(skip);
+		if (limit >= 0)
+			s = s.limit(limit);
+		return new ListPortion<>(s.toList(), list.size());
+	}
+
+	public <F> ListPortion<F> map(Function<E, F> mapper) {
+		return new ListPortion<>(elements.stream().map(mapper).toList(), totalSize);
 	}
 }

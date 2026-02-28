@@ -47,16 +47,57 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.cms;
+import WebComponent from "base/web-component";
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+export default class AdminPagination extends WebComponent {
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE })
-public @interface Versions {
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	boolean drafts() default false;
+    static get templateNames() {
+        return ["admin-pagination"];
+    }
+
+    static get observedAttributes() {
+        return ["data-page", "data-total-pages"];
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("click", this.handleClick);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("click", this.handleClick);
+    }
+
+    async updateDisplay() {
+        const p = parseInt(this.dataset.page);
+        const tp = parseInt(this.dataset.totalPages);
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            arrows: [-1, 1].map(x => ({
+                $template: "arrow",
+                page: p + x,
+                disabled: x === -1 ? p === 1 : p === tp,
+                icon: x === -1 ? "chevron-left" : "chevron-right"
+            })),
+            pages: Array.from({ length: tp }).map((_, x) => ({
+                $template: "page",
+                active: (x + 1) === p ? "active" : null,
+                page: x + 1
+            }))
+        }));
+    }
+
+    handleClick = event => {
+        const el = event.target.closest("button");
+        if (el)
+            this.dispatchEvent(new CustomEvent("pageselected", {
+                bubbles: true,
+                detail: parseInt(el.dataset.page)
+            }));
+    }
 }

@@ -47,9 +47,56 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.cms;
+import WebComponent from "base/web-component";
 
-import com.janilla.cms.Document;
+export default class AdminSearchFilter extends WebComponent {
 
-public record DocumentReference<ID extends Comparable<ID>, T extends Document<ID>>(Class<T> type, ID id) {
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
+    static get templateNames() {
+        return ["admin-search-filter"];
+    }
+
+    static get observedAttributes() {
+        return ["data-search"];
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("input", this.handleInput);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("input", this.handleInput);
+    }
+
+    async updateDisplay() {
+        const a2 = this.closest("admin-element");
+        const l = this.closest("admin-list");
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            value: this.dataset.search,
+            placeholder: `Search by ${a2.titleName(a2.documentType(l.dataset.slug))}`
+        }));
+    }
+
+    handleInput = event => {
+        const el = event.target.closest("input");
+        if (el) {
+            const s = this.customState;
+            if (typeof s.inputTimeout !== "undefined")
+                clearTimeout(s.inputTimeout);
+
+            s.inputTimeout = setTimeout(() => {
+                delete s.inputTimeout;
+                this.dispatchEvent(new CustomEvent("searchchanged", {
+                    bubbles: true,
+                    detail: el.value
+                }));
+            }, 300);
+        }
+    }
 }

@@ -56,9 +56,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.janilla.backend.persistence.Crud;
+import com.janilla.cms.User;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.http.HttpServer;
 import com.janilla.http.SimpleHttpExchange;
 import com.janilla.json.Jwt;
 import com.janilla.web.UnauthorizedException;
@@ -102,7 +104,7 @@ public abstract class AbstractUserHttpExchange<U extends User<?, ?>> extends Sim
 		if (!session.containsKey("sessionUser")) {
 			var e = sessionEmail();
 			@SuppressWarnings({ "rawtypes", "unchecked" })
-			var o = e != null ? ((Crud) userCrud).read(userCrud.find("email", e)) : null;
+			var o = e != null ? ((Crud) userCrud).read(userCrud.find("email", new Object[] { e })) : null;
 			session.put("sessionUser", o);
 		}
 		@SuppressWarnings("unchecked")
@@ -121,7 +123,11 @@ public abstract class AbstractUserHttpExchange<U extends User<?, ?>> extends Sim
 
 	@Override
 	public void requireSessionEmail() {
-		if (sessionEmail() == null)
+		if (sessionEmail() == null) {
+			var r = HttpServer.HTTP_EXCHANGE.get().request();
+			IO.println(r.getMethod() + " " + r.getPath());
+
 			throw new UnauthorizedException("Unauthorized, you must be logged in to make this request.");
+		}
 	}
 }

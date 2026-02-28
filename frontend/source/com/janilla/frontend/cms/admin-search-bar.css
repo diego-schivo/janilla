@@ -47,29 +47,20 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-import WebComponent from "base/web-component";
+.admin :where(admin-search-bar) {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
 
-export default class AdminHidden extends WebComponent {
+  lucide-icon {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: center;
+    z-index: 1;
+  }
 
-    static get moduleUrl() {
-        return import.meta.url;
-    }
-
-    static get templateNames() {
-        return ["admin-hidden"];
-    }
-
-    static get observedAttributes() {
-        return ["data-array-key", "data-path", "data-updated-at"];
-    }
-
-    async updateDisplay() {
-        const p = this.dataset.path;
-        const f = this.closest("admin-edit").field(p);
-        this.appendChild(this.interpolateDom({
-            $template: "",
-            path: p,
-            data: f.data
-        }));
-    }
+  admin-search-filter {
+    grid-column: 1 / 3;
+    grid-row: 1;
+  }
 }

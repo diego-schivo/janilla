@@ -121,7 +121,7 @@ public class Converter {
 			case Integer x -> x.longValue();
 			case Long _ -> object;
 			case String x -> Long.parseLong(x);
-			default -> throw new IllegalArgumentException();
+			default -> throw new IllegalArgumentException("object=" + object);
 			};
 
 		if (c == OffsetDateTime.class)
@@ -199,7 +199,7 @@ public class Converter {
 	}
 
 	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
-//		IO.println("Converter.convertMap, map=" + map + ", target=" + target);
+//		IO.println("Converter.convertMap, map=" + map + ", target=" + target + ", typeResolver=" + typeResolver);
 //		IO.println(Json.format(map));
 		var c = target != null ? Java.toClass(target) : null;
 		var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
@@ -248,6 +248,7 @@ public class Converter {
 						}
 						return (f != null && f.isAnnotationPresent(Flat.class)) ? convertMap(m, t2, null) : null;
 					}).toArray();
+//					IO.println("Converter.convertMap, c0=" + c0 + ", oo=" + Arrays.toString(oo));
 					try {
 						o = c0.newInstance(oo);
 					} catch (IllegalAccessException e) {

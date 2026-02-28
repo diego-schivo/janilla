@@ -93,9 +93,9 @@
     
     input,
     .button {
-      border-radius: 3px;
+      border-radius: 0.1875rem;
       box-sizing: border-box;
-      height: 40px;  
+      height: 2.5rem;  
       padding: 0.5rem 1rem;
     }
     

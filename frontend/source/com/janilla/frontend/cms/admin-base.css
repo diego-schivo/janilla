@@ -50,7 +50,7 @@
 :where(:root:has(.admin)) {
   background: var(--background-1);
   color-scheme: light dark;
-  line-height: 20px;
+  line-height: 1.25;
   -webkit-font-smoothing: antialiased;
   --background-1: light-dark(rgba(0, 0, 0, 0), rgb(20, 20, 20));
   --background-2: light-dark(rgb(245, 245, 245), rgb(34, 34, 34));
@@ -368,7 +368,9 @@
         }
       }
 
-      lucide-icon {
+      janilla-logo {
+        aspect-ratio: 1;
+        overflow: hidden;
         width: 1.125rem;
       }
 
@@ -437,10 +439,16 @@
     font-size: 0.75rem;
     font-weight: 400;
     height: auto;
+    line-height: 1.8462;
     padding: 0.25rem;
+    text-decoration: none;
 
     @media (min-width: 1441px) {
       font-size: 0.8125rem;
+    }
+
+    &[disabled] {
+      opacity: 0.5;
     }
 
     &.primary,
@@ -458,10 +466,6 @@
       background: var(--background-5);
       /*color: var(--color-2);*/
       color: var(--color-3);
-
-      &[disabled] {
-        opacity: 0.5;
-      }
 
       &:not([disabled]):hover {
         background: var(--background-6);

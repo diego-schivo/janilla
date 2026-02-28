@@ -58,7 +58,9 @@ import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.Document;
+import com.janilla.cms.Types;
 import com.janilla.cms.Version;
+import com.janilla.cms.Versions;
 import com.janilla.java.Reflection;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -93,10 +95,10 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 					object = o = x;
 				}
 				stack().push(o);
-			} else if (object instanceof DocumentReference<?, ?> r) {
-				@SuppressWarnings({ "rawtypes", "unchecked" })
-				var x = persistence.crud((Class) r.type()).read(r.id());
-				object = x;
+//			} else if (object instanceof DocumentReference<?, ?> r) {
+//				@SuppressWarnings({ "rawtypes", "unchecked" })
+//				var x = persistence.crud((Class) r.type()).read(r.id());
+//				object = x;
 			} else if (object instanceof List<?> oo && !oo.isEmpty() && oo.getFirst() instanceof Long) {
 				o = stack().pop();
 				var p = Reflection.property(stack().peek().getClass(), n);

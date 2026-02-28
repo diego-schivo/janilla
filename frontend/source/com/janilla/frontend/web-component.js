@@ -153,6 +153,7 @@ export default class WebComponent extends HTMLElement {
     interpolateDom(input) {
         // console.log("WebComponent(${this.constructor.name}).interpolateDom");
         const getInterpolate = (template, index) => {
+			// console.log("getInterpolate, template=" + template + ", index=" + index);
             const x = this.#templatingData[template];
             if (!x)
                 throw new Error(`Template "${template}" not found (${this.constructor.name})`);

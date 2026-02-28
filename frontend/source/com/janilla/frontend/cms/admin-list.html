@@ -1,8 +1,10 @@
 <!--${header}-->
+<!--${searchBar}-->
 <div class="results">
   <!--${noResults}-->
   <!--${table}-->
 </div>
+<!--${pageControls}-->
 <!--${publishDialog}-->
 <!--${unpublishDialog}-->
 <!--${deleteDialog}-->
@@ -22,6 +24,10 @@
     <button type="button" name="unpublish" class="button">Unpublish</button>
     <button type="button" name="delete" class="button">Delete</button>
   </p>
+</template>
+
+<template id="search-bar">
+  <admin-search-bar data-search="${search}"></admin-search-bar>
 </template>
 
 <template id="no-results">
@@ -87,6 +93,10 @@
     <img src="${uri}" loading="lazy" />
   </div>
   <p>${file.name}</p>
+</template>
+
+<template id="page-controls">
+  <admin-page-controls data-page="${page}" data-total-pages="${totalPages}" data-limit="${limit}" data-total-docs="${totalDocs}"></admin-page-controls>
 </template>
 
 <template id="publish-dialog">

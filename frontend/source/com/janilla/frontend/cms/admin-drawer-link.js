@@ -51,43 +51,44 @@ import WebComponent from "base/web-component";
 
 export default class AdminDrawerLink extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-drawer-link"];
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get observedAttributes() {
-		return ["data-id"];
-	}
+    static get templateNames() {
+        return ["admin-drawer-link"];
+    }
 
-	constructor() {
-		super();
-	}
+    static get observedAttributes() {
+        return ["data-id"];
+    }
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.addEventListener("click", this.handleClick);
-	}
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("click", this.handleClick);
+    }
 
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		this.removeEventListener("click", this.handleClick);
-	}
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("click", this.handleClick);
+    }
 
-	async updateDisplay() {
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			...this.dataset
-		}));
-	}
+    async updateDisplay() {
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            ...this.dataset
+        }));
+    }
 
-	handleClick = event => {
-		if (event.target.closest("button")) {
-			event.preventDefault();
-			event.stopPropagation();
-			this.dispatchEvent(new CustomEvent("open-drawer", {
-				bubbles: true,
-				detail: { id: this.dataset.id }
-			}));
-		}
-	}
+    handleClick = event => {
+        if (event.target.closest("button")) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            this.dispatchEvent(new CustomEvent("open-drawer", {
+                bubbles: true,
+                detail: { id: this.dataset.id }
+            }));
+        }
+    }
 }

@@ -36,6 +36,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -259,10 +260,22 @@ public class Reflection {
 				break;
 			i++;
 		}
-		var pt = (ParameterizedType) Stream
-				.concat(Stream.of(class1.getGenericSuperclass()), Arrays.stream(class1.getGenericInterfaces()))
-				.filter(x -> x != null && Java.toClass(x) == superclassOrInterface).findFirst().get();
-		return pt.getActualTypeArguments()[i];
+		var d = new ArrayDeque<Class<?>>();
+		d.offer(class1);
+		do {
+			var c = d.poll();
+			var t = c.getGenericSuperclass();
+			var ii = c.getGenericInterfaces();
+			var pt = (ParameterizedType) Stream
+					.concat(t != null ? Stream.of(t) : Stream.<Type>empty(), Arrays.stream(ii)).filter(x -> {
+						var c2 = Java.toClass(x);
+						d.offer(c2);
+						return c2 == superclassOrInterface;
+					}).findFirst().orElse(null);
+			if (pt != null)
+				return pt.getActualTypeArguments()[i];
+		} while (!d.isEmpty());
+		return null;
 	}
 
 	public static Type[] actualParameterTypes(Method method, Class<?> target) {

@@ -47,12 +47,10 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.cms;
+package com.janilla.cms;
 
 import java.time.Instant;
 import java.util.Set;
-
-import com.janilla.cms.Document;
 
 public interface User<ID extends Comparable<ID>, R extends UserRole> extends Document<ID> {
 
@@ -64,6 +62,8 @@ public interface User<ID extends Comparable<ID>, R extends UserRole> extends Doc
 
 	Instant resetPasswordExpiration();
 
+	boolean hasRole(R role);
+
 	boolean passwordEquals(String password);
 
 	User<ID, R> withPassword(String password);
@@ -71,6 +71,4 @@ public interface User<ID extends Comparable<ID>, R extends UserRole> extends Doc
 	User<ID, R> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
 
 	User<ID, R> withRoles(Set<R> roles);
-
-	boolean hasRole(R role);
 }

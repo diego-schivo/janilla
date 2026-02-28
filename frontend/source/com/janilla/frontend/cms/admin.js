@@ -60,7 +60,7 @@ export default class Admin extends WebComponent {
     }
 
     static get observedAttributes() {
-        return ["data-user", "data-path"];
+        return ["data-user", "data-uri"];
     }
 
     dateTimeFormat = new Intl.DateTimeFormat("en-US", {
@@ -92,9 +92,11 @@ export default class Admin extends WebComponent {
     async updateDisplay() {
         const a = this.closest("app-element");
         const ua = a.currentUser?.roles?.some(x => x.name === "ADMIN");
-        const p = this.dataset.path === "/account" && ua
-            ? `/collections/users/${a.currentUser.id}`
-            : this.dataset.path;
+
+        let p = this.dataset.uri.split("?")[0];
+        if (p === "/account" && ua)
+            p = `/collections/users/${a.currentUser.id}`;
+
         const s = this.customState;
         s.pathSegments = p.length > 1 ? p.substring(1).split("/") : [];
 
@@ -122,7 +124,7 @@ export default class Admin extends WebComponent {
             switch (s.pathSegments[0]) {
                 case "collections":
                     s.collectionSlug = s.pathSegments[1];
-                    s.documentType = s.schema["Collections"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].elementTypes[0];
+                    s.documentType = this.documentType(s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join(""));
                     if (s.pathSegments[2] === "create") {
                         await this.createDocument(s.collectionSlug);
                         return;
@@ -143,7 +145,6 @@ export default class Admin extends WebComponent {
                 s.versionId = parseInt(s.versionId);
             }
             await Promise.all([
-                //s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : { $type: s.documentType }) : null,
                 s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : null) : null,
                 s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`).then(async x => s.versions = await x.json()) : null,
                 s.documentSubview === "version" ? fetch(`${s.collectionSlug
@@ -155,8 +156,10 @@ export default class Admin extends WebComponent {
                 a.navigate(new URL(`/admin/${nn.join("/")}`, location.href));
             }
         } else if (!["/create-first-user", "/forgot", "/login", "/reset"].includes(p) && !p.startsWith("/reset/")) {
-            const j = await (await fetch(`${a.dataset.apiUrl}/users?limit=1`)).json();
-            a.navigate(new URL(j.length ? "/admin/login" : "/admin/create-first-user", location.href));
+            const u = new URL(`${a.dataset.apiUrl}/users`, location.href);
+            u.searchParams.append("limit", 0);
+            const j = await (await fetch(u)).json();
+            a.navigate(new URL(`/admin${j.totalSize ? "/login" : "/create-first-user"}`, location.href));
             return;
         }
 
@@ -170,6 +173,7 @@ export default class Admin extends WebComponent {
                 text: x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" ")
             }))
         }));
+        const pp = new URLSearchParams(location.search);
         this.appendChild(this.interpolateDom({
             $template: "",
             p: ua ? {
@@ -186,9 +190,15 @@ export default class Admin extends WebComponent {
                     const xx = [];
                     xx.push({
                         href: "/admin",
-                        icon: "house"
+                        logo: true
                     });
                     switch (s.pathSegments[0]) {
+                        case undefined:
+                            xx.push({
+                                href: "/admin",
+                                text: "Dashboard"
+                            });
+                            break;
                         case "collections":
                             xx.push({
                                 href: `/admin/collections/${s.pathSegments[1]}`,
@@ -227,14 +237,11 @@ export default class Admin extends WebComponent {
                 })().map(x => ({
                     $template: x.href ? "link-item" : "item",
                     ...x,
-                    content: x.icon ? {
-                        $template: "icon",
-                        name: x.icon
-                    } : x.text
+                    content: x.logo ? { $template: "logo" } : x.text
                 }))
             } : null,
             content: (() => {
-                switch (this.dataset.path) {
+                switch (p) {
                     case "/create-first-user":
                         return { $template: "create-first-user" };
                     case "/forgot":
@@ -244,18 +251,16 @@ export default class Admin extends WebComponent {
                     case "/unauthorized":
                         return { $template: "unauthorized" };
                 }
-                if (this.dataset.path.startsWith("/reset/"))
-                    return {
-                        $template: "reset-password",
-                        token: this.dataset.path.substring("/reset/".length)
-                    };
                 if (!s.pathSegments)
                     return { $template: "loading" };
                 switch (s.pathSegments[0]) {
                     case "collections":
                         return s.pathSegments.length === 2 ? {
                             $template: "list",
-                            slug: s.pathSegments[1]
+                            slug: s.pathSegments[1],
+                            search: pp.get("search"),
+                            page: pp.get("page") ?? 1,
+                            limit: pp.get("limit") ?? 5
                         } : s.document ? {
                             $template: "document",
                             subview: s.documentSubview,
@@ -267,6 +272,11 @@ export default class Admin extends WebComponent {
                             subview: s.documentSubview,
                             document: s.document
                         } : { $template: "loading" };
+                    case "reset":
+                        return {
+                            $template: "reset-password",
+                            token: s.pathSegments[1]
+                        };
                     default:
                         return { $template: s.schema ? "dashboard" : "loading" };
                 }
@@ -398,7 +408,7 @@ export default class Admin extends WebComponent {
             method: "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ $type: this.customState.schema["Collections"][n].elementTypes[0] })
+            body: JSON.stringify({ $type: this.documentType(n) })
         });
         const j = await r.json();
         if (r.ok)
@@ -459,7 +469,7 @@ export default class Admin extends WebComponent {
 
     formProperties(field) {
         return field.properties ? Object.entries(field.properties)//.filter(([k, _]) => k !== "uri") 
-		: [];
+            : [];
     }
 
     headers(documentSlug) {
@@ -555,11 +565,24 @@ export default class Admin extends WebComponent {
         switch (document.$type) {
             case "Media":
                 return document.file?.name;
-            case "User":
+            case "UserImpl":
                 return document.name;
             default:
                 return document.title;
         }
+    }
+
+    titleName(documentType) {
+        switch (documentType) {
+            case "UserImpl":
+                return "name";
+            default:
+                return "title";
+        }
+    }
+
+    documentType(slug) {
+        return this.customState.schema["Collections"][slug].elementTypes[0];
     }
 
     fieldLabel(ct) {

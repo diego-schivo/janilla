@@ -108,7 +108,7 @@ export default class AdminTabs extends WebComponent {
         }));
     }
 
-    handleClick = async event => {
+    handleClick = event => {
         const b = event.composedPath().find(x => x instanceof Element && x.matches("button"));
         if (b?.role === "tab") {
             event.stopPropagation();

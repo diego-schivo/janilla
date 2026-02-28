@@ -70,7 +70,7 @@ public class ReflectionValueIterator extends ValueIterator {
 	protected Stream<Map.Entry<String, Object>> entries(Class<?> type) {
 //		IO.println("ReflectionValueIterator.entries, type=" + type);
 		var ee = type.isEnum() ? Stream.of(Map.entry("name", (Object) ((Enum<?>) value).name()))
-				: Reflection.properties(type).filter(this::test).map(x -> {
+				: Reflection.properties(type).filter(this::includeEntry).map(x -> {
 //					IO.println("ReflectionValueIterator.entries, x=" + x + ", value=" + value);
 					return (Map.Entry<String, Object>) Java.mapEntry(x.name(), x.get(value));
 				});
@@ -81,7 +81,7 @@ public class ReflectionValueIterator extends ValueIterator {
 		return ee;
 	}
 
-	protected boolean test(Property property) {
+	protected boolean includeEntry(Property property) {
 		return property.canGet();
 	}
 }

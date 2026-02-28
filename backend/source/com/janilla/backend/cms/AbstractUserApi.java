@@ -59,6 +59,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.User;
+import com.janilla.cms.UserRole;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Flat;
 import com.janilla.java.Reflection;
@@ -74,8 +76,9 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 
 	protected final String jwtKey;
 
-	protected AbstractUserApi(Class<U> type, Predicate<HttpExchange> drafts, Persistence persistence, String jwtKey) {
-		super(type, drafts, persistence);
+	protected AbstractUserApi(Class<U> type, Predicate<HttpExchange> drafts, Persistence persistence,
+			String searchIndex, String jwtKey) {
+		super(type, drafts, persistence, searchIndex);
 		this.jwtKey = jwtKey;
 	}
 
@@ -109,7 +112,8 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		if (data == null || data.email() == null || data.email().isBlank() || data.password() == null
 				|| data.password().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
-		var u = persistence.database().perform(() -> crud().read(crud().find("email", data.email())), false);
+		var u = persistence.database().perform(() -> crud().read(crud().find("email", new Object[] { data.email() })),
+				false);
 		if (u != null && !u.passwordEquals(data.password()))
 			u = null;
 		if (u == null)
@@ -134,7 +138,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	public U read(String email) {
 		return email != null ? persistence.database().perform(() -> {
 			var c = persistence.crud(type);
-			return c.read(c.find("email", email));
+			return c.read(c.find("email", new Object[] { email }));
 		}, false) : null;
 	}
 
@@ -162,7 +166,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		if (user == null || user.email() == null || user.email().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
 		var u = persistence.database().perform(() -> {
-			var x = crud().read(crud().find("email", user.email()));
+			var x = crud().read(crud().find("email", new Object[] { user.email() }));
 			if (x == null)
 				return null;
 			var t = UUID.randomUUID().toString().replace("-", "");
@@ -198,7 +202,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 				|| !password.equals(confirmPassword))
 			throw new BadRequestException("Please correct invalid fields.");
 		var u = persistence.database().perform(() -> {
-			var x = crud().read(crud().find("resetPasswordToken", token));
+			var x = crud().read(crud().find("resetPasswordToken", new Object[] { token }));
 			if (x != null && !Instant.now().isBefore(x.resetPasswordExpiration()))
 				x = null;
 			if (x == null)

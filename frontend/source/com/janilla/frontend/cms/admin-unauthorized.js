@@ -51,16 +51,16 @@ import WebComponent from "base/web-component";
 
 export default class AdminUnauthorized extends WebComponent {
 
-	static get templateNames() {
-		return ["admin-unauthorized"];
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	constructor() {
-		super();
-	}
+    static get templateNames() {
+        return ["admin-unauthorized"];
+    }
 
-	async updateDisplay() {
-		document.title = "Unauthorized, you must be logged in to make this request. - Janilla";
-		this.appendChild(this.interpolateDom({ $template: "" }));
-	}
+    async updateDisplay() {
+        document.title = "Unauthorized, you must be logged in to make this request. - Janilla";
+        this.appendChild(this.interpolateDom({ $template: "" }));
+    }
 }

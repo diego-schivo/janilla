@@ -63,10 +63,6 @@ export default class AdminSelect extends WebComponent {
         return ["data-array-key", "data-path", "data-updated-at"];
     }
 
-    constructor() {
-        super();
-    }
-
     async updateDisplay() {
         const p = this.dataset.path;
         const f = this.closest("admin-edit").field(p);

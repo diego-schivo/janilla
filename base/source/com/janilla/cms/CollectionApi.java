@@ -52,14 +52,15 @@ package com.janilla.cms;
 import java.util.List;
 
 import com.janilla.http.HttpExchange;
+import com.janilla.persistence.ListPortion;
 
 public interface CollectionApi<ID extends Comparable<ID>, D extends Document<ID>> {
 
 	D create(D document);
 
-	List<D> read(Long skip, Long limit);
+	D read(ID id, Integer depth, HttpExchange exchange);
 
-	D read(ID id, HttpExchange exchange);
+	ListPortion<D> read(String search, Boolean reverse, Long skip, Long limit, Integer depth);
 
 	D update(ID id, D document, Boolean draft, Boolean autosave);
 

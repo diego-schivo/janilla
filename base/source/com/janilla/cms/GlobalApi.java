@@ -57,7 +57,7 @@ public interface GlobalApi<ID extends Comparable<ID>, D extends Document<ID>> {
 
 	D create(D document);
 
-	D read(HttpExchange exchange);
+	D read(Integer depth, HttpExchange exchange);
 
 	D update(D document, Boolean draft, Boolean autosave);
 
