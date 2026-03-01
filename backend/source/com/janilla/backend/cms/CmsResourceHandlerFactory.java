@@ -49,64 +49,28 @@
  */
 package com.janilla.backend.cms;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse;
 import com.janilla.web.ResourceHandlerFactory;
-import com.janilla.web.NotFoundException;
 
-public abstract class CmsResourceHandlerFactory implements ResourceHandlerFactory {
+public class CmsResourceHandlerFactory implements ResourceHandlerFactory {
 
-	protected final Path directory;
+	protected final Foo foo;
 
-	public CmsResourceHandlerFactory(Path directory) {
-		this.directory = directory;
+	public CmsResourceHandlerFactory(Foo foo) {
+		this.foo = foo;
 	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {
 		var p = object instanceof HttpRequest x ? x.getPath() : null;
-		var n = p != null && p.startsWith("/api/images/") ? p.substring("/api/images/".length()) : null;
+		var n = p != null && p.startsWith("/api/media/") ? p.substring("/api/media/".length()) : null;
 		if (n == null)
 			return null;
-		var f = directory.resolve(n);
-		return Files.exists(f) ? x -> handle(f, x.response()) : null;
-	}
-
-	public static boolean handle(Path file, HttpResponse response) {
-		if (!Files.exists(file))
-			throw new NotFoundException();
-
-		response.setStatus(200);
-		response.setHeaderValue("cache-control", "max-age=3600");
-		var n = file.getFileName().toString();
-		switch (n.substring(n.lastIndexOf('.') + 1)) {
-		case "ico":
-			response.setHeaderValue("content-type", "image/x-icon");
-			break;
-		case "svg":
-			response.setHeaderValue("content-type", "image/svg+xml");
-			break;
-		}
-		try {
-			response.setHeaderValue("content-length", String.valueOf(Files.size(file)));
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
-		try (var in = Files.newInputStream(file);
-				var out = Channels.newOutputStream((WritableByteChannel) response.getBody())) {
-			in.transferTo(out);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		return true;
+		var f = Path.of(n);
+		return Files.exists(foo.directory().resolve(f)) ? x -> foo.handle(f, x.response()) : null;
 	}
 }
