@@ -50,6 +50,7 @@
 package com.janilla.backend.cms;
 
 import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +62,7 @@ import com.janilla.cms.Document;
 import com.janilla.cms.Types;
 import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.json.ReflectionValueIterator;
@@ -85,7 +86,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 			var n = (String) kv.getKey();
 			if (object instanceof Long l) {
 				o = stack().pop();
-				var p = Reflection.property(stack().peek().getClass(), n);
+				var p = JavaReflect.property(stack().peek().getClass(), n);
 				var ta = p != null ? p.annotatedType().getAnnotation(Types.class) : null;
 				var t = ta != null ? ta.value()[0] : null;
 				if (t != null
@@ -101,7 +102,7 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 //				object = x;
 			} else if (object instanceof List<?> oo && !oo.isEmpty() && oo.getFirst() instanceof Long) {
 				o = stack().pop();
-				var p = Reflection.property(stack().peek().getClass(), n);
+				var p = JavaReflect.property(stack().peek().getClass(), n);
 				var apt = p != null && p.annotatedType() instanceof AnnotatedParameterizedType x ? x : null;
 				var ta = apt != null ? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class) : null;
 				var t = ta != null ? ta.value()[0] : null;
@@ -128,9 +129,14 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 
 		@Override
 		protected Iterator<JsonToken<?>> newIterator() {
-			return value instanceof Class<?> c
-					? context.newStringIterator(c.getName().substring(c.getPackageName().length() + 1))
-					: super.newIterator();
+//			return value instanceof Class<?> c
+//					? context.newStringIterator(c.getName().substring(c.getPackageName().length() + 1))
+//					: super.newIterator();
+			if (value instanceof Class<?> c) {
+				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
+				return context.newStringIterator(persistence.converter().convert(t, String.class));
+			}
+			return super.newIterator();
 		}
 
 		@Override

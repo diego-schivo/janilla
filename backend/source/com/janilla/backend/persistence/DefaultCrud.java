@@ -24,6 +24,7 @@
  */
 package com.janilla.backend.persistence;
 
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,10 +50,9 @@ import com.janilla.backend.sqlite.Record;
 import com.janilla.backend.sqlite.RecordColumn;
 import com.janilla.backend.sqlite.TableBTree;
 import com.janilla.backend.sqlite.TableLeafCell;
-import com.janilla.java.Converter;
 import com.janilla.java.Java;
+import com.janilla.java.JavaReflect;
 import com.janilla.java.Property;
-import com.janilla.java.Reflection;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -91,7 +91,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@Override
 	public E create(E entity) {
-//		IO.println("Crud.create, entity=" + entity);
+//		IO.println("DefaultCrud.create, entity=" + entity);
 		return persistence.database().perform(() -> {
 			class A {
 				ID i;
@@ -102,19 +102,19 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			if (idHelper != null) {
 				{
 					@SuppressWarnings("unchecked")
-					var x = (ID) Reflection.property(type, "id").get(a.e);
+					var x = (ID) JavaReflect.property(type, "id").get(a.e);
 					a.i = x;
 				}
 				if (a.i == null)
 					a.i = idHelper.random(a.e);
-				a.e = Reflection.copy(Map.of("id", a.i), a.e);
+				a.e = JavaReflect.copy(Map.of("id", a.i), a.e);
 				for (var o : observers)
 					a.e = o.beforeCreate(a.e);
 				bTree().insert(new Object[] { toDatabaseId(a.i) }, new Object[] { format(a.e) });
 			} else {
 				@SuppressWarnings("unchecked")
 				var y = (ID) Long.valueOf(((TableBTree) bTree()).insert(x -> {
-					a.e = Reflection.copy(Map.of("id", x), a.e);
+					a.e = JavaReflect.copy(Map.of("id", x), a.e);
 					for (var o : observers)
 						a.e = o.beforeCreate(a.e);
 					return new Object[] { x, format(a.e) };
@@ -195,7 +195,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@Override
 	public E delete(ID id) {
-//		IO.println("Crud.delete, id=" + id);
+//		IO.println("DefaultCrud.delete, id=" + id);
 		if (id == null)
 			throw new NullPointerException();
 		return persistence.database().perform(() -> {
@@ -205,7 +205,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			var a = new A();
 			bTree().delete(new Object[] { toDatabaseId(id) }, rr -> {
 				var oo = rr.findFirst().get();
-//				IO.println("Crud.delete, oo=" + Arrays.toString(oo));
+//				IO.println("DefaultCrud.delete, oo=" + Arrays.toString(oo));
 				a.e = parse((String) oo.reduce((_, y) -> y).get());
 			});
 			updateIndexes(a.e, null);
@@ -234,7 +234,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 				default -> throw new RuntimeException();
 				};
 				var id = fromDatabaseId(o);
-//				IO.println("Crud.list, o=" + o + ", id=" + id);
+//				IO.println("DefaultCrud.list, o=" + o + ", id=" + id);
 				return id;
 			}).toList();
 		}, false);
@@ -247,7 +247,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@Override
 	public ListPortion<ID> listAndCount(boolean reverse, long skip, long limit) {
-//		IO.println("Crud.list, skip=" + skip + ", limit=" + limit);
+//		IO.println("DefaultCrud.list, skip=" + skip + ", limit=" + limit);
 		return persistence.database().perform(() -> {
 			var t = bTree();
 			var cc = t.cells(reverse);
@@ -445,27 +445,27 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected String format(Object object) {
-//		IO.println("Crud.format, object=" + object);
+//		IO.println("DefaultCrud.format, object=" + object);
 		var s = Json.format(new CustomJsonIterator(object, true));
-//		IO.println("Crud.format, s=" + s);
+//		IO.println("DefaultCrud.format, s=" + s);
 		return s;
 	}
 
 	protected E parse(String string) {
-//		IO.println("Crud.parse, string=" + string);
+//		IO.println("DefaultCrud.parse, string=" + string);
 		return parse(string, type);
 	}
 
 	protected <T> T parse(String string, Class<T> target) {
-//		IO.println("Crud.parse, string=" + string + ", target=" + target);
-		var c = new Converter(persistence.typeResolver);
+//		IO.println("DefaultCrud.parse, string=" + string + ", target=" + target);
+//		var c = new Converter(persistence.typeResolver);
 		@SuppressWarnings("unchecked")
-		var t = (T) c.convert(Json.parse(string), target);
+		var t = (T) persistence.converter().convert(Json.parse(string), target);
 		return t;
 	}
 
 	protected void updateIndexes(E entity1, E entity2) {
-//		IO.println("Crud.updateIndexes, entity1=" + entity1 + ", entity2=" + entity2 + ", id=" + id);
+//		IO.println("DefaultCrud.updateIndexes, entity1=" + entity1 + ", entity2=" + entity2 + ", id=" + id);
 		updateIndexes(entity1, entity2, this::getIndex);
 	}
 
@@ -499,7 +499,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected void updateIndex(IndexBTree index, Set<List<Object>> remove, Set<List<Object>> add, ID id) {
-//		IO.println("Crud.updateIndex, remove=" + remove + ", add=" + add);
+//		IO.println("DefaultCrud.updateIndex, remove=" + remove + ", add=" + add);
 		if (remove != null)
 			for (var oo : remove)
 				index.delete(
@@ -546,14 +546,14 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	public <T> T populate(T input, int depth) {
-//		IO.println("Crud.populate, t=" + t + ", depth=" + depth);
+		IO.println("DefaultCrud.populate, input=" + input + ", depth=" + depth);
 		var pp = input != null && depth != 0 && !(input.getClass().getPackageName().startsWith("java."))
-				? Reflection.properties(input.getClass()).filter(Property::canGet)
+				? JavaReflect.properties(input.getClass()).filter(Property::canGet)
 				: Stream.<Property>empty();
 
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		var m = pp.map(p -> {
-//			IO.println("Crud.populate, p=" + p + " (" + p.type() + "), depth=" + depth);
+			IO.println("DefaultCrud.populate, p=" + p + " (" + p.type() + "), depth=" + depth);
 
 			if (p.type() == List.class) {
 				var t = p.genericType() instanceof ParameterizedType pt
@@ -561,7 +561,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 						: null;
 				var c = t != null && Entity.class.isAssignableFrom(t) ? persistence.crud(t) : null;
 				var n = c != null
-						? Reflection.properties(c.type())
+						? JavaReflect.properties(c.type())
 								.filter(x -> x.canGet() && x.type().isAssignableFrom(input.getClass())).findFirst()
 								.map(x -> x.name()).orElse(null)
 						: null;
@@ -570,7 +570,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 					l = c.read(c.filter(n, new Object[] { ((Entity) input).id() }), depth - 1);
 				else {
 					var l1 = (List) p.get(input);
-//					IO.println("Crud.populate, l1=" + l1);
+//					IO.println("DefaultCrud.populate, l1=" + l1);
 					if (l1 == null)
 						l = null;
 					else {
@@ -588,10 +588,10 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			return v2 != v1 ? Java.mapEntry(p.name(), v2) : null;
 		}).filter(Objects::nonNull).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
 //		if (m != null && !m.isEmpty())
-//			IO.println("Crud.populate, m=" + m);
+//			IO.println("DefaultCrud.populate, m=" + m);
 
-		var t = !m.isEmpty() ? Reflection.copy(m, input) : input;
-//		IO.println("Crud.populate, t=" + t);
+		var t = !m.isEmpty() ? JavaReflect.copy(m, input) : input;
+//		IO.println("DefaultCrud.populate, t=" + t);
 		return t;
 	}
 
@@ -615,8 +615,13 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 		@Override
 		protected Iterator<JsonToken<?>> newIterator() {
-			return value instanceof Class<?> c ? context.newStringIterator(persistence.typeResolver.format(c))
-					: super.newIterator();
+//			return value instanceof Class<?> c ? context.newStringIterator(persistence.typeResolver.format(c))
+//					: super.newIterator();
+			if (value instanceof Class<?> c) {
+				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
+				return context.newStringIterator(persistence.converter().convert(t, String.class));
+			}
+			return super.newIterator();
 		}
 
 		@Override

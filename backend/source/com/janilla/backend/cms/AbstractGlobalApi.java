@@ -60,7 +60,7 @@ import com.janilla.cms.GlobalApi;
 import com.janilla.cms.Version;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.DollarTypeResolver;
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 
@@ -98,7 +98,7 @@ public abstract class AbstractGlobalApi<ID extends Comparable<ID>, D extends Doc
 	public D update(@Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != document.documentStatus())
-			document = Reflection.copy(Map.of("documentStatus", s), document);
+			document = JavaReflect.copy(Map.of("documentStatus", s), document);
 		return crud().update(id, document, null, !Boolean.TRUE.equals(autosave));
 	}
 

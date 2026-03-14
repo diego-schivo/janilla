@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.janilla.java.Property;
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 
 public class DefaultIndexKeyGetterFactory implements IndexKeyGetterFactory {
 
@@ -42,8 +42,8 @@ public class DefaultIndexKeyGetterFactory implements IndexKeyGetterFactory {
 		}
 		return A.RESULTS.computeIfAbsent(type, _ -> new ConcurrentHashMap<>()).computeIfAbsent(List.of(names),
 				_ -> new DefaultIndexKeyGetter(Arrays.stream(names).map(x -> {
-					var p1 = Reflection.property(type, x);
-					var p2 = !p1.type().getPackageName().startsWith("java.") ? Reflection.property(p1.type(), "id")
+					var p1 = JavaReflect.property(type, x);
+					var p2 = !p1.type().getPackageName().startsWith("java.") ? JavaReflect.property(p1.type(), "id")
 							: null;
 					return p2 != null ? Property.of(p1, p2) : p1;
 				}).toArray(Property[]::new)));

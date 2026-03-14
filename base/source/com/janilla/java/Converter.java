@@ -46,16 +46,25 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.janilla.ioc.DiFactory;
+
 public class Converter {
 
 	protected final TypeResolver typeResolver;
+
+	protected final DiFactory diFactory;
 
 	public Converter() {
 		this(null);
 	}
 
 	public Converter(TypeResolver typeResolver) {
+		this(typeResolver, null);
+	}
+
+	public Converter(TypeResolver typeResolver, DiFactory diFactory) {
 		this.typeResolver = typeResolver;
+		this.diFactory = diFactory;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -142,6 +151,9 @@ public class Converter {
 		if (c == Class.class)
 			return (T) typeResolver.parse((String) object);
 
+		if (c == String.class)
+			return (T) typeResolver.format((Class<?>) object);
+
 		if (c != null && c.isEnum()) {
 			var n = switch (object) {
 			case String x -> x;
@@ -212,65 +224,73 @@ public class Converter {
 			c = Java.toClass(target);
 		}
 
+		var c2 = diFactory != null ? diFactory.classFor(c) : null;
+		if (c2 != null)
+			c = c2;
+//		IO.println("Converter.convertMap, c=" + c + ", c2=" + c2);
+
 		Object o;
 		if (c.isEnum()) {
 			var n = (String) map.get("name");
 			if (n != null && !n.isEmpty()) {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
-				var x = Enum.valueOf((Class) target, n);
+				var x = Enum.valueOf((Class) c, n);
 				o = x;
 			} else
 				o = null;
 		} else {
 			var t0 = target;
-			var c0 = c.getConstructors().length != 0 ? c.getConstructors()[0] : null;
-			if (c0 == null)
-				c0 = c.getDeclaredConstructors().length != 0 ? c.getDeclaredConstructors()[0] : null;
-			if (c0 == null)
-				throw new NullPointerException(c.toString());
+			var c0 = JavaInvoke.methodHandle(JavaReflect.constructor(c));
 //			IO.println("Converter.convertMap, c0=" + c0);
-			var tt = c.isRecord() ? Arrays.stream(c.getRecordComponents()).collect(Collectors.toMap(x -> x.getName(),
-					x -> Reflection.actualType(x, t0), (_, x) -> x, LinkedHashMap::new)) : null;
-			try {
-				if (tt != null) {
-					var m = map;
-					var t = c;
-					var oo = tt.entrySet().stream().map(x -> {
-						var n2 = x.getKey();
-						var t2 = x.getValue();
-						if (m.containsKey(n2))
-							return convert(m.get(n2), t2);
-						Field f;
-						try {
-							f = t.getDeclaredField(n2);
-						} catch (NoSuchFieldException e) {
-							f = null;
-						}
-						return (f != null && f.isAnnotationPresent(Flat.class)) ? convertMap(m, t2, null) : null;
-					}).toArray();
-//					IO.println("Converter.convertMap, c0=" + c0 + ", oo=" + Arrays.toString(oo));
+			var tt = c.isRecord()
+					? Arrays.stream(c.getRecordComponents()).collect(Collectors.toMap(x -> x.getName(), x -> {
+						return JavaReflect.actualType(x, t0);
+//						return x.getType();
+					}, (_, x) -> x, LinkedHashMap::new))
+					: null;
+//			try {
+			if (tt != null) {
+				var m = map;
+				var t = c;
+				var oo = tt.entrySet().stream().map(x -> {
+					var n2 = x.getKey();
+					var t2 = x.getValue();
+					if (m.containsKey(n2))
+						return convert(m.get(n2), t2);
+					Field f;
 					try {
-						o = c0.newInstance(oo);
-					} catch (IllegalAccessException e) {
-						c0.setAccessible(true);
-						o = c0.newInstance(oo);
+						f = t.getDeclaredField(n2);
+					} catch (NoSuchFieldException e) {
+						f = null;
 					}
-				} else {
-					o = c0.newInstance();
-					for (var x : map.entrySet()) {
+					return (f != null && f.isAnnotationPresent(Flat.class)) ? convertMap(m, t2, null) : null;
+				}).toArray();
+//				IO.println("Converter.convertMap, c0=" + c0 + ", oo=" + Arrays.toString(oo));
+				try {
+					o = c0.invokeWithArguments(oo);
+				} catch (Throwable e) {
+					throw e instanceof RuntimeException e2 ? e2 : new RuntimeException(e);
+				}
+			} else {
+				try {
+					o = c0.invokeWithArguments();
+				} catch (Throwable e) {
+					throw e instanceof RuntimeException e2 ? e2 : new RuntimeException(e);
+				}
+				for (var x : map.entrySet()) {
 //						IO.println("Converter.convertMap, x=" + x);
-						var n = (String) x.getKey();
-						var p = !n.startsWith("$") ? Reflection.property(target, n) : null;
-						if (p != null) {
-							var v = convert(x.getValue(), p.genericType());
+					var n = (String) x.getKey();
+					var p = !n.startsWith("$") ? JavaReflect.property(target, n) : null;
+					if (p != null) {
+						var v = convert(x.getValue(), p.genericType());
 //							IO.println("Converter.convertMap, p=" + p + ", v=" + v);
-							p.set(o, v);
-						}
+						p.set(o, v);
 					}
 				}
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
 			}
+//			} catch (ReflectiveOperationException e) {
+//				throw new RuntimeException(e);
+//			}
 		}
 		return o;
 	}

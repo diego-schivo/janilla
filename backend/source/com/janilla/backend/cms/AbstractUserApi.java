@@ -60,10 +60,9 @@ import java.util.stream.Collectors;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.User;
-import com.janilla.cms.UserRole;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Flat;
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 import com.janilla.json.Jwt;
 import com.janilla.web.BadRequestException;
 import com.janilla.web.Bind;
@@ -71,7 +70,7 @@ import com.janilla.web.ForbiddenException;
 import com.janilla.web.Handle;
 import com.janilla.web.UnauthorizedException;
 
-public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<ID, R>, R extends UserRole>
+public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<ID>>
 		extends AbstractCollectionApi<ID, U> {
 
 	protected final String jwtKey;
@@ -252,7 +251,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	protected Set<String> updateInclude(U entity) {
 		var nn = Set.of("salt", "hash");
 		return entity.salt() == null
-				? Reflection.propertyNames(type).filter(x -> !nn.contains(x)).collect(Collectors.toSet())
+				? JavaReflect.propertyNames(type).filter(x -> !nn.contains(x)).collect(Collectors.toSet())
 				: null;
 	}
 

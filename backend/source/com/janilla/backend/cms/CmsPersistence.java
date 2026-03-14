@@ -59,7 +59,7 @@ import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.cms.Document;
 import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
-import com.janilla.java.TypeResolver;
+import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 
 public class CmsPersistence extends Persistence {
@@ -67,8 +67,9 @@ public class CmsPersistence extends Persistence {
 	protected static final DocumentObserver<?> DOCUMENT_OBSERVER = new DocumentObserver<>();
 
 	public CmsPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-			TypeResolver typeResolver) {
-		super(database, storables, typeResolver);
+//			TypeResolver typeResolver,
+			Converter converter) {
+		super(database, storables, converter);
 	}
 
 	@Override

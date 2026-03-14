@@ -63,7 +63,7 @@ import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
 import com.janilla.java.Property;
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 import com.janilla.json.ReflectionValueIterator;
 
 public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> extends DefaultCrud<ID, D>
@@ -156,15 +156,15 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 			var a = new A();
 			switch (document.documentStatus()) {
 			case DRAFT:
-				a.d2 = Reflection.copy(document, a.d1,
+				a.d2 = JavaReflect.copy(document, a.d1,
 						x -> (include == null || include.contains(x)) && !exclude.contains(x));
-				a.d2 = Reflection.copy(Map.of("updatedAt", Instant.now()), a.d2);
+				a.d2 = JavaReflect.copy(Map.of("updatedAt", Instant.now()), a.d2);
 				if (a.d2.documentStatus() != a.d1.documentStatus())
 					a.nv = true;
 				break;
 			case PUBLISHED:
 				a.d2 = update(id, x -> {
-					var d2 = Reflection.copy(document, a.d1,
+					var d2 = JavaReflect.copy(document, a.d1,
 							y -> (include == null || include.contains(y)) && !exclude.contains(y));
 					if (d2.documentStatus() != x.documentStatus())
 						a.nv = true;
@@ -207,7 +207,7 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 			return a.d2;
 		}, true) : update(id, d1 -> {
 //			IO.println("d1=" + d1);
-			var d2 = Reflection.copy(document, d1,
+			var d2 = JavaReflect.copy(document, d1,
 					x -> (include == null || include.contains(x)) && !exclude.contains(x));
 //			IO.println("d2=" + d2);
 			return d2;
@@ -292,7 +292,7 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 			var d = update(v1.document().id(), _ -> {
 				var x = v1.document();
 				if (status != x.documentStatus())
-					x = Reflection.copy(Map.of("documentStatus", status), x);
+					x = JavaReflect.copy(Map.of("documentStatus", status), x);
 				return x;
 			});
 			persistence.database().index(versionTable + ".documentId")

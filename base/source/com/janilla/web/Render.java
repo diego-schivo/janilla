@@ -25,15 +25,19 @@
 package com.janilla.web;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+@Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.RECORD_COMPONENT, ElementType.TYPE, ElementType.TYPE_USE })
 public @interface Render {
 
 	String template() default "";
+
+	String[] resource() default {};
 
 	@SuppressWarnings("rawtypes")
 	Class<? extends Renderer> renderer() default HtmlRenderer.class;

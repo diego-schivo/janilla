@@ -65,7 +65,7 @@ import com.janilla.http.SimpleHttpExchange;
 import com.janilla.json.Jwt;
 import com.janilla.web.UnauthorizedException;
 
-public abstract class AbstractUserHttpExchange<U extends User<?, ?>> extends SimpleHttpExchange
+public abstract class AbstractUserHttpExchange<U extends User<?>> extends SimpleHttpExchange
 		implements UserHttpExchange<U> {
 
 	protected final String jwtCookie;

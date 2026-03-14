@@ -52,7 +52,7 @@ package com.janilla.backend.cms;
 import com.janilla.cms.User;
 import com.janilla.http.HttpExchange;
 
-public interface UserHttpExchange<U extends User<?, ?>> extends HttpExchange {
+public interface UserHttpExchange<U extends User<?>> extends HttpExchange {
 
 	U sessionUser();
 

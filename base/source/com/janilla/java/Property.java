@@ -26,6 +26,7 @@ package com.janilla.java;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
@@ -133,16 +134,31 @@ public interface Property {
 //		IO.println("Property.of, n=" + n);
 		MethodHandle g, s;
 		try {
-			var l = MethodHandles.publicLookup();
+			Lookup l;
+			if (Modifier.isPublic(class1.getModifiers()))
+				l = MethodHandles.publicLookup();
+			else {
+				var m1 = Property.class.getModule();
+				var m2 = class1.getModule();
+				if (!m1.canRead(m2))
+					m1.addReads(m2);
+				l = MethodHandles.privateLookupIn(class1, MethodHandles.lookup());
+			}
 			g = getter != null ? l.unreflect(getter) : null;
 			s = setter != null ? l.unreflect(setter) : null;
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}
-		var gt0 = getter != null ? getter.getGenericReturnType() : setter.getGenericParameterTypes()[0];
-		var dc = getter != null ? getter.getDeclaringClass() : setter.getDeclaringClass();
-		var gt = gt0 instanceof TypeVariable v && dc != class1 ? Reflection.resolveTypeVariable(v, class1, dc) : gt0;
-		var t = gt != gt0 ? Java.toClass(gt) : getter != null ? getter.getReturnType() : setter.getParameterTypes()[0];
+
+		var m = getter != null ? getter : setter;
+		var gt0 = m.getReturnType() == Void.TYPE ? m.getGenericParameterTypes()[0] : m.getGenericReturnType();
+		var dc = m.getDeclaringClass();
+		var gt = gt0 instanceof TypeVariable v && dc != class1 ? JavaReflect.resolveTypeVariable(v, class1, dc) : gt0;
+
+		var at = m.getReturnType() == Void.TYPE ? m.getAnnotatedParameterTypes()[0] : m.getAnnotatedReturnType();
+
+		var t = gt != gt0 ? Java.toClass(gt)
+				: m.getReturnType() == Void.TYPE ? m.getParameterTypes()[0] : m.getReturnType();
 		var d = class1.isRecord() && !Arrays.stream(class1.getRecordComponents())
 //				.filter(x -> x.getType() != Optional.class)
 				.anyMatch(x -> x.getName().equals(n));
@@ -150,7 +166,7 @@ public interface Property {
 
 			@Override
 			public Member member() {
-				return getter != null ? getter : setter;
+				return m;
 			}
 
 			@Override
@@ -165,7 +181,7 @@ public interface Property {
 
 			@Override
 			public AnnotatedType annotatedType() {
-				return getter != null ? getter.getAnnotatedReturnType() : setter.getAnnotatedParameterTypes()[0];
+				return at;
 			}
 
 			@Override

@@ -24,7 +24,7 @@
  */
 package com.janilla.backend.persistence;
 
-import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,9 +35,8 @@ import java.util.stream.Stream;
 
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
-import com.janilla.java.Property;
-import com.janilla.java.Reflection;
-import com.janilla.java.TypeResolver;
+import com.janilla.java.Converter;
+import com.janilla.java.JavaReflect;
 import com.janilla.persistence.Entity;
 import com.janilla.persistence.Index;
 
@@ -47,14 +46,19 @@ public class Persistence {
 
 	protected final List<Class<? extends Entity<?>>> storables;
 
-	protected final TypeResolver typeResolver;
+//	protected final TypeResolver typeResolver;
+
+	protected final Converter converter;
 
 	protected final PersistenceConfiguration configuration = new PersistenceConfiguration();
 
-	public Persistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, TypeResolver typeResolver) {
+	public Persistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
+//			TypeResolver typeResolver,
+			Converter converter) {
 		this.database = database;
 		this.storables = storables;
-		this.typeResolver = typeResolver;
+//		this.typeResolver = typeResolver;
+		this.converter = converter;
 		for (var t : storables)
 			configure(t);
 		if (database.schema().isEmpty())
@@ -65,24 +69,31 @@ public class Persistence {
 		return database;
 	}
 
-	public TypeResolver typeResolver() {
-		return typeResolver;
+//	public TypeResolver typeResolver() {
+//		return typeResolver;
+//	}
+
+	public Converter converter() {
+		return converter;
 	}
 
-	@SuppressWarnings("unchecked")
 	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> type) {
 //		IO.println("Persistence.crud, type=" + type);
-//		return (Crud<ID, E>) Objects.requireNonNull(configuration.cruds.get(type), "type=" + type);
 		class A {
-			private static final Map<Class<?>, Crud<?, ?>> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Class<?>, Object> RESULTS = new ConcurrentHashMap<>();
 		}
-		return (Crud<ID, E>) A.RESULTS.computeIfAbsent(type, _ -> {
+		var o = A.RESULTS.computeIfAbsent(type, _ -> {
 			var c = configuration.cruds.get(type);
 			if (c == null)
 				c = configuration.cruds.entrySet().stream().filter(x -> type.isAssignableFrom(x.getKey())).findFirst()
-						.map(x -> x.getValue()).get();
-			return c;
+						.map(x -> x.getValue()).orElse(null);
+			return c != null ? c : new IllegalArgumentException("type=" + type);
 		});
+		if (o instanceof RuntimeException e)
+			throw e;
+		@SuppressWarnings("unchecked")
+		var c = (Crud<ID, E>) o;
+		return c;
 	}
 
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
@@ -92,12 +103,10 @@ public class Persistence {
 //		IO.println("Persistence.configure, type=" + type);
 		configuration.cruds.put(type, c);
 
-		for (var oo = Stream.concat(Stream.of(type), Reflection.properties(type)).iterator(); oo.hasNext();) {
-			var o = oo.next();
-//			IO.println("Persistence.configure, o=" + o);
-			var p = o instanceof Property x ? x : null;
-			var ae = (AnnotatedElement) (p != null ? p.member() : o);
-			var i = ae.getAnnotation(Index.class);
+		for (var pp = JavaReflect.properties(type).iterator(); pp.hasNext();) {
+			var p = pp.next();
+//			IO.println("Persistence.configure, p=" + p);
+			var i = JavaReflect.inheritedAnnotation((Method) p.member(), Index.class);
 			if (i == null)
 				continue;
 
@@ -121,7 +130,7 @@ public class Persistence {
 	}
 
 	public <ID extends Comparable<ID>> IdHelper<ID> idConverter(Class<?> type) {
-		var t = Reflection.property(type, "id").type();
+		var t = JavaReflect.property(type, "id").type();
 		@SuppressWarnings("unchecked")
 		var x = (IdHelper<ID>) (t == UUID.class ? new UuidIdHelper() : t == String.class ? new StringIdHelper() : null);
 		return x;
@@ -135,12 +144,12 @@ public class Persistence {
 				database.createTable(t.getSimpleName(),
 						Stream.concat(
 								Stream.of(new TableColumn("id",
-										Number.class.isAssignableFrom(Reflection.property(t, "id").type()) ? "INTEGER"
+										Number.class.isAssignableFrom(JavaReflect.property(t, "id").type()) ? "INTEGER"
 												: "TEXT",
 										true), new TableColumn("content", "TEXT", false)),
 								c.indexKeyGetters.keySet().stream().filter(Objects::nonNull)
 										.map(x -> new TableColumn(x,
-												Number.class.isAssignableFrom(Reflection.property(t, x).type())
+												Number.class.isAssignableFrom(JavaReflect.property(t, x).type())
 														? "INTEGER"
 														: "TEXT",
 												false)))

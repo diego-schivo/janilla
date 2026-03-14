@@ -131,8 +131,10 @@ export default class WebComponent extends HTMLElement {
         this.#displayUpdate.ongoing = true;
         try {
             await this.#initializeTemplating;
-            if (!this.#displayUpdate.repeat)
+            if (!this.#displayUpdate.repeat) {
                 await this.updateDisplay();
+				this.dispatchEvent(new Event("displayupdated", { bubbles: true }));
+            }
         } finally {
             this.#displayUpdate.ongoing = false;
         }
@@ -153,7 +155,7 @@ export default class WebComponent extends HTMLElement {
     interpolateDom(input) {
         // console.log("WebComponent(${this.constructor.name}).interpolateDom");
         const getInterpolate = (template, index) => {
-			// console.log("getInterpolate, template=" + template + ", index=" + index);
+            // console.log("getInterpolate, template=" + template + ", index=" + index);
             const x = this.#templatingData[template];
             if (!x)
                 throw new Error(`Template "${template}" not found (${this.constructor.name})`);

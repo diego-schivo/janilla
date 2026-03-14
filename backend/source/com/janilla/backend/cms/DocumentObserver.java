@@ -57,7 +57,7 @@ import com.janilla.backend.persistence.CrudObserver;
 import com.janilla.cms.Document;
 import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Versions;
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 
 public class DocumentObserver<D extends Document<?>> implements CrudObserver<D> {
 
@@ -70,7 +70,7 @@ public class DocumentObserver<D extends Document<?>> implements CrudObserver<D> 
 			m = new HashMap<>(m);
 			m.put("documentStatus", v != null && v.drafts() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 		}
-		return Reflection.copy(m, document);
+		return JavaReflect.copy(m, document);
 	}
 
 	@Override
@@ -81,6 +81,6 @@ public class DocumentObserver<D extends Document<?>> implements CrudObserver<D> 
 			m = new HashMap<>(m);
 			m.put("publishedAt", i);
 		}
-		return Reflection.copy(m, document);
+		return JavaReflect.copy(m, document);
 	}
 }

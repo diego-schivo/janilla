@@ -36,25 +36,32 @@ export default class App extends WebComponent {
 
     constructor() {
         super();
-        const el = this.children.length === 1 ? this.firstElementChild : null;
-        if (el?.matches('[type="application/json"]')) {
-            this.serverState = JSON.parse(el.text);
-            el.remove();
-        }
+
+        this.serverState = (() => {
+            const el = this.children.length === 1 ? this.firstElementChild : null;
+            if (el?.matches('[type="application/json"]')) {
+                el.remove();
+                return JSON.parse(el.text);
+            }
+            return {};
+        })();
+
         if (!history.state || this.serverState)
             history.replaceState({}, "");
     }
 
     connectedCallback() {
         super.connectedCallback();
+
         this.addEventListener("click", this.handleClick);
         addEventListener("popstate", this.handlePopState);
     }
 
     disconnectedCallback() {
-        super.disconnectedCallback();
         this.removeEventListener("click", this.handleClick);
         removeEventListener("popstate", this.handlePopState);
+
+        super.disconnectedCallback();
     }
 
     async updateDisplay() {
@@ -70,7 +77,7 @@ export default class App extends WebComponent {
     async updateDisplaySite() {
         this.appendChild(this.interpolateDom({
             $template: "",
-            site: this.customState.notFound ? { $template: "not-found" } : { $template: "page" }
+            site: { $template: this.customState.notFound ? "not-found" : "page" }
         }));
     }
 
@@ -93,14 +100,16 @@ export default class App extends WebComponent {
     }
 
     navigate(url) {
-        delete this.serverState;
-        delete this.customState.notFound;
         if (!url || url.pathname !== location.pathname)
             window.scrollTo(0, 0);
+
         if (url) {
             history.pushState({}, "", url.pathname + url.search);
             dispatchEvent(new Event("statepushed"));
         }
+
+        this.serverState = {};
+        delete this.customState.notFound;
         this.requestDisplay();
     }
 

@@ -356,11 +356,9 @@ public class HttpServer extends SecureServer {
 	}
 
 	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		var x = diFactory != null
-				? diFactory.create(diFactory.actualType(HttpExchange.class),
-						Map.of("request", request, "response", response))
-				: null;
-		return x != null ? x : new SimpleHttpExchange(request, response);
+		var c = diFactory != null ? diFactory.classFor(HttpExchange.class) : null;
+		return c != null ? diFactory.newInstance(c, Map.of("request", request, "response", response))
+				: new SimpleHttpExchange(request, response);
 	}
 
 	protected boolean handleExchange(HttpExchange exchange) {
@@ -398,64 +396,4 @@ public class HttpServer extends SecureServer {
 			}
 		return k;
 	}
-
-//	protected byte[] readFrame(SecureTransfer transfer) throws IOException {
-//		transfer.inLock().lock();
-//		try {
-//			if (transfer.in().remaining() < 3) {
-//				transfer.in().compact();
-//				do
-//					if (transfer.read() == -1)
-//						return null;
-//				while (transfer.in().position() < 3);
-//				transfer.in().flip();
-//			}
-//			var l = (Short.toUnsignedInt(transfer.in().getShort(transfer.in().position())) << 8)
-//					| Byte.toUnsignedInt(transfer.in().get(transfer.in().position() + Short.BYTES));
-	//// IO.println("HttpServer.readFrame, l=" + l);
-//			if (l > 16384)
-//				throw new RuntimeException();
-//			var bb = new byte[9 + l];
-	//// IO.println("in.remaining() " + in.remaining());
-//			if (transfer.in().remaining() < bb.length) {
-//				transfer.in().compact();
-//				do
-//					transfer.read();
-//				while (transfer.in().position() < bb.length);
-//				transfer.in().flip();
-//			}
-//			transfer.in().get(bb);
-//			return bb;
-//		} finally {
-//			transfer.inLock().unlock();
-//		}
-//	}
-//
-//	protected void writeFrame(SecureTransfer transfer, byte[] bytes) throws IOException {
-	//// IO.println("HttpServer.writeFrame, bytes=" + bytes.length);
-//		transfer.outLock().lock();
-	//// IO.println("HttpServer.writeFrame, lock");
-//		try {
-//			transfer.out().clear();
-//			for (var o = 0; o < bytes.length;) {
-//				var l = Math.min(bytes.length - o, transfer.out().remaining());
-	//// IO.println("HttpServer.writeFrame, l=" + l);
-//				transfer.out().put(bytes, o, l);
-//				if (!transfer.out().hasRemaining()) {
-//					transfer.out().flip();
-//					do
-//						transfer.write();
-//					while (transfer.out().hasRemaining());
-//					transfer.out().clear();
-//				}
-//				o += l;
-	//// IO.println("HttpServer.writeFrame, o=" + o);
-//			}
-//			for (transfer.out().flip(); transfer.out().hasRemaining();)
-//				transfer.write();
-//		} finally {
-//			transfer.outLock().unlock();
-	//// IO.println("HttpServer.writeFrame, unlock");
-//		}
-//	}
 }

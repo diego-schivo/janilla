@@ -52,13 +52,14 @@ package com.janilla.backend.cms;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import com.janilla.ioc.DiFactory;
 import com.janilla.java.Converter;
 import com.janilla.java.TypeResolver;
 
 public class CmsConverter extends Converter {
 
-	public CmsConverter(TypeResolver typeResolver) {
-		super(typeResolver);
+	public CmsConverter(TypeResolver typeResolver, DiFactory diFactory) {
+		super(typeResolver, diFactory);
 	}
 
 	@Override

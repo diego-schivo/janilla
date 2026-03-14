@@ -52,23 +52,29 @@ package com.janilla.cms;
 import java.time.Instant;
 import java.util.Set;
 
-public interface User<ID extends Comparable<ID>, R extends UserRole> extends Document<ID> {
+import com.janilla.persistence.Index;
+import com.janilla.persistence.Store;
 
+@Store
+public interface User<ID extends Comparable<ID>> extends Document<ID> {
+
+	@Index
 	String email();
 
 	String salt();
 
+	@Index
 	String resetPasswordToken();
 
 	Instant resetPasswordExpiration();
 
-	boolean hasRole(R role);
+	boolean hasRole(UserRole role);
 
 	boolean passwordEquals(String password);
 
-	User<ID, R> withPassword(String password);
+	User<ID> withPassword(String password);
 
-	User<ID, R> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
+	User<ID> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
 
-	User<ID, R> withRoles(Set<R> roles);
+	User<ID> withRoles(Set<UserRole> roles);
 }

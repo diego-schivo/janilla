@@ -63,14 +63,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.janilla.http.HttpResponse;
 import com.janilla.web.NotFoundException;
 
-public class Foo {
+public class CmsResourceHandling {
+
+	private static final byte[] ABSENT = {};
+
+	private static final byte[] INVALID = {};
 
 	protected final Path directory;
 
 	protected final Map<String, byte[]> bodies = new ConcurrentHashMap<>();
 
-	public Foo(Path directory) {
+	public CmsResourceHandling(Path directory) {
 		this.directory = directory;
+
+		try (var ee = Files.list(directory)) {
+			ee.filter(Files::isRegularFile).map(x -> x.getFileName().toString()).forEach(x -> bodies.put(x, ABSENT));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 
 		Thread.startVirtualThread(this::watch);
 	}
@@ -79,28 +89,38 @@ public class Foo {
 		return directory;
 	}
 
+	public boolean canHandle(Path file) {
+		return file.getNameCount() == 1 && bodies.containsKey(file.toString());
+	}
+
 	public boolean handle(Path file, HttpResponse response) {
-		if (file.getNameCount() != 1)
-			throw new IllegalArgumentException("file=" + file);
+//		IO.println("CmsResourceHandling.handle, file=" + file);
 
-		IO.println("Foo.handle, file=" + file);
+		var n = file.toString();
+		var bb = bodies.get(n);
 
-		var bb = bodies.computeIfAbsent(file.toString(), _ -> {
-			var f = directory.resolve(file);
-			if (!Files.exists(file))
-				throw new NotFoundException();
+		if (bb == ABSENT)
+			bb = bodies.compute(n, (_, v) -> {
+				if (v == ABSENT) {
+					var f = directory.resolve(file);
+					if (Files.isRegularFile(f))
+						try {
+							v = Files.readAllBytes(f);
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					else
+						v = INVALID;
+				}
+				return v;
+			});
 
-			try {
-				return Files.readAllBytes(f);
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
+		if (bb == INVALID)
+			throw new NotFoundException();
 
 		response.setStatus(200);
 		response.setHeaderValue("cache-control", "max-age=3600");
 		{
-			var n = file.getFileName().toString();
 			var i = n.lastIndexOf('.');
 			var e = i != -1 ? n.substring(i + 1).toLowerCase() : null;
 			var t = e != null ? switch (e) {
@@ -113,12 +133,6 @@ public class Foo {
 		}
 		response.setHeaderValue("content-length", String.valueOf(bb.length));
 
-//		try (var in = Files.newInputStream(file);
-//				var out = Channels.newOutputStream((WritableByteChannel) response.getBody())) {
-//			in.transferTo(out);
-//		} catch (IOException e) {
-//			throw new UncheckedIOException(e);
-//		}
 		try {
 			((WritableByteChannel) response.getBody()).write(ByteBuffer.wrap(bb));
 		} catch (IOException e) {
@@ -136,11 +150,18 @@ public class Foo {
 			for (;;)
 				try {
 					var k = w.take();
-					IO.println("k=" + k);
-					for (var e : k.pollEvents())
-						IO.println(
-								"e=" + e.kind() + " " + e.count() + " " + e.context() + " " + e.context().getClass());
+//					IO.println("k=" + k);
+					for (var e : k.pollEvents()) {
+//						IO.println(
+//								"e=" + e.kind() + " " + e.count() + " " + e.context() + " " + e.context().getClass());
+						var n = e.context().toString();
+						if (e.kind() == StandardWatchEventKinds.ENTRY_DELETE)
+							bodies.remove(n);
+						else
+							bodies.put(n, ABSENT);
+					}
 					k.reset();
+//					IO.println("bodies=" + bodies);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}

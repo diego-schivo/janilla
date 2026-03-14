@@ -79,7 +79,7 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected HttpHandlerFactory buildExceptionHandlerFactory() {
 		return diFactory != null ? Objects.requireNonNull(
-				diFactory.create(diFactory.actualType(ExceptionHandlerFactory.class), Map.of("rootFactory", this)))
+				diFactory.newInstance(diFactory.classFor(ExceptionHandlerFactory.class), Map.of("rootFactory", this)))
 				: new ExceptionHandlerFactory();
 	}
 
@@ -90,12 +90,12 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 
 	protected HttpHandlerFactory buildInvocationHandlerFactory() {
 		return diFactory != null
-				? Objects.requireNonNull(diFactory.create(diFactory.actualType(InvocationHandlerFactory.class),
+				? Objects.requireNonNull(diFactory.newInstance(diFactory.classFor(InvocationHandlerFactory.class),
 						Java.hashMap("instanceResolver", (Function<Class<?>, Object>) x -> {
 							var y = diFactory.context();
 //					IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
 							return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-									: diFactory.create(diFactory.actualType(x));
+									: diFactory.newInstance(diFactory.classFor(x));
 						}, "rootFactory", this)))
 				: new InvocationHandlerFactory(invocationResolver, renderableFactory, this);
 	}
@@ -103,19 +103,19 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 	protected HttpHandlerFactory buildJsonHandlerFactory() {
 		return diFactory != null
 				? Objects.requireNonNull(
-						diFactory.create(diFactory.actualType(JsonHandlerFactory.class), Map.of("rootFactory", this)))
+						diFactory.newInstance(diFactory.classFor(JsonHandlerFactory.class), Map.of("rootFactory", this)))
 				: new JsonHandlerFactory();
 	}
 
 	protected ResourceHandlerFactory buildResourceHandlerFactory() {
 		return diFactory != null ? Objects.requireNonNull(
-				diFactory.create(diFactory.actualType(ResourceHandlerFactory.class), Map.of("rootFactory", this)))
+				diFactory.newInstance(diFactory.classFor(ResourceHandlerFactory.class), Map.of("rootFactory", this)))
 				: new DefaultResourceHandlerFactory(resourceMap);
 	}
 
 	protected HttpHandlerFactory buildTemplateHandlerFactory() {
 		return diFactory != null ? Objects.requireNonNull(
-				diFactory.create(diFactory.actualType(TemplateHandlerFactory.class), Map.of("rootFactory", this)))
+				diFactory.newInstance(diFactory.classFor(TemplateHandlerFactory.class), Map.of("rootFactory", this)))
 				: new TemplateHandlerFactory();
 	}
 }

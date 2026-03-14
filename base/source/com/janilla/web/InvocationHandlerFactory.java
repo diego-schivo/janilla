@@ -51,11 +51,13 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.ioc.DiFactory;
 import com.janilla.java.Converter;
 import com.janilla.java.Java;
+import com.janilla.java.JavaInvoke;
+import com.janilla.java.JavaReflect;
 import com.janilla.java.NullTypeResolver;
 import com.janilla.java.Property;
-import com.janilla.java.Reflection;
 import com.janilla.java.TypeResolver;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.json.Json;
@@ -68,11 +70,19 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 
 	protected final HttpHandlerFactory rootFactory;
 
+	protected final DiFactory diFactory;
+
 	public InvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
 			HttpHandlerFactory rootFactory) {
+		this(invocationResolver, renderableFactory, rootFactory, null);
+	}
+
+	public InvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
+			HttpHandlerFactory rootFactory, DiFactory diFactory) {
 		this.invocationResolver = invocationResolver;
 		this.renderableFactory = renderableFactory;
 		this.rootFactory = rootFactory;
+		this.diFactory = diFactory;
 	}
 
 	@Override
@@ -100,7 +110,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 //		IO.println("InvocationHandlerFactory.handle, invocation=" + invocation);
 
 		var o = ScopedValue.where(JSON_KEYS, new HashSet<>()).call(() -> {
-			var h = Reflection.methodHandle(invocation.method());
+			var h = JavaInvoke.methodHandle(invocation.method());
 			var oo = Stream
 					.concat(Stream.of(invocation.object()), Arrays.stream(resolveArguments(invocation, exchange)))
 					.toArray();
@@ -200,7 +210,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		}
 
 		var ii = IntStream.iterate(0, x -> x + 1).iterator();
-		var ptt = Reflection.actualParameterTypes(invocation.method(), invocation.object().getClass());
+		var ptt = JavaReflect.actualParameterTypes(invocation.method(), invocation.object().getClass());
 		var oo1 = Arrays.stream(invocation.regexGroups()).map(x -> {
 			var i = ii.nextInt();
 			return resolveArgument(ptt[i], exchange, new String[] { x }, null, () -> converter(null));
@@ -227,7 +237,9 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values, Supplier<String> body,
 			Supplier<Converter> converter) {
 //		IO.println("InvocationHandlerFactory.resolveArgument, type=" + type);
-		var c = Java.toClass(type);
+		var c0 = Java.toClass(type);
+		var c1 = diFactory.classFor(c0);
+		var c = c1 != null ? c1 : c0;
 
 		if (c != null && HttpExchange.class.isAssignableFrom(c))
 			return exchange;
@@ -296,7 +308,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
-					for (var p : (Iterable<Property>) (() -> Reflection.properties(c).iterator())) {
+					for (var p : (Iterable<Property>) (() -> JavaReflect.properties(c).iterator())) {
 						var v = resolveArgument(p.type(), exchange,
 //									entries != null
 //											? entries.stream().filter(x -> x.getKey().equals(n))
@@ -314,16 +326,12 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		return null;
 	}
 
-//	protected EntryTree createEntryTree() {
-//		return new EntryTree();
-//	}
-
 	protected Object parseParameter(String[] strings, Type type) {
 //		IO.println("InvocationHandlerFactory.parseParameter, strings=" + Arrays.toString(strings) + ", type=" + type);
 		var c = Java.toClass(type);
 		var o = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
-		return new Converter(null).convert(o, type);
+		return new Converter().convert(o, type);
 	}
 
 	protected Converter converter(Class<? extends TypeResolver> type) {
@@ -341,81 +349,6 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		if (h != null)
 			h.handle(exchange);
 	}
-
-//	public static class EntryTree extends LinkedHashMap<String, Object> {
-//
-//		private static final long serialVersionUID = 2351446498774467936L;
-//
-//		public void add(Map.Entry<String, String> entry) {
-//			Map<String, Object> m = this;
-//			var ss = entry.getKey().split("\\.");
-//			for (var i = 0; i < ss.length; i++) {
-//				if (ss[i].endsWith("]")) {
-//					var ss2 = ss[i].split("\\[", 2);
-//					var i2 = Integer.parseInt(ss2[1].substring(0, ss2[1].length() - 1));
-//					if (i2 < 0 || i2 >= 1000)
-//						throw new RuntimeException();
-//					@SuppressWarnings("unchecked")
-//					var l = (List<Object>) m.computeIfAbsent(ss2[0], _ -> new ArrayList<Object>());
-//					while (l.size() <= i2)
-//						l.add(null);
-//					if (i < ss.length - 1) {
-//						@SuppressWarnings("unchecked")
-//						var m2 = (Map<String, Object>) l.get(i2);
-//						if (m2 == null) {
-//							m2 = new LinkedHashMap<String, Object>();
-//							l.set(i2, m2);
-//						}
-//						m = m2;
-//					} else
-//						l.set(i2, entry.getValue());
-//				} else if (i < ss.length - 1) {
-//					@SuppressWarnings("unchecked")
-//					var o = (Map<String, Object>) m.computeIfAbsent(ss[i], _ -> new LinkedHashMap<String, Object>());
-//					m = o;
-//				} else
-//					m.put(ss[i], entry.getValue());
-//			}
-//		}
-//
-//		public <T> T convert(Class<T> target) {
-//			return convert(this, target);
-//		}
-//
-//		protected <T> T convert(Map<String, Object> map, Class<T> target) {
-//			if (map.containsKey("$type"))
-//				try {
-//					@SuppressWarnings("unchecked")
-//					var c = (Class<T>) Class.forName(target.getPackageName() + "." + map.get("$type"));
-//					if (!target.isAssignableFrom(c))
-//						throw new RuntimeException();
-//					target = c;
-//				} catch (ClassNotFoundException e) {
-//					throw new RuntimeException(e);
-//				}
-//			BiFunction<String, Type, Object> c = (name, type) -> new Converter(null).convert(map.get(name), type);
-//			try {
-//				if (target.isRecord()) {
-//					var oo = new ArrayList<Object>();
-//					for (var x : target.getRecordComponents())
-//						oo.add(c.apply(x.getName(), x.getGenericType()));
-//					@SuppressWarnings("unchecked")
-//					var t = (T) target.getConstructors()[0].newInstance(oo.toArray());
-//					return t;
-//				}
-//				var z = target;
-//				var t = z.getConstructor().newInstance();
-//				Reflection.properties(z).forEach(x -> {
-//					var o = c.apply(x.name(), x.genericType());
-//					if (o != null)
-//						x.set(t, o);
-//				});
-//				return t;
-//			} catch (ReflectiveOperationException e) {
-//				throw new RuntimeException(e);
-//			}
-//		}
-//	}
 
 //	public static void main(String[] args) throws Exception {
 //	class C {

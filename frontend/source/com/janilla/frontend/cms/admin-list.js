@@ -67,6 +67,7 @@ export default class AdminList extends WebComponent {
         super.connectedCallback();
         this.addEventListener("change", this.handleChange);
         this.addEventListener("click", this.handleClick);
+        this.addEventListener("displayupdated", this.handleDisplayUpdated);
         this.addEventListener("limitselected", this.handleLimitSelected);
         this.addEventListener("pageselected", this.handlePageSelected);
         this.addEventListener("searchchanged", this.handleSearchChanged);
@@ -76,6 +77,7 @@ export default class AdminList extends WebComponent {
         super.disconnectedCallback();
         this.removeEventListener("change", this.handleChange);
         this.removeEventListener("click", this.handleClick);
+        this.removeEventListener("displayupdated", this.handleDisplayUpdated);
         this.removeEventListener("limitselected", this.handleLimitSelected);
         this.removeEventListener("pageselected", this.handlePageSelected);
         this.removeEventListener("searchchanged", this.handleSearchChanged);
@@ -187,7 +189,6 @@ export default class AdminList extends WebComponent {
                 name: this.dataset.slug.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join(" ")
             } : null
         }));
-		this.querySelector("admin-search-filter").setAttribute("data-search", this.dataset.search);
     }
 
     handleChange = event => {
@@ -313,6 +314,10 @@ export default class AdminList extends WebComponent {
                 this.requestDisplay();
                 break;
         }
+    }
+
+    handleDisplayUpdated = () => {
+        this.querySelector("admin-search-filter")?.setAttribute("data-search", this.dataset.search);
     }
 
     handleLimitSelected = event => {

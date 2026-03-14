@@ -32,8 +32,12 @@ public class DollarTypeResolver implements TypeResolver {
 
 	protected final Map<String, Class<?>> parseMap;
 
-	public DollarTypeResolver(List<Class<?>> resolvables) {
-		parseMap = resolvables.stream().collect(Collectors.toMap(this::format, x -> x, (_, x) -> x));
+	public DollarTypeResolver(List<Class<?>> resolvables) { // , DiFactory diFactory) {
+		parseMap = resolvables.stream().collect(Collectors.toMap(this::format, x -> {
+//			var c = (Class<?>) diFactory.classFor(x);
+//			return c != null ? c : x;
+			return x;
+		}, (_, x) -> x));
 //		IO.println("DollarTypeResolver, parseMap=" + parseMap);
 	}
 

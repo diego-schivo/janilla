@@ -1,0 +1,181 @@
+/*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
+package com.janilla.ioc;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import com.janilla.java.JavaReflect;
+
+public class DefaultDiFactory implements DiFactory {
+
+	protected final List<Class<?>> types;
+
+	protected Object context;
+
+	protected final String name;
+
+	protected final Map<Class<?>, Optional<Class<?>>> classes = new ConcurrentHashMap<>();
+
+	protected final Map<Class<?>, Function<Map<String, Object>, ?>> factories = new ConcurrentHashMap<>();
+
+	public DefaultDiFactory(List<Class<?>> types) {
+		this(types, null);
+	}
+
+	public DefaultDiFactory(List<Class<?>> types, String name) {
+//		IO.println("DiFactory, types=" + types);
+		this.types = types;
+		this.name = name;
+	}
+
+	@Override
+	public Object context() {
+		return context;
+	}
+
+	@Override
+	public DiFactory context(Object context) {
+		if (this.context != null)
+			throw new IllegalStateException();
+		this.context = context;
+		return this;
+	}
+
+	@Override
+	public List<Class<?>> types() {
+		return types;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <T, U extends T> Class<U> classFor(Class<T> type) {
+//		IO.println("DiFactory.actualType, type=" + type);
+		return (Class<U>) classes.computeIfAbsent(type, _ -> Stream.concat(Stream.of(type), types.stream())
+				.filter(x -> !Modifier.isAbstract(x.getModifiers())).filter(type::isAssignableFrom).filter(x -> {
+					var a = x.getAnnotation(Context.class);
+					var nn = a != null ? a.value() : null;
+					return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
+				}).reduce((_, x) -> x)).orElse(null);
+	}
+
+	@Override
+	public <T> T newInstance(Class<T> class1, Map<String, Object> arguments) {
+//		IO.println("DiFactory.create, class1=" + class1 + ", arguments=" + arguments);
+		if (class1.isInterface() || Modifier.isAbstract(class1.getModifiers()))
+			throw new IllegalArgumentException("class1=" + class1);
+		var f = factories.computeIfAbsent(class1, _ -> {
+			var cc = class1.getConstructors();
+			var o = context;
+			var oe = !Modifier.isStatic(class1.getModifiers()) && o != null
+					&& class1.getEnclosingClass() == o.getClass();
+			return aa -> newInstance(cc, aa, o, oe);
+		});
+		@SuppressWarnings("unchecked")
+		var t = (T) f.apply(arguments);
+		return t;
+	}
+
+	protected <T> T newInstance(Constructor<?>[] constructors, Map<String, Object> arguments, Object context,
+			boolean enclosed) {
+//		IO.println("DiFactory.newInstance, constructors=" + Arrays.toString(constructors) + ", arguments=" + arguments
+//				+ ", context=" + context + ", enclosed=" + enclosed);
+		record R(Constructor<?> c, Object[] aa, boolean f, int n) {
+		}
+		try {
+			var r = new R(null, null, false, -1);
+			for (var c : constructors) {
+				var pp = Arrays.stream(c.getParameters());
+				var aa = (enclosed ? pp.skip(1) : pp).map(x -> {
+					if (arguments != null && arguments.containsKey(x.getName()))
+						return arguments.get(x.getName());
+					var p = context != null ? JavaReflect.property(context.getClass(), x.getName()) : null;
+					return p != null ? p.get(context) : null;
+				}).toArray();
+				var n = (int) Arrays.stream(aa).filter(Objects::nonNull).count();
+				var f = Arrays.stream(aa).anyMatch(x -> x instanceof DiFactory);
+				if (f != r.f ? f : n > r.n || (n == r.n && c.getParameterCount() < r.c.getParameterCount()))
+					r = new R(c, aa, f, n);
+			}
+			if (enclosed) {
+				var aa = new Object[1 + r.aa.length];
+				aa[0] = context;
+				System.arraycopy(r.aa, 0, aa, 1, r.aa.length);
+				r = new R(r.c, aa, r.f, r.n);
+			}
+//			IO.println("DiFactory.newInstance, r=" + r);
+			@SuppressWarnings("unchecked")
+			var t = (T) r.c.newInstance(r.aa);
+			return t;
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+//	public static void main(String[] args) {
+//		var z = new Foo("a");
+//		var f = new DefaultDiFactory(List.of(Foo.C.class), () -> z);
+//		var x1 = f.create(f.actualType(Foo.I.class), Map.of("s2", "b"));
+//		IO.println("x1=" + x1);
+//		var x2 = f.create(f.actualType(Foo.I.class), Map.of("s2", "c"));
+//		IO.println("x2=" + x2);
+//	}
+//
+//	public static class Foo {
+//
+//		public final String s1;
+//
+//		public Foo(String s1) {
+//			this.s1 = s1;
+//		}
+//
+//		public interface I {
+//		}
+//
+//		public class C implements I {
+//
+//			public String s1;
+//
+//			private final String s2;
+//
+//			public C(String s2) {
+//				this.s2 = s2;
+//			}
+//
+//			@Override
+//			public String toString() {
+//				return s1 + s2;
+//			}
+//		}
+//	}
+}

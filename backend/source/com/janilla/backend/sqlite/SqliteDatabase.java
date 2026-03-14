@@ -264,6 +264,10 @@ public class SqliteDatabase {
 		return header;
 	}
 
+	public Cache<Long, byte[]> pageCache() {
+		return pageCache;
+	}
+
 	public int usableSize() {
 		return header.getPageSize() - header.getReservedBytes();
 	}
@@ -480,7 +484,10 @@ public class SqliteDatabase {
 	public IndexBTree index(String name, String type) {
 //		IO.println("SqliteDatabase.index, name=" + name + ", type=" + type);
 		var o = schema().stream().filter(x -> (type == null || x.type().equals(type)) && x.name().equals(name))
-				.findFirst().orElseThrow(() -> new IllegalArgumentException(name + " (type=" + type + ")"));
+				.findFirst().orElse(null);
+		if (o == null)
+			throw new IllegalArgumentException("name=" + name + ", type=" + type);
+
 		return new IndexBTree(this, o.root());
 	}
 

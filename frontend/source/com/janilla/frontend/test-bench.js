@@ -23,7 +23,7 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 import WebComponent from "./web-component.js";
-import tests from "tests";
+import tests from "./tests.js";
 
 export default class TestBench extends WebComponent {
 
@@ -143,7 +143,7 @@ export const matchNode = (xpath, context, not) => {
 					o.disconnect();
 					o = null;
 				}
-				reject(`Timeout (xpath=${xpath})`);
+				reject(new Error(`Timeout (xpath=${xpath})`));
 			}, 500);
 		}
 	});

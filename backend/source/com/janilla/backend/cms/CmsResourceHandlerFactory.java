@@ -49,7 +49,6 @@
  */
 package com.janilla.backend.cms;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.janilla.http.HttpHandler;
@@ -58,19 +57,17 @@ import com.janilla.web.ResourceHandlerFactory;
 
 public class CmsResourceHandlerFactory implements ResourceHandlerFactory {
 
-	protected final Foo foo;
+	protected final CmsResourceHandling handling;
 
-	public CmsResourceHandlerFactory(Foo foo) {
-		this.foo = foo;
+	public CmsResourceHandlerFactory(CmsResourceHandling cmsResourceHandling) {
+		this.handling = cmsResourceHandling;
 	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {
 		var p = object instanceof HttpRequest x ? x.getPath() : null;
 		var n = p != null && p.startsWith("/api/media/") ? p.substring("/api/media/".length()) : null;
-		if (n == null)
-			return null;
-		var f = Path.of(n);
-		return Files.exists(foo.directory().resolve(f)) ? x -> foo.handle(f, x.response()) : null;
+		var f = n != null && n.indexOf('/') == -1 ? Path.of(n) : null;
+		return f != null && handling.canHandle(f) ? x -> handling.handle(f, x.response()) : null;
 	}
 }

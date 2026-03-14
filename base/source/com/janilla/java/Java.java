@@ -249,13 +249,19 @@ public final class Java {
 
 	public static Class<?> toClass(Type type) {
 //		IO.println("Java.toClass, type=" + type);
-		return switch (type) {
+		class A {
+			private static final Map<Type, Object> RESULTS = new ConcurrentHashMap<>();
+		}
+		var o = A.RESULTS.computeIfAbsent(type, _ -> switch (type) {
 		case Class<?> x -> x;
 		case ParameterizedType x -> (Class<?>) x.getRawType();
 		case TypeVariable<?> _ -> Object.class;
 		case WildcardType _ -> Object.class;
-		default -> throw new IllegalArgumentException();
-		};
+		default -> new IllegalArgumentException();
+		});
+		if (o instanceof RuntimeException e)
+			throw e;
+		return (Class<?>) o;
 	}
 
 	public static FileSystem zipFileSystem(URI uri) {

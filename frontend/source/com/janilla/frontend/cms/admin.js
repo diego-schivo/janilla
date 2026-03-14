@@ -353,7 +353,7 @@ export default class Admin extends WebComponent {
                 return "text";
             case "Boolean":
                 return "checkbox";
-            case "DocumentReference":
+            case "Document":
                 return "relationship";
             case "File":
                 return "file";
@@ -451,7 +451,7 @@ export default class Admin extends WebComponent {
                         //properties: p && !["List", "String"].includes(p.type) ? s.schema[p.type] : null,
                         properties: p ? (() => {
                             switch (p.type) {
-                                case "DocumentReference":
+                                case "Document":
                                     return { id: { type: "Long" } };
                                 case "List":
                                 case "String":

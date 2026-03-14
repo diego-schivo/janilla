@@ -61,7 +61,7 @@ public class ResourceMap extends HashMap<String, Resource> {
 								.dropWhile(x -> !x.getFileName().toString().equals("classes")).findFirst().get()
 						: p.getFileSystem().getRootDirectories().iterator().next();
 				p = d.relativize(p);
-//			IO.println("ResourceMap, p=" + p);
+//				IO.println("ResourceMap, p=" + p);
 				try {
 					String ex;
 					{
@@ -104,7 +104,7 @@ public class ResourceMap extends HashMap<String, Resource> {
 						var mu = A.moduleAndUri(n);
 						var f = d.resolve(p);
 						var r = new DefaultResource(mu.module(), mu.uri(), p2, "/" + n, Files.size(f));
-//					IO.println("r=" + r);
+//						IO.println("r=" + r);
 						var k2 = r.path().substring(r.package1().length() + 1);
 						if (k != null && !k.isEmpty())
 							k2 = k + k2;

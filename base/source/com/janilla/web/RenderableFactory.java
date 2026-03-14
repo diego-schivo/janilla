@@ -28,59 +28,83 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedType;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Java;
+import com.janilla.java.JavaReflect;
 
 public class RenderableFactory {
 
 	protected static final Pattern TEMPLATE_ELEMENT = Pattern
 			.compile("<ssr-template id=\"([\\w-]+)\">(.*?)</ssr-template>", Pattern.DOTALL);
 
-	protected final Map<String, Map<String, String>> templates = new ConcurrentHashMap<>();
-
 	protected final DiFactory diFactory;
 
-	public RenderableFactory() {
-		this(null);
+	protected final ResourceMap resourceMap;
+
+	protected final Map<String, Map<String, String>> templates = new ConcurrentHashMap<>();
+
+	public RenderableFactory(ResourceMap resourceMap) {
+		this(resourceMap, null);
 	}
 
-	public RenderableFactory(DiFactory diFactory) {
+	public RenderableFactory(ResourceMap resourceMap, DiFactory diFactory) {
+		this.resourceMap = resourceMap;
 		this.diFactory = diFactory;
 	}
 
 	public String template(String key1, String key2) {
+//		IO.println("RenderableFactory.template, key1=" + key1 + ", key2=" + key2);
 		return Optional.ofNullable(templates.get(key1)).map(x -> x.get(key2)).orElse(null);
 	}
 
 	public <T> Renderable<T> createRenderable(AnnotatedElement annotated, T value) {
 //		IO.println("RenderableFactory.createRenderable, annotated=" + annotated + ", value=" + value);
-		var a = annotation(annotated, value);
+		var a = Stream.of(value != null ? value.getClass() : null, annotated).filter(x -> x != null).map(x -> {
+			var r = x.getAnnotation(Render.class);
+			if (r == null) {
+				var c = x instanceof AnnotatedType at ? Java.toClass(at.getType()) : (Class<?>) x;
+				r = JavaReflect.inheritedAnnotation(c, Render.class);
+			}
+			return r;
+		}).filter(x -> x != null).findFirst().orElse(null);
+//		IO.println("RenderableFactory.createRenderable, a=" + a);
+
 		@SuppressWarnings("unchecked")
 		var c = (Class<Renderer<T>>) (a != null ? a.renderer() : HtmlRenderer.class);
 		var r = createRenderer(c);
 		r.renderableFactory = this;
 		r.annotation = a;
-		var t = a != null ? a.template() : null;
-		if (t != null && t.endsWith(".html")) {
-			templates.computeIfAbsent(t, k -> {
-				var m = new ConcurrentHashMap<String, String>();
-				try (var in = getResourceAsStream(value, k)) {
-					if (in == null)
-						throw new NullPointerException(k);
-					var s = new String(in.readAllBytes());
-					m.put("", TEMPLATE_ELEMENT.matcher(s).replaceAll(x -> {
-						m.put(x.group(1), x.group(2));
-						return "";
-					}));
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
+		if (a != null && a.resource().length != 0) {
+			var t = a.template();
+			templates.computeIfAbsent(t, _ -> {
+				var s = Arrays.stream(a.resource()).map(x -> {
+					try (var in = ((DefaultResource) resourceMap.get(x)).newInputStream()) {
+						if (in == null)
+							throw new NullPointerException(t);
+						return new String(in.readAllBytes());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				}).collect(Collectors.joining());
+
+				var m = new LinkedHashMap<String, String>();
+				m.put("", TEMPLATE_ELEMENT.matcher(s).replaceAll(x -> {
+					m.put(x.group(1), x.group(2));
+					return "";
+				}));
+//				IO.println("RenderableFactory.createRenderable, t=" + t + ", m.keySet()=" + m.keySet());
 				return m;
 			});
 			r.templateKey1 = t;
@@ -90,7 +114,7 @@ public class RenderableFactory {
 
 	protected <T> Renderer<T> createRenderer(Class<Renderer<T>> class1) {
 //		IO.println("RenderableFactory.createRenderer, class1=" + class1);
-		var x = diFactory != null ? diFactory.create(class1) : null;
+		var x = diFactory != null ? diFactory.newInstance(class1) : null;
 		try {
 			return x != null ? x : class1.getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {
@@ -98,13 +122,18 @@ public class RenderableFactory {
 		}
 	}
 
-	protected <T> Render annotation(AnnotatedElement annotated, T value) {
-		return Stream.of(annotated, value != null ? value.getClass() : null)
-				.map(x -> x != null ? x.getAnnotation(Render.class) : null).filter(Objects::nonNull).findFirst()
-				.orElse(null);
-	}
-
 	protected <T> InputStream getResourceAsStream(T value, String name) {
-		return value.getClass().getResourceAsStream(name);
+		class A {
+			private static final Map<List<?>, Supplier<InputStream>> SUPPLIERS = new ConcurrentHashMap<>();
+		}
+		var c = value.getClass();
+		return A.SUPPLIERS.computeIfAbsent(List.of(c, name),
+				_ -> Stream.concat(Stream.of(c), JavaReflect.inheritedClasses(c))
+						.filter(x -> !x.getPackageName().startsWith("java.")).filter(x -> x.getResource(name) != null)
+						.findFirst().map(x -> (Supplier<InputStream>) () -> {
+//							IO.println("RenderableFactory.getResourceAsStream, x=" + x + ", name=" + name);
+							return x.getResourceAsStream(name);
+						}).orElse(() -> null))
+				.get();
 	}
 }

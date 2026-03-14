@@ -24,7 +24,6 @@
  */
 package com.janilla.json;
 
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -33,8 +32,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.java.Java;
+import com.janilla.java.JavaReflect;
 import com.janilla.java.Property;
-import com.janilla.java.Reflection;
 
 public class ReflectionValueIterator extends ValueIterator {
 
@@ -57,10 +56,11 @@ public class ReflectionValueIterator extends ValueIterator {
 			default -> null;
 			};
 			if (tt == null) {
-				var c = Modifier.isPublic(value.getClass().getModifiers()) ? value.getClass() : switch (value) {
-				case Map.Entry<?, ?> _ -> Map.Entry.class;
-				default -> throw new IllegalArgumentException(value.toString());
-				};
+//				var c = Modifier.isPublic(value.getClass().getModifiers()) ? value.getClass() : switch (value) {
+//				case Map.Entry<?, ?> _ -> Map.Entry.class;
+//				default -> throw new IllegalArgumentException("value=" + value);
+//				};
+				var c = value instanceof Map.Entry ? Map.Entry.class : value.getClass();
 				tt = context.newObjectIterator(entries(c));
 			}
 		}
@@ -70,14 +70,22 @@ public class ReflectionValueIterator extends ValueIterator {
 	protected Stream<Map.Entry<String, Object>> entries(Class<?> type) {
 //		IO.println("ReflectionValueIterator.entries, type=" + type);
 		var ee = type.isEnum() ? Stream.of(Map.entry("name", (Object) ((Enum<?>) value).name()))
-				: Reflection.properties(type).filter(this::includeEntry).map(x -> {
+				: JavaReflect.properties(type).filter(this::includeEntry).map(x -> {
 //					IO.println("ReflectionValueIterator.entries, x=" + x + ", value=" + value);
 					return (Map.Entry<String, Object>) Java.mapEntry(x.name(), x.get(value));
 				});
 		if (((ReflectionJsonIterator) context).includeType) {
-			var x = (Object) type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');
-			ee = Stream.concat(Stream.of(Map.entry("$type", x)), ee);
+//			var x = (Object) type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');
+//			ee = Stream.concat(Stream.of(Map.entry("$type", x)), ee);
+			ee = Stream.concat(Stream.of(Map.entry("$type", type)), ee);
 		}
+
+		{
+			var l = ee.toList();
+//			IO.println("ReflectionValueIterator.entries, l=" + l);
+			ee = l.stream();
+		}
+
 		return ee;
 	}
 

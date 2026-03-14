@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${title}</title>
+    <link rel="icon" href="/images/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="importmap">
+      {
+        "imports": <!--${imports}-->
+      }
+    </script>
+    <script type="module" src="/script.js"></script>
+    <!--${scripts}-->
+  </head>
+  <body>
+    <!--${app}-->
+    <!--${templates}-->
+  </body>
+</html>
+
+<ssr-template id="script">
+  <script src="${url}"></script>
+</ssr-template>
+
+<ssr-template id="app">
+  <app-element data-api-url="${apiUrl}">
+    <script type="application/json">
+      <!--${state}-->
+    </script>
+  </app-element>
+</ssr-template>
+
+<ssr-template id="template">
+  <template id="${id}">
+    <!--${content}-->
+  </template>
+</ssr-template>

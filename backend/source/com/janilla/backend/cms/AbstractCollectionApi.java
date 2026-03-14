@@ -61,7 +61,7 @@ import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Version;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.DollarTypeResolver;
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
@@ -116,7 +116,7 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 //				+ autosave);
 		var s = draft != null && draft.booleanValue() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != document.documentStatus())
-			document = Reflection.copy(Map.of("documentStatus", s), document);
+			document = JavaReflect.copy(Map.of("documentStatus", s), document);
 		var nv = !(autosave != null && autosave.booleanValue());
 		return crud().update(id, document, updateInclude(document), nv);
 	}

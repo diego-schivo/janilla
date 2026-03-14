@@ -26,11 +26,15 @@ package com.janilla.web;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterators;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -40,7 +44,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 
 public class HtmlRenderer<T> extends Renderer<T> {
 
@@ -88,7 +92,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 		if (annotation != null && !annotation.template().isEmpty()) {
 			var k1 = annotation.template();
 			var k2 = "";
-			if (!annotation.template().endsWith(".html")) {
+			if (annotation.resource().length == 0) {
 				k1 = templateKey1;
 				k2 = annotation.template();
 			}
@@ -105,20 +109,21 @@ public class HtmlRenderer<T> extends Renderer<T> {
 				if (input.value() == null)
 					break;
 				input = evaluate(input.value(), k);
-//						IO.println("Renderer.interpolate, k=" + k + ", av=" + av);
+//				IO.println("Renderer.interpolate, k=" + k + ", input=" + input);
 			}
+
+		var a = input.annotated();
 		var v = input.value();
+
 		consumer.accept(v);
 
 		var r = v instanceof Renderable<?> x ? x
-				: v != null && !(expression.isEmpty() && input.annotated() == null)
-						? renderableFactory.createRenderable(input.annotated(), v)
-						: null;
+				: v != null && !(expression.isEmpty() && a == null) ? renderableFactory.createRenderable(a, v) : null;
 		var m = v instanceof Iterator || v instanceof Iterable || v instanceof Stream;
 		if (r != null) {
 			if (r.renderer().templateKey1 == null)
 				r.renderer().templateKey1 = templateKey1;
-			if (m && input.annotated() instanceof AnnotatedParameterizedType x)
+			if (m && a instanceof AnnotatedParameterizedType x)
 				r.renderer().elementType = x.getAnnotatedActualTypeArguments()[0];
 			v = r.get();
 		} else if (m) {
@@ -141,6 +146,7 @@ public class HtmlRenderer<T> extends Renderer<T> {
 	}
 
 	protected AnnotatedValue evaluate(Object input, String key) {
+//		IO.println("HtmlRenderer.evaluate, input=" + input.getClass() + ", key=" + key);
 		AnnotatedElement a;
 		Object v;
 		switch (input) {
@@ -155,10 +161,33 @@ public class HtmlRenderer<T> extends Renderer<T> {
 			v = x.get(key);
 			break;
 		default:
-			var p = Reflection.property(input.getClass(), key);
-			a = p != null ? p.annotatedType() : null;
+			var p = JavaReflect.property(input.getClass(), key);
+
+			if (p != null && p.member() instanceof Method m) {
+				class A {
+					private static final Map<Method, Optional<AnnotatedType>> RESULTS = new ConcurrentHashMap<>();
+				}
+				a = A.RESULTS.computeIfAbsent(m, _ -> {
+					var r = p.annotatedType();
+					if (r != null && r.getAnnotations().length == 0 && !(r instanceof AnnotatedParameterizedType x
+							&& x.getAnnotatedActualTypeArguments()[0].getAnnotations().length != 0))
+						r = JavaReflect.inheritedMethods(m)
+								.map(x -> x.getReturnType() == Void.TYPE ? x.getAnnotatedParameterTypes()[0]
+										: x.getAnnotatedReturnType())
+								.filter(x -> x.getAnnotations().length != 0
+										|| (x instanceof AnnotatedParameterizedType x2
+												&& x2.getAnnotatedActualTypeArguments()[0]
+														.getAnnotations().length != 0))
+								.findFirst().orElse(null);
+					return Optional.ofNullable(r);
+				}).orElse(null);
+			} else
+				a = p != null ? p.annotatedType() : null;
+
 			v = p != null ? p.get(input) : null;
 		}
-		return new AnnotatedValue(a, v);
+		var av = new AnnotatedValue(a, v);
+//		IO.println("HtmlRenderer.evaluate, av=" + av);
+		return av;
 	}
 }

@@ -70,6 +70,8 @@
 @import "admin-radio-group.css";
 @import "admin-relationship.css";
 @import "admin-rich-text.css";
+@import "admin-search-bar.css";
+@import "admin-search-filter.css";
 @import "admin-select.css";
 @import "admin-slug.css";
 @import "admin-tabs.css";

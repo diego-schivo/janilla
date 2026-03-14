@@ -50,108 +50,99 @@
 package com.janilla.backend.cms;
 
 import java.io.IOException;
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
-import com.janilla.cms.Document;
-import com.janilla.cms.Types;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.MultipartFormData;
-import com.janilla.java.Java;
-import com.janilla.java.Reflection;
 
 public class Cms {
 
-	public static Map<String, Map<String, Map<String, Object>>> schema(Class<?> dataClass,
-			UnaryOperator<Class<?>> actualType) {
-		var m1 = new HashMap<String, Map<String, Map<String, Object>>>();
-		var q = new ArrayDeque<Class<?>>();
-		q.add(dataClass);
-		Function<Type, String> n = t -> {
-			if (t instanceof TypeVariable v)
-				return v.getName();
-			var c = (Class<?>) (t instanceof ParameterizedType pt ? pt.getRawType() : t);
-			return c.getName().substring(c.getPackageName().length() + 1).replace('$', '.');
-		};
-//		var skip = Set.of("createdAt", "updatedAt", "documentStatus");
-		var skip = Set.of("createdAt", "updatedAt", "documentStatus", "publishedAt");
-		do {
-			var c = q.remove();
-//			IO.println("WebsiteTemplate.schema, c=" + c);
-//			var v = c.getAnnotation(Versions.class);
-//			var d = v != null && v.drafts();
-			var m2 = new LinkedHashMap<String, Map<String, Object>>();
-//			Reflection.properties(c).filter(x -> !(skip.contains(x.name()) || (x.name().equals("publishedAt") && !d)))
-			Reflection.properties(c).filter(x -> !skip.contains(x.name())).forEach(p -> {
-//				IO.println("WebsiteTemplate.schema, x=" + x);
-				var m3 = new LinkedHashMap<String, Object>();
-				m3.put("type", n.apply(p.type() == Class.class || p.type().isEnum() ? String.class : p.genericType()));
-				List<Class<?>> cc;
-				if (p.type() == List.class) {
-					var c2 = Java.toClass(((ParameterizedType) p.genericType()).getActualTypeArguments()[0]);
-					c2 = actualType.apply(c2);
-					var apt = p.annotatedType() instanceof AnnotatedParameterizedType y ? y : null;
-					var ta = apt != null ? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class) : null;
-					if (c2 == Long.class) {
-						cc = List.of();
-						m3.put("elementTypes", List.of(n.apply(c2)));
-						if (ta != null)
-							m3.put("referenceType", n.apply(ta.value()[0]));
-					} else {
-						cc = ta != null ? Arrays.asList(ta.value())
-								: c2.isInterface() ? Arrays.asList(c2.getPermittedSubclasses()) : List.of(c2);
-						m3.put("elementTypes", cc.stream().map(n).toList());
-					}
-				} else if (p.type() == Set.class) {
-					var c2 = (Class<?>) ((ParameterizedType) p.genericType()).getActualTypeArguments()[0];
-					m3.put("elementTypes", List.of(n.apply(c2.isEnum() ? String.class : c2)));
-					if (c2.isEnum())
-//								m3.put("elementTypes", List.of(f.apply(String.class)));
-						m3.put("options", Arrays.stream(c2.getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
-					cc = List.of();
-				} else if (p.type().getPackageName().startsWith("java.")) {
-					if (p.type() == Long.class) {
-						var ta = p.annotatedType().getAnnotation(Types.class);
-						if (ta != null)
-							m3.put("referenceType", n.apply(ta.value()[0]));
-					}
-					cc = List.of();
-//				} else if (p.type() == DocumentReference.class) {
-				} else if (p.type() == Document.class) {
-					var ta = p.annotatedType().getAnnotation(Types.class);
-					if (ta != null)
-						m3.put("referenceTypes", Arrays.stream(ta.value()).map(n).toList());
-					cc = List.of();
-				} else if (p.type().isEnum()) {
-					m3.put("options",
-							Arrays.stream(p.type().getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
-					cc = List.of();
-				} else if (!m1.containsKey(n.apply(p.type())))
-					cc = List.of(p.type());
-				else
-					cc = List.of();
-				m2.put(p.name(), m3);
-				q.addAll(cc);
-			});
-			m1.put(n.apply(c), m2);
-		} while (!q.isEmpty());
-		return m1.entrySet().stream().sorted(Map.Entry.comparingByKey()).collect(LinkedHashMap::new,
-				(x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
-	}
+//	public static Map<String, Map<String, Map<String, Object>>> schema(Class<?> dataClass,
+//			UnaryOperator<Class<?>> classFor) {
+//		var m1 = new HashMap<String, Map<String, Map<String, Object>>>();
+//		var q = new ArrayDeque<Class<?>>(List.of(dataClass));
+//
+//		Function<Type, String> n = t -> {
+//			if (t instanceof TypeVariable v)
+//				return v.getName();
+//			var c = (Class<?>) (t instanceof ParameterizedType pt ? pt.getRawType() : t);
+//			return c.getName().substring(c.getPackageName().length() + 1).replace('$', '.');
+//		};
+//
+//		var skip = Set.of("createdAt", "updatedAt", "documentStatus", "publishedAt");
+//
+//		do {
+//			var c = q.remove();
+//
+//			if (m1.containsKey(n.apply(c)))
+//				continue;
+//
+//			IO.println("Cms.schema, c=" + c);
+//			var m2 = new LinkedHashMap<String, Map<String, Object>>();
+//			JavaReflect.properties(c).filter(x -> !skip.contains(x.name())).forEach(p -> {
+//				IO.println("Cms.schema, p=" + p);
+//				var m3 = new LinkedHashMap<String, Object>();
+//				m3.put("type", n.apply(p.type() == Class.class || p.type().isEnum() ? String.class : p.genericType()));
+//
+//				List<Class<?>> cc;
+//				if (p.type() == List.class) {
+//					var c2 = Java.toClass(((ParameterizedType) p.genericType()).getActualTypeArguments()[0]);
+//					c2 = classFor.apply(c2);
+//					var apt = p.annotatedType() instanceof AnnotatedParameterizedType y ? y : null;
+//					var ta = apt != null ? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class) : null;
+//					if (c2 == Long.class) {
+//						cc = List.of();
+//						m3.put("elementTypes", List.of(n.apply(c2)));
+//						if (ta != null)
+//							m3.put("referenceType", n.apply(ta.value()[0]));
+//					} else {
+//						cc = ta != null ? Arrays.asList(ta.value())
+//								: c2.isInterface() ? Arrays.asList(c2.getPermittedSubclasses()) : List.of(c2);
+//						m3.put("elementTypes", cc.stream().map(n).toList());
+//					}
+//				} else if (p.type() == Set.class) {
+//					var c2 = (Class<?>) ((ParameterizedType) p.genericType()).getActualTypeArguments()[0];
+//					m3.put("elementTypes", List.of(n.apply(c2.isEnum() ? String.class : c2)));
+//					if (c2.isEnum())
+//						m3.put("options", Arrays.stream(c2.getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
+//					cc = List.of();
+//				} else if (p.type().getPackageName().startsWith("java.")) {
+//					if (p.type() == Long.class) {
+//						var ta = p.annotatedType().getAnnotation(Types.class);
+//						if (ta != null)
+//							m3.put("referenceType", n.apply(ta.value()[0]));
+//					}
+//					cc = List.of();
+//				} else if (p.type() == Document.class) {
+//					var ta = p.annotatedType().getAnnotation(Types.class);
+//					if (ta != null)
+//						m3.put("referenceTypes", Arrays.stream(ta.value()).map(classFor::apply).map(n).toList());
+//					cc = List.of();
+//				} else if (p.type().isEnum()) {
+//					m3.put("options",
+//							Arrays.stream(p.type().getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
+//					cc = List.of();
+//				} else if (!m1.containsKey(n.apply(p.type())))
+//					cc = List.of(p.type());
+//				else
+//					cc = List.of();
+//				IO.println("Cms.schema, cc=" + cc);
+//
+//				m2.put(p.name(), m3);
+//				q.addAll(cc);
+//			});
+//
+//			m1.put(n.apply(c), m2);
+//		} while (!q.isEmpty());
+//
+//		return m1.entrySet().stream().sorted(Map.Entry.comparingByKey()).collect(LinkedHashMap::new,
+//				(x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
+//	}
 
 	public static Map<String, byte[]> files(HttpRequest request) throws IOException {
 		byte[][] bbb;

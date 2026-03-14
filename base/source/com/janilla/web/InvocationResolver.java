@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.janilla.java.Reflection;
+import com.janilla.java.JavaReflect;
 
 public class InvocationResolver {
 
@@ -65,7 +65,7 @@ public class InvocationResolver {
 			var m = tm.method();
 			var h1 = t.getAnnotation(Handle.class);
 			var p1 = h1 != null ? h1.path() : null;
-			var h2 = Reflection.inheritedAnnotation(m, Handle.class);
+			var h2 = JavaReflect.inheritedAnnotation(m, Handle.class);
 			var p2 = h2 != null ? h2.path() : null;
 //			IO.println("InvocationHandlerFactory, h1=" + h1 + ", h2=" + h2);
 			if (p2 != null) {

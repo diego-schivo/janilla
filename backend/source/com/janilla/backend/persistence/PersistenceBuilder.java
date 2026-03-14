@@ -36,7 +36,7 @@ import java.util.Map;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TransactionalByteChannel;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.TypeResolver;
+import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 
 public class PersistenceBuilder {
@@ -47,22 +47,26 @@ public class PersistenceBuilder {
 		this.databaseFile = databaseFile;
 	}
 
-	public Persistence build(List<Class<? extends Entity<?>>> storables, TypeResolver typeResolver) {
+	public Persistence build(List<Class<? extends Entity<?>>> storables,
+//			TypeResolver typeResolver,
+			Converter converter) {
 		var d = createDatabase();
-		return new Persistence(d, storables, typeResolver);
+		return new Persistence(d, storables, converter);
 	}
 
 	public Persistence build(DiFactory diFactory) {
 		var d = createDatabase();
-		return diFactory.create(diFactory.actualType(Persistence.class), Map.of("database", d));
+		return diFactory.newInstance(diFactory.classFor(Persistence.class), Map.of("database", d));
 	}
 
 	protected SqliteDatabase createDatabase() {
+		var n1 = databaseFile.getFileName().toString();
+		var n2 = n1.substring(0, n1.lastIndexOf('.')) + ".dbt";
 		TransactionalByteChannel ch;
 		try {
 			var d = Files.createDirectories(databaseFile.getParent());
-			var f1 = d.resolve(databaseFile.getFileName());
-			var f2 = d.resolve(databaseFile.getFileName() + ".transaction");
+			var f1 = d.resolve(n1);
+			var f2 = d.resolve(n2);
 			ch = new TransactionalByteChannel(
 					FileChannel.open(f1, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE),
 					FileChannel.open(f2, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE));
