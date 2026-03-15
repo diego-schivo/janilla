@@ -33,6 +33,9 @@ public class DollarTypeResolver implements TypeResolver {
 	protected final Map<String, Class<?>> parseMap;
 
 	public DollarTypeResolver(List<Class<?>> resolvables) { // , DiFactory diFactory) {
+//		IO.println("DollarTypeResolver, resolvables=" + resolvables);
+//		resolvables.forEach(x -> IO.println(x + " " + x.isAnonymousClass() + " " + x.isLocalClass()));
+
 		parseMap = resolvables.stream().collect(Collectors.toMap(this::format, x -> {
 //			var c = (Class<?>) diFactory.classFor(x);
 //			return c != null ? c : x;
@@ -58,7 +61,10 @@ public class DollarTypeResolver implements TypeResolver {
 
 	@Override
 	public String format(Class<?> type) {
-		var s = type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');
+//		IO.println("DollarTypeResolver.format, type=" + type);
+//		var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
+		var t = type;
+		var s = t.getName().substring(t.getPackageName().length() + 1).replace('$', '.');
 //		IO.println("DollarTypeResolver.format, type=" + type + ", s=" + s);
 		return s;
 	}

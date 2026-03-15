@@ -91,7 +91,7 @@ public class HttpClient {
 	}
 
 	public <R> R send(HttpRequest request, Function<HttpResponse, R> function) {
-//		IO.println("HttpClient.send, " + request.getMethod() + " " + request.getUri());
+		IO.println("HttpClient.send, " + request.getMethod() + " " + request.getUri());
 		try (var ch = SocketChannel.open()) {
 			{
 				var a = request.getHeaderValue(":authority");

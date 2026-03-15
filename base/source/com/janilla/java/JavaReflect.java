@@ -35,7 +35,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -43,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -55,17 +55,17 @@ import java.util.stream.Stream;
 public class JavaReflect {
 
 	public static Stream<String> propertyNames(Type type) {
-//		IO.println("Reflection.properties, type=" + type);
+//		IO.println("JavaReflect.properties, type=" + type);
 		return propertyMap(type).keySet().stream();
 	}
 
 	public static Stream<Property> properties(Type type) {
-//		IO.println("Reflection.properties, type=" + type);
+//		IO.println("JavaReflect.properties, type=" + type);
 		return propertyMap(type).values().stream();
 	}
 
 	public static Property property(Type type, String name) {
-//		IO.println("Reflection.property, type=" + type + ", name=" + name);
+//		IO.println("JavaReflect.property, type=" + type + ", name=" + name);
 		return propertyMap(type).get(name);
 	}
 
@@ -86,7 +86,7 @@ public class JavaReflect {
 	}
 
 	protected static <T> T copy(Function<String, Object> source, T destination, Predicate<String> filter) {
-//		IO.println("Reflection.copy, source=" + source + ", destination=" + destination);
+//		IO.println("JavaReflect.copy, source=" + source + ", destination=" + destination);
 		var c = destination.getClass();
 		var s = propertyNames(c);
 		if (filter != null)
@@ -102,7 +102,7 @@ public class JavaReflect {
 			return destination;
 		if (c.isRecord()) {
 			var aa = Arrays.stream(c.getRecordComponents()).map(x -> {
-//				IO.println("Reflection.copy, x=" + x);
+//				IO.println("JavaReflect.copy, x=" + x);
 				if (vv.containsKey(x.getName()))
 					return vv.get(x.getName());
 				var p = property(c, x.getName());
@@ -152,14 +152,14 @@ public class JavaReflect {
 			}
 		}
 		properties(c).filter(x -> vv.containsKey(x.name()) && x.canSet()).forEach(x -> {
-//			IO.println("Reflection.copy, x=" + x);
+//			IO.println("JavaReflect.copy, x=" + x);
 			x.set(destination, vv.get(x.name()));
 		});
 		return destination;
 	}
 
 	protected static Map<String, Property> propertyMap(Type type) {
-//		IO.println("Reflection.propertyMap, type=" + type);
+//		IO.println("JavaReflect.propertyMap, type=" + type);
 		class A {
 			private static final Map<Type, Map<String, Property>> RESULTS = new ConcurrentHashMap<>();
 
@@ -266,35 +266,35 @@ public class JavaReflect {
 		return A.RESULTS.computeIfAbsent(type, A::compute);
 	}
 
-	public static Type resolveTypeVariable(TypeVariable<?> variable, Class<?> class1, Class<?> superclassOrInterface) {
-//		IO.println("Reflection.resolveTypeVariable, variable=" + variable + ", class1=" + class1
+//	public static Type resolveTypeVariable(TypeVariable<?> variable, Class<?> class1, Class<?> superclassOrInterface) {
+//		IO.println("JavaReflect.resolveTypeVariable, variable=" + variable + ", class1=" + class1
 //				+ ", superclassOrInterface=" + superclassOrInterface);
-		var i = 0;
-		for (var x : superclassOrInterface.getTypeParameters()) {
-			if (x == variable)
-				break;
-			i++;
-		}
-		var d = new ArrayDeque<Class<?>>();
-		d.offer(class1);
-		do {
-			var c = d.poll();
-			var t = c.getGenericSuperclass();
-			var ii = c.getGenericInterfaces();
-			var pt = (ParameterizedType) Stream
-					.concat(t != null ? Stream.of(t) : Stream.<Type>empty(), Arrays.stream(ii)).filter(x -> {
-						var c2 = Java.toClass(x);
-						d.offer(c2);
-						return c2 == superclassOrInterface;
-					}).findFirst().orElse(null);
-			if (pt != null)
-				return pt.getActualTypeArguments()[i];
-		} while (!d.isEmpty());
-		return null;
-	}
+//		var i = 0;
+//		for (var x : superclassOrInterface.getTypeParameters()) {
+//			if (x == variable)
+//				break;
+//			i++;
+//		}
+//		var d = new ArrayDeque<Class<?>>();
+//		d.offer(class1);
+//		do {
+//			var c = d.poll();
+//			var t = c.getGenericSuperclass();
+//			var ii = c.getGenericInterfaces();
+//			var pt = (ParameterizedType) Stream
+//					.concat(t != null ? Stream.of(t) : Stream.<Type>empty(), Arrays.stream(ii)).filter(x -> {
+//						var c2 = Java.toClass(x);
+//						d.offer(c2);
+//						return c2 == superclassOrInterface;
+//					}).findFirst().orElse(null);
+//			if (pt != null)
+//				return pt.getActualTypeArguments()[i];
+//		} while (!d.isEmpty());
+//		return null;
+//	}
 
 	public static Type[] actualParameterTypes(Method method, Class<?> target) {
-//		IO.println("Reflection.actualParameterTypes, method=" + method + ", target=" + target);
+//		IO.println("JavaReflect.actualParameterTypes, method=" + method + ", target=" + target);
 		class A {
 			private static final Map<Method, Map<Class<?>, Type[]>> RESULTS = new ConcurrentHashMap<>();
 		}
@@ -304,23 +304,19 @@ public class JavaReflect {
 	}
 
 	public static Type actualType(RecordComponent recordComponent, Type target) {
-//		IO.println("Reflection.actualType, recordComponent=" + recordComponent + ", target=" + target);
-		class A {
-			private static final Map<RecordComponent, Map<Type, Type>> RESULTS = new ConcurrentHashMap<>();
-		}
-		var t = A.RESULTS.computeIfAbsent(recordComponent, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target,
-				_ -> actualType(recordComponent.getGenericType(), target, recordComponent.getDeclaringRecord()));
-//		_ -> {
-//			var gt = recordComponent.getGenericType();
-//			IO.println("Reflection.actualType, gt=" + gt + ", (" + gt.getClass() + ")");
-//			return gt instanceof Class<?> c ? c : actualType(gt, target, recordComponent.getDeclaringRecord());
-//		});
-//		IO.println("Reflection.actualType, t=" + t);
+//		IO.println("JavaReflect.actualType, recordComponent=" + recordComponent + ", target=" + target);
+//		class A {
+//			private static final Map<RecordComponent, Map<Type, Type>> RESULTS = new ConcurrentHashMap<>();
+//		}
+//		var t = A.RESULTS.computeIfAbsent(recordComponent, _ -> new ConcurrentHashMap<>()).computeIfAbsent(target,
+//				_ -> actualType(recordComponent.getGenericType(), target, recordComponent.getDeclaringRecord()));
+		var t = actualType(recordComponent.getGenericType(), target, recordComponent.getDeclaringRecord());
+//		IO.println("JavaReflect.actualType, t=" + t);
 		return t;
 	}
 
 	public static Type actualType(Field field, Type target) {
-//		IO.println("Reflection.actualType, field=" + field + ", target=" + target);
+//		IO.println("JavaReflect.actualType, field=" + field + ", target=" + target);
 		class A {
 			private static final Map<Field, Map<Type, Type>> RESULTS = new ConcurrentHashMap<>();
 		}
@@ -328,12 +324,12 @@ public class JavaReflect {
 				_ -> actualType(field.getGenericType(), target, field.getDeclaringClass()));
 	}
 
-	protected static Type actualType(Type type, Type target, Class<?> superClass) {
-//		IO.println("Reflection.actualType, type=" + type + ", target=" + target + ", superClass=" + superClass);
-		if (target == superClass || !superClass.isAssignableFrom(Java.toClass(target)))
+	public static Type actualType(Type type, Type target, Class<?> declaring) {
+//		IO.println("JavaReflect.actualType, type=" + type + ", target=" + target + ", declaring=" + declaring);
+		if (target == declaring || !declaring.isAssignableFrom(Java.toClass(target)))
 			return type;
 
-		var m = actualTypeArguments(target, superClass);
+		var m = actualTypeArguments(target, declaring);
 		switch (type) {
 		case TypeVariable<?> v:
 			return m.get(v.getName());
@@ -345,17 +341,15 @@ public class JavaReflect {
 		}
 	}
 
-	private static Object NULL = new Object();
-
-	public static Map<String, Type> actualTypeArguments(Type target, Class<?> superClass) {
-//		IO.println("Reflection.actualTypeArguments, target=" + target + ", superClass=" + superClass);
+	public static Map<String, Type> actualTypeArguments(Type type, Class<?> superType) {
+		IO.println("JavaReflect.actualTypeArguments, type=" + type + ", superType=" + superType);
 		class A {
-			private static final Map<Type, Map<Class<?>, Object>> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Type, Map<Class<?>, Map<String, Type>>> RESULTS = new ConcurrentHashMap<>();
 		}
-		var o = A.RESULTS.computeIfAbsent(target, _ -> new ConcurrentHashMap<>()).computeIfAbsent(superClass, _ -> {
-			var c0 = Java.toClass(target);
-			Map<String, Type> m = null;
-			if (target instanceof ParameterizedType x) {
+		var r = A.RESULTS.computeIfAbsent(type, _ -> new ConcurrentHashMap<>()).computeIfAbsent(superType, _ -> {
+			var c0 = Java.toClass(type);
+			var m = Map.<String, Type>of();
+			if (type instanceof ParameterizedType x) {
 				var pp = c0.getTypeParameters();
 				var aa = x.getActualTypeArguments();
 				var m2 = new LinkedHashMap<String, Type>();
@@ -364,29 +358,39 @@ public class JavaReflect {
 							aa[i] instanceof TypeVariable v ? (m != null ? m.get(v.getName()) : null) : aa[i]);
 				m = m2;
 			}
-			for (var c = c0; c != superClass; c = c.getSuperclass()) {
-				var pp = c.getSuperclass().getTypeParameters();
-				var aa = c.getGenericSuperclass() instanceof ParameterizedType x ? x.getActualTypeArguments() : null;
-				var m2 = new LinkedHashMap<String, Type>();
-				for (var i = 0; i < pp.length; i++)
-					m2.put(pp[i].getName(), aa[i] instanceof TypeVariable v ? m.get(v.getName()) : aa[i]);
-				m = m2;
-			}
-			return m != null ? m : NULL;
+
+			var ttt = (superType.isInterface() ? inheritedGenericInterfaces(c0)
+					: Stream.of(inheritedGenericClasses(c0))).map(x -> x.toList());
+			var tt = ttt.filter(x -> x.stream().anyMatch(y -> Java.toClass(y) == superType)).findFirst().orElse(null);
+			if (tt != null)
+				for (var t : tt) {
+					var c = Java.toClass(t);
+					if (c == superType)
+						break;
+					var pp = c.getTypeParameters();
+					var aa = t instanceof ParameterizedType x ? x.getActualTypeArguments() : null;
+					var m2 = new LinkedHashMap<String, Type>();
+					for (var i = 0; i < pp.length; i++) {
+						var t2 = aa[i] instanceof TypeVariable v ? m.get(v.getName()) : aa[i];
+						if (t2 != null)
+							m2.put(pp[i].getName(), t2);
+					}
+					m = m2;
+				}
+			return m;
 		});
-		@SuppressWarnings("unchecked")
-		var m = o != NULL ? (Map<String, Type>) o : null;
-		return m;
+//		IO.println("JavaReflect.actualTypeArguments, r=" + r);
+		return r;
 	}
 
 	public static Method bridgeMethod(Method method) {
-//		IO.println("Reflection.bridgeMethod, method=" + method);
+//		IO.println("JavaReflect.bridgeMethod, method=" + method);
 		if (method.isBridge())
 			throw new IllegalArgumentException();
 		class A {
-			private static final Map<Method, Object> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Method, Optional<Method>> RESULTS = new ConcurrentHashMap<>();
 		}
-		var o = A.RESULTS.computeIfAbsent(method, _ -> {
+		return A.RESULTS.computeIfAbsent(method, _ -> {
 			var n1 = method.getName();
 			var t1 = method.getReturnType();
 			var tt1 = method.getParameterTypes();
@@ -398,12 +402,11 @@ public class JavaReflect {
 					for (var i = 0; i < tt2.length; i++)
 						if (!tt2[i].isAssignableFrom(tt1[i]))
 							continue m2;
-					return m2;
+					return Optional.of(m2);
 				}
 			}
-			return NULL;
-		});
-		return o != NULL ? (Method) o : null;
+			return Optional.empty();
+		}).orElse(null);
 	}
 
 //	public static <T extends Annotation> T inheritedAnnotation(AnnotatedElement annotated, Class<T> annotation) {
@@ -455,10 +458,19 @@ public class JavaReflect {
 		class A {
 			private static final Map<Class<?>, List<Class<?>>> RESULTS = new ConcurrentHashMap<>();
 		}
-		return A.RESULTS.computeIfAbsent(class1, _ -> {
-			return !class1.isInterface() ? Stream.<Class<?>>iterate(class1, x -> x.getSuperclass()).skip(1)
-					.takeWhile(x -> x != null).toList() : List.of();
-		}).stream();
+		var cc = A.RESULTS.computeIfAbsent(class1, _ -> Stream.<Class<?>>iterate(class1, x -> x.getSuperclass()).skip(1)
+				.takeWhile(x -> x != null).toList());
+		return cc.stream();
+	}
+
+	public static Stream<Type> inheritedGenericClasses(Class<?> class1) {
+		class A {
+			private static final Map<Class<?>, List<Type>> RESULTS = new ConcurrentHashMap<>();
+		}
+		var cc = A.RESULTS.computeIfAbsent(class1,
+				_ -> Stream.<Type>iterate(class1, x -> Java.toClass(x).getGenericSuperclass()).skip(1)
+						.takeWhile(x -> x != null).toList());
+		return cc.stream();
 	}
 
 	public static Stream<Stream<Class<?>>> inheritedInterfaces(Class<?> type) {
@@ -475,7 +487,26 @@ public class JavaReflect {
 				}).toList() : List.of();
 			}
 		}
-		return A.RESULTS.computeIfAbsent(type, A::compute).stream().map(x -> x.stream());
+		var ii = A.RESULTS.computeIfAbsent(type, A::compute);
+		return ii.stream().map(x -> x.stream());
+	}
+
+	public static Stream<Stream<Type>> inheritedGenericInterfaces(Class<?> type) {
+		class A {
+			private static final Map<Class<?>, List<List<Type>>> RESULTS = new ConcurrentHashMap<>();
+
+			@SuppressWarnings({ "rawtypes", "unchecked" })
+			private static List<List<Type>> compute(Class<?> t) {
+				var ii = t.getGenericInterfaces();
+				return ii.length != 0 ? (List) Arrays.stream(ii).flatMap(i -> {
+					var ll = compute(Java.toClass(i));
+					return !ll.isEmpty() ? ll.stream().map(l -> Stream.concat(Stream.of(i), l.stream()).toList())
+							: Stream.of(List.of(i));
+				}).toList() : List.of();
+			}
+		}
+		var ii = A.RESULTS.computeIfAbsent(type, A::compute);
+		return ii.stream().map(x -> x.stream());
 	}
 
 	public static Stream<Method> inheritedMethods(Method method) {
@@ -533,12 +564,18 @@ public class JavaReflect {
 
 	public static Constructor<?> constructor(Class<?> class1) {
 		class A {
-			private static final Map<Class<?>, Constructor<?>> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Class<?>, Object> RESULTS = new ConcurrentHashMap<>();
 		}
-		return A.RESULTS.computeIfAbsent(class1, _ -> {
+		var o = A.RESULTS.computeIfAbsent(class1, _ -> {
 //			IO.println("JavaReflect.constructor, class1=" + class1);
 			var cc = class1.getConstructors();
-			return cc.length != 0 ? cc[0] : class1.getDeclaredConstructors()[0];
+			cc = cc.length != 0 ? cc : class1.getDeclaredConstructors();
+			if (cc.length == 0)
+				throw new IllegalArgumentException("class1=" + class1);
+			return cc[0];
 		});
+		if (o instanceof RuntimeException e)
+			throw e;
+		return (Constructor<?>) o;
 	}
 }

@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -56,10 +57,6 @@ public class ReflectionValueIterator extends ValueIterator {
 			default -> null;
 			};
 			if (tt == null) {
-//				var c = Modifier.isPublic(value.getClass().getModifiers()) ? value.getClass() : switch (value) {
-//				case Map.Entry<?, ?> _ -> Map.Entry.class;
-//				default -> throw new IllegalArgumentException("value=" + value);
-//				};
 				var c = value instanceof Map.Entry ? Map.Entry.class : value.getClass();
 				tt = context.newObjectIterator(entries(c));
 			}
@@ -74,10 +71,10 @@ public class ReflectionValueIterator extends ValueIterator {
 //					IO.println("ReflectionValueIterator.entries, x=" + x + ", value=" + value);
 					return (Map.Entry<String, Object>) Java.mapEntry(x.name(), x.get(value));
 				});
-		if (((ReflectionJsonIterator) context).includeType) {
-//			var x = (Object) type.getName().substring(type.getPackageName().length() + 1).replace('$', '.');
-//			ee = Stream.concat(Stream.of(Map.entry("$type", x)), ee);
-			ee = Stream.concat(Stream.of(Map.entry("$type", type)), ee);
+//		if (((ReflectionJsonIterator) context).includeType) 
+		if (((ReflectionJsonIterator) context).typeResolver != null) {
+			var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
+			ee = Stream.concat(Stream.of(Map.entry("$type", t)), ee);
 		}
 
 		{
@@ -91,5 +88,11 @@ public class ReflectionValueIterator extends ValueIterator {
 
 	protected boolean includeEntry(Property property) {
 		return property.canGet();
+	}
+
+	@Override
+	protected String toString(Class<?> type) {
+		var r = ((ReflectionJsonIterator) context).typeResolver;
+		return r != null ? r.format(type) : super.toString(type);
 	}
 }

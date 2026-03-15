@@ -47,30 +47,30 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.backend.cms;
-
-import java.lang.reflect.Type;
-import java.util.Map;
-
-import com.janilla.ioc.DiFactory;
-import com.janilla.java.Converter;
-import com.janilla.java.TypeResolver;
-
-public class CmsConverter extends Converter {
-
-	public CmsConverter(TypeResolver typeResolver, DiFactory diFactory) {
-		super(typeResolver, diFactory);
-	}
-
-	@Override
-	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
-//		if (target instanceof ParameterizedType x && x.getRawType() == DocumentReference.class) {
-//			var d = (Document<?>) super.convertMap(Map.of("$type", map.get("type"), "id", map.get("id")), null,
-//					typeResolver);
-//			@SuppressWarnings({ "rawtypes", "unchecked" })
-//			var r = new DocumentReference(d.getClass(), d.id());
-//			return r;
-//		}
-		return super.convertMap(map, target, typeResolver);
-	}
-}
+//package com.janilla.backend.cms;
+//
+//import java.lang.reflect.Type;
+//import java.util.Map;
+//
+//import com.janilla.ioc.DiFactory;
+//import com.janilla.java.Converter;
+//import com.janilla.java.TypeResolver;
+//
+//public class CmsConverter extends Converter {
+//
+//	public CmsConverter(TypeResolver typeResolver, DiFactory diFactory) {
+//		super(typeResolver, diFactory);
+//	}
+//
+//	@Override
+//	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
+////		if (target instanceof ParameterizedType x && x.getRawType() == DocumentReference.class) {
+////			var d = (Document<?>) super.convertMap(Map.of("$type", map.get("type"), "id", map.get("id")), null,
+////					typeResolver);
+////			@SuppressWarnings({ "rawtypes", "unchecked" })
+////			var r = new DocumentReference(d.getClass(), d.id());
+////			return r;
+////		}
+//		return super.convertMap(map, target, typeResolver);
+//	}
+//}

@@ -64,7 +64,7 @@ public interface Json {
 	}
 
 	static String format(Object object, boolean reflection) {
-		return format(reflection ? new ReflectionJsonIterator(object, false) : new JsonIterator(object));
+		return format(reflection ? new ReflectionJsonIterator(object) : new JsonIterator(object));
 	}
 
 	static String format(Iterator<JsonToken<?>> tokens) {

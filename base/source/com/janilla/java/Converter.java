@@ -67,6 +67,10 @@ public class Converter {
 		this.diFactory = diFactory;
 	}
 
+	public TypeResolver typeResolver() {
+		return typeResolver;
+	}
+
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object object, Type target) {
 //		IO.println("Converter.convert, object=" + object + ", target=" + target);
@@ -108,6 +112,9 @@ public class Converter {
 			default -> throw new IllegalArgumentException();
 			};
 
+		if (c == Class.class)
+			return (T) typeResolver.parse((String) object);
+
 		if (c == Instant.class)
 			return (T) Instant.parse((String) object);
 
@@ -139,6 +146,9 @@ public class Converter {
 		if (c == Path.class)
 			return (T) Path.of((String) object);
 
+		if (c == String.class)
+			return (T) typeResolver.format((Class<?>) object);
+
 		if (c == URI.class)
 			return (T) URI.create((String) object);
 
@@ -147,12 +157,6 @@ public class Converter {
 
 		if (c == byte[].class)
 			return (T) Base64.getDecoder().decode((String) object);
-
-		if (c == Class.class)
-			return (T) typeResolver.parse((String) object);
-
-		if (c == String.class)
-			return (T) typeResolver.format((Class<?>) object);
 
 		if (c != null && c.isEnum()) {
 			var n = switch (object) {
@@ -244,8 +248,8 @@ public class Converter {
 //			IO.println("Converter.convertMap, c0=" + c0);
 			var tt = c.isRecord()
 					? Arrays.stream(c.getRecordComponents()).collect(Collectors.toMap(x -> x.getName(), x -> {
-						return JavaReflect.actualType(x, t0);
 //						return x.getType();
+						return JavaReflect.actualType(x, t0);
 					}, (_, x) -> x, LinkedHashMap::new))
 					: null;
 //			try {

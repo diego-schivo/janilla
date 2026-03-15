@@ -25,17 +25,14 @@
 package com.janilla.web;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,14 +86,18 @@ public class RenderableFactory {
 		if (a != null && a.resource().length != 0) {
 			var t = a.template();
 			templates.computeIfAbsent(t, _ -> {
-				var s = Arrays.stream(a.resource()).map(x -> {
-					try (var in = ((DefaultResource) resourceMap.get(x)).newInputStream()) {
-						if (in == null)
-							throw new NullPointerException(t);
-						return new String(in.readAllBytes());
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
+				var s = resourceKeys(a, value).map(x -> {
+					var r2 = resourceMap.get(x);
+					if (r2 instanceof DefaultResource r3)
+						try (var in = r3.newInputStream()) {
+							if (in == null)
+								throw new NullPointerException(t);
+							return new String(in.readAllBytes());
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					else
+						throw new NullPointerException(x);
 				}).collect(Collectors.joining());
 
 				var m = new LinkedHashMap<String, String>();
@@ -122,18 +123,23 @@ public class RenderableFactory {
 		}
 	}
 
-	protected <T> InputStream getResourceAsStream(T value, String name) {
-		class A {
-			private static final Map<List<?>, Supplier<InputStream>> SUPPLIERS = new ConcurrentHashMap<>();
-		}
-		var c = value.getClass();
-		return A.SUPPLIERS.computeIfAbsent(List.of(c, name),
-				_ -> Stream.concat(Stream.of(c), JavaReflect.inheritedClasses(c))
-						.filter(x -> !x.getPackageName().startsWith("java.")).filter(x -> x.getResource(name) != null)
-						.findFirst().map(x -> (Supplier<InputStream>) () -> {
-//							IO.println("RenderableFactory.getResourceAsStream, x=" + x + ", name=" + name);
-							return x.getResourceAsStream(name);
-						}).orElse(() -> null))
-				.get();
+	protected Stream<String> resourceKeys(Render a, Object value) {
+		return Arrays.stream(a.resource());
 	}
+
+//	protected <T> InputStream getResourceAsStream(T value, String name) {
+//		class A {
+//			private static final Map<List<?>, Supplier<InputStream>> SUPPLIERS = new ConcurrentHashMap<>();
+//		}
+//		var c = value.getClass();
+//		return A.SUPPLIERS.computeIfAbsent(List.of(c, name),
+//				_ -> Stream.concat(Stream.of(c), JavaReflect.inheritedClasses(c))
+//						.filter(x -> !x.getPackageName().startsWith("java.")).filter(x -> x.getResource(name) != null)
+//						.findFirst().map(x -> (Supplier<InputStream>) () -> {
+	//// IO.println("RenderableFactory.getResourceAsStream, x=" + x + ", name="
+	/// + name);
+//							return x.getResourceAsStream(name);
+//						}).orElse(() -> null))
+//				.get();
+//	}
 }

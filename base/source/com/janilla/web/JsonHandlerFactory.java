@@ -81,8 +81,7 @@ public class JsonHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected Iterator<JsonToken<?>> buildJsonIterator(Object object, HttpExchange exchange) {
-		return diFactory != null
-				? diFactory.newInstance(diFactory.classFor(ReflectionJsonIterator.class), Collections.singletonMap("object", object))
-				: new ReflectionJsonIterator(object);
+		return diFactory != null ? diFactory.newInstance(diFactory.classFor(ReflectionJsonIterator.class),
+				Collections.singletonMap("object", object)) : new ReflectionJsonIterator(object);
 	}
 }

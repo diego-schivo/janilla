@@ -128,21 +128,21 @@ public interface Property {
 		};
 	}
 
-	static Property of(Class<?> class1, Method getter, Method setter) {
-//		IO.println("Property.of, class1=" + class1 + ", getter=" + getter + ", setter=" + setter);
+	static Property of(Class<?> type, Method getter, Method setter) {
+//		IO.println("Property.of, type=" + type + ", getter=" + getter + ", setter=" + setter);
 		var n = getter != null ? name(getter) : name(setter);
 //		IO.println("Property.of, n=" + n);
 		MethodHandle g, s;
 		try {
 			Lookup l;
-			if (Modifier.isPublic(class1.getModifiers()))
+			if (Modifier.isPublic(type.getModifiers()))
 				l = MethodHandles.publicLookup();
 			else {
 				var m1 = Property.class.getModule();
-				var m2 = class1.getModule();
+				var m2 = type.getModule();
 				if (!m1.canRead(m2))
 					m1.addReads(m2);
-				l = MethodHandles.privateLookupIn(class1, MethodHandles.lookup());
+				l = MethodHandles.privateLookupIn(type, MethodHandles.lookup());
 			}
 			g = getter != null ? l.unreflect(getter) : null;
 			s = setter != null ? l.unreflect(setter) : null;
@@ -151,15 +151,16 @@ public interface Property {
 		}
 
 		var m = getter != null ? getter : setter;
-		var gt0 = m.getReturnType() == Void.TYPE ? m.getGenericParameterTypes()[0] : m.getGenericReturnType();
+		var gt1 = m.getReturnType() != Void.TYPE ? m.getGenericReturnType() : m.getGenericParameterTypes()[0];
 		var dc = m.getDeclaringClass();
-		var gt = gt0 instanceof TypeVariable v && dc != class1 ? JavaReflect.resolveTypeVariable(v, class1, dc) : gt0;
+		var gt2 = gt1 instanceof TypeVariable v && dc != type ? JavaReflect.actualType(v, type, dc) : null;
+		var gt = gt2 != null ? gt2 : gt1;
 
-		var at = m.getReturnType() == Void.TYPE ? m.getAnnotatedParameterTypes()[0] : m.getAnnotatedReturnType();
+		var at = m.getReturnType() != Void.TYPE ? m.getAnnotatedReturnType() : m.getAnnotatedParameterTypes()[0];
 
-		var t = gt != gt0 ? Java.toClass(gt)
-				: m.getReturnType() == Void.TYPE ? m.getParameterTypes()[0] : m.getReturnType();
-		var d = class1.isRecord() && !Arrays.stream(class1.getRecordComponents())
+		var t = gt != gt1 ? Java.toClass(gt)
+				: m.getReturnType() != Void.TYPE ? m.getReturnType() : m.getParameterTypes()[0];
+		var d = type.isRecord() && !Arrays.stream(type.getRecordComponents())
 //				.filter(x -> x.getType() != Optional.class)
 				.anyMatch(x -> x.getName().equals(n));
 		return new Property() {

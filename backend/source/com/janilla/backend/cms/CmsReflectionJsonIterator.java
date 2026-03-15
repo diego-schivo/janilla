@@ -50,7 +50,6 @@
 package com.janilla.backend.cms;
 
 import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +62,7 @@ import com.janilla.cms.Types;
 import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
 import com.janilla.java.JavaReflect;
+import com.janilla.java.TypeResolver;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.json.ReflectionValueIterator;
@@ -72,8 +72,12 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 
 	protected final Persistence persistence;
 
-	public CmsReflectionJsonIterator(Object object, boolean includeType, Persistence persistence) {
-		super(object, includeType);
+//	public CmsReflectionJsonIterator(Object object, boolean includeType, Persistence persistence) {
+//		super(object, includeType);
+//		this.persistence = persistence;
+//	}
+	public CmsReflectionJsonIterator(Object object, TypeResolver typeResolver, Persistence persistence) {
+		super(object, typeResolver);
 		this.persistence = persistence;
 	}
 
@@ -96,10 +100,6 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 					object = o = x;
 				}
 				stack().push(o);
-//			} else if (object instanceof DocumentReference<?, ?> r) {
-//				@SuppressWarnings({ "rawtypes", "unchecked" })
-//				var x = persistence.crud((Class) r.type()).read(r.id());
-//				object = x;
 			} else if (object instanceof List<?> oo && !oo.isEmpty() && oo.getFirst() instanceof Long) {
 				o = stack().pop();
 				var p = JavaReflect.property(stack().peek().getClass(), n);
@@ -127,17 +127,14 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 			super(context, object);
 		}
 
-		@Override
-		protected Iterator<JsonToken<?>> newIterator() {
-//			return value instanceof Class<?> c
-//					? context.newStringIterator(c.getName().substring(c.getPackageName().length() + 1))
-//					: super.newIterator();
-			if (value instanceof Class<?> c) {
-				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
-				return context.newStringIterator(persistence.converter().convert(t, String.class));
-			}
-			return super.newIterator();
-		}
+//		@Override
+//		protected Iterator<JsonToken<?>> newIterator() {
+//			if (value instanceof Class<?> c) {
+//				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
+//				return context.newStringIterator(persistence.converter().convert(t, String.class));
+//			}
+//			return super.newIterator();
+//		}
 
 		@Override
 		protected Stream<Entry<String, Object>> entries(Class<?> class0) {

@@ -53,6 +53,7 @@ import com.janilla.backend.sqlite.TableLeafCell;
 import com.janilla.java.Java;
 import com.janilla.java.JavaReflect;
 import com.janilla.java.Property;
+import com.janilla.java.TypeResolver;
 import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -271,6 +272,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@Override
 	public List<ID> filter(String index, Object[] keys, boolean reverse, long skip, long limit) {
+//		IO.println("DefaultCrud.filter, type=" + type.getSimpleName() + ", index=" + index + ", keys="
+//				+ Arrays.toString(keys));
 		return persistence.database().perform(() -> {
 			var t = getIndex(index);
 
@@ -446,21 +449,20 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	protected String format(Object object) {
 //		IO.println("DefaultCrud.format, object=" + object);
-		var s = Json.format(new CustomJsonIterator(object, true));
+		var s = Json.format(new CustomJsonIterator(object, persistence.converter.typeResolver()));
 //		IO.println("DefaultCrud.format, s=" + s);
 		return s;
 	}
 
 	protected E parse(String string) {
-//		IO.println("DefaultCrud.parse, string=" + string);
 		return parse(string, type);
 	}
 
 	protected <T> T parse(String string, Class<T> target) {
 //		IO.println("DefaultCrud.parse, string=" + string + ", target=" + target);
-//		var c = new Converter(persistence.typeResolver);
 		@SuppressWarnings("unchecked")
 		var t = (T) persistence.converter().convert(Json.parse(string), target);
+//		IO.println("DefaultCrud.parse, t=" + t);
 		return t;
 	}
 
@@ -546,14 +548,14 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	public <T> T populate(T input, int depth) {
-		IO.println("DefaultCrud.populate, input=" + input + ", depth=" + depth);
+//		IO.println("DefaultCrud.populate, input=" + input + ", depth=" + depth);
 		var pp = input != null && depth != 0 && !(input.getClass().getPackageName().startsWith("java."))
 				? JavaReflect.properties(input.getClass()).filter(Property::canGet)
 				: Stream.<Property>empty();
 
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		var m = pp.map(p -> {
-			IO.println("DefaultCrud.populate, p=" + p + " (" + p.type() + "), depth=" + depth);
+//			IO.println("DefaultCrud.populate, p=" + p + " (" + p.type() + "), depth=" + depth);
 
 			if (p.type() == List.class) {
 				var t = p.genericType() instanceof ParameterizedType pt
@@ -587,8 +589,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 					: populate(v1, depth);
 			return v2 != v1 ? Java.mapEntry(p.name(), v2) : null;
 		}).filter(Objects::nonNull).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
-//		if (m != null && !m.isEmpty())
-//			IO.println("DefaultCrud.populate, m=" + m);
+//		IO.println("DefaultCrud.populate, m=" + m);
 
 		var t = !m.isEmpty() ? JavaReflect.copy(m, input) : input;
 //		IO.println("DefaultCrud.populate, t=" + t);
@@ -597,8 +598,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	protected class CustomJsonIterator extends ReflectionJsonIterator {
 
-		public CustomJsonIterator(Object object, boolean includeType) {
-			super(object, includeType);
+//		public CustomJsonIterator(Object object, boolean includeType) {
+//			super(object, includeType);
+//		}
+		public CustomJsonIterator(Object object, TypeResolver typeResolver) {
+			super(object, typeResolver);
 		}
 
 		@Override
