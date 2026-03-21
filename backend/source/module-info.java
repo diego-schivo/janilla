@@ -29,5 +29,10 @@ module com.janilla.backend {
 	exports com.janilla.backend.smtp;
 	exports com.janilla.backend.sqlite;
 
+	opens com.janilla.backend.cms;
+	opens com.janilla.backend.persistence;
+	opens com.janilla.backend.smtp;
+	opens com.janilla.backend.sqlite;
+
 	requires transitive com.janilla.base;
 }

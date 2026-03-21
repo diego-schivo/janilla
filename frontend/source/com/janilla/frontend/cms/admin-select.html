@@ -1,9 +1,11 @@
-<div>
-  <select name="${name}" multiple="${multiple}">
-    <!--${options}-->
-  </select>
-  <!--${icon}-->
-</div>
+<select>
+  <button>
+    <selectedcontent></selectedcontent>
+    <lucide-icon data-name="chevron-down"></lucide-icon>
+  </button>
+  <!--${options}-->
+</select>
+<!--${hiddens}-->
 
 <template id="option">
   <option value="${value}" selected="${selected}">${text}</option>
@@ -11,4 +13,8 @@
 
 <template id="icon">
   <lucide-icon data-name="chevron-down"></lucide-icon>
+</template>
+
+<template id="hidden">
+  <input type="hidden" name="${name}" value="${value}" />
 </template>

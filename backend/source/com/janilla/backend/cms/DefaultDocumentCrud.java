@@ -62,7 +62,6 @@ import com.janilla.cms.Document;
 import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
-import com.janilla.java.Property;
 import com.janilla.java.JavaReflect;
 import com.janilla.json.ReflectionValueIterator;
 
@@ -104,9 +103,14 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 //		IO.println("DocumentCrud.read, id=" + id + ", drafts=" + drafts);
 		if (id == null)
 			return null;
-		return versionTable != null && drafts ? persistence.database().perform(() -> {
+
+		if (versionTable == null || !drafts)
+			return read(id, depth);
+
+		return persistence.database().perform(() -> {
 			var d = read(id, depth);
 			// IO.println("d=" + d);
+
 			if (d != null) {
 				var i = persistence.database().index(versionTable + ".documentId");
 				class A {
@@ -120,13 +124,16 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 					var o = (ID) oo.toArray()[1];
 					a.id = o;
 				});
+
 				var v = readVersion(a.id);
 //				IO.println("DocumentCrud.read, v=" + v);
+
 				if (v != null && v.document().updatedAt().isAfter(d.updatedAt()))
-					d = v.document();
+					d = populate(v.document(), depth);
 			}
+
 			return d;
-		}, false) : read(id, depth);
+		}, false);
 	}
 
 	@Override
@@ -327,8 +334,8 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 	}
 
 	@Override
-	protected boolean includeEntry(Property property, ReflectionValueIterator valueIterator) {
-		return super.includeEntry(property, valueIterator)
-				|| valueIterator.context().stack().peekLast() instanceof Version;
+	protected int referenceDepth(ReflectionValueIterator valueIterator) {
+		var d = super.referenceDepth(valueIterator);
+		return valueIterator.context().stack().peekLast() instanceof Version ? d + 3 : d;
 	}
 }

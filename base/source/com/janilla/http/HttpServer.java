@@ -161,8 +161,7 @@ public class HttpServer extends SecureServer {
 					rs.setStatus(0);
 					var baos = new ByteArrayOutputStream();
 					rs.setBody(Channels.newChannel(baos));
-					var ex = createExchange(rq, rs);
-					ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
+					exchange(rq, rs);
 					ll.clear();
 					ll.add("HTTP/1.1 " + rs.getStatus() + " OK");
 					for (var h : rs.getHeaders())
@@ -345,14 +344,18 @@ public class HttpServer extends SecureServer {
 						return n;
 					}
 				});
-				var ex = createExchange(rq, rs);
-				ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
+				exchange(rq, rs);
 //				IO.println("HttpServer.handleStream, " + rq.getMethod() + " " + rq.getScheme() + "://"
 //						+ rq.getAuthority() + rq.getTarget() + " " + rs.getStatus());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	protected void exchange(HttpRequest request, HttpResponse response) {
+		var ex = createExchange(request, response);
+		ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
 	}
 
 	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {

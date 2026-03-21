@@ -63,25 +63,55 @@ export default class AdminSelect extends WebComponent {
         return ["data-array-key", "data-path", "data-updated-at"];
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+
+        this.addEventListener("change", this.handleChange);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+
+        this.removeEventListener("change", this.handleChange);
+    }
+
     async updateDisplay() {
         const p = this.dataset.path;
-        const f = this.closest("admin-edit").field(p);
-        const oo = this.closest("admin-element").options(f);
-        // console.log("f", f, "oo", oo);
-        const m = f.type === "Set";
+        const s = this.customState;
+
+        s.field ??= this.closest("admin-edit").field(p);
+        s.data ??= s.field.data;
+        s.options ??= this.closest("admin-element").options(s.field);
+
         this.appendChild(this.interpolateDom({
             $template: "",
-            name: p,
-            multiple: m,
-            options: (m ? oo : [null, ...oo]).map(x => ({
+            options: [null, ...s.options].map(x => ({
                 $template: "option",
                 value: x,
-                selected: m
-                    ? f.data?.some(y => y.name === x)
-                    : x == f.data?.name,
+                selected: x === s.data?.name,
                 text: x
             })),
-            icon: !m ? { $template: "icon" } : null
+            icon: { $template: "icon" },
+            hiddens: s.data ? Object.entries({
+                $type: s.data.$type,
+                name: s.data.name
+            }).map(x => ({
+                $template: "hidden",
+                name: [p, x[0]].join("."),
+                value: x[1]
+            })) : null
         }));
+    }
+
+    handleChange = event => {
+        const el = event.target.closest("select");
+        if (el) {
+            const s = this.customState;
+            s.data = el.value ? {
+				$type: s.field.type,
+				name: el.value
+			} : null;
+            this.requestDisplay();
+        }
     }
 }

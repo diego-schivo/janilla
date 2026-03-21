@@ -170,6 +170,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected Object[] resolveArguments(Invocation invocation, HttpExchange exchange) {
+//		IO.println("InvocationHandlerFactory.resolveArguments, invocation=" + invocation);
 		var rq = exchange.request();
 		var bs = new Supplier<String>() {
 

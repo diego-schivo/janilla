@@ -81,8 +81,8 @@ export default class AdminRelationshipField extends WebComponent {
         const p = this.dataset.path;
         const s = this.customState;
         s.field ??= this.closest("admin-edit").field(p);
-        s.complex ??= s.field.type === "Document";
-        //		const m = s.field.type === "List";
+        //s.complex ??= s.field.type === "Document";
+        //const m = s.field.type === "List";
         const a = this.closest("admin-element");
         s.data ??= Array.isArray(s.field.data) ? s.field.data
             : s.field.data ? [s.field.data] : [];
@@ -93,33 +93,48 @@ export default class AdminRelationshipField extends WebComponent {
                 label: a.title(x),
                 value: `${x.$type}:${x.id}`
             })),
-            /*
-            options: s.options ? Object.values(s.options)[0].filter(x => !s.data.some(y => y.id === x.id)).map(x => ({
-                $template: "option",
-                value: x.id,
-                text: a.title(x)
-            })) : null,
-            */
-            optgroups: s.options && Object.keys(s.options).length > 1 ? Object.entries(s.options).map(x => ({
-                $template: "optgroup",
-                label: x[0],
-                options: x[1].map(y => ({
+            options: s.options && Object.keys(s.options).length === 1
+                ? Object.values(s.options)[0].filter(x => !s.data.some(y => y.$type === x.$type && y.id === x.id)).map(x => ({
                     $template: "option",
-                    value: `${x[0]}:${y.id}`,
-                    text: a.title(y)
+                    value: `${x.$type}:${x.id}`,
+                    text: a.title(x)
                 }))
-            })) : null,
-            hiddens: s.complex ? s.data.flatMap(x => Object.entries({
+                : null,
+            optgroups: s.options && Object.keys(s.options).length > 1
+                ? Object.entries(s.options).map(x => ({
+                    $template: "optgroup",
+                    label: x[0],
+                    options: x[1].map(y => ({
+                        $template: "option",
+                        value: `${y.$type}:${y.id}`,
+                        text: a.title(y)
+                    }))
+                }))
+                : null,
+            /*
+            hiddens: s.complex
+                ? s.data.flatMap(x => Object.entries({
+                    $type: x.$type,
+                    id: x.id
+                })).map(x => ({
+                    $template: "hidden",
+                    name: `${p}.${x[0]}`,
+                    value: x[1]
+                }))
+                : s.data.map(x => ({
+                    $template: "hidden",
+                    name: p,
+                    value: x.id
+                })),
+            */
+            hiddens: s.data.flatMap(x => Object.entries({
                 $type: x.$type,
                 id: x.id
-            })).map(x => ({
+            })).map((x, i) => ({
                 $template: "hidden",
-                name: `${p}.${x[0]}`,
+                //name: `${p}.${Math.floor(i / 2)}.${x[0]}`,
+                name: (s.field.type === "List" ? [p, Math.floor(i / 2), x[0]] : [p, x[0]]).join("."),
                 value: x[1]
-            })) : s.data.map(x => ({
-                $template: "hidden",
-                name: p,
-                value: x.id
             })),
             drawer: s.drawer ? {
                 $template: "drawer",
@@ -132,10 +147,10 @@ export default class AdminRelationshipField extends WebComponent {
         const el = event.target.closest("select");
         if (el) {
             const s = this.customState;
-            //s.data = Object.values(s.options)[0].filter(x => x.id == el.value || s.data.some(y => y.id === x.id));
             s.data = Object.values(s.options).flatMap(x => x)
-                .filter(x => `${x.$type}:${x.id}` === el.value || s.data.some(y => y.$type == x.$type && y.id === x.id));
+                .filter(x => `${x.$type}:${x.id}` === el.value || s.data.some(y => y.$type === x.$type && y.id === x.id));
             el.selectedIndex = 0;
+            this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
             this.requestDisplay();
         }
     }
@@ -144,6 +159,7 @@ export default class AdminRelationshipField extends WebComponent {
         let el = event.target.closest("button");
         const a = this.closest("admin-element");
         const s = this.customState;
+
         switch (el?.name) {
             case "add-new": {
                 const t = s.field.referenceTypes?.[0] ?? s.field.referenceType;
@@ -157,6 +173,7 @@ export default class AdminRelationshipField extends WebComponent {
             }
             case "clear":
                 s.data = [];
+				this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
                 this.requestDisplay();
                 break;
             case "edit": {
@@ -171,7 +188,8 @@ export default class AdminRelationshipField extends WebComponent {
                 break;
             }
             case "remove":
-                s.data = s.data.filter(x => x.id != el.value);
+                s.data = s.data.filter(x => `${x.$type}:${x.id}` !== el.value);
+				this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
                 this.requestDisplay();
                 break;
         }

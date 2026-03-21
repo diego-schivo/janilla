@@ -96,7 +96,7 @@ export default class AdminVersion extends WebComponent {
                     ? a2.customState.documentUrl.substring(0, a2.customState.documentUrl.lastIndexOf("/"))
                     : a2.customState.documentUrl}/versions/${a2.customState.version.id}`, { method: "POST" })).json();
                 a2.currentDocument = j;
-                a2.renderToast("Restored successfully.");
+                a2.success("Restored successfully.");
                 a.navigate(`/admin/${a2.customState.pathSegments.slice(0, 3).join("/")}`);
                 break;
             }

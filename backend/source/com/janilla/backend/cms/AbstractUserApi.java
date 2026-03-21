@@ -81,25 +81,25 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		this.jwtKey = jwtKey;
 	}
 
-	public record CreateData<U>(@Flat U user, String password) {
+	protected record UserData<U>(@Flat U user, String password) {
 
-		public CreateData<U> withUser(U user) {
-			return new CreateData<>(user, password);
+		public UserData<U> withUser(U user) {
+			return new UserData<>(user, password);
 		}
 	}
 
 	@Handle(method = "POST")
-	public U create(CreateData<U> data) {
+	public U create(UserData<U> data) {
 		@SuppressWarnings("unchecked")
-		var e = (U) data.user().withPassword(data.password());
-		return super.create(e);
+		var u = (U) data.user().withPassword(data.password());
+		return super.create(u);
 	}
 
 	@Handle(method = "PUT", path = "(\\d+)")
-	public U update(ID id, U entity, Boolean draft, Boolean autosave, String password) {
+	public U update(ID id, UserData<U> data, Boolean draft, Boolean autosave) {
 		@SuppressWarnings("unchecked")
-		var e = (U) entity.withPassword(password);
-		return super.update(id, e, draft, autosave);
+		var u = (U) data.user().withPassword(data.password());
+		return super.update(id, u, draft, autosave);
 	}
 
 	public record LoginData(String email, String password) {
@@ -111,16 +111,19 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		if (data == null || data.email() == null || data.email().isBlank() || data.password() == null
 				|| data.password().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
+
 		var u = persistence.database().perform(() -> crud().read(crud().find("email", new Object[] { data.email() })),
 				false);
 		if (u != null && !u.passwordEquals(data.password()))
 			u = null;
 		if (u == null)
 			throw new UnauthorizedException("The email or password provided is incorrect.");
+
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
 		var t = Jwt.generateToken(h, p, jwtKey);
 		exchange.setSessionCookie(t);
+
 		return u;
 	}
 
@@ -142,10 +145,11 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	}
 
 	@Handle(method = "POST", path = "first-register")
-	public U firstRegister(CreateData<U> data, UserHttpExchange<U> exchange) {
+	public U firstRegister(UserData<U> data, UserHttpExchange<U> exchange) {
 		if (data == null || data.user() == null || data.user().email() == null || data.user().email().isBlank()
 				|| data.password() == null || data.password().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
+
 		var u = persistence.database().perform(() -> {
 			if (crud().count() != 0)
 				throw new ForbiddenException("You are not allowed to perform this action.");
@@ -153,10 +157,12 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 			var e = (U) data.user().withPassword(data.password());
 			return crud().create(e);
 		}, true);
+
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
 		var t = Jwt.generateToken(h, p, jwtKey);
 		exchange.setSessionCookie(t);
+
 		return u;
 	}
 
@@ -248,11 +254,14 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	}
 
 	@Override
-	protected Set<String> updateInclude(U entity) {
-		var nn = Set.of("salt", "hash");
-		return entity.salt() == null
-				? JavaReflect.propertyNames(type).filter(x -> !nn.contains(x)).collect(Collectors.toSet())
-				: null;
+	protected Set<String> updateInclude(U user) {
+//		var nn = Set.of("salt", "hash");
+//		return entity.salt() == null
+//				? JavaReflect.propertyNames(type).filter(x -> !nn.contains(x)).collect(Collectors.toSet())
+//				: null;
+		var nn = Set.of(// "hash", "salt",
+				"resetPasswordExpiration", "resetPasswordToken", "roles");
+		return JavaReflect.propertyNames(type).filter(x -> !nn.contains(x)).collect(Collectors.toSet());
 	}
 
 //	private static void mail(Data d) {

@@ -39,6 +39,7 @@ import com.janilla.java.Converter;
 import com.janilla.java.JavaReflect;
 import com.janilla.persistence.Entity;
 import com.janilla.persistence.Index;
+import com.janilla.persistence.Store;
 
 public class Persistence {
 
@@ -51,6 +52,8 @@ public class Persistence {
 	protected final Converter converter;
 
 	protected final PersistenceConfiguration configuration = new PersistenceConfiguration();
+
+	protected final Map<Class<?>, Object> cruds = new ConcurrentHashMap<>();
 
 	public Persistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 //			TypeResolver typeResolver,
@@ -79,14 +82,13 @@ public class Persistence {
 
 	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> type) {
 //		IO.println("Persistence.crud, type=" + type);
-		class A {
-			private static final Map<Class<?>, Object> RESULTS = new ConcurrentHashMap<>();
-		}
-		var o = A.RESULTS.computeIfAbsent(type, _ -> {
-			var c = configuration.cruds.get(type);
-			if (c == null)
-				c = configuration.cruds.entrySet().stream().filter(x -> type.isAssignableFrom(x.getKey())).findFirst()
-						.map(x -> x.getValue()).orElse(null);
+		var o = cruds.computeIfAbsent(type, _ -> {
+//			var c = configuration.cruds.get(type);
+//			if (c == null)
+//				c = configuration.cruds.entrySet().stream().filter(x -> type.isAssignableFrom(x.getKey())).findFirst()
+//						.map(x -> x.getValue()).orElse(null);
+			var ae = JavaReflect.inheritedAnnotation(type, Store.class);
+			var c = ae != null ? configuration.cruds.get(ae.annotated()) : null;
 			return c != null ? c : new IllegalArgumentException("type=" + type);
 		});
 		if (o instanceof RuntimeException e)
@@ -97,10 +99,10 @@ public class Persistence {
 	}
 
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
+//		IO.println("Persistence.configure, type=" + type);
 		Crud<?, E> c = newCrud(type);
 		if (c == null)
 			return;
-//		IO.println("Persistence.configure, type=" + type);
 		configuration.cruds.put(type, c);
 
 		for (var pp = JavaReflect.properties(type).iterator(); pp.hasNext();) {

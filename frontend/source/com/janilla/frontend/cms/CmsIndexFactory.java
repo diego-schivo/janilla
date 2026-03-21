@@ -69,12 +69,12 @@ public abstract class CmsIndexFactory extends AbstractIndexFactory {
 		super.putImports(map);
 
 		Stream.of("admin", "admin-array", "admin-bar", "admin-checkbox", "admin-create-first-user", "admin-dashboard",
-				"admin-document", "admin-drawer", "admin-drawer-link", "admin-edit", "admin-fields", "admin-file",
-				"admin-forgot-password", "admin-hidden", "admin-join", "admin-list", "admin-login",
-				"admin-page-controls", "admin-pagination", "admin-per-page", "admin-radio-group", "admin-relationship",
-				"admin-rich-text", "admin-search-bar", "admin-search-filter", "admin-select", "admin-slug",
-				"admin-tabs", "admin-text", "admin-unauthorized", "admin-upload", "admin-version", "admin-versions")
-				.map(this::cmsImportKey).forEach(x -> map.put(x, "/" + x + ".js"));
+				"admin-date-time", "admin-document", "admin-drawer", "admin-drawer-link", "admin-edit", "admin-fields",
+				"admin-file", "admin-forgot-password", "admin-hidden", "admin-join", "admin-list", "admin-login",
+				"admin-page-controls", "admin-pagination", "admin-password", "admin-per-page", "admin-radio-group",
+				"admin-relationship", "admin-rich-text", "admin-search-bar", "admin-search-filter", "admin-select",
+				"admin-slug", "admin-tabs", "admin-text", "admin-unauthorized", "admin-upload", "admin-version",
+				"admin-versions").map(this::cmsImportKey).forEach(x -> map.put(x, "/" + x + ".js"));
 	}
 
 	protected String cmsImportKey(String name) {

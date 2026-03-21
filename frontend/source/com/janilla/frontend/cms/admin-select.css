@@ -47,30 +47,27 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin {
-label:has(admin-select) {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-admin-select {
-  div {
-    position: relative;
+:where(.admin) {
+  label:has(admin-select) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
-  select {
-    box-sizing: border-box;
-    width: 100%;
-  }
+  admin-select {
+    select,
+    ::picker(select) {
+      appearance: base-select;
+    }
 
-  lucide-icon {
-    color: var(--color-1);
-    pointer-events: none;
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
+    select {
+      box-sizing: border-box;
+      justify-content: space-between;
+      width: 100%;
+
+      &::picker-icon {
+        display: none;
+      }
+    }
   }
-}
 }

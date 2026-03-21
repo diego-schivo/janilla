@@ -157,7 +157,7 @@ export default class AdminArray extends WebComponent {
                     s.items.splice(i, 1);
                     break;
             }
-            this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
+            this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
             this.requestDisplay();
         } else if (s.dialog && el.matches('[type="radio"]')) {
             event.stopPropagation();
@@ -170,7 +170,7 @@ export default class AdminArray extends WebComponent {
                 key: s.nextKey++,
                 expand: true
             });
-            this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
+            this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
             this.requestDisplay();
         } else if (el.matches('[type="checkbox"]:not([name])')) {
             event.stopPropagation();
@@ -195,7 +195,7 @@ export default class AdminArray extends WebComponent {
                             key: s.nextKey++,
                             expand: true
                         });
-                        this.dispatchEvent(new CustomEvent("document-change", { bubbles: true }));
+                        this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
                     } else
                         s.dialog = true;
                     break;

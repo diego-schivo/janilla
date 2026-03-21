@@ -66,7 +66,7 @@ export default class AdminEdit extends WebComponent {
     connectedCallback() {
         super.connectedCallback();
         this.addEventListener("change", this.handleChange);
-        this.addEventListener("document-change", this.handleDocumentChange);
+        this.addEventListener("documentchanged", this.handleDocumentChanged);
         this.addEventListener("input", this.handleInput);
         this.addEventListener("submit", this.handleSubmit);
     }
@@ -74,7 +74,7 @@ export default class AdminEdit extends WebComponent {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener("change", this.handleChange);
-        this.removeEventListener("document-change", this.handleDocumentChange);
+        this.removeEventListener("documentchanged", this.handleDocumentChanged);
         this.removeEventListener("input", this.handleInput);
         this.removeEventListener("submit", this.handleSubmit);
     }
@@ -82,7 +82,11 @@ export default class AdminEdit extends WebComponent {
     async updateDisplay() {
         const s = this.customState;
         const a = this.closest("app-element");
-        s.document ??= await (await fetch([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"))).json();
+        s.document ??= await (await fetch((() => {
+            const u = new URL([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), location.href);
+			u.searchParams.append("depth", 1);
+			return u;
+        })())).json();
         s.versions = Object.hasOwn(s.document, "versionCount");
         s.drafts = Object.hasOwn(s.document, "documentStatus");
         const a2 = this.closest("admin-element");
@@ -90,7 +94,7 @@ export default class AdminEdit extends WebComponent {
             $template: "",
             entries: (() => {
                 const kkvv = [];
-                if (!s.document.id)
+                if (!this.dataset.id)
                     kkvv.push([null, "Creating new Media"])
                 if (s.drafts)
                     kkvv.push(["Status", s.document.documentStatus.name]);
@@ -202,7 +206,7 @@ export default class AdminEdit extends WebComponent {
         }
     }
 
-    handleDocumentChange = () => {
+    handleDocumentChanged = () => {
         const s = this.customState;
         //delete s.document;
         if (!s.changed) {
@@ -325,7 +329,7 @@ export default class AdminEdit extends WebComponent {
             u.searchParams.append("autosave", true);
         }
         const r = await fetch(u, {
-            method: s.document.id ? "PUT" : "POST",
+            method: this.dataset.id ? "PUT" : "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(s.document)
@@ -359,7 +363,7 @@ export default class AdminEdit extends WebComponent {
             f(j, s.document);
             //console.log("s.document", s.document);
             //}
-			a2.currentDocument = j;
+            a2.currentDocument = j;
         } else
             a2.error(j);
     }

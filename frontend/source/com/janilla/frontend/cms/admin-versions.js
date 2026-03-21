@@ -85,7 +85,7 @@ export default class AdminVersions extends WebComponent {
                     $template: "cell",
                     content: i === 0 ? {
                         $template: "link",
-                        href: `/admin${a.dataset.path}/${v.id}`,
+                        href: `/admin${a.dataset.uri}/${v.id}`,
                         content: x
                     } : x
                 }))

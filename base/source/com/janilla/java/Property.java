@@ -128,21 +128,22 @@ public interface Property {
 		};
 	}
 
-	static Property of(Class<?> type, Method getter, Method setter) {
+	static Property of(Type type, Method getter, Method setter) {
 //		IO.println("Property.of, type=" + type + ", getter=" + getter + ", setter=" + setter);
+		var t0 = Java.toClass(type);
 		var n = getter != null ? name(getter) : name(setter);
 //		IO.println("Property.of, n=" + n);
 		MethodHandle g, s;
 		try {
 			Lookup l;
-			if (Modifier.isPublic(type.getModifiers()))
+			if (Modifier.isPublic(t0.getModifiers()))
 				l = MethodHandles.publicLookup();
 			else {
 				var m1 = Property.class.getModule();
-				var m2 = type.getModule();
+				var m2 = t0.getModule();
 				if (!m1.canRead(m2))
 					m1.addReads(m2);
-				l = MethodHandles.privateLookupIn(type, MethodHandles.lookup());
+				l = MethodHandles.privateLookupIn(t0, MethodHandles.lookup());
 			}
 			g = getter != null ? l.unreflect(getter) : null;
 			s = setter != null ? l.unreflect(setter) : null;
@@ -153,14 +154,14 @@ public interface Property {
 		var m = getter != null ? getter : setter;
 		var gt1 = m.getReturnType() != Void.TYPE ? m.getGenericReturnType() : m.getGenericParameterTypes()[0];
 		var dc = m.getDeclaringClass();
-		var gt2 = gt1 instanceof TypeVariable v && dc != type ? JavaReflect.actualType(v, type, dc) : null;
+		var gt2 = gt1 instanceof TypeVariable v && dc != t0 ? JavaReflect.actualType(v, type, dc) : null;
 		var gt = gt2 != null ? gt2 : gt1;
 
 		var at = m.getReturnType() != Void.TYPE ? m.getAnnotatedReturnType() : m.getAnnotatedParameterTypes()[0];
 
 		var t = gt != gt1 ? Java.toClass(gt)
 				: m.getReturnType() != Void.TYPE ? m.getReturnType() : m.getParameterTypes()[0];
-		var d = type.isRecord() && !Arrays.stream(type.getRecordComponents())
+		var d = t0.isRecord() && !Arrays.stream(t0.getRecordComponents())
 //				.filter(x -> x.getType() != Optional.class)
 				.anyMatch(x -> x.getName().equals(n));
 		return new Property() {

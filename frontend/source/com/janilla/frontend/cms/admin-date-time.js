@@ -47,40 +47,32 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.cms;
+import WebComponent from "base/web-component";
 
-import java.time.Instant;
-import java.util.Set;
+export default class AdminDateTime extends WebComponent {
 
-import com.janilla.persistence.Index;
-import com.janilla.persistence.Store;
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-@Store
-public interface User<ID extends Comparable<ID>> extends Document<ID> {
+    static get templateNames() {
+        return ["admin-date-time"];
+    }
 
-	String name();
+    static get observedAttributes() {
+        return ["data-array-key", "data-path", "data-updated-at"];
+    }
 
-	@Index
-	String email();
-
-	String salt();
-
-	String hash();
-
-	@Index
-	String resetPasswordToken();
-
-	Instant resetPasswordExpiration();
-
-	Set<UserRole> roles();
-
-//	boolean hasRole(UserRole role);
-
-	boolean passwordEquals(String password);
-
-	User<ID> withPassword(String password);
-
-	User<ID> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
-
-	User<ID> withRoles(Set<UserRole> roles);
+    async updateDisplay() {
+        const p = this.dataset.path;
+        const f = this.closest("admin-edit").field(p);
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            input: {
+                $template: "input",
+                name: p,
+                value: f.data
+            }
+        }));
+    }
 }

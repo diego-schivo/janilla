@@ -54,14 +54,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.Document;
 import com.janilla.cms.Types;
+import com.janilla.cms.User;
 import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
 import com.janilla.java.JavaReflect;
+import com.janilla.java.Property;
 import com.janilla.java.TypeResolver;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -72,10 +75,6 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 
 	protected final Persistence persistence;
 
-//	public CmsReflectionJsonIterator(Object object, boolean includeType, Persistence persistence) {
-//		super(object, includeType);
-//		this.persistence = persistence;
-//	}
 	public CmsReflectionJsonIterator(Object object, TypeResolver typeResolver, Persistence persistence) {
 		super(object, typeResolver);
 		this.persistence = persistence;
@@ -127,23 +126,18 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 			super(context, object);
 		}
 
-//		@Override
-//		protected Iterator<JsonToken<?>> newIterator() {
-//			if (value instanceof Class<?> c) {
-//				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
-//				return context.newStringIterator(persistence.converter().convert(t, String.class));
-//			}
-//			return super.newIterator();
-//		}
-
 		@Override
-		protected Stream<Entry<String, Object>> entries(Class<?> class0) {
-			var ee = super.entries(class0);
-			var v = class0.getAnnotation(Versions.class);
+		protected Stream<Entry<String, Object>> entries(Class<?> type) {
+			var ee = super.entries(type);
+
+			var ae = JavaReflect.inheritedAnnotation(type, Versions.class);
+			var v = ae != null ? ae.annotation() : null;
 			if (v == null || !v.drafts())
 				ee = ee.filter(x -> x.getKey() != "documentStatus");
 			if (v != null) {
-				var n = Version.class.getSimpleName() + "<" + class0.getSimpleName() + ">.documentId";
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				var t = persistence.crud((Class) type).type();
+				var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">.documentId";
 				var c = persistence.database().perform(() -> {
 					var i = persistence.database().index(n);
 					var d = (Document<?>) value;
@@ -151,7 +145,23 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 				}, false);
 				ee = Stream.concat(ee, Stream.of(Map.entry("versionCount", c)));
 			}
+
+//			if (User.class.isAssignableFrom(type)) {
+//				var nn = Set.of("hash", "resetPasswordExpiration", "resetPasswordToken", "salt");
+//				ee = ee.filter(x -> !nn.contains(x.getKey()));
+//			}
+
 			return ee;
+		}
+
+		@Override
+		protected boolean includeEntry(Property property) {
+			class A {
+				private static final Set<String> USER_EXCLUDE = Set.of("hash", "resetPasswordExpiration",
+						"resetPasswordToken", "salt");
+			}
+			return super.includeEntry(property)
+					&& !(User.class.isAssignableFrom(property.type()) && A.USER_EXCLUDE.contains(property.name()));
 		}
 	}
 }

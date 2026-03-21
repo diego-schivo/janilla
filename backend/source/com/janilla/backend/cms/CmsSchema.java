@@ -57,12 +57,14 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.janilla.cms.Document;
 import com.janilla.cms.Types;
@@ -71,13 +73,18 @@ import com.janilla.java.Java;
 import com.janilla.java.JavaReflect;
 import com.janilla.java.TypeResolver;
 
-public class CmsSchema extends LinkedHashMap<String, Map<String, Map<String, Object>>> {
+public class CmsSchema extends LinkedHashMap<String, Object> {
 
 	private static final long serialVersionUID = -8003987634573939042L;
 
 	public CmsSchema(Class<?> dataType, TypeResolver typeResolver, DiFactory diFactory) {
-		var m1 = new HashMap<String, Map<String, Map<String, Object>>>();
-		var q = new ArrayDeque<Class<?>>(List.of(dataType));
+		var q = new ArrayDeque<Type>(List.of(dataType));
+
+		var m1 = new HashMap<String, Object>();
+
+		class A {
+			private static final Set<String> skip = Set.of("id", "createdAt", "updatedAt", "documentStatus");
+		}
 
 		Function<Type, String> n = x -> {
 			if (x instanceof TypeVariable v)
@@ -88,78 +95,83 @@ public class CmsSchema extends LinkedHashMap<String, Map<String, Map<String, Obj
 			return typeResolver.format(t);
 		};
 
-		var skip = Set.of("createdAt", "updatedAt", "documentStatus", "publishedAt");
-
 		do {
-			var c = q.remove();
+			var t1 = q.remove();
+			var t2 = Java.toClass(t1);
 
-			if (m1.containsKey(n.apply(c)))
+			if (m1.containsKey(n.apply(t2)))
 				continue;
 
-//			IO.println("CmsSchema, c=" + c);
-			var m2 = new LinkedHashMap<String, Map<String, Object>>();
-			JavaReflect.properties(c).filter(x -> !skip.contains(x.name())).forEach(p -> {
-//				IO.println("CmsSchema, p=" + p);
+			var t3 = diFactory.classFor(t2);
+//			IO.println("CmsSchema, t1=" + t1 + ", t2=" + t2 + ", t3=" + t3);
 
-				var m3 = new LinkedHashMap<String, Object>();
-				m3.put("type", n.apply(p.type() == Class.class || p.type().isEnum() ? String.class : p.genericType()));
+			var i = new int[] { 0 };
+			var ii = JavaReflect.properties(t3).collect(Collectors.toMap(x -> x.name(), _ -> i[0]++));
 
-				List<Class<?>> cc;
-				if (p.type() == List.class) {
-					var c2 = Java.toClass(((ParameterizedType) p.genericType()).getActualTypeArguments()[0]);
-					c2 = diFactory.classFor(c2);
+			Object o2;
+			if (t3 != null && t3.isEnum())
+				o2 = Arrays.stream(t3.getEnumConstants()).map(x -> ((Enum<?>) x).name()).toList();
+			else {
+				var m2 = new LinkedHashMap<String, Map<String, Object>>();
+				JavaReflect.properties(t1).sorted(Comparator.comparingInt(x -> ii.get(x.name())))
+						.filter(x -> !A.skip.contains(x.name())).forEach(p -> {
+//							var pt1 = p.genericType();
+							var pt2 = p.type();
+							var pt3 = !pt2.getPackageName().startsWith("java.") ? diFactory.classFor(pt2) : null;
+//							IO.println("CmsSchema, pt1=" + pt1 + ", pt2=" + pt2 + ", pt3=" + pt3);
 
-//					var apt = p.annotatedType() instanceof AnnotatedParameterizedType y ? y : null;
-//					var ta = apt != null ? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class) : null;
-					var ta = JavaReflect.inheritedMethods((Method) p.member())
-							.map(x -> x.getAnnotatedReturnType() instanceof AnnotatedParameterizedType apt
-									? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class)
-									: null)
-							.filter(x -> x != null).findFirst().orElse(null);
+							var m3 = new LinkedHashMap<String, Object>();
+							m3.put("type", n.apply(pt2 == Class.class // || (pt3 != null && pt3.isEnum())
+									? String.class
+									: pt2));
 
-					if (c2 == Long.class) {
-						cc = List.of();
-						m3.put("elementTypes", List.of(n.apply(c2)));
-						if (ta != null)
-							m3.put("referenceType", n.apply(ta.value()[0]));
-					} else {
-						cc = ta != null ? Arrays.asList(ta.value())
-								: c2.isInterface() ? Arrays.asList(c2.getPermittedSubclasses()) : List.of(c2);
-						m3.put("elementTypes", cc.stream().map(n).toList());
-					}
-				} else if (p.type() == Set.class) {
-					var c2 = (Class<?>) ((ParameterizedType) p.genericType()).getActualTypeArguments()[0];
-					m3.put("elementTypes", List.of(n.apply(c2.isEnum() ? String.class : c2)));
-					if (c2.isEnum())
-						m3.put("options", Arrays.stream(c2.getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
-					cc = List.of();
-				} else if (p.type().getPackageName().startsWith("java.")) {
-					if (p.type() == Long.class) {
-						var ta = p.annotatedType().getAnnotation(Types.class);
-						if (ta != null)
-							m3.put("referenceType", n.apply(ta.value()[0]));
-					}
-					cc = List.of();
-				} else if (p.type() == Document.class) {
-					var ta = JavaReflect.inheritedAnnotation((Method) p.member(), Types.class);
-					if (ta != null)
-						m3.put("referenceTypes", Arrays.stream(ta.value()).map(diFactory::classFor).map(n).toList());
-					cc = List.of();
-				} else if (p.type().isEnum()) {
-					m3.put("options",
-							Arrays.stream(p.type().getEnumConstants()).map(y -> ((Enum<?>) y).name()).toList());
-					cc = List.of();
-				} else if (!m1.containsKey(n.apply(p.type())))
-					cc = List.of(p.type());
-				else
-					cc = List.of();
-//				IO.println("CmsSchema, cc=" + cc);
+							List<Type> tt;
+							if (pt2 == List.class) {
+								var et1 = ((ParameterizedType) p.genericType()).getActualTypeArguments()[0];
+								var et2 = Java.toClass(et1);
+								IO.println("et1=" + et1 + ", et2=" + et2);
 
-				m2.put(p.name(), m3);
-				q.addAll(cc);
-			});
+//								var ta = JavaReflect.inheritedMethods((Method) p.member())
+//										.map(x -> x.getAnnotatedReturnType() instanceof AnnotatedParameterizedType apt
+//												? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class)
+//												: null)
+//										.filter(x -> x != null).findFirst().orElse(null);
+								var ta = p.annotatedType() instanceof AnnotatedParameterizedType apt
+										? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class)
+										: null;
 
-			m1.put(n.apply(c), m2);
+								tt = ta != null ? Arrays.asList(ta.value()) : List.of(et1);
+								m3.put("elementTypes", tt.stream().map(n).toList());
+								if (Document.class.isAssignableFrom(et2))
+									m3.put("referenceType", n.apply(ta != null ? ta.value()[0] : et2));
+							} else if (pt2 == Set.class) {
+								var c2 = (Class<?>) ((ParameterizedType) p.genericType()).getActualTypeArguments()[0];
+								m3.put("elementTypes", List.of(n.apply(c2.isEnum() ? String.class : c2)));
+								if (c2.isEnum())
+									m3.put("options", Arrays.stream(c2.getEnumConstants())
+											.map(x -> ((Enum<?>) x).name()).toList());
+								tt = List.of();
+							} else if (pt2.getPackageName().startsWith("java."))
+								tt = List.of();
+							else if (pt2 == Document.class) {
+								var ta = JavaReflect.inheritedAnnotation((Method) p.member(), Types.class);
+								if (ta != null)
+									m3.put("referenceTypes",
+											Arrays.stream(ta.value()).map(diFactory::classFor).map(n).toList());
+								tt = List.of();
+							} else {
+								if (Document.class.isAssignableFrom(pt2))
+									m3.put("referenceTypes", List.of(n.apply(pt3)));
+								tt = !m1.containsKey(n.apply(pt2)) ? List.of(p.genericType()) : List.of();
+							}
+//							IO.println("CmsSchema, tt=" + tt);
+
+							m2.put(p.name(), m3);
+							q.addAll(tt);
+						});
+				o2 = m2;
+			}
+			m1.put(n.apply(t2), o2);
 		} while (!q.isEmpty());
 
 		m1.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(x -> put(x.getKey(), x.getValue()));

@@ -33,6 +33,12 @@ module com.janilla.base {
 	exports com.janilla.net;
 	exports com.janilla.web;
 
+	opens com.janilla.cms;
+	opens com.janilla.persistence;
+	opens com.janilla.http;
+	opens com.janilla.ioc;
+	opens com.janilla.java;
+	opens com.janilla.json;
 	opens com.janilla.net;
 	opens com.janilla.web;
 }

@@ -71,17 +71,17 @@ public class ReflectionValueIterator extends ValueIterator {
 //					IO.println("ReflectionValueIterator.entries, x=" + x + ", value=" + value);
 					return (Map.Entry<String, Object>) Java.mapEntry(x.name(), x.get(value));
 				});
-//		if (((ReflectionJsonIterator) context).includeType) 
+
 		if (((ReflectionJsonIterator) context).typeResolver != null) {
 			var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
 			ee = Stream.concat(Stream.of(Map.entry("$type", t)), ee);
 		}
 
-		{
-			var l = ee.toList();
+//		{
+//			var l = ee.toList();
 //			IO.println("ReflectionValueIterator.entries, l=" + l);
-			ee = l.stream();
-		}
+//			ee = l.stream();
+//		}
 
 		return ee;
 	}

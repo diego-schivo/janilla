@@ -369,7 +369,9 @@ export default class Admin extends WebComponent {
                         return "relationship";
                 }
                 */
-                return field.referenceType ? "join" : "array";
+                //return field.referenceType ? "join" : "array";
+                return field.referenceType ? "relationship" : "array";
+            /*
             case "Long":
                 if (field.referenceType)
                     switch (field.referenceType) {
@@ -384,11 +386,12 @@ export default class Admin extends WebComponent {
                     default:
                         return "text";
                 }
+            */
             case "Set":
                 return "select";
             case "String":
-                if (field.options)
-                    return "select";
+                //if (field.options)
+                //return "select";
                 switch (field.name) {
                     case "caption":
                         return "rich-text";
@@ -398,7 +401,9 @@ export default class Admin extends WebComponent {
                         return "text";
                 }
             default:
-                return "fields";
+                return Array.isArray(this.customState.schema[field.type])
+                    ? "select"
+                    : field.referenceTypes ? "relationship" : "fields";
         }
     }
 
@@ -477,7 +482,8 @@ export default class Admin extends WebComponent {
             case "media":
                 return ["file", "alt", "caption", "updatedAt"];
             case "users":
-                return ["name", "email"];
+                //return ["name", "email"];
+                return ["email", "updatedAt", "createdAt", "id"];
             default:
                 return ["title"];
         }
@@ -500,7 +506,8 @@ export default class Admin extends WebComponent {
     }
 
     options(field) {
-        return field.options ?? [];
+        //return field.options ?? [];
+        return this.customState.schema[field.type];
     }
 
     preview(document) {
@@ -565,7 +572,7 @@ export default class Admin extends WebComponent {
         switch (document.$type) {
             case "Media":
                 return document.file?.name;
-            case "UserImpl":
+            case "User":
                 return document.name;
             default:
                 return document.title;
@@ -574,7 +581,7 @@ export default class Admin extends WebComponent {
 
     titleName(documentType) {
         switch (documentType) {
-            case "UserImpl":
+            case "User":
                 return "name";
             default:
                 return "title";

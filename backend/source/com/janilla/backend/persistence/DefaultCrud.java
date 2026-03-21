@@ -156,6 +156,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			var oo = x.findFirst().orElse(null);
 			a.e = oo != null ? parse((String) oo.reduce((_, y) -> y).get()) : null;
 		});
+//		IO.println("DefaultCrud.read, a.e=" + a.e);
 		a.e = populate(a.e, depth);
 //		IO.println("DefaultCrud.read, depth=" + depth + ", a.e=" + a.e);
 		if (a.e != null)
@@ -598,9 +599,6 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	protected class CustomJsonIterator extends ReflectionJsonIterator {
 
-//		public CustomJsonIterator(Object object, boolean includeType) {
-//			super(object, includeType);
-//		}
 		public CustomJsonIterator(Object object, TypeResolver typeResolver) {
 			super(object, typeResolver);
 		}
@@ -619,8 +617,6 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 		@Override
 		protected Iterator<JsonToken<?>> newIterator() {
-//			return value instanceof Class<?> c ? context.newStringIterator(persistence.typeResolver.format(c))
-//					: super.newIterator();
 			if (value instanceof Class<?> c) {
 				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
 				return context.newStringIterator(persistence.converter().convert(t, String.class));
@@ -635,7 +631,23 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected boolean includeEntry(Property property, ReflectionValueIterator valueIterator) {
-		return !property.derived() && !(valueIterator.context().stack().size() >= 3
-				&& valueIterator.value() instanceof Entity && !property.name().equals("id"));
+//		IO.println("DefaultCrud.includeEntry, property=" + property + ", (" + valueIterator.context().stack().size()
+//				+ ", " + (valueIterator.value() != null ? valueIterator.value().getClass().getSimpleName() : null)
+//				+ ")");
+
+		if (property.derived())
+			return false;
+
+		if (valueIterator.value() instanceof Entity
+				&& valueIterator.context().stack().size() >= referenceDepth(valueIterator)) {
+			if (!property.name().equals("id"))
+				return false;
+		}
+
+		return property.get(valueIterator.value()) != null;
+	}
+
+	protected int referenceDepth(ReflectionValueIterator valueIterator) {
+		return 3;
 	}
 }

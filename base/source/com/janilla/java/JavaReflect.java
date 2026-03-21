@@ -25,6 +25,7 @@
 package com.janilla.java;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -160,6 +161,7 @@ public class JavaReflect {
 
 	protected static Map<String, Property> propertyMap(Type type) {
 //		IO.println("JavaReflect.propertyMap, type=" + type);
+
 		class A {
 			private static final Map<Type, Map<String, Property>> RESULTS = new ConcurrentHashMap<>();
 
@@ -178,7 +180,7 @@ public class JavaReflect {
 				var c0 = c;
 
 				var rcc = c.getRecordComponents();
-				var mm = new HashMap<String, Member[]>();
+				var mm = new LinkedHashMap<String, Member[]>();
 				if (rcc != null)
 					for (var x : rcc)
 						mm.computeIfAbsent(x.getName(), k -> {
@@ -192,6 +194,8 @@ public class JavaReflect {
 						});
 
 				for (var m : c.getMethods()) {
+//					IO.println("JavaReflect.propertyMap, m=" + m);
+
 					if (mm.containsKey(m.getName()) || Modifier.isStatic(m.getModifiers())
 							|| m.getDeclaringClass() == Object.class
 							|| Set.of("hashCode", "toString").contains(m.getName()))
@@ -230,15 +234,16 @@ public class JavaReflect {
 				var oo = rcc != null ? IntStream.range(0, rcc.length).boxed()
 						.collect(Collectors.toMap(i -> rcc[i].getName(), i -> i + 1)) : null;
 				return mm.values().stream().map(
-						x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of(c0, (Method) x[0], (Method) x[1]))
+						x -> x.length == 1 ? Property.of((Field) x[0]) : Property.of(t, (Method) x[0], (Method) x[1]))
 						.map(x -> {
-							Field f;
-							try {
-								f = c0.getDeclaredField(x.name());
-							} catch (NoSuchFieldException e) {
-								f = null;
-							}
-							var o = f != null ? f.getAnnotation(Order.class) : null;
+//							Field f;
+//							try {
+//								f = c0.getDeclaredField(x.name());
+//							} catch (NoSuchFieldException e) {
+//								f = null;
+//							}
+//							var o = f != null ? f.getAnnotation(Order.class) : null;
+							var o = x.member() instanceof AnnotatedElement ae ? ae.getAnnotation(Order.class) : null;
 							return Java.mapEntry(x,
 									o != null ? Integer.valueOf(o.value()) : oo != null ? oo.get(x.name()) : null);
 						}).sorted(Comparator.comparing(Map.Entry::getValue,
@@ -342,7 +347,7 @@ public class JavaReflect {
 	}
 
 	public static Map<String, Type> actualTypeArguments(Type type, Class<?> superType) {
-		IO.println("JavaReflect.actualTypeArguments, type=" + type + ", superType=" + superType);
+//		IO.println("JavaReflect.actualTypeArguments, type=" + type + ", superType=" + superType);
 		class A {
 			private static final Map<Type, Map<Class<?>, Map<String, Type>>> RESULTS = new ConcurrentHashMap<>();
 		}
@@ -365,8 +370,8 @@ public class JavaReflect {
 			if (tt != null)
 				for (var t : tt) {
 					var c = Java.toClass(t);
-					if (c == superType)
-						break;
+//					if (c == superType)
+//						break;
 					var pp = c.getTypeParameters();
 					var aa = t instanceof ParameterizedType x ? x.getActualTypeArguments() : null;
 					var m2 = new LinkedHashMap<String, Type>();
@@ -376,6 +381,8 @@ public class JavaReflect {
 							m2.put(pp[i].getName(), t2);
 					}
 					m = m2;
+					if (c == superType)
+						break;
 				}
 			return m;
 		});
@@ -535,17 +542,20 @@ public class JavaReflect {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends Annotation> T inheritedAnnotation(Class<?> type, Class<T> annotationClass) {
+	public static <T extends Annotation> AnnotationAndElement<T> inheritedAnnotation(Class<?> type,
+			Class<T> annotationClass) {
 		class A {
-			private static final Map<Class<?>, Map<Class<?>, Annotation>> RESULTS = new ConcurrentHashMap<>();
+			private static final Map<Class<?>, Map<Class<?>, AnnotationAndElement<?>>> RESULTS = new ConcurrentHashMap<>();
 		}
-		return (T) A.RESULTS.computeIfAbsent(type, _ -> new ConcurrentHashMap<>()).computeIfAbsent(annotationClass,
-				_ -> {
+		return (AnnotationAndElement<T>) A.RESULTS.computeIfAbsent(type, _ -> new ConcurrentHashMap<>())
+				.computeIfAbsent(annotationClass, _ -> {
 					return Stream
 							.<Supplier<Stream<Class<?>>>>of(() -> Stream.of(type), () -> inheritedClasses(type),
 									() -> inheritedInterfaces(type).flatMap(x -> x).distinct())
-							.flatMap(x -> x.get()).map(x -> x.getAnnotation(annotationClass)).filter(x -> x != null)
-							.findFirst().orElse(null);
+							.flatMap(x -> x.get()).map(x -> {
+								var a = x.getAnnotation(annotationClass);
+								return a != null ? new AnnotationAndElement<>(a, x) : null;
+							}).filter(x -> x != null).findFirst().orElse(null);
 				});
 	}
 

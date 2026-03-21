@@ -47,9 +47,13 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin admin-text {
-  input {
-    box-sizing: border-box;
-    width: 100%;
+:where(.admin) {
+  admin-date-time,
+  admin-password,
+  admin-text {
+    input {
+      box-sizing: border-box;
+      width: 100%;
+    }
   }
 }

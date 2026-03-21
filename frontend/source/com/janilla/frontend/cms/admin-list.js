@@ -317,7 +317,7 @@ export default class AdminList extends WebComponent {
     }
 
     handleDisplayUpdated = () => {
-        this.querySelector("admin-search-filter")?.setAttribute("data-search", this.dataset.search);
+        this.querySelector("admin-search-filter")?.setAttribute("data-search", this.dataset.search ?? "");
     }
 
     handleLimitSelected = event => {
