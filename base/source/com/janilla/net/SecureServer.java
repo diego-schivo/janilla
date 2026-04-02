@@ -63,16 +63,23 @@ public abstract class SecureServer {
 
 		try (var s = ServerSocketChannel.open()) {
 			s.socket().bind(endpoint);
-			for (;;) {
-				var ch = s.accept();
-//				IO.println("SecureServer.serve, ch=" + ch);
-				var th = Thread.startVirtualThread(
-						() -> ScopedValue.where(SOCKET_CHANNEL, ch).run(() -> handleConnection(ch)));
-				lastUsed.put(ch, new ThreadAndInstant(th, Instant.now()));
-			}
+			for (;;)
+				try {
+					var ch = s.accept();
+//					IO.println("SecureServer.serve, ch=" + ch);
+					var th = startThread(ch);
+					lastUsed.put(ch, new ThreadAndInstant(th, Instant.now()));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	protected Thread startThread(SocketChannel channel) {
+		return Thread.startVirtualThread(
+				() -> ScopedValue.where(SOCKET_CHANNEL, channel).run(() -> handleConnection(channel)));
 	}
 
 	protected void handleConnection(SocketChannel channel) {
