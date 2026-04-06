@@ -75,19 +75,8 @@ public abstract class AbstractIndexFactory implements IndexFactory {
 	}
 
 	protected List<Script> scripts() {
-//		if (scripts == null)
-//			synchronized (this) {
-//				if (scripts == null) {
-//					scripts = new ArrayList<Script>();
-//					addScripts(scripts);
-//				}
-//			}
-//		return scripts;
 		return new ArrayList<>();
 	}
-
-//	protected void addScripts(List<Script> list) {
-//	}
 
 	protected List<Template> templates() {
 		if (templates == null)

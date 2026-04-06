@@ -92,10 +92,12 @@ public class DefaultDiFactory implements DiFactory {
 	@Override
 	public <T> T newInstance(Class<T> class1, Map<String, Object> arguments) {
 //		IO.println("DiFactory.create, class1=" + class1 + ", arguments=" + arguments);
-		if (class1.isInterface() || Modifier.isAbstract(class1.getModifiers()))
-			throw new IllegalArgumentException("class1=" + class1);
+		Objects.requireNonNull(class1);
 		var f = factories.computeIfAbsent(class1, _ -> {
-			var cc = class1.getConstructors();
+			var cc = !class1.isInterface() && !Modifier.isAbstract(class1.getModifiers()) ? class1.getConstructors()
+					: null;
+			if (cc == null || cc.length == 0)
+				throw new IllegalArgumentException("class1=" + class1);
 			var o = context;
 			var oe = !Modifier.isStatic(class1.getModifiers()) && o != null
 					&& class1.getEnclosingClass() == o.getClass();

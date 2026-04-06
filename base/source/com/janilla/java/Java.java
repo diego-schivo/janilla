@@ -88,6 +88,10 @@ public final class Java {
 		}
 	}
 
+	public static List<Class<?>> getPackageClasses(String package1) {
+		return getPackageClasses(package1, false);
+	}
+
 	public static List<Class<?>> getPackageClasses(String package1, boolean recursive) {
 //		IO.println("Java.getPackageClasses, package1=" + package1 + ", recursive=" + recursive);
 		class A {
@@ -123,6 +127,10 @@ public final class Java {
 //			IO.println("Java.getPackageClasses, cc=" + cc);
 			return cc;
 		});
+	}
+
+	public static Stream<Path> getPackagePaths(String package1) {
+		return getPackagePaths(package1, false);
 	}
 
 	public static Stream<Path> getPackagePaths(String package1, boolean recursive) {
