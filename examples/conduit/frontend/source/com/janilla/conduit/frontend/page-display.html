@@ -1,0 +1,38 @@
+<link href="/page-display.css" rel="stylesheet" />
+<slot name="content"></slot>
+
+<!--${article}-->
+<!--${editor}-->
+<!--${home}-->
+<!--${login}-->
+<!--${profile}-->
+<!--${register}-->
+<!--${settings}-->
+
+<template id="article">
+	<article-element slot="${slot}" data-slug="${slug}"></article-element>
+</template>
+
+<template id="editor">
+	<editor-element slot="${slot}" data-slug="${slug}"></editor-element>
+</template>
+
+<template id="home">
+	<home-element slot="${slot}"></home-element>
+</template>
+
+<template id="login">
+	<login-element slot="${slot}"></login-element>
+</template>
+
+<template id="profile">
+	<profile-element slot="${slot}" data-username="${username}"></profile-element>
+</template>
+
+<template id="register">
+	<register-element slot="${slot}"></register-element>
+</template>
+
+<template id="settings">
+	<settings-element slot="${slot}"></settings-element>
+</template>

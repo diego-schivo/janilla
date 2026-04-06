@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="/style.css" />
+<div>
+  <p>
+    <!--${lines}-->
+  </p>
+</div>
+<!--${actions}-->
+
+<template id="line">
+  ${text}<br />
+</template>
+
+<template id="actions">
+  <div>
+    <slot name="before-actions"></slot>
+    <slot name="actions">
+      <button name="edit" class="button secondary">Edit</button>
+    </slot>
+    <slot name="after-actions"></slot>
+  </div>
+</template>

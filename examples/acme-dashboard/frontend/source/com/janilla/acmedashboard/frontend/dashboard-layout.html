@@ -1,0 +1,22 @@
+<link href="/dashboard-layout.css" rel="stylesheet" />
+<aside>
+  <dashboard-nav></dashboard-nav>
+</aside>
+<main>
+  <slot name="content"></slot>
+</main>
+<!--${dashboard}-->
+<!--${invoices}-->
+<!--${customers}-->
+
+<template id="dashboard">
+  <dashboard-page slot="${slot}"></dashboard-page>
+</template>
+
+<template id="invoices">
+  <invoices-layout slot="${slot}" data-uri="${uri}"></invoices-layout>
+</template>
+
+<template id="customers">
+  <customers-page slot="${slot}" data-query="${query}"></customers-page>
+</template>

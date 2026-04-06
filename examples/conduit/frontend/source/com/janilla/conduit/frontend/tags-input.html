@@ -1,0 +1,12 @@
+<input type="text" class="form-control" placeholder="Enter tags" value="" />
+<div class="tag-list">
+	<!--${tags}-->
+</div>
+
+<template id="tag">
+	<span class="tag-default tag-pill">
+		<i class="ion-close-round"></i>
+		<span>${value}</span>
+		<input type="hidden" name="tagList" value="${value}" />
+	</span>
+</template>

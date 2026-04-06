@@ -1,0 +1,280 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+@import "/website/site-base.css";
+
+/*
+:where(:root:not(:has(.admin)), :host:not(:has(.admin))) {
+  line-height: 1.5;
+  text-size-adjust: 100%;
+
+  a,
+  strong {
+    color: light-dark(oklch(0.21 0.034 264.665), rgb(255, 255, 255));
+  }
+
+  article,
+  form,
+  label {
+    display: flex;
+    flex-direction: column;
+  }
+
+  article {
+    gap: 1rem;
+  }
+
+  body {
+    background: light-dark(rgb(255, 255, 255), rgb(10, 10, 10));
+    color: light-dark(oklch(0.373 0.034 259.733), rgb(209, 213, 219));
+    font-family: Geist;
+    margin: 0;
+
+    &:has(dialog[open]) {
+      overflow: hidden;
+    }
+  }
+
+  button,
+  input,
+  label,
+  select,
+  textarea,
+  .button {
+    color: inherit;
+    font-size: 0.875rem;
+  }
+
+  button,
+  input,
+  select,
+  textarea,
+  .button {
+    font-family: Geist;
+  }
+
+  dd,
+  dl,
+  h1,
+  h2,
+  h3,
+  ol,
+  p,
+  ul {
+    margin: 0;
+  }
+
+  form {
+    gap: 2rem;
+
+    .button {
+      align-self: start;
+      height: 2.25rem;
+    }
+
+    label {
+      gap: 0.5rem;
+    }
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: light-dark(oklch(0.21 0.034 264.665), rgb(255, 255, 255));
+    font-weight: 400;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  img {
+    display: block;
+  }
+
+  input,
+  select,
+  textarea {
+    background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+    border: 1px solid light-dark(rgb(228, 228, 231), oklch(0.269 0 0));
+    border-radius: 0.25rem;
+    box-sizing: border-box;
+    color: light-dark(oklch(0.21 0.034 264.665), rgb(255, 255, 255));
+    font-size: 1rem;
+    padding: 0.25rem 0.75rem;
+
+    &:focus {
+      outline: 2px solid rgb(255, 255, 255);
+    }
+  }
+
+  input {
+    height: 2.25rem;
+  }
+
+  label {
+    color: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.5), oklab(0.983828 -0.00126734 -0.00320476 / 0.5));
+    font-family: GeistMono;
+
+    &:has([required]) span::after {
+      content: " *";
+    }
+
+    &.checkbox {
+      align-items: center;
+      display: flex;
+      flex-direction: row;
+      gap: 1rem;
+
+      input:not(:checked) + lucide-icon {
+        svg {
+          display: none;
+        }
+      }
+
+      lucide-icon {
+        background: light-dark(rgb(15, 23, 42), rgb(248, 250, 252));
+        border: 1px solid light-dark(rgb(15, 23, 42), rgb(248, 250, 252));
+        border-radius: 0.1875rem;
+        box-sizing: border-box;
+        color: light-dark(rgb(248, 250, 252), rgb(15, 15, 15));
+      }
+
+      &:has([disabled]) {
+        opacity: 0.5;
+      }
+    }
+  }
+
+  ol,
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  textarea {
+    resize: none;
+  }
+
+  .button {
+    align-items: center;
+    border: none;
+    display: inline-flex;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+
+    &:where(.primary, .secondary) {
+      border-radius: 0.25rem;
+      box-sizing: border-box;
+      height: 2.5rem;
+      justify-content: center;
+      padding: 0.5rem 1rem;
+      text-align: center;
+
+      &:disabled {
+        opacity: 0.5;
+      }
+    }
+
+    &.primary {
+      background: light-dark(rgb(15, 23, 42), rgb(248, 250, 252));
+      color: light-dark(rgb(248, 250, 252), rgb(15, 15, 15));
+
+      &:not(:disabled):hover {
+        background: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.9), oklab(0.983828 -0.00126734 -0.00320476 / 0.9));
+      }
+    }
+
+    &.secondary {
+      border: 1px solid light-dark(rgb(226, 232, 240), rgba(255, 255, 255, 0.1));
+      background: light-dark(rgb(244, 244, 245), rgb(20, 20, 20));
+      color: light-dark(rgb(2, 8, 23), rgb(248, 250, 252));
+    }
+
+    &:not(:disabled) {
+      cursor: pointer;
+    }
+  }
+
+  .visually-hidden {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  ::backdrop {
+    background: oklab(0 0 0 / 0.8);
+  }
+}
+*/
+
+:where(app-element) {
+  > .site {
+    color: light-dark(oklch(0.373 0.034 259.733), rgb(209, 213, 219));
+    gap: 2rem;
+
+    div:has(> [name="query"]) {
+      position: relative;
+
+      input {
+        width: 100%;
+      }
+
+      lucide-icon {
+        position: absolute;
+        right: .5rem;
+        top: 50%;
+        translate: 0 -50%;
+      }
+    }
+  }
+
+  main {
+    > * {
+      @media (min-width: 1441px) {
+        max-width: 76.125rem;
+      }
+    }
+  }
+}

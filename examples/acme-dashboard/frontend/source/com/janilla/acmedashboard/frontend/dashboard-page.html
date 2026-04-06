@@ -1,0 +1,20 @@
+<article>
+  <h1>Dashboard</h1>
+  <div>
+    <!--${cards}-->
+    <!--${revenue}-->
+    <!--${invoices}-->
+  </div>
+</article>
+
+<template id="cards">
+  <card-wrapper data-state="${state}"></card-wrapper>
+</template>
+
+<template id="revenue">
+  <revenue-chart data-state="${state}"></revenue-chart>
+</template>
+
+<template id="invoices">
+  <latest-invoices data-state="${state}"></latest-invoices>
+</template>

@@ -1,0 +1,39 @@
+<article>
+  <!--${intro}-->
+  <!--${form}-->
+  <!--${confirmation}-->
+</article>
+
+<template id="intro">
+  <section class="intro">
+    <!--${introContent}-->
+  </section>
+</template>
+
+<template id="form">
+  <form>
+    <!--${fields}-->
+    <button class="button primary">Submit</button>
+  </form>
+</template>
+
+<template id="field">
+  <label>
+    <span>${label}</span>
+    <!--${control}-->
+  </label>
+</template>
+
+<template id="input">
+  <input type="${type}" name="${name}" required="${required}" />
+</template>
+
+<template id="textarea">
+  <textarea name="${name}" rows="3" required="${required}"></textarea>
+</template>
+
+<template id="confirmation">
+  <section class="confirmation">
+    <!--${confirmationMessage}-->
+  </section>
+</template>

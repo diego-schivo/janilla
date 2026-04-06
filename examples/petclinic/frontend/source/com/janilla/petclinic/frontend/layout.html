@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="shortcut icon" type="image/x-icon" href="/static/resources/images/favicon.png" />
+	<title>PetClinic :: a Janilla demonstration</title>
+	<link rel="stylesheet" href="/petclinic.css" />
+</head>
+<body>
+	<nav class="navbar navbar-expand-lg navbar-dark" role="navigation">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="/">
+				<span></span>
+			</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-navbar">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="main-navbar">
+				<ul class="nav navbar-nav me-auto">
+					<!--${navItems}-->
+				</ul>
+
+				<ssr-template id="nav-item">
+					<li class="nav-item">
+						<a class="nav-link ${active}" href="${href}" title="${title}">
+							<span class="fa fa-${icon}"></span>
+							<span>${text}</span>
+						</a>
+					</li>
+				</ssr-template>
+			</div>
+		</div>
+	</nav>
+	<div class="container-fluid">
+		<div class="container xd-container">
+			<!--${content}-->
+			<br />
+			<br />
+			<div class="container">
+				<div class="row">
+					<div class="col-12 text-center">
+						<img src="/static/resources/images/spring-logo.svg" alt="VMware Tanzu Logo" loading="lazy" class="logo" />
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<form>
+  <section>
+    <div>
+      <label for="customerId">Choose customer</label>
+      <div class="customerId-control">
+        <select id="customerId" name="customerId">
+          <option value="">Select a customer</option>
+          <!--${customerOptions}-->
+        </select>
+        <hero-icon data-name="user-circle"></hero-icon>
+      </div>
+      <div class="customerId-error" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div>
+      <label for="amount">Choose an amount</label>
+      <div class="amount-control">
+        <input id="amount" name="amount" type="number" step="0.01" placeholder="Enter USD amount" value="${amount}" />
+        <hero-icon data-name="currency-dollar"></hero-icon>
+      </div>
+      <div class="amount-error" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <fieldset>
+      <legend>Set the invoice status</legend>
+      <ol>
+        <!--${statusItems}-->
+      </ol>
+      <div class="status-error" aria-live="polite" aria-atomic="true"></div>
+    </fieldset>
+    <div class="error" aria-live="polite" aria-atomic="true"></div>
+  </section>
+  <section>
+    <a href="/dashboard/invoices" class="secondary-button">Cancel</a>
+    <button class="primary-button" aria-disabled="false">${title}</button>
+  </section>
+</form>
+
+<template id="customer-option">
+  <option value="${key}" selected="${selected}">${value}</option>
+</template>
+
+<template id="status-item">
+  <li>
+    <input id="${value}" name="status" type="radio" value="${value}" checked="${checked}" />
+    <label for="${value}">
+      <invoice-status data-value="${value}"></invoice-status>
+    </label>
+  </li>
+</template>

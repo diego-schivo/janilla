@@ -1,0 +1,18 @@
+<header class="topbar">
+  <!--${newTodo}-->
+  <!--${toggleAll}-->
+</header>
+
+<template id="new-todo">
+  <div class="new-todo-display">
+    <label for="new-todo" class="visually-hidden">Enter a new todo.</label>
+    <input id="new-todo" value="${value}" class="new-todo-input" placeholder="What needs to be done?" autofocus />
+  </div>
+</template>
+
+<template id="toggle-all">
+  <div class="toggle-all-container">
+    <input id="toggle-all" class="toggle-all-input" type="checkbox" checked="${checked}" disabled="${disabled}" />
+    <label for="toggle-all" class="toggle-all-label">Mark all todos as complete.</label>
+  </div>
+</template>

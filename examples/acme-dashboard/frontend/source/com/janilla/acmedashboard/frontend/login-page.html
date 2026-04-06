@@ -1,0 +1,25 @@
+<header>
+  <acme-logo></acme-logo>
+</header>
+<form>
+  <h1>Please log in to continue.</h1>
+  <div>
+    <label for="email">Email</label>
+    <div class="control">
+      <input id="email" name="email" type="email" placeholder="Enter your email address" required />
+      <hero-icon data-name="at-symbol"></hero-icon>
+    </div>
+  </div>
+  <div>
+    <label for="password">Password</label>
+    <div class="control">
+      <input id="password" name="password" type="password" placeholder="Enter password" required minlength="6" />
+      <hero-icon data-name="key"></hero-icon>
+    </div>
+  </div>
+  <button class="primary-button" aria-disabled="false">
+    Log in
+    <hero-icon data-name="arrow-right"></hero-icon>
+  </button>
+  <div class="error" aria-live="polite" aria-atomic="true"></div>
+</form>

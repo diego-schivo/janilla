@@ -1,0 +1,217 @@
+{
+	"customers": [
+		{
+			"id": "d6e15727-9fe1-4961-8c5b-ea44a9bd81aa",
+			"name": "Evil Rabbit",
+			"email": "evil@rabbit.com",
+			"imageUrl": "/images/customers/evil-rabbit.webp"
+		},
+		{
+			"id": "3958dc9e-712f-4377-85e9-fec4b6a6442a",
+			"name": "Delba de Oliveira",
+			"email": "delba@oliveira.com",
+			"imageUrl": "/images/customers/delba-de-oliveira.webp"
+		},
+		{
+			"id": "3958dc9e-742f-4377-85e9-fec4b6a6442a",
+			"name": "Lee Robinson",
+			"email": "lee@robinson.com",
+			"imageUrl": "/images/customers/lee-robinson.webp"
+		},
+		{
+			"id": "76d65c26-f784-44a2-ac19-586678f7c2f2",
+			"name": "Michael Novotny",
+			"email": "michael@novotny.com",
+			"imageUrl": "/images/customers/michael-novotny.webp"
+		},
+		{
+			"id": "CC27C14A-0ACF-4F4A-A6C9-D45682C144B9",
+			"name": "Amy Burns",
+			"email": "amy@burns.com",
+			"imageUrl": "/images/customers/amy-burns.webp"
+		},
+		{
+			"id": "13D07535-C59E-4157-A011-F8D2EF4E0CBB",
+			"name": "Balazs Orban",
+			"email": "balazs@orban.com",
+			"imageUrl": "/images/customers/balazs-orban.webp"
+		}
+	],
+	"invoices": [
+		{
+			"customer": {
+				"id": "d6e15727-9fe1-4961-8c5b-ea44a9bd81aa",
+				"name": "Foo Bar"
+			},
+			"amount": 157.95,
+			"status": "PENDING",
+			"date": "2022-12-06"
+		},
+		{
+			"customer": {
+				"id": "3958dc9e-712f-4377-85e9-fec4b6a6442a"
+			},
+			"amount": 203.48,
+			"status": "PENDING",
+			"date": "2022-11-14"
+		},
+		{
+			"customer": {
+				"id": "CC27C14A-0ACF-4F4A-A6C9-D45682C144B9"
+			},
+			"amount": 30.4,
+			"status": "PAID",
+			"date": "2022-10-29"
+		},
+		{
+			"customer": {
+				"id": "76d65c26-f784-44a2-ac19-586678f7c2f2"
+			},
+			"amount": 448,
+			"status": "PAID",
+			"date": "2023-09-10"
+		},
+		{
+			"customer": {
+				"id": "13D07535-C59E-4157-A011-F8D2EF4E0CBB"
+			},
+			"amount": 345.77,
+			"status": "PENDING",
+			"date": "2023-08-05"
+		},
+		{
+			"customer": {
+				"id": "3958dc9e-742f-4377-85e9-fec4b6a6442a"
+			},
+			"amount": 542.46,
+			"status": "PENDING",
+			"date": "2023-07-16"
+		},
+		{
+			"customer": {
+				"id": "d6e15727-9fe1-4961-8c5b-ea44a9bd81aa"
+			},
+			"amount": 6.66,
+			"status": "PENDING",
+			"date": "2023-06-27"
+		},
+		{
+			"customer": {
+				"id": "76d65c26-f784-44a2-ac19-586678f7c2f2"
+			},
+			"amount": 325.45,
+			"status": "PAID",
+			"date": "2023-06-09"
+		},
+		{
+			"customer": {
+				"id": "CC27C14A-0ACF-4F4A-A6C9-D45682C144B9"
+			},
+			"amount": 12.5,
+			"status": "PAID",
+			"date": "2023-06-17"
+		},
+		{
+			"customer": {
+				"id": "13D07535-C59E-4157-A011-F8D2EF4E0CBB"
+			},
+			"amount": 85.46,
+			"status": "PAID",
+			"date": "2023-06-07"
+		},
+		{
+			"customer": {
+				"id": "3958dc9e-712f-4377-85e9-fec4b6a6442a"
+			},
+			"amount": 5,
+			"status": "PAID",
+			"date": "2023-08-19"
+		},
+		{
+			"customer": {
+				"id": "13D07535-C59E-4157-A011-F8D2EF4E0CBB"
+			},
+			"amount": 89.45,
+			"status": "PAID",
+			"date": "2023-06-03"
+		},
+		{
+			"customer": {
+				"id": "3958dc9e-742f-4377-85e9-fec4b6a6442a"
+			},
+			"amount": 10,
+			"status": "PAID",
+			"date": "2022-06-05"
+		}
+	],
+	"revenue": [
+		{
+			"id": 1,
+			"month": "Jan",
+			"revenue": 2000
+		},
+		{
+			"id": 2,
+			"month": "Feb",
+			"revenue": 1800
+		},
+		{
+			"id": 3,
+			"month": "Mar",
+			"revenue": 2200
+		},
+		{
+			"id": 4,
+			"month": "Apr",
+			"revenue": 2500
+		},
+		{
+			"id": 5,
+			"month": "May",
+			"revenue": 2300
+		},
+		{
+			"id": 6,
+			"month": "Jun",
+			"revenue": 3200
+		},
+		{
+			"id": 7,
+			"month": "Jul",
+			"revenue": 3500
+		},
+		{
+			"id": 8,
+			"month": "Aug",
+			"revenue": 3700
+		},
+		{
+			"id": 9,
+			"month": "Sep",
+			"revenue": 2500
+		},
+		{
+			"id": 10,
+			"month": "Oct",
+			"revenue": 2800
+		},
+		{
+			"id": 11,
+			"month": "Nov",
+			"revenue": 3000
+		},
+		{
+			"id": 12,
+			"month": "Dec",
+			"revenue": 4800
+		}
+	],
+	"users": [
+		{
+			"id": "410544b2-4001-4271-9855-fec4b6a6442a",
+			"name": "User",
+			"email": "user@nextmail.com",
+			"password": "123456"
+		}
+	]
+}

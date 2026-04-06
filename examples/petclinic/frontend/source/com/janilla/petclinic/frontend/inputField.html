@@ -1,0 +1,14 @@
+<div class="form-group ${hasError}">
+	<label class="col-sm-2 control-label">${label}</label>
+	<div class="col-sm-10">
+		<div>
+			<input class="form-control" type="${type}" id="${name}" name="${name}" value="${value}" />
+		</div>
+		<span class="fa fa-${icon} form-control-feedback" aria-hidden="true"></span>
+		<!--${errors}-->
+
+		<ssr-template id="errors">
+			<span class="help-inline">${}</span>
+		</ssr-template>
+	</div>
+</div>

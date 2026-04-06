@@ -1,0 +1,73 @@
+<link rel="stylesheet" href="/style.css" />
+<div id="sidebar">
+  <h1>
+    <a href="/about">React Router Contacts</a>
+  </h1>
+  <div>
+    <form id="search-form" role="search">
+      <input
+        aria-label="Search contacts"
+        class="${search.input.class}"
+        value="${search.input.value}"
+        id="q"
+        name="q"
+        placeholder="Search"
+        type="search"
+      />
+      <div
+        aria-hidden
+        hidden="${search.spinner.hidden}"
+        id="search-spinner">
+      </div>
+    </form>
+    <form method="post">
+      <button type="submit">New</button>
+    </form>
+  </div>
+  <nav>
+    <!--${contacts}-->
+  </nav>
+</div>
+<div id="detail" class="${detail.class}">
+  <slot name="content"></slot>
+</div>
+
+<!--${home}-->
+<!--${contact}-->
+<!--${editContact}-->
+
+<template id="contacts">
+  <ul>
+    <!--${items}-->
+  </ul>
+</template>
+
+<template id="no-contacts">
+  <p>
+    <i>No contacts</i>
+  </p>
+</template>
+
+<template id="item">
+  <li>
+    <a href="${href}" class="${class}"><!--${name}--><!--${favorite}--></a>
+  </li>
+</template>
+
+<template id="name">${full}</template>
+
+<template id="no-name"><i>No Name</i></template>
+
+<template id="favorite"><span>★</span></template>
+
+<template id="home">
+  <home-element slot="${slot}"></home-element>
+</template>
+
+<template id="contact">
+  <contact-element slot="${slot}" data-loading="${loading}" data-id="${id}"></contact-element>
+</template>
+
+<template id="edit-contact">
+  <edit-contact slot="${slot}" data-loading="${loading}" data-id="${id}"></edit-contact>
+</template>

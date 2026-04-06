@@ -1,0 +1,30 @@
+<article>
+  <h2>Latest Invoices</h2>
+  <div>
+    <section>
+      <!--${articles}-->
+    </section>
+    <footer>
+      <hero-icon data-name="arrow-path"></hero-icon>
+      <h3>Updated just now</h3>
+    </footer>
+  </div>
+</article>
+
+<template id="article">
+  <article>
+    <img src="${customer.imageUrl}" loading="lazy" />
+    <p>${customer.name}</p>
+    <p>${customer.email}</p>
+    <intl-format data-type="amount" data-value="${amount}"></intl-format>
+  </article>
+</template>
+
+<template id="article-skeleton">
+  <article class="skeleton">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </article>
+</template>

@@ -1,0 +1,20 @@
+<slot name="content"></slot>
+
+<div slot="${loadingSlot}">
+	<div class="article-preview">Loading articles...</div>
+</div>
+<div slot="${emptySlot}">
+	<div class="article-preview">No articles are here... yet.</div>
+</div>
+<div slot="${slot}">
+	<!--${previews}-->
+	<!--${pagination}-->
+</div>
+
+<template id="preview">
+	<article-preview data-index="${index}" data-slug="${slug}"></article-preview>
+</template>
+
+<template id="pagination">
+	<pagination-nav data-pages-count="${pagesCount}" data-page-number="${pageNumber}"></pagination-nav>
+</template>

@@ -1,0 +1,38 @@
+<!--${header}-->
+<page-display data-path="${path}" data-loading="${loading}"></page-display>
+<!--${footer}-->
+
+<template id="header">
+	<nav class="navbar navbar-light">
+		<div class="container">
+			<a class="navbar-brand" href="#/">conduit</a>
+			<ul class="nav navbar-nav pull-xs-right">
+				<!--${navItems}-->
+			</ul>
+		</div>
+	</nav>
+</template>
+
+<template id="nav-item">
+	<li class="nav-item">
+		<nav-link
+			class="nav-link ${active}"
+			data-href="${href}"
+			data-icon="${icon}"
+			data-image="${image}">${text}</nav-link>
+	</li>
+</template>
+
+<template id="footer">
+	<footer>
+		<div class="container">
+			<a href="#/" class="logo-font">conduit</a>
+			<span class="attribution">
+				An interactive learning project from
+				<a href="https://thinkster.io">Thinkster</a> and
+				<a href="https://janilla.com">Janilla</a>.
+				Code &amp; design licensed under MIT.
+			</span>
+		</div>
+	</footer>
+</template>

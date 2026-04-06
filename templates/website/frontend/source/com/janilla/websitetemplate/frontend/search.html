@@ -1,0 +1,17 @@
+<main>
+  <article>
+    <form>
+      <h1>Search</h1>
+      <label for="search" class="visually-hidden">Search</label>
+      <input id="search" name="q" value="${query}" placeholder="Search" />
+      <button class="visually-hidden">submit</button>
+    </form>
+    <div>
+      <!--${cards}-->
+    </div>
+  </article>
+</main>
+
+<template id="card">
+  <card-element data-slug="${slug}"></card-element>
+</template>

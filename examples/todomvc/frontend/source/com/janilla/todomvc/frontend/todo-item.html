@@ -1,0 +1,20 @@
+<li class="todo-item ${editing}">
+  <!--${display}-->
+  <!--${edit}-->
+</li>
+
+<template id="display">
+  <div class="display-todo">
+    <label for="toggle-todo-${id}" class="toggle-todo-label visually-hidden">Toggle Todo</label>
+    <input id="toggle-todo-${id}" class="toggle-todo-input" type="checkbox" checked="${checked}" />
+    <span class="todo-item-text truncate-singleline" tabindex="0">${title}</span>
+    <button class="remove-todo-button" title="Remove Todo"></button>
+  </div>
+</template>
+
+<template id="edit">
+  <div class="edit-todo-container">
+    <label for="edit-todo-${id}" class="edit-todo-label visually-hidden">Edit todo</label>
+    <input id="edit-todo-${id}" class="edit-todo-input" value="${title}" />
+  </div>
+</template>

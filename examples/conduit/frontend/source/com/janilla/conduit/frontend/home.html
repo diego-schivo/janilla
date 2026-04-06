@@ -1,0 +1,35 @@
+<div class="home-page">
+	<!--${banner}-->
+	<div class="container page">
+		<div class="row">
+			<div class="col-md-9">
+				<div class="feed-toggle">
+					<ul class="nav nav-pills outline-active">
+						<!--${tabItems}-->
+					</ul>
+				</div>
+				<articles-element data-api-url="${articlesUrl}"></articles-element>
+			</div>
+			<div class="col-md-3">
+				<div class="sidebar">
+					<popular-tags></popular-tags>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<template id="banner">
+	<div class="banner">
+		<div class="container">
+			<h1 class="logo-font">conduit</h1>
+			<p>A place to share your knowledge.</p>
+		</div>
+	</div>
+</template>
+
+<template id="tab-item">
+	<li class="nav-item">
+		<nav-link class="nav-link ${active}" data-href="${href}" data-icon="${icon}">${text}</nav-link>
+	</li>
+</template>

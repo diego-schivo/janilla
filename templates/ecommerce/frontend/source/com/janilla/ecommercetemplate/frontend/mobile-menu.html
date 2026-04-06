@@ -1,0 +1,25 @@
+<button name="show">
+  <lucide-icon data-name="menu"></lucide-icon>
+</button>
+<dialog>
+  <article>
+    <section class="store">
+      <h2>My Store</h2>
+      <ul><!--${storeItems}--></ul>
+    </section>
+    <section class="account">
+      <h2>My account</h2>
+      <ul><!--${accountItems}--></ul>
+    </section>
+  </article>
+  <button name="close">
+    <lucide-icon data-name="x"></lucide-icon>
+    <span class="visually-hidden">Close</span>
+  </button>
+</dialog>
+
+<template id="list-item">
+  <li>
+    <link-element data-document="${document}" data-href="${href}" data-target="${target}" data-class="${class}" data-text="${text}"></link-element>
+  </li>
+</template>

@@ -1,0 +1,32 @@
+<main>
+  <!--${warning}-->
+  <article>
+    <h1>Log in</h1>
+    <p>
+      This is where your customers will login to manage their account, review their order history, and more.
+      To manage all users, <a href="/admin/collections/users">login to the admin dashboard</a>.
+    </p>
+    <form>
+      <label>
+        Email
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" required />
+      </label>
+      <p>
+        Forgot your password?
+        <a href="/recover-password">Click here to reset it</a>
+      </p>
+      <p>
+        <a href="/create-account" class="button secondary">Create an account</a>
+        <button class="button primary">Continue</button>
+      </p>
+    </form>
+  </article>
+</main>
+
+<template id="message">
+  <message-element class="${class}" data-text="${text}"></message-element>
+</template>

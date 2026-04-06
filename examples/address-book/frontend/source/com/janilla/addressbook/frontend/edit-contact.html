@@ -1,0 +1,49 @@
+<form id="contact-form" method="post">
+  <p>
+    <span>Name</span>
+    <input
+      aria-label="First name"
+      value="${first}"
+      name="first"
+      placeholder="First"
+      type="text"
+    />
+    <input
+      aria-label="Last name"
+      value="${last}"
+      name="last"
+      placeholder="Last"
+      type="text"
+    />
+  </p>
+  <label>
+    <span>Twitter</span>
+    <input
+      value="${twitter}"
+      name="twitter"
+      placeholder="@jack"
+      type="text"
+    />
+  </label>
+  <label>
+    <span>Avatar URL</span>
+    <input
+      aria-label="Avatar URL"
+      value="${avatar}"
+      name="avatar"
+      placeholder="https://example.com/avatar.jpg"
+      type="text"
+    />
+  </label>
+  <label>
+    <span>Notes</span>
+    <textarea
+      name="notes"
+      rows="6"
+    >${notes}</textarea>
+  </label>
+  <p>
+    <button type="submit">Save</button>
+    <button type="button">Cancel</button>
+  </p>
+</form>

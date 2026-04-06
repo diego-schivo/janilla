@@ -1,0 +1,621 @@
+{
+	"categories": [
+		{
+			"$type": "Category",
+			"id": 1,
+			"title": "Technology",
+			"slug": "technology"
+		},
+		{
+			"$type": "Category",
+			"id": 2,
+			"title": "News",
+			"slug": "news"
+		},
+		{
+			"$type": "Category",
+			"id": 3,
+			"title": "Finance",
+			"slug": "finance"
+		},
+		{
+			"$type": "Category",
+			"id": 4,
+			"title": "Design",
+			"slug": "design"
+		},
+		{
+			"$type": "Category",
+			"id": 5,
+			"title": "Software",
+			"slug": "software"
+		},
+		{
+			"$type": "Category",
+			"id": 6,
+			"title": "Engineering",
+			"slug": "engineering"
+		}
+	],
+	"footer": {
+		"$type": "Footer",
+		"id": 1,
+		"navItems": [
+			{
+				"$type": "Link",
+				"type": {
+					"$type": "LinkType",
+					"name": "CUSTOM"
+				},
+				"uri": "/admin",
+				"text": "Admin"
+			},
+			{
+				"$type": "Link",
+				"type": {
+					"$type": "LinkType",
+					"name": "CUSTOM"
+				},
+				"uri": "https://github.com/diego-schivo/website-template",
+				"text": "Source Code"
+			},
+			{
+				"$type": "Link",
+				"type": {
+					"$type": "LinkType",
+					"name": "CUSTOM"
+				},
+				"uri": "https://janilla.com/",
+				"text": "Janilla"
+			}
+		]
+	},
+	"formSubmissions": [],
+	"forms": [
+		{
+			"$type": "Form",
+			"id": 1,
+			"title": "Contact Form",
+			"fields": [
+				{
+					"$type": "TextField",
+					"name": "full-name",
+					"label": "Full Name",
+					"width": 100,
+					"required": true
+				},
+				{
+					"$type": "EmailField",
+					"name": "email",
+					"label": "Email",
+					"width": 100,
+					"required": true
+				},
+				{
+					"$type": "NumberField",
+					"name": "phone",
+					"label": "Phone",
+					"width": 100,
+					"required": false
+				},
+				{
+					"$type": "TextAreaField",
+					"name": "message",
+					"label": "Message",
+					"width": 100,
+					"required": true
+				}
+			],
+			"submitButtonLabel": "Submit",
+			"confirmationType": {
+				"$type": "FormConfirmationType",
+				"name": "MESSAGE"
+			},
+			"confirmationMessage": "<h2>The contact form has been submitted successfully.</h2>",
+			"emails": [
+				{
+					"$type": "Email",
+					"emailTo": "${email}",
+					"cc": "",
+					"bcc": "",
+					"replyTo": "",
+					"emailFrom": "\"Janilla\" <diego.schivo@janilla.com>",
+					"subject": "You've received a new message.",
+					"message": "Your contact form submission was successfully received."
+				}
+			]
+		}
+	],
+	"header": {
+		"$type": "Header",
+		"id": 1,
+		"navItems": [
+			{
+				"$type": "Link",
+				"type": {
+					"$type": "LinkType",
+					"name": "CUSTOM"
+				},
+				"uri": "/posts",
+				"text": "Posts"
+			},
+			{
+				"$type": "Link",
+				"type": {
+					"$type": "LinkType",
+					"name": "REFERENCE"
+				},
+				"document": {
+					"$type": "Page",
+					"id": 2
+				},
+				"text": "Contact"
+			}
+		]
+	},
+	"media": [
+		{
+			"$type": "Media",
+			"id": 1,
+			"file": {
+				"$type": "File",
+				"name": "image-post1.webp"
+			},
+			"alt": "Curving abstract shapes with an orange and blue gradient",
+			"caption": "<p>Photo by <a href=\"https://unsplash.com/@kirp\" rel=\"noopener noreferrer\" target=\"_blank\">Andrew Kliatskyi</a> on Unsplash.</p>"
+		},
+		{
+			"$type": "Media",
+			"id": 2,
+			"file": {
+				"$type": "File",
+				"name": "image-post2.webp"
+			},
+			"alt": "Curving abstract shapes with an orange and blue gradient",
+			"caption": "<p>Photo by <a href=\"https://unsplash.com/@kirp\" rel=\"noopener noreferrer\" target=\"_blank\">Andrew Kliatskyi</a> on Unsplash.</p>"
+		},
+		{
+			"$type": "Media",
+			"id": 3,
+			"file": {
+				"$type": "File",
+				"name": "image-post3.webp"
+			},
+			"alt": "Curving abstract shapes with an orange and blue gradient",
+			"caption": "<p>Photo by <a href=\"https://unsplash.com/@kirp\" rel=\"noopener noreferrer\" target=\"_blank\">Andrew Kliatskyi</a> on Unsplash.</p>"
+		},
+		{
+			"$type": "Media",
+			"id": 4,
+			"file": {
+				"$type": "File",
+				"name": "image-hero1.webp"
+			},
+			"alt": "Straight metallic shapes with a blue gradient",
+			"caption": ""
+		}
+	],
+	"pages": [
+		{
+			"$type": "Page",
+			"id": 1,
+			"title": "Home",
+			"hero": {
+				"$type": "Hero",
+				"type": {
+					"$type": "HeroType",
+					"name": "HIGH_IMPACT"
+				},
+				"richText": "<h1>Janilla Website Template</h1><p><a href=\"/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla-templates/tree/main/website\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>",
+				"links": [
+					{
+						"$type": "Link",
+						"type": {
+							"$type": "LinkType",
+							"name": "CUSTOM"
+						},
+						"uri": "/posts",
+						"text": "All posts",
+						"appearance": {
+							"$type": "LinkAppearance",
+							"name": "DEFAULT"
+						}
+					},
+					{
+						"$type": "Link",
+						"type": {
+							"$type": "LinkType",
+							"name": "CUSTOM"
+						},
+						"uri": "/contact",
+						"text": "Contact",
+						"appearance": {
+							"$type": "LinkAppearance",
+							"name": "OUTLINE"
+						}
+					}
+				],
+				"media": {
+					"$type": "Media",
+					"id": 4
+				}
+			},
+			"layout": [
+				{
+					"$type": "Content",
+					"columns": [
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<h2>Core features</h2>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
+							"richText": "<h3>Admin Dashboard</h3><p>Manage this site's pages and posts from the <a href=\"/admin\">admin dashboard</a>.</p>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
+							"richText": "<h3>Preview</h3><p>Using versions, drafts, and preview, editors can review and share their changes before publishing them.</p>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
+							"richText": "<h3>Page Builder</h3><p>Custom page builder allows you to create unique page, post, and project layouts for any type of content.</p>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
+							"richText": "<h3>SEO</h3><p>Editors have complete control over SEO data and site content directly from the <a href=\"/admin\">admin dashboard</a>.</p>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
+							"richText": "<h3>Dark Mode</h3><p>Users will experience this site in their preferred color scheme and each block can be inverted.</p>"
+						}
+					]
+				},
+				{
+					"$type": "MediaBlock",
+					"media": {
+						"$type": "Media",
+						"id": 2
+					}
+				},
+				{
+					"$type": "Archive",
+					"introContent": "<h3>Recent posts</h3><p>The posts below are displayed in an \"Archive\" layout building block which is an extremely powerful way to display documents on a page. It can be auto-populated by collection or by category, or posts can be individually selected. Pagination controls will automatically appear if the number of results exceeds the number of items per page.</p>"
+				},
+				{
+					"$type": "CallToAction",
+					"richText": "<h3>This is a call to action</h3><p>This is a custom layout building block <a href=\"/admin\">configured in the admin dashboard</a>.</p>",
+					"links": [
+						{
+							"$type": "Link",
+							"type": {
+								"$type": "LinkType",
+								"name": "CUSTOM"
+							},
+							"uri": "/posts",
+							"text": "All posts",
+							"appearance": {
+								"$type": "LinkAppearance",
+								"name": "DEFAULT"
+							}
+						}
+					]
+				}
+			],
+			"meta": {
+				"$type": "Meta",
+				"title": "Janilla Website Template",
+				"description": "An open-source website built with Janilla.",
+				"image": {
+					"$type": "Media",
+					"id": 4
+				}
+			},
+			"slug": "home",
+			"documentStatus": {
+				"$type": "Document.Status",
+				"name": "PUBLISHED"
+			}
+		},
+		{
+			"$type": "Page",
+			"id": 2,
+			"title": "Contact",
+			"hero": {
+				"$type": "Hero",
+				"type": {
+					"$type": "HeroType",
+					"name": "NONE"
+				},
+				"richText": "",
+				"links": []
+			},
+			"layout": [
+				{
+					"$type": "FormBlock",
+					"form": {
+						"$type": "Form",
+						"id": 1
+					},
+					"introContent": "<h3>Example contact form:</h3>",
+					"enableIntro": "true"
+				}
+			],
+			"slug": "contact",
+			"documentStatus": {
+				"$type": "Document.Status",
+				"name": "PUBLISHED"
+			}
+		}
+	],
+	"posts": [
+		{
+			"$type": "Post",
+			"id": 1,
+			"title": "Digital Horizons: A Glimpse into Tomorrow",
+			"heroImage": {
+				"$type": "Media",
+				"id": 1
+			},
+			"content": [
+				{
+					"$type": "RichText",
+					"richText": "<h2>Dive into the marvels of modern innovation, where the only constant is change. A journey where pixels and data converge to craft the future.</h2>"
+				},
+				{
+					"$type": "Banner",
+					"style": {
+						"$type": "BannerStyle",
+						"name": "INFO"
+					},
+					"content": "<p><strong>Disclaimer:</strong> This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard</a>.</p>"
+				},
+				{
+					"$type": "RichText",
+					"richText": "<h2>The Rise of AI and Machine Learning</h2><p>We find ourselves in a transformative era where artificial intelligence (AI) stands at the forefront of technological evolution. The ripple effects of its advancements are reshaping industries at an unprecedented pace. No longer are businesses bound by the limitations of tedious, manual processes. Instead, sophisticated machines, fueled by vast amounts of historical data, are now capable of making decisions previously left to human intuition. These intelligent systems are not only optimizing operations but also pioneering innovative approaches, heralding a new age of business transformation worldwide. </p><h4>To demonstrate basic AI functionality, here is a javascript snippet that makes a POST request to a generic AI API in order to generate text based on a prompt. </h4>"
+				},
+				{
+					"$type": "RichText",
+					"richText": "<h2>IoT: Connecting the World Around Us</h2><p>In today's rapidly evolving technological landscape, the Internet of Things (IoT) stands out as a revolutionary force. From transforming our residences with smart home systems to redefining transportation through connected cars, IoT's influence is palpable in nearly every facet of our daily lives.</p><p>This technology hinges on the seamless integration of devices and systems, allowing them to communicate and collaborate effortlessly. With each connected device, we move a step closer to a world where convenience and efficiency are embedded in the very fabric of our existence. As a result, we're transitioning into an era where our surroundings intuitively respond to our needs, heralding a smarter and more interconnected global community.</p>"
+				},
+				{
+					"$type": "MediaBlock",
+					"media": {
+						"$type": "Media",
+						"id": 2
+					}
+				},
+				{
+					"$type": "Banner",
+					"style": {
+						"$type": "BannerStyle",
+						"name": "INFO"
+					},
+					"content": "<p>This content above is completely dynamic using custom layout building blocks configured in the CMS. This can be anything you'd like from rich text and images, to highly designed, complex components.</p>"
+				}
+			],
+			"relatedPosts": [
+				{
+					"$type": "Post",
+					"id": 2
+				},
+				{
+					"$type": "Post",
+					"id": 3
+				}
+			],
+			"meta": {
+				"$type": "Meta",
+				"title": "Digital Horizons: A Glimpse into Tomorrow",
+				"description": "Dive into the marvels of modern innovation, where the only constant is change. A journey where pixels and data converge to craft the future.",
+				"image": {
+					"$type": "Media",
+					"id": 1
+				}
+			},
+			"slug": "digital-horizons-a-glimpse-into-tomorrow",
+			"authors": [
+				{
+					"$type": "User",
+					"id": 1
+				}
+			],
+			"createdAt": "2025-02-16T09:07:44.965918Z",
+			"documentStatus": {
+				"$type": "Document.Status",
+				"name": "PUBLISHED"
+			}
+		},
+		{
+			"$type": "Post",
+			"id": 2,
+			"title": "Global Gaze: Beyond the Headlines",
+			"heroImage": {
+				"$type": "Media",
+				"id": 2
+			},
+			"content": [
+				{
+					"$type": "RichText",
+					"richText": "<h2>Explore the untold and overlooked. A magnified view into the corners of the world, where every story deserves its spotlight.</h2>"
+				},
+				{
+					"$type": "Banner",
+					"style": {
+						"$type": "BannerStyle",
+						"name": "INFO"
+					},
+					"content": "<p><strong>Disclaimer:</strong> This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard.</a></p>"
+				},
+				{
+					"$type": "RichText",
+					"richText": "<h2>The Power of Resilience: Stories of Recovery and Hope</h2><p>Throughout history, regions across the globe have faced the devastating impact of natural disasters, the turbulence of political unrest, and the challenging ripples of economic downturns. In these moments of profound crisis, an often-underestimated force emerges: the indomitable resilience of the human spirit. These aren't just tales of mere survival, but stories of communities forging bonds, uniting with a collective purpose, and demonstrating an innate ability to overcome.</p>"
+				},
+				{
+					"$type": "MediaBlock",
+					"media": {
+						"$type": "Media",
+						"id": 3
+					}
+				},
+				{
+					"$type": "RichText",
+					"richText": "<p>From neighbors forming makeshift rescue teams during floods to entire cities rallying to rebuild after economic collapse, the essence of humanity is most evident in these acts of solidarity. As we delve into these narratives, we witness the transformative power of community spirit, where adversity becomes a catalyst for growth, unity, and a brighter, rebuilt future.</p>"
+				},
+				{
+					"$type": "Banner",
+					"style": {
+						"$type": "BannerStyle",
+						"name": "INFO"
+					},
+					"content": "<p>This content above is completely dynamic using custom layout building blocks configured in the CMS. This can be anything you'd like from rich text and images, to highly designed, complex components.</p>"
+				}
+			],
+			"relatedPosts": [
+				{
+					"$type": "Post",
+					"id": 1
+				},
+				{
+					"$type": "Post",
+					"id": 3
+				}
+			],
+			"meta": {
+				"$type": "Meta",
+				"title": "Global Gaze: Beyond the Headlines",
+				"description": "Explore the untold and overlooked. A magnified view into the corners of the world, where every story deserves its spotlight.",
+				"image": {
+					"$type": "Media",
+					"id": 2
+				}
+			},
+			"slug": "global-gaze-beyond-the-headlines",
+			"authors": [
+				{
+					"$type": "User",
+					"id": 1
+				}
+			],
+			"createdAt": "2025-02-16T09:08:44.965918Z",
+			"documentStatus": {
+				"$type": "Document.Status",
+				"name": "PUBLISHED"
+			}
+		},
+		{
+			"$type": "Post",
+			"id": 3,
+			"title": "Dollar and Sense: The Financial Forecast",
+			"heroImage": {
+				"$type": "Media",
+				"id": 3
+			},
+			"content": [
+				{
+					"$type": "Banner",
+					"style": {
+						"$type": "BannerStyle",
+						"name": "INFO"
+					},
+					"content": "<p><strong>Disclaimer: </strong>This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard.</a></p>"
+				},
+				{
+					"$type": "RichText",
+					"richText": "<h2>Money isn't just currency; <em>it's a language. </em>Dive deep into its nuances, where strategy meets intuition in the vast sea of finance.</h2><p>Money, in its essence, transcends the mere concept of coins and paper notes; it becomes a profound language that speaks of value, trust, and societal structures. Like any language, it possesses intricate nuances and subtleties that require a discerning understanding. It's in these depths where the calculated world of financial strategy collides with the raw, instinctive nature of human intuition. Just as a seasoned linguist might dissect the syntax and semantics of a sentence, a financial expert navigates the vast and tumultuous ocean of finance, guided not only by logic and data but also by gut feelings and foresight. Every transaction, investment, and financial decision becomes a dialogue in this expansive lexicon of commerce and value.</p>"
+				},
+				{
+					"$type": "MediaBlock",
+					"media": {
+						"$type": "Media",
+						"id": 1
+					}
+				},
+				{
+					"$type": "RichText",
+					"richText": "<h2>Stock Market Dynamics: Bulls, Bears, and the Uncertain Middle</h2><p>The stock market is a realm of vast opportunity but also poses risks. Discover the forces that drive market trends and the strategies employed by top traders to navigate this complex ecosystem. From market analysis to understanding investor psychology, get a comprehensive insight into the world of stocks.</p><p>The stock market, often visualized as a bustling arena of numbers and ticker tapes, is as much about human behavior as it is about economics. It's a place where optimism, represented by the bullish rally, meets the caution of bearish downturns, with each vying to dictate the market's direction. But between these two extremes lies an uncertain middle ground, a zone populated by traders and investors who constantly weigh hope against fear. Successful navigation requires more than just financial acumen; it demands an understanding of collective sentiments and the ability to predict not just market movements, but also the reactions of other market participants. In this intricate dance of numbers and nerves, the most astute players are those who master both the hard data and the soft nuances of human behavior.</p>"
+				},
+				{
+					"$type": "Banner",
+					"style": {
+						"$type": "BannerStyle",
+						"name": "INFO"
+					},
+					"content": "<p>This content above is completely dynamic using custom layout building blocks configured in the CMS. This can be anything you'd like from rich text and images, to highly designed, complex components.</p>"
+				}
+			],
+			"relatedPosts": [
+				{
+					"$type": "Post",
+					"id": 1
+				},
+				{
+					"$type": "Post",
+					"id": 2
+				}
+			],
+			"meta": {
+				"$type": "Meta",
+				"title": "Dollar and Sense: The Financial Forecast",
+				"description": "Money isn't just currency; it's a language. Dive deep into its nuances, where strategy meets intuition in the vast sea of finance.",
+				"image": {
+					"$type": "Media",
+					"id": 3
+				}
+			},
+			"slug": "dollar-and-sense-the-financial-forecast",
+			"authors": [
+				{
+					"$type": "User",
+					"id": 1
+				}
+			],
+			"createdAt": "2025-02-16T09:09:44.965918Z",
+			"documentStatus": {
+				"$type": "Document.Status",
+				"name": "PUBLISHED"
+			}
+		}
+	],
+	"redirects": [],
+	"searchResults": [],
+	"users": [
+		{
+			"$type": "User",
+			"id": 1,
+			"name": "Demo Author",
+			"email": "demo-author@janilla.com",
+			"salt": "b99966fba75e6ed4a3206da3dd888e5b",
+			"hash": "c73c5f4d61cf1f9ef10ec1a0eb7b4d49ddd8ad2bf6815b2b3bf0a07dfb795d1e32eb7a89565bb8f844f85d5cb08b400fe8ea925a1b05f6720453d766a1a6941d",
+			"roles": [
+				{
+					"$type": "UserRole",
+					"name": "ADMIN"
+				}
+			]
+		}
+	]
+}

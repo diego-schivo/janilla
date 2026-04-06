@@ -1,0 +1,108 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2024 Vercel, Inc.
+ * Copyright (c) 2024-2026 Diego Schivo
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+latest-invoices {
+  section {
+    padding: 0 1.5rem !important;
+  
+    article {
+      align-items: center;
+      column-gap: 1rem;
+      display: grid;
+      grid-template:
+        "a b d"
+        "a c d" / auto 1fr auto;
+      padding: 1rem 0;
+      
+      &:not(:last-child) {
+        border-bottom: 1px solid rgb(229, 231, 235);
+      }
+
+      p {
+        min-width: 0;
+      }
+
+      :first-child {
+        grid-area: a;
+      }
+
+      :nth-child(2) {
+        grid-area: b;
+      }
+
+      :nth-child(3) {
+        grid-area: c;
+      }
+
+      :nth-child(4) {
+        grid-area: d;
+      }
+
+      &.skeleton span:empty {
+        background: light-dark(rgb(243, 244, 246), rgb(12, 11, 9));
+        border-radius: 0.25rem;
+        display: block;
+        height: 1rem;
+        width: 3rem;
+
+        &:first-child {
+          border-radius: 9999px;
+          height: 2rem;
+          width: 2rem;
+        }
+  
+        &:nth-child(2) {
+          height: 1.25rem;
+          width: 10rem;
+        }
+      }
+    }
+  }
+
+  img {
+    border-radius: 9999px;
+    height: 2rem;
+    width: 2rem;
+  }
+
+  p:first-of-type,
+  amount-format {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  p {
+    &:first-of-type {
+      font-weight: 600;
+    }
+    
+    &:nth-of-type(2) {
+      color: light-dark(rgb(107, 114, 128), rgb(148, 141, 127));
+    }
+  }
+  
+  amount-format {
+    font-family: "Lusitana";
+  }
+}

@@ -1,0 +1,136 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+:where(post-element) {
+  /*
+  padding: 0 1rem;
+  */
+
+  main {
+    > article {
+      align-items: flex-end;
+      background: no-repeat top center / 1280px 80vh;
+      display: flex;
+      margin-top: -10.4rem;
+      min-height: 80vh;
+      position: relative;
+
+      @media (min-width: 1441px) {
+        background: no-repeat center center / 100% auto;
+        /*justify-content: center;*/
+        margin-top: -11.5rem;
+      }
+
+      > section {
+        gap: 1.5rem;
+        margin: 0 1rem 2rem;
+        z-index: 1;
+
+        &,
+        dl,
+        dl div {
+          display: flex;
+          flex-direction: column;
+        }
+
+        @media (min-width: 1441px) {
+          box-sizing: border-box;
+          display: grid;
+          grid-template-columns: 1fr 48rem 1fr;
+          max-width: 86rem;
+          margin: 0 auto;
+          padding: 0 2rem;
+          width: 100%;
+        }
+
+        > div {
+          grid-column: 2 / span 2;
+        }
+      }
+
+      > div {
+        background: linear-gradient(to top, rgb(0, 0, 0), rgba(0, 0, 0, 0));
+        bottom: 0;
+        height: 50%;
+        position: absolute;
+        width: 100%;
+      }
+
+      h1 {
+        font-size: 1.875rem;
+        line-height: 2.25rem;
+
+        @media (min-width: 1441px) {
+          font-size: 3.75rem;
+          font-weight: 400;
+          line-height: 1;
+          margin-bottom: 1.5rem;
+        }
+      }
+
+      dl {
+        gap: 1rem;
+
+        @media (min-width: 1441px) {
+          flex-direction: row !important;
+        }
+
+        div {
+          gap: 0.25rem;
+        }
+      }
+
+      dt {
+        font-size: 0.875rem;
+      }
+    }
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      line-height: 1.75;
+
+      > :not(.cards) {
+        @media (min-width: 1441px) {
+          margin: 0 auto;
+          max-width: 48rem;
+        }
+      }
+
+      h2 {
+        line-height: 1.3333333;
+        margin-bottom: 1rem;
+      }
+    }
+
+    .cards {
+      @media (min-width: 1441px) {
+        display: grid;
+        gap: 2rem;
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  }
+}

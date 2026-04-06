@@ -1,0 +1,23 @@
+<link href="/invoices-layout.css" rel="stylesheet" />
+<breadcrumb-nav data-uri="${uri}">
+  <!--${breadcrumbItems}-->
+</breadcrumb-nav>
+<slot name="content"></slot>
+<!--${invoices}-->
+<!--${invoice}-->
+
+<template id="breadcrumb-link">
+  <a href="${href}" slot="${slot}">${title}</a>
+</template>
+
+<template id="breadcrumb-heading">
+  <h1 slot="${slot}">${title}</h1>
+</template>
+
+<template id="invoices">
+  <invoices-page slot="${slot}" data-title="${title}" data-href="${href}" data-query="${query}" data-page="${page}"></invoices-page>
+</template>
+
+<template id="invoice">
+  <invoice-page slot="${slot}" data-title="${title}" data-id="${id}"></invoice-page>
+</template>

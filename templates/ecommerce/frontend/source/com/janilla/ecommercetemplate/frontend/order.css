@@ -1,0 +1,145 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+order-element {
+  main {
+    @media (max-width: 1440px) {
+      padding: 0 2rem;
+    }
+  }
+
+  article {
+    gap: 1.5rem;
+
+    > header {
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+    }
+  }
+  
+  a:has(> lucide-icon) {
+    align-items: center;
+    color: light-dark(oklab(0.207922 -0.00297319 -0.0397971 / 0.5), oklab(0.983834 -0.00131196 -0.00322449 / 0.5));
+    display: flex;
+    font-family: GeistMono;
+    font-size: 0.75rem;
+    font-weight: 500;
+    gap: 0.5rem;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 0.75rem;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  h1 {
+    background: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.1), oklab(0.983828 -0.00126734 -0.00320476 / 0.1));
+    border-radius: 0.25rem;
+    font-family: GeistMono;
+    font-size: 0.875rem;
+    font-weight: 400;
+    letter-spacing: 0.07em;
+    padding: 0 0.5rem;
+    text-transform: uppercase;
+  }
+
+  .article {
+    background: light-dark(rgb(244, 244, 245), rgb(20, 20, 20));
+    padding: 1rem 1.5rem;
+
+    > dl {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+  
+      @media (min-width: 1441px) {
+        display: grid;
+        gap: 2rem;
+        grid-template-columns: repeat(3, auto);
+      }
+  
+      > div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        &.created-at,
+        &.amount {
+          dd {
+            font-size: 1.125rem;
+          }
+        }
+
+        &.status {
+          dd {
+            font-family: GeistMono;
+            font-size: 0.875rem;
+            letter-spacing: 0.1em;
+          }
+
+          span {
+            background: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.1), oklab(0.983828 -0.00126734 -0.00320476 / 0.1));
+            border-radius: 0.25rem;
+            display: inline-block;
+            padding: 0 0.5rem;
+          }
+        }
+
+        &.items {
+          gap: 0.75rem;
+          margin: 1.5rem 0;
+          grid-column: span 3;
+
+          ul {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+          }
+        }
+
+        &.shipping-address {
+          gap: 1rem;
+          grid-column: span 3;
+        }
+
+        > dt {
+          color: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.5), oklab(0.983834 -0.00131196 -0.00322449 / 0.5));
+          font-family: GeistMono;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+        }
+
+        > dd {
+          color: light-dark(rgb(2, 8, 23), rgb(248, 250, 252));
+        }
+      }
+    }
+  }
+
+  product-item {
+    section:last-child {
+      margin-left: auto;
+    }
+  }
+}

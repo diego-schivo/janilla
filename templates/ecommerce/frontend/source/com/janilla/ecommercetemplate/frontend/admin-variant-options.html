@@ -1,0 +1,31 @@
+<h3>Variant options</h3>
+<ul>
+  <!--${types}-->
+</ul>
+
+<template id="type">
+  <li class="field">
+    <label>
+      ${label}
+      <div>
+        <select name="options">
+          <button>
+            <selectedcontent></selectedcontent>
+          </button>
+          <option value=""></option>
+          <!--${options}-->
+        </select>
+        <div>
+          <button type="button" name="remove" value="${id}">
+            <lucide-icon data-name="x"></lucide-icon>
+          </button>
+          <lucide-icon data-name="chevron-down"></lucide-icon>
+        </div>
+      </div>
+    </label>
+  </li>
+</template>
+
+<template id="option">
+  <option value="${value}" selected="${selected}">${text}</option>
+</template>

@@ -1,0 +1,27 @@
+<header>
+  <h3>${heading}</h3>
+  <p>${description}</p>
+</header>
+<button name="open" class="button secondary">Select an address</button>
+<input type="hidden" name="${name}" />
+<dialog>
+  <article>
+    <h2>Select an address</h2>
+    <ul>
+      <!--${items}-->
+    </ul>
+    <button name="add-new" class="button secondary">Add a new address</button>
+  </article>
+  <button name="close">
+    <lucide-icon data-name="x"></lucide-icon>
+    <span class="visually-hidden">Close</span>
+  </button>
+</dialog>
+
+<template id="item">
+  <li>
+    <address-item data-id="${id}">
+      <button slot="before-actions" name="select" value="${id}" class="button primary">Select</button>
+    </address-item>
+  </li>
+</template>

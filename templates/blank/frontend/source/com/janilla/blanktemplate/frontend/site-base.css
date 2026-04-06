@@ -1,0 +1,88 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+:where(:root:not(:has(.admin)), :host:not(:has(.admin))) {
+  --body-background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+  --body-color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
+  --primary-button-background: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
+  --primary-button-color: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+  --secondary-button-background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+  --secondary-button-color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
+
+  a {
+    color: inherit;
+    /*
+    text-decoration: none;
+    */
+  }
+
+  body {
+    background: var(--body-background);
+    color: var(--body-color);
+    font-family: system-ui;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .button {
+    border-radius: 0.25rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    padding: 0.28125rem 0.5625rem;
+    text-decoration: none;
+
+    @media (min-width: 64rem) {
+      font-size: 1.125rem;
+    }
+
+    &.primary {
+      background: var(--primary-button-background);
+      border: 1px solid var(--primary-button-color);
+      color: var(--primary-button-color);
+    }
+
+    &.secondary {
+      background: var(--secondary-button-background);
+      border: 1px solid var(--secondary-button-color);
+      color: var(--secondary-button-color);
+    }
+  }
+}
+
+:where(:root:not(:has(.admin))) {
+  color-scheme: light dark;
+
+  &:has([data-color-scheme="light"]) {
+    color-scheme: light;
+  }
+
+  &:has([data-color-scheme="dark"]) {
+    color-scheme: dark;
+  }
+}

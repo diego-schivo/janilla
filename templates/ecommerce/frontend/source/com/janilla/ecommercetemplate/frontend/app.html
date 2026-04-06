@@ -1,0 +1,55 @@
+<template id="account">
+  <account-element class="account" data-success="${success}" data-warning="${warning}"></account-element>
+</template>
+
+<template id="addresses">
+  <addresses-element class="account"></addresses-element>
+</template>
+
+<template id="checkout">
+  <checkout-element></checkout-element>
+</template>
+
+<template id="confirm-order">
+  <confirm-order data-guest-email="${guestEmail}" data-payment-intent="${paymentIntent}"></confirm-order>
+</template>
+
+<template id="create-account">
+  <create-account></create-account>
+</template>
+
+<template id="find-order">
+  <find-order></find-order>
+</template>
+
+<template id="login">
+  <login-element class="login" data-warning="${warning}"></login-element>
+</template>
+
+<template id="logout">
+  <logout-element class="login" data-no-op="${noOp}"></logout-element>
+</template>
+
+<template id="order">
+  <order-element class="account" data-id="${id}"></order-element>
+</template>
+
+<template id="orders">
+  <orders-element class="account"></orders-element>
+</template>
+
+<template id="product">
+  <product-element data-slug="${slug}" data-search="${search}"></product-element>
+</template>
+
+<template id="search">
+  <search-element data-query="${query}"></search-element>
+</template>
+
+<template id="shop">
+  <shop-element data-query="${query}" data-category="${category}" data-sort="${sort}"></shop-element>
+</template>
+
+<template id="toaster">
+  <toaster-element></toaster-element>
+</template>

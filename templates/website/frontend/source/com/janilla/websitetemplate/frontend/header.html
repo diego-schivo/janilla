@@ -1,0 +1,34 @@
+<header>
+  <!--${content}-->
+</header>
+
+<template id="navigation">
+  <nav>
+    <ul>
+      <!--${navItems}-->
+    </ul>
+  </nav>
+</template>
+
+<template id="logo">
+  <li class="logo">
+    <a href="/">
+      <janilla-logo></janilla-logo>
+    </a>
+  </li>
+</template>
+
+<template id="link">
+  <li class="link">
+    <link-element data-document="${document}" data-href="${href}" data-target="${target}" data-class="${class}" data-text="${text}"></link-element>
+  </li>
+</template>
+
+<template id="search">
+  <li class="search">
+    <a href="/search">
+      <span class="visually-hidden">Search</span>
+      <lucide-icon data-name="search"></lucide-icon>
+    </a>
+  </li>
+</template>

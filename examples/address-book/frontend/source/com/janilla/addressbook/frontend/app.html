@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="/style.css" />
+<slot name="content"></slot>
+<!--${loading}-->
+<!--${sidebar}-->
+<!--${about}-->
+
+<template id="about">
+  <about-element slot="${slot}"></about-element>
+</template>
+
+<template id="loading">
+  <div id="loading-splash" slot="${slot}">
+    <div id="loading-splash-spinner"></div>
+    <p>Loading, please wait...</p>
+  </div>
+</template>
+
+<template id="sidebar">
+  <sidebar-layout slot="${slot}"
+    data-href="${href}"
+    data-loading="${loading}"
+    data-pending="${pending}"></sidebar-layout>
+</template>

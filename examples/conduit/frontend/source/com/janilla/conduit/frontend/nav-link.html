@@ -1,0 +1,14 @@
+<link href="/nav-link.css" rel="stylesheet" />
+<a href="${href}">
+	<!--${icon}-->
+	<!--${image}-->
+	<slot></slot>
+</a>
+
+<template id="icon">
+	<i class="${class}"></i>
+</template>
+
+<template id="image">
+	<img src="${src}" loading="lazy" class="user-pic" />
+</template>

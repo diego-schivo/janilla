@@ -1,0 +1,60 @@
+<main>
+  <div>
+    <!--${nav}-->
+    <article>
+      <header>
+        <a href="/orders">
+          <lucide-icon data-name="chevron-left"></lucide-icon>
+          All orders
+        </a>
+        <h1>Order #${id}</h1>
+      </header>
+      <section class="article">
+        <dl>
+          <div class="created-at">
+            <dt>Order Date</dt>
+            <dd>
+              <intl-format data-type="date" data-value="${createdAt}"></intl-format>
+            </dd>
+          </div>
+          <div class="amount">
+            <dt>Total</dt>
+            <dd>
+              <intl-format data-type="amount" data-value="${amount}"></intl-format>
+            </dd>
+          </div>
+          <div class="status">
+            <dt>Status</dt>
+            <dd>
+              <span>${status.name}</span>
+            </dd>
+          </div>
+          <div class="items">
+            <dt>Items</dt>
+            <dd>
+              <ul>
+                <!--${products}-->
+              </ul>
+            </dd>
+          </div>
+          <div class="shipping-address">
+            <dt>Shipping Address</dt>
+            <dd>
+              <address-item data-data="${shippingAddress}" data-hide-actions></address-item>
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </article>
+  </div>
+</main>
+<template id="nav">
+  <account-nav data-path="${path}"></account-nav>
+</template>
+
+
+<template id="product">
+  <li>
+    <product-item data-item="${json}"></product-item>
+  </li>
+</template>

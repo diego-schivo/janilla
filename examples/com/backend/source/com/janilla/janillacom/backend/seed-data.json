@@ -1,0 +1,276 @@
+{
+	"applications": [
+		{
+			"$type": "Application",
+			"id": 1,
+			"title": "TodoMVC",
+			"slug": "todomvc",
+			"frontend": "com.janilla.todomvc.frontend.TodoMvcFrontend"
+		},
+		{
+			"$type": "Application",
+			"id": 2,
+			"title": "PetClinic",
+			"slug": "petclinic",
+			"frontend": "com.janilla.petclinic.frontend.PetclinicFrontend",
+			"backend": "com.janilla.petclinic.backend.PetclinicBackend"
+		},
+		{
+			"$type": "Application",
+			"id": 3,
+			"title": "Address Book",
+			"slug": "addressbook",
+			"frontend": "com.janilla.addressbook.frontend.AddressBookFrontend",
+			"backend": "com.janilla.addressbook.backend.AddressBookBackend"
+		},
+		{
+			"$type": "Application",
+			"id": 4,
+			"title": "Acme Dashboard",
+			"slug": "acmedashboard",
+			"frontend": "com.janilla.acmedashboard.frontend.AcmeDashboardFrontend",
+			"backend": "com.janilla.acmedashboard.backend.AcmeDashboardBackend"
+		},
+		{
+			"$type": "Application",
+			"id": 5,
+			"title": "RealWorld Conduit",
+			"slug": "conduit",
+			"frontend": "com.janilla.conduit.frontend.ConduitFrontend",
+			"backend": "com.janilla.conduit.backend.ConduitBackend"
+		},
+		{
+			"$type": "Application",
+			"id": 6,
+			"title": "Blank Template",
+			"slug": "blanktemplate",
+			"frontend": "com.janilla.blanktemplate.frontend.BlankFrontend",
+			"backend": "com.janilla.blanktemplate.backend.BlankBackend"
+		},
+		{
+			"$type": "Application",
+			"id": 7,
+			"title": "Website Template",
+			"slug": "websitetemplate",
+			"frontend": "com.janilla.websitetemplate.frontend.WebsiteFrontend",
+			"backend": "com.janilla.websitetemplate.backend.WebsiteBackend"
+		},
+		{
+			"$type": "Application",
+			"id": 8,
+			"title": "Ecommerce Template",
+			"slug": "ecommercetemplate",
+			"frontend": "com.janilla.ecommercetemplate.frontend.EcommerceFrontend",
+			"backend": "com.janilla.ecommercetemplate.backend.EcommerceBackend"
+		}
+	],
+	"categories": [],
+	"footer": {
+		"$type": "Footer",
+		"id": 1,
+		"navItems": [
+			{
+				"$type": "LinkImpl",
+				"type": {
+					"$type": "LinkType",
+					"name": "CUSTOM"
+				},
+				"uri": "/admin",
+				"text": "Admin"
+			},
+			{
+				"$type": "LinkImpl",
+				"type": {
+					"$type": "LinkType",
+					"name": "CUSTOM"
+				},
+				"uri": "https://github.com/diego-schivo/janilla",
+				"text": "Source Code"
+			},
+			{
+				"$type": "LinkImpl",
+				"type": {
+					"$type": "LinkType",
+					"name": "CUSTOM"
+				},
+				"uri": "https://janilla.com/",
+				"text": "Janilla"
+			}
+		]
+	},
+	"formSubmissions": [],
+	"forms": [],
+	"header": {
+		"$type": "Header",
+		"id": 1,
+		"navItems": [
+			{
+				"$type": "LinkImpl",
+				"type": {
+					"$type": "LinkType",
+					"name": "CUSTOM"
+				},
+				"uri": "https://github.com/diego-schivo/janilla",
+				"text": "Source Code"
+			}
+		]
+	},
+	"media": [
+		{
+			"$type": "Media",
+			"id": 1,
+			"file": {
+				"$type": "File",
+				"name": "image-hero1.webp"
+			},
+			"alt": "Straight metallic shapes with a blue gradient",
+			"caption": ""
+		}
+	],
+	"pages": [
+		{
+			"$type": "Page",
+			"id": 1,
+			"title": "Home",
+			"hero": {
+				"$type": "Hero",
+				"type": {
+					"$type": "HeroType",
+					"name": "HIGH_IMPACT"
+				},
+				"richText": "<h1>The vanilla foundation to build the lightweight web</h1><p>Janilla leverages standard technologies and principles to let you develop overengineering-free equivalent of web applications relying on heavy frameworks.</p>",
+				"links": [
+					{
+						"$type": "LinkImpl",
+						"type": {
+							"$type": "LinkType",
+							"name": "CUSTOM"
+						},
+						"uri": "https://github.com/diego-schivo/janilla",
+						"text": "Source Code",
+						"appearance": {
+							"$type": "LinkAppearance",
+							"name": "DEFAULT"
+						}
+					}
+				],
+				"media": {
+					"$type": "Media",
+					"id": 1
+				}
+			},
+			"layout": [
+				{
+					"$type": "Content",
+					"columns": [
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla is a set of three small libraries that implement an overengineering-free stack of web technologies.</div><div>- Base: provides IoC factory, JSON parser and formatter, web client and server, MVC factory.</div><div>- Backend: provides database, data persistence, CMS API, email sending.</div><div>- Frontend: provides templating engine, CMS administration panel.</div>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla is a self-contained solution.</div><div>- The base module has no dependencies (implicitly requires only the Java base module).</div><div>- The backend and frontend modules are independent of each other and require only the Janilla base module.</div>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla does not use any external systems other than the operating system.</div><div>The database and server are also embedded.</div>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla is not necessary a framework.</div><div>All library classes can work without IoC.</div>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla is a project written in the vanilla style of standard languages.</div><div>- Server-side: Java (Java SE 25 LTS).</div><div>- Client-side: JavaScript (ES6), HTML (HTML5), CSS (CSS3).</div>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla is a compact solution.</div><div>- 3 modules.</div><div>- 12 packages.</div><div>- 90 Java classes, 33 JavaScript classes.</div>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla provides everything you need to develop overengineering-free web applications.</div><div>- IoC factory: takes care of correctly building complex objects by retrieving the appropriate dependencies (DI).</div><div>- JSON parser and formatter: builds Java objects from JSON input and vice versa.</div><div>- Web server: accepts secure connections (TLS) from browser and converts between HTTP/2 streams and request/response objects.</div><div>- MVC factory: dispatches requests to handlers that implement the business logic and return responses, typically JSON (backend) or HTML/JS/CSS (frontend).</div><div>- Database: performs read and write operations on tables and indexes saved in a SQLite file.</div><div>- Data persistence: builds the database based on the entities that define the data model and takes care of saving and retrieving objects (CRUD).</div><div>- CMS API: extends data persistence by defining documents as entities with additional features (metadata/versions/drafts) and exposes access to them via REST API.</div><div>- Email sending: provides an SMTP client.</div><div>- Templating engine: implements JavaScript object rendering without direct DOM manipulation, using standard Web Components technologies.</div><div>- CMS administration panel: allows editors to manage application content through a web interface dynamically built from the data model.</div>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla is continuously improved by rewriting increasingly complex open-source applications originally developed by others.</div><div>- TodoMVC: with the templating engine, the UI can be easily created by leveraging only the power of JavaScript and HTML rather than resorting to more cumbersome alternative techniques.</div><div>- PetClinic: data persistence allows you to ignore the database and focus on the business model and logic, while SSR is achieved by combining POJOs, Java annotations and standard HTML.</div><div>- Address Book: a simple CRUD application that can run either as two separate processes (a frontend that calls the APIs exposed by the backend) or as a single fullstack process (convenient for development).</div><div>- Acme Dashboard: features JWT authentication and implements additional CRUD features such as search and pagination.</div><div>- RealWorld Conduit: features social features such as registration, comments, favorites and followers.</div><div>- Blank Template: the application integrates with the CMS and its admin panel, with users and media modeled as document collections.</div><div>- Website Template: the CMS maintains editorial content (pages, posts, images, categories) and non-editorial content (contact forms and requests, redirect rules, search results).</div><div>- Ecommerce Template: the CMS also maintains the catalog (products and variants) and additional user data related to their profile (addresses) and purchases (carts, orders, transactions).</div>"
+						},
+						{
+							"$type": "Column",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
+							"richText": "<div>Janilla is free software.</div><div>- The library license is the same as the OpenJDK implementation of Java SE.</div><div>- The reimplemented applications retained the same license as the corresponding original ones.</div>"
+						}
+					]
+				}
+			],
+			"meta": {
+				"$type": "Meta",
+				"title": "Janilla Website Template",
+				"description": "An open-source website built with Janilla.",
+				"image": {
+					"$type": "Media",
+					"id": 4
+				}
+			},
+			"slug": "home",
+			"documentStatus": {
+				"$type": "Document.Status",
+				"name": "PUBLISHED"
+			}
+		}
+	],
+	"posts": [],
+	"redirects": [],
+	"searchResults": [],
+	"users": [
+		{
+			"$type": "UserImpl",
+			"id": 1,
+			"name": "Demo Author",
+			"email": "demo-author@janilla.com",
+			"salt": "b99966fba75e6ed4a3206da3dd888e5b",
+			"hash": "c73c5f4d61cf1f9ef10ec1a0eb7b4d49ddd8ad2bf6815b2b3bf0a07dfb795d1e32eb7a89565bb8f844f85d5cb08b400fe8ea925a1b05f6720453d766a1a6941d",
+			"roles": [
+				{
+					"$type": "UserRoleImpl",
+					"name": "ADMIN"
+				}
+			]
+		}
+	]
+}

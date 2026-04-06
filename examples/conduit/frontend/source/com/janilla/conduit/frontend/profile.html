@@ -1,0 +1,43 @@
+<div class="profile-page">
+	<div class="user-info">
+		<div class="container">
+			<div class="row">
+				<div class="col-xs-12 col-md-10 offset-md-1">
+					<img src="${image}" loading="lazy" class="user-img" />
+					<h4>${username}</h4>
+					<p>${bio}</p>
+					<!--${action}-->
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-12 col-md-10 offset-md-1">
+				<div class="feed-toggle">
+					<ul class="nav nav-pills outline-active">
+						<!--${tabItems}-->
+					</ul>
+				</div>
+				<articles-element data-api-url="${articlesUrl}"></articles-element>
+			</div>
+		</div>
+	</div>
+</div>
+
+<template id="can-modify">
+	<a href="#/settings" class="btn btn-sm btn-outline-secondary action-btn">
+		<i class="ion-gear-a"></i>
+		<span>Edit Profile Settings</span>
+	</a>
+</template>
+
+<template id="cannot-modify">
+	<follow-button data-username="${username}" data-active="${following}"></follow-button>
+</template>
+
+<template id="tab-item">
+	<li class="nav-item">
+		<nav-link class="nav-link ${active}" data-href="${href}" data-icon="${icon}">${text}</nav-link>
+	</li>
+</template>

@@ -1,0 +1,94 @@
+<main>
+  <article>
+    <section class="contact">
+      <h2>Contact</h2>
+      <!--${contact}-->
+    </section>
+    <section class="address">
+      <h2>Address</h2>
+      <!--${billingAddress}-->
+      <label class="checkbox">
+        <input type="checkbox" name="billingAddressSameAsShipping" value="true" class="visually-hidden"
+          checked="${billingAddressSameAsShipping}" disabled="${billingAddressSameAsShippingDisabled}" />
+        <lucide-icon data-name="check"></lucide-icon>
+        Shipping is the same as billing
+      </label>
+      <!--${shippingAddress}-->
+    </section>
+    <section class="payment">
+      <!--${payment}-->
+    </section>
+    <section class="cart">
+      <h2>Your Cart</h2>
+      <ul>
+        <!--${items}-->
+      </ul>
+      <footer>
+        <dl>
+          <dt>Total</dt>
+          <dd>
+            <intl-format data-type="amount" data-value="${total}"></intl-format>
+          </dd>
+        </dl>
+      </footer>
+    </section>
+  </article>
+</main>
+
+<template id="user">
+  <div>
+    <p>${text}</p>
+    <p>
+      Not you?
+      <a href="/logout">Log out</a>
+    </p>
+  </div>
+</template>
+
+<template id="guest">
+  <div>
+    <p>
+      <a href="/login" class="button secondary">Log in</a><br />
+      or <a href="/create-account">create an account</a>
+    </p>
+  </div>
+  <div>
+    <form>
+      <p>Enter your email to checkout as a guest.</p>
+      <label>
+        Email Address
+        <input type="email" name="guestEmail" value="${value}" />
+      </label>
+      <button name="continue-as-guest" class="button primary" disabled="${disabled}">Continue as guest</button>
+    </form>
+  </div>
+</template>
+
+<template id="address-item">
+  <address-item data-id="${id}" data-data="${data}">
+    <button slot="actions" name="${name}" class="button secondary" disabled="${disabled}">Remove</button>
+  </address-item>
+</template>
+
+<template id="checkout-addresses">
+  <input type="hidden" name="${name}" value="${value}" />
+  <checkout-addresses data-heading="${heading}" data-description="${description}" data-name="${name}"></checkout-addresses>
+</template>
+
+<template id="create-address-modal">
+  <create-address-modal data-name="${name}" data-disabled="${disabled}"></create-address-modal>
+</template>
+
+<template id="payment-trigger">
+  <button name="go-to-payment" class="button primary" disabled="${disabled}">Go to payment</button>
+</template>
+
+<template id="payment">
+  <payment-element data-guest-email="${guestEmail}" data-amount="${amount}"></payment-element>
+</template>
+
+<template id="item">
+  <li>
+    <product-item data-item="${item}"></product-item>
+  </li>
+</template>

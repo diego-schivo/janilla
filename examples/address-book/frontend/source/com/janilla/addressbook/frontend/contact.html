@@ -1,0 +1,38 @@
+<div id="contact">
+  <div>
+    <img src="${avatar}" alt="${full} avatar" loading="lazy" />
+  </div>
+
+  <div>
+    <h1>
+      <!--${name}-->
+      <toggle-favorite data-checked="${favorite}"></toggle-favorite>
+    </h1>
+    <!--${twitter}-->
+    <!--${notes}-->
+    <div>
+      <form>
+        <button>Edit</button>
+      </form>
+      <form method="post">
+        <button>Delete</button>
+      </Form>
+    </div>
+  </div>
+</div>
+
+<template id="name">${full}</template>
+
+<template id="no-name">
+  <i>No Name</i>
+</template>
+
+<template id="twitter">
+  <p>
+    <a href="https://twitter.com/${twitter}">${twitter}</a>
+  </p>
+</template>
+
+<template id="notes">
+  <p>${notes}</p>
+</template>

@@ -1,0 +1,895 @@
+{
+	"addresses": [
+		{
+			"$type": "Address",
+			"id": 1,
+			"customer": {
+				"$type": "UserImpl",
+				"id": 2
+			},
+			"title": "DR",
+			"firstName": "Otto",
+			"lastName": "Octavius",
+			"company": "Oscorp",
+			"addressLine1": "123 Main St",
+			"addressLine2": "Suite 100",
+			"city": "New York",
+			"state": "NY",
+			"postalCode": "10001",
+			"country": "US",
+			"phone": "1234567890"
+		},
+		{
+			"$type": "Address",
+			"id": 2,
+			"customer": {
+				"$type": "UserImpl",
+				"id": 2
+			},
+			"title": "MR",
+			"firstName": "Oliver",
+			"lastName": "Twist",
+			"company": "",
+			"addressLine1": "48 Great Portland St",
+			"addressLine2": "",
+			"city": "London",
+			"state": "",
+			"postalCode": "W1W 7ND",
+			"country": "GB",
+			"phone": "1234567890"
+		}
+	],
+	"carts": [
+		{
+			"$type": "Cart",
+			"id": 1,
+			"items": [
+				{
+					"$type": "CartItem",
+					"product": {
+						"$type": "Product",
+						"id": 2
+					},
+					"variant": {
+						"$type": "Variant",
+						"id": 2
+					},
+					"quantity": 1
+				}
+			],
+			"customer": {
+				"$type": "UserImpl",
+				"id": 2
+			},
+			"status": "ACTIVE",
+			"subtotal": 49.99,
+			"currency": "USD"
+		},
+		{
+			"$type": "Cart",
+			"id": 2,
+			"items": [
+				{
+					"$type": "CartItem",
+					"product": {
+						"$type": "Product",
+						"id": 1
+					},
+					"quantity": 1
+				}
+			],
+			"status": "ABANDONED",
+			"subtotal": 25,
+			"currency": "USD"
+		},
+		{
+			"$type": "Cart",
+			"id": 3,
+			"items": [
+				{
+					"$type": "CartItem",
+					"product": {
+						"$type": "Product",
+						"id": 2
+					},
+					"variant": {
+						"$type": "Variant",
+						"id": 1
+					},
+					"quantity": 1
+				},
+				{
+					"$type": "CartItem",
+					"product": {
+						"$type": "Product",
+						"id": 2
+					},
+					"variant": {
+						"$type": "Variant",
+						"id": 2
+					},
+					"quantity": 1
+				}
+			],
+			"customer": {
+				"$type": "UserImpl",
+				"id": 2
+			},
+			"status": "PURCHASED",
+			"subtotal": 99.98,
+			"currency": "USD"
+		}
+	],
+	"categories": [
+		{
+			"$type": "Category",
+			"id": 1,
+			"title": "Accessories",
+			"slug": "accessories"
+		},
+		{
+			"$type": "Category",
+			"id": 2,
+			"title": "T-Shirts",
+			"slug": "tshirts"
+		},
+		{
+			"$type": "Category",
+			"id": 3,
+			"title": "Hats",
+			"slug": "hats"
+		}
+	],
+	"footer": {
+		"$type": "Footer",
+		"id": 1,
+		"navItems": [
+			{
+				"$type": "LinkImpl",
+				"type": "CUSTOM",
+				"uri": "/admin",
+				"text": "Admin"
+			},
+			{
+				"$type": "LinkImpl",
+				"type": "CUSTOM",
+				"uri": "/find-order",
+				"text": "Find my order"
+			},
+			{
+				"$type": "LinkImpl",
+				"type": "CUSTOM",
+				"uri": "https://github.com/diego-schivo/ecommerce-template",
+				"text": "Source Code"
+			},
+			{
+				"$type": "LinkImpl",
+				"type": "CUSTOM",
+				"uri": "https://janilla.com/",
+				"text": "Janilla"
+			}
+		]
+	},
+	"header": {
+		"$type": "Header",
+		"id": 1,
+		"navItems": [
+			{
+				"$type": "LinkImpl",
+				"type": "CUSTOM",
+				"uri": "/",
+				"text": "Home"
+			},
+			{
+				"$type": "LinkImpl",
+				"type": "CUSTOM",
+				"uri": "/shop",
+				"text": "Shop"
+			},
+			{
+				"$type": "LinkImpl",
+				"type": "CUSTOM",
+				"uri": "/account",
+				"text": "Account"
+			}
+		]
+	},
+	"media": [
+		{
+			"$type": "Media",
+			"id": 1,
+			"file": {
+				"$type": "File",
+				"name": "tshirt-white.webp"
+			},
+			"alt": "White tshirt with the Payload logo on the front",
+			"caption": "<p>Photo by <a href=\"https://unsplash.com/@kirp\" rel=\"noopener noreferrer\" target=\"_blank\">Andrew Kliatskyi</a> on Unsplash.</p>"
+		},
+		{
+			"$type": "Media",
+			"id": 2,
+			"file": {
+				"$type": "File",
+				"name": "hat-logo.webp"
+			},
+			"alt": "Black hat with the Payload logo on the front",
+			"caption": "<p>Photo by <a href=\"https://unsplash.com/@kirp\" rel=\"noopener noreferrer\" target=\"_blank\">Andrew Kliatskyi</a> on Unsplash.</p>"
+		},
+		{
+			"$type": "Media",
+			"id": 3,
+			"file": {
+				"$type": "File",
+				"name": "image-hero1.webp"
+			},
+			"alt": "Straight metallic shapes with a blue gradient"
+		},
+		{
+			"$type": "Media",
+			"id": 4,
+			"file": {
+				"$type": "File",
+				"name": "tshirt-black.webp"
+			},
+			"alt": "Black tshirt with the Payload logo on the front",
+			"caption": "<p>Photo by <a href=\"https://unsplash.com/@kirp\" rel=\"noopener noreferrer\" target=\"_blank\">Andrew Kliatskyi</a> on Unsplash.</p>"
+		}
+	],
+	"orders": [
+		{
+			"id": 1,
+			"items": [
+				{
+					"product": {
+						"$type": "Product",
+						"id": 2
+					},
+					"variant": {
+						"$type": "Variant",
+						"id": 1
+					},
+					"quantity": 1
+				},
+				{
+					"product": {
+						"$type": "Product",
+						"id": 2
+					},
+					"variant": {
+						"$type": "Variant",
+						"id": 3
+					},
+					"quantity": 1
+				}
+			],
+			"shippingAddress": {
+				"title": "DR",
+				"firstName": "Otto",
+				"lastName": "Octavius",
+				"company": "Oscorp",
+				"addressLine1": "123 Main St",
+				"addressLine2": "Suite 100",
+				"city": "New York",
+				"state": "NY",
+				"postalCode": "10001",
+				"country": "US",
+				"phone": "1234567890"
+			},
+			"customer": {
+				"$type": "UserImpl",
+				"id": 2
+			},
+			"transactions": [
+				{
+					"$type": "Transaction",
+					"id": 2
+				}
+			],
+			"status": "COMPLETED",
+			"amount": 74.99,
+			"currency": "USD"
+		},
+		{
+			"id": 2,
+			"items": [
+				{
+					"product": {
+						"$type": "Product",
+						"id": 2
+					},
+					"variant": {
+						"$type": "Variant",
+						"id": 1
+					},
+					"quantity": 1
+				},
+				{
+					"product": {
+						"$type": "Product",
+						"id": 2
+					},
+					"variant": {
+						"$type": "Variant",
+						"id": 3
+					},
+					"quantity": 1
+				}
+			],
+			"shippingAddress": {
+				"title": "DR",
+				"firstName": "Otto",
+				"lastName": "Octavius",
+				"company": "Oscorp",
+				"addressLine1": "123 Main St",
+				"addressLine2": "Suite 100",
+				"city": "New York",
+				"state": "NY",
+				"postalCode": "10001",
+				"country": "US",
+				"phone": "1234567890"
+			},
+			"customer": {
+				"$type": "UserImpl",
+				"id": 2
+			},
+			"transactions": [
+				{
+					"$type": "Transaction",
+					"id": 2
+				}
+			],
+			"status": "PROCESSING",
+			"amount": 74.99,
+			"currency": "USD"
+		}
+	],
+	"pages": [
+		{
+			"$type": "Page",
+			"id": 1,
+			"title": "Home",
+			"hero": {
+				"$type": "Hero",
+				"type": "LOW_IMPACT",
+				"richText": "<h1>Janilla Ecommerce Template</h1><p><a href=\"/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla-ecommerce-template\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>"
+			},
+			"layout": [
+				{
+					"$type": "Content",
+					"columns": [
+						{
+							"$type": "Column",
+							"size": "FULL",
+							"richText": "<h2>Core features</h2>"
+						},
+						{
+							"$type": "Column",
+							"size": "ONE_THIRD",
+							"richText": "<h3>Admin Dashboard</h3><p>Manage this site's pages and products from the <a href=\"/admin\">admin dashboard</a>.</p>"
+						},
+						{
+							"$type": "Column",
+							"size": "ONE_THIRD",
+							"richText": "<h3>Preview</h3><p>Using versions, drafts, and preview, editors can review and share their changes before publishing them.</p>"
+						},
+						{
+							"$type": "Column",
+							"size": "ONE_THIRD",
+							"richText": "<h3>Page Builder</h3><p>Custom page builder allows you to create unique page, product, and project layouts for any type of content.</p>"
+						},
+						{
+							"$type": "Column",
+							"size": "ONE_THIRD",
+							"richText": "<h3>SEO</h3><p>Editors have complete control over SEO data and site content directly from the <a href=\"/admin\">admin dashboard</a>.</p>"
+						},
+						{
+							"$type": "Column",
+							"size": "ONE_THIRD",
+							"richText": "<h3>Dark Mode</h3><p>Users will experience this site in their preferred color scheme and each block can be inverted.</p>"
+						}
+					]
+				},
+				{
+					"$type": "MediaBlock",
+					"media": {
+						"$type": "Media",
+						"id": 3
+					}
+				},
+				{
+					"$type": "CallToAction",
+					"richText": "<h3>This is a call to action</h3><p>This is a custom layout building block <a href=\"/admin\">configured in the admin dashboard</a>.</p>",
+					"links": [
+						{
+							"$type": "LinkImpl",
+							"type": "CUSTOM",
+							"uri": "/products",
+							"text": "All products",
+							"appearance": "DEFAULT"
+						}
+					]
+				}
+			],
+			"meta": {
+				"$type": "Meta",
+				"title": "Janilla Ecommerce Template",
+				"description": "An open-source ecommerce site built with Janilla.",
+				"image": {
+					"$type": "Media",
+					"id": 2
+				}
+			},
+			"slug": "home",
+			"documentStatus": {
+				"$type": "DocumentStatus",
+				"name": "PUBLISHED"
+			}
+		}
+	],
+	"products": [
+		{
+			"$type": "Product",
+			"id": 1,
+			"title": "Hat",
+			"description": "Top off your look with our classic hat, crafted for style and comfort. Made with breathable, high-quality materials and an adjustable strap for the perfect fit, it’s ideal for everyday wear or outdoor adventures. Available in a range of colors to match any outfit.",
+			"gallery": [
+				{
+					"image": {
+						"$type": "Media",
+						"id": 2
+					}
+				}
+			],
+			"enableVariants": false,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 25,
+			"categories": [
+				{
+					"$type": "Category",
+					"id": 3
+				}
+			],
+			"meta": {
+				"$type": "Meta",
+				"title": "Hat | Janilla Ecommerce Template",
+				"description": "Top off your look with our classic hat, crafted for style and comfort. Made with breathable, high-quality materials and an adjustable strap for the perfect fit, it’s ideal for everyday wear or outdoor adventures. Available in a range of colors to match any outfit.",
+				"image": {
+					"$type": "Media",
+					"id": 2
+				}
+			},
+			"slug": "hat",
+			"documentStatus": {
+				"$type": "DocumentStatus",
+				"name": "PUBLISHED"
+			}
+		},
+		{
+			"$type": "Product",
+			"id": 2,
+			"title": "Tshirt",
+			"description": "Top off your look with our classic tshirt, crafted for style and comfort. Made with breathable, high-quality materials and an adjustable strap for the perfect fit, it’s ideal for everyday wear or outdoor adventures. Available in a range of colors to match any outfit.",
+			"gallery": [
+				{
+					"image": {
+						"$type": "Media",
+						"id": 4
+					},
+					"variantOption": {
+						"$type": "VariantOption",
+						"id": 5
+					}
+				},
+				{
+					"image": {
+						"$type": "Media",
+						"id": 1
+					},
+					"variantOption": {
+						"$type": "VariantOption",
+						"id": 6
+					}
+				}
+			],
+			"layout": [
+				{
+					"$type": "MediaBlock",
+					"media": {
+						"$type": "Media",
+						"id": 3
+					}
+				},
+				{
+					"$type": "Content",
+					"columns": [
+						{
+							"$type": "Column",
+							"size": "HALF",
+							"richText": "<ul><li>This is 100% cotton unisex fitted tee with screen printed design. Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document<br /></li><li><ul><li>Product Type: t-shirt</li><li>Material: 100% cotton</li><li>Colour: black</li><li>Style: men (unisex)</li></ul></li></ul>"
+						},
+						{
+							"$type": "Column",
+							"size": "HALF",
+							"richText": "<p>Size chart</p><div><table><tr><td></td><td><strong>length (IN)</strong></td><td><strong>length (CM)</strong></td><td><strong>chest (IN)</strong></td><td><strong>chest (CM)</strong></td></tr><tr><td>s</td><td>26-28</td><td>66-68</td><td>34-36</td><td>86-91</td></tr><tr><td>m</td><td>27-29</td><td>70-72</td><td>19-21</td><td>50-52</td></tr><tr><td>l</td><td>29-31</td><td>75-77</td><td>21-23</td><td>55-57</td></tr><tr><td>xl</td><td>30-32</td><td>77-79</td><td>23-25</td><td>60-62</td></tr></table></div>"
+						}
+					]
+				}
+			],
+			"enableVariants": true,
+			"variantTypes": [
+				{
+					"$type": "VariantType",
+					"id": 1
+				},
+				{
+					"$type": "VariantType",
+					"id": 2
+				}
+			],
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"categories": [
+				{
+					"$type": "Category",
+					"id": 2
+				}
+			],
+			"meta": {
+				"$type": "Meta",
+				"title": "Tshirt | Janilla Ecommerce Template",
+				"description": "Top off your look with our classic tshirt, crafted for style and comfort. Made with breathable, high-quality materials and an adjustable strap for the perfect fit, it’s ideal for everyday wear or outdoor adventures. Available in a range of colors to match any outfit.",
+				"image": {
+					"$type": "Media",
+					"id": 4
+				}
+			},
+			"slug": "tshirt",
+			"documentStatus": {
+				"$type": "DocumentStatus",
+				"name": "PUBLISHED"
+			}
+		}
+	],
+	"transactions": [
+		{
+			"id": 1,
+			"paymentMethod": "STRIPE",
+			"billingAddress": {
+				"title": "DR",
+				"firstName": "Otto",
+				"lastName": "Octavius",
+				"company": "Oscorp",
+				"addressLine1": "123 Main St",
+				"addressLine2": "Suite 100",
+				"city": "New York",
+				"state": "NY",
+				"postalCode": "10001",
+				"country": "US",
+				"phone": "1234567890"
+			},
+			"status": "PENDING",
+			"customer": {
+				"$type": "UserImpl",
+				"id": 2
+			},
+			"stripeCustomer": "cus_123",
+			"stripePaymentIntent": "pi_123"
+		},
+		{
+			"id": 2,
+			"paymentMethod": "STRIPE",
+			"billingAddress": {
+				"title": "DR",
+				"firstName": "Otto",
+				"lastName": "Octavius",
+				"company": "Oscorp",
+				"addressLine1": "123 Main St",
+				"addressLine2": "Suite 100",
+				"city": "New York",
+				"state": "NY",
+				"postalCode": "10001",
+				"country": "US",
+				"phone": "1234567890"
+			},
+			"status": "SUCCEEDED",
+			"customer": {
+				"$type": "UserImpl",
+				"id": 2
+			},
+			"stripeCustomer": "cus_123",
+			"stripePaymentIntent": "pi_123"
+		}
+	],
+	"users": [
+		{
+			"$type": "UserImpl",
+			"id": 1,
+			"name": "Demo Author",
+			"email": "demo-author@janilla.com",
+			"salt": "b99966fba75e6ed4a3206da3dd888e5b",
+			"hash": "c73c5f4d61cf1f9ef10ec1a0eb7b4d49ddd8ad2bf6815b2b3bf0a07dfb795d1e32eb7a89565bb8f844f85d5cb08b400fe8ea925a1b05f6720453d766a1a6941d",
+			"roles": [
+				{
+					"$type": "UserRoleImpl",
+					"name": "ADMIN"
+				}
+			]
+		},
+		{
+			"$type": "UserImpl",
+			"id": 2,
+			"name": "Customer",
+			"email": "customer@example.com",
+			"salt": "556cf0edc60fae8f541190dceb647c30",
+			"hash": "9fd3dc9061b1325907d33f15bee49ed3de5ae11967f7515fa9d6272dc83595776a981bb88fce843d24a1b19fbd37e03bbedbe566477ca5769953e922ab77c90d",
+			"roles": [
+				{
+					"$type": "UserRoleImpl",
+					"name": "CUSTOMER"
+				}
+			]
+		}
+	],
+	"variantOptions": [
+		{
+			"$type": "VariantOption",
+			"id": 1,
+			"type": {
+				"$type": "VariantType",
+				"id": 1
+			},
+			"label": "Small",
+			"value": "small"
+		},
+		{
+			"$type": "VariantOption",
+			"id": 2,
+			"type": {
+				"$type": "VariantType",
+				"id": 1
+			},
+			"label": "Medium",
+			"value": "medium"
+		},
+		{
+			"$type": "VariantOption",
+			"id": 3,
+			"type": {
+				"$type": "VariantType",
+				"id": 1
+			},
+			"label": "Large",
+			"value": "large"
+		},
+		{
+			"$type": "VariantOption",
+			"id": 4,
+			"type": {
+				"$type": "VariantType",
+				"id": 1
+			},
+			"label": "X Large",
+			"value": "xlarge"
+		},
+		{
+			"$type": "VariantOption",
+			"id": 5,
+			"type": {
+				"$type": "VariantType",
+				"id": 2
+			},
+			"label": "Black",
+			"value": "black"
+		},
+		{
+			"$type": "VariantOption",
+			"id": 6,
+			"type": {
+				"$type": "VariantType",
+				"id": 2
+			},
+			"label": "White",
+			"value": "white"
+		}
+	],
+	"variantTypes": [
+		{
+			"$type": "VariantType",
+			"id": 1,
+			"label": "Size",
+			"name": "size"
+		},
+		{
+			"$type": "VariantType",
+			"id": 2,
+			"label": "Color",
+			"name": "color"
+		}
+	],
+	"variants": [
+		{
+			"$type": "Variant",
+			"id": 1,
+			"title": "Tshirt — Small — White",
+			"product": {
+				"$type": "Product",
+				"id": 2
+			},
+			"options": [
+				{
+					"$type": "VariantOption",
+					"id": 1
+				},
+				{
+					"$type": "VariantOption",
+					"id": 6
+				}
+			],
+			"inventory": 492,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"documentStatus": "PUBLISHED"
+		},
+		{
+			"$type": "Variant",
+			"id": 2,
+			"title": "Tshirt — Medium — White",
+			"product": {
+				"$type": "Product",
+				"id": 2
+			},
+			"options": [
+				{
+					"$type": "VariantOption",
+					"id": 2
+				},
+				{
+					"$type": "VariantOption",
+					"id": 6
+				}
+			],
+			"inventory": 492,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"documentStatus": "PUBLISHED"
+		},
+		{
+			"$type": "Variant",
+			"id": 3,
+			"title": "Tshirt — Large — White",
+			"product": {
+				"$type": "Product",
+				"id": 2
+			},
+			"options": [
+				{
+					"$type": "VariantOption",
+					"id": 3
+				},
+				{
+					"$type": "VariantOption",
+					"id": 6
+				}
+			],
+			"inventory": 492,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"documentStatus": "PUBLISHED"
+		},
+		{
+			"$type": "Variant",
+			"id": 4,
+			"title": "Tshirt — X Large — White",
+			"product": {
+				"$type": "Product",
+				"id": 2
+			},
+			"options": [
+				{
+					"$type": "VariantOption",
+					"id": 4
+				},
+				{
+					"$type": "VariantOption",
+					"id": 6
+				}
+			],
+			"inventory": 492,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"documentStatus": "PUBLISHED"
+		},
+		{
+			"$type": "Variant",
+			"id": 5,
+			"title": "Tshirt — Small — Black",
+			"product": {
+				"$type": "Product",
+				"id": 2
+			},
+			"options": [
+				{
+					"$type": "VariantOption",
+					"id": 1
+				},
+				{
+					"$type": "VariantOption",
+					"id": 5
+				}
+			],
+			"inventory": 492,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"documentStatus": "PUBLISHED"
+		},
+		{
+			"$type": "Variant",
+			"id": 6,
+			"title": "Tshirt — Medium — Black",
+			"product": {
+				"$type": "Product",
+				"id": 2
+			},
+			"options": [
+				{
+					"$type": "VariantOption",
+					"id": 2
+				},
+				{
+					"$type": "VariantOption",
+					"id": 5
+				}
+			],
+			"inventory": 0,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"documentStatus": "PUBLISHED"
+		},
+		{
+			"$type": "Variant",
+			"id": 7,
+			"title": "Tshirt — Large — Black",
+			"product": {
+				"$type": "Product",
+				"id": 2
+			},
+			"options": [
+				{
+					"$type": "VariantOption",
+					"id": 3
+				},
+				{
+					"$type": "VariantOption",
+					"id": 5
+				}
+			],
+			"inventory": 492,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"documentStatus": "PUBLISHED"
+		},
+		{
+			"$type": "Variant",
+			"id": 8,
+			"title": "Tshirt — X Large — Black",
+			"product": {
+				"$type": "Product",
+				"id": 2
+			},
+			"options": [
+				{
+					"$type": "VariantOption",
+					"id": 4
+				},
+				{
+					"$type": "VariantOption",
+					"id": 5
+				}
+			],
+			"inventory": 492,
+			"priceInUsdEnabled": true,
+			"priceInUsd": 49.99,
+			"documentStatus": "PUBLISHED"
+		}
+	]
+}

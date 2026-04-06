@@ -1,0 +1,21 @@
+<main>
+  <article>
+    <a href="/shop">
+      <lucide-icon data-name="chevron-left"></lucide-icon>
+      All products
+    </a>
+    <div>
+      <product-gallery data-variant-options="${variantOptions}"></product-gallery>
+      <product-description data-variant="${variant}"></product-description>
+    </div>
+  </article>
+  <!--${layout}-->
+</main>
+
+<template id="content">
+  <content-element data-path="${path}"></content-element>
+</template>
+
+<template id="media-block">
+  <media-block data-path="${path}"></media-block>
+</template>

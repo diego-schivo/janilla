@@ -1,0 +1,17 @@
+<!--${content}-->
+
+<template id="content">
+  <footer class="bottombar">
+    <div class="todo-status">${todoStatusText}</div>
+    <ul class="filter-list">
+      <!--${filterItems}-->
+    </ul>
+    <button id="clear-completed" class="clear-completed-button">Clear completed</button>
+  </footer>
+</template>
+
+<template id="filter-item">
+  <li class="filter-item">
+    <a id="${id}" class="filter-link ${selected}" href="${href}">${text}</a>
+  </li>
+</template>

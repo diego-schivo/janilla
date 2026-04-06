@@ -1,0 +1,60 @@
+<main>
+  <!--${success}-->
+  <!--${warning}-->
+  <div>
+    <!--${nav}-->
+    <article>
+      <h1>Account settings</h1>
+      <p>
+        Change your account details below, or
+        <a href="#">click here</a>
+        to change your password.
+      </p>
+      <form>
+        <label>
+          Email Address
+          <input type="email" name="email" value="${user.email}" />
+        </label>
+        <label>
+          Name
+          <input type="text" name="name" value="${user.name}" />
+        </label>
+        <button class="button primary" disabled>Update Account</button>
+      </form>
+    </article>
+    <article>
+      <h2>Recent Orders</h2>
+      <p>
+        These are the most recent orders you have placed.
+        Each order is associated with an payment.
+        As you place more orders, they will appear in your orders list.
+      </p>
+      <!--${orders}-->
+      <a href="/orders" class="button primary">View all orders</a>
+    </article>
+  </div>
+</main>
+
+<template id="message">
+  <message-element class="${class}" data-text="${text}"></message-element>
+</template>
+
+<template id="nav">
+  <account-nav data-path="${path}"></account-nav>
+</template>
+
+<template id="empty">
+  <p>You have no orders.</p>
+</template>
+
+<template id="list">
+  <ul>
+    <!--${items}-->
+  </ul>
+</template>
+
+<template id="item">
+  <li>
+    <order-item data-item="${item}"></order-item>
+  </li>
+</template>

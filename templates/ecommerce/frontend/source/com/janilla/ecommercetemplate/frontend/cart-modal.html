@@ -1,0 +1,90 @@
+<button name="show">Cart <!--${quantity}--></button>
+<dialog>
+  <article>
+    <header>
+      <h2>My Cart</h2>
+      <p>Manage your cart here, add items to view the total.</p>
+    </header>
+    <!--${content}-->
+    <!--${footer}-->
+  </article>
+  <button name="close">
+    <lucide-icon data-name="x"></lucide-icon>
+    <span class="visually-hidden">Close</span>
+  </button>
+</dialog>
+
+<template id="quantity">
+  <span>${text}</span>
+</template>
+
+<template id="empty-content">
+  <div class="content empty">
+    <lucide-icon data-name="shopping-cart"></lucide-icon>
+    <p>Your cart is empty.</p>
+  </div>
+</template>
+
+<template id="content">
+  <div class="content">
+    <ul>
+      <!--${items}-->
+    </ul>
+  </div>
+</template>
+
+<template id="item">
+  <li>
+    <div>
+      <a href="/products/${product.slug}">
+        <img src="${image.uri}" loading="lazy" />
+      </a>
+      <form>
+        <input type="hidden" name="product" value="${product.id}" />
+        <input type="hidden" name="variant" value="${variant.id}" />
+        <input type="hidden" name="quantity" value="0" />
+        <button>
+          <lucide-icon data-name="x"></lucide-icon>
+        </button>
+      </form>
+    </div>
+    <div>
+      <h3>${product.title}</h3>
+      <p>${option}</p>
+    </div>
+    <div>
+      <intl-format data-type="amount" data-value="${variant.priceInUsd}"></intl-format>
+      <div class="edit-quantity">
+        <form>
+          <input type="hidden" name="product" value="${product.id}" />
+          <input type="hidden" name="variant" value="${variant.id}" />
+          <input type="hidden" name="quantity" value="${quantityMinus1}" />
+          <button>
+            <lucide-icon data-name="minus"></lucide-icon>
+          </button>
+        </form>
+        <span>${quantity}</span>
+        <form>
+          <input type="hidden" name="product" value="${product.id}" />
+          <input type="hidden" name="variant" value="${variant.id}" />
+          <input type="hidden" name="quantity" value="${quantityPlus1}" />
+          <button>
+            <lucide-icon data-name="plus"></lucide-icon>
+          </button>
+        </form>
+      </div>
+    </div>
+  </li>
+</template>
+
+<template id="footer">
+  <footer>
+    <dl>
+      <dt>Total:</dt>
+      <dd>
+        <intl-format data-type="amount" data-value="${total}"></intl-format>
+      </dd>
+    </dl>
+    <a href="/checkout" class="button primary">Proceed to Checkout</a>
+  </footer>
+</template>

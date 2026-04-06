@@ -1,0 +1,47 @@
+<main>
+  <div>
+    <!--${nav}-->
+    <article>
+      <h1>Addresses</h1>
+      <!--${results}-->
+      <button name="add" class="button secondary">Add a new address</button>
+    </article>
+  </div>
+</main>
+<!--${dialog}-->
+
+<template id="nav">
+  <account-nav data-path="${path}"></account-nav>
+</template>
+
+<template id="no-results">
+  <p>No addresses found.</p>
+</template>
+
+<template id="results">
+  <ul>
+    <!--${items}-->
+  </ul>
+</template>
+
+<template id="result">
+  <li>
+    <p>
+      ${title.name} ${firstName} ${lastName}<br />
+      ${phone}<br />
+      ${addressLine1}, ${addressLine2}<br />
+      ${city}, ${state} ${postalCode}<br />
+      ${country.name}
+    </p>
+    <button name="edit" value="${id}" class="button secondary">Edit</button>
+  </li>
+</template>
+
+<template id="dialog">
+  <dialog open>
+    <button type="button" name="close">
+      <lucide-icon data-name="x"></lucide-icon>
+    </button>
+    <address-edit data-id="${id}"></address-edit>
+  </dialog>
+</template>

@@ -1,0 +1,20 @@
+<header>
+  <h3>
+    <a href="/products/${product.slug}?variant=${variant.id}">${product.title}</a>
+  </h3>
+  <p class="option">${option}</p>
+  <p class="quantity">x${quantity}</p>
+</header>
+<section>
+  <a href="/products/${product.slug}?variant=${variant.id}">
+    <img src="${image.uri}" loading="lazy" />
+  </a>
+</section>
+<section>
+  <dl>
+    <dt>Subtotal</dt>
+    <dd>
+      <intl-format data-type="amount" data-value="${variant.priceInUsd}"></intl-format>
+    </dd>
+  </dl>
+</section>

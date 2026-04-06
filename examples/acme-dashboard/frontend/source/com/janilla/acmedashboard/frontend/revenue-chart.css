@@ -1,0 +1,74 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2024 Vercel, Inc.
+ * Copyright (c) 2024-2026 Diego Schivo
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+revenue-chart {
+  .chart {
+    color: light-dark(rgb(156, 163, 175), rgb(99, 92, 80));
+    display: flex;
+    gap: 0.75rem;
+  
+    @media (min-width: 768px) {
+      gap: 1.75rem;
+    }
+  }
+  
+  .y {
+    display: flex;
+    flex-direction: column-reverse;
+    height: 350px;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  
+  .x {
+    align-items: end;
+    display: grid;
+    flex: 1;
+    gap: 0.5rem;
+    grid: 1fr auto / auto-flow 1fr;
+    min-width: 0;
+  
+    @media (min-width: 768px) {
+      column-gap: 1rem;
+    }
+  
+    div {
+      background: light-dark(rgb(147, 197, 253), rgb(108, 58, 2));
+      border-radius: 0.375rem;
+    }
+    
+    p {
+      min-width: 0;
+  
+      @media (max-width: 767px) {
+        line-height: 100%;
+        writing-mode: sideways-lr;
+      }
+  
+      @media (min-width: 768px) {
+        text-align: center;
+      }
+    }
+  }
+}

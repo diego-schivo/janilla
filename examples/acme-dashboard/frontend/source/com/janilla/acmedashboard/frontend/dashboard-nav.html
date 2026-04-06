@@ -1,0 +1,24 @@
+<header>
+  <acme-logo></acme-logo>
+</header>
+<ul>
+  <!--${items}-->
+  <li></li>
+  <li>
+    <form>
+      <button>
+        <hero-icon data-name="power"></hero-icon>
+        <span>Sign Out</span>
+      </button>
+    </form>
+  </li>
+</ul>
+
+<template id="item">
+  <li class="${active}">
+    <a href="${href}">
+      <hero-icon data-name="${icon}"></hero-icon>
+      <span>${text}</span>
+    </a>
+  </li>
+</template>

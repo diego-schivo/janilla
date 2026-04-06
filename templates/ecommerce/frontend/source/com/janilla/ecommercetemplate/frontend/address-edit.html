@@ -1,0 +1,65 @@
+<article>
+  <header>
+    <h2>${title}</h2>
+    <p>This address will be connected to your account.</p>
+  </header>
+  <!--${form}-->
+</article>
+
+<template id="form">
+  <form>
+    <label>
+      Title
+      <select-element data-name="title" data-value="${title.name}"
+        data-values="${titleValues}">
+      </select-element>
+    </label>
+    <label>
+      First name*
+      <input name="firstName" value="${firstName}" required />
+    </label>
+    <label>
+      Last name*
+      <input name="lastName" value="${lastName}" required />
+    </label>
+    <label>
+      Phone
+      <input name="phone" value="${phone}" />
+    </label>
+    <label>
+      Company
+      <input name="company" value="${company}" />
+    </label>
+    <label>
+      Address line 1*
+      <input name="addressLine1" value="${addressLine1}" required />
+    </label>
+    <label>
+      Address line 2
+      <input name="addressLine2" value="${addressLine2}" />
+    </label>
+    <label>
+      City*
+      <input name="city" value="${city}" required />
+    </label>
+    <label>
+      State
+      <input name="state" value="${state}" />
+    </label>
+    <label>
+      Zip Code*
+      <input name="postalCode" value="${postalCode}" />
+    </label>
+    <label>
+      Country*
+      <select-element data-name="country" data-value="${country.name}"
+        data-values="${countryValues}">
+      </select-element>
+    </label>
+    <button class="button primary">Submit</button>
+  </form>
+</template>
+
+<template id="option">
+  <option value="${value}" selected="${selected}">${text}</option>
+</template>

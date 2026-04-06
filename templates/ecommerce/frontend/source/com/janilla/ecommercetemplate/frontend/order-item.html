@@ -1,0 +1,14 @@
+<h3>#${id}</h3>
+<p class="status" data-status="${status.name}">
+  <span>${status.name}</span>
+</p>
+<p class="created-at">
+  <time datetime="${createdAt}">
+    <intl-format data-type="date" data-value="${createdAt}"></intl-format>
+  </time>
+</p>
+<p class="items">
+  <span>${itemsLength} items</span>
+  <intl-format data-type="amount" data-value="${amount}"></intl-format>
+</p>
+<a href="/orders/${id}" class="button secondary">View Order</a>

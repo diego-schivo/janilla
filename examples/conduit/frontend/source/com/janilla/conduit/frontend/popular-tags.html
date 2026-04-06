@@ -1,0 +1,14 @@
+<div>
+	<p>Popular Tags</p>
+	<slot name="content"></slot>
+</div>
+
+<div slot="${loadingSlot}">Loading tags...</div>
+<div slot="${emptySlot}" class="post-preview">No tags are here... yet.</div>
+<div slot="${slot}" class="tag-list">
+	<!--${tags}-->
+</div>
+
+<template id="tag">
+	<a href="" class="tag-pill tag-default">${text}</a>
+</template>

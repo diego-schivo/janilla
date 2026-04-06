@@ -1,0 +1,247 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+@import "/blank/site-base.css";
+
+:where(:root:not(:has(.admin)), :host:not(:has(.admin))) {
+  line-height: 1.5;
+  text-size-adjust: 100%;
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    color: inherit;
+  }
+
+  body {
+    background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
+    color: light-dark(rgb(2, 8, 23), rgb(209, 213, 219));
+    font-family: Geist;
+  }
+
+  button {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  dd,
+  dl,
+  h1,
+  h2,
+  h3,
+  ol,
+  p,
+  ul {
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: light-dark(rgb(2, 8, 23), rgb(255, 255, 255));
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    font-weight: normal;
+    line-height: 1.1111111;
+
+    @media (min-width: 1441px) {
+      font-size: 3.5rem;
+    }
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  img {
+    display: block;
+  }
+
+  input,
+  select,
+  textarea {
+    background: transparent;
+    border: 1px solid rgba(38, 38, 38, 0.8);
+    border-radius: 0.25rem;
+    box-sizing: border-box;
+    font-family: Geist;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+
+    &:focus {
+      outline: 2px solid rgb(255, 255, 255);
+    }
+  }
+
+  input {
+    height: 2.5rem;
+  }
+
+  label:has([required]) span::after {
+    content: " *";
+  }
+
+  ol,
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  textarea {
+    resize: none;
+  }
+
+  .button {
+    align-items: center;
+    border: none;
+    /*display: inline-flex;*/
+    font-size: 0.875rem;
+    font-weight: 500;
+
+    &.primary,
+    &.secondary {
+      border-radius: 0.25rem;
+      box-sizing: border-box;
+      height: 2.5rem;
+      justify-content: center;
+      padding: 0.5rem 1rem;
+      text-align: center;
+
+      &:disabled {
+        opacity: 0.5;
+      }
+    }
+
+    &.primary {
+      background: light-dark(rgb(15, 23, 42), rgb(248, 250, 252));
+      border: none;
+      color: light-dark(rgb(248, 250, 252), rgb(15, 15, 15));
+
+      &:not(:disabled):hover {
+        background: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.9), oklab(0.983828 -0.00126734 -0.00320476 / 0.9));
+      }
+    }
+
+    &.secondary {
+      background: light-dark(rgb(244, 244, 245), rgb(0, 0, 0));
+      border: 1px solid light-dark(rgb(226, 232, 240), rgba(38, 38, 38, 0.8));
+      color: light-dark(rgb(2, 8, 23), rgb(248, 250, 252));
+    }
+
+    &:not(:disabled) {
+      cursor: pointer;
+    }
+  }
+
+  .visually-hidden {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+}
+
+:where(app-element) {
+  > .site {
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+    min-height: 100vh;
+
+    > header {
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+      padding: 2rem 1rem;
+      position: relative;
+      z-index: 20;
+
+      @media (min-width: 1441px) {
+        padding: 2rem;
+      }
+
+      a {
+        color: rgb(255, 255, 255);
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+      }
+
+      img {
+        height: 34px;
+      }
+
+      nav {
+        align-items: center;
+        display: flex;
+        gap: 0.75rem;
+      }
+
+      lucide-icon {
+        width: 1.25rem;
+      }
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      font-size: 1rem;
+      gap: 4rem;
+      line-height: 1.75;
+
+      > :not(.hero) {
+        padding: 0 1rem;
+
+        @media (min-width: 1441px) {
+          box-sizing: border-box;
+          margin-left: auto;
+          margin-right: auto;
+          max-width: 86rem;
+          padding-left: 2rem;
+          padding-right: 2rem;
+          width: 100%;
+        }
+      }
+    }
+  }
+}

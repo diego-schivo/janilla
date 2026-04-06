@@ -1,0 +1,18 @@
+<div class="${className}">
+	<label class="col-sm-2 control-label">${label}</label>
+	<div class="col-sm-10">
+		<select id="${name}" name="${name}">
+			<!--${options}-->
+		</select>
+
+		<ssr-template id="option">
+			<option value="${value}" selected="${selected}">${text}</option>
+		</ssr-template>
+		<span class="${feedbackClass}" aria-hidden="true"></span>
+		<!--${errors}-->
+
+		<ssr-template id="error">
+			<span class="help-inline">${}</span>
+		</ssr-template>
+	</div>
+</div>

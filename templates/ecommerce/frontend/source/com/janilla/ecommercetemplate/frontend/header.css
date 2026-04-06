@@ -1,0 +1,207 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+@import "/website/header.css";
+
+:where(header-element) {
+  border-bottom: 1px solid light-dark(rgb(228, 228, 231), oklch(0.269 0 0));
+  display: block;
+
+  > header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+
+    @media (min-width: 1441px) {
+      padding: 1rem 2rem;
+    }
+
+    > nav {
+      > ul {
+        > li {
+          &.logo {
+            janilla-logo {
+              aspect-ratio: 1;
+              overflow: hidden;
+            }
+          }
+
+          &.link {
+            @media (max-width: 1440px) {
+              display: none;
+            }
+          }
+
+          &.search {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+
+  mobile-menu {
+    @media (min-width: 1441px) {
+      display: none;
+    }
+  }
+
+  /*
+  header {
+    align-items: center;
+    display: flex;
+    padding: 1rem 2rem 0.5rem;
+    position: relative;
+    z-index: 20;
+
+    @media (min-width: 1441px) {
+      box-sizing: border-box;
+      margin-left: auto;
+      margin-right: auto;
+      max-width: 76.125rem;
+      padding: 0 2rem;
+      width: 100%;
+    }
+
+    lucide-icon {
+      width: 1rem;
+    }
+
+    a:not(:hover) {
+      text-decoration: none;
+    }
+  }
+
+  mobile-menu {
+    flex: 1;
+
+    @media (min-width: 1441px) {
+      display: none;
+    }
+  }
+
+  nav {
+    align-items: center;
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  a:has(> janilla-logo) {
+    color: light-dark(oklch(0.21 0.034 264.665), rgb(255, 255, 255));
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+  }
+
+  janilla-logo {
+    height: 2.125rem;
+    overflow: hidden;
+    width: 2.125rem;
+  }
+
+  nav > ul {
+    display: flex;
+    gap: 1rem;
+
+    @media (max-width: 1440px) {
+      display: none;
+    }
+
+    a {
+      color: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.5), oklab(0.983828 -0.00126734 -0.00320476 / 0.5));
+      font-family: GeistMono, ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, Monaco, "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+  }
+
+  nav > ul a,
+  cart-modal > button {
+    @media (min-width: 1441px) {
+      cursor: pointer;
+      padding: 1.5rem 0;
+
+      &.active,
+      &:hover {
+        border-bottom: 2px solid light-dark(rgb(15, 23, 42), rgb(248, 250, 252));
+        color: light-dark(oklab(0.207918 -0.00296434 -0.0397924), oklab(0.983828 -0.00126734 -0.00320476));
+        padding-bottom: calc(1.5rem - 2px);
+      }
+    }
+  }
+
+  div:has(> cart-modal) {
+    display: flex;
+    flex: 1;
+    justify-content: end;
+  }
+  */
+
+  dialog {
+    background: light-dark(rgb(255, 255, 255), rgb(10, 10, 10));
+    border: none;
+    box-sizing: border-box;
+    display: block;
+    height: 100vh;
+    max-height: none;
+    max-width: 24rem;
+    padding: 0;
+    position: fixed;
+    top: 0;
+    transition: translate 0.5s ease-in-out;
+    width: 75vw;
+    z-index: 101;
+
+    &[open] {
+      translate: 0;
+    }
+
+    > article {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      height: 100%;
+      padding: 1rem;
+    }
+
+    > button {
+      background: transparent;
+      color: rgb(248, 250, 252);
+      height: auto;
+      padding: 0;
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+
+      &:hover {
+        background: transparent;
+      }
+    }
+  }
+}

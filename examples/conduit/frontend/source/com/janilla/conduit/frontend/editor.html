@@ -1,0 +1,26 @@
+<div class="editor-page">
+	<div class="container page">
+		<div class="row">
+			<div class="col-md-10 offset-md-1 col-xs-12">
+				<errors-element data-messages="${errorMessages}"></errors-element>
+				<form>
+					<fieldset>
+						<fieldset class="form-group">
+							<input type="text" class="form-control form-control-lg" placeholder="Article Title" name="title" value="${title}" />
+						</fieldset>
+						<fieldset class="form-group">
+							<input type="text" class="form-control" placeholder="What's this article about?" name="description" value="${description}" />
+						</fieldset>
+						<fieldset class="form-group">
+							<textarea class="form-control" rows="8" placeholder="Write your article (in markdown)" name="body">${body}</textarea>
+						</fieldset>
+						<fieldset class="form-group">
+							<tags-input data-values="${tagList}"></tags-input>
+						</fieldset>
+						<button class="btn btn-lg pull-xs-right btn-primary">Publish Article</button>
+					</fieldset>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>

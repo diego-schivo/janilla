@@ -2,17 +2,27 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.janilla</groupId>
 	<artifactId>janilla</artifactId>
-	<version>12.0.0-SNAPSHOT</version>
+	<version>${revision}</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>backend</module>
 		<module>base</module>
 		<module>frontend</module>
+		<module>examples/acme-dashboard</module>
+		<module>examples/address-book</module>
+		<module>examples/com</module>
+		<module>examples/conduit</module>
+		<module>examples/petclinic</module>
+		<module>examples/todomvc</module>
+		<module>templates/blank</module>
+		<module>templates/ecommerce</module>
+		<module>templates/website</module>
 	</modules>
 	<properties>
 		<maven.compiler.parameters>true</maven.compiler.parameters>
 		<maven.compiler.release>25</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<revision>12.0.0-SNAPSHOT</revision>
 	</properties>
 	<build>
 		<sourceDirectory>./source</sourceDirectory>
