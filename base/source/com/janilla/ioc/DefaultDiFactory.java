@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import com.janilla.java.JavaInvoke;
 import com.janilla.java.JavaReflect;
 
 public class DefaultDiFactory implements DiFactory {
@@ -114,33 +115,33 @@ public class DefaultDiFactory implements DiFactory {
 //				+ ", context=" + context + ", enclosed=" + enclosed);
 		record R(Constructor<?> c, Object[] aa, boolean f, int n) {
 		}
-		try {
-			var r = new R(null, null, false, -1);
-			for (var c : constructors) {
-				var pp = Arrays.stream(c.getParameters());
-				var aa = (enclosed ? pp.skip(1) : pp).map(x -> {
-					if (arguments != null && arguments.containsKey(x.getName()))
-						return arguments.get(x.getName());
-					var p = context != null ? JavaReflect.property(context.getClass(), x.getName()) : null;
-					return p != null ? p.get(context) : null;
-				}).toArray();
-				var n = (int) Arrays.stream(aa).filter(Objects::nonNull).count();
-				var f = Arrays.stream(aa).anyMatch(x -> x instanceof DiFactory);
-				if (f != r.f ? f : n > r.n || (n == r.n && c.getParameterCount() < r.c.getParameterCount()))
-					r = new R(c, aa, f, n);
-			}
-			if (enclosed) {
-				var aa = new Object[1 + r.aa.length];
-				aa[0] = context;
-				System.arraycopy(r.aa, 0, aa, 1, r.aa.length);
-				r = new R(r.c, aa, r.f, r.n);
-			}
+		var r = new R(null, null, false, -1);
+		for (var c : constructors) {
+			var pp = Arrays.stream(c.getParameters());
+			var aa = (enclosed ? pp.skip(1) : pp).map(x -> {
+				if (arguments != null && arguments.containsKey(x.getName()))
+					return arguments.get(x.getName());
+				var p = context != null ? JavaReflect.property(context.getClass(), x.getName()) : null;
+				return p != null ? p.get(context) : null;
+			}).toArray();
+			var n = (int) Arrays.stream(aa).filter(Objects::nonNull).count();
+			var f = Arrays.stream(aa).anyMatch(x -> x instanceof DiFactory);
+			if (f != r.f ? f : n > r.n || (n == r.n && c.getParameterCount() < r.c.getParameterCount()))
+				r = new R(c, aa, f, n);
+		}
+		if (enclosed) {
+			var aa = new Object[1 + r.aa.length];
+			aa[0] = context;
+			System.arraycopy(r.aa, 0, aa, 1, r.aa.length);
+			r = new R(r.c, aa, r.f, r.n);
+		}
 //			IO.println("DiFactory.newInstance, r=" + r);
+		try {
 			@SuppressWarnings("unchecked")
-			var t = (T) r.c.newInstance(r.aa);
+			var t = (T) JavaInvoke.methodHandle(r.c).invokeWithArguments(r.aa);
 			return t;
-		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException(e);
+		} catch (Throwable e) {
+			throw e instanceof RuntimeException e2 ? e2 : new RuntimeException(e);
 		}
 	}
 
