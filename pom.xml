@@ -22,7 +22,7 @@
 		<maven.compiler.parameters>true</maven.compiler.parameters>
 		<maven.compiler.release>25</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<revision>12.0.0-SNAPSHOT</revision>
+		<revision>12.0.0</revision>
 	</properties>
 	<build>
 		<sourceDirectory>./source</sourceDirectory>
@@ -88,7 +88,7 @@
 		<connection>scm:git:git://github.com/diego-schivo/janilla.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla.git</developerConnection>
 		<url>https://github.com/diego-schivo/janilla</url>
-		<tag>HEAD</tag>
+		<tag>janilla-12.0.0</tag>
 	</scm>
 	<profiles>
 		<profile>
