@@ -24,6 +24,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.ecommercetemplate.frontend.EcommerceFrontend</exec.mainClass>
 	</properties>
+	<name>janilla-ecommerce-template-frontend</name>
+	<description>Janilla Ecommerce Template Frontend</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

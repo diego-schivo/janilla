@@ -33,4 +33,6 @@
 			</plugin>
 		</plugins>
 	</build>
+	<name>janilla-acme-dashboard-backend</name>
+	<description>Janilla Acme Dashboard Backend</description>
 </project>

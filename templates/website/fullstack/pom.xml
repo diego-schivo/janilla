@@ -29,6 +29,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.websitetemplate.fullstack.WebsiteFullstack</exec.mainClass>
 	</properties>
+	<name>janilla-website-template-fullstack</name>
+	<description>Janilla Website Template Fullstack</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

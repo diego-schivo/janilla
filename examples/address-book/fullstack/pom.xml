@@ -38,4 +38,6 @@
 			</plugin>
 		</plugins>
 	</build>
+	<name>janilla-address-book-fullstack</name>
+	<description>Janilla Address Book Fullstack</description>
 </project>

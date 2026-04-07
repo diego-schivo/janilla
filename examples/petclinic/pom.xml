@@ -57,8 +57,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla PetClinic</name>
-	<description>Spring Petclinic porting to Janilla</description>
+	<name>janilla-petclinic</name>
+	<description>Janilla PetClinic</description>
 	<url>https://github.com/diego-schivo/janilla-petclinic</url>
 	<licenses>
 		<license>

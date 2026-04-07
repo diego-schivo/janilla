@@ -19,6 +19,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.todomvc.test.TodoMvcTest</exec.mainClass>
 	</properties>
+	<name>janilla-todomvc-test</name>
+	<description>Janilla TodoMVC Test</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

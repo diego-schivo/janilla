@@ -27,4 +27,6 @@
 			</plugin>
 		</plugins>
 	</build>
+	<name>janilla-conduit-frontend</name>
+	<description>Janilla Conduit Frontend</description>
 </project>

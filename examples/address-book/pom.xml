@@ -57,8 +57,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla Address Book</name>
-	<description></description>
+	<name>janilla-address-book</name>
+	<description>Janilla Address Book</description>
 	<url>https://github.com/diego-schivo/janilla-address-book</url>
 	<licenses>
 		<license>

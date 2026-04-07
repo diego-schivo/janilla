@@ -29,6 +29,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.janillacom.fullstack.JanillaFullstack</exec.mainClass>
 	</properties>
+	<name>janilla-com-fullstack</name>
+	<description>Janilla.com Fullstack</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

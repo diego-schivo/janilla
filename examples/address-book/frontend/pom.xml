@@ -33,4 +33,6 @@
 			</plugin>
 		</plugins>
 	</build>
+	<name>janilla-address-book-frontend</name>
+	<description>Janilla Address Book Frontend</description>
 </project>

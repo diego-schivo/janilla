@@ -24,6 +24,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.conduit.fullstack.ConduitFullstack</exec.mainClass>
 	</properties>
+	<name>janilla-conduit-fullstack</name>
+	<description>Janilla Conduit Fullstack</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

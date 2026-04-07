@@ -57,9 +57,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla Conduit</name>
-	<description>A fully fledged fullstack application built with Janilla
-		including CRUD operations, authentication, routing, pagination, and more</description>
+	<name>janilla-conduit</name>
+	<description>Janilla Conduit</description>
 	<url>https://github.com/diego-schivo/janilla-conduit</url>
 	<licenses>
 		<license>

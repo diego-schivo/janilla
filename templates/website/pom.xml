@@ -49,8 +49,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla Website Template</name>
-	<description>Payload Website Template porting to Janilla</description>
+	<name>janilla-website-template</name>
+	<description>Janilla Website Template</description>
 	<url>https://github.com/diego-schivo/janilla-website-template</url>
 	<licenses>
 		<license>

@@ -49,6 +49,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.janillacom.frontend.JanillaFrontend</exec.mainClass>
 	</properties>
+	<name>janilla-com-frontend</name>
+	<description>Janilla.com Frontend</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

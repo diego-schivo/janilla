@@ -38,4 +38,6 @@
 			</plugin>
 		</plugins>
 	</build>
+	<name>janilla-petclinic-fullstack</name>
+	<description>Janilla PetClinic Fullstack</description>
 </project>

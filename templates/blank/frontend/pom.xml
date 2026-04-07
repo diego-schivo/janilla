@@ -24,6 +24,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.blanktemplate.frontend.BlankFrontend</exec.mainClass>
 	</properties>
+	<name>janilla-blank-template-frontend</name>
+	<description>Janilla Blank Template Frontend</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

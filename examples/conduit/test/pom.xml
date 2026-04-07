@@ -33,4 +33,6 @@
 			</plugin>
 		</plugins>
 	</build>
+	<name>janilla-conduit-test</name>
+	<description>Janilla Conduit Test</description>
 </project>

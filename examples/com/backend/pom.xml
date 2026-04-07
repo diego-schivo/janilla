@@ -44,6 +44,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.janillacom.backend.JanillaBackend</exec.mainClass>
 	</properties>
+	<name>janilla-com-backend</name>
+	<description>Janilla.com Backend</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

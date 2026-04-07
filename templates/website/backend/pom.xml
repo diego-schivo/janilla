@@ -24,6 +24,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.websitetemplate.backend.WebsiteBackend</exec.mainClass>
 	</properties>
+	<name>janilla-website-template-backend</name>
+	<description>Janilla Website Template Backend</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

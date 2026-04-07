@@ -24,6 +24,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.blanktemplate.fullstack.BlankFullstack</exec.mainClass>
 	</properties>
+	<name>janilla-blank-template-fullstack</name>
+	<description>Janilla Blank Template Fullstack</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

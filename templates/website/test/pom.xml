@@ -24,6 +24,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.websitetemplate.test.WebsiteTest</exec.mainClass>
 	</properties>
+	<name>janilla-website-template-test</name>
+	<description>Janilla Website Template Test</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

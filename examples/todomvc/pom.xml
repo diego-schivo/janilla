@@ -46,8 +46,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla TodoMVC</name>
-	<description>A TodoMVC written with Janilla</description>
+	<name>janilla-todomvc</name>
+	<description>Janilla TodoMVC</description>
 	<url>https://github.com/diego-schivo/janilla-todomvc</url>
 	<licenses>
 		<license>

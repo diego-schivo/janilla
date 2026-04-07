@@ -49,8 +49,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla Blank Template</name>
-	<description>Payload Blank Template porting porting to Janilla</description>
+	<name>janilla-blank-template</name>
+	<description>Janilla Blank Template</description>
 	<url>https://github.com/diego-schivo/janilla-blank-template</url>
 	<licenses>
 		<license>

@@ -48,8 +48,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla.com</name>
-	<description>Janilla official website: https://janilla.com</description>
+	<name>janilla-com</name>
+	<description>Janilla.com</description>
 	<url>https://github.com/diego-schivo/janilla-com</url>
 	<licenses>
 		<license>

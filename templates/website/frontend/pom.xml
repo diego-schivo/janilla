@@ -24,6 +24,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.websitetemplate.frontend.WebsiteFrontend</exec.mainClass>
 	</properties>
+	<name>janilla-website-template-frontend</name>
+	<description>Janilla Website Template Frontend</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

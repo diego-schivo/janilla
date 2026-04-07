@@ -29,6 +29,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.ecommercetemplate.fullstack.EcommerceFullstack</exec.mainClass>
 	</properties>
+	<name>janilla-ecommerce-template-fullstack</name>
+	<description>Janilla Ecommerce Template Fullstack</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

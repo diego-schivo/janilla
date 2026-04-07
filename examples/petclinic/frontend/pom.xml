@@ -38,4 +38,6 @@
 			</plugin>
 		</plugins>
 	</build>
+	<name>janilla-petclinic-frontend</name>
+	<description>Janilla PetClinic Frontend</description>
 </project>

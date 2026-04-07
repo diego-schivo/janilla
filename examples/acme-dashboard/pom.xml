@@ -57,8 +57,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla Acme Dashboard</name>
-	<description>Next.js App Router Course porting to Janilla</description>
+	<name>janilla-acme-dashboard</name>
+	<description>Janilla Acme Dashboard</description>
 	<url>https://github.com/diego-schivo/janilla-acme-dashboard</url>
 	<licenses>
 		<license>

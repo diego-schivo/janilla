@@ -16,4 +16,6 @@
 		<version>${revision}</version>
 		<relativePath>..</relativePath>
 	</parent>
+	<name>janilla-petclinic-base</name>
+	<description>Janilla PetClinic Base</description>
 </project>

@@ -16,4 +16,6 @@
 		<version>${revision}</version>
 		<relativePath>..</relativePath>
 	</parent>
+	<name>janilla-website-template-base</name>
+	<description>Janilla Website Template Base</description>
 </project>

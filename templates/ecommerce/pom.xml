@@ -49,8 +49,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<name>Janilla Ecommerce Template</name>
-	<description>Payload Ecommerce Template porting to Janilla</description>
+	<name>janilla-ecommerce-template</name>
+	<description>Janilla Ecommerce Template</description>
 	<url>https://github.com/diego-schivo/janilla-ecommerce-template</url>
 	<licenses>
 		<license>

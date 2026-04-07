@@ -24,6 +24,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.ecommercetemplate.test.EcommerceTest</exec.mainClass>
 	</properties>
+	<name>janilla-ecommerce-template-test</name>
+	<description>Janilla Ecommerce Template test</description>
 	<profiles>
 		<profile>
 			<id>execute</id>

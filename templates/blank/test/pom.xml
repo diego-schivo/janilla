@@ -19,6 +19,8 @@
 	<properties>
 		<exec.mainClass>com.janilla.blanktemplate.test.BlankTest</exec.mainClass>
 	</properties>
+	<name>janilla-blank-template-test</name>
+	<description>Janilla Blank Template Test</description>
 	<profiles>
 		<profile>
 			<id>execute</id>
