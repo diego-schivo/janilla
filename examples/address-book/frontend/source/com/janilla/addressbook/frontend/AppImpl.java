@@ -24,11 +24,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.addressbook.frontend;
-
-import java.util.Map;
-
-import com.janilla.frontend.App;
-
-record AppImpl(String apiUrl, Map<String, Object> state) implements App {
-}
+//package com.janilla.addressbook.frontend;
+//
+//import java.util.Map;
+//
+//import com.janilla.frontend.App;
+//
+//record AppImpl(String apiUrl, Map<String, Object> state) implements App {
+//}

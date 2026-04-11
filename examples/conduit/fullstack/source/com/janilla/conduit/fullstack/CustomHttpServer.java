@@ -30,29 +30,29 @@ import javax.net.ssl.SSLContext;
 
 import com.janilla.conduit.backend.ConduitBackend;
 import com.janilla.conduit.frontend.ConduitFrontend;
+import com.janilla.http.DefaultHttpServer;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpServer;
 import com.janilla.ioc.Context;
 
 @Context("fullstack")
-public class CustomHttpServer extends HttpServer {
+public class CustomHttpServer extends DefaultHttpServer {
 
 	protected final ConduitBackend backend;
 
 	protected final ConduitFrontend frontend;
 
-	public CustomHttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler, ConduitBackend backend,
+	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, ConduitBackend backend,
 			ConduitFrontend frontend) {
-		super(sslContext, endpoint, handler);
+		super(endpoint, sslContext, handler);
 		this.backend = backend;
 		this.frontend = frontend;
 	}
 
 	@Override
-	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 		var f = request.getPath().startsWith("/api/") ? backend.diFactory() : frontend.diFactory();
 		var c = f.classFor(HttpExchange.class);
 		return c != null ? f.newInstance(c, Map.of("request", request, "response", response))

@@ -26,7 +26,7 @@ package com.janilla.ecommercetemplate.frontend;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.Index;
@@ -38,7 +38,7 @@ import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 
 public class EcommerceIndexFactory extends WebsiteIndexFactory {
 
-	public EcommerceIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Properties configuration,
+	public EcommerceIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
 			String configurationKey) {
 		super(resourceMap, dataFetching, configuration, configurationKey);
 	}

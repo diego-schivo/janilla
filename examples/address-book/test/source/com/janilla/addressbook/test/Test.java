@@ -35,7 +35,7 @@ import com.janilla.addressbook.fullstack.AddressBookFullstack;
 import com.janilla.web.Handle;
 
 @Handle(path = "/test")
-public class Test {
+class Test {
 
 	protected static final AtomicBoolean ONGOING = new AtomicBoolean();
 

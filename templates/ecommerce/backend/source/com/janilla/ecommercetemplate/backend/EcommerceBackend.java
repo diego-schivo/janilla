@@ -40,7 +40,7 @@ import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
-import com.janilla.net.SecureServer;
+import com.janilla.net.AbstractServer;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
 
@@ -56,7 +56,7 @@ public class EcommerceBackend extends WebsiteBackend {
 			EcommerceBackend a;
 			{
 				var f = new DefaultDiFactory(
-						Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageClasses(x, false).stream()).toList());
+						Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
 				a = f.newInstance(f.classFor(EcommerceBackend.class),
 						Java.hashMap("diFactory", f, "configurationFile",
 								args.length > 0 ? Path.of(
@@ -68,7 +68,7 @@ public class EcommerceBackend extends WebsiteBackend {
 			HttpServer s;
 			{
 				SSLContext c;
-				try (var x = SecureServer.class.getResourceAsStream("localhost")) {
+				try (var x = AbstractServer.class.getResourceAsStream("localhost")) {
 					c = Java.sslContext(x, "passphrase".toCharArray());
 				}
 				var p = Integer.parseInt(a.configuration.getProperty(a.configurationKey + ".server.port"));

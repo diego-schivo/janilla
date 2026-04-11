@@ -23,7 +23,7 @@
  * www.janilla.com if you need additional information or have any questions.
  */
 import WebComponent from "./web-component.js";
-import tests from "./tests.js";
+import tests from "/tests.js";
 
 export default class TestBench extends WebComponent {
 

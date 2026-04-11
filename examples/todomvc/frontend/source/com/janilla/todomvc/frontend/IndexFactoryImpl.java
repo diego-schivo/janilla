@@ -23,12 +23,16 @@
  */
 package com.janilla.todomvc.frontend;
 
-import com.janilla.frontend.AbstractIndexFactory;
+import java.util.List;
+import java.util.stream.Stream;
+
+import com.janilla.frontend.DefaultIndexFactory;
 import com.janilla.frontend.Index;
+import com.janilla.frontend.Template;
 import com.janilla.http.HttpExchange;
 import com.janilla.web.ResourceMap;
 
-class IndexFactoryImpl extends AbstractIndexFactory {
+class IndexFactoryImpl extends DefaultIndexFactory {
 
 	public IndexFactoryImpl(ResourceMap resourceMap) {
 		super(resourceMap);
@@ -42,5 +46,11 @@ class IndexFactoryImpl extends AbstractIndexFactory {
 	@Override
 	protected String baseImportKey(String name) {
 		return "base/" + name;
+	}
+
+	@Override
+	protected void addTemplates(List<Template> list) {
+		Stream.of("todo-app", "todo-bottombar", "todo-item", "todo-list", "todo-topbar").map(this::template)
+				.forEach(list::add);
 	}
 }

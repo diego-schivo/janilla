@@ -31,29 +31,29 @@ import javax.net.ssl.SSLContext;
 
 import com.janilla.acmedashboard.backend.AcmeDashboardBackend;
 import com.janilla.acmedashboard.frontend.AcmeDashboardFrontend;
+import com.janilla.http.DefaultHttpServer;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpServer;
 import com.janilla.ioc.Context;
 
 @Context("fullstack")
-public class CustomHttpServer extends HttpServer {
+public class CustomHttpServer extends DefaultHttpServer {
 
 	protected final AcmeDashboardBackend backend;
 
 	protected final AcmeDashboardFrontend frontend;
 
-	public CustomHttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler,
+	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
 			AcmeDashboardBackend backend, AcmeDashboardFrontend frontend) {
-		super(sslContext, endpoint, handler);
+		super(endpoint, sslContext, handler);
 		this.backend = backend;
 		this.frontend = frontend;
 	}
 
 	@Override
-	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 		var x = request.getPath().startsWith("/api/") ? backend.diFactory() : frontend.diFactory();
 		return x.newInstance(x.classFor(HttpExchange.class), Map.of("request", request, "response", response));
 	}

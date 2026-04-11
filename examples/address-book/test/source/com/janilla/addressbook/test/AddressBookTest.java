@@ -26,8 +26,6 @@
  */
 package com.janilla.addressbook.test;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -36,85 +34,70 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import javax.net.ssl.SSLContext;
-
+import com.janilla.addressbook.frontend.AddressBookFrontend;
 import com.janilla.addressbook.fullstack.AddressBookFullstack;
-import com.janilla.http.HttpClient;
+import com.janilla.frontend.Index;
+import com.janilla.frontend.IndexFactory;
+import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 import com.janilla.web.ApplicationHandlerFactory;
 import com.janilla.web.Handle;
 import com.janilla.web.Invocable;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.NotFoundException;
-import com.janilla.web.Render;
 import com.janilla.web.RenderableFactory;
 import com.janilla.web.ResourceMap;
 
-@Render(template = "index", resource = "/index.html")
 public class AddressBookTest {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.web", "com.janilla.addressbook.test" };
+	public static final String[] DI_PACKAGES = Stream
+			.concat(Arrays.stream(AddressBookFrontend.DI_PACKAGES), Stream.of("com.janilla.addressbook.test"))
+			.toArray(String[]::new);
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageClasses(x, false).stream()).toList());
+
+		var f = new DefaultDiFactory(Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, true)).toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected static void serve(DiFactory diFactory, String configurationPath) {
 		AddressBookTest a;
 		{
+			var cf = configurationPath != null ? Path.of(
+					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
+							: configurationPath)
+					: null;
 			a = diFactory.newInstance(diFactory.classFor(AddressBookTest.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile",
-							configurationPath != null ? Path.of(configurationPath.startsWith("~")
-									? System.getProperty("user.home") + configurationPath.substring(1)
-									: configurationPath) : null));
-		}
-
-		SSLContext c;
-		{
-			var p = a.configuration.getProperty("address-book.server.keystore.path");
-			if (p != null) {
-				var w = a.configuration.getProperty("address-book.server.keystore.password");
-				if (p.startsWith("~"))
-					p = System.getProperty("user.home") + p.substring(1);
-				var f = Path.of(p);
-				if (!Files.exists(f))
-					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
-				try (var s = Files.newInputStream(f)) {
-					c = Java.sslContext(s, w.toCharArray());
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			} else
-				c = HttpClient.sslContext("TLSv1.3");
+					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
 		}
 
 		HttpServer s;
 		{
 			var p = Integer.parseInt(a.configuration.getProperty("address-book.server.port"));
 			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("sslContext", c, "endpoint", new InetSocketAddress(p), "handler", a.handler));
+					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
 		}
 		s.serve();
 	}
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final DiFactory diFactory;
 
 	protected final AddressBookFullstack fullstack;
 
 	protected final HttpHandler handler;
+
+	protected final IndexFactory indexFactory;
 
 	protected final InvocationResolver invocationResolver;
 
@@ -125,32 +108,34 @@ public class AddressBookTest {
 	public AddressBookTest(DiFactory diFactory, Path configurationFile) {
 		this.diFactory = diFactory;
 		diFactory.context(this);
-		configuration = diFactory.newInstance(diFactory.classFor(Properties.class),
-				Collections.singletonMap("file", configurationFile));
+
+		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
+				Collections.singletonMap("path", configurationFile));
 
 		{
 			var f = new DefaultDiFactory(Arrays.stream(AddressBookFullstack.DI_PACKAGES)
-					.flatMap(x -> Java.getPackageClasses(x, false).stream()).toList(), "fullstack");
+					.flatMap(x -> Java.getPackageTypes(x, true)).toList(), "fullstack");
 			fullstack = diFactory.newInstance(diFactory.classFor(AddressBookFullstack.class),
 					Java.hashMap("diFactory", f, "configurationFile", configurationFile));
 		}
 
-		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class),
-				Map.of("invocables",
-						diFactory.types().stream()
-								.flatMap(x -> Arrays.stream(x.getMethods())
-										.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-										.map(y -> new Invocable(x, y)))
-								.toList(),
-						"instanceResolver", (Function<Class<?>, Object>) x -> {
-							var y = diFactory.context();
+		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths",
+				Map.of("/base", Java.getPackagePaths("com.janilla.frontend").filter(Files::isRegularFile).toList(), "",
+						Stream.of("com.janilla.addressbook.frontend", "com.janilla.addressbook.test")
+								.flatMap(Java::getPackagePaths).filter(Files::isRegularFile).toList())));
+		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
+		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
+				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
+						.flatMap(x -> Arrays.stream(x.getMethods())
+								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
+								.map(y -> new Invocable(x, y)))
+						.toList(),
+				"instanceResolver", (Function<Class<?>, Object>) x -> {
+					var y = diFactory.context();
 //							IO.println("x=" + x + ", y=" + y);
-							return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-									: diFactory.newInstance(diFactory.classFor(x));
-						}));
-		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class),
-				Map.of("paths", Map.of("", Stream.of("com.janilla.frontend", "com.janilla.addressbook.test")
-						.flatMap(x -> Java.getPackagePaths(x, false).filter(Files::isRegularFile)).toList())));
+					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
+							: diFactory.newInstance(diFactory.classFor(x));
+				}));
 		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
 		{
 			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
@@ -168,12 +153,7 @@ public class AddressBookTest {
 		}
 	}
 
-	@Handle(method = "GET", path = "/")
-	public AddressBookTest application() {
-		return this;
-	}
-
-	public Properties configuration() {
+	public Configuration configuration() {
 		return configuration;
 	}
 
@@ -189,6 +169,10 @@ public class AddressBookTest {
 		return handler;
 	}
 
+	public IndexFactory indexFactory() {
+		return indexFactory;
+	}
+
 	public InvocationResolver invocationResolver() {
 		return invocationResolver;
 	}
@@ -199,5 +183,10 @@ public class AddressBookTest {
 
 	public ResourceMap resourceMap() {
 		return resourceMap;
+	}
+
+	@Handle(method = "GET", path = "/")
+	public Index home(HttpExchange exchange) {
+		return indexFactory.newIndex(exchange);
 	}
 }

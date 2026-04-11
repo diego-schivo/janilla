@@ -37,7 +37,7 @@ import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/customers")
-public class CustomerApi {
+class CustomerApi {
 
 	protected final Persistence persistence;
 

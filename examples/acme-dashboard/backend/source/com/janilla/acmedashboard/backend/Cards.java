@@ -26,5 +26,5 @@ package com.janilla.acmedashboard.backend;
 
 import java.math.BigDecimal;
 
-public record Cards(BigDecimal paidAmount, BigDecimal pendingAmount, long invoiceCount, long customerCount) {
+record Cards(BigDecimal paidAmount, BigDecimal pendingAmount, long invoiceCount, long customerCount) {
 }

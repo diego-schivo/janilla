@@ -27,7 +27,7 @@ package com.janilla.ecommercetemplate.backend;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -48,7 +48,7 @@ public class EcommercePersistence extends WebsitePersistence {
 
 	public EcommercePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 //			TypeResolver typeResolver, 
-			Converter converter, DiFactory diFactory, Properties configuration, String configurationKey) {
+			Converter converter, DiFactory diFactory, Configuration configuration, String configurationKey) {
 		super(database, storables, converter, diFactory, configuration, configurationKey);
 	}
 

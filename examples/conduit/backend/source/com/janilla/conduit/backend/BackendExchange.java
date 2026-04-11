@@ -25,7 +25,7 @@ package com.janilla.conduit.backend;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpRequest;
@@ -35,13 +35,13 @@ import com.janilla.json.Jwt;
 
 public class BackendExchange extends SimpleHttpExchange {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final Persistence persistence;
 
 	protected final Map<String, Object> session = new HashMap<>();
 
-	public BackendExchange(HttpRequest request, HttpResponse response, Properties configuration,
+	public BackendExchange(HttpRequest request, HttpResponse response, Configuration configuration,
 			Persistence persistence) {
 		super(request, response);
 		this.configuration = configuration;

@@ -25,7 +25,7 @@ import com.janilla.petclinic.Visit;
 import com.janilla.web.Render;
 
 @Render(template = "createOrUpdateVisitForm", resource = "/createOrUpdateVisitForm.html")
-public record VisitForm(Visit visit, List<@Render(template = "visit") Visit> previousVisits,
+record VisitForm(Visit visit, List<@Render(template = "visit") Visit> previousVisits,
 		Map<String, List<String>> errors) {
 
 	private static final Map<String, String> LABELS = Map.of("date", "Date", "description", "Description");

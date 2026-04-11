@@ -24,8 +24,6 @@
  */
 package com.janilla.blanktemplate.frontend;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -37,14 +35,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.net.ssl.SSLContext;
-
 import com.janilla.blanktemplate.BlankDomain;
-import com.janilla.blanktemplate.Configuration;
 import com.janilla.frontend.IndexFactory;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.http.HttpClient;
@@ -54,6 +48,7 @@ import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.Java;
@@ -61,7 +56,6 @@ import com.janilla.java.TypeResolver;
 import com.janilla.web.ApplicationHandlerFactory;
 import com.janilla.web.Invocable;
 import com.janilla.web.InvocationResolver;
-import com.janilla.web.NotFoundException;
 import com.janilla.web.RenderableFactory;
 import com.janilla.web.ResourceMap;
 
@@ -73,7 +67,7 @@ public class BlankFrontend {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageClasses(x, false).stream()).toList());
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
 		serve(f, BlankFrontend.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -88,41 +82,41 @@ public class BlankFrontend {
 									: configurationPath) : null));
 		}
 
-		var c = sslContext(a.configuration(), a.configurationKey);
+//		var c = sslContext(a.configuration(), a.configurationKey);
 
 		HttpServer s;
 		{
 			var p = Integer.parseInt(a.configuration.getProperty(a.configurationKey + ".server.port"));
 			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("sslContext", c, "endpoint", new InetSocketAddress(p), "handler", a.handler));
+					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
 		}
 		s.serve();
 	}
 
-	protected static <T extends BlankFrontend> SSLContext sslContext(Properties configuration,
-			String configurationKey) {
-		var p = configuration.getProperty(configurationKey + ".server.keystore.path");
-		if (p == null)
-			return HttpClient.sslContext("TLSv1.3");
-		var w = configuration.getProperty(configurationKey + ".server.keystore.password");
-		if (p.startsWith("~"))
-			p = System.getProperty("user.home") + p.substring(1);
-		var f = Path.of(p);
-		if (!Files.exists(f)) {
-			var cn = configuration.getProperty(configurationKey + ".server.keystore.common-name");
-			var san = configuration.getProperty(configurationKey + ".server.keystore.subject-alternative-name");
-			Java.generateKeyPair(cn != null ? cn : "localhost", f, w, san != null ? san : "dns:localhost,ip:127.0.0.1");
-		}
-		try (var s = Files.newInputStream(f)) {
-			return Java.sslContext(s, w.toCharArray());
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
+//	protected static <T extends BlankFrontend> SSLContext sslContext(Configuration configuration,
+//			String configurationKey) {
+//		var p = configuration.getProperty(configurationKey + ".server.keystore.path");
+//		if (p == null)
+//			return DefaultHttpClient.sslContext("TLSv1.3");
+//		var w = configuration.getProperty(configurationKey + ".server.keystore.password");
+//		if (p.startsWith("~"))
+//			p = System.getProperty("user.home") + p.substring(1);
+//		var f = Path.of(p);
+//		if (!Files.exists(f)) {
+//			var cn = configuration.getProperty(configurationKey + ".server.keystore.common-name");
+//			var san = configuration.getProperty(configurationKey + ".server.keystore.subject-alternative-name");
+//			Java.generateKeyPair(cn != null ? cn : "localhost", f, w, san != null ? san : "dns:localhost,ip:127.0.0.1");
+//		}
+//		try (var s = Files.newInputStream(f)) {
+//			return Java.sslContext(s, w.toCharArray());
+//		} catch (IOException e) {
+//			throw new UncheckedIOException(e);
+//		}
+//	}
 
 	protected final HttpHandlerFactory handlerFactory;
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final Path configurationFile;
 
@@ -163,8 +157,8 @@ public class BlankFrontend {
 		this.configurationFile = configurationFile;
 		this.configurationKey = configurationKey;
 		diFactory.context(this);
-		configuration = diFactory.newInstance(diFactory.classFor(Properties.class),
-				Collections.singletonMap("file", configurationFile));
+		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
+				Collections.singletonMap("path", configurationFile));
 		domain = diFactory.newInstance(diFactory.classFor(BlankDomain.class));
 
 		{
@@ -176,8 +170,8 @@ public class BlankFrontend {
 		typeResolver = diFactory.newInstance(diFactory.classFor(DollarTypeResolver.class));
 		converter = diFactory.newInstance(diFactory.classFor(Converter.class));
 
-		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class),
-				Map.of("sslContext", sslContext(configuration, configurationKey)));
+		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
+//				Map.of("sslContext", sslContext(configuration, configurationKey)));
 		{
 			var c = diFactory.classFor(CmsDataFetching.class);
 			dataFetching = c != null ? diFactory.newInstance(c) : null;
@@ -205,7 +199,7 @@ public class BlankFrontend {
 		handler = this::handle;
 	}
 
-	public Properties configuration() {
+	public Configuration configuration() {
 		return configuration;
 	}
 
@@ -266,16 +260,17 @@ public class BlankFrontend {
 	}
 
 	protected boolean handle(HttpExchange exchange) {
-		return ScopedValue
-				.where(Configuration.PROPERTY_GETTER, x -> configuration.getProperty(configurationKey + "." + x))
-				.call(() -> {
-					var h = handlerFactory
-							.createHandler(exchange.exception() != null ? exchange.exception() : exchange.request());
-					if (h == null)
-						throw new NotFoundException(
-								exchange.request().getMethod() + " " + exchange.request().getTarget());
-					return h.handle(exchange);
-				});
+//		return ScopedValue
+//				.where(Configuration.PROPERTY_GETTER, x -> configuration.getProperty(configurationKey + "." + x))
+//				.call(() -> {
+//					var h = handlerFactory
+//							.createHandler(exchange.exception() != null ? exchange.exception() : exchange.request());
+//					if (h == null)
+//						throw new NotFoundException(
+//								exchange.request().getMethod() + " " + exchange.request().getTarget());
+//					return h.handle(exchange);
+//				});
+		throw new RuntimeException();
 	}
 
 	protected Map<String, List<Path>> resourcePaths() {

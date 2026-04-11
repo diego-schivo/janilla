@@ -26,7 +26,7 @@ package com.janilla.blanktemplate.frontend;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.Index;
@@ -38,11 +38,11 @@ import com.janilla.web.ResourceMap;
 
 public class BlankIndexFactory extends CmsIndexFactory {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final String configurationKey;
 
-	public BlankIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Properties configuration,
+	public BlankIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
 			String configurationKey) {
 		super(resourceMap, dataFetching);
 		this.configuration = configuration;

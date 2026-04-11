@@ -33,7 +33,7 @@ import java.util.List;
 import com.janilla.java.Converter;
 import com.janilla.json.Json;
 
-public record SeedData(List<Contact> contacts) {
+record SeedData(List<Contact> contacts) {
 
 	public static SeedData read() {
 		try (var x = SeedData.class.getResourceAsStream("seed-data.json")) {

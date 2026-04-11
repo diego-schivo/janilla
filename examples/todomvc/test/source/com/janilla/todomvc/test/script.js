@@ -21,6 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import TestBench from "./test-bench.js";
+import TestBench from "/base/test-bench.js";
 
 customElements.define("test-bench", TestBench);

@@ -27,7 +27,7 @@ package com.janilla.acmedashboard.frontend;
 import java.util.List;
 import java.util.UUID;
 
-public interface Fetcher {
+interface Fetcher {
 
 	Object authentication();
 

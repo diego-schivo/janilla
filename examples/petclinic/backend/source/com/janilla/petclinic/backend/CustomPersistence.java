@@ -28,26 +28,21 @@ import com.janilla.petclinic.Vet;
 /**
  * @author Diego Schivo
  */
-public class CustomPersistence extends Persistence {
+class CustomPersistence extends Persistence {
 
-	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver,
-			Converter converter) {
+	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, Converter converter) {
 		super(database, storables, converter);
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		if (type == Vet.class) {
-			@SuppressWarnings("unchecked")
-			var c = (Crud<?, E>) new VetRepository(this);
-			return c;
-		}
-		if (type == Specialty.class) {
-			@SuppressWarnings("unchecked")
-			var c = (Crud<?, E>) new SpecialtyRepository(this);
-			return c;
-		}
+		if (type == Vet.class)
+			return (Crud<?, E>) new VetCrud(this);
+
+		if (type == Specialty.class)
+			return (Crud<?, E>) new SpecialtyCrud(this);
+
 		return super.newCrud(type);
 	}
 }

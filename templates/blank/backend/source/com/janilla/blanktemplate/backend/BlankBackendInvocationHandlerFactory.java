@@ -26,7 +26,6 @@ package com.janilla.blanktemplate.backend;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +35,7 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.NullTypeResolver;
@@ -49,7 +49,7 @@ import com.janilla.web.RenderableFactory;
 
 public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFactory {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final String configurationKey;
 
@@ -59,7 +59,7 @@ public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFacto
 
 	public BlankBackendInvocationHandlerFactory(InvocationResolver invocationResolver,
 			RenderableFactory renderableFactory, HttpHandlerFactory rootFactory, DiFactory diFactory,
-			Properties configuration, String configurationKey) {
+			Configuration configuration, String configurationKey) {
 		super(invocationResolver, renderableFactory, rootFactory, diFactory);
 		this.configuration = configuration;
 		this.configurationKey = configurationKey;

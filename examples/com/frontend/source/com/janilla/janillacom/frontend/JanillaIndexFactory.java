@@ -24,7 +24,7 @@
 package com.janilla.janillacom.frontend;
 
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.Template;
@@ -34,7 +34,7 @@ import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 
 public class JanillaIndexFactory extends WebsiteIndexFactory {
 
-	public JanillaIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Properties configuration,
+	public JanillaIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
 			String configurationKey) {
 		super(resourceMap, dataFetching, configuration, configurationKey);
 	}

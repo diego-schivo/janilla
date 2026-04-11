@@ -15,11 +15,10 @@
  */
 package com.janilla.petclinic.backend;
 
-import java.util.Properties;
-
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.web.HandleException;
 import com.janilla.web.Invocation;
 import com.janilla.web.InvocationHandlerFactory;
@@ -29,12 +28,12 @@ import com.janilla.web.RenderableFactory;
 /**
  * @author Diego Schivo
  */
-public class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
+class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	public CustomInvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory, DiFactory diFactory, Properties configuration) {
+			HttpHandlerFactory rootFactory, DiFactory diFactory, Configuration configuration) {
 		super(invocationResolver, renderableFactory, rootFactory, diFactory);
 		this.configuration = configuration;
 	}
@@ -44,6 +43,7 @@ public class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 		if (Boolean.parseBoolean(configuration.getProperty("petclinic.live-demo"))
 				&& !exchange.request().getMethod().equals("GET"))
 			throw new HandleException(new InvocationBlockedException());
+
 		return super.handle(invocation, exchange);
 	}
 }

@@ -21,5 +21,5 @@ import java.util.Map;
 import com.janilla.web.Render;
 
 @Render(template = "findOwners", resource = "/findOwners.html")
-public record FindOwners(String lastName, Map<String, List<String>> errors) {
+record FindOwners(String lastName, Map<String, List<String>> errors) {
 }

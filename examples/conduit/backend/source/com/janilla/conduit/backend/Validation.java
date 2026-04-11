@@ -26,18 +26,18 @@ package com.janilla.conduit.backend;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Validation {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final Map<String, Set<String>> errors = new LinkedHashMap<>();
 
-	public Validation(Properties configuration) {
+	public Validation(Configuration configuration) {
 		this.configuration = configuration;
 	}
 

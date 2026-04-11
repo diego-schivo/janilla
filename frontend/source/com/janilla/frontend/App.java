@@ -34,10 +34,14 @@ import com.janilla.web.Renderer;
 
 public interface App {
 
-	String apiUrl();
+	default String apiUrl() {
+		return null;
+	}
 
 	@Render(renderer = StateRenderer.class)
-	Map<String, Object> state();
+	default Map<String, Object> state() {
+		return null;
+	}
 
 	public static class StateRenderer<T> extends Renderer<T> {
 

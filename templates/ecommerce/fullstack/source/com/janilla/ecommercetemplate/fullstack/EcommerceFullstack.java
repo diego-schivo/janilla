@@ -52,7 +52,7 @@ public class EcommerceFullstack extends WebsiteFullstack {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageClasses(x, false).stream()).toList(),
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList(),
 				"fullstack");
 		serve(f, EcommerceFullstack.class, args.length > 0 ? args[0] : null);
 	}

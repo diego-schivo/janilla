@@ -34,7 +34,7 @@ import com.janilla.petclinic.Visit;
 /**
  * @author Diego Schivo
  */
-public class CustomPersistenceBuilder extends PersistenceBuilder {
+class CustomPersistenceBuilder extends PersistenceBuilder {
 
 	public CustomPersistenceBuilder(Path databaseFile) {
 		super(databaseFile);
@@ -44,13 +44,6 @@ public class CustomPersistenceBuilder extends PersistenceBuilder {
 	public Persistence build(DiFactory diFactory) {
 		var fe = Files.exists(databaseFile);
 		var p = super.build(diFactory);
-//		p.setTypeResolver(x -> {
-//			try {
-//				return Class.forName(getClass().getPackageName() + "." + x.replace('.', '$'));
-//			} catch (ClassNotFoundException e) {
-//				throw new RuntimeException(e);
-//			}
-//		});
 		if (!fe)
 			seed(p);
 		return p;

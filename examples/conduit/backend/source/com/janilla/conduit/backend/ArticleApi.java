@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,13 +43,13 @@ import com.janilla.web.Handle;
 @Handle(path = "/api/articles")
 public class ArticleApi {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final DiFactory diFactory;
 
 	protected final Persistence persistence;
 
-	public ArticleApi(Properties configuration, Persistence persistence, DiFactory diFactory) {
+	public ArticleApi(Configuration configuration, Persistence persistence, DiFactory diFactory) {
 		this.configuration = configuration;
 		this.persistence = persistence;
 		this.diFactory = diFactory;

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import WebComponent from "base/web-component";
-import { nanoid } from "./static/scripts/nanoid.js";
+import { nanoid } from "./utils/nanoid.js";
 
 export default class TodoTopbar extends WebComponent {
 

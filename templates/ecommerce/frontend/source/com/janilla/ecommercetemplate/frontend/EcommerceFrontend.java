@@ -36,7 +36,7 @@ import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
-import com.janilla.net.SecureServer;
+import com.janilla.net.AbstractServer;
 import com.janilla.websitetemplate.frontend.WebsiteFrontend;
 
 public class EcommerceFrontend extends WebsiteFrontend {
@@ -51,7 +51,7 @@ public class EcommerceFrontend extends WebsiteFrontend {
 			EcommerceFrontend a;
 			{
 				var f = new DefaultDiFactory(
-						Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageClasses(x, false).stream()).toList());
+						Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
 				a = f.newInstance(f.classFor(EcommerceFrontend.class),
 						Java.hashMap("diFactory", f, "configurationFile",
 								args.length > 0 ? Path.of(
@@ -63,7 +63,7 @@ public class EcommerceFrontend extends WebsiteFrontend {
 			HttpServer s;
 			{
 				SSLContext c;
-				try (var x = SecureServer.class.getResourceAsStream("localhost")) {
+				try (var x = AbstractServer.class.getResourceAsStream("localhost")) {
 					c = Java.sslContext(x, "passphrase".toCharArray());
 				}
 				var p = Integer.parseInt(a.configuration.getProperty("ecommerce-template.server.port"));

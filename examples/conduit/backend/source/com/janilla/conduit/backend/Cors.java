@@ -23,21 +23,21 @@
  */
 package com.janilla.conduit.backend;
 
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.java.Configuration;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationResolver;
 
 public class Cors {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final InvocationResolver invocationResolver;
 
-	public Cors(Properties configuration, InvocationResolver invocationResolver) {
+	public Cors(Configuration configuration, InvocationResolver invocationResolver) {
 		this.configuration = configuration;
 		this.invocationResolver = invocationResolver;
 	}

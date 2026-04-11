@@ -24,23 +24,23 @@
  */
 package com.janilla.blanktemplate.backend;
 
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.java.Configuration;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationResolver;
 
 public class Cors {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final String configurationKey;
 
 	protected final InvocationResolver invocationResolver;
 
-	public Cors(Properties configuration, String configurationKey, InvocationResolver invocationResolver) {
+	public Cors(Configuration configuration, String configurationKey, InvocationResolver invocationResolver) {
 		this.configuration = configuration;
 		this.configurationKey = configurationKey;
 		this.invocationResolver = invocationResolver;

@@ -25,11 +25,11 @@ package com.janilla.janillacom.frontend;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Properties;
 
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.janillacom.Application;
+import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -38,7 +38,7 @@ import com.janilla.websitetemplate.frontend.WebsiteDataFetching;
 
 public class JanillaDataFetching extends WebsiteDataFetching {
 
-	public JanillaDataFetching(Properties configuration, String configurationKey, HttpClient httpClient,
+	public JanillaDataFetching(Configuration configuration, String configurationKey, HttpClient httpClient,
 			Converter converter) {
 		super(configuration, configurationKey, httpClient, converter);
 	}

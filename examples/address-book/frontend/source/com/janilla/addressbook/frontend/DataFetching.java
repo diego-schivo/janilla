@@ -30,29 +30,32 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Properties;
 
 import com.janilla.http.HttpClient;
+import com.janilla.http.HttpRequest;
+import com.janilla.java.Configuration;
 import com.janilla.java.UriQueryBuilder;
 
-public class DataFetching {
+class DataFetching {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final HttpClient httpClient;
 
-	public DataFetching(Properties configuration, HttpClient httpClient) {
+	public DataFetching(Configuration configuration, HttpClient httpClient) {
 		this.configuration = configuration;
 		this.httpClient = httpClient;
 	}
 
 	public Object contact(String id) {
-		return httpClient.getJson(URI.create(configuration.getProperty("address-book.api.url") + "/contacts/"
+		var r = new HttpRequest("GET", URI.create(configuration.getProperty("address-book.api.url") + "/contacts/"
 				+ URLEncoder.encode(id, StandardCharsets.UTF_8)));
+		return httpClient.send(r, HttpClient.JSON);
 	}
 
 	public List<?> contacts(String query) {
-		return (List<?>) httpClient.getJson(URI.create(configuration.getProperty("address-book.api.url") + "/contacts?"
+		var r = new HttpRequest("GET", URI.create(configuration.getProperty("address-book.api.url") + "/contacts?"
 				+ new UriQueryBuilder().append("query", query)));
+		return (List<?>) httpClient.send(r, HttpClient.JSON);
 	}
 }

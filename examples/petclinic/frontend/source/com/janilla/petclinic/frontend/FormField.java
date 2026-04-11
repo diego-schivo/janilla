@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * @author Diego Schivo
  */
-public interface FormField<T> {
+interface FormField<T> {
 
 	String label();
 

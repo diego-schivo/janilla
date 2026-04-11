@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
@@ -36,11 +36,11 @@ import com.janilla.ioc.DiFactory;
 
 public class WebsitePersistenceBuilder extends PersistenceBuilder {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final String configurationKey;
 
-	public WebsitePersistenceBuilder(Path databaseFile, Properties configuration, String configurationKey) {
+	public WebsitePersistenceBuilder(Path databaseFile, Configuration configuration, String configurationKey) {
 		super(databaseFile);
 		this.configuration = configuration;
 		this.configurationKey = configurationKey;

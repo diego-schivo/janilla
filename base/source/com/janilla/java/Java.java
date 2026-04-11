@@ -88,19 +88,19 @@ public final class Java {
 		}
 	}
 
-	public static List<Class<?>> getPackageClasses(String package1) {
-		return getPackageClasses(package1, false);
+	public static Stream<Class<?>> getPackageTypes(String package1) {
+		return getPackageTypes(package1, false);
 	}
 
-	public static List<Class<?>> getPackageClasses(String package1, boolean recursive) {
-//		IO.println("Java.getPackageClasses, package1=" + package1 + ", recursive=" + recursive);
+	public static Stream<Class<?>> getPackageTypes(String package1, boolean recursive) {
+//		IO.println("Java.getPackageTypes, package1=" + package1 + ", recursive=" + recursive);
 		class A {
 			private static final Map<String, List<Class<?>>> RESULTS = new ConcurrentHashMap<>();
 		}
 		var pp = getPackagePaths(package1, false).toList();
-		return A.RESULTS.computeIfAbsent(package1, _ -> {
+		var tt = A.RESULTS.computeIfAbsent(package1, _ -> {
 			Stream<Class<?>> s = pp.stream().map(x -> {
-//				IO.println("Java.getPackageClasses, x=" + x);
+//				IO.println("Java.getPackageTypes, x=" + x);
 				var d = x.getFileSystem() == FileSystems.getDefault()
 						? Stream.iterate(x, y -> y.getParent())
 								.dropWhile(y -> !y.getFileName().toString().equals("classes")).findFirst().get()
@@ -116,17 +116,15 @@ public final class Java {
 				} catch (ClassNotFoundException e) {
 					c = null;
 				}
-//				IO.println("Java.getPackageClasses, c=" + c);
+//				IO.println("Java.getPackageTypes, c=" + c);
 				return c;
 			});
-			s = s.filter(Objects::nonNull);
-			if (recursive)
-				s = Stream.concat(s, pp.stream().filter(Java::isDirectory)
-						.flatMap(x -> getPackageClasses(package1 + '.' + x.getFileName().toString(), true).stream()));
-			var cc = s.toList();
-//			IO.println("Java.getPackageClasses, cc=" + cc);
-			return cc;
+			var l = s.filter(Objects::nonNull).toList();
+//			IO.println("Java.getPackageTypes, l=" + l);
+			return l;
 		});
+		return recursive ? Stream.concat(tt.stream(), pp.stream().filter(Java::isDirectory)
+				.flatMap(x -> getPackageTypes(package1 + '.' + x.getFileName(), true))) : tt.stream();
 	}
 
 	public static Stream<Path> getPackagePaths(String package1) {
@@ -218,6 +216,16 @@ public final class Java {
 		x.put(k2, v2);
 		x.put(k3, v3);
 		x.put(k4, v4);
+		return x;
+	}
+
+	public static <K, V> HashMap<K, V> hashMap(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5) {
+		var x = HashMap.<K, V>newHashMap(4);
+		x.put(k1, v1);
+		x.put(k2, v2);
+		x.put(k3, v3);
+		x.put(k4, v4);
+		x.put(k5, v5);
 		return x;
 	}
 

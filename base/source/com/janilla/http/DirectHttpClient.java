@@ -33,7 +33,7 @@ import java.util.function.Function;
 
 import javax.net.ssl.SSLContext;
 
-public class DirectHttpClient extends HttpClient {
+public class DirectHttpClient extends DefaultHttpClient {
 
 	protected final HttpServer server;
 

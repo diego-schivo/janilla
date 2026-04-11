@@ -28,7 +28,7 @@ import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.HexFormat;
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.Random;
 
 import javax.crypto.SecretKeyFactory;
@@ -43,13 +43,13 @@ import com.janilla.web.Handle;
 @Handle(path = "/api/users")
 public class UserApi {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final DiFactory diFactory;
 
 	protected final Persistence persistence;
 
-	public UserApi(Properties configuration, Persistence persistence, DiFactory diFactory) {
+	public UserApi(Configuration configuration, Persistence persistence, DiFactory diFactory) {
 		this.configuration = configuration;
 		this.persistence = persistence;
 		this.diFactory = diFactory;

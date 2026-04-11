@@ -27,24 +27,12 @@ package com.janilla.net;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
-public class SecureTransfer implements Transfer {
-
-	protected final ByteChannel channel;
-
-	protected final ByteBuffer in;
-
-	protected final Lock inLock = new ReentrantLock();
-
-	protected final ByteBuffer out;
-
-	protected final Lock outLock = new ReentrantLock();
+public class SecureTransfer extends SimpleTransfer {
 
 	protected final SSLEngine engine;
 
@@ -53,28 +41,10 @@ public class SecureTransfer implements Transfer {
 	protected final ByteBuffer out0;
 
 	public SecureTransfer(ByteChannel channel, SSLEngine engine) {
-		this.channel = channel;
 		this.engine = engine;
-		in = ByteBuffer.allocate(engine.getSession().getApplicationBufferSize() + 50);
-		out = ByteBuffer.allocate(in.capacity());
+		super(channel);
 		in0 = ByteBuffer.allocate(engine.getSession().getPacketBufferSize());
 		out0 = ByteBuffer.allocate(in0.capacity());
-	}
-
-	public ByteBuffer in() {
-		return in;
-	}
-
-	public Lock inLock() {
-		return inLock;
-	}
-
-	public ByteBuffer out() {
-		return out;
-	}
-
-	public Lock outLock() {
-		return outLock;
 	}
 
 	public SSLEngine engine() {
@@ -117,6 +87,11 @@ public class SecureTransfer implements Transfer {
 		} finally {
 			outLock.unlock();
 		}
+	}
+
+	@Override
+	protected int capacity() {
+		return engine.getSession().getApplicationBufferSize() + 50;
 	}
 
 	protected void handshake() throws IOException {

@@ -24,7 +24,7 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -40,7 +40,7 @@ import com.janilla.web.Handle;
 public class UserApi extends AbstractUserApi<Long, User<Long>> {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, Properties configuration,
+	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, Configuration configuration,
 			String configurationKey) {
 		super((Class) User.class, drafts, persistence, "name",
 				configuration.getProperty(configurationKey + ".jwt.key"));

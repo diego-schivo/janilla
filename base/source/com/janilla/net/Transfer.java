@@ -25,8 +25,18 @@
 package com.janilla.net;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.locks.Lock;
 
 public interface Transfer {
+
+	ByteBuffer in();
+
+	Lock inLock();
+
+	ByteBuffer out();
+
+	Lock outLock();
 
 	int read() throws IOException;
 

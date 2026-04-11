@@ -24,7 +24,7 @@
  */
 package com.janilla.ecommercetemplate.frontend;
 
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankFrontendHttpExchange;
@@ -41,12 +41,12 @@ import com.janilla.websitetemplate.frontend.WebsiteWebHandling;
 
 public class EcommerceWebHandling extends WebsiteWebHandling {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final String configurationKey;
 
 	public EcommerceWebHandling(IndexFactory indexFactory, WebsiteDomain domain, WebsiteDataFetching dataFetching,
-			Properties configuration, String configurationKey) {
+			Configuration configuration, String configurationKey) {
 		super(indexFactory, domain, dataFetching);
 		this.configuration = configuration;
 		this.configurationKey = configurationKey;

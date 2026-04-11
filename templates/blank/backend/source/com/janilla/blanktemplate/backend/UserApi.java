@@ -24,7 +24,7 @@
  */
 package com.janilla.blanktemplate.backend;
 
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -42,7 +42,7 @@ public class UserApi extends AbstractUserApi<Long, User<Long>> {
 	protected final BlankDomain domain;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, Properties configuration,
+	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, Configuration configuration,
 			String configurationKey, BlankDomain domain) {
 		super((Class) User.class, drafts, persistence, "title",
 				configuration.getProperty(configurationKey + ".jwt.key"));

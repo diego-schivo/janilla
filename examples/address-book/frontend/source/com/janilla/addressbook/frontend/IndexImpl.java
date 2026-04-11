@@ -24,18 +24,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.addressbook.frontend;
-
-import java.util.List;
-import java.util.Map;
-
-import com.janilla.frontend.App;
-import com.janilla.frontend.Index;
-import com.janilla.frontend.Script;
-import com.janilla.frontend.Template;
-import com.janilla.web.Render;
-
-@Render(template = "index", resource = "/base/index.html")
-record IndexImpl(String title, Map<String, String> imports, List<Script> scripts, App app, List<Template> templates)
-		implements Index {
-}
+//package com.janilla.addressbook.frontend;
+//
+//import java.util.List;
+//import java.util.Map;
+//
+//import com.janilla.frontend.App;
+//import com.janilla.frontend.Index;
+//import com.janilla.frontend.Script;
+//import com.janilla.frontend.Template;
+//import com.janilla.web.Render;
+//
+//@Render(template = "index", resource = "/base/index.html")
+//record IndexImpl(String title, Map<String, String> imports, List<Script> scripts, App app, List<Template> templates)
+//		implements Index {
+//}

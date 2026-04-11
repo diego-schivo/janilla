@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 import javax.crypto.Mac;
@@ -50,8 +49,10 @@ import com.janilla.ecommercetemplate.CartItem;
 import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.Order;
 import com.janilla.ecommercetemplate.Transaction;
+import com.janilla.http.DefaultHttpClient;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
+import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -66,7 +67,7 @@ public class StripeApi extends PaymentApi {
 
 	protected final String secretKey = configuration.getProperty("ecommerce-template.stripe.secret-key");
 
-	public StripeApi(Properties configuration, Persistence persistence, EcommerceDomain domain) {
+	public StripeApi(Configuration configuration, Persistence persistence, EcommerceDomain domain) {
 		super(configuration, persistence);
 		this.domain = domain;
 	}
@@ -83,7 +84,8 @@ public class StripeApi extends PaymentApi {
 			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/customers?"
 					+ new UriQueryBuilder().append("email", user != null ? user.email() : guestEmail)));
 			rq.setBasicAuthorization(secretKey + ":");
-			var r = new HttpClient().send(rq, HttpClient.JSON.andThen(x -> (R) new Converter().convert(x, R.class)));
+			var r = new DefaultHttpClient().send(rq,
+					HttpClient.JSON.andThen(x -> (R) new Converter().convert(x, R.class)));
 //			IO.println("r=" + r);
 			c = !r.data().isEmpty() ? r.data().getFirst() : null;
 		}
@@ -96,7 +98,7 @@ public class StripeApi extends PaymentApi {
 			rq.setHeaderValue("content-type", "application/x-www-form-urlencoded");
 			rq.setHeaderValue("content-length", String.valueOf(bb.length));
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
-			c = new HttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, C.class)));
+			c = new DefaultHttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, C.class)));
 //			IO.println("c=" + c);
 		}
 
@@ -118,14 +120,13 @@ public class StripeApi extends PaymentApi {
 			rq.setHeaderValue("content-type", "application/x-www-form-urlencoded");
 			rq.setHeaderValue("content-length", String.valueOf(bb.length));
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
-			pi = new HttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, PI.class)));
+			pi = new DefaultHttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, PI.class)));
 //			IO.println("pi=" + pi);
 		}
 
 		persistence.crud(Transaction.class)
 				.create(domain.newTransaction(cart.items(), domain.paymentMethod("STRIPE"), billingAddress,
-						domain.transactionStatus(
-								"PENDING"), user, guestEmail, null, cart, cart.subtotal(),
+						domain.transactionStatus("PENDING"), user, guestEmail, null, cart, cart.subtotal(),
 						cart.currency(), c.id(), pi.id()));
 
 		return new InitiateResult(pi.id(), pi.client_secret());
@@ -145,7 +146,7 @@ public class StripeApi extends PaymentApi {
 		{
 			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/payment_intents/" + paymentIntent));
 			rq.setBasicAuthorization(configuration.getProperty("ecommerce-template.stripe.secret-key") + ":");
-			pi = new HttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, PI.class)));
+			pi = new DefaultHttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, PI.class)));
 //			IO.println("pi=" + pi);
 		}
 
@@ -155,8 +156,7 @@ public class StripeApi extends PaymentApi {
 		var sa = (AddressData) new Converter().convert(Json.parse(pi.metadata().get("shippingAddress")),
 				AddressData.class);
 		var o = persistence.crud(Order.class)
-				.create(domain.newOrder(cii, sa, user, guestEmail, List.of(t), domain.orderStatus(
-						"PROCESSING"),
+				.create(domain.newOrder(cii, sa, user, guestEmail, List.of(t), domain.orderStatus("PROCESSING"),
 						BigDecimal.valueOf(pi.amount(), 2), domain.currency(pi.currency().toUpperCase())));
 
 		persistence.crud(Cart.class).update(Long.valueOf(pi.metadata().get("cartId")),

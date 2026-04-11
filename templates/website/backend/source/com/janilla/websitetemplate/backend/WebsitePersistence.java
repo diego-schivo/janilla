@@ -37,7 +37,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,13 +59,13 @@ public class WebsitePersistence extends BlankPersistence {
 
 	private SearchObserver<?> searchObserver;
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final String configurationKey;
 
 	public WebsitePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 //			TypeResolver typeResolver,
-			Converter converter, DiFactory diFactory, Properties configuration, String configurationKey) {
+			Converter converter, DiFactory diFactory, Configuration configuration, String configurationKey) {
 		this.configuration = configuration;
 		this.configurationKey = configurationKey;
 		super(database, storables, converter, diFactory);

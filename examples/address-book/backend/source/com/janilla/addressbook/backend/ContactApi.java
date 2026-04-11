@@ -39,7 +39,7 @@ import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
 
 @Handle(path = "/api/contacts")
-public class ContactApi {
+class ContactApi {
 
 	protected final Persistence persistence;
 

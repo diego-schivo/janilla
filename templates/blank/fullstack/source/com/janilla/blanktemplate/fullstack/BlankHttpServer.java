@@ -31,30 +31,30 @@ import javax.net.ssl.SSLContext;
 
 import com.janilla.blanktemplate.backend.BlankBackend;
 import com.janilla.blanktemplate.frontend.BlankFrontend;
+import com.janilla.http.DefaultHttpServer;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpServer;
 import com.janilla.ioc.Context;
 import com.janilla.ioc.DiFactory;
 
 @Context("fullstack")
-public class BlankHttpServer extends HttpServer {
+public class BlankHttpServer extends DefaultHttpServer {
 
 	protected final BlankBackend backend;
 
 	protected final BlankFrontend frontend;
 
-	public BlankHttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler, DiFactory diFactory,
+	public BlankHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, DiFactory diFactory,
 			BlankBackend backend, BlankFrontend frontend) {
-		super(sslContext, endpoint, handler, diFactory);
+		super(endpoint, sslContext, handler, diFactory);
 		this.backend = backend;
 		this.frontend = frontend;
 	}
 
 	@Override
-	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 //		IO.println("BlankHttpServer.createExchange, request.getPath()=" + request.getPath());
 		var f = request.getPath().startsWith("/api/") ? backend.diFactory() : frontend.diFactory();
 		var x = f.newInstance(f.classFor(HttpExchange.class), Map.of("request", request, "response", response));

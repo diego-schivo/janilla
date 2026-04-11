@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 
+import com.janilla.http.DefaultHttpServer;
 import com.janilla.http.Frame;
 import com.janilla.http.FrameTransfer;
 import com.janilla.http.HeadersFrame;
@@ -48,7 +49,6 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpServer;
 import com.janilla.ioc.Context;
 import com.janilla.ioc.DiFactory;
 import com.janilla.janillacom.JanillaDomain;
@@ -57,7 +57,7 @@ import com.janilla.janillacom.frontend.JanillaFrontend;
 import com.janilla.java.JavaReflect;
 
 @Context("fullstack")
-public class CustomHttpServer extends HttpServer {
+public class CustomHttpServer extends DefaultHttpServer {
 
 	protected static final Pattern BOT_REGEX = Pattern.compile("aws|config|docker|env|info|node|php|sql|wp|yml");
 
@@ -67,9 +67,9 @@ public class CustomHttpServer extends HttpServer {
 
 	protected final Set<String> blacklist = new HashSet<>();
 
-	public CustomHttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler, JanillaBackend backend,
+	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, JanillaBackend backend,
 			JanillaFrontend frontend) {
-		super(sslContext, endpoint, handler);
+		super(endpoint, sslContext, handler);
 		this.backend = backend;
 		this.frontend = frontend;
 	}
@@ -141,7 +141,7 @@ public class CustomHttpServer extends HttpServer {
 	}
 
 	@Override
-	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 		var a = JanillaDomain.APPLICATION.get();
 		var f = (DiFactory) JavaReflect.property(a.getClass(), "diFactory").get(a);
 		var c = f.classFor(HttpExchange.class);

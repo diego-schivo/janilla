@@ -41,9 +41,10 @@ public class JavaInvoke {
 			private static final Map<Method, Object> RESULTS = new ConcurrentHashMap<>();
 		}
 		var o = A.RESULTS.computeIfAbsent(method, _ -> {
+			var l = lookup(method.getDeclaringClass());
 			try {
-				return MethodHandles.publicLookup().unreflect(method);
-			} catch (ReflectiveOperationException e) {
+				return l.unreflect(method);
+			} catch (IllegalAccessException e) {
 				return new RuntimeException(e);
 			}
 		});
@@ -58,25 +59,33 @@ public class JavaInvoke {
 			private static final Map<Constructor<?>, Object> RESULTS = new ConcurrentHashMap<>();
 		}
 		var o = A.RESULTS.computeIfAbsent(constructor, _ -> {
+			var l = lookup(constructor.getDeclaringClass());
 			try {
-				var c = constructor.getDeclaringClass();
-				Lookup l;
-				if (Modifier.isPublic(c.getModifiers()))
-					l = MethodHandles.publicLookup();
-				else {
-					var m1 = JavaReflect.class.getModule();
-					var m2 = c.getModule();
-					if (!m1.canRead(m2))
-						m1.addReads(m2);
-					l = MethodHandles.privateLookupIn(c, MethodHandles.lookup());
-				}
 				return l.unreflectConstructor(constructor);
-			} catch (ReflectiveOperationException e) {
+			} catch (IllegalAccessException e) {
 				return new RuntimeException(e);
 			}
 		});
 		if (o instanceof RuntimeException e)
 			throw e;
 		return (MethodHandle) o;
+	}
+
+	protected static Lookup lookup(Class<?> c) {
+		Lookup l;
+		if (Modifier.isPublic(c.getModifiers()))
+			l = MethodHandles.publicLookup();
+		else {
+			var m1 = JavaReflect.class.getModule();
+			var m2 = c.getModule();
+			if (!m1.canRead(m2))
+				m1.addReads(m2);
+			try {
+				l = MethodHandles.privateLookupIn(c, MethodHandles.lookup());
+			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return l;
 	}
 }

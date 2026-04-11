@@ -35,7 +35,7 @@ import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/invoices")
-public class InvoiceApi {
+class InvoiceApi {
 
 	protected final Persistence persistence;
 

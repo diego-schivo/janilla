@@ -52,10 +52,10 @@ package com.janilla.frontend.cms;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.AbstractIndexFactory;
+import com.janilla.frontend.DefaultIndexFactory;
 import com.janilla.web.ResourceMap;
 
-public abstract class CmsIndexFactory extends AbstractIndexFactory {
+public abstract class CmsIndexFactory extends DefaultIndexFactory {
 
 	protected final CmsDataFetching dataFetching;
 

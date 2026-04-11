@@ -26,7 +26,7 @@ import com.janilla.web.Renderable;
  * @author Diego Schivo
  */
 @Render(template = "layout", resource = "/layout.html")
-public record Layout(Renderable<?> content) {
+record Layout(Renderable<?> content) {
 
 	protected static final List<NavItem> NAV_ITEMS = List.of(new NavItem("home", "Home", "/", "home page"),
 			new NavItem("search", "Find owners", "/owners/find", "find owners"),

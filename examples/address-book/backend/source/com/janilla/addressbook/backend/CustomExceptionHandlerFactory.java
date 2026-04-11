@@ -32,7 +32,7 @@ import com.janilla.web.Error;
 import com.janilla.web.ExceptionHandlerFactory;
 import com.janilla.web.RenderableFactory;
 
-public class CustomExceptionHandlerFactory extends ExceptionHandlerFactory {
+class CustomExceptionHandlerFactory extends ExceptionHandlerFactory {
 
 	protected final RenderableFactory renderableFactory;
 

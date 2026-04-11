@@ -24,7 +24,6 @@
  */
 package com.janilla.backend.persistence;
 
-import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,7 +91,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@Override
 	public E create(E entity) {
-//		IO.println("DefaultCrud.create, entity=" + entity);
+		IO.println("DefaultCrud.create, entity=" + entity);
 		return persistence.database().perform(() -> {
 			class A {
 				ID i;
@@ -449,9 +448,9 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected String format(Object object) {
-//		IO.println("DefaultCrud.format, object=" + object);
+		IO.println("DefaultCrud.format, object=" + object);
 		var s = Json.format(new CustomJsonIterator(object, persistence.converter.typeResolver()));
-//		IO.println("DefaultCrud.format, s=" + s);
+		IO.println("DefaultCrud.format, s=" + s);
 		return s;
 	}
 
@@ -618,7 +617,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		@Override
 		protected Iterator<JsonToken<?>> newIterator() {
 			if (value instanceof Class<?> c) {
-				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
+//				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
+				var t = c;
 				return context.newStringIterator(persistence.converter().convert(t, String.class));
 			}
 			return super.newIterator();

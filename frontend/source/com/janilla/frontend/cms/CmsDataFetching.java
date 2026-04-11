@@ -51,11 +51,12 @@ package com.janilla.frontend.cms;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Properties;
 
 import com.janilla.cms.User;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
+import com.janilla.http.HttpRequest;
+import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -69,7 +70,7 @@ public abstract class CmsDataFetching {
 
 	protected final Converter converter;
 
-	protected CmsDataFetching(Properties configuration, String configurationKey, HttpClient httpClient,
+	protected CmsDataFetching(Configuration configuration, String configurationKey, HttpClient httpClient,
 			Converter converter) {
 		apiUrl = configuration.getProperty(configurationKey + ".api.url");
 		this.httpClient = httpClient;
@@ -77,14 +78,17 @@ public abstract class CmsDataFetching {
 	}
 
 	public User<?> sessionUser(HttpCookie token) {
-		var o = httpClient.getJson(URI.create(apiUrl + "/users/me"), token != null ? token.format() : null);
+		var r = new HttpRequest("GET", URI.create(apiUrl + "/users/me"), token != null ? token.format() : null);
+		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, User.class);
 	}
 
 	public ListPortion<User<?>> users(Long skip, Long limit) {
-		var o = httpClient.getJson(URI
-				.create(apiUrl + "/users?" + new UriQueryBuilder().append("skip", skip != null ? skip.toString() : null)
-						.append("limit", limit != null ? limit.toString() : null)));
+		var r = new HttpRequest("GET",
+				URI.create(
+						apiUrl + "/users?" + new UriQueryBuilder().append("skip", skip != null ? skip.toString() : null)
+								.append("limit", limit != null ? limit.toString() : null)));
+		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(User.class)));
 	}
 }

@@ -26,7 +26,7 @@ package com.janilla.websitetemplate.frontend;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankIndexFactory;
@@ -38,7 +38,7 @@ import com.janilla.web.ResourceMap;
 
 public class WebsiteIndexFactory extends BlankIndexFactory {
 
-	public WebsiteIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Properties configuration,
+	public WebsiteIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
 			String configurationKey) {
 		super(resourceMap, dataFetching, configuration, configurationKey);
 	}

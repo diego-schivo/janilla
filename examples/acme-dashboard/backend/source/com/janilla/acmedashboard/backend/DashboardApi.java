@@ -30,7 +30,7 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/dashboard")
-public class DashboardApi {
+class DashboardApi {
 
 	protected final Persistence persistence;
 

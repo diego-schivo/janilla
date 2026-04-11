@@ -33,8 +33,8 @@ import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
 @Store
-public record Invoice(UUID id, @Index Customer customer, BigDecimal amount, @Index InvoiceStatus status,
-		@Index LocalDate date) implements Entity<UUID> {
+record Invoice(UUID id, @Index Customer customer, BigDecimal amount, @Index InvoiceStatus status, @Index LocalDate date)
+		implements Entity<UUID> {
 
 	public Invoice withDate(LocalDate date) {
 		return new Invoice(id, customer, amount, status, date);

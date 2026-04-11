@@ -29,7 +29,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,9 +40,9 @@ import com.janilla.ioc.DiFactory;
 
 public class CustomPersistenceBuilder extends PersistenceBuilder {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
-	public CustomPersistenceBuilder(Path databaseFile, Properties configuration) {
+	public CustomPersistenceBuilder(Path databaseFile, Configuration configuration) {
 		super(databaseFile);
 		this.configuration = configuration;
 	}

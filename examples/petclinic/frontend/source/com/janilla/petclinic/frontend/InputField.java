@@ -23,7 +23,7 @@ import com.janilla.web.Render;
  * @author Diego Schivo
  */
 @Render(template = "inputField", resource = "/inputField.html")
-public record InputField<T>(String label, String name, T value,
+record InputField<T>(String label, String name, T value,
 		@Render(template = "errors", delimiter = "<br />") List<String> errors, String type) implements FormField<T> {
 
 	public String hasError() {

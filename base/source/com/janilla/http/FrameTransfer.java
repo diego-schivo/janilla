@@ -26,17 +26,17 @@ package com.janilla.http;
 
 import java.io.IOException;
 
-import com.janilla.net.SecureTransfer;
+import com.janilla.net.Transfer;
 
 public class FrameTransfer {
 
-	protected final SecureTransfer transfer;
+	protected final Transfer transfer;
 
 	protected final HttpEncoder encoder = new HttpEncoder();
 
 	protected final HttpDecoder decoder = new HttpDecoder();
 
-	public FrameTransfer(SecureTransfer transfer) {
+	public FrameTransfer(Transfer transfer) {
 		this.transfer = transfer;
 	}
 

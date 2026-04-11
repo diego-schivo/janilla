@@ -28,28 +28,38 @@ package com.janilla.addressbook.frontend;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.DefaultIndexFactory;
 import com.janilla.frontend.Index;
-import com.janilla.frontend.AbstractIndexFactory;
+import com.janilla.frontend.SimpleApp;
 import com.janilla.frontend.Template;
 import com.janilla.http.HttpExchange;
+import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
+import com.janilla.java.Java;
 import com.janilla.web.ResourceMap;
 
-public class IndexFactoryImpl extends AbstractIndexFactory {
+class IndexFactoryImpl extends DefaultIndexFactory {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
-	public IndexFactoryImpl(ResourceMap resourceMap, Properties configuration) {
+	protected final DiFactory diFactory;
+
+	public IndexFactoryImpl(ResourceMap resourceMap, Configuration configuration, DiFactory diFactory) {
 		super(resourceMap);
 		this.configuration = configuration;
+		this.diFactory = diFactory;
 	}
 
 	@Override
 	public Index newIndex(HttpExchange exchange) {
-		return new IndexImpl("Address Book", imports(), scripts(),
-				new AppImpl(configuration.getProperty("address-book.api.url"), state(exchange)), templates());
+//		return new SimpleIndex("Address Book", imports(), scripts(),
+//				new SimpleApp(configuration.getProperty("address-book.api.url"), state(exchange)), templates());
+		return diFactory.newInstance(diFactory.classFor(Index.class),
+				Java.hashMap("title", "Address Book", "imports", imports(), "scripts", scripts(), "app",
+						new SimpleApp(configuration.getProperty("address-book.api.url"), state(exchange)), "templates",
+						templates()));
 	}
 
 	@Override

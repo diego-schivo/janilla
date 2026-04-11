@@ -55,7 +55,7 @@ public class DefaultDiFactory implements DiFactory {
 	}
 
 	public DefaultDiFactory(List<Class<?>> types, String name) {
-//		IO.println("DiFactory, types=" + types);
+//		IO.println("DefaultDiFactory, types=" + types);
 		this.types = types;
 		this.name = name;
 	}
@@ -81,21 +81,29 @@ public class DefaultDiFactory implements DiFactory {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T, U extends T> Class<U> classFor(Class<T> type) {
-//		IO.println("DiFactory.actualType, type=" + type);
-		return (Class<U>) classes.computeIfAbsent(type, _ -> Stream.concat(Stream.of(type), types.stream())
-				.filter(x -> !Modifier.isAbstract(x.getModifiers())).filter(type::isAssignableFrom).filter(x -> {
-					var a = x.getAnnotation(Context.class);
-					var nn = a != null ? a.value() : null;
-					return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
-				}).reduce((_, x) -> x)).orElse(null);
+//		IO.println("DefaultDiFactory.classFor, type=" + type);
+		var c = (Class<U>) classes.computeIfAbsent(type,
+				_ -> Stream.concat(Stream.of(type), types.stream())
+						.filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())
+								|| (x.isMemberClass() && !Modifier.isStatic(x.getModifiers()))))
+						.filter(type::isAssignableFrom).filter(x -> {
+							var a = x.getAnnotation(Context.class);
+							var nn = a != null ? a.value() : null;
+							return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
+						}).reduce((_, x) -> x))
+				.orElse(null);
+//		IO.println("DefaultDiFactory.classFor, c=" + c);
+		return c;
 	}
 
 	@Override
 	public <T> T newInstance(Class<T> class1, Map<String, Object> arguments) {
-//		IO.println("DiFactory.create, class1=" + class1 + ", arguments=" + arguments);
+//		IO.println("DefaultDiFactory.newInstance, class1=" + class1 + ", arguments=" + arguments);
 		Objects.requireNonNull(class1);
 		var f = factories.computeIfAbsent(class1, _ -> {
-			var cc = !class1.isInterface() && !Modifier.isAbstract(class1.getModifiers()) ? class1.getConstructors()
+			var cc = !class1.isInterface() && !Modifier.isAbstract(class1.getModifiers())
+					? Stream.of(class1.getConstructors(), class1.getDeclaredConstructors()).filter(x -> x.length != 0)
+							.findFirst().orElse(null)
 					: null;
 			if (cc == null || cc.length == 0)
 				throw new IllegalArgumentException("class1=" + class1);
@@ -111,7 +119,7 @@ public class DefaultDiFactory implements DiFactory {
 
 	protected <T> T newInstance(Constructor<?>[] constructors, Map<String, Object> arguments, Object context,
 			boolean enclosed) {
-//		IO.println("DiFactory.newInstance, constructors=" + Arrays.toString(constructors) + ", arguments=" + arguments
+//		IO.println("DefaultDiFactory.newInstance, constructors=" + Arrays.toString(constructors) + ", arguments=" + arguments
 //				+ ", context=" + context + ", enclosed=" + enclosed);
 		record R(Constructor<?> c, Object[] aa, boolean f, int n) {
 		}
@@ -135,7 +143,7 @@ public class DefaultDiFactory implements DiFactory {
 			System.arraycopy(r.aa, 0, aa, 1, r.aa.length);
 			r = new R(r.c, aa, r.f, r.n);
 		}
-//			IO.println("DiFactory.newInstance, r=" + r);
+//		IO.println("DefaultDiFactory.newInstance, r=" + r);
 		try {
 			@SuppressWarnings("unchecked")
 			var t = (T) JavaInvoke.methodHandle(r.c).invokeWithArguments(r.aa);

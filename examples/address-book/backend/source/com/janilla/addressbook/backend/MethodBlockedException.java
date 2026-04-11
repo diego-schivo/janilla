@@ -29,7 +29,7 @@ package com.janilla.addressbook.backend;
 import com.janilla.web.Error;
 
 @Error(code = 403, text = "Forbidden")
-public class MethodBlockedException extends RuntimeException {
+class MethodBlockedException extends RuntimeException {
 
 	private static final long serialVersionUID = -7370515482861976382L;
 

@@ -28,7 +28,7 @@ import com.janilla.petclinic.PetType;
 import com.janilla.web.Render;
 
 @Render(template = "createOrUpdatePetForm", resource = "/createOrUpdatePetForm.html")
-public record PetForm(Pet pet, List<PetType> types, Map<String, List<String>> errors) {
+record PetForm(Pet pet, List<PetType> types, Map<String, List<String>> errors) {
 
 	private static final Map<String, String> LABELS = Map.of("name", "Name", "birthDate", "Birth Date", "type", "Type");
 

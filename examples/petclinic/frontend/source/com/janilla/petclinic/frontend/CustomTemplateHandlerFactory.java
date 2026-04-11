@@ -23,7 +23,7 @@ import com.janilla.web.TemplateHandlerFactory;
 /**
  * @author Diego Schivo
  */
-public class CustomTemplateHandlerFactory extends TemplateHandlerFactory {
+class CustomTemplateHandlerFactory extends TemplateHandlerFactory {
 
 	protected final RenderableFactory renderableFactory;
 

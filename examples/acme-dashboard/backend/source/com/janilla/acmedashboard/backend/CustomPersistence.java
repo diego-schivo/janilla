@@ -33,7 +33,7 @@ import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 
-public class CustomPersistence extends Persistence {
+class CustomPersistence extends Persistence {
 
 	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 //			TypeResolver typeResolver,

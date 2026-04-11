@@ -25,26 +25,26 @@
 package com.janilla.acmedashboard.backend;
 
 import java.util.Map;
-import java.util.Properties;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Configuration;
 import com.janilla.json.Jwt;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/authentication")
-public class AuthenticationApi {
+class AuthenticationApi {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final Persistence persistence;
 
-	public AuthenticationApi(Properties configuration, Persistence persistence) {
+	public AuthenticationApi(Configuration configuration, Persistence persistence) {
 		this.configuration = configuration;
 		this.persistence = persistence;
 	}
 
 	@Handle(method = "POST")
-	public User create(User user, BackendExchange exchange) {
+	public User create(User user, HttpExchangeImpl exchange) {
 //		IO.println("AuthenticationApi.create, user=" + user);
 		var c = persistence.crud(User.class);
 		var u = c.read(c.find("email", new Object[] { user.email() }));
@@ -59,13 +59,13 @@ public class AuthenticationApi {
 	}
 
 	@Handle(method = "GET")
-	public User read(BackendExchange exchange) {
+	public User read(HttpExchangeImpl exchange) {
 //		IO.println("AuthenticationApi.read");
 		return exchange.getSessionUser();
 	}
 
 	@Handle(method = "DELETE")
-	public void delete(User user, BackendExchange exchange) {
+	public void delete(User user, HttpExchangeImpl exchange) {
 //		IO.println("AuthenticationApi.delete, user=" + user);
 		exchange.setSessionCookie(null);
 	}

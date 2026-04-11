@@ -25,6 +25,8 @@
 package com.janilla.net;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.locks.Lock;
 
 public class FilterTransfer implements Transfer {
 
@@ -36,6 +38,26 @@ public class FilterTransfer implements Transfer {
 
 	public Transfer transfer() {
 		return transfer;
+	}
+
+	@Override
+	public ByteBuffer in() {
+		return transfer.in();
+	}
+
+	@Override
+	public Lock inLock() {
+		return transfer.inLock();
+	}
+
+	@Override
+	public ByteBuffer out() {
+		return transfer.out();
+	}
+
+	@Override
+	public Lock outLock() {
+		return transfer.outLock();
 	}
 
 	@Override

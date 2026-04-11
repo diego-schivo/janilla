@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 import com.janilla.backend.persistence.DefaultCrud;
 import com.janilla.backend.persistence.Persistence;
 
-public class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
+class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
 
 	public InvoiceCrud(Persistence persistence) {
 		super(Invoice.class, persistence.idConverter(Invoice.class), persistence);

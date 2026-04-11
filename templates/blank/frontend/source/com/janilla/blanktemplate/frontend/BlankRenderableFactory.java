@@ -30,10 +30,10 @@ import java.util.stream.Stream;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.AnnotationAndElement;
 import com.janilla.web.Render;
-import com.janilla.web.RenderableFactory;
+import com.janilla.web.DefaultRenderableFactory;
 import com.janilla.web.ResourceMap;
 
-public class BlankRenderableFactory extends RenderableFactory {
+public class BlankRenderableFactory extends DefaultRenderableFactory {
 
 	protected final Map<String, String> resourcePrefixes;
 

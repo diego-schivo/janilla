@@ -27,7 +27,7 @@ import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
+import com.janilla.java.Configuration;
 import java.util.Set;
 
 import com.janilla.backend.persistence.Persistence;
@@ -38,11 +38,11 @@ import com.janilla.json.ReflectionJsonIterator;
 
 public class CustomJsonIterator extends ReflectionJsonIterator {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final Persistence persistence;
 
-	public CustomJsonIterator(Object object, Properties configuration, Persistence persistence) {
+	public CustomJsonIterator(Object object, Configuration configuration, Persistence persistence) {
 		super(object);
 		this.configuration = configuration;
 		this.persistence = persistence;

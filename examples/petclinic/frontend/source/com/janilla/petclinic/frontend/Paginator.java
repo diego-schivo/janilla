@@ -27,7 +27,7 @@ import com.janilla.web.Render;
  * @author Diego Schivo
  */
 @Render(template = "paginator", resource = "/paginator.html")
-public record Paginator(int index, int length, URI uri) {
+record Paginator(int index, int length, URI uri) {
 
 	public Stream<Item> pages() {
 		return IntStream.range(0, length).mapToObj(x -> new Item(x != index ? uri(x + 1) : null, null, null, x + 1));

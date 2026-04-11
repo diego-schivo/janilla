@@ -31,15 +31,12 @@ import com.janilla.java.TypeResolver;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 
-public class CustomReflectionJsonIterator extends ReflectionJsonIterator {
+class CustomReflectionJsonIterator extends ReflectionJsonIterator {
 
 	public CustomReflectionJsonIterator(Object object) {
 		super(object);
 	}
 
-//	public CustomReflectionJsonIterator(Object object, boolean includeType) {
-//		super(object, includeType);
-//	}
 	public CustomReflectionJsonIterator(Object object, TypeResolver typeResolver) {
 		super(object, typeResolver);
 	}

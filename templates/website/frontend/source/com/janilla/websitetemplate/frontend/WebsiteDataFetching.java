@@ -26,11 +26,12 @@ package com.janilla.websitetemplate.frontend;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Properties;
 
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
+import com.janilla.http.HttpRequest;
+import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -43,47 +44,46 @@ import com.janilla.websitetemplate.SearchResult;
 
 public class WebsiteDataFetching extends CmsDataFetching {
 
-	public WebsiteDataFetching(Properties configuration, String configurationKey, HttpClient httpClient,
+	public WebsiteDataFetching(Configuration configuration, String configurationKey, HttpClient httpClient,
 			Converter converter) {
 		super(configuration, configurationKey, httpClient, converter);
 	}
 
 	public Footer footer() {
-		var o = httpClient.getJson(URI.create(apiUrl + "/footer"));
+		var r = new HttpRequest("GET", URI.create(apiUrl + "/footer"));
+		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, Footer.class);
 	}
 
 	public Header header(Integer depth) {
-		var o = httpClient.getJson(URI.create(
+		var r = new HttpRequest("GET", URI.create(
 				apiUrl + "/header?" + new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null)));
+		var o = httpClient.send(r, HttpClient.JSON);
 //		IO.println("o=" + o);
 		return converter.convert(o, Header.class);
 	}
 
 	public ListPortion<Page> pages(String slug, Integer depth, HttpCookie token) {
-		var o = httpClient
-				.getJson(
-						URI.create(apiUrl + "/pages?"
-								+ new UriQueryBuilder().append("slug", slug).append("depth",
-										depth != null ? depth.toString() : null)),
-						token != null ? token.format() : null);
+		var r = new HttpRequest("GET", URI.create(apiUrl + "/pages?"
+				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
+				token != null ? token.format() : null);
+		var o = httpClient.send(r, HttpClient.JSON);
 //		IO.println("o=" + o);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Page.class)));
 	}
 
 	public ListPortion<Post> posts(String slug, Integer depth, HttpCookie token) {
-		var o = httpClient
-				.getJson(
-						URI.create(apiUrl + "/posts?"
-								+ new UriQueryBuilder().append("slug", slug).append("depth",
-										depth != null ? depth.toString() : null)),
-						token != null ? token.format() : null);
+		var r = new HttpRequest("GET", URI.create(apiUrl + "/posts?"
+				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
+				token != null ? token.format() : null);
+		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Post.class)));
 	}
 
 	public ListPortion<SearchResult> searchResults(String query) {
-		var o = httpClient
-				.getJson(URI.create(apiUrl + "/search-results?" + new UriQueryBuilder().append("query", query)));
+		var r = new HttpRequest("GET",
+				URI.create(apiUrl + "/search-results?" + new UriQueryBuilder().append("query", query)));
+		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(SearchResult.class)));
 	}
 }

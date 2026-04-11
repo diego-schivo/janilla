@@ -30,24 +30,24 @@ import java.util.Map;
 import javax.net.ssl.SSLContext;
 
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
+import com.janilla.http.DefaultHttpServer;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpServer;
 
-public class CustomHttpServer extends HttpServer {
+public class CustomHttpServer extends DefaultHttpServer {
 
 	protected final BlankFullstack fullstack;
 
-	public CustomHttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler,
+	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
 			BlankFullstack fullstack) {
-		super(sslContext, endpoint, handler);
+		super(endpoint, sslContext, handler);
 		this.fullstack = fullstack;
 	}
 
 	@Override
-	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 		if (Test.ONGOING.get()) {
 			var f = request.getPath().startsWith("/api/") ? fullstack.backend().diFactory()
 					: fullstack.frontend().diFactory();

@@ -25,7 +25,7 @@ import com.janilla.web.RenderableFactory;
 /**
  * @author Diego Schivo
  */
-public class CustomExceptionHandlerFactory extends ExceptionHandlerFactory {
+class CustomExceptionHandlerFactory extends ExceptionHandlerFactory {
 
 	protected final RenderableFactory renderableFactory;
 

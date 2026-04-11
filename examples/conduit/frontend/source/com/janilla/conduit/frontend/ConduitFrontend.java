@@ -23,8 +23,6 @@
  */
 package com.janilla.conduit.frontend;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -33,17 +31,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import javax.net.ssl.SSLContext;
-
-import com.janilla.http.HttpClient;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 import com.janilla.web.ApplicationHandlerFactory;
 import com.janilla.web.Handle;
@@ -62,7 +57,7 @@ public class ConduitFrontend {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageClasses(x, false).stream()).toList());
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -76,35 +71,35 @@ public class ConduitFrontend {
 									: configurationPath) : null));
 		}
 
-		SSLContext c;
-		{
-			var p = a.configuration.getProperty("conduit.server.keystore.path");
-			if (p != null) {
-				var w = a.configuration.getProperty("conduit.server.keystore.password");
-				if (p.startsWith("~"))
-					p = System.getProperty("user.home") + p.substring(1);
-				var f = Path.of(p);
-				if (!Files.exists(f))
-					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
-				try (var s = Files.newInputStream(f)) {
-					c = Java.sslContext(s, w.toCharArray());
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			} else
-				c = HttpClient.sslContext("TLSv1.3");
-		}
+//		SSLContext c;
+//		{
+//			var p = a.configuration.getProperty("conduit.server.keystore.path");
+//			if (p != null) {
+//				var w = a.configuration.getProperty("conduit.server.keystore.password");
+//				if (p.startsWith("~"))
+//					p = System.getProperty("user.home") + p.substring(1);
+//				var f = Path.of(p);
+//				if (!Files.exists(f))
+//					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
+//				try (var s = Files.newInputStream(f)) {
+//					c = Java.sslContext(s, w.toCharArray());
+//				} catch (IOException e) {
+//					throw new UncheckedIOException(e);
+//				}
+//			} else
+//				c = DefaultHttpClient.sslContext("TLSv1.3");
+//		}
 
 		HttpServer s;
 		{
 			var p = Integer.parseInt(a.configuration.getProperty("conduit.server.port"));
 			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("sslContext", c, "endpoint", new InetSocketAddress(p), "handler", a.handler));
+					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
 		}
 		s.serve();
 	}
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final DiFactory diFactory;
 
@@ -119,22 +114,21 @@ public class ConduitFrontend {
 	public ConduitFrontend(DiFactory diFactory, Path configurationFile) {
 		this.diFactory = diFactory;
 		diFactory.context(this);
-		configuration = diFactory.newInstance(diFactory.classFor(Properties.class),
-				Collections.singletonMap("file", configurationFile));
+		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
+				Collections.singletonMap("path", configurationFile));
 
-		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class),
-				Map.of("invocables",
-						diFactory.types().stream()
-								.flatMap(x -> Arrays.stream(x.getMethods())
-										.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-										.map(y -> new Invocable(x, y)))
-								.toList(),
-						"instanceResolver", (Function<Class<?>, Object>) x -> {
-							var y = diFactory.context();
+		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
+				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
+						.flatMap(x -> Arrays.stream(x.getMethods())
+								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
+								.map(y -> new Invocable(x, y)))
+						.toList(),
+				"instanceResolver", (Function<Class<?>, Object>) x -> {
+					var y = diFactory.context();
 //							IO.println("x=" + x + ", y=" + y);
-							return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-									: diFactory.newInstance(diFactory.classFor(x));
-						}));
+					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
+							: diFactory.newInstance(diFactory.classFor(x));
+				}));
 		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class),
 				Map.of("paths", Map.of("", Stream.of("com.janilla.frontend", ConduitFrontend.class.getPackageName())
 						.flatMap(x -> Java.getPackagePaths(x, false).filter(Files::isRegularFile)).toList())));
@@ -159,7 +153,7 @@ public class ConduitFrontend {
 		return this;
 	}
 
-	public Properties configuration() {
+	public Configuration configuration() {
 		return configuration;
 	}
 

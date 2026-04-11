@@ -25,29 +25,29 @@
 package com.janilla.acmedashboard.frontend;
 
 import java.util.Objects;
-import java.util.Properties;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.web.Invocation;
 import com.janilla.web.InvocationHandlerFactory;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
 
-public class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
+class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	public CustomInvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory, DiFactory diFactory, Properties configuration) {
+			HttpHandlerFactory rootFactory, DiFactory diFactory, Configuration configuration) {
 		super(invocationResolver, renderableFactory, rootFactory, diFactory);
 		this.configuration = configuration;
 	}
 
 	@Override
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
-		var ex = (FrontendExchange) exchange;
+		var ex = (HttpExchangeImpl) exchange;
 		var rq = ex.request();
 		var rs = ex.response();
 

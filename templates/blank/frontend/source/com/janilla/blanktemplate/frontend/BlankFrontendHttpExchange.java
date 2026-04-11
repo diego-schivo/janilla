@@ -24,7 +24,7 @@
  */
 package com.janilla.blanktemplate.frontend;
 
-import java.util.Properties;
+import com.janilla.java.Configuration;
 
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
@@ -33,11 +33,11 @@ import com.janilla.http.SimpleHttpExchange;
 
 public class BlankFrontendHttpExchange extends SimpleHttpExchange {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final String configurationKey;
 
-	public BlankFrontendHttpExchange(HttpRequest request, HttpResponse response, Properties configuration,
+	public BlankFrontendHttpExchange(HttpRequest request, HttpResponse response, Configuration configuration,
 			String configurationKey) {
 		super(request, response);
 		this.configuration = configuration;

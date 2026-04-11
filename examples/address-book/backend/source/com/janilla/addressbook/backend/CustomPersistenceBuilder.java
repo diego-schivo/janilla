@@ -36,7 +36,7 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
 import com.janilla.ioc.DiFactory;
 
-public class CustomPersistenceBuilder extends PersistenceBuilder {
+class CustomPersistenceBuilder extends PersistenceBuilder {
 
 	public CustomPersistenceBuilder(Path databaseFile) {
 		super(databaseFile);

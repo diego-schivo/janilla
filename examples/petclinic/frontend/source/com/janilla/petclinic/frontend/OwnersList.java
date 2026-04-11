@@ -24,7 +24,7 @@ import com.janilla.petclinic.Pet;
 import com.janilla.web.Render;
 
 @Render(template = "ownersList", resource = "/ownersList.html")
-public record OwnersList(List<Result> results, Paginator paginator) {
+record OwnersList(List<Result> results, Paginator paginator) {
 
 	public static OwnersList of(ListPortion<Owner> owners, int page) {
 		return new OwnersList(owners.elements().stream().map(x -> new Result(x, x.pets())).toList(),

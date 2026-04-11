@@ -23,29 +23,23 @@
  */
 package com.janilla.conduit.fullstack;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Stream;
-
-import javax.net.ssl.SSLContext;
 
 import com.janilla.conduit.backend.BackendExchange;
 import com.janilla.conduit.backend.ConduitBackend;
 import com.janilla.conduit.frontend.ConduitFrontend;
-import com.janilla.http.HttpClient;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 
 public class ConduitFullstack {
@@ -55,8 +49,7 @@ public class ConduitFullstack {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageClasses(x, false).stream()).toList(),
-				"fullstack");
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList(), "fullstack");
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -70,35 +63,35 @@ public class ConduitFullstack {
 									: configurationPath) : null));
 		}
 
-		SSLContext c;
-		{
-			var p = a.configuration.getProperty("conduit.server.keystore.path");
-			if (p != null) {
-				var w = a.configuration.getProperty("conduit.server.keystore.password");
-				if (p.startsWith("~"))
-					p = System.getProperty("user.home") + p.substring(1);
-				var f = Path.of(p);
-				if (!Files.exists(f))
-					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
-				try (var s = Files.newInputStream(f)) {
-					c = Java.sslContext(s, w.toCharArray());
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			} else
-				c = HttpClient.sslContext("TLSv1.3");
-		}
+//		SSLContext c;
+//		{
+//			var p = a.configuration.getProperty("conduit.server.keystore.path");
+//			if (p != null) {
+//				var w = a.configuration.getProperty("conduit.server.keystore.password");
+//				if (p.startsWith("~"))
+//					p = System.getProperty("user.home") + p.substring(1);
+//				var f = Path.of(p);
+//				if (!Files.exists(f))
+//					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
+//				try (var s = Files.newInputStream(f)) {
+//					c = Java.sslContext(s, w.toCharArray());
+//				} catch (IOException e) {
+//					throw new UncheckedIOException(e);
+//				}
+//			} else
+//				c = DefaultHttpClient.sslContext("TLSv1.3");
+//		}
 
 		HttpServer s;
 		{
 			var p = Integer.parseInt(a.configuration.getProperty("conduit.server.port"));
 			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("sslContext", c, "endpoint", new InetSocketAddress(p), "handler", a.handler));
+					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
 		}
 		s.serve();
 	}
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final DiFactory diFactory;
 
@@ -111,8 +104,8 @@ public class ConduitFullstack {
 	public ConduitFullstack(DiFactory diFactory, Path configurationFile) {
 		this.diFactory = diFactory;
 		diFactory.context(this);
-		configuration = diFactory.newInstance(diFactory.classFor(Properties.class),
-				Collections.singletonMap("file", configurationFile));
+		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
+				Collections.singletonMap("path", configurationFile));
 
 		var cf = Optional.ofNullable(configurationFile).orElseGet(() -> {
 			try {
@@ -129,7 +122,7 @@ public class ConduitFullstack {
 												Stream.of("backend", "fullstack")
 														.map(x -> ConduitBackend.class.getPackageName()
 																.replace(".backend", "." + x)))
-										.flatMap(x -> Java.getPackageClasses(x, false).stream()).toList(), "backend"),
+										.flatMap(x -> Java.getPackageTypes(x, false)).toList(), "backend"),
 								"configurationFile", cf));
 		frontend = diFactory
 				.newInstance(ConduitFrontend.class,
@@ -139,7 +132,7 @@ public class ConduitFullstack {
 												Stream.of("frontend", "fullstack")
 														.map(x -> ConduitFrontend.class.getPackageName()
 																.replace(".frontend", "." + x)))
-										.flatMap(x -> Java.getPackageClasses(x, false).stream()).toList(), "frontend"),
+										.flatMap(x -> Java.getPackageTypes(x, false)).toList(), "frontend"),
 								"configurationFile", cf));
 
 		handler = x -> {
@@ -156,7 +149,7 @@ public class ConduitFullstack {
 		return backend;
 	}
 
-	public Properties configuration() {
+	public Configuration configuration() {
 		return configuration;
 	}
 

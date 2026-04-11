@@ -34,16 +34,16 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.http.HttpClient;
+import com.janilla.http.DefaultHttpClient;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
+import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 
 public class DownloadHandlerFactory implements HttpHandlerFactory {
@@ -52,7 +52,7 @@ public class DownloadHandlerFactory implements HttpHandlerFactory {
 
 	protected final Map<String, byte[]> bodies = new ConcurrentHashMap<>();
 
-	public DownloadHandlerFactory(Properties configuration, String configurationKey) {
+	public DownloadHandlerFactory(Configuration configuration, String configurationKey) {
 		var d = configuration.getProperty(configurationKey + ".download.directory");
 		if (d.startsWith("~"))
 			d = System.getProperty("user.home") + d.substring(1);
@@ -76,7 +76,7 @@ public class DownloadHandlerFactory implements HttpHandlerFactory {
 					if (!Files.exists(f)) {
 						var l = x;
 						do {
-							l = new HttpClient().send(new HttpRequest("GET", URI.create(l)), rs -> {
+							l = new DefaultHttpClient().send(new HttpRequest("GET", URI.create(l)), rs -> {
 								if (rs.getStatus() == 302)
 									return rs.getHeaderValue("location");
 								try {

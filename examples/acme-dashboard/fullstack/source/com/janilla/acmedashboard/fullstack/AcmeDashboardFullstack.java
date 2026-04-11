@@ -24,86 +24,61 @@
  */
 package com.janilla.acmedashboard.fullstack;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Stream;
 
-import javax.net.ssl.SSLContext;
-
 import com.janilla.acmedashboard.backend.AcmeDashboardBackend;
-import com.janilla.acmedashboard.backend.BackendExchange;
 import com.janilla.acmedashboard.frontend.AcmeDashboardFrontend;
-import com.janilla.http.HttpClient;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 
 public class AcmeDashboardFullstack {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.web", "com.janilla.acmedashboard.fullstack" };
+	public static final String[] DI_PACKAGES = { "com.janilla.http", "com.janilla.web",
+			"com.janilla.acmedashboard.fullstack" };
 
 	public static final ScopedValue<AcmeDashboardFullstack> INSTANCE = ScopedValue.newInstance();
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
+
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageClasses(x, false).stream()).toList(),
-				"fullstack");
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList(), "fullstack");
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected static void serve(DiFactory diFactory, String configurationPath) {
 		AcmeDashboardFullstack a;
 		{
+			var cf = configurationPath != null ? Path.of(
+					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
+							: configurationPath)
+					: null;
 			a = diFactory.newInstance(diFactory.classFor(AcmeDashboardFullstack.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile",
-							configurationPath != null ? Path.of(configurationPath.startsWith("~")
-									? System.getProperty("user.home") + configurationPath.substring(1)
-									: configurationPath) : null));
-		}
-
-		SSLContext c;
-		{
-			var p = a.configuration.getProperty("acme-dashboard.server.keystore.path");
-			if (p != null) {
-				var w = a.configuration.getProperty("acme-dashboard.server.keystore.password");
-				if (p.startsWith("~"))
-					p = System.getProperty("user.home") + p.substring(1);
-				var f = Path.of(p);
-				if (!Files.exists(f))
-					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
-				try (var s = Files.newInputStream(f)) {
-					c = Java.sslContext(s, w.toCharArray());
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			} else
-				c = HttpClient.sslContext("TLSv1.3");
+					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
 		}
 
 		HttpServer s;
 		{
 			var p = Integer.parseInt(a.configuration.getProperty("acme-dashboard.server.port"));
 			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("sslContext", c, "endpoint", new InetSocketAddress(p), "handler", a.handler));
+					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
 		}
 		s.serve();
 	}
 
 	protected final AcmeDashboardBackend backend;
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
 	protected final DiFactory diFactory;
 
@@ -114,39 +89,38 @@ public class AcmeDashboardFullstack {
 	public AcmeDashboardFullstack(DiFactory diFactory, Path configurationFile) {
 		this.diFactory = diFactory;
 		diFactory.context(this);
-		configuration = diFactory.newInstance(diFactory.classFor(Properties.class),
-				Collections.singletonMap("file", configurationFile));
 
-		var cf = Optional.ofNullable(configurationFile).orElseGet(() -> {
-			try {
-				return Path.of(AcmeDashboardFullstack.class.getResource("configuration.properties").toURI());
-			} catch (URISyntaxException e) {
-				throw new RuntimeException(e);
-			}
+		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
+				Collections.singletonMap("path", configurationFile));
+
+		Path cf;
+		try {
+			cf = configurationFile != null ? configurationFile
+					: Path.of(AcmeDashboardFullstack.class.getResource("configuration.properties").toURI());
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+
+		backend = ScopedValue.where(INSTANCE, this).call(() -> {
+			var f = new DefaultDiFactory(Stream
+					.concat(Arrays.stream(AcmeDashboardBackend.DI_PACKAGES),
+							Stream.of("com.janilla.acmedashboard.fullstack"))
+					.flatMap(x -> Java.getPackageTypes(x)).toList(), "backend");
+			return diFactory.newInstance(diFactory.classFor(AcmeDashboardBackend.class),
+					Java.hashMap("diFactory", f, "configurationFile", cf));
 		});
-		backend = ScopedValue.where(INSTANCE, this)
-				.call(() -> diFactory.newInstance(diFactory.classFor(AcmeDashboardBackend.class),
-						Java.hashMap("diFactory",
-								new DefaultDiFactory(Stream
-										.concat(Stream.of("com.janilla.web"),
-												Stream.of("backend", "fullstack")
-														.map(x -> AcmeDashboardBackend.class.getPackageName()
-																.replace(".backend", "." + x)))
-										.flatMap(x -> Java.getPackageClasses(x, false).stream()).toList(), "backend"),
-								"configurationFile", cf)));
-		frontend = ScopedValue.where(INSTANCE, this)
-				.call(() -> diFactory.newInstance(diFactory.classFor(AcmeDashboardFrontend.class),
-						Java.hashMap("diFactory",
-								new DefaultDiFactory(Stream
-										.concat(Stream.of("com.janilla.web"),
-												Stream.of("frontend", "fullstack")
-														.map(x -> AcmeDashboardFrontend.class.getPackageName()
-																.replace(".frontend", "." + x)))
-										.flatMap(x -> Java.getPackageClasses(x, false).stream()).toList(), "frontend"),
-								"configurationFile", cf)));
+
+		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
+			var f = new DefaultDiFactory(Stream
+					.concat(Arrays.stream(AcmeDashboardFrontend.DI_PACKAGES),
+							Stream.of("com.janilla.acmedashboard.fullstack"))
+					.flatMap(x -> Java.getPackageTypes(x)).toList(), "frontend");
+			return diFactory.newInstance(diFactory.classFor(AcmeDashboardFrontend.class),
+					Java.hashMap("diFactory", f, "configurationFile", cf));
+		});
 
 		handler = x -> {
-			var h = x instanceof BackendExchange ? backend.handler() : frontend.handler();
+			var h = x.request().getPath().startsWith("/api/") ? backend.handler() : frontend.handler();
 			return h.handle(x);
 		};
 	}
@@ -155,7 +129,7 @@ public class AcmeDashboardFullstack {
 		return backend;
 	}
 
-	public Properties configuration() {
+	public Configuration configuration() {
 		return configuration;
 	}
 

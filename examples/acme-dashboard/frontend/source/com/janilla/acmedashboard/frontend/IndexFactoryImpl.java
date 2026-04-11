@@ -26,20 +26,20 @@ package com.janilla.acmedashboard.frontend;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.DefaultIndexFactory;
 import com.janilla.frontend.Index;
-import com.janilla.frontend.AbstractIndexFactory;
 import com.janilla.frontend.Template;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Configuration;
 import com.janilla.web.ResourceMap;
 
-public class IndexFactoryImpl extends AbstractIndexFactory {
+class IndexFactoryImpl extends DefaultIndexFactory {
 
-	protected final Properties configuration;
+	protected final Configuration configuration;
 
-	public IndexFactoryImpl(ResourceMap resourceMap, Properties configuration) {
+	public IndexFactoryImpl(ResourceMap resourceMap, Configuration configuration) {
 		super(resourceMap);
 		this.configuration = configuration;
 	}

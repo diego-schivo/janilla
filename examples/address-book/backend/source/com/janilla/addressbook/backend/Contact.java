@@ -35,8 +35,8 @@ import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
 @Store
-public record Contact(String id, Instant createdAt, String avatar, String first, String last, String twitter,
-		Boolean favorite) implements Entity<String> {
+record Contact(String id, Instant createdAt, String avatar, String first, String last, String twitter, Boolean favorite)
+		implements Entity<String> {
 
 	@Index
 	public String full() {

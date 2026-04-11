@@ -24,7 +24,7 @@ import com.janilla.petclinic.Owner;
 import com.janilla.web.Render;
 
 @Render(template = "createOrUpdateOwnerForm", resource = "/createOrUpdateOwnerForm.html")
-public record OwnerForm(Owner owner, Map<String, List<String>> errors) {
+record OwnerForm(Owner owner, Map<String, List<String>> errors) {
 
 	private static final Map<String, String> LABELS = Map.of("firstName", "First Name", "lastName", "Last Name",
 			"address", "Address", "city", "City", "telephone", "Telephone");

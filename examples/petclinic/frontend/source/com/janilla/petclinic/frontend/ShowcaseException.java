@@ -21,7 +21,7 @@ import com.janilla.web.Render;
  * @author Diego Schivo
  */
 @Render(template = "error", resource = "/error.html")
-public class ShowcaseException extends RuntimeException {
+class ShowcaseException extends RuntimeException {
 
 	private static final long serialVersionUID = 3791424499076553670L;
 

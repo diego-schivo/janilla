@@ -33,7 +33,7 @@ import com.janilla.frontend.IndexFactory;
 import com.janilla.http.HttpExchange;
 import com.janilla.web.Handle;
 
-public class WebHandling {
+class WebHandling {
 
 	protected final DataFetching dataFetching;
 

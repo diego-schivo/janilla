@@ -31,23 +31,12 @@ import java.util.List;
 import com.janilla.java.Converter;
 import com.janilla.json.Json;
 
-public record PlaceholderData(List<Customer> customers, List<Invoice> invoices, List<Revenue> revenue,
-		List<User> users) {
+record PlaceholderData(List<Customer> customers, List<Invoice> invoices, List<Revenue> revenue, List<User> users) {
 
 	public static PlaceholderData read() {
 		try (var x = PlaceholderData.class.getResourceAsStream("placeholder-data.json")) {
-			return (PlaceholderData) new Converter(null)
-//			{
-//
-//				@Override
-//				@SuppressWarnings("unchecked")
-//				public <T> T convert(Object object, Type target) {
-//					if (object instanceof String s && target == Customer.class)
-//						return (T) Customer.EMPTY.withId(UUID.fromString(s));
-//					return super.convert(object, target);
-//				}
-//			}
-			.convert(Json.parse(new String(x.readAllBytes())), PlaceholderData.class);
+			return (PlaceholderData) new Converter().convert(Json.parse(new String(x.readAllBytes())),
+					PlaceholderData.class);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

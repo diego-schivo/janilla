@@ -24,7 +24,6 @@
  */
 package com.janilla.json;
 
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -73,15 +72,10 @@ public class ReflectionValueIterator extends ValueIterator {
 				});
 
 		if (((ReflectionJsonIterator) context).typeResolver != null) {
-			var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
+//			var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
+			var t = type;
 			ee = Stream.concat(Stream.of(Map.entry("$type", t)), ee);
 		}
-
-//		{
-//			var l = ee.toList();
-//			IO.println("ReflectionValueIterator.entries, l=" + l);
-//			ee = l.stream();
-//		}
 
 		return ee;
 	}

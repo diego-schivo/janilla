@@ -23,7 +23,7 @@ import com.janilla.petclinic.Visit;
 import com.janilla.web.Render;
 
 @Render(template = "ownerDetails", resource = "/ownerDetails.html")
-public record OwnerDetails(Owner owner, List<Pet2> pets) {
+record OwnerDetails(Owner owner, List<Pet2> pets) {
 
 	public static OwnerDetails of(Owner owner) {
 		return new OwnerDetails(owner, owner.pets().stream().map(x -> new Pet2(x, x.visits())).toList());

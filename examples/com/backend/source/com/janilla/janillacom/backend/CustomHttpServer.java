@@ -28,22 +28,22 @@ import java.util.Map;
 
 import javax.net.ssl.SSLContext;
 
+import com.janilla.http.DefaultHttpServer;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpServer;
 import com.janilla.ioc.DiFactory;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.java.JavaReflect;
 
-public class CustomHttpServer extends HttpServer {
+public class CustomHttpServer extends DefaultHttpServer {
 
 	protected final JanillaBackend application;
 
-	public CustomHttpServer(SSLContext sslContext, SocketAddress endpoint, HttpHandler handler,
+	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
 			JanillaBackend application) {
-		super(sslContext, endpoint, handler);
+		super(endpoint, sslContext, handler);
 		this.application = application;
 	}
 
@@ -56,7 +56,7 @@ public class CustomHttpServer extends HttpServer {
 	}
 
 	@Override
-	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 //		var a = application.application(request.getAuthority());
 		var a = JanillaDomain.APPLICATION.get();
 //		IO.println("CustomHttpServer.createExchange, a=" + a);
