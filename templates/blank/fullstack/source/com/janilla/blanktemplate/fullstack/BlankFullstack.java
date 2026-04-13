@@ -60,7 +60,7 @@ public class BlankFullstack {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList(), "fullstack");
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList(), "fullstack");
 		serve(f, BlankFullstack.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -143,14 +143,14 @@ public class BlankFullstack {
 		});
 		backend = ScopedValue.where(INSTANCE, this).call(() -> {
 			var f = new DefaultDiFactory(
-					Arrays.stream(diBackendPackages()).flatMap(x -> Java.getPackageTypes(x, false)).toList(),
+					Arrays.stream(diBackendPackages()).flatMap(x -> Java.getPackageTypes(x)).toList(),
 					"backend");
 			return f.newInstance(f.classFor(BlankBackend.class),
 					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
 		});
 		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
 			var f = new DefaultDiFactory(
-					Arrays.stream(diFrontendPackages()).flatMap(x -> Java.getPackageTypes(x, false)).toList(),
+					Arrays.stream(diFrontendPackages()).flatMap(x -> Java.getPackageTypes(x)).toList(),
 					"frontend");
 			return f.newInstance(f.classFor(BlankFrontend.class),
 					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));

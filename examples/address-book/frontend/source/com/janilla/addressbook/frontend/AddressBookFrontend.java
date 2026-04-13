@@ -35,8 +35,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
-import com.janilla.frontend.DefaultIndexFactory;
 import com.janilla.frontend.IndexFactory;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpHandler;
@@ -54,12 +54,16 @@ import com.janilla.web.ResourceMap;
 
 public class AddressBookFrontend {
 
-	public static final String[] DI_PACKAGES = { "com.janilla", "com.janilla.addressbook.frontend" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.addressbook")),
+				Java.getPackageTypes("com.janilla.addressbook.frontend"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, true)).toList());
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -103,6 +107,7 @@ public class AddressBookFrontend {
 
 	public AddressBookFrontend(DiFactory diFactory, Path configurationFile) {
 //		IO.println("AddressBookFrontend, configurationFile=" + configurationFile);
+		
 		this.diFactory = diFactory;
 		diFactory.context(this);
 
@@ -116,7 +121,7 @@ public class AddressBookFrontend {
 						Java.getPackagePaths("com.janilla.frontend", false).filter(Files::isRegularFile).toList(), "",
 						Java.getPackagePaths("com.janilla.addressbook.frontend", false).filter(Files::isRegularFile)
 								.toList())));
-		indexFactory = diFactory.newInstance(diFactory.classFor(DefaultIndexFactory.class));
+		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
 
 		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
 				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))

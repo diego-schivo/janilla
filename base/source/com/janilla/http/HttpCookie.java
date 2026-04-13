@@ -41,6 +41,7 @@ public record HttpCookie(String name, String value, String domain, ZonedDateTime
 	}
 
 	public static HttpCookie parse(String string) {
+//		IO.println("HttpCookie.parse, string=" + string);
 		var i = 0;
 		String n = null;
 		String v = null;
@@ -92,7 +93,9 @@ public record HttpCookie(String name, String value, String domain, ZonedDateTime
 				}
 			i++;
 		}
-		return new HttpCookie(n, v, d, e, ho, ma, p1, p2, ss, s);
+		var c = new HttpCookie(n, v, d, e, ho, ma, p1, p2, ss, s);
+//		IO.println("HttpCookie.parse, c=" + c);
+		return c;
 	}
 
 	public HttpCookie withDomain(String domain) {

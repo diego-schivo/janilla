@@ -53,7 +53,7 @@ import java.util.List;
 
 import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.CrudObserver;
-import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.cms.Document;
@@ -62,7 +62,7 @@ import com.janilla.cms.Versions;
 import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 
-public class CmsPersistence extends Persistence {
+public class CmsPersistence extends DefaultPersistence {
 
 	protected static final DocumentObserver<?> DOCUMENT_OBSERVER = new DocumentObserver<>();
 
@@ -74,8 +74,6 @@ public class CmsPersistence extends Persistence {
 
 	@Override
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-//		if (!Modifier.isInterface(type.getModifiers()) && !Modifier.isAbstract(type.getModifiers())
-//				&& type.isAnnotationPresent(Store.class)) {
 		@SuppressWarnings("unchecked")
 		var t = (Class<? extends Document<?>>) type;
 		@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -84,8 +82,6 @@ public class CmsPersistence extends Persistence {
 		var o = (CrudObserver<E>) DOCUMENT_OBSERVER;
 		c.observers().add(o);
 		return c;
-//		}
-//		return null;
 	}
 
 	@Override

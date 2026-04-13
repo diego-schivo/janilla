@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import com.janilla.frontend.IndexFactory;
 import com.janilla.http.HttpClient;
@@ -51,14 +52,16 @@ import com.janilla.web.ResourceMap;
 
 public class AcmeDashboardFrontend {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.http", "com.janilla.web",
-			"com.janilla.acmedashboard.frontend" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.acmedashboard")),
+				Java.getPackageTypes("com.janilla.acmedashboard.frontend"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -101,10 +104,14 @@ public class AcmeDashboardFrontend {
 	protected final ResourceMap resourceMap;
 
 	public AcmeDashboardFrontend(DiFactory diFactory, Path configurationFile) {
+//		IO.println("AcmeDashboardFrontend, configurationFile=" + configurationFile);
+
 		this.diFactory = diFactory;
 		diFactory.context(this);
+
 		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
 				Collections.singletonMap("path", configurationFile));
+		IO.println("AcmeDashboardFrontend, configuration=" + configuration);
 
 		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
 //				Map.of("sslContext", sslContext(configuration)));

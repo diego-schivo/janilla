@@ -48,7 +48,7 @@ public class JanillaBackend extends WebsiteBackend {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
 		serve(f, JanillaBackend.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -82,7 +82,7 @@ public class JanillaBackend extends WebsiteBackend {
 					var pp = (String[]) c.getDeclaredField("DI_PACKAGES").get(null);
 //					IO.println("JanillaBackend.application, c=" + c + ", pp=" + Arrays.toString(pp));
 					var f = new DefaultDiFactory(
-							Arrays.stream(pp).flatMap(x -> Java.getPackageTypes(x, false)).toList());
+							Arrays.stream(pp).flatMap(x -> Java.getPackageTypes(x)).toList());
 					var cf = configurationFile != null ? configurationFile
 							: Path.of(JanillaBackend.class.getResource("configuration.properties").toURI());
 					return f.newInstance(c, Java.hashMap("diFactory", f, "configurationFile", cf));

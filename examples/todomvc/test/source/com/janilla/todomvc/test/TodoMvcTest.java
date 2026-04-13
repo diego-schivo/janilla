@@ -108,7 +108,7 @@ public class TodoMvcTest {
 
 		{
 			var f = new DefaultDiFactory(Arrays.stream(TodoMvcFrontend.DI_PACKAGES)
-					.flatMap(x -> Java.getPackageTypes(x, false)).toList());
+					.flatMap(x -> Java.getPackageTypes(x)).toList());
 			frontend = diFactory.newInstance(diFactory.classFor(TodoMvcFrontend.class),
 					Java.hashMap("diFactory", f, "configurationFile", configurationFile));
 		}

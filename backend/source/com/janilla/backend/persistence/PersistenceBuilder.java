@@ -51,7 +51,7 @@ public class PersistenceBuilder {
 //			TypeResolver typeResolver,
 			Converter converter) {
 		var d = createDatabase();
-		return new Persistence(d, storables, converter);
+		return new DefaultPersistence(d, storables, converter);
 	}
 
 	public Persistence build(DiFactory diFactory) {

@@ -71,8 +71,7 @@ public class BlankBackend {
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
+		var f = new DefaultDiFactory(Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
 		serve(f, BlankBackend.class, args.length > 0 ? args[0] : null);
 	}
 

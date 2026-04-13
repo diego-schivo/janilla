@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -89,11 +90,11 @@ public final class Java {
 	}
 
 	public static Stream<Class<?>> getPackageTypes(String package1) {
-		return getPackageTypes(package1, false);
+		return getPackageTypes(package1, null);
 	}
 
-	public static Stream<Class<?>> getPackageTypes(String package1, boolean recursive) {
-//		IO.println("Java.getPackageTypes, package1=" + package1 + ", recursive=" + recursive);
+	public static Stream<Class<?>> getPackageTypes(String package1, Predicate<String> recursive) {
+//		IO.println("Java.getPackageTypes, package1=" + package1);
 		class A {
 			private static final Map<String, List<Class<?>>> RESULTS = new ConcurrentHashMap<>();
 		}
@@ -123,8 +124,10 @@ public final class Java {
 //			IO.println("Java.getPackageTypes, l=" + l);
 			return l;
 		});
-		return recursive ? Stream.concat(tt.stream(), pp.stream().filter(Java::isDirectory)
-				.flatMap(x -> getPackageTypes(package1 + '.' + x.getFileName(), true))) : tt.stream();
+		return recursive != null ? Stream.concat(tt.stream(), pp.stream().filter(Java::isDirectory).flatMap(x -> {
+			var p = package1 + '.' + x.getFileName();
+			return recursive.test(p) ? getPackageTypes(p, recursive) : Stream.empty();
+		})) : tt.stream();
 	}
 
 	public static Stream<Path> getPackagePaths(String package1) {

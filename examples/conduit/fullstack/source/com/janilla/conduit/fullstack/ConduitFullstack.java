@@ -49,7 +49,7 @@ public class ConduitFullstack {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList(), "fullstack");
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList(), "fullstack");
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -122,7 +122,7 @@ public class ConduitFullstack {
 												Stream.of("backend", "fullstack")
 														.map(x -> ConduitBackend.class.getPackageName()
 																.replace(".backend", "." + x)))
-										.flatMap(x -> Java.getPackageTypes(x, false)).toList(), "backend"),
+										.flatMap(x -> Java.getPackageTypes(x)).toList(), "backend"),
 								"configurationFile", cf));
 		frontend = diFactory
 				.newInstance(ConduitFrontend.class,
@@ -132,7 +132,7 @@ public class ConduitFullstack {
 												Stream.of("frontend", "fullstack")
 														.map(x -> ConduitFrontend.class.getPackageName()
 																.replace(".frontend", "." + x)))
-										.flatMap(x -> Java.getPackageTypes(x, false)).toList(), "frontend"),
+										.flatMap(x -> Java.getPackageTypes(x)).toList(), "frontend"),
 								"configurationFile", cf));
 
 		handler = x -> {

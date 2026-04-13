@@ -49,20 +49,23 @@ class HttpExchangeImpl extends SimpleHttpExchange {
 		super(request, response);
 		this.configuration = configuration;
 		this.diFactory = diFactory;
+//		IO.println("HttpExchangeImpl, configuration=" + configuration);
 	}
 
 	public String getSessionEmail() {
 		if (!session.containsKey("email")) {
 			var c = request().getHeaderValues("cookie").map(HttpCookie::parse).filter(x -> x.name().equals("session"))
 					.findFirst().orElse(null);
-//			IO.println("CustomHttpExchange.getSessionEmail, c=" + c);
+//			IO.println("HttpExchangeImpl.getSessionEmail, c=" + c);
 			Map<String, ?> p;
 			try {
-				p = c != null ? Jwt.verifyToken(c.value(), configuration.getProperty("acme-dashboard.jwt.key")) : null;
+				p = c != null && c.value() != null
+						? Jwt.verifyToken(c.value(), configuration.getProperty("acme-dashboard.jwt.key"))
+						: null;
 			} catch (IllegalArgumentException e) {
 				p = null;
 			}
-//			IO.println("CustomHttpExchange.getSessionEmail, p=" + p);
+//			IO.println("HttpExchangeImpl.getSessionEmail, p=" + p);
 			session.put("email", p != null ? p.get("loggedInAs") : null);
 		}
 		return (String) session.get("email");

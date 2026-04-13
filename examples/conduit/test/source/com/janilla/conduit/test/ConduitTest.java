@@ -59,7 +59,7 @@ public class ConduitTest {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
+				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -123,7 +123,7 @@ public class ConduitTest {
 
 		{
 			var f = new DefaultDiFactory(Arrays.stream(ConduitFullstack.DI_PACKAGES)
-					.flatMap(x -> Java.getPackageTypes(x, false)).toList(), "fullstack");
+					.flatMap(x -> Java.getPackageTypes(x)).toList(), "fullstack");
 			fullstack = diFactory.newInstance(diFactory.classFor(ConduitFullstack.class),
 					Java.hashMap("diFactory", f, "configurationFile", configurationFile));
 		}

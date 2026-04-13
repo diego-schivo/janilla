@@ -53,12 +53,15 @@ import com.janilla.web.ResourceMap;
 
 public class AcmeDashboardTest {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.web", "com.janilla.acmedashboard.test" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.acmedashboard")),
+				Java.getPackageTypes("com.janilla.acmedashboard.test"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -71,25 +74,6 @@ public class AcmeDashboardTest {
 									? System.getProperty("user.home") + configurationPath.substring(1)
 									: configurationPath) : null));
 		}
-
-//		SSLContext c;
-//		{
-//			var p = a.configuration.getProperty("acme-dashboard.server.keystore.path");
-//			if (p != null) {
-//				var w = a.configuration.getProperty("acme-dashboard.server.keystore.password");
-//				if (p.startsWith("~"))
-//					p = System.getProperty("user.home") + p.substring(1);
-//				var f = Path.of(p);
-//				if (!Files.exists(f))
-//					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
-//				try (var s = Files.newInputStream(f)) {
-//					c = Java.sslContext(s, w.toCharArray());
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
-//			} else
-//				c = DefaultHttpClient.sslContext("TLSv1.3");
-//		}
 
 		HttpServer s;
 		{
@@ -117,12 +101,12 @@ public class AcmeDashboardTest {
 	public AcmeDashboardTest(DiFactory diFactory, Path configurationFile) {
 		this.diFactory = diFactory;
 		diFactory.context(this);
+
 		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
 				Collections.singletonMap("path", configurationFile));
 
 		{
-			var f = new DefaultDiFactory(Arrays.stream(AcmeDashboardFullstack.DI_PACKAGES)
-					.flatMap(x -> Java.getPackageTypes(x, false)).toList(), "fullstack");
+			var f = new DefaultDiFactory(AcmeDashboardFullstack.diTypes().toList(), "fullstack");
 			fullstack = diFactory.newInstance(diFactory.classFor(AcmeDashboardFullstack.class),
 					Java.hashMap("diFactory", f, "configurationFile", configurationFile));
 		}

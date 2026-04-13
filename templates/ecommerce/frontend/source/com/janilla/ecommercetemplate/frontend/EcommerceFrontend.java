@@ -51,7 +51,7 @@ public class EcommerceFrontend extends WebsiteFrontend {
 			EcommerceFrontend a;
 			{
 				var f = new DefaultDiFactory(
-						Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList());
+						Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
 				a = f.newInstance(f.classFor(EcommerceFrontend.class),
 						Java.hashMap("diFactory", f, "configurationFile",
 								args.length > 0 ? Path.of(

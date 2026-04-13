@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import com.janilla.java.JavaInvoke;
@@ -82,18 +83,27 @@ public class DefaultDiFactory implements DiFactory {
 	@SuppressWarnings("unchecked")
 	public <T, U extends T> Class<U> classFor(Class<T> type) {
 //		IO.println("DefaultDiFactory.classFor, type=" + type);
-		var c = (Class<U>) classes.computeIfAbsent(type,
-				_ -> Stream.concat(Stream.of(type), types.stream())
-						.filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())
-								|| (x.isMemberClass() && !Modifier.isStatic(x.getModifiers()))))
-						.filter(type::isAssignableFrom).filter(x -> {
-							var a = x.getAnnotation(Context.class);
-							var nn = a != null ? a.value() : null;
-							return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
-						}).reduce((_, x) -> x))
+		var c = (Class<U>) classes
+				.computeIfAbsent(type,
+						_ -> Stream.concat(Stream.of(type), types.stream()).filter(predicate(type)).reduce((_, x) -> x))
 				.orElse(null);
 //		IO.println("DefaultDiFactory.classFor, c=" + c);
 		return c;
+	}
+
+	protected Predicate<Class<?>> predicate(Class<?> type) {
+		Predicate<Class<?>> p = x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())
+				|| (x.isMemberClass() && !Modifier.isStatic(x.getModifiers())));
+		p = p.and(type::isAssignableFrom);
+
+		if (name != null)
+			p = p.and(x -> {
+				var a = x.getAnnotation(Context.class);
+				var nn = a != null ? a.value() : null;
+				return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
+			});
+
+		return p;
 	}
 
 	@Override

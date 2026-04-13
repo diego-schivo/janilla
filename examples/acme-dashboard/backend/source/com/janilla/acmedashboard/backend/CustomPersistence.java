@@ -27,13 +27,13 @@ package com.janilla.acmedashboard.backend;
 import java.util.List;
 
 import com.janilla.backend.persistence.Crud;
-import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 
-class CustomPersistence extends Persistence {
+class CustomPersistence extends DefaultPersistence {
 
 	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 //			TypeResolver typeResolver,

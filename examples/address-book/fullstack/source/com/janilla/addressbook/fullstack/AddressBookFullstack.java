@@ -29,7 +29,6 @@ package com.janilla.addressbook.fullstack;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -45,15 +44,18 @@ import com.janilla.java.Java;
 
 public class AddressBookFullstack {
 
-	public static final String[] DI_PACKAGES = { "com.janilla", "com.janilla.addressbook.fullstack" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.addressbook")),
+				Java.getPackageTypes("com.janilla.addressbook.fullstack"));
+	};
 
 	public static final ScopedValue<AddressBookFullstack> INSTANCE = ScopedValue.newInstance();
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, true)).toList(),
-				"fullstack");
+		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -109,18 +111,16 @@ public class AddressBookFullstack {
 
 		backend = ScopedValue.where(INSTANCE, this).call(() -> {
 			var f = new DefaultDiFactory(Stream
-					.concat(Arrays.stream(AddressBookBackend.DI_PACKAGES),
-							Stream.of("com.janilla.addressbook.fullstack"))
-					.flatMap(x -> Java.getPackageTypes(x, true)).toList(), "backend");
+					.concat(AddressBookBackend.diTypes(), Java.getPackageTypes("com.janilla.addressbook.fullstack"))
+					.toList(), "backend");
 			return diFactory.newInstance(diFactory.classFor(AddressBookBackend.class),
 					Java.hashMap("diFactory", f, "configurationFile", cf));
 		});
 
 		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
 			var f = new DefaultDiFactory(Stream
-					.concat(Arrays.stream(AddressBookFrontend.DI_PACKAGES),
-							Stream.of("com.janilla.addressbook.fullstack"))
-					.flatMap(x -> Java.getPackageTypes(x, true)).toList(), "frontend");
+					.concat(AddressBookFrontend.diTypes(), Java.getPackageTypes("com.janilla.addressbook.fullstack"))
+					.toList(), "frontend");
 			return diFactory.newInstance(diFactory.classFor(AddressBookFrontend.class),
 					Java.hashMap("diFactory", f, "configurationFile", cf));
 		});

@@ -45,16 +45,16 @@ class CustomPersistenceBuilder extends PersistenceBuilder {
 	@Override
 	public Persistence build(DiFactory diFactory) {
 		var e = Files.exists(databaseFile);
-		var x = super.build(diFactory);
+		var p = super.build(diFactory);
 		if (!e) {
 			var d = SeedData.read();
 //			IO.println("CustomPersistenceBuilder.build, d=" + d);
 			for (var c : d.contacts()) {
 				c = c.withId(Stream.of(c.first(), c.last()).map(y -> y.toLowerCase().replace(' ', '_'))
 						.collect(Collectors.joining("-"))).withCreatedAt(Instant.now());
-				x.crud(Contact.class).create(c);
+				p.crud(Contact.class).create(c);
 			}
 		}
-		return x;
+		return p;
 	}
 }

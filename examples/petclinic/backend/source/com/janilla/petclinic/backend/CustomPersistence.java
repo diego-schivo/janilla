@@ -18,7 +18,7 @@ package com.janilla.petclinic.backend;
 import java.util.List;
 
 import com.janilla.backend.persistence.Crud;
-import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
@@ -28,7 +28,7 @@ import com.janilla.petclinic.Vet;
 /**
  * @author Diego Schivo
  */
-class CustomPersistence extends Persistence {
+class CustomPersistence extends DefaultPersistence {
 
 	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, Converter converter) {
 		super(database, storables, converter);

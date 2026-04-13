@@ -60,7 +60,9 @@ class HttpExchangeImpl extends SimpleHttpExchange {
 //			IO.println("CustomHttpExchange.getSessionEmail, c=" + c);
 			Map<String, ?> p;
 			try {
-				p = c != null ? Jwt.verifyToken(c.value(), configuration.getProperty("acme-dashboard.jwt.key")) : null;
+				p = c != null && c.value() != null
+						? Jwt.verifyToken(c.value(), configuration.getProperty("acme-dashboard.jwt.key"))
+						: null;
 			} catch (IllegalArgumentException e) {
 				p = null;
 			}

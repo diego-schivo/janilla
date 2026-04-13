@@ -27,7 +27,6 @@ package com.janilla.acmedashboard.fullstack;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -43,16 +42,18 @@ import com.janilla.java.Java;
 
 public class AcmeDashboardFullstack {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.http", "com.janilla.web",
-			"com.janilla.acmedashboard.fullstack" };
-
 	public static final ScopedValue<AcmeDashboardFullstack> INSTANCE = ScopedValue.newInstance();
+
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.acmedashboard")),
+				Java.getPackageTypes("com.janilla.acmedashboard.fullstack"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, false)).toList(), "fullstack");
+		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -103,18 +104,15 @@ public class AcmeDashboardFullstack {
 
 		backend = ScopedValue.where(INSTANCE, this).call(() -> {
 			var f = new DefaultDiFactory(Stream
-					.concat(Arrays.stream(AcmeDashboardBackend.DI_PACKAGES),
-							Stream.of("com.janilla.acmedashboard.fullstack"))
-					.flatMap(x -> Java.getPackageTypes(x)).toList(), "backend");
+					.concat(AcmeDashboardBackend.diTypes(), Java.getPackageTypes("com.janilla.acmedashboard.fullstack"))
+					.toList(), "backend");
 			return diFactory.newInstance(diFactory.classFor(AcmeDashboardBackend.class),
 					Java.hashMap("diFactory", f, "configurationFile", cf));
 		});
 
 		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
-			var f = new DefaultDiFactory(Stream
-					.concat(Arrays.stream(AcmeDashboardFrontend.DI_PACKAGES),
-							Stream.of("com.janilla.acmedashboard.fullstack"))
-					.flatMap(x -> Java.getPackageTypes(x)).toList(), "frontend");
+			var f = new DefaultDiFactory(Stream.concat(AcmeDashboardFrontend.diTypes(),
+					Java.getPackageTypes("com.janilla.acmedashboard.fullstack")).toList(), "frontend");
 			return diFactory.newInstance(diFactory.classFor(AcmeDashboardFrontend.class),
 					Java.hashMap("diFactory", f, "configurationFile", cf));
 		});

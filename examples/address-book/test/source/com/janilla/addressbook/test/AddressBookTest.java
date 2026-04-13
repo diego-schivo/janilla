@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.janilla.addressbook.frontend.AddressBookFrontend;
 import com.janilla.addressbook.fullstack.AddressBookFullstack;
 import com.janilla.frontend.Index;
 import com.janilla.frontend.IndexFactory;
@@ -58,14 +57,16 @@ import com.janilla.web.ResourceMap;
 
 public class AddressBookTest {
 
-	public static final String[] DI_PACKAGES = Stream
-			.concat(Arrays.stream(AddressBookFrontend.DI_PACKAGES), Stream.of("com.janilla.addressbook.test"))
-			.toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.addressbook")),
+				Java.getPackageTypes("com.janilla.addressbook.test"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, true)).toList());
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -113,8 +114,7 @@ public class AddressBookTest {
 				Collections.singletonMap("path", configurationFile));
 
 		{
-			var f = new DefaultDiFactory(Arrays.stream(AddressBookFullstack.DI_PACKAGES)
-					.flatMap(x -> Java.getPackageTypes(x, true)).toList(), "fullstack");
+			var f = new DefaultDiFactory(AddressBookFullstack.diTypes().toList(), "fullstack");
 			fullstack = diFactory.newInstance(diFactory.classFor(AddressBookFullstack.class),
 					Java.hashMap("diFactory", f, "configurationFile", configurationFile));
 		}

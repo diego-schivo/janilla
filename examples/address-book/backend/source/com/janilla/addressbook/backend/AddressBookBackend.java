@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
@@ -58,12 +59,16 @@ import com.janilla.web.NotFoundException;
 
 public class AddressBookBackend {
 
-	public static final String[] DI_PACKAGES = { "com.janilla", "com.janilla.addressbook.backend" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.addressbook")),
+				Java.getPackageTypes("com.janilla.addressbook.backend"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x, true)).toList());
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -106,6 +111,8 @@ public class AddressBookBackend {
 	protected final TypeResolver typeResolver;
 
 	public AddressBookBackend(DiFactory diFactory, Path configurationFile) {
+//		IO.println("AddressBookBackend, configurationFile=" + configurationFile);
+		
 		this.diFactory = diFactory;
 		diFactory.context(this);
 
