@@ -29,7 +29,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import com.janilla.java.Configuration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,8 +36,9 @@ import java.util.stream.Stream;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 
-public class CustomPersistenceBuilder extends PersistenceBuilder {
+class CustomPersistenceBuilder extends PersistenceBuilder {
 
 	protected final Configuration configuration;
 

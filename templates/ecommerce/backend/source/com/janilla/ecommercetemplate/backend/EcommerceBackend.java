@@ -24,61 +24,32 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
-import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import javax.net.ssl.SSLContext;
-
 import com.janilla.ecommercetemplate.Country;
 import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.Title;
-import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
-import com.janilla.net.AbstractServer;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
 
 public class EcommerceBackend extends WebsiteBackend {
 
-	public static final String[] DI_PACKAGES = Stream
-			.concat(Arrays.stream(WebsiteBackend.DI_PACKAGES),
-					Stream.of("com.janilla.ecommercetemplate", "com.janilla.ecommercetemplate.backend"))
-			.toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream.of(WebsiteBackend.diTypes(), Java.getPackageTypes("com.janilla.ecommercetemplate"),
+				Java.getPackageTypes("com.janilla.ecommercetemplate.backend")).flatMap(x -> x);
+	};
 
 	public static void main(String[] args) {
-		try {
-			EcommerceBackend a;
-			{
-				var f = new DefaultDiFactory(
-						Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
-				a = f.newInstance(f.classFor(EcommerceBackend.class),
-						Java.hashMap("diFactory", f, "configurationFile",
-								args.length > 0 ? Path.of(
-										args[0].startsWith("~") ? System.getProperty("user.home") + args[0].substring(1)
-												: args[0])
-										: null));
-			}
+		IO.println(ProcessHandle.current().pid());
 
-			HttpServer s;
-			{
-				SSLContext c;
-				try (var x = AbstractServer.class.getResourceAsStream("localhost")) {
-					c = Java.sslContext(x, "passphrase".toCharArray());
-				}
-				var p = Integer.parseInt(a.configuration.getProperty(a.configurationKey + ".server.port"));
-				s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-						Map.of("sslContext", c, "endpoint", new InetSocketAddress(p), "handler", a.handler));
-			}
-			s.serve();
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
+		var f = new DefaultDiFactory(diTypes().toList());
+		serve(f, EcommerceBackend.class, args.length > 0 ? args[0] : null);
 	}
 
 	public EcommerceBackend(DiFactory diFactory, Path configurationFile) {
@@ -96,8 +67,6 @@ public class EcommerceBackend extends WebsiteBackend {
 
 	@Handle(method = "GET", path = "/api/enums")
 	public Map<String, List<String>> enums() {
-//		return Stream.of(Title.class, Country.class).collect(Collectors.toMap(x -> x.getSimpleName(),
-//				x -> Arrays.stream(x.getEnumConstants()).map(Enum::name).toList()));
 		var cc = ((EcommerceDomain) domain);
 		return Map.of(Title.class.getSimpleName(), cc.titles().map(x -> x.name()).toList(),
 				Country.class.getSimpleName(), cc.countries().map(x -> x.name()).toList());

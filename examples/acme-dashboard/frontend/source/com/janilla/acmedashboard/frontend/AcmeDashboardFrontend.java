@@ -24,162 +24,58 @@
  */
 package com.janilla.acmedashboard.frontend;
 
-import java.lang.reflect.Modifier;
-import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.IndexFactory;
+import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Java;
-import com.janilla.web.ApplicationHandlerFactory;
-import com.janilla.web.Invocable;
 import com.janilla.web.InvocationResolver;
-import com.janilla.web.NotFoundException;
-import com.janilla.web.RenderableFactory;
-import com.janilla.web.ResourceMap;
 
-public class AcmeDashboardFrontend {
+public class AcmeDashboardFrontend extends AbstractFrontend {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(
-				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.acmedashboard")),
-				Java.getPackageTypes("com.janilla.acmedashboard.frontend"));
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
+				Java.getPackageTypes("com.janilla.frontend", _ -> true),
+				Java.getPackageTypes("com.janilla.acmedashboard.frontend")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		serve(f, args.length > 0 ? args[0] : null, "acme-dashboard");
 	}
 
-	protected static void serve(DiFactory diFactory, String configurationPath) {
-		AcmeDashboardFrontend a;
-		{
-			var cf = configurationPath != null ? Path.of(
-					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-							: configurationPath)
-					: null;
-			a = diFactory.newInstance(diFactory.classFor(AcmeDashboardFrontend.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-		}
+	protected Fetcher fetcher;
 
-		HttpServer s;
-		{
-			var p = Integer.parseInt(a.configuration.getProperty("acme-dashboard.server.port"));
-			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
-		}
-		s.serve();
-	}
+	protected HttpClient httpClient;
 
-	protected final Configuration configuration;
-
-	protected final Fetcher fetcher;
-
-	protected final DiFactory diFactory;
-
-	protected final HttpHandler handler;
-
-	protected final HttpClient httpClient;
-
-	protected final IndexFactory indexFactory;
-
-	protected final InvocationResolver invocationResolver;
-
-	protected final RenderableFactory renderableFactory;
-
-	protected final ResourceMap resourceMap;
-
-	public AcmeDashboardFrontend(DiFactory diFactory, Path configurationFile) {
-//		IO.println("AcmeDashboardFrontend, configurationFile=" + configurationFile);
-
-		this.diFactory = diFactory;
-		diFactory.context(this);
-
-		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-				Collections.singletonMap("path", configurationFile));
-		IO.println("AcmeDashboardFrontend, configuration=" + configuration);
-
-		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
-//				Map.of("sslContext", sslContext(configuration)));
-		fetcher = diFactory.newInstance(diFactory.classFor(Fetcher.class));
-		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths",
-				Map.of("/base",
-						Java.getPackagePaths("com.janilla.frontend", false).filter(Files::isRegularFile).toList(), "",
-						Java.getPackagePaths(AcmeDashboardFrontend.class.getPackageName(), false)
-								.filter(Files::isRegularFile).toList())));
-		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
-
-		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
-				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
-						.flatMap(x -> Arrays.stream(x.getMethods())
-								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-								.map(y -> new Invocable(x, y)))
-						.toList(),
-				"instanceResolver", (Function<Class<?>, Object>) x -> {
-					var y = diFactory.context();
-//							IO.println("x=" + x + ", y=" + y);
-					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-							: diFactory.newInstance(diFactory.classFor(x));
-				}));
-		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
-		{
-			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
-			handler = x -> {
-				var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));
-				if (h == null)
-					throw new NotFoundException(x.request().getMethod() + " " + x.request().getTarget());
-				return h.handle(x);
-			};
-		}
-	}
-
-	public Configuration configuration() {
-		return configuration;
+	public AcmeDashboardFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
+		super(diFactory, configurationFile, configurationKey);
 	}
 
 	public Fetcher fetcher() {
 		return fetcher;
 	}
 
-	public DiFactory diFactory() {
-		return diFactory;
-	}
-
-	public HttpHandler handler() {
-		return handler;
-	}
-
 	public HttpClient httpClient() {
 		return httpClient;
 	}
 
-	public IndexFactory indexFactory() {
-		return indexFactory;
+	@Override
+	protected InvocationResolver newInvocationResolver() {
+		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
+		fetcher = diFactory.newInstance(diFactory.classFor(Fetcher.class));
+		return super.newInvocationResolver();
 	}
 
-	public InvocationResolver invocationResolver() {
-		return invocationResolver;
-	}
-
-	public RenderableFactory renderableFactory() {
-		return renderableFactory;
-	}
-
-	public ResourceMap resourceMap() {
-		return resourceMap;
+	@Override
+	protected void putResourcePrefixes(Map<String, String> prefixes) {
+		super.putResourcePrefixes(prefixes);
+		prefixes.put("com.janilla.acmedashboard.frontend", "");
 	}
 }

@@ -80,6 +80,8 @@ public class DefaultHttpClient implements HttpClient {
 		try (var ch = SocketChannel.open()) {
 			{
 				var a = request.getHeaderValue(":authority");
+				if (a == null)
+					a = request.getHeaderValue("Host");
 				var i = a.indexOf(':');
 				var h = i != -1 ? a.substring(0, i) : a;
 				var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : 443;
@@ -187,7 +189,8 @@ public class DefaultHttpClient implements HttpClient {
 				t2 = null;
 
 				var ll = new ArrayList<String>();
-				ll.add(request.getMethod() + " " + request.getTarget() + " HTTP/1.1");
+				ll.add(request.getHeaderValue(":method") + " " + request.getHeaderValue(":path") + " HTTP/1.1");
+				request.setHeaderValue("Host", request.getHeaderValue(":authority"));
 				for (var h : request.getHeaders())
 					if (!h.name().startsWith(":"))
 						ll.add(h.toLine());
@@ -246,7 +249,7 @@ public class DefaultHttpClient implements HttpClient {
 					for (var l : ll) {
 						if (i == 0) {
 							var ss = l.split(" ", 3);
-							rs.setStatus(Integer.parseInt(ss[1].trim()));
+							rs.setHeaderValue(":status", ss[1].trim());
 						} else
 							rs.setHeader(HeaderField.fromLine(l));
 						i++;

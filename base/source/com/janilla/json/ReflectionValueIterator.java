@@ -24,6 +24,7 @@
  */
 package com.janilla.json;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -86,7 +87,8 @@ public class ReflectionValueIterator extends ValueIterator {
 
 	@Override
 	protected String toString(Class<?> type) {
+		var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
 		var r = ((ReflectionJsonIterator) context).typeResolver;
-		return r != null ? r.format(type) : super.toString(type);
+		return r != null ? r.format(t) : super.toString(t);
 	}
 }

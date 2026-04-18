@@ -22,18 +22,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.blanktemplate.frontend;
+package com.janilla.websitetemplate.test;
 
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Path;
 
-import com.janilla.frontend.App;
-import com.janilla.frontend.Index;
-import com.janilla.frontend.Script;
-import com.janilla.frontend.Template;
-import com.janilla.web.Render;
+import com.janilla.java.AbstractConfiguration;
 
-@Render(template = "index", resource = "/base/index.html")
-record IndexImpl(String title, Map<String, String> imports, List<Script> scripts, App app, List<Template> templates)
-		implements Index {
+class ConfigurationImpl extends AbstractConfiguration {
+
+	private static final long serialVersionUID = 7229681284123223175L;
+
+	public ConfigurationImpl(Path path) {
+		super(WebsiteTest.class, path);
+	}
 }

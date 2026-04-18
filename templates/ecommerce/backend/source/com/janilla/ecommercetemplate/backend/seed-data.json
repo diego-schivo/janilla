@@ -4,10 +4,13 @@
 			"$type": "Address",
 			"id": 1,
 			"customer": {
-				"$type": "UserImpl",
+				"$type": "User",
 				"id": 2
 			},
-			"title": "DR",
+			"title": {
+				"$type": "Title",
+				"name": "DR"
+			},
 			"firstName": "Otto",
 			"lastName": "Octavius",
 			"company": "Oscorp",
@@ -16,17 +19,23 @@
 			"city": "New York",
 			"state": "NY",
 			"postalCode": "10001",
-			"country": "US",
+			"country": {
+				"$type": "Country",
+				"name": "US"
+			},
 			"phone": "1234567890"
 		},
 		{
 			"$type": "Address",
 			"id": 2,
 			"customer": {
-				"$type": "UserImpl",
+				"$type": "User",
 				"id": 2
 			},
-			"title": "MR",
+			"title": {
+				"$type": "Title",
+				"name": "MR"
+			},
 			"firstName": "Oliver",
 			"lastName": "Twist",
 			"company": "",
@@ -58,12 +67,18 @@
 				}
 			],
 			"customer": {
-				"$type": "UserImpl",
+				"$type": "User",
 				"id": 2
 			},
-			"status": "ACTIVE",
+			"status": {
+				"$type": "CartStatus",
+				"name": "ACTIVE"
+			},
 			"subtotal": 49.99,
-			"currency": "USD"
+			"currency": {
+				"$type": "Currency",
+				"name": "USD"
+			}
 		},
 		{
 			"$type": "Cart",
@@ -78,9 +93,15 @@
 					"quantity": 1
 				}
 			],
-			"status": "ABANDONED",
+			"status": {
+				"$type": "CartStatus",
+				"name": "ABANDONED"
+			},
 			"subtotal": 25,
-			"currency": "USD"
+			"currency": {
+				"$type": "Currency",
+				"name": "USD"
+			}
 		},
 		{
 			"$type": "Cart",
@@ -112,12 +133,18 @@
 				}
 			],
 			"customer": {
-				"$type": "UserImpl",
+				"$type": "User",
 				"id": 2
 			},
-			"status": "PURCHASED",
+			"status": {
+				"$type": "CartStatus",
+				"name": "PURCHASED"
+			},
 			"subtotal": 99.98,
-			"currency": "USD"
+			"currency": {
+				"$type": "Currency",
+				"name": "USD"
+			}
 		}
 	],
 	"categories": [
@@ -145,26 +172,38 @@
 		"id": 1,
 		"navItems": [
 			{
-				"$type": "LinkImpl",
-				"type": "CUSTOM",
+				"$type": "Link",
+				"type": {
+				"$type": "LinkType",
+				"name": "CUSTOM"
+			},
 				"uri": "/admin",
 				"text": "Admin"
 			},
 			{
-				"$type": "LinkImpl",
-				"type": "CUSTOM",
+				"$type": "Link",
+				"type": {
+				"$type": "LinkType",
+				"name": "CUSTOM"
+			},
 				"uri": "/find-order",
 				"text": "Find my order"
 			},
 			{
-				"$type": "LinkImpl",
-				"type": "CUSTOM",
+				"$type": "Link",
+				"type": {
+				"$type": "LinkType",
+				"name": "CUSTOM"
+			},
 				"uri": "https://github.com/diego-schivo/ecommerce-template",
 				"text": "Source Code"
 			},
 			{
-				"$type": "LinkImpl",
-				"type": "CUSTOM",
+				"$type": "Link",
+				"type": {
+				"$type": "LinkType",
+				"name": "CUSTOM"
+			},
 				"uri": "https://janilla.com/",
 				"text": "Janilla"
 			}
@@ -175,20 +214,29 @@
 		"id": 1,
 		"navItems": [
 			{
-				"$type": "LinkImpl",
-				"type": "CUSTOM",
+				"$type": "Link",
+				"type": {
+				"$type": "LinkType",
+				"name": "CUSTOM"
+			},
 				"uri": "/",
 				"text": "Home"
 			},
 			{
-				"$type": "LinkImpl",
-				"type": "CUSTOM",
+				"$type": "Link",
+				"type": {
+				"$type": "LinkType",
+				"name": "CUSTOM"
+			},
 				"uri": "/shop",
 				"text": "Shop"
 			},
 			{
-				"$type": "LinkImpl",
-				"type": "CUSTOM",
+				"$type": "Link",
+				"type": {
+				"$type": "LinkType",
+				"name": "CUSTOM"
+			},
 				"uri": "/account",
 				"text": "Account"
 			}
@@ -263,7 +311,10 @@
 				}
 			],
 			"shippingAddress": {
-				"title": "DR",
+				"title": {
+					"$type": "Title",
+					"name": "DR"
+				},
 				"firstName": "Otto",
 				"lastName": "Octavius",
 				"company": "Oscorp",
@@ -272,11 +323,14 @@
 				"city": "New York",
 				"state": "NY",
 				"postalCode": "10001",
-				"country": "US",
+				"country": {
+				"$type": "Country",
+				"name": "US"
+			},
 				"phone": "1234567890"
 			},
 			"customer": {
-				"$type": "UserImpl",
+				"$type": "User",
 				"id": 2
 			},
 			"transactions": [
@@ -285,9 +339,15 @@
 					"id": 2
 				}
 			],
-			"status": "COMPLETED",
+			"status": {
+				"$type": "OrderStatus",
+				"name": "COMPLETED"
+			},
 			"amount": 74.99,
-			"currency": "USD"
+			"currency": {
+				"$type": "Currency",
+				"name": "USD"
+			}
 		},
 		{
 			"id": 2,
@@ -316,7 +376,10 @@
 				}
 			],
 			"shippingAddress": {
-				"title": "DR",
+				"title": {
+					"$type": "Title",
+					"name": "DR"
+				},
 				"firstName": "Otto",
 				"lastName": "Octavius",
 				"company": "Oscorp",
@@ -325,11 +388,14 @@
 				"city": "New York",
 				"state": "NY",
 				"postalCode": "10001",
-				"country": "US",
+				"country": {
+				"$type": "Country",
+				"name": "US"
+			},
 				"phone": "1234567890"
 			},
 			"customer": {
-				"$type": "UserImpl",
+				"$type": "User",
 				"id": 2
 			},
 			"transactions": [
@@ -338,9 +404,15 @@
 					"id": 2
 				}
 			],
-			"status": "PROCESSING",
+			"status": {
+				"$type": "OrderStatus",
+				"name": "PROCESSING"
+			},
 			"amount": 74.99,
-			"currency": "USD"
+			"currency": {
+				"$type": "Currency",
+				"name": "USD"
+			}
 		}
 	],
 	"pages": [
@@ -350,7 +422,10 @@
 			"title": "Home",
 			"hero": {
 				"$type": "Hero",
-				"type": "LOW_IMPACT",
+				"type": {
+					"$type": "HeroType",
+					"name": "LOW_IMPACT"
+				},
 				"richText": "<h1>Janilla Ecommerce Template</h1><p><a href=\"/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla-ecommerce-template\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>"
 			},
 			"layout": [
@@ -359,32 +434,50 @@
 					"columns": [
 						{
 							"$type": "Column",
-							"size": "FULL",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "FULL"
+							},
 							"richText": "<h2>Core features</h2>"
 						},
 						{
 							"$type": "Column",
-							"size": "ONE_THIRD",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
 							"richText": "<h3>Admin Dashboard</h3><p>Manage this site's pages and products from the <a href=\"/admin\">admin dashboard</a>.</p>"
 						},
 						{
 							"$type": "Column",
-							"size": "ONE_THIRD",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
 							"richText": "<h3>Preview</h3><p>Using versions, drafts, and preview, editors can review and share their changes before publishing them.</p>"
 						},
 						{
 							"$type": "Column",
-							"size": "ONE_THIRD",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
 							"richText": "<h3>Page Builder</h3><p>Custom page builder allows you to create unique page, product, and project layouts for any type of content.</p>"
 						},
 						{
 							"$type": "Column",
-							"size": "ONE_THIRD",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
 							"richText": "<h3>SEO</h3><p>Editors have complete control over SEO data and site content directly from the <a href=\"/admin\">admin dashboard</a>.</p>"
 						},
 						{
 							"$type": "Column",
-							"size": "ONE_THIRD",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "ONE_THIRD"
+							},
 							"richText": "<h3>Dark Mode</h3><p>Users will experience this site in their preferred color scheme and each block can be inverted.</p>"
 						}
 					]
@@ -401,11 +494,17 @@
 					"richText": "<h3>This is a call to action</h3><p>This is a custom layout building block <a href=\"/admin\">configured in the admin dashboard</a>.</p>",
 					"links": [
 						{
-							"$type": "LinkImpl",
-							"type": "CUSTOM",
+							"$type": "Link",
+							"type": {
+								"$type": "LinkType",
+								"name": "CUSTOM"
+							},
 							"uri": "/products",
 							"text": "All products",
-							"appearance": "DEFAULT"
+							"appearance": {
+								"$type": "LinkAppearance",
+								"name": "DEFAULT"
+							}
 						}
 					]
 				}
@@ -504,12 +603,18 @@
 					"columns": [
 						{
 							"$type": "Column",
-							"size": "HALF",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "HALF"
+							},
 							"richText": "<ul><li>This is 100% cotton unisex fitted tee with screen printed design. Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document<br /></li><li><ul><li>Product Type: t-shirt</li><li>Material: 100% cotton</li><li>Colour: black</li><li>Style: men (unisex)</li></ul></li></ul>"
 						},
 						{
 							"$type": "Column",
-							"size": "HALF",
+							"size": {
+								"$type": "ColumnSize",
+								"name": "HALF"
+							},
 							"richText": "<p>Size chart</p><div><table><tr><td></td><td><strong>length (IN)</strong></td><td><strong>length (CM)</strong></td><td><strong>chest (IN)</strong></td><td><strong>chest (CM)</strong></td></tr><tr><td>s</td><td>26-28</td><td>66-68</td><td>34-36</td><td>86-91</td></tr><tr><td>m</td><td>27-29</td><td>70-72</td><td>19-21</td><td>50-52</td></tr><tr><td>l</td><td>29-31</td><td>75-77</td><td>21-23</td><td>55-57</td></tr><tr><td>xl</td><td>30-32</td><td>77-79</td><td>23-25</td><td>60-62</td></tr></table></div>"
 						}
 					]
@@ -552,10 +657,17 @@
 	],
 	"transactions": [
 		{
+			"$type": "Transaction",
 			"id": 1,
-			"paymentMethod": "STRIPE",
+			"paymentMethod": {
+				"$type": "PaymentMethod",
+				"name": "STRIPE"
+			},
 			"billingAddress": {
-				"title": "DR",
+				"title": {
+					"$type": "Title",
+					"name": "DR"
+				},
 				"firstName": "Otto",
 				"lastName": "Octavius",
 				"company": "Oscorp",
@@ -564,22 +676,35 @@
 				"city": "New York",
 				"state": "NY",
 				"postalCode": "10001",
-				"country": "US",
+				"country": {
+				"$type": "Country",
+				"name": "US"
+			},
 				"phone": "1234567890"
 			},
-			"status": "PENDING",
+			"status": {
+				"$type": "TransactionStatus",
+				"name": "PENDING"
+			},
 			"customer": {
-				"$type": "UserImpl",
+				"$type": "User",
 				"id": 2
 			},
 			"stripeCustomer": "cus_123",
 			"stripePaymentIntent": "pi_123"
 		},
 		{
+			"$type": "Transaction",
 			"id": 2,
-			"paymentMethod": "STRIPE",
+			"paymentMethod": {
+				"$type": "PaymentMethod",
+				"name": "STRIPE"
+			},
 			"billingAddress": {
-				"title": "DR",
+				"title": {
+					"$type": "Title",
+					"name": "DR"
+				},
 				"firstName": "Otto",
 				"lastName": "Octavius",
 				"company": "Oscorp",
@@ -588,12 +713,18 @@
 				"city": "New York",
 				"state": "NY",
 				"postalCode": "10001",
-				"country": "US",
+				"country": {
+				"$type": "Country",
+				"name": "US"
+			},
 				"phone": "1234567890"
 			},
-			"status": "SUCCEEDED",
+			"status": {
+				"$type": "TransactionStatus",
+				"name": "SUCCEEDED"
+			},
 			"customer": {
-				"$type": "UserImpl",
+				"$type": "User",
 				"id": 2
 			},
 			"stripeCustomer": "cus_123",
@@ -602,7 +733,7 @@
 	],
 	"users": [
 		{
-			"$type": "UserImpl",
+			"$type": "User",
 			"id": 1,
 			"name": "Demo Author",
 			"email": "demo-author@janilla.com",
@@ -610,13 +741,13 @@
 			"hash": "c73c5f4d61cf1f9ef10ec1a0eb7b4d49ddd8ad2bf6815b2b3bf0a07dfb795d1e32eb7a89565bb8f844f85d5cb08b400fe8ea925a1b05f6720453d766a1a6941d",
 			"roles": [
 				{
-					"$type": "UserRoleImpl",
+					"$type": "UserRole",
 					"name": "ADMIN"
 				}
 			]
 		},
 		{
-			"$type": "UserImpl",
+			"$type": "User",
 			"id": 2,
 			"name": "Customer",
 			"email": "customer@example.com",
@@ -624,7 +755,7 @@
 			"hash": "9fd3dc9061b1325907d33f15bee49ed3de5ae11967f7515fa9d6272dc83595776a981bb88fce843d24a1b19fbd37e03bbedbe566477ca5769953e922ab77c90d",
 			"roles": [
 				{
-					"$type": "UserRoleImpl",
+					"$type": "UserRole",
 					"name": "CUSTOMER"
 				}
 			]

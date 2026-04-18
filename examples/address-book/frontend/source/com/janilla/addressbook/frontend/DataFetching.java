@@ -36,7 +36,7 @@ import com.janilla.http.HttpRequest;
 import com.janilla.java.Configuration;
 import com.janilla.java.UriQueryBuilder;
 
-class DataFetching {
+public class DataFetching {
 
 	protected final Configuration configuration;
 

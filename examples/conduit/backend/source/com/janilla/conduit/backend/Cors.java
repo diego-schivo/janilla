@@ -48,7 +48,7 @@ public class Cors {
 		var m = invocationResolver.groups(request.getPath()).flatMap(x -> x.methods().keySet().stream()).toList();
 		var h = configuration.getProperty("conduit.api.cors.headers");
 
-		response.setStatus(204);
+		response.setHeaderValue(":status", "204");
 		response.setHeaderValue("access-control-allow-origin", o);
 		response.setHeaderValue("access-control-allow-methods",
 				m.contains(null) ? "*" : m.stream().collect(Collectors.joining(", ")));

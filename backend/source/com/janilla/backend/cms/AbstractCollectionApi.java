@@ -101,6 +101,8 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	@Override
 	@Handle(method = "GET")
 	public ListPortion<D> read(String search, Boolean reverse, Long skip, Long limit, Integer depth) {
+//		IO.println("AbstractCollectionApi.read, search=" + search + ", reverse=" + reverse + ", skip=" + skip
+//				+ ", limit=" + limit + ", depth=" + depth);
 		var s1 = search != null && !search.isBlank() ? search.strip().toLowerCase() : null;
 		var r = reverse != null && reverse.booleanValue();
 		var s2 = skip != null ? skip.longValue() : 0;
@@ -112,8 +114,8 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	@Override
 	@Handle(method = "PUT", path = "(\\d+)")
 	public D update(ID id, @Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
-//		IO.println("CollectionApi.update, id=" + id + ", document=" + document + ", draft=" + draft + ", autosave="
-//				+ autosave);
+//		IO.println("AbstractCollectionApi.update, id=" + id + ", document=" + document + ", draft=" + draft
+//				+ ", autosave=" + autosave);
 		var s = draft != null && draft.booleanValue() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != document.documentStatus())
 			document = JavaReflect.copy(Map.of("documentStatus", s), document);

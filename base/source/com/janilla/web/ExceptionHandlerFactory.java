@@ -44,7 +44,7 @@ public class ExceptionHandlerFactory implements HttpHandlerFactory {
 		var rs = exchange.response();
 		var s = error != null ? error.code() : 500;
 //		IO.println("ExceptionHandlerFactory.handle, s=" + s);
-		rs.setStatus(s);
+		rs.setHeaderValue(":status", String.valueOf(s));
 		rs.setHeaderValue("cache-control", "no-cache");
 		return true;
 	}

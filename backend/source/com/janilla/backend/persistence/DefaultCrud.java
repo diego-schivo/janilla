@@ -91,7 +91,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@Override
 	public E create(E entity) {
-		IO.println("DefaultCrud.create, entity=" + entity);
+//		IO.println("DefaultCrud.create, entity=" + entity);
 		return persistence.database().perform(() -> {
 			class A {
 				ID i;
@@ -615,19 +615,15 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		}
 
 		@Override
-		protected Iterator<JsonToken<?>> newIterator() {
-			if (value instanceof Class<?> c) {
-//				var t = Modifier.isPublic(c.getModifiers()) ? c : c.getInterfaces()[0];
-				var t = c;
-				return context.newStringIterator(persistence.converter().convert(t, String.class));
-			}
-			return super.newIterator();
-		}
-
-		@Override
 		protected boolean includeEntry(Property property) {
 			return super.includeEntry(property) && DefaultCrud.this.includeEntry(property, this);
 		}
+
+//		@Override
+//		protected String toString(Class<?> type) {
+//			var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
+//			return super.toString(t);
+//		}
 	}
 
 	protected boolean includeEntry(Property property, ReflectionValueIterator valueIterator) {

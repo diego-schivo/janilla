@@ -23,30 +23,17 @@
  */
 package com.janilla.conduit.fullstack;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 
 import com.janilla.ioc.Context;
+import com.janilla.java.AbstractConfiguration;
 
 @Context("fullstack")
-public class ConfigurationImpl extends Properties {
+class ConfigurationImpl extends AbstractConfiguration {
 
-	private static final long serialVersionUID = 3097294114823670340L;
+	private static final long serialVersionUID = 1323905196636594310L;
 
-	public ConfigurationImpl(Path file) {
-		try {
-			try (var x = ConduitFullstack.class.getResourceAsStream("configuration.properties")) {
-				load(x);
-			}
-			if (file != null)
-				try (var x = Files.newInputStream(file)) {
-					load(x);
-				}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+	public ConfigurationImpl(Path path) {
+		super(ConduitFullstack.class, path);
 	}
 }

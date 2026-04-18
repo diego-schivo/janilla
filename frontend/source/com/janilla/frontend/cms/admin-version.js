@@ -94,7 +94,10 @@ export default class AdminVersion extends WebComponent {
                 const a2 = this.closest("admin-element");
                 const j = await (await fetch(`${a2.customState.collectionSlug
                     ? a2.customState.documentUrl.substring(0, a2.customState.documentUrl.lastIndexOf("/"))
-                    : a2.customState.documentUrl}/versions/${a2.customState.version.id}`, { method: "POST" })).json();
+                    : a2.customState.documentUrl}/versions/${a2.customState.version.id}`, {
+					method: "POST",
+					credentials: "include"
+				})).json();
                 a2.currentDocument = j;
                 a2.success("Restored successfully.");
                 a.navigate(`/admin/${a2.customState.pathSegments.slice(0, 3).join("/")}`);

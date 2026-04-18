@@ -32,4 +32,5 @@ module com.janilla.addressbook.fullstack {
 
 	requires transitive com.janilla.addressbook.backend;
 	requires transitive com.janilla.addressbook.frontend;
+	requires transitive com.janilla.fullstack;
 }

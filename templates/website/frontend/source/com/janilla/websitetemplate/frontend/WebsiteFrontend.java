@@ -25,7 +25,6 @@
 package com.janilla.websitetemplate.frontend;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankFrontend;
@@ -35,15 +34,15 @@ import com.janilla.java.Java;
 
 public class WebsiteFrontend extends BlankFrontend {
 
-	public static final String[] DI_PACKAGES = Stream
-			.concat(Arrays.stream(BlankFrontend.DI_PACKAGES),
-					Stream.of("com.janilla.websitetemplate", "com.janilla.websitetemplate.frontend"))
-			.toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream.of(BlankFrontend.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate"),
+				Java.getPackageTypes("com.janilla.websitetemplate.frontend")).flatMap(x -> x);
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, WebsiteFrontend.class, args.length > 0 ? args[0] : null);
 	}
 

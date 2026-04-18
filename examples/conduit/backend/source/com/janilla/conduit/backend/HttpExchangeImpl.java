@@ -21,41 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.conduit.fullstack;
+package com.janilla.conduit.backend;
 
-import java.net.SocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 
-import javax.net.ssl.SSLContext;
-
-import com.janilla.conduit.backend.ConduitBackend;
-import com.janilla.conduit.frontend.ConduitFrontend;
-import com.janilla.http.DefaultHttpServer;
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
+import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.ioc.Context;
+import com.janilla.http.SimpleHttpExchange;
+import com.janilla.java.Configuration;
+import com.janilla.json.Jwt;
 
-@Context("fullstack")
-public class CustomHttpServer extends DefaultHttpServer {
+class HttpExchangeImpl extends SimpleHttpExchange {
 
-	protected final ConduitBackend backend;
+	protected final Configuration configuration;
 
-	protected final ConduitFrontend frontend;
+	protected final Persistence persistence;
 
-	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, ConduitBackend backend,
-			ConduitFrontend frontend) {
-		super(endpoint, sslContext, handler);
-		this.backend = backend;
-		this.frontend = frontend;
+	protected final Map<String, Object> session = new HashMap<>();
+
+	public HttpExchangeImpl(HttpRequest request, HttpResponse response, Configuration configuration,
+			Persistence persistence) {
+		super(request, response);
+		this.configuration = configuration;
+		this.persistence = persistence;
 	}
 
-	@Override
-	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		var f = request.getPath().startsWith("/api/") ? backend.diFactory() : frontend.diFactory();
-		var c = f.classFor(HttpExchange.class);
-		return c != null ? f.newInstance(c, Map.of("request", request, "response", response))
-				: super.createExchange(request, response);
+	public User getUser() {
+		if (!session.containsKey("user")) {
+			var a = request().getHeaderValue("authorization");
+			var t = a != null && a.startsWith("Token ") ? a.substring("Token ".length()) : null;
+			var p = t != null ? Jwt.verifyToken(t, configuration.getProperty("conduit.jwt.key")) : null;
+			var e = p != null ? (String) p.get("loggedInAs") : null;
+			User u;
+			if (e != null) {
+				var c = persistence.crud(User.class);
+				u = c.read(c.find("email", new Object[] { e }));
+			} else
+				u = null;
+			session.put("user", u);
+		}
+		return (User) session.get("user");
 	}
 }

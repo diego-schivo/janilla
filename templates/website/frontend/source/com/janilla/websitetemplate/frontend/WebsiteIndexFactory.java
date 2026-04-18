@@ -26,30 +26,30 @@ package com.janilla.websitetemplate.frontend;
 
 import java.util.List;
 import java.util.Map;
-import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankIndexFactory;
-import com.janilla.frontend.Index;
 import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.http.HttpExchange;
+import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.web.ResourceMap;
 
 public class WebsiteIndexFactory extends BlankIndexFactory {
 
 	public WebsiteIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
-			String configurationKey) {
-		super(resourceMap, dataFetching, configuration, configurationKey);
+			String configurationKey, DiFactory diFactory) {
+		super(resourceMap, dataFetching, configuration, configurationKey, diFactory);
 	}
 
-	@Override
-	public Index newIndex(HttpExchange exchange) {
-		return new IndexImpl(configuration.getProperty(configurationKey + ".title"), imports(), scripts(),
-				new AppImpl(configurationKey, configuration.getProperty(configurationKey + ".api.url"),
-						state(exchange)),
-				templates());
-	}
+//	@Override
+//	public Index newIndex(HttpExchange exchange) {
+//		return new IndexImpl(configuration.getProperty(configurationKey + ".title"), imports(), scripts(),
+//				new AppImpl(configurationKey, configuration.getProperty(configurationKey + ".api.url"),
+//						state(exchange)),
+//				templates());
+//	}
 
 	@Override
 	public Template blankTemplate(String name) {

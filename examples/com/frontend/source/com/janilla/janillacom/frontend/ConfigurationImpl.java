@@ -23,27 +23,15 @@
  */
 package com.janilla.janillacom.frontend;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 
-public class ConfigurationImpl extends Properties {
+import com.janilla.java.AbstractConfiguration;
 
-	private static final long serialVersionUID = -2917310337224210232L;
+class ConfigurationImpl extends AbstractConfiguration {
 
-	public ConfigurationImpl(Path file) {
-		try {
-			try (var x = JanillaFrontend.class.getResourceAsStream("configuration.properties")) {
-				load(x);
-			}
-			if (file != null)
-				try (var x = Files.newInputStream(file)) {
-					load(x);
-				}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+	private static final long serialVersionUID = -1284448939339614612L;
+
+	public ConfigurationImpl(Path path) {
+		super(JanillaFrontend.class, path);
 	}
 }

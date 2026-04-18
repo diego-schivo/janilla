@@ -54,7 +54,7 @@ class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 		if ((rq.getPath() + "/").startsWith("/dashboard/"))
 			ex.requireSessionEmail();
 		else if (!Objects.requireNonNullElse(ex.getSessionEmail(), "").isEmpty()) {
-			rs.setStatus(303);
+			rs.setHeaderValue(":status", "303");
 			rs.setHeaderValue("cache-control", "no-cache");
 			rs.setHeaderValue("location", "/dashboard");
 			return true;

@@ -26,178 +26,30 @@
  */
 package com.janilla.addressbook.backend;
 
-import java.lang.reflect.Modifier;
-import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.backend.persistence.Persistence;
-import com.janilla.backend.persistence.PersistenceBuilder;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpServer;
+import com.janilla.backend.web.AbstractBackend;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
-import com.janilla.java.Converter;
-import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.Java;
-import com.janilla.java.TypeResolver;
-import com.janilla.persistence.Store;
-import com.janilla.web.ApplicationHandlerFactory;
-import com.janilla.web.DefaultInvocationResolver;
-import com.janilla.web.Invocable;
-import com.janilla.web.InvocationResolver;
-import com.janilla.web.NotFoundException;
 
-public class AddressBookBackend {
+public class AddressBookBackend extends AbstractBackend {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(
-				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.addressbook")),
-				Java.getPackageTypes("com.janilla.addressbook.backend"));
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
+				Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.addressbook.backend")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		serve(f, args.length > 0 ? args[0] : null, "address-book");
 	}
 
-	protected static void serve(DiFactory diFactory, String configurationPath) {
-		AddressBookBackend a;
-		{
-			var cf = configurationPath != null ? Path.of(
-					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-							: configurationPath)
-					: null;
-			a = diFactory.newInstance(diFactory.classFor(AddressBookBackend.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-		}
-
-		HttpServer s;
-		{
-			var p = Integer.parseInt(a.configuration.getProperty("address-book.server.port"));
-			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
-		}
-		s.serve();
-	}
-
-	protected final Configuration configuration;
-
-	protected final Converter converter;
-
-	protected final DiFactory diFactory;
-
-	protected final HttpHandler handler;
-
-	protected final InvocationResolver invocationResolver;
-
-	protected final Persistence persistence;
-
-	protected final List<Class<?>> resolvables;
-
-	protected final List<Class<?>> storables;
-
-	protected final TypeResolver typeResolver;
-
-	public AddressBookBackend(DiFactory diFactory, Path configurationFile) {
-//		IO.println("AddressBookBackend, configurationFile=" + configurationFile);
-		
-		this.diFactory = diFactory;
-		diFactory.context(this);
-
-		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-				Collections.singletonMap("path", configurationFile));
-
-		{
-			Map<String, Class<?>> m = diFactory.types().stream()
-					.collect(Collectors.toMap(x -> x.getSimpleName(), x -> x, (_, x) -> x, LinkedHashMap::new));
-			resolvables = m.values().stream().toList();
-		}
-		typeResolver = diFactory.newInstance(diFactory.classFor(DollarTypeResolver.class));
-		converter = diFactory.newInstance(diFactory.classFor(Converter.class));
-
-		storables = resolvables.stream().filter(x -> x.isAnnotationPresent(Store.class)).toList();
-		{
-			var f = configuration.getProperty("address-book.database.file");
-			if (f.startsWith("~"))
-				f = System.getProperty("user.home") + f.substring(1);
-			var b = diFactory.newInstance(diFactory.classFor(PersistenceBuilder.class),
-					Map.of("databaseFile", Path.of(f)));
-			persistence = b.build(diFactory);
-		}
-
-		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
-				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
-						.flatMap(x -> Arrays.stream(x.getMethods())
-								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-								.map(y -> new Invocable(x, y)))
-						.toList(),
-				"instanceResolver", (Function<Class<?>, Object>) x -> {
-					var y = diFactory.context();
-//							IO.println("x=" + x + ", y=" + y);
-					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-							: diFactory.newInstance(diFactory.classFor(x),
-									Map.of("invocationResolver", DefaultInvocationResolver.INSTANCE.get()));
-				}));
-		{
-			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
-			handler = x -> {
-				var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));
-				if (h == null)
-					throw new NotFoundException(x.request().getMethod() + " " + x.request().getTarget());
-				return h.handle(x);
-			};
-		}
-	}
-
-	public AddressBookBackend application() {
-		return this;
-	}
-
-	public Configuration configuration() {
-		return configuration;
-	}
-
-	public Converter converter() {
-		return converter;
-	}
-
-	public DiFactory diFactory() {
-		return diFactory;
-	}
-
-	public HttpHandler handler() {
-		return handler;
-	}
-
-	public InvocationResolver invocationResolver() {
-		return invocationResolver;
-	}
-
-	public Persistence persistence() {
-		return persistence;
-	}
-
-	public List<Class<?>> resolvables() {
-		return resolvables;
-	}
-
-	public List<Class<?>> storables() {
-		return storables;
-	}
-
-	public TypeResolver typeResolver() {
-		return typeResolver;
+	public AddressBookBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
+		super(diFactory, configurationFile, configurationKey);
 	}
 }

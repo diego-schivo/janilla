@@ -21,26 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import App from "./app.js";
-import Article from "./article.js";
-import Articles from "./articles.js";
-import ArticlePreview from "./article-preview.js";
-import Comments from "./comments.js";
-import Editor from "./editor.js";
-import Errors from "./errors.js";
-import FavoriteButton from "./favorite-button.js";
-import FollowButton from "./follow-button.js";
-import Home from "./home.js";
-import IntlFormat from "./intl-format.js";
-import Login from "./login.js";
-import NavLink from "./nav-link.js";
-import PageDisplay from "./page-display.js";
-import PaginationNav from "./pagination-nav.js";
-import PopularTags from "./popular-tags.js";
-import Profile from "./profile.js";
-import Register from "./register.js";
-import Settings from "./settings.js";
-import TagsInput from "./tags-input.js";
+import App from "app";
+import Article from "article";
+import Articles from "articles";
+import ArticlePreview from "article-preview";
+import Comments from "comments";
+import Editor from "editor";
+import Errors from "errors";
+import FavoriteButton from "favorite-button";
+import FollowButton from "follow-button";
+import Home from "home";
+import IntlFormat from "base/intl-format";
+import Login from "login";
+import NavLink from "nav-link";
+import PageDisplay from "page-display";
+import PaginationNav from "pagination-nav";
+import PopularTags from "popular-tags";
+import Profile from "profile";
+import Register from "register";
+import Settings from "settings";
+import TagsInput from "tags-input";
 
 customElements.define("app-element", App);
 customElements.define("article-element", Article);

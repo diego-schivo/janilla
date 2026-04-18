@@ -30,13 +30,17 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
+import com.janilla.frontend.Index;
+import com.janilla.frontend.IndexFactory;
+import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.Handle;
 
-@Handle(path = "/test")
-public class Test {
+public class WebHandling {
 
-	protected static final AtomicBoolean ONGOING = new AtomicBoolean();
+	protected static final AtomicBoolean TEST_ONGOING = new AtomicBoolean();
+
+	protected final IndexFactory indexFactory;
 
 	protected final String configurationKey;
 
@@ -44,16 +48,23 @@ public class Test {
 
 	protected final BlankFullstack fullstack;
 
-	public Test(BlankFullstack fullstack, DiFactory diFactory, String configurationKey) {
+	public WebHandling(IndexFactory indexFactory, BlankFullstack fullstack, DiFactory diFactory,
+			String configurationKey) {
+		this.indexFactory = indexFactory;
 		this.fullstack = fullstack;
 		this.diFactory = diFactory;
 		this.configurationKey = configurationKey;
 	}
 
-	@Handle(method = "POST", path = "start")
+	@Handle(method = "GET", path = "/")
+	public Index home(HttpExchange exchange) {
+		return indexFactory.newIndex(exchange);
+	}
+
+	@Handle(method = "POST", path = "/test/start")
 	public void start() throws IOException {
 //		IO.println("Test.start, this=" + this);
-		if (ONGOING.getAndSet(true))
+		if (TEST_ONGOING.getAndSet(true))
 			throw new IllegalStateException();
 
 		var d = fullstack.backend().persistence().database();
@@ -66,10 +77,10 @@ public class Test {
 		d.pageCache().clear();
 	}
 
-	@Handle(method = "POST", path = "stop")
+	@Handle(method = "POST", path = "/test/stop")
 	public void stop() {
 //		IO.println("Test.stop, this=" + this);
-		if (!ONGOING.getAndSet(false))
+		if (!TEST_ONGOING.getAndSet(false))
 			throw new IllegalStateException();
 	}
 }

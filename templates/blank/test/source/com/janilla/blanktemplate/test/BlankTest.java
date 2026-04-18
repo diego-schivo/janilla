@@ -34,11 +34,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
+import com.janilla.frontend.IndexFactory;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
@@ -46,23 +46,26 @@ import com.janilla.ioc.DiFactory;
 import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 import com.janilla.web.ApplicationHandlerFactory;
-import com.janilla.web.Handle;
 import com.janilla.web.Invocable;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.NotFoundException;
-import com.janilla.web.Render;
 import com.janilla.web.RenderableFactory;
 import com.janilla.web.ResourceMap;
 
-@Render(template = "index.html")
 public class BlankTest {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.web", "com.janilla.blanktemplate.test" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.of(
+				Java.getPackageTypes("com.janilla",
+						x -> !x.equals("com.janilla.backend") && !x.equals("com.janilla.blanktemplate")),
+				Java.getPackageTypes("com.janilla.blanktemplate.frontend"),
+				Java.getPackageTypes("com.janilla.blanktemplate.test")).flatMap(x -> x);
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+
+		var f = new DefaultDiFactory(diTypes().toList(), "test");
 		serve(f, BlankTest.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -70,36 +73,12 @@ public class BlankTest {
 			String configurationPath) {
 		T a;
 		{
-			a = diFactory.newInstance(applicationType,
-					Java.hashMap("diFactory", diFactory, "configurationFile",
-							configurationPath != null ? Path.of(configurationPath.startsWith("~")
-									? System.getProperty("user.home") + configurationPath.substring(1)
-									: configurationPath) : null));
+			var cf = configurationPath != null ? Path.of(
+					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
+							: configurationPath)
+					: null;
+			a = diFactory.newInstance(applicationType, Java.hashMap("diFactory", diFactory, "configurationFile", cf));
 		}
-
-//		SSLContext c;
-//		{
-//			var p = a.configuration.getProperty(a.configurationKey + ".server.keystore.path");
-//			if (p != null) {
-//				var w = a.configuration.getProperty(a.configurationKey + ".server.keystore.password");
-//				if (p.startsWith("~"))
-//					p = System.getProperty("user.home") + p.substring(1);
-//				var f = Path.of(p);
-//				if (!Files.exists(f)) {
-//					var cn = a.configuration.getProperty(a.configurationKey + ".server.keystore.common-name");
-//					var san = a.configuration
-//							.getProperty(a.configurationKey + ".server.keystore.subject-alternative-name");
-//					Java.generateKeyPair(cn != null ? cn : "localhost", f, w,
-//							san != null ? san : "dns:localhost,ip:127.0.0.1");
-//				}
-//				try (var s = Files.newInputStream(f)) {
-//					c = Java.sslContext(s, w.toCharArray());
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
-//			} else
-//				c = DefaultHttpClient.sslContext("TLSv1.3");
-//		}
 
 		HttpServer s;
 		{
@@ -122,6 +101,8 @@ public class BlankTest {
 
 	protected final HttpHandler handler;
 
+	protected final IndexFactory indexFactory;
+
 	protected final InvocationResolver invocationResolver;
 
 	protected final RenderableFactory renderableFactory;
@@ -140,22 +121,23 @@ public class BlankTest {
 		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
 				Collections.singletonMap("path", configurationFile));
 
-		var cf = Optional.ofNullable(configurationFile).orElseGet(() -> {
-			try {
-				return Path.of(getClass().getResource("configuration.properties").toURI());
-			} catch (URISyntaxException e) {
-				throw new RuntimeException(e);
-			}
-		});
+		Path cf;
+		try {
+			cf = configurationFile != null ? configurationFile
+					: Path.of(getClass().getResource("configuration.properties").toURI());
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
 
 		{
-			var f = new DefaultDiFactory(
-					Arrays.stream(diFullstackPackages()).flatMap(x -> Java.getPackageTypes(x)).toList(),
-					"fullstack");
+			var f = new DefaultDiFactory(diFullstackTypes().toList(), "fullstack");
 			fullstack = f.newInstance(f.classFor(BlankFullstack.class),
 					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
 		}
 
+		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths", resourcePaths()));
+//		IO.println("resourceMap=" + resourceMap);
+		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
 		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
 				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
 						.flatMap(x -> Arrays.stream(x.getMethods())
@@ -168,27 +150,23 @@ public class BlankTest {
 					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
 							: diFactory.newInstance(diFactory.classFor(x));
 				}));
-		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths", resourcePaths()));
 		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
 		{
 			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
 			HttpHandler h0 = ex -> {
 				var h = f.createHandler(Objects.requireNonNullElse(ex.exception(), ex.request()));
 				if (h == null)
-					throw new NotFoundException(ex.request().getMethod() + " " + ex.request().getTarget());
+					throw new NotFoundException(ex.request().getHeaderValue(":method") + " " + ex.request().getHeaderValue(":path"));
 				return h.handle(ex);
 			};
 			handler = ex -> {
 //				IO.println("BlankTest, " + ex.request().getPath() + ", Test.ongoing=" + Test.ONGOING.get());
-				var h = Test.ONGOING.get() && !ex.request().getPath().startsWith("/test/") ? fullstack.handler() : h0;
+				var h = WebHandling.TEST_ONGOING.get() && !ex.request().getPath().startsWith("/test/")
+						? fullstack.handler()
+						: h0;
 				return h.handle(ex);
 			};
 		}
-	}
-
-	@Handle(method = "GET", path = "/")
-	public BlankTest application() {
-		return this;
 	}
 
 	public Configuration configuration() {
@@ -211,6 +189,10 @@ public class BlankTest {
 		return handler;
 	}
 
+	public IndexFactory indexFactory() {
+		return indexFactory;
+	}
+
 	public InvocationResolver invocationResolver() {
 		return invocationResolver;
 	}
@@ -223,12 +205,14 @@ public class BlankTest {
 		return resourceMap;
 	}
 
-	protected String[] diFullstackPackages() {
-		return BlankFullstack.DI_PACKAGES;
-	}
+	protected Stream<Class<?>> diFullstackTypes() {
+		return BlankFullstack.diTypes();
+	};
 
 	protected Map<String, List<Path>> resourcePaths() {
-		return Map.of("", Stream.of("com.janilla.frontend", "com.janilla.blanktemplate.test")
-				.flatMap(x -> Java.getPackagePaths(x, false).filter(Files::isRegularFile)).toList());
+		return Map.of("/base", Java.getPackagePaths("com.janilla.frontend").filter(Files::isRegularFile).toList(), "",
+//				Stream.of("com.janilla.blanktemplate.frontend", "com.janilla.blanktemplate.test")
+//						.flatMap(Java::getPackagePaths).filter(Files::isRegularFile).toList());
+				Java.getPackagePaths("com.janilla.blanktemplate.test").filter(Files::isRegularFile).toList());
 	}
 }

@@ -52,10 +52,10 @@ public class Cors {
 		var m = invocationResolver.groups(request.getPath()).flatMap(x -> x.methods().keySet().stream()).toList();
 		var h = configuration.getProperty(configurationKey + ".api.cors.headers");
 
-		response.setStatus(204);
-		response.setHeaderValue("access-control-allow-origin", o);
-		response.setHeaderValue("access-control-allow-methods",
+		response.setHeaderValue(":status", "204");
+		response.setHeaderValue("Access-Control-Allow-Origin", o);
+		response.setHeaderValue("Access-Control-Allow-Methods",
 				m.contains(null) ? "*" : m.stream().collect(Collectors.joining(", ")));
-		response.setHeaderValue("access-control-allow-headers", h);
+		response.setHeaderValue("Access-Control-Allow-Headers", h);
 	}
 }

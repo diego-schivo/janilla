@@ -41,7 +41,7 @@ class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 	@Override
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
 		if (Boolean.parseBoolean(configuration.getProperty("petclinic.live-demo"))
-				&& !exchange.request().getMethod().equals("GET"))
+				&& !exchange.request().getHeaderValue(":method").equals("GET"))
 			throw new HandleException(new InvocationBlockedException());
 
 		return super.handle(invocation, exchange);

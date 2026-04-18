@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import com.janilla.frontend.DefaultIndexFactory;
 import com.janilla.frontend.Index;
+import com.janilla.frontend.SimpleApp;
 import com.janilla.frontend.Template;
 import com.janilla.http.HttpExchange;
 import com.janilla.web.ResourceMap;
@@ -40,12 +41,8 @@ class IndexFactoryImpl extends DefaultIndexFactory {
 
 	@Override
 	public Index newIndex(HttpExchange exchange) {
-		return new IndexImpl("TodoMVC: Janilla", imports(), scripts(), new AppImpl(), templates());
-	}
-
-	@Override
-	protected String baseImportKey(String name) {
-		return "base/" + name;
+		return new IndexImpl("TodoMVC: Janilla", imports(), scripts(), new SimpleApp(null, state(exchange)),
+				templates());
 	}
 
 	@Override

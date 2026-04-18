@@ -88,7 +88,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 	@Override
 	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest r) {
-			var ii = invocationResolver.lookup(r.getMethod(), r.getPath()).toList();
+			var ii = invocationResolver.lookup(r.getHeaderValue(":method"), r.getPath()).toList();
 			if (!ii.isEmpty())
 				return x -> {
 					NotFoundException e = null;
@@ -131,13 +131,13 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 //		IO.println("InvocationHandlerFactory.handle, o=" + o);
 
 		var rs = exchange.response();
-		if (rs.getStatus() != 0)
+		if (rs.getHeaderValue(":status") != null)
 			;
 		else if (invocation.method().getReturnType() == Void.TYPE) {
-			rs.setStatus(204);
+			rs.setHeaderValue(":status", "204");
 			rs.setHeaderValue("cache-control", "no-cache");
 		} else if (o instanceof Path x && invocation.method().isAnnotationPresent(Attachment.class)) {
-			rs.setStatus(200);
+			rs.setHeaderValue(":status", "200");
 			rs.setHeaderValue("cache-control", "max-age=3600");
 			rs.setHeaderValue("Content-Disposition", "attachment; filename=\"" + x.getFileName() + "\"");
 			try {
@@ -153,11 +153,11 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 			}
 		} else if (o instanceof URI x) {
 //			rs.setStatus(307);
-			rs.setStatus(303);
+			rs.setHeaderValue(":status", "303");
 			rs.setHeaderValue("cache-control", "no-cache");
 			rs.setHeaderValue("location", x.toString());
 		} else {
-			rs.setStatus(200);
+			rs.setHeaderValue(":status", "200");
 			if (rs.getHeader("cache-control") == null)
 				rs.setHeaderValue("cache-control", "no-cache");
 			var r = renderableFactory != null
@@ -191,7 +191,7 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		};
 
 		var qs = rq.getQuery();
-		if (Set.of("PATCH", "POST", "PUT").contains(rq.getMethod())) {
+		if (Set.of("PATCH", "POST", "PUT").contains(rq.getHeaderValue(":method"))) {
 			var ct = Objects.requireNonNullElse(rq.getHeaderValue("content-type"), "").split(";")[0];
 			switch (ct) {
 			case "application/x-www-form-urlencoded":

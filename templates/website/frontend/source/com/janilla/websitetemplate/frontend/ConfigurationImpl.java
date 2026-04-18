@@ -24,27 +24,15 @@
  */
 package com.janilla.websitetemplate.frontend;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 
-public class ConfigurationImpl extends Properties {
+import com.janilla.java.AbstractConfiguration;
 
-	private static final long serialVersionUID = 3315806416027291683L;
+class ConfigurationImpl extends AbstractConfiguration {
 
-	public ConfigurationImpl(Path file) {
-		try {
-			try (var x = WebsiteFrontend.class.getResourceAsStream("configuration.properties")) {
-				load(x);
-			}
-			if (file != null)
-				try (var x = Files.newInputStream(file)) {
-					load(x);
-				}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+	private static final long serialVersionUID = -2762800525790619208L;
+
+	public ConfigurationImpl(Path path) {
+		super(WebsiteFrontend.class, path);
 	}
 }

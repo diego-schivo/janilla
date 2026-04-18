@@ -23,37 +23,54 @@
  */
 package com.janilla.conduit.test;
 
-import java.net.SocketAddress;
-import java.util.Map;
-
-import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.janilla.conduit.fullstack.ConduitFullstack;
-import com.janilla.http.DefaultHttpServer;
+import com.janilla.frontend.Index;
+import com.janilla.frontend.IndexFactory;
 import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse;
+import com.janilla.web.Handle;
 
-public class CustomHttpServer extends DefaultHttpServer {
+class WebHandling {
+
+	protected static final AtomicBoolean TEST_ONGOING = new AtomicBoolean();
+
+	protected final IndexFactory indexFactory;
 
 	protected final ConduitFullstack fullstack;
 
-	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
-			ConduitFullstack fullstack) {
-		super(endpoint, sslContext, handler);
+	public WebHandling(IndexFactory indexFactory, ConduitFullstack fullstack) {
+		this.indexFactory = indexFactory;
 		this.fullstack = fullstack;
 	}
 
-	@Override
-	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		if (Test.ONGOING.get()) {
-			var f = request.getPath().startsWith("/api/") ? fullstack.backend().diFactory()
-					: fullstack.frontend().diFactory();
-			var c = f.classFor(HttpExchange.class);
-			if (c != null)
-				return f.newInstance(c, Map.of("request", request, "response", response));
+	@Handle(method = "GET", path = "/")
+	public Index home(HttpExchange exchange) {
+		return indexFactory.newIndex(exchange);
+	}
+
+	@Handle(method = "POST", path = "/test/start")
+	public void start() throws IOException {
+//		IO.println("Test.start, this=" + this);
+		if (TEST_ONGOING.getAndSet(true))
+			throw new IllegalStateException();
+
+		var d = fullstack.backend().persistence().database();
+		var ch1 = (FileChannel) d.channel().channel();
+		try (var ch2 = Channels.newChannel(getClass().getResourceAsStream("conduit-test.db"))) {
+			var s = ch1.transferFrom(ch2, 0, Long.MAX_VALUE);
+			ch1.truncate(s);
 		}
-		return super.createExchange(request, response);
+		d.pageCache().clear();
+	}
+
+	@Handle(method = "POST", path = "/test/stop")
+	public void stop() {
+//		IO.println("Test.stop, this=" + this);
+		if (!TEST_ONGOING.getAndSet(false))
+			throw new IllegalStateException();
 	}
 }

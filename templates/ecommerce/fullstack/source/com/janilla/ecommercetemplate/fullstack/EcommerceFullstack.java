@@ -25,7 +25,6 @@
 package com.janilla.ecommercetemplate.fullstack;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.stream.Stream;
 
 import com.janilla.ecommercetemplate.backend.EcommerceBackend;
@@ -37,23 +36,15 @@ import com.janilla.websitetemplate.fullstack.WebsiteFullstack;
 
 public class EcommerceFullstack extends WebsiteFullstack {
 
-	public static final String[] DI_BACKEND_PACKAGES = Stream
-			.concat(Arrays.stream(EcommerceBackend.DI_PACKAGES), Stream.of("com.janilla.ecommercetemplate.fullstack"))
-			.toArray(String[]::new);
-
-	public static final String[] DI_FRONTEND_PACKAGES = Stream
-			.concat(Arrays.stream(EcommerceFrontend.DI_PACKAGES), Stream.of("com.janilla.ecommercetemplate.fullstack"))
-			.toArray(String[]::new);
-
-	public static final String[] DI_PACKAGES = Stream
-			.concat(Arrays.stream(WebsiteFullstack.DI_PACKAGES), Stream.of("com.janilla.ecommercetemplate.fullstack"))
-			.toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(WebsiteFullstack.diTypes(),
+				Java.getPackageTypes("com.janilla.ecommercetemplate.fullstack"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList(),
-				"fullstack");
+
+		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
 		serve(f, EcommerceFullstack.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -65,35 +56,17 @@ public class EcommerceFullstack extends WebsiteFullstack {
 		super(diFactory, configurationFile, configurationKey);
 	}
 
-//	@Override
-//	protected List<Class<?>> backendTypes() {
-//		return Stream
-//				.concat(Arrays.stream(EcommerceBackend.DI_PACKAGES),
-//						Stream.of("com.janilla.ecommercetemplate.fullstack"))
-//				.flatMap(x -> Java.getPackageClasses(x, false).stream()).toList();
-//	}
-//
-//	@Override
-//	protected List<Class<?>> frontendTypes() {
-//		return Stream
-//				.concat(Arrays.stream(EcommerceFrontend.DI_PACKAGES),
-//						Stream.of("com.janilla.ecommercetemplate.fullstack"))
-//				.flatMap(x -> Java.getPackageClasses(x, false).stream()).toList();
-//	}
-
-//	@Override
-//	protected boolean handle(HttpExchange exchange) {
-//		var h = exchange instanceof BackendHttpExchange ? backend.handler() : frontend.handler();
-//		return h.handle(exchange);
-//	}
-
 	@Override
-	protected String[] diBackendPackages() {
-		return DI_BACKEND_PACKAGES;
+	protected Stream<Class<?>> diBackendTypes() {
+		return Stream.of(EcommerceBackend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.websitetemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.ecommercetemplate.fullstack")).flatMap(x -> x);
 	}
 
 	@Override
-	protected String[] diFrontendPackages() {
-		return DI_FRONTEND_PACKAGES;
+	protected Stream<Class<?>> diFrontendTypes() {
+		return Stream.of(EcommerceFrontend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.websitetemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.ecommercetemplate.fullstack")).flatMap(x -> x);
 	}
 }

@@ -118,7 +118,7 @@ public class CmsResourceHandling {
 		if (bb == INVALID)
 			throw new NotFoundException();
 
-		response.setStatus(200);
+		response.setHeaderValue(":status", "200");
 		response.setHeaderValue("cache-control", "max-age=3600");
 		{
 			var i = n.lastIndexOf('.');

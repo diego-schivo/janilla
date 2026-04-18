@@ -62,19 +62,22 @@ public abstract class HttpMessage implements Closeable {
 	}
 
 	public void setHeader(HeaderField header) {
-		if (headers == null)
-			headers = new ArrayList<>();
-		else {
-			var i = 0;
-			for (var x : headers) {
-				if (x.name().equalsIgnoreCase(header.name())) {
-					headers.set(i, header);
-					return;
+		if (header.value() != null) {
+			if (headers == null)
+				headers = new ArrayList<>();
+			else {
+				var i = 0;
+				for (var x : headers) {
+					if (x.name().equalsIgnoreCase(header.name())) {
+						headers.set(i, header);
+						return;
+					}
+					i++;
 				}
-				i++;
 			}
-		}
-		headers.add(header);
+			headers.add(header);
+		} else if (headers != null)
+			headers.removeIf(x -> x.name().equalsIgnoreCase(header.name()));
 	}
 
 	public Stream<String> getHeaderValues(String name) {

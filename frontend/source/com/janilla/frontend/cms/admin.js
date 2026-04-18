@@ -107,7 +107,10 @@ export default class Admin extends WebComponent {
             }
 
             if (p === "/logout") {
-                await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
+                await fetch(`${a.dataset.apiUrl}/users/logout`, {
+					method: "POST",
+					credentials: "include"
+				});
                 a.currentUser = null;
                 a.navigate(new URL("/admin", location.href));
                 return;
@@ -119,7 +122,7 @@ export default class Admin extends WebComponent {
             }
 
             if (ua)
-                s.schema ??= await (await fetch(`${a.dataset.apiUrl}/schema`)).json();
+                s.schema ??= await (await fetch(`${a.dataset.apiUrl}/schema`, { credentials: "include" })).json();
 
             switch (s.pathSegments[0]) {
                 case "collections":
@@ -145,11 +148,11 @@ export default class Admin extends WebComponent {
                 s.versionId = parseInt(s.versionId);
             }
             await Promise.all([
-                s.documentUrl ? fetch(s.documentUrl).then(async x => s.document = x.ok ? await x.json() : null) : null,
-                s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`).then(async x => s.versions = await x.json()) : null,
+                s.documentUrl ? fetch(s.documentUrl, { credentials: "include" }).then(async x => s.document = x.ok ? await x.json() : null) : null,
+                s.documentSubview === "versions" ? fetch(`${s.documentUrl}/versions`, { credentials: "include" }).then(async x => s.versions = await x.json()) : null,
                 s.documentSubview === "version" ? fetch(`${s.collectionSlug
                     ? s.documentUrl.substring(0, s.documentUrl.lastIndexOf("/"))
-                    : s.documentUrl}/versions/${s.versionId}`).then(async x => s.version = await x.json()) : null
+                    : s.documentUrl}/versions/${s.versionId}`, { credentials: "include" }).then(async x => s.version = await x.json()) : null
             ]);
             if (s.documentUrl && !s.document) {
                 const nn = s.pathSegments.slice(0, s.collectionSlug ? 2 : 1);
@@ -158,7 +161,7 @@ export default class Admin extends WebComponent {
         } else if (!["/create-first-user", "/forgot", "/login", "/reset"].includes(p) && !p.startsWith("/reset/")) {
             const u = new URL(`${a.dataset.apiUrl}/users`, location.href);
             u.searchParams.append("limit", 0);
-            const j = await (await fetch(u)).json();
+            const j = await (await fetch(u, { credentials: "include" })).json();
             a.navigate(new URL(`/admin${j.totalSize ? "/login" : "/create-first-user"}`, location.href));
             return;
         }
@@ -302,7 +305,10 @@ export default class Admin extends WebComponent {
                     break;
                 case "logout": {
                     const a = this.closest("app-element");
-                    await fetch(`${a.dataset.apiUrl}/users/logout`, { method: "POST" });
+                    await fetch(`${a.dataset.apiUrl}/users/logout`, {
+						method: "POST",
+						credentials: "include"
+					});
                     a.currentUser = null;
                     this.querySelector("dialog").close();
                     this.success("You have been logged out successfully.");

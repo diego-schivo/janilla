@@ -62,6 +62,7 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 		this.resourceMap = resourceMap;
 		this.diFactory = diFactory;
 		handlerFactories = buildFactories();
+//		IO.println("ApplicationHandlerFactory, handlerFactories=" + handlerFactories);
 	}
 
 	@Override
@@ -101,9 +102,8 @@ public class ApplicationHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected HttpHandlerFactory buildJsonHandlerFactory() {
-		return diFactory != null
-				? Objects.requireNonNull(
-						diFactory.newInstance(diFactory.classFor(JsonHandlerFactory.class), Map.of("rootFactory", this)))
+		return diFactory != null ? Objects.requireNonNull(
+				diFactory.newInstance(diFactory.classFor(JsonHandlerFactory.class), Map.of("rootFactory", this)))
 				: new JsonHandlerFactory();
 	}
 

@@ -21,9 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import WebComponent from "./web-component.js";
+import WebComponent from "base/web-component";
 
 export default class ArticleList extends WebComponent {
+
+static get moduleUrl() {
+    return import.meta.url;
+}
 
 	static get observedAttributes() {
 		return ["data-api-url"];

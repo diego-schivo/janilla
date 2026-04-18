@@ -46,19 +46,21 @@ public class DefaultResourceHandlerFactory implements ResourceHandlerFactory {
 
 	@Override
 	public HttpHandler createHandler(Object object) {
-		var f = resourceMap != null && object instanceof HttpRequest r ? resourceMap.get(r.getPath()) : null;
-		return f != null ? x -> {
-			handle(f, x);
+		var p = object instanceof HttpRequest r ? r.getPath() : null;
+		var r = resourceMap != null && p != null ? resourceMap.get(p) : null;
+//		IO.println("p=" + p + ", r=" + r);
+		return r != null ? x -> {
+			handle(r, x);
 			return true;
 		} : null;
 	}
 
-	protected void handle(Resource file, HttpExchange exchange) {
-//		IO.println("FileHandlerFactory.handle, file=" + file);
+	protected void handle(Resource resource, HttpExchange exchange) {
+//		IO.println("DefaultResourceHandlerFactory.handle, file=" + file);
 		var rs = exchange.response();
-		rs.setStatus(200);
+		rs.setHeaderValue(":status", "200");
 		rs.setHeaderValue("cache-control", "max-age=3600");
-		switch (file.path().substring(file.path().lastIndexOf('.') + 1).toLowerCase()) {
+		switch (resource.path().substring(resource.path().lastIndexOf('.') + 1).toLowerCase()) {
 		case "html":
 			rs.setHeaderValue("content-type", "text/html");
 			break;
@@ -72,24 +74,24 @@ public class DefaultResourceHandlerFactory implements ResourceHandlerFactory {
 			rs.setHeaderValue("content-type", "image/svg+xml");
 			break;
 		}
-		rs.setHeaderValue("content-length", String.valueOf(file.size()));
+		rs.setHeaderValue("content-length", String.valueOf(resource.size()));
 
-		try (var in = switch (file) {
+		try (var in = switch (resource) {
 		case DefaultResource x -> x.newInputStream();
 		case ZipEntryResource x -> {
 			var u = x.archive().uri();
-//			IO.println("FileHandlerFactory.handle, u=" + u);
+//			IO.println("DefaultResourceHandlerFactory.handle, u=" + u);
 			var s = u.toString();
 			if (!s.startsWith("jar:"))
 				u = URI.create("jar:" + s);
 			var p = Java.zipFileSystem(u).getPath(x.path());
-//			IO.println("FileHandlerFactory.handle, p=" + p);
+//			IO.println("DefaultResourceHandlerFactory.handle, p=" + p);
 			yield Files.newInputStream(p);
 		}
 		default -> throw new IllegalArgumentException();
 		}; var out = Channels.newOutputStream((WritableByteChannel) rs.getBody())) {
 			if (in == null)
-				throw new NullPointerException(file.toString());
+				throw new NullPointerException(resource.toString());
 			in.transferTo(out);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
@@ -97,7 +99,7 @@ public class DefaultResourceHandlerFactory implements ResourceHandlerFactory {
 	}
 
 //	public static void main(String[] args) throws Exception {
-//	var f = new FileHandlerFactory();
+//	var f = new DefaultResourceHandlerFactory();
 //	f.setToInputStream(u -> u.getPath().equals("/test.html") ? new ByteArrayInputStream("""
 //			<html>
 //				<head>

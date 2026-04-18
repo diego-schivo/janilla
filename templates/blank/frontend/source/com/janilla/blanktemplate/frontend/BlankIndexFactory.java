@@ -26,14 +26,17 @@ package com.janilla.blanktemplate.frontend;
 
 import java.util.List;
 import java.util.Map;
-import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.Index;
+import com.janilla.frontend.SimpleApp;
 import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.frontend.cms.CmsIndexFactory;
 import com.janilla.http.HttpExchange;
+import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
+import com.janilla.java.Java;
 import com.janilla.web.ResourceMap;
 
 public class BlankIndexFactory extends CmsIndexFactory {
@@ -42,17 +45,23 @@ public class BlankIndexFactory extends CmsIndexFactory {
 
 	protected final String configurationKey;
 
+	protected final DiFactory diFactory;
+
 	public BlankIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
-			String configurationKey) {
+			String configurationKey, DiFactory diFactory) {
 		super(resourceMap, dataFetching);
 		this.configuration = configuration;
 		this.configurationKey = configurationKey;
+		this.diFactory = diFactory;
 	}
 
 	@Override
 	public Index newIndex(HttpExchange exchange) {
-		return new IndexImpl(configuration.getProperty(configurationKey + ".title"), imports(), scripts(),
-				new AppImpl(configuration.getProperty(configurationKey + ".api.url"), state(exchange)), templates());
+		return diFactory.newInstance(diFactory.classFor(Index.class),
+				Java.hashMap("title", configuration.getProperty(configurationKey + ".title"), "imports", imports(),
+						"scripts", scripts(), "app",
+						new SimpleApp(configuration.getProperty(configurationKey + ".api.url"), state(exchange)),
+						"templates", templates()));
 	}
 
 	public Template blankTemplate(String name) {
@@ -64,11 +73,6 @@ public class BlankIndexFactory extends CmsIndexFactory {
 		super.putImports(map);
 		Stream.of("app", "lucide-icon", "not-found", "page").map(this::blankImportKey)
 				.forEach(x -> map.put(x, "/" + x + ".js"));
-	}
-
-	@Override
-	protected String baseImportKey(String name) {
-		return "base/" + name;
 	}
 
 	protected String blankImportKey(String name) {

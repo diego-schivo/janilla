@@ -52,7 +52,7 @@ export default class App extends BaseApp {
         if (!Object.hasOwn(s, "user"))
             s.user = ss && Object.hasOwn(ss, "user")
                 ? ss.user
-                : await (await fetch(`${this.dataset.apiUrl}/users/me`)).json();
+                : await (await fetch(`${this.dataset.apiUrl}/users/me`, { credentials: "include" })).json();
 
         const p = location.pathname;
         const m = p.match(adminRegex);

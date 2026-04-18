@@ -21,10 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import WebComponent from "./web-component.js";
+import WebComponent from "base/web-component";
 import { formatMarkdownAsHtml, parseMarkdown } from "./markdown.js";
 
 export default class Article extends WebComponent {
+
+static get moduleUrl() {
+    return import.meta.url;
+}
 
 	static get observedAttributes() {
 		return ["data-slug", "slot"];

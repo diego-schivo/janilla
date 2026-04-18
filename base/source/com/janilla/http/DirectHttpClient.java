@@ -47,7 +47,6 @@ public class DirectHttpClient extends DefaultHttpClient {
 		var rs0 = new HttpResponse();
 		var o = new ByteArrayOutputStream();
 		try (var rs = rs0) {
-			rs.setStatus(0);
 			rs.setBody(Channels.newChannel(o));
 			var ex = server.createExchange(request, rs);
 			ScopedValue.where(HttpServer.HTTP_EXCHANGE, ex).call(() -> server.handleExchange(ex));

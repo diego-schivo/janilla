@@ -134,7 +134,9 @@ public class CustomHttpServer extends DefaultHttpServer {
 
 	@Override
 	protected void exchange(HttpRequest request, HttpResponse response) {
-		var a1 = request.getAuthority();
+		var a1 = request.getHeaderValue(":authority");
+		if (a1 == null)
+			a1 = request.getHeaderValue("Host");
 		var a2 = request.getPath().startsWith("/api/") ? backend.application(a1) : frontend.application(a1);
 //		IO.println("CustomHttpServer.exchange, a1=" + a1 + ", a2=" + a2);
 		ScopedValue.where(JanillaDomain.APPLICATION, a2).run(() -> super.exchange(request, response));

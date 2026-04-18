@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.IndexFactory;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DefaultDiFactory;
@@ -41,54 +42,37 @@ import com.janilla.ioc.DiFactory;
 import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 import com.janilla.web.ApplicationHandlerFactory;
-import com.janilla.web.Handle;
 import com.janilla.web.Invocable;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.NotFoundException;
-import com.janilla.web.Render;
 import com.janilla.web.RenderableFactory;
 import com.janilla.web.ResourceMap;
 
-@Render(template = "index", resource = "/index.html")
 public class ConduitFrontend {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.web", "com.janilla.conduit.frontend" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.conduit")),
+				Java.getPackageTypes("com.janilla.conduit.frontend"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected static void serve(DiFactory diFactory, String configurationPath) {
 		ConduitFrontend a;
 		{
+			var cf = configurationPath != null ? Path.of(
+					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
+							: configurationPath)
+					: null;
 			a = diFactory.newInstance(diFactory.classFor(ConduitFrontend.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile",
-							configurationPath != null ? Path.of(configurationPath.startsWith("~")
-									? System.getProperty("user.home") + configurationPath.substring(1)
-									: configurationPath) : null));
+					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
 		}
-
-//		SSLContext c;
-//		{
-//			var p = a.configuration.getProperty("conduit.server.keystore.path");
-//			if (p != null) {
-//				var w = a.configuration.getProperty("conduit.server.keystore.password");
-//				if (p.startsWith("~"))
-//					p = System.getProperty("user.home") + p.substring(1);
-//				var f = Path.of(p);
-//				if (!Files.exists(f))
-//					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
-//				try (var s = Files.newInputStream(f)) {
-//					c = Java.sslContext(s, w.toCharArray());
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
-//			} else
-//				c = DefaultHttpClient.sslContext("TLSv1.3");
-//		}
 
 		HttpServer s;
 		{
@@ -105,6 +89,8 @@ public class ConduitFrontend {
 
 	protected final HttpHandler handler;
 
+	protected final IndexFactory indexFactory;
+
 	protected final InvocationResolver invocationResolver;
 
 	protected final RenderableFactory renderableFactory;
@@ -114,8 +100,15 @@ public class ConduitFrontend {
 	public ConduitFrontend(DiFactory diFactory, Path configurationFile) {
 		this.diFactory = diFactory;
 		diFactory.context(this);
+
 		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
 				Collections.singletonMap("path", configurationFile));
+
+		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class),
+				Map.of("paths", Map.of("/base",
+						Java.getPackagePaths("com.janilla.frontend").filter(Files::isRegularFile).toList(), "",
+						Java.getPackagePaths("com.janilla.conduit.frontend").filter(Files::isRegularFile).toList())));
+		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
 
 		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
 				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
@@ -129,29 +122,21 @@ public class ConduitFrontend {
 					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
 							: diFactory.newInstance(diFactory.classFor(x));
 				}));
-		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class),
-				Map.of("paths", Map.of("", Stream.of("com.janilla.frontend", ConduitFrontend.class.getPackageName())
-						.flatMap(x -> Java.getPackagePaths(x, false).filter(Files::isRegularFile)).toList())));
 		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
 		{
 			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
 			handler = x -> {
 				var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));
 				if (h == null)
-					throw new NotFoundException(x.request().getMethod() + " " + x.request().getTarget());
+					throw new NotFoundException(x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
 				return h.handle(x);
 			};
 		}
 	}
 
-	public String apiUrl() {
-		return configuration.getProperty("conduit.api.url");
-	}
-
-	@Handle(method = "GET", path = "/")
-	public ConduitFrontend application() {
-		return this;
-	}
+//	public String apiUrl() {
+//		return configuration.getProperty("conduit.api.url");
+//	}
 
 	public Configuration configuration() {
 		return configuration;
@@ -163,6 +148,10 @@ public class ConduitFrontend {
 
 	public HttpHandler handler() {
 		return handler;
+	}
+
+	public IndexFactory indexFactory() {
+		return indexFactory;
 	}
 
 	public InvocationResolver invocationResolver() {

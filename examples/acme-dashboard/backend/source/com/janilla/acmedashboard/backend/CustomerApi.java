@@ -55,19 +55,21 @@ class CustomerApi {
 
 	@Handle(method = "GET")
 	public List<Customer2> list(@Bind("query") String query) {
-		var c = persistence.crud(Customer.class);
-		return c.read(query == null || query.isEmpty() ? c.list()
-				: c.filter("name", x -> ((String) x).toLowerCase().contains(query.toLowerCase()))).stream()
-				.map(x -> Customer2.of(x)).toList();
+		var c1 = persistence.crud(Customer.class);
+		var c2 = (InvoiceCrud) persistence.crud(Invoice.class);
+		return c1
+				.read(query == null || query.isEmpty() ? c1.list()
+						: c1.filter("name", x -> ((String) x).toLowerCase().contains(query.toLowerCase())))
+				.stream().map(x -> Customer2.of(x, c2)).toList();
 	}
 
 	public record Customer2(@Flat Customer customer, Long invoiceCount, BigDecimal pendingAmount,
 			BigDecimal paidAmount) {
 
-		public static Customer2 of(Customer customer) {
-			var c = (InvoiceCrud) AcmeDashboardBackend.INSTANCE.get().persistence().crud(Invoice.class);
-			return new Customer2(customer, c.count("customer", new Object[] { customer.id() }),
-					c.getAmount(customer.id(), InvoiceStatus.PENDING), c.getAmount(customer.id(), InvoiceStatus.PAID));
+		public static Customer2 of(Customer customer, InvoiceCrud invoiceCrud) {
+			return new Customer2(customer, invoiceCrud.count("customer", new Object[] { customer.id() }),
+					invoiceCrud.getAmount(customer.id(), InvoiceStatus.PENDING),
+					invoiceCrud.getAmount(customer.id(), InvoiceStatus.PAID));
 		}
 	}
 }

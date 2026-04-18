@@ -46,8 +46,8 @@ public class TemplateHandlerFactory implements HttpHandlerFactory {
 	protected void render(Renderable<?> renderable, HttpExchange exchange) {
 //		IO.println("TemplateHandlerFactory.render, renderable=" + renderable);
 		var rs = exchange.response();
-		if (rs.getStatus() == 0)
-			rs.setStatus(200);
+		if (rs.getHeaderValue(":status") == null)
+			rs.setHeaderValue(":status", "200");
 		if (rs.getHeader("cache-control") == null)
 			rs.setHeaderValue("cache-control", "no-cache");
 		if (rs.getHeader("content-type") == null)

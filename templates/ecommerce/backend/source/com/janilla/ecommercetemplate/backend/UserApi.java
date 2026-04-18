@@ -24,16 +24,15 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
-import com.janilla.java.Configuration;
 import java.util.Set;
 import java.util.function.Predicate;
 
 import com.janilla.backend.cms.AbstractUserApi;
 import com.janilla.backend.persistence.Persistence;
-import com.janilla.blanktemplate.backend.BackendHttpExchange;
 import com.janilla.cms.User;
 import com.janilla.ecommercetemplate.UserRoleImpl;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Configuration;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/users")

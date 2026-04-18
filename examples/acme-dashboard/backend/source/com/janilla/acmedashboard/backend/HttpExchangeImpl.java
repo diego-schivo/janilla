@@ -26,6 +26,7 @@ package com.janilla.acmedashboard.backend;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,8 +56,8 @@ class HttpExchangeImpl extends SimpleHttpExchange {
 
 	public String getSessionEmail() {
 		if (!session.containsKey("email")) {
-			var c = request().getHeaderValues("cookie").map(HttpCookie::parse).filter(x -> x.name().equals("session"))
-					.findFirst().orElse(null);
+			var c = request().getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; ")))
+					.map(HttpCookie::parse).filter(x -> x.name().equals("session")).findFirst().orElse(null);
 //			IO.println("CustomHttpExchange.getSessionEmail, c=" + c);
 			Map<String, ?> p;
 			try {

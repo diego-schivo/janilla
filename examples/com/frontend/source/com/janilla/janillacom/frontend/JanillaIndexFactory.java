@@ -24,28 +24,29 @@
 package com.janilla.janillacom.frontend;
 
 import java.util.Map;
-import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
+import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.web.ResourceMap;
 import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 
 public class JanillaIndexFactory extends WebsiteIndexFactory {
 
 	public JanillaIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
-			String configurationKey) {
-		super(resourceMap, dataFetching, configuration, configurationKey);
+			String configurationKey, DiFactory diFactory) {
+		super(resourceMap, dataFetching, configuration, configurationKey, diFactory);
+	}
+
+	public Template janillaTemplate(String name) {
+		return template(name);
 	}
 
 	@Override
 	public Template websiteTemplate(String name) {
 		return template("website/" + name);
-	}
-
-	public Template janillaTemplate(String name) {
-		return template(name);
 	}
 
 	@Override
@@ -54,12 +55,12 @@ public class JanillaIndexFactory extends WebsiteIndexFactory {
 		Stream.of("header", "link", "post").map(this::janillaImportKey).forEach(x -> map.put(x, "/" + x + ".js"));
 	}
 
+	protected String janillaImportKey(String name) {
+		return name;
+	}
+
 	@Override
 	protected String websiteImportKey(String name) {
 		return "website/" + name;
-	}
-
-	protected String janillaImportKey(String name) {
-		return name;
 	}
 }

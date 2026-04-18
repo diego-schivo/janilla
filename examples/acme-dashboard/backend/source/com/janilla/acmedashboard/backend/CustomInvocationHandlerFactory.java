@@ -53,20 +53,20 @@ class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 		var rs = ex.response();
 
 		if (Boolean.parseBoolean(configuration.getProperty("acme-dashboard.live-demo")))
-			if (rq.getMethod().equals("GET") || rq.getPath().equals("/api/authentication"))
+			if (rq.getHeaderValue(":method").equals("GET") || rq.getPath().equals("/api/authentication"))
 				;
 			else
 				throw new HandleException(new MethodBlockedException());
 
 		if (rq.getPath().startsWith("/api/")) {
-			if (rq.getMethod().equals("OPTIONS") || rq.getPath().equals("/api/authentication"))
+			if (rq.getHeaderValue(":method").equals("OPTIONS") || rq.getPath().equals("/api/authentication"))
 				;
 			else
 				ex.requireSessionEmail();
 		} else if (Set.of("/", "/login").contains(rq.getPath()) || rq.getPath().contains("."))
 			;
 		else if (ex.getSessionEmail() == null) {
-			rs.setStatus(302);
+			rs.setHeaderValue(":status", "302");
 			rs.setHeaderValue("cache-control", "no-cache");
 			rs.setHeaderValue("location", "/login");
 		}

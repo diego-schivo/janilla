@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.janilla.conduit.fullstack.ConduitFullstack;
+import com.janilla.frontend.IndexFactory;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
@@ -43,54 +44,39 @@ import com.janilla.ioc.DiFactory;
 import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 import com.janilla.web.ApplicationHandlerFactory;
-import com.janilla.web.Handle;
 import com.janilla.web.Invocable;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.NotFoundException;
-import com.janilla.web.Render;
 import com.janilla.web.RenderableFactory;
 import com.janilla.web.ResourceMap;
 
-@Render(template = "index", resource = "/index.html")
 public class ConduitTest {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.web", "com.janilla.conduit.test" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream
+				.of(Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.conduit")),
+						Java.getPackageTypes("com.janilla.conduit.frontend"),
+						Java.getPackageTypes("com.janilla.conduit.test"))
+				.flatMap(x -> x);
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected static void serve(DiFactory diFactory, String configurationPath) {
 		ConduitTest a;
 		{
+			var cf = configurationPath != null ? Path.of(
+					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
+							: configurationPath)
+					: null;
 			a = diFactory.newInstance(diFactory.classFor(ConduitTest.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile",
-							configurationPath != null ? Path.of(configurationPath.startsWith("~")
-									? System.getProperty("user.home") + configurationPath.substring(1)
-									: configurationPath) : null));
+					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
 		}
-
-//		SSLContext c;
-//		{
-//			var p = a.configuration.getProperty("conduit.server.keystore.path");
-//			if (p != null) {
-//				var w = a.configuration.getProperty("conduit.server.keystore.password");
-//				if (p.startsWith("~"))
-//					p = System.getProperty("user.home") + p.substring(1);
-//				var f = Path.of(p);
-//				if (!Files.exists(f))
-//					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
-//				try (var s = Files.newInputStream(f)) {
-//					c = Java.sslContext(s, w.toCharArray());
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
-//			} else
-//				c = DefaultHttpClient.sslContext("TLSv1.3");
-//		}
 
 		HttpServer s;
 		{
@@ -109,6 +95,8 @@ public class ConduitTest {
 
 	protected final HttpHandler handler;
 
+	protected final IndexFactory indexFactory;
+
 	protected final InvocationResolver invocationResolver;
 
 	protected final RenderableFactory renderableFactory;
@@ -118,16 +106,21 @@ public class ConduitTest {
 	public ConduitTest(DiFactory diFactory, Path configurationFile) {
 		this.diFactory = diFactory;
 		diFactory.context(this);
+
 		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
 				Collections.singletonMap("path", configurationFile));
 
 		{
-			var f = new DefaultDiFactory(Arrays.stream(ConduitFullstack.DI_PACKAGES)
-					.flatMap(x -> Java.getPackageTypes(x)).toList(), "fullstack");
+			var f = new DefaultDiFactory(ConduitFullstack.diTypes().toList(), "fullstack");
 			fullstack = diFactory.newInstance(diFactory.classFor(ConduitFullstack.class),
 					Java.hashMap("diFactory", f, "configurationFile", configurationFile));
 		}
 
+		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths",
+				Map.of("/base", Java.getPackagePaths("com.janilla.frontend").filter(Files::isRegularFile).toList(), "",
+						Stream.of("com.janilla.conduit.frontend", "com.janilla.conduit.test")
+								.flatMap(Java::getPackagePaths).filter(Files::isRegularFile).toList())));
+		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
 		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
 				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
 						.flatMap(x -> Arrays.stream(x.getMethods())
@@ -140,9 +133,6 @@ public class ConduitTest {
 					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
 							: diFactory.newInstance(diFactory.classFor(x));
 				}));
-		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class),
-				Map.of("paths", Map.of("", Stream.of("com.janilla.frontend", "com.janilla.conduit.test")
-						.flatMap(x -> Java.getPackagePaths(x, false).filter(Files::isRegularFile)).toList())));
 		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
 		{
 			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
@@ -150,21 +140,17 @@ public class ConduitTest {
 				var hx = (HttpExchange) x;
 //				IO.println(
 //						"ConduitTesting, " + hx.request().getPath() + ", Test.ongoing=" + Test.ongoing.get());
-				var h2 = Test.ONGOING.get() && !hx.request().getPath().startsWith("/test/") ? fullstack.handler()
+				var h2 = WebHandling.TEST_ONGOING.get() && !hx.request().getPath().startsWith("/test/")
+						? fullstack.handler()
 						: (HttpHandler) y -> {
 							var h = f.createHandler(Objects.requireNonNullElse(y.exception(), y.request()));
 							if (h == null)
-								throw new NotFoundException(y.request().getMethod() + " " + y.request().getTarget());
+								throw new NotFoundException(y.request().getHeaderValue(":method") + " " + y.request().getHeaderValue(":path"));
 							return h.handle(y);
 						};
 				return h2.handle(hx);
 			};
 		}
-	}
-
-	@Handle(method = "GET", path = "/")
-	public ConduitTest application() {
-		return this;
 	}
 
 	public Configuration configuration() {
@@ -181,6 +167,10 @@ public class ConduitTest {
 
 	public HttpHandler handler() {
 		return handler;
+	}
+
+	public IndexFactory indexFactory() {
+		return indexFactory;
 	}
 
 	public InvocationResolver invocationResolver() {

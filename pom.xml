@@ -7,13 +7,14 @@
 	<modules>
 		<module>backend</module>
 		<module>base</module>
-		<module>frontend</module>
 		<module>examples/acme-dashboard</module>
 		<module>examples/address-book</module>
 		<module>examples/com</module>
 		<module>examples/conduit</module>
 		<module>examples/petclinic</module>
 		<module>examples/todomvc</module>
+		<module>frontend</module>
+		<module>fullstack</module>
 		<module>templates/blank</module>
 		<module>templates/ecommerce</module>
 		<module>templates/website</module>

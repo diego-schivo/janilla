@@ -21,20 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import WebComponent from "./web-component.js";
+import WebComponent from "base/web-component";
 
 export default class FavoriteButton extends WebComponent {
 
-	static get observedAttributes() {
-		return ["data-active", "data-count", "data-preview"];
+	static get moduleUrl() {
+	    return import.meta.url;
 	}
 
 	static get templateNames() {
 		return ["favorite-button"];
 	}
 
-	constructor() {
-		super();
+	static get observedAttributes() {
+		return ["data-active", "data-count", "data-preview"];
 	}
 
 	connectedCallback() {

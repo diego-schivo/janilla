@@ -51,15 +51,18 @@ import com.janilla.web.ResourceMap;
 
 public class TodoMvcTest {
 
-	public static final String[] DI_PACKAGES = Stream
-			.concat(Arrays.stream(TodoMvcFrontend.DI_PACKAGES), Stream.of("com.janilla.todomvc.test"))
-			.toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream
+				.of(Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.todomvc")),
+						Java.getPackageTypes("com.janilla.todomvc.frontend"),
+						Java.getPackageTypes("com.janilla.todomvc.test"))
+				.flatMap(x -> x);
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
@@ -107,8 +110,7 @@ public class TodoMvcTest {
 				Collections.singletonMap("path", configurationFile));
 
 		{
-			var f = new DefaultDiFactory(Arrays.stream(TodoMvcFrontend.DI_PACKAGES)
-					.flatMap(x -> Java.getPackageTypes(x)).toList());
+			var f = new DefaultDiFactory(TodoMvcFrontend.diTypes().toList());
 			frontend = diFactory.newInstance(diFactory.classFor(TodoMvcFrontend.class),
 					Java.hashMap("diFactory", f, "configurationFile", configurationFile));
 		}
@@ -141,7 +143,7 @@ public class TodoMvcTest {
 						: (HttpHandler) y -> {
 							var h = f.createHandler(Objects.requireNonNullElse(y.exception(), y.request()));
 							if (h == null)
-								throw new NotFoundException(y.request().getMethod() + " " + y.request().getTarget());
+								throw new NotFoundException(y.request().getHeaderValue(":method") + " " + y.request().getHeaderValue(":path"));
 							return h.handle(y);
 						};
 				return h2.handle(ex);

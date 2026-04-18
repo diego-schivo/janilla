@@ -71,22 +71,22 @@ public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFacto
 
 	@Override
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
+		var o = configuration.getProperty(configurationKey + ".api.cors.origin");
+		if (o != null && !o.isEmpty()) {
+			var rs = exchange.response();
+			rs.setHeaderValue("Access-Control-Allow-Credentials", "true");
+			rs.setHeaderValue("Access-Control-Allow-Origin", o);
+		}
+
 		var rq = exchange.request();
 		if (requireSessionEmail(rq))
 			((UserHttpExchange<?>) exchange).requireSessionEmail();
 
 		if (Boolean.parseBoolean(configuration.getProperty(configurationKey + ".live-demo"))) {
-			if (rq.getMethod().equals("GET") || userLoginLogout.contains(rq.getPath()))
+			if (rq.getHeaderValue(":method").equals("GET") || userLoginLogout.contains(rq.getPath()))
 				;
 			else
 				throw new HandleException(new MethodBlockedException());
-		}
-
-		var o = configuration.getProperty(configurationKey + ".api.cors.origin");
-		if (o != null && !o.isEmpty()) {
-			var rs = exchange.response();
-			rs.setHeaderValue("access-control-allow-credentials", "true");
-			rs.setHeaderValue("access-control-allow-origin", o);
 		}
 
 //		if (r.getPath().startsWith("/api/"))
@@ -102,7 +102,7 @@ public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFacto
 	protected boolean requireSessionEmail(HttpRequest request) {
 		if (!request.getPath().startsWith("/api/"))
 			return false;
-		switch (request.getMethod()) {
+		switch (request.getHeaderValue(":method")) {
 		case "GET", "OPTIONS":
 			if (request.getPath().equals("/api/users"))
 				return !"0".equals(new UriQueryBuilder(request.getQuery()).values("limit").findFirst().orElse(null));

@@ -21,20 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import WebComponent from "./web-component.js";
+import WebComponent from "base/web-component";
 
 export default class Editor extends WebComponent {
 
-	static get observedAttributes() {
-		return ["data-slug", "slot"];
+	static get moduleUrl() {
+	    return import.meta.url;
 	}
 
 	static get templateNames() {
 		return ["editor"];
 	}
 
-	constructor() {
-		super();
+	static get observedAttributes() {
+		return ["data-slug", "slot"];
 	}
 
 	connectedCallback() {

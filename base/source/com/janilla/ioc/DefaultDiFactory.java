@@ -68,6 +68,7 @@ public class DefaultDiFactory implements DiFactory {
 
 	@Override
 	public DiFactory context(Object context) {
+//		IO.println("DefaultDiFactory.context, this=" + this + ", context=" + context);
 		if (this.context != null)
 			throw new IllegalStateException();
 		this.context = context;

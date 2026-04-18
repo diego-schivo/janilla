@@ -26,7 +26,6 @@ package com.janilla.conduit.backend;
 import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -35,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
@@ -46,7 +46,6 @@ import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.Java;
-import com.janilla.java.JavaReflect;
 import com.janilla.java.TypeResolver;
 import com.janilla.persistence.Store;
 import com.janilla.web.ApplicationHandlerFactory;
@@ -58,43 +57,30 @@ import com.janilla.web.RenderableFactory;
 
 public class ConduitBackend {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.web", "com.janilla.conduit.backend" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(
+				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.conduit")),
+				Java.getPackageTypes("com.janilla.conduit.backend"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
+		
 		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+				diTypes().toList());
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected static void serve(DiFactory diFactory, String configurationPath) {
 		ConduitBackend a;
 		{
+			var cf = configurationPath != null ? Path.of(configurationPath.startsWith("~")
+					? System.getProperty("user.home") + configurationPath.substring(1)
+					: configurationPath) : null;
 			a = diFactory.newInstance(diFactory.classFor(ConduitBackend.class),
 					Java.hashMap("diFactory", diFactory, "configurationFile",
-							configurationPath != null ? Path.of(configurationPath.startsWith("~")
-									? System.getProperty("user.home") + configurationPath.substring(1)
-									: configurationPath) : null));
+							cf));
 		}
-
-//		SSLContext c;
-//		{
-//			var p = a.configuration.getProperty("conduit.server.keystore.path");
-//			if (p != null) {
-//				var w = a.configuration.getProperty("conduit.server.keystore.password");
-//				if (p.startsWith("~"))
-//					p = System.getProperty("user.home") + p.substring(1);
-//				var f = Path.of(p);
-//				if (!Files.exists(f))
-//					Java.generateKeyPair("localhost", f, w, "dns:localhost,ip:127.0.0.1");
-//				try (var s = Files.newInputStream(f)) {
-//					c = Java.sslContext(s, w.toCharArray());
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
-//			} else
-//				c = DefaultHttpClient.sslContext("TLSv1.3");
-//		}
 
 		HttpServer s;
 		{
@@ -128,6 +114,7 @@ public class ConduitBackend {
 	public ConduitBackend(DiFactory diFactory, Path configurationFile) {
 		this.diFactory = diFactory;
 		diFactory.context(this);
+		
 		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
 				Collections.singletonMap("path", configurationFile));
 
@@ -169,14 +156,14 @@ public class ConduitBackend {
 			handler = x -> {
 				var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));
 				if (h == null)
-					throw new NotFoundException(x.request().getMethod() + " " + x.request().getTarget());
+					throw new NotFoundException(x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
 				return h.handle(x);
 			};
 		}
 
-		{
-			persistence.crud(Article.class).update(1L, x -> JavaReflect.copy(Map.of("updatedAt", Instant.now()), x));
-		}
+//		{
+//			persistence.crud(Article.class).update(1L, x -> JavaReflect.copy(Map.of("updatedAt", Instant.now()), x));
+//		}
 	}
 
 	public Configuration configuration() {

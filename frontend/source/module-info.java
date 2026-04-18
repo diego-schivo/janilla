@@ -26,9 +26,11 @@ module com.janilla.frontend {
 
 	exports com.janilla.frontend;
 	exports com.janilla.frontend.cms;
+	exports com.janilla.frontend.web;
 
 	opens com.janilla.frontend;
 	opens com.janilla.frontend.cms;
+	opens com.janilla.frontend.web;
 
 	requires transitive com.janilla.base;
 }

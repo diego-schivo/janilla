@@ -76,7 +76,7 @@ public class DefaultIndexFactory implements IndexFactory {
 	}
 
 	protected String baseImportKey(String name) {
-		return name;
+		return "base/" + name;
 	}
 
 	protected List<Script> scripts() {

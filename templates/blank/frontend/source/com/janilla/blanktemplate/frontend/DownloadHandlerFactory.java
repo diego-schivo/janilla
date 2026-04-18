@@ -77,7 +77,7 @@ public class DownloadHandlerFactory implements HttpHandlerFactory {
 						var l = x;
 						do {
 							l = new DefaultHttpClient().send(new HttpRequest("GET", URI.create(l)), rs -> {
-								if (rs.getStatus() == 302)
+								if (rs.getHeaderValue(":status").equals("302"))
 									return rs.getHeaderValue("location");
 								try {
 									Files.copy(Channels.newInputStream((ReadableByteChannel) rs.getBody()), f);
@@ -120,7 +120,7 @@ public class DownloadHandlerFactory implements HttpHandlerFactory {
 		});
 
 		var rs = exchange.response();
-		rs.setStatus(200);
+		rs.setHeaderValue(":status", "200");
 		rs.setHeaderValue("cache-control", "max-age=3600");
 		{
 			var n = file.getFileName().toString();

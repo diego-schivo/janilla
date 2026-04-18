@@ -31,5 +31,5 @@ import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
 @Store
-record User(UUID id, @Index String name, @Index String email, String password) implements Entity<UUID> {
+public record User(UUID id, @Index String name, @Index String email, String password) implements Entity<UUID> {
 }

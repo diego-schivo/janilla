@@ -59,6 +59,8 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 	}
 
 	public DefaultHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, DiFactory diFactory) {
+		IO.println("DefaultHttpServer, endpoint=" + endpoint + ", sslContext=" + sslContext + ", handler=" + handler
+				+ ", diFactory=" + diFactory);
 		super(endpoint, sslContext);
 		this.handler = handler;
 		this.diFactory = diFactory;
@@ -114,7 +116,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 				transfer.in().get(bb);
 				transfer.in().compact();
 				var l = new String(bb, 0, i - 1);
-//				IO.println("s=" + s);
+//				IO.println("l=" + l);
 				if (!l.isEmpty())
 					ll.add(l);
 				else
@@ -127,10 +129,11 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 				{
 					var i = 0;
 					for (var l : ll) {
+//						IO.println("l=" + l);
 						if (i == 0) {
 							var ss = l.split(" ", 3);
-							rq.setMethod(ss[0].trim());
-							rq.setTarget(ss[1].trim());
+							rq.setHeaderValue(":method", ss[0].trim());
+							rq.setHeaderValue(":path", ss[1].trim());
 						} else
 							rq.setHeader(HeaderField.fromLine(l));
 						i++;
@@ -154,12 +157,12 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 					rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
 				}
 				try (var rs = new HttpResponse()) {
-					rs.setStatus(0);
+//					rs.setStatus(0);
 					var baos = new ByteArrayOutputStream();
 					rs.setBody(Channels.newChannel(baos));
 					exchange(rq, rs);
 					ll.clear();
-					ll.add("HTTP/1.1 " + rs.getStatus() + " OK");
+					ll.add("HTTP/1.1 " + rs.getHeaderValue(":status") + " OK");
 					for (var h : rs.getHeaders())
 						if (!h.name().startsWith(":"))
 							ll.add(h.toLine());
@@ -291,7 +294,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 //					+ rq.getTarget());
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(dbb.array())));
 			try (var rs = new HttpResponse()) {
-				rs.setStatus(0);
+//				rs.setStatus(0);
 				rs.setBody(new WritableByteChannel() {
 
 					private boolean closed;

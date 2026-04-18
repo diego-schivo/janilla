@@ -1,10 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,18 +22,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-//package com.janilla.addressbook.frontend;
-//
-//import java.util.List;
-//import java.util.Map;
-//
-//import com.janilla.frontend.App;
-//import com.janilla.frontend.Index;
-//import com.janilla.frontend.Script;
-//import com.janilla.frontend.Template;
-//import com.janilla.web.Render;
-//
-//@Render(template = "index", resource = "/base/index.html")
-//record IndexImpl(String title, Map<String, String> imports, List<Script> scripts, App app, List<Template> templates)
-//		implements Index {
-//}
+package com.janilla.blanktemplate.backend;
+
+import com.janilla.backend.cms.AbstractUserHttpExchange;
+import com.janilla.backend.persistence.Crud;
+import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.User;
+import com.janilla.http.HttpRequest;
+import com.janilla.http.HttpResponse;
+import com.janilla.java.Configuration;
+
+class HttpExchangeImpl extends AbstractUserHttpExchange<User<?>> {
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public HttpExchangeImpl(HttpRequest request, HttpResponse response, Configuration configuration,
+			String configurationKey, Persistence persistence) {
+		super(request, response, configuration.getProperty(configurationKey + ".jwt.cookie"),
+				configuration.getProperty(configurationKey + ".jwt.key"), (Crud) persistence.crud(User.class));
+	}
+}

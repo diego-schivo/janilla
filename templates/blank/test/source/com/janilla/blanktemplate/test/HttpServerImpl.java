@@ -22,11 +22,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.blanktemplate.frontend;
+package com.janilla.blanktemplate.test;
 
+import java.net.SocketAddress;
 import java.util.Map;
 
-import com.janilla.frontend.App;
+import javax.net.ssl.SSLContext;
 
-record AppImpl(String apiUrl, Map<String, Object> state) implements App {
+import com.janilla.blanktemplate.fullstack.BlankFullstack;
+import com.janilla.http.DefaultHttpServer;
+import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpRequest;
+import com.janilla.http.HttpResponse;
+
+class HttpServerImpl extends DefaultHttpServer {
+
+	protected final BlankFullstack fullstack;
+
+	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
+			BlankFullstack fullstack) {
+		super(endpoint, sslContext, handler);
+		this.fullstack = fullstack;
+	}
+
+	@Override
+	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+		if (WebHandling.TEST_ONGOING.get()) {
+			var f = request.getPath().startsWith("/api/") ? fullstack.backend().diFactory()
+					: fullstack.frontend().diFactory();
+			return f.newInstance(f.classFor(HttpExchange.class), Map.of("request", request, "response", response));
+		}
+		return super.createExchange(request, response);
+	}
 }

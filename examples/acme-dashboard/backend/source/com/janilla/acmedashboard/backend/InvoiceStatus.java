@@ -24,7 +24,7 @@
  */
 package com.janilla.acmedashboard.backend;
 
-enum InvoiceStatus {
+public enum InvoiceStatus {
 
 	PAID, PENDING
 }

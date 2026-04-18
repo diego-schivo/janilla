@@ -45,21 +45,22 @@ public class DefaultInvocationResolver implements InvocationResolver {
 
 	public static final ScopedValue<DefaultInvocationResolver> INSTANCE = ScopedValue.newInstance();
 
-	protected final Map<String, InvocationGroup> groups;
+	protected final Function<Class<?>, Object> instanceResolver;
 
 	protected final Comparator<Invocation> invocationComparator;
 
-	protected final Map<Pattern, InvocationGroup> regexGroups;
+	protected final Map<String, B> bb;
+
+	protected Map<String, InvocationGroup> groups;
+
+	protected Map<Pattern, InvocationGroup> regexGroups;
 
 	public DefaultInvocationResolver(List<Invocable> invocables, Function<Class<?>, Object> instanceResolver,
 			Comparator<Invocation> invocationComparator) {
+		this.instanceResolver = instanceResolver;
 		this.invocationComparator = invocationComparator;
 
-		record A(String m1, Method m2) {
-		}
-		record B(String p, Class<?> t, List<A> aa) {
-		}
-		var bb = invocables.stream().map(tm -> {
+		bb = invocables.stream().map(tm -> {
 //			IO.println("InvocationHandlerFactory, tm=" + tm);
 			var t = tm.type();
 			var m = tm.method();
@@ -83,6 +84,17 @@ public class DefaultInvocationResolver implements InvocationResolver {
 			}
 			return y;
 		}, LinkedHashMap::new));
+	}
+
+	record A(String m1, Method m2) {
+	}
+
+	record B(String p, Class<?> t, List<A> aa) {
+	}
+
+	synchronized void foo() {
+		if (groups != null)
+			return;
 		var oo = new HashMap<Class<?>, Object>();
 		groups = ScopedValue.where(INSTANCE, this)
 				.call(() -> bb.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
@@ -123,6 +135,8 @@ public class DefaultInvocationResolver implements InvocationResolver {
 	public Stream<InvocationGroup> groups(String path) {
 		if (path == null)
 			return Stream.empty();
+		if (groups == null)
+			foo();
 		var a = Optional.ofNullable(groups.get(path)).stream();
 		var b = regexGroups.entrySet().stream().map(x -> {
 			var m = x.getKey().matcher(path);

@@ -23,137 +23,37 @@
  */
 package com.janilla.todomvc.frontend;
 
-import java.lang.reflect.Modifier;
-import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
+import java.util.stream.Stream;
 
-import com.janilla.frontend.IndexFactory;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpServer;
+import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Java;
-import com.janilla.web.ApplicationHandlerFactory;
-import com.janilla.web.Invocable;
-import com.janilla.web.InvocationResolver;
-import com.janilla.web.NotFoundException;
-import com.janilla.web.RenderableFactory;
-import com.janilla.web.ResourceMap;
 
-public class TodoMvcFrontend {
+public class TodoMvcFrontend extends AbstractFrontend {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.http", "com.janilla.web",
-			"com.janilla.todomvc.frontend" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
+				Java.getPackageTypes("com.janilla.frontend", _ -> true),
+				Java.getPackageTypes("com.janilla.todomvc.frontend")).flatMap(x -> x);
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
-		serve(f, args.length != 0 ? args[0] : null);
+		var f = new DefaultDiFactory(diTypes().toList());
+		serve(f, args.length != 0 ? args[0] : null, "todomvc");
 	}
 
-	protected static void serve(DiFactory diFactory, String configurationPath) {
-		TodoMvcFrontend a;
-		{
-			var cf = configurationPath != null ? Path.of(
-					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-							: configurationPath)
-					: null;
-			a = diFactory.newInstance(diFactory.classFor(TodoMvcFrontend.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-		}
-
-		HttpServer s;
-		{
-			var p = Integer.parseInt(a.configuration.getProperty("todomvc.server.port"));
-			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
-		}
-		s.serve();
+	public TodoMvcFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
+		super(diFactory, configurationFile, configurationKey);
 	}
 
-	protected final Configuration configuration;
-
-	protected final DiFactory diFactory;
-
-	protected final HttpHandler handler;
-
-	protected final IndexFactory indexFactory;
-
-	protected final InvocationResolver invocationResolver;
-
-	protected final RenderableFactory renderableFactory;
-
-	protected final ResourceMap resourceMap;
-
-	public TodoMvcFrontend(DiFactory diFactory, Path configurationFile) {
-		this.diFactory = diFactory;
-		diFactory.context(this);
-
-		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-				Collections.singletonMap("path", configurationFile));
-
-		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class),
-				Map.of("paths", Map.of("/base",
-						Java.getPackagePaths("com.janilla.frontend").filter(Files::isRegularFile).toList(), "",
-						Java.getPackagePaths("com.janilla.todomvc.frontend").filter(Files::isRegularFile).toList())));
-		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
-		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
-				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
-						.flatMap(x -> Arrays.stream(x.getMethods())
-								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-								.map(y -> new Invocable(x, y)))
-						.toList(),
-				"instanceResolver", (Function<Class<?>, Object>) x -> {
-					var y = diFactory.context();
-//							IO.println("x=" + x + ", y=" + y);
-					return x.isAssignableFrom(y.getClass()) ? y : diFactory.newInstance(diFactory.classFor(x));
-				}));
-		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
-		{
-			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
-			handler = x -> {
-				var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));
-				if (h == null)
-					throw new NotFoundException(x.request().getMethod() + " " + x.request().getTarget());
-				return h.handle(x);
-			};
-		}
-	}
-
-	public Configuration configuration() {
-		return configuration;
-	}
-
-	public DiFactory diFactory() {
-		return diFactory;
-	}
-
-	public HttpHandler handler() {
-		return handler;
-	}
-
-	public IndexFactory indexFactory() {
-		return indexFactory;
-	}
-
-	public InvocationResolver invocationResolver() {
-		return invocationResolver;
-	}
-
-	public RenderableFactory renderableFactory() {
-		return renderableFactory;
-	}
-
-	public ResourceMap resourceMap() {
-		return resourceMap;
+	@Override
+	protected void putResourcePrefixes(Map<String, String> prefixes) {
+		super.putResourcePrefixes(prefixes);
+		prefixes.put("com.janilla.todomvc.frontend", "");
 	}
 }

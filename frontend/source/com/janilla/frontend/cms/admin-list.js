@@ -102,7 +102,7 @@ export default class AdminList extends WebComponent {
             u.searchParams.append("limit", l);
         }
 
-        s.data ??= (await (await fetch(u)).json());
+        s.data ??= (await (await fetch(u, { credentials: "include" })).json());
         s.selectionIds ??= [];
         const a2 = this.closest("admin-element");
         const hh = a2.headers(this.dataset.slug);

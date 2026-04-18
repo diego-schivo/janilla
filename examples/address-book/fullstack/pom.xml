@@ -12,6 +12,11 @@
 			<artifactId>janilla-address-book-frontend</artifactId>
 			<version>${revision}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.janilla</groupId>
+			<artifactId>janilla-fullstack</artifactId>
+			<version>${revision}</version>
+		</dependency>
 	</dependencies>
 	<parent>
 		<groupId>com.janilla</groupId>

@@ -52,7 +52,7 @@ class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 		var rs = exchange.response();
 
 		if (Boolean.parseBoolean(configuration.getProperty("address-book.live-demo"))) {
-			if (!rq.getMethod().equals("GET"))
+			if (!rq.getHeaderValue(":method").equals("GET"))
 				throw new HandleException(new MethodBlockedException());
 		}
 

@@ -25,6 +25,7 @@
 package com.janilla.acmedashboard.frontend;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -105,6 +106,7 @@ class ClientFetcher implements Fetcher {
 	}
 
 	protected String cookie() {
-		return request.getHeaderValues("cookie").filter(x -> x.startsWith("session=")).findFirst().orElse(null);
+		return request.getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; ")))
+				.filter(x -> x.startsWith("session=")).findFirst().orElse(null);
 	}
 }

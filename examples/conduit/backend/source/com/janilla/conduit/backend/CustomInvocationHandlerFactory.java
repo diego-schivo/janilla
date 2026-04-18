@@ -36,7 +36,7 @@ import com.janilla.web.InvocationHandlerFactory;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
 
-public class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
+class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 
 	protected final Configuration configuration;
 
@@ -65,7 +65,7 @@ public class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 	@Override
 	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values, Supplier<String> body,
 			Supplier<Converter> converter) {
-		return type == User.class ? ((BackendExchange) exchange).getUser()
+		return type == User.class ? ((HttpExchangeImpl) exchange).getUser()
 				: super.resolveArgument(type, exchange, values, body, converter);
 	}
 }

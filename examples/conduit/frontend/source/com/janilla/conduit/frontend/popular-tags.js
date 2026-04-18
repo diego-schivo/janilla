@@ -21,9 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import WebComponent from "./web-component.js";
+import WebComponent from "base/web-component";
 
 export default class PopularTags extends WebComponent {
+
+	static get moduleUrl() {
+	    return import.meta.url;
+	}
 
 	static get templateNames() {
 		return ["popular-tags"];

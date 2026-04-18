@@ -200,7 +200,7 @@ export default class AdminRelationshipField extends WebComponent {
             const a2 = this.closest("admin-element");
             s.options ??= Object.fromEntries(await Promise.all((s.field.referenceTypes ?? [s.field.referenceType]).map(t => {
                 const n = Object.entries(a2.customState.schema["Collections"]).find(([_, v]) => v.elementTypes[0] === t)[0];
-                return fetch(`${a1.dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`).then(x => x.json()).then(x => [t, x.elements]);
+                return fetch(`${a1.dataset.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`, { credentials: "include" }).then(x => x.json()).then(x => [t, x.elements]);
             })));
             this.requestDisplay();
         }

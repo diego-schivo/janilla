@@ -26,21 +26,22 @@ package com.janilla.ecommercetemplate.frontend;
 
 import java.util.List;
 import java.util.Map;
-import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.Index;
 import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.http.HttpExchange;
+import com.janilla.ioc.DiFactory;
+import com.janilla.java.Configuration;
 import com.janilla.web.ResourceMap;
 import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 
 public class EcommerceIndexFactory extends WebsiteIndexFactory {
 
 	public EcommerceIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
-			String configurationKey) {
-		super(resourceMap, dataFetching, configuration, configurationKey);
+			String configurationKey, DiFactory diFactory) {
+		super(resourceMap, dataFetching, configuration, configurationKey, diFactory);
 	}
 
 	@Override

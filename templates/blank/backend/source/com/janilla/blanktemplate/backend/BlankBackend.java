@@ -39,6 +39,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.net.ssl.SSLContext;
 
 import com.janilla.backend.cms.CmsResourceHandling;
 import com.janilla.backend.cms.CmsSchema;
@@ -62,16 +65,22 @@ import com.janilla.web.DefaultInvocationResolver;
 import com.janilla.web.Handle;
 import com.janilla.web.Invocable;
 import com.janilla.web.InvocationResolver;
+import com.janilla.web.NotFoundException;
 import com.janilla.web.RenderableFactory;
 
 public class BlankBackend {
 
-	public static final String[] DI_PACKAGES = { "com.janilla.web", "com.janilla.cms", "com.janilla.backend.cms",
-			"com.janilla.blanktemplate", "com.janilla.blanktemplate.backend" };
+	public static Stream<Class<?>> diTypes() {
+		return Stream.of(Java.getPackageTypes("com.janilla.cms"), Java.getPackageTypes("com.janilla.http"),
+				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.blanktemplate"),
+				Java.getPackageTypes("com.janilla.blanktemplate.backend")).flatMap(x -> x);
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, BlankBackend.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -79,42 +88,43 @@ public class BlankBackend {
 			String configurationPath) {
 		T a;
 		{
-			a = diFactory.newInstance(applicationType,
-					Java.hashMap("diFactory", diFactory, "configurationFile",
-							configurationPath != null ? Path.of(configurationPath.startsWith("~")
-									? System.getProperty("user.home") + configurationPath.substring(1)
-									: configurationPath) : null));
+			var cf = configurationPath != null ? Path.of(
+					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
+							: configurationPath)
+					: null;
+			a = diFactory.newInstance(applicationType, Java.hashMap("diFactory", diFactory, "configurationFile", cf));
 		}
 
-//		SSLContext c;
-//		{
-//			var p = a.configuration.getProperty(a.configurationKey + ".server.keystore.path");
-//			if (p != null) {
-//				var w = a.configuration.getProperty(a.configurationKey + ".server.keystore.password");
-//				if (p.startsWith("~"))
-//					p = System.getProperty("user.home") + p.substring(1);
-//				var f = Path.of(p);
-//				if (!Files.exists(f)) {
-//					var cn = a.configuration.getProperty(a.configurationKey + ".server.keystore.common-name");
-//					var san = a.configuration
-//							.getProperty(a.configurationKey + ".server.keystore.subject-alternative-name");
-//					Java.generateKeyPair(cn != null ? cn : "localhost", f, w,
-//							san != null ? san : "dns:localhost,ip:127.0.0.1");
-//				}
-//				try (var s = Files.newInputStream(f)) {
-//					c = Java.sslContext(s, w.toCharArray());
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
-//			} else
+		SSLContext c;
+		{
+			var p = a.configuration.getProperty(a.configurationKey + ".server.keystore.path");
+			if (p != null) {
+				var w = a.configuration.getProperty(a.configurationKey + ".server.keystore.password");
+				if (p.startsWith("~"))
+					p = System.getProperty("user.home") + p.substring(1);
+				var f = Path.of(p);
+				if (!Files.exists(f)) {
+					var cn = a.configuration.getProperty(a.configurationKey + ".server.keystore.common-name");
+					var san = a.configuration
+							.getProperty(a.configurationKey + ".server.keystore.subject-alternative-name");
+					Java.generateKeyPair(cn != null ? cn : "localhost", f, w,
+							san != null ? san : "dns:localhost,ip:127.0.0.1");
+				}
+				try (var s = Files.newInputStream(f)) {
+					c = Java.sslContext(s, w.toCharArray());
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			} else
 //				c = DefaultHttpClient.sslContext("TLSv1.3");
-//		}
+				c = null;
+		}
 
 		HttpServer s;
 		{
 			var p = Integer.parseInt(a.configuration.getProperty(a.configurationKey + ".server.port"));
 			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
+					Java.hashMap("endpoint", new InetSocketAddress(p), "sslContext", c, "handler", a.handler));
 		}
 		s.serve();
 	}
@@ -163,6 +173,7 @@ public class BlankBackend {
 		this.configurationFile = configurationFile;
 		this.configurationKey = configurationKey;
 		diFactory.context(this);
+
 		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
 				Collections.singletonMap("path", configurationFile));
 		domain = diFactory.newInstance(diFactory.classFor(BlankDomain.class));
@@ -292,21 +303,19 @@ public class BlankBackend {
 
 	protected boolean handle(HttpExchange exchange) {
 //		IO.println("BlankBackend.handle, exchange=" + exchange);
-//		return ScopedValue
-//				.where(Configuration.PROPERTY_GETTER, x -> configuration.getProperty(configurationKey + "." + x))
-//				.call(() -> {
-//					var h = handlerFactory
-//							.createHandler(exchange.exception() != null ? exchange.exception() : exchange.request());
-//					if (h == null)
-//						throw new NotFoundException(
-//								exchange.request().getMethod() + " " + exchange.request().getTarget());
-//					return h.handle(exchange);
-//				});
-		throw new RuntimeException();
+		return ScopedValue.where(com.janilla.blanktemplate.Configuration.PROPERTY_GETTER,
+				x -> configuration.getProperty(configurationKey + "." + x)).call(() -> {
+					var h = handlerFactory
+							.createHandler(exchange.exception() != null ? exchange.exception() : exchange.request());
+					if (h == null)
+						throw new NotFoundException(
+								exchange.request().getHeaderValue(":method") + " " + exchange.request().getHeaderValue(":path"));
+					return h.handle(exchange);
+				});
 	}
 
 	protected boolean testDrafts(HttpExchange x) {
-		var u = x instanceof BackendHttpExchange y ? y.sessionUser() : null;
+		var u = x instanceof HttpExchangeImpl y ? y.sessionUser() : null;
 		return u != null;
 	}
 }

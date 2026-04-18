@@ -86,7 +86,7 @@ export default class AdminEdit extends WebComponent {
             const u = new URL([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), location.href);
 			u.searchParams.append("depth", 1);
 			return u;
-        })())).json();
+        })(), { credentials: "include" })).json();
         s.versions = Object.hasOwn(s.document, "versionCount");
         s.drafts = Object.hasOwn(s.document, "documentStatus");
         const a2 = this.closest("admin-element");
@@ -265,7 +265,7 @@ export default class AdminEdit extends WebComponent {
     async reloadFieldData(path) {
         const a = this.closest("app-element");
         const a2 = this.closest("admin-element");
-        const d = await (await fetch([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"))).json();
+        const d = await (await fetch([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), { credentials: "include" })).json();
         a2.setFieldData(this.field(path), this.field(path, d).data);
     }
 

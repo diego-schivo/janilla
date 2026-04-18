@@ -23,27 +23,15 @@
  */
 package com.janilla.conduit.backend;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 
-public class ConfigurationImpl extends Properties {
+import com.janilla.java.AbstractConfiguration;
 
-	private static final long serialVersionUID = -4232860713765868597L;
+class ConfigurationImpl extends AbstractConfiguration {
 
-	public ConfigurationImpl(Path file) {
-		try {
-			try (var x = ConduitBackend.class.getResourceAsStream("configuration.properties")) {
-				load(x);
-			}
-			if (file != null)
-				try (var x = Files.newInputStream(file)) {
-					load(x);
-				}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+	private static final long serialVersionUID = -8020386491694043266L;
+
+	public ConfigurationImpl(Path path) {
+		super(ConduitBackend.class, path);
 	}
 }

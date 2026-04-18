@@ -135,7 +135,7 @@ public class AcmeDashboardTest {
 						: (HttpHandler) y -> {
 							var h = f.createHandler(Objects.requireNonNullElse(y.exception(), y.request()));
 							if (h == null)
-								throw new NotFoundException(y.request().getMethod() + " " + y.request().getTarget());
+								throw new NotFoundException(y.request().getHeaderValue(":method") + " " + y.request().getHeaderValue(":path"));
 							return h.handle(y);
 						};
 				return h2.handle(ex);

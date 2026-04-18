@@ -26,7 +26,6 @@ package com.janilla.ecommercetemplate.test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -39,14 +38,14 @@ import com.janilla.websitetemplate.test.WebsiteTest;
 
 public class EcommerceTest extends WebsiteTest {
 
-	public static final String[] DI_PACKAGES = Stream
-			.concat(Arrays.stream(WebsiteTest.DI_PACKAGES), Stream.of("com.janilla.ecommercetemplate.test"))
-			.toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(WebsiteTest.diTypes(), Java.getPackageTypes("com.janilla.ecommercetemplate.test"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, EcommerceTest.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -59,8 +58,8 @@ public class EcommerceTest extends WebsiteTest {
 	}
 
 	@Override
-	protected String[] diFullstackPackages() {
-		return EcommerceFullstack.DI_PACKAGES;
+	protected Stream<Class<?>> diFullstackTypes() {
+		return EcommerceFullstack.diTypes();
 	}
 
 	@Override

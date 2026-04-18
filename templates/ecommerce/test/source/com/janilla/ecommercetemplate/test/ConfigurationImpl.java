@@ -24,27 +24,15 @@
  */
 package com.janilla.ecommercetemplate.test;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 
-public class ConfigurationImpl extends Properties {
+import com.janilla.java.AbstractConfiguration;
 
-	private static final long serialVersionUID = -7628610436987997432L;
+class ConfigurationImpl extends AbstractConfiguration {
 
-	public ConfigurationImpl(Path file) {
-		try {
-			try (var x = EcommerceTest.class.getResourceAsStream("configuration.properties")) {
-				load(x);
-			}
-			if (file != null)
-				try (var x = Files.newInputStream(file)) {
-					load(x);
-				}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+	private static final long serialVersionUID = -9157178645417835339L;
+
+	public ConfigurationImpl(Path path) {
+		super(EcommerceTest.class, path);
 	}
 }

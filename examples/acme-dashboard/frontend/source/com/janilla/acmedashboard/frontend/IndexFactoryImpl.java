@@ -60,11 +60,6 @@ class IndexFactoryImpl extends DefaultIndexFactory {
 	}
 
 	@Override
-	protected String baseImportKey(String name) {
-		return "base/" + name;
-	}
-
-	@Override
 	protected void addTemplates(List<Template> list) {
 		Stream.of("acme-logo", "app", "breadcrumb-nav", "card-wrapper", "customers-page", "dashboard-page",
 				"dashboard-layout", "dashboard-nav", "hero-icon", "invoice-page", "invoice-status", "invoices-layout",

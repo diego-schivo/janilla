@@ -52,6 +52,7 @@ package com.janilla.backend.cms;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,7 +61,6 @@ import com.janilla.cms.User;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.HttpServer;
 import com.janilla.http.SimpleHttpExchange;
 import com.janilla.json.Jwt;
 import com.janilla.web.UnauthorizedException;
@@ -86,8 +86,8 @@ public abstract class AbstractUserHttpExchange<U extends User<?>> extends Simple
 
 	public String sessionEmail() {
 		if (!session.containsKey("sessionEmail")) {
-			var t = request().getHeaderValues("cookie").map(HttpCookie::parse).filter(x -> x.name().equals(jwtCookie))
-					.findFirst().orElse(null);
+			var t = request().getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; ")))
+					.map(HttpCookie::parse).filter(x -> x.name().equals(jwtCookie)).findFirst().orElse(null);
 			Map<String, ?> p;
 			try {
 				p = t != null ? Jwt.verifyToken(t.value(), jwtKey) : null;
@@ -124,8 +124,8 @@ public abstract class AbstractUserHttpExchange<U extends User<?>> extends Simple
 	@Override
 	public void requireSessionEmail() {
 		if (sessionEmail() == null) {
-			var r = HttpServer.HTTP_EXCHANGE.get().request();
-			IO.println(r.getMethod() + " " + r.getPath());
+//			var r = HttpServer.HTTP_EXCHANGE.get().request();
+//			IO.println(r.getHeaderValue(":method") + " " + r.getPath());
 
 			throw new UnauthorizedException("Unauthorized, you must be logged in to make this request.");
 		}

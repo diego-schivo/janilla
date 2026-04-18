@@ -54,8 +54,6 @@ class IndexFactoryImpl extends DefaultIndexFactory {
 
 	@Override
 	public Index newIndex(HttpExchange exchange) {
-//		return new SimpleIndex("Address Book", imports(), scripts(),
-//				new SimpleApp(configuration.getProperty("address-book.api.url"), state(exchange)), templates());
 		return diFactory.newInstance(diFactory.classFor(Index.class),
 				Java.hashMap("title", "Address Book", "imports", imports(), "scripts", scripts(), "app",
 						new SimpleApp(configuration.getProperty("address-book.api.url"), state(exchange)), "templates",
@@ -67,11 +65,6 @@ class IndexFactoryImpl extends DefaultIndexFactory {
 		super.putImports(map);
 		Stream.of("about", "app", "contact", "edit-contact", "home", "sidebar-layout", "toggle-favorite")
 				.forEach(x -> map.put(x, "/" + x + ".js"));
-	}
-
-	@Override
-	protected String baseImportKey(String name) {
-		return "base/" + name;
 	}
 
 	@Override

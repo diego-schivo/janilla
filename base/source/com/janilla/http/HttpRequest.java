@@ -39,69 +39,38 @@ public class HttpRequest extends HttpMessage {
 	}
 
 	public HttpRequest(String method, URI uri, String cookie) {
+//		IO.println("HttpRequest, method=" + method + ", uri=" + uri + ", cookie=" + cookie);
 		if (method != null && !method.isEmpty())
-			setMethod(method);
+			setHeaderValue(":method", method);
 		if (uri != null)
 			setUri(uri);
 		if (cookie != null && !cookie.isEmpty())
 			setCookie(cookie);
 	}
 
-	public String getMethod() {
-		return getHeaderValue(":method");
-	}
-
-	public void setMethod(String method) {
-		setHeaderValue(":method", method);
-	}
-
-	public String getScheme() {
-		return getHeaderValue(":scheme");
-	}
-
-	public void setScheme(String scheme) {
-		setHeaderValue(":scheme", scheme);
-	}
-
-	public String getAuthority() {
-		return getHeaderValue(":authority");
-	}
-
-	public void setAuthority(String authority) {
-		setHeaderValue(":authority", authority);
-	}
-
-	public String getTarget() {
-		return getHeaderValue(":path");
-	}
-
-	public void setTarget(String target) {
-		setHeaderValue(":path", target);
-	}
-
 	public String getPath() {
-		var t = getTarget();
+		var t = getHeaderValue(":path");
 		var i = t != null ? t.indexOf('?') : -1;
 		return URLDecoder.decode(i != -1 ? t.substring(0, i) : t, StandardCharsets.UTF_8);
 	}
 
 	public String getQuery() {
-		var t = getTarget();
+		var t = getHeaderValue(":path");
 		var i = t != null ? t.indexOf('?') : -1;
 		return i != -1 ? t.substring(i + 1) : null;
 	}
 
 	public URI getUri() {
-		return URI.create(getScheme() + "://" + getAuthority() + getTarget());
+		return URI.create(getHeaderValue(":scheme") + "://" + getHeaderValue(":authority") + getHeaderValue(":path"));
 	}
 
 	public void setUri(URI uri) {
-		setScheme(uri.getScheme());
-		setAuthority(uri.getAuthority());
+		setHeaderValue(":scheme", uri.getScheme());
+		setHeaderValue(":authority", uri.getAuthority());
 		var b = new StringBuilder(uri.getRawPath());
 		if (uri.getRawQuery() != null && !uri.getRawQuery().isEmpty())
 			b.append('?').append(uri.getRawQuery());
-		setTarget(b.toString());
+		setHeaderValue(":path", b.toString());
 	}
 
 	public void setBasicAuthorization(String credentials) {

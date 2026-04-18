@@ -25,7 +25,6 @@ package com.janilla.janillacom.backend;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -42,13 +41,15 @@ import com.janilla.websitetemplate.backend.WebsiteBackend;
 
 public class JanillaBackend extends WebsiteBackend {
 
-	public static final String[] DI_PACKAGES = Stream.concat(Arrays.stream(WebsiteBackend.DI_PACKAGES),
-			Stream.of("com.janilla.janillacom", "com.janilla.janillacom.backend")).toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream.of(WebsiteBackend.diTypes(), Java.getPackageTypes("com.janilla.janillacom"),
+				Java.getPackageTypes("com.janilla.janillacom.backend")).flatMap(x -> x);
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList());
+
+		var f = new DefaultDiFactory(diTypes().toList());
 		serve(f, JanillaBackend.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -79,10 +80,10 @@ public class JanillaBackend extends WebsiteBackend {
 			if (a != null)
 				try {
 					var c = Class.forName(a.backend());
-					var pp = (String[]) c.getDeclaredField("DI_PACKAGES").get(null);
+					@SuppressWarnings("unchecked")
+					var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
 //					IO.println("JanillaBackend.application, c=" + c + ", pp=" + Arrays.toString(pp));
-					var f = new DefaultDiFactory(
-							Arrays.stream(pp).flatMap(x -> Java.getPackageTypes(x)).toList());
+					var f = new DefaultDiFactory(tt);
 					var cf = configurationFile != null ? configurationFile
 							: Path.of(JanillaBackend.class.getResource("configuration.properties").toURI());
 					return f.newInstance(c, Java.hashMap("diFactory", f, "configurationFile", cf));
@@ -101,7 +102,6 @@ public class JanillaBackend extends WebsiteBackend {
 	@Override
 	protected boolean handle(HttpExchange exchange) {
 //		IO.println("JanillaBackend.handle, exchange=" + exchange);
-//		var a = application(exchange.request().getAuthority());
 		var a = JanillaDomain.APPLICATION.get();
 		return a == this ? super.handle(exchange)
 				: ((HttpHandler) JavaReflect.property(a.getClass(), "handler").get(a)).handle(exchange);

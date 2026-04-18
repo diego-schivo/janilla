@@ -21,47 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.conduit.backend;
+package com.janilla.conduit.fullstack;
 
-import java.util.HashMap;
+import java.net.SocketAddress;
 import java.util.Map;
-import com.janilla.java.Configuration;
 
-import com.janilla.backend.persistence.Persistence;
+import javax.net.ssl.SSLContext;
+
+import com.janilla.conduit.backend.ConduitBackend;
+import com.janilla.conduit.frontend.ConduitFrontend;
+import com.janilla.http.DefaultHttpServer;
+import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.SimpleHttpExchange;
-import com.janilla.json.Jwt;
+import com.janilla.ioc.Context;
 
-public class BackendExchange extends SimpleHttpExchange {
+@Context("fullstack")
+class HttpServerImpl extends DefaultHttpServer {
 
-	protected final Configuration configuration;
+	protected final ConduitBackend backend;
 
-	protected final Persistence persistence;
+	protected final ConduitFrontend frontend;
 
-	protected final Map<String, Object> session = new HashMap<>();
-
-	public BackendExchange(HttpRequest request, HttpResponse response, Configuration configuration,
-			Persistence persistence) {
-		super(request, response);
-		this.configuration = configuration;
-		this.persistence = persistence;
+	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, ConduitBackend backend,
+			ConduitFrontend frontend) {
+		super(endpoint, sslContext, handler);
+		this.backend = backend;
+		this.frontend = frontend;
 	}
 
-	public User getUser() {
-		if (!session.containsKey("user")) {
-			var a = request().getHeaderValue("authorization");
-			var t = a != null && a.startsWith("Token ") ? a.substring("Token ".length()) : null;
-			var p = t != null ? Jwt.verifyToken(t, configuration.getProperty("conduit.jwt.key")) : null;
-			var e = p != null ? (String) p.get("loggedInAs") : null;
-			User u;
-			if (e != null) {
-				var c = persistence.crud(User.class);
-				u = c.read(c.find("email", new Object[] { e }));
-			} else
-				u = null;
-			session.put("user", u);
-		}
-		return (User) session.get("user");
+	@Override
+	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+		var f = request.getPath().startsWith("/api/") ? backend.diFactory() : frontend.diFactory();
+		var c = f.classFor(HttpExchange.class);
+		return c != null ? f.newInstance(c, Map.of("request", request, "response", response))
+				: super.createExchange(request, response);
 	}
 }

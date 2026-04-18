@@ -129,7 +129,7 @@ public class CmsSchema extends LinkedHashMap<String, Object> {
 							if (pt2 == List.class) {
 								var et1 = ((ParameterizedType) p.genericType()).getActualTypeArguments()[0];
 								var et2 = Java.toClass(et1);
-								IO.println("et1=" + et1 + ", et2=" + et2);
+//								IO.println("et1=" + et1 + ", et2=" + et2);
 
 //								var ta = JavaReflect.inheritedMethods((Method) p.member())
 //										.map(x -> x.getAnnotatedReturnType() instanceof AnnotatedParameterizedType apt

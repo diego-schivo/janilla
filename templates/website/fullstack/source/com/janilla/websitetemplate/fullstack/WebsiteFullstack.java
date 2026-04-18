@@ -25,7 +25,6 @@
 package com.janilla.websitetemplate.fullstack;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
@@ -37,23 +36,14 @@ import com.janilla.websitetemplate.frontend.WebsiteFrontend;
 
 public class WebsiteFullstack extends BlankFullstack {
 
-	public static final String[] DI_BACKEND_PACKAGES = Stream
-			.concat(Arrays.stream(WebsiteBackend.DI_PACKAGES), Stream.of("com.janilla.websitetemplate.fullstack"))
-			.toArray(String[]::new);
-
-	public static final String[] DI_FRONTEND_PACKAGES = Stream
-			.concat(Arrays.stream(WebsiteFrontend.DI_PACKAGES), Stream.of("com.janilla.websitetemplate.fullstack"))
-			.toArray(String[]::new);
-
-	public static final String[] DI_PACKAGES = Stream
-			.concat(Arrays.stream(BlankFullstack.DI_PACKAGES), Stream.of("com.janilla.websitetemplate.fullstack"))
-			.toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate.fullstack"));
+	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList(),
-				"fullstack");
+
+		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
 		serve(f, WebsiteFullstack.class, args.length > 0 ? args[0] : null);
 	}
 
@@ -66,12 +56,14 @@ public class WebsiteFullstack extends BlankFullstack {
 	}
 
 	@Override
-	protected String[] diBackendPackages() {
-		return DI_BACKEND_PACKAGES;
+	protected Stream<Class<?>> diBackendTypes() {
+		return Stream.of(WebsiteBackend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.websitetemplate.fullstack")).flatMap(x -> x);
 	}
 
 	@Override
-	protected String[] diFrontendPackages() {
-		return DI_FRONTEND_PACKAGES;
+	protected Stream<Class<?>> diFrontendTypes() {
+		return Stream.of(WebsiteFrontend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.websitetemplate.fullstack")).flatMap(x -> x);
 	}
 }

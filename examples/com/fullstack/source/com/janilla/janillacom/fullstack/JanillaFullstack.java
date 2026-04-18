@@ -28,7 +28,6 @@ import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -41,17 +40,9 @@ import com.janilla.websitetemplate.fullstack.WebsiteFullstack;
 
 public class JanillaFullstack extends WebsiteFullstack {
 
-	public static final String[] DI_BACKEND_PACKAGES = Stream
-			.concat(Arrays.stream(JanillaBackend.DI_PACKAGES), Stream.of("com.janilla.janillacom.fullstack"))
-			.toArray(String[]::new);
-
-	public static final String[] DI_FRONTEND_PACKAGES = Stream
-			.concat(Arrays.stream(JanillaFrontend.DI_PACKAGES), Stream.of("com.janilla.janillacom.fullstack"))
-			.toArray(String[]::new);
-
-	public static final String[] DI_PACKAGES = Stream
-			.concat(Arrays.stream(WebsiteFullstack.DI_PACKAGES), Stream.of("com.janilla.janillacom.fullstack"))
-			.toArray(String[]::new);
+	public static Stream<Class<?>> diTypes() {
+		return Stream.concat(WebsiteFullstack.diTypes(), Java.getPackageTypes("com.janilla.janillacom.fullstack"));
+	};
 
 	public static void main(String[] args) {
 		IO.println("pid=" + ProcessHandle.current().pid());
@@ -75,9 +66,7 @@ public class JanillaFullstack extends WebsiteFullstack {
 			}
 		});
 
-		var f = new DefaultDiFactory(
-				Arrays.stream(DI_PACKAGES).flatMap(x -> Java.getPackageTypes(x)).toList(),
-				"fullstack");
+		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
 		try {
 			serve(f, JanillaFullstack.class, args.length > 0 ? args[0] : null);
 		} catch (Throwable t) {
@@ -90,12 +79,12 @@ public class JanillaFullstack extends WebsiteFullstack {
 	}
 
 	@Override
-	protected String[] diBackendPackages() {
-		return DI_BACKEND_PACKAGES;
+	protected Stream<Class<?>> diBackendTypes() {
+		return Stream.concat(JanillaBackend.diTypes(), Java.getPackageTypes("com.janilla.janillacom.fullstack"));
 	}
 
 	@Override
-	protected String[] diFrontendPackages() {
-		return DI_FRONTEND_PACKAGES;
+	protected Stream<Class<?>> diFrontendTypes() {
+		return Stream.concat(JanillaFrontend.diTypes(), Java.getPackageTypes("com.janilla.janillacom.fullstack"));
 	}
 }

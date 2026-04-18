@@ -24,12 +24,13 @@
  */
 package com.janilla.blanktemplate.frontend;
 
-import com.janilla.java.Configuration;
+import java.util.Arrays;
 
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.http.SimpleHttpExchange;
+import com.janilla.java.Configuration;
 
 public class BlankFrontendHttpExchange extends SimpleHttpExchange {
 
@@ -46,7 +47,7 @@ public class BlankFrontendHttpExchange extends SimpleHttpExchange {
 
 	public HttpCookie tokenCookie() {
 		var c = configuration.getProperty(configurationKey + ".jwt.cookie");
-		return request.getHeaderValues("cookie").map(HttpCookie::parse).filter(x -> x.name().equals(c)).findFirst()
-				.orElse(null);
+		return request.getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; "))).map(HttpCookie::parse)
+				.filter(x -> x.name().equals(c)).findFirst().orElse(null);
 	}
 }

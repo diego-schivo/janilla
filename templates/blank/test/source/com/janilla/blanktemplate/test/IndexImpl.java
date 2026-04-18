@@ -24,35 +24,16 @@
  */
 package com.janilla.blanktemplate.test;
 
-import java.net.SocketAddress;
+import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.SSLContext;
+import com.janilla.frontend.App;
+import com.janilla.frontend.Index;
+import com.janilla.frontend.Script;
+import com.janilla.frontend.Template;
+import com.janilla.web.Render;
 
-import com.janilla.blanktemplate.fullstack.BlankFullstack;
-import com.janilla.http.DefaultHttpServer;
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse;
-
-public class CustomHttpServer extends DefaultHttpServer {
-
-	protected final BlankFullstack fullstack;
-
-	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
-			BlankFullstack fullstack) {
-		super(endpoint, sslContext, handler);
-		this.fullstack = fullstack;
-	}
-
-	@Override
-	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		if (Test.ONGOING.get()) {
-			var f = request.getPath().startsWith("/api/") ? fullstack.backend().diFactory()
-					: fullstack.frontend().diFactory();
-			return f.newInstance(f.classFor(HttpExchange.class), Map.of("request", request, "response", response));
-		}
-		return super.createExchange(request, response);
-	}
+@Render(template = "index", resource = { "/base/index.html", "/index.html" })
+record IndexImpl(String title, Map<String, String> imports, List<Script> scripts, App app, List<Template> templates)
+		implements Index {
 }

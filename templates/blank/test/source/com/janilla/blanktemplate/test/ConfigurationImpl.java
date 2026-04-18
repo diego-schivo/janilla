@@ -24,27 +24,15 @@
  */
 package com.janilla.blanktemplate.test;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 
-public class ConfigurationImpl extends Properties {
+import com.janilla.java.AbstractConfiguration;
 
-	private static final long serialVersionUID = 6296824129286674444L;
+class ConfigurationImpl extends AbstractConfiguration {
 
-	public ConfigurationImpl(Path file) {
-		try {
-			try (var x = BlankTest.class.getResourceAsStream("configuration.properties")) {
-				load(x);
-			}
-			if (file != null)
-				try (var x = Files.newInputStream(file)) {
-					load(x);
-				}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+	private static final long serialVersionUID = -9068513378074710452L;
+
+	public ConfigurationImpl(Path path) {
+		super(BlankTest.class, path);
 	}
 }
