@@ -35,15 +35,17 @@ import java.util.Map;
 import com.janilla.frontend.IndexFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
-import com.janilla.web.AbstractApp;
+import com.janilla.web.AbstractWebApp;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.ResourceMap;
 
-public abstract class AbstractFrontend extends AbstractApp {
+public abstract class AbstractFrontend extends AbstractWebApp {
 
 	protected IndexFactory indexFactory;
 
 	protected ResourceMap resourceMap;
+
+	protected Map<String, String> resourcePrefixes;
 
 	protected AbstractFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
 		super(diFactory, configurationFile, configurationKey);
@@ -57,13 +59,17 @@ public abstract class AbstractFrontend extends AbstractApp {
 		return resourceMap;
 	}
 
+	public Map<String, String> resourcePrefixes() {
+		return resourcePrefixes;
+	}
+
 	@Override
 	protected InvocationResolver newInvocationResolver() {
 		{
-			var pp = new LinkedHashMap<String, String>();
-			putResourcePrefixes(pp);
-			resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class),
-					Map.of("paths", pp.entrySet().stream().reduce(new HashMap<String, List<Path>>(), (x, y) -> {
+			resourcePrefixes = new LinkedHashMap<>();
+			putResourcePrefixes();
+			resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths",
+					resourcePrefixes.entrySet().stream().reduce(new HashMap<String, List<Path>>(), (x, y) -> {
 						x.computeIfAbsent(y.getValue(), _ -> new ArrayList<>())
 								.addAll(Java.getPackagePaths(y.getKey()).filter(Files::isRegularFile).toList());
 						return x;
@@ -73,7 +79,7 @@ public abstract class AbstractFrontend extends AbstractApp {
 		return super.newInvocationResolver();
 	}
 
-	protected void putResourcePrefixes(Map<String, String> prefixes) {
-		prefixes.put("com.janilla.frontend", "/base");
+	protected void putResourcePrefixes() {
+		resourcePrefixes.put("com.janilla.frontend", "/base");
 	}
 }

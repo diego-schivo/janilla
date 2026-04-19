@@ -24,7 +24,6 @@
 package com.janilla.todomvc.frontend;
 
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.AbstractFrontend;
@@ -35,8 +34,8 @@ import com.janilla.java.Java;
 public class TodoMvcFrontend extends AbstractFrontend {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.frontend", _ -> true),
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
+				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
 				Java.getPackageTypes("com.janilla.todomvc.frontend")).flatMap(x -> x);
 	};
 
@@ -44,16 +43,16 @@ public class TodoMvcFrontend extends AbstractFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length != 0 ? args[0] : null, "todomvc");
+		serve(f, args.length != 0 ? args[0] : null);
 	}
 
-	public TodoMvcFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public TodoMvcFrontend(DiFactory diFactory, Path configurationFile) {
+		super(diFactory, configurationFile, "todomvc");
 	}
 
 	@Override
-	protected void putResourcePrefixes(Map<String, String> prefixes) {
-		super.putResourcePrefixes(prefixes);
-		prefixes.put("com.janilla.todomvc.frontend", "");
+	protected void putResourcePrefixes() {
+		super.putResourcePrefixes();
+		resourcePrefixes.put("com.janilla.todomvc.frontend", "");
 	}
 }

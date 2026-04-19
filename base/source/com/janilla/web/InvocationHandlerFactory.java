@@ -53,6 +53,7 @@ import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.java.Java;
 import com.janilla.java.JavaInvoke;
 import com.janilla.java.JavaReflect;
@@ -332,12 +333,12 @@ public class InvocationHandlerFactory implements HttpHandlerFactory {
 		var c = Java.toClass(type);
 		var o = c.isArray() || Collection.class.isAssignableFrom(c) ? strings
 				: (strings != null && strings.length > 0 ? strings[0] : null);
-		return new Converter().convert(o, type);
+		return new DefaultConverter().convert(o, type);
 	}
 
 	protected Converter converter(Class<? extends TypeResolver> type) {
 		try {
-			return new Converter(
+			return new DefaultConverter(
 					type != null && type != NullTypeResolver.class ? type.getConstructor().newInstance() : null);
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);

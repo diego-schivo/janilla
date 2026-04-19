@@ -53,7 +53,7 @@ import com.janilla.http.DefaultHttpClient;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.java.Configuration;
-import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.json.Json;
@@ -85,7 +85,7 @@ public class StripeApi extends PaymentApi {
 					+ new UriQueryBuilder().append("email", user != null ? user.email() : guestEmail)));
 			rq.setBasicAuthorization(secretKey + ":");
 			var r = new DefaultHttpClient().send(rq,
-					HttpClient.JSON.andThen(x -> (R) new Converter().convert(x, R.class)));
+					HttpClient.JSON.andThen(x -> (R) new DefaultConverter().convert(x, R.class)));
 //			IO.println("r=" + r);
 			c = !r.data().isEmpty() ? r.data().getFirst() : null;
 		}
@@ -98,7 +98,8 @@ public class StripeApi extends PaymentApi {
 			rq.setHeaderValue("content-type", "application/x-www-form-urlencoded");
 			rq.setHeaderValue("content-length", String.valueOf(bb.length));
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
-			c = new DefaultHttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, C.class)));
+			c = new DefaultHttpClient().send(rq,
+					HttpClient.JSON.andThen(x -> new DefaultConverter().convert(x, C.class)));
 //			IO.println("c=" + c);
 		}
 
@@ -120,7 +121,8 @@ public class StripeApi extends PaymentApi {
 			rq.setHeaderValue("content-type", "application/x-www-form-urlencoded");
 			rq.setHeaderValue("content-length", String.valueOf(bb.length));
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
-			pi = new DefaultHttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, PI.class)));
+			pi = new DefaultHttpClient().send(rq,
+					HttpClient.JSON.andThen(x -> new DefaultConverter().convert(x, PI.class)));
 //			IO.println("pi=" + pi);
 		}
 
@@ -146,14 +148,15 @@ public class StripeApi extends PaymentApi {
 		{
 			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/payment_intents/" + paymentIntent));
 			rq.setBasicAuthorization(configuration.getProperty("ecommerce-template.stripe.secret-key") + ":");
-			pi = new DefaultHttpClient().send(rq, HttpClient.JSON.andThen(x -> new Converter().convert(x, PI.class)));
+			pi = new DefaultHttpClient().send(rq,
+					HttpClient.JSON.andThen(x -> new DefaultConverter().convert(x, PI.class)));
 //			IO.println("pi=" + pi);
 		}
 
 		@SuppressWarnings("unchecked")
-		var cii = (List<CartItem>) new Converter().convert(Json.parse(pi.metadata().get("cartItems")),
+		var cii = (List<CartItem>) new DefaultConverter().convert(Json.parse(pi.metadata().get("cartItems")),
 				new SimpleParameterizedType(List.class, List.of(CartItem.class)));
-		var sa = (AddressData) new Converter().convert(Json.parse(pi.metadata().get("shippingAddress")),
+		var sa = (AddressData) new DefaultConverter().convert(Json.parse(pi.metadata().get("shippingAddress")),
 				AddressData.class);
 		var o = persistence.crud(Order.class)
 				.create(domain.newOrder(cii, sa, user, guestEmail, List.of(t), domain.orderStatus("PROCESSING"),

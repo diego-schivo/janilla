@@ -23,28 +23,20 @@
  */
 package com.janilla.conduit.fullstack;
 
-import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.conduit.backend.ConduitBackend;
 import com.janilla.conduit.frontend.ConduitFrontend;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpServer;
+import com.janilla.fullstack.web.AbstractFullstack;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 
-public class ConduitFullstack {
+public class ConduitFullstack extends AbstractFullstack {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(
-				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.conduit")),
-				Java.getPackageTypes("com.janilla.conduit.fullstack"));
+		return Java.getPackageTypes("com.janilla.conduit.fullstack");
 	};
 
 	public static void main(String[] args) {
@@ -54,94 +46,7 @@ public class ConduitFullstack {
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
-	protected static void serve(DiFactory diFactory, String configurationPath) {
-		ConduitFullstack a;
-		{
-			var cf = configurationPath != null ? Path.of(
-					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-							: configurationPath)
-					: null;
-			a = diFactory.newInstance(diFactory.classFor(ConduitFullstack.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-		}
-
-		HttpServer s;
-		{
-			var p = Integer.parseInt(a.configuration.getProperty("conduit.server.port"));
-			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
-		}
-		s.serve();
-	}
-
-	protected final ConduitBackend backend;
-
-	protected final Configuration configuration;
-
-	protected final DiFactory diFactory;
-
-	protected final ConduitFrontend frontend;
-
-	protected final HttpHandler handler;
-
 	public ConduitFullstack(DiFactory diFactory, Path configurationFile) {
-		this.diFactory = diFactory;
-		diFactory.context(this);
-
-		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-				Collections.singletonMap("path", configurationFile));
-
-		Path cf;
-		try {
-			cf = configurationFile != null ? configurationFile
-					: Path.of(ConduitFullstack.class.getResource("configuration.properties").toURI());
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-
-		{
-			var f = new DefaultDiFactory(Stream
-					.concat(ConduitBackend.diTypes(), Java.getPackageTypes("com.janilla.conduit.fullstack")).toList(),
-					"backend");
-			backend = diFactory.newInstance(ConduitBackend.class,
-					Java.hashMap("diFactory", f, "configurationFile", cf));
-		}
-
-		{
-			var f = new DefaultDiFactory(Stream
-					.concat(ConduitFrontend.diTypes(), Java.getPackageTypes("com.janilla.conduit.fullstack")).toList(),
-					"frontend");
-			frontend = diFactory.newInstance(ConduitFrontend.class,
-					Java.hashMap("diFactory", f, "configurationFile", cf));
-		}
-
-		handler = x -> {
-			var h = x.request().getPath().startsWith("/api/") ? backend.handler() : frontend.handler();
-			return h.handle(x);
-		};
-	}
-
-//	public ConduitFullstack application() {
-//		return this;
-//	}
-
-	public ConduitBackend backend() {
-		return backend;
-	}
-
-	public Configuration configuration() {
-		return configuration;
-	}
-
-	public DiFactory diFactory() {
-		return diFactory;
-	}
-
-	public ConduitFrontend frontend() {
-		return frontend;
-	}
-
-	public HttpHandler handler() {
-		return handler;
+		super(diFactory, configurationFile, "conduit", ConduitFrontend.class, ConduitBackend.class);
 	}
 }

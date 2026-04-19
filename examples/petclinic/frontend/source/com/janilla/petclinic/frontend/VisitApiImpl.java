@@ -22,7 +22,7 @@ import java.nio.channels.Channels;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.java.Configuration;
-import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.json.Json;
 import com.janilla.petclinic.Visit;
 import com.janilla.petclinic.VisitApi;
@@ -44,6 +44,6 @@ class VisitApiImpl implements VisitApi {
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(visit, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);
-		return new Converter().convert(o, Visit.class);
+		return new DefaultConverter().convert(o, Visit.class);
 	}
 }

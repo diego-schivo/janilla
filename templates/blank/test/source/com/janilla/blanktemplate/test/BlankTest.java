@@ -162,7 +162,7 @@ public class BlankTest {
 			handler = ex -> {
 //				IO.println("BlankTest, " + ex.request().getPath() + ", Test.ongoing=" + Test.ONGOING.get());
 				var h = WebHandling.TEST_ONGOING.get() && !ex.request().getPath().startsWith("/test/")
-						? fullstack.handler()
+						? fullstack.httpHandler()
 						: h0;
 				return h.handle(ex);
 			};

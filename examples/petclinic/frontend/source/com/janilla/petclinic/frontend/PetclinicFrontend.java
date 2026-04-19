@@ -16,7 +16,6 @@
 package com.janilla.petclinic.frontend;
 
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.AbstractFrontend;
@@ -47,7 +46,7 @@ public class PetclinicFrontend extends AbstractFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null, "petclinic");
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected HttpClient httpClient;
@@ -62,8 +61,8 @@ public class PetclinicFrontend extends AbstractFrontend {
 
 	protected VisitApi visitApi;
 
-	public PetclinicFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public PetclinicFrontend(DiFactory diFactory, Path configurationFile) {
+		super(diFactory, configurationFile, "petclinic");
 	}
 
 	public HttpClient httpClient() {
@@ -103,8 +102,8 @@ public class PetclinicFrontend extends AbstractFrontend {
 	}
 
 	@Override
-	protected void putResourcePrefixes(Map<String, String> prefixes) {
-		super.putResourcePrefixes(prefixes);
-		prefixes.put("com.janilla.petclinic.frontend", "");
+	protected void putResourcePrefixes() {
+		super.putResourcePrefixes();
+		resourcePrefixes.put("com.janilla.petclinic.frontend", "");
 	}
 }

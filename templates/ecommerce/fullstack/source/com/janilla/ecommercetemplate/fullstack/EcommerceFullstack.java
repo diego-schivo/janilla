@@ -45,14 +45,14 @@ public class EcommerceFullstack extends WebsiteFullstack {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		serve(f, EcommerceFullstack.class, args.length > 0 ? args[0] : null);
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	public EcommerceFullstack(DiFactory diFactory, Path configurationFile) {
 		this(diFactory, configurationFile, "ecommerce-template");
 	}
 
-	public EcommerceFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
+	protected EcommerceFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
 		super(diFactory, configurationFile, configurationKey);
 	}
 

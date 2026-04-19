@@ -21,7 +21,7 @@ import java.util.List;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.java.Configuration;
-import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.persistence.ListPortion;
@@ -46,6 +46,6 @@ class VetApiImpl implements VetApi {
 						.append("skip", skip != null ? skip.toString() : null)
 						.append("limit", limit != null ? limit.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
-		return new Converter().convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Vet.class)));
+		return new DefaultConverter().convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Vet.class)));
 	}
 }

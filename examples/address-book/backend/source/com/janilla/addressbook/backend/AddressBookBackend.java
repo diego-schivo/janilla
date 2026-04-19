@@ -46,10 +46,10 @@ public class AddressBookBackend extends AbstractBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null, "address-book");
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
-	public AddressBookBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public AddressBookBackend(DiFactory diFactory, Path configurationFile) {
+		super(diFactory, configurationFile, "address-book");
 	}
 }

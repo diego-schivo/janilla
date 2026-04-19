@@ -37,11 +37,11 @@ import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.java.JavaInvoke;
-import com.janilla.web.AbstractApp;
+import com.janilla.web.AbstractWebApp;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
 
-public abstract class AbstractFullstack extends AbstractApp {
+public abstract class AbstractFullstack extends AbstractWebApp {
 
 	public static final ScopedValue<AbstractFullstack> INSTANCE = ScopedValue.newInstance();
 
@@ -85,7 +85,7 @@ public abstract class AbstractFullstack extends AbstractApp {
 	};
 
 	@Override
-	protected HttpHandler newHandler() {
+	protected HttpHandler newHttpHandler() {
 		Path cf;
 		try {
 			cf = configurationFile != null ? configurationFile
@@ -107,7 +107,7 @@ public abstract class AbstractFullstack extends AbstractApp {
 		});
 
 		return x -> {
-			var h = x.request().getPath().startsWith("/api/") ? backend.handler() : frontend.handler();
+			var h = x.request().getPath().startsWith("/api/") ? backend.httpHandler() : frontend.httpHandler();
 			return h.handle(x);
 		};
 	}

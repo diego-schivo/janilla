@@ -59,8 +59,8 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 	}
 
 	public DefaultHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, DiFactory diFactory) {
-		IO.println("DefaultHttpServer, endpoint=" + endpoint + ", sslContext=" + sslContext + ", handler=" + handler
-				+ ", diFactory=" + diFactory);
+//		IO.println("DefaultHttpServer, endpoint=" + endpoint + ", sslContext=" + sslContext + ", handler=" + handler
+//				+ ", diFactory=" + diFactory);
 		super(endpoint, sslContext);
 		this.handler = handler;
 		this.diFactory = diFactory;

@@ -30,14 +30,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 
-import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.json.Json;
 
 record SeedData(List<Contact> contacts) {
 
 	public static SeedData read() {
 		try (var x = SeedData.class.getResourceAsStream("seed-data.json")) {
-			return (SeedData) new Converter(null).convert(Json.parse(new String(x.readAllBytes())), SeedData.class);
+			return (SeedData) new DefaultConverter().convert(Json.parse(new String(x.readAllBytes())), SeedData.class);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

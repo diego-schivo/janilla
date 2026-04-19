@@ -30,4 +30,5 @@ module com.janilla.blanktemplate.fullstack {
 
 	requires transitive com.janilla.blanktemplate.backend;
 	requires transitive com.janilla.blanktemplate.frontend;
+	requires transitive com.janilla.fullstack;
 }

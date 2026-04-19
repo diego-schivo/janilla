@@ -141,7 +141,7 @@ public class AddressBookTest {
 			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
 			handler = ex -> {
 //				IO.println("AddressBookTest, " + ex.request().getPath() + ", Test.ONGOING=" + Test.ONGOING.get());
-				var h2 = Test.ONGOING.get() && !ex.request().getPath().startsWith("/test/") ? fullstack.handler()
+				var h2 = Test.ONGOING.get() && !ex.request().getPath().startsWith("/test/") ? fullstack.httpHandler()
 						: (HttpHandler) y -> {
 							var h = f.createHandler(Objects.requireNonNullElse(y.exception(), y.request()));
 							if (h == null)

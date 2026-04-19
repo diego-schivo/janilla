@@ -39,10 +39,10 @@ public class PetclinicFullstack extends AbstractFullstack {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		serve(f, args.length > 0 ? args[0] : null, "petclinic");
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
-	public PetclinicFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey, PetclinicFrontend.class, PetclinicBackend.class);
+	public PetclinicFullstack(DiFactory diFactory, Path configurationFile) {
+		super(diFactory, configurationFile, "petclinic", PetclinicFrontend.class, PetclinicBackend.class);
 	}
 }

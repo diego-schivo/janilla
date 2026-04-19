@@ -27,7 +27,6 @@
 package com.janilla.addressbook.frontend;
 
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.AbstractFrontend;
@@ -49,15 +48,15 @@ public class AddressBookFrontend extends AbstractFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null, "address-book");
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected DataFetching dataFetching;
 
 	protected HttpClient httpClient;
 
-	public AddressBookFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public AddressBookFrontend(DiFactory diFactory, Path configurationFile) {
+		super(diFactory, configurationFile, "address-book");
 	}
 
 	public DataFetching dataFetching() {
@@ -76,8 +75,8 @@ public class AddressBookFrontend extends AbstractFrontend {
 	}
 
 	@Override
-	protected void putResourcePrefixes(Map<String, String> prefixes) {
-		super.putResourcePrefixes(prefixes);
-		prefixes.put("com.janilla.addressbook.frontend", "");
+	protected void putResourcePrefixes() {
+		super.putResourcePrefixes();
+		resourcePrefixes.put("com.janilla.addressbook.frontend", "");
 	}
 }

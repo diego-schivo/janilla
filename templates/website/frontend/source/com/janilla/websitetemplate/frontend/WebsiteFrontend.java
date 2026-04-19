@@ -43,14 +43,14 @@ public class WebsiteFrontend extends BlankFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, WebsiteFrontend.class, args.length > 0 ? args[0] : null);
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	public WebsiteFrontend(DiFactory diFactory, Path configurationFile) {
 		this(diFactory, configurationFile, "website-template");
 	}
 
-	public WebsiteFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
+	protected WebsiteFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
 		super(diFactory, configurationFile, configurationKey);
 	}
 

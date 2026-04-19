@@ -23,37 +23,20 @@
  */
 package com.janilla.conduit.frontend;
 
-import java.lang.reflect.Modifier;
-import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.IndexFactory;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpServer;
+import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Java;
-import com.janilla.web.ApplicationHandlerFactory;
-import com.janilla.web.Invocable;
-import com.janilla.web.InvocationResolver;
-import com.janilla.web.NotFoundException;
-import com.janilla.web.RenderableFactory;
-import com.janilla.web.ResourceMap;
 
-public class ConduitFrontend {
+public class ConduitFrontend extends AbstractFrontend {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(
-				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.conduit")),
-				Java.getPackageTypes("com.janilla.conduit.frontend"));
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
+				Java.getPackageTypes("com.janilla.frontend", _ -> true),
+				Java.getPackageTypes("com.janilla.conduit.frontend")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
@@ -63,106 +46,13 @@ public class ConduitFrontend {
 		serve(f, args.length > 0 ? args[0] : null);
 	}
 
-	protected static void serve(DiFactory diFactory, String configurationPath) {
-		ConduitFrontend a;
-		{
-			var cf = configurationPath != null ? Path.of(
-					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-							: configurationPath)
-					: null;
-			a = diFactory.newInstance(diFactory.classFor(ConduitFrontend.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-		}
-
-		HttpServer s;
-		{
-			var p = Integer.parseInt(a.configuration.getProperty("conduit.server.port"));
-			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
-		}
-		s.serve();
-	}
-
-	protected final Configuration configuration;
-
-	protected final DiFactory diFactory;
-
-	protected final HttpHandler handler;
-
-	protected final IndexFactory indexFactory;
-
-	protected final InvocationResolver invocationResolver;
-
-	protected final RenderableFactory renderableFactory;
-
-	protected final ResourceMap resourceMap;
-
 	public ConduitFrontend(DiFactory diFactory, Path configurationFile) {
-		this.diFactory = diFactory;
-		diFactory.context(this);
-
-		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-				Collections.singletonMap("path", configurationFile));
-
-		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class),
-				Map.of("paths", Map.of("/base",
-						Java.getPackagePaths("com.janilla.frontend").filter(Files::isRegularFile).toList(), "",
-						Java.getPackagePaths("com.janilla.conduit.frontend").filter(Files::isRegularFile).toList())));
-		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
-
-		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
-				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
-						.flatMap(x -> Arrays.stream(x.getMethods())
-								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-								.map(y -> new Invocable(x, y)))
-						.toList(),
-				"instanceResolver", (Function<Class<?>, Object>) x -> {
-					var y = diFactory.context();
-//							IO.println("x=" + x + ", y=" + y);
-					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-							: diFactory.newInstance(diFactory.classFor(x));
-				}));
-		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
-		{
-			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
-			handler = x -> {
-				var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));
-				if (h == null)
-					throw new NotFoundException(x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
-				return h.handle(x);
-			};
-		}
+		super(diFactory, configurationFile, "conduit");
 	}
 
-//	public String apiUrl() {
-//		return configuration.getProperty("conduit.api.url");
-//	}
-
-	public Configuration configuration() {
-		return configuration;
-	}
-
-	public DiFactory diFactory() {
-		return diFactory;
-	}
-
-	public HttpHandler handler() {
-		return handler;
-	}
-
-	public IndexFactory indexFactory() {
-		return indexFactory;
-	}
-
-	public InvocationResolver invocationResolver() {
-		return invocationResolver;
-	}
-
-	public RenderableFactory renderableFactory() {
-		return renderableFactory;
-	}
-
-	public ResourceMap resourceMap() {
-		return resourceMap;
+	@Override
+	protected void putResourcePrefixes() {
+		super.putResourcePrefixes();
+		resourcePrefixes.put("com.janilla.conduit.frontend", "");
 	}
 }

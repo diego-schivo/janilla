@@ -46,10 +46,10 @@ public class AddressBookFullstack extends AbstractFullstack {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		serve(f, args.length > 0 ? args[0] : null, "address-book");
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
-	public AddressBookFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey, AddressBookFrontend.class, AddressBookBackend.class);
+	public AddressBookFullstack(DiFactory diFactory, Path configurationFile) {
+		super(diFactory, configurationFile, "address-book", AddressBookFrontend.class, AddressBookBackend.class);
 	}
 }

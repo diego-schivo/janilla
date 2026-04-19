@@ -29,4 +29,5 @@ module com.janilla.conduit.fullstack {
 
 	requires transitive com.janilla.conduit.backend;
 	requires transitive com.janilla.conduit.frontend;
+	requires transitive com.janilla.fullstack;
 }

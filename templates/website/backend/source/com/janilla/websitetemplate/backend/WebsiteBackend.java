@@ -49,7 +49,7 @@ public class WebsiteBackend extends BlankBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, WebsiteBackend.class, args.length > 0 ? args[0] : null);
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected final SmtpClient smtpClient;
@@ -58,7 +58,7 @@ public class WebsiteBackend extends BlankBackend {
 		this(diFactory, configurationFile, "website-template");
 	}
 
-	public WebsiteBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
+	protected WebsiteBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
 		super(diFactory, configurationFile, configurationKey);
 
 		var h = configuration.getProperty(configurationKey + ".mail.host");

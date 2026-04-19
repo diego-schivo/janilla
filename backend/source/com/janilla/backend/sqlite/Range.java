@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.json.Json;
 
 public record Range(long from, long to) {
@@ -39,7 +39,7 @@ public record Range(long from, long to) {
 	public static void main(String[] args) {
 		var l = 50;
 
-		var c = new Converter(null);
+		var c = new DefaultConverter();
 		var in = Stream.of(
 //				"""
 //						[{"from":23,"to":31},{"from":18,"to":50},{"from":28,"to":32},{"from":33,"to":44},{"from":41,"to":45}]""",

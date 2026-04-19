@@ -139,7 +139,7 @@ public class TodoMvcTest {
 //				IO.println(
 //						"TodoMvcTest, " + ex.request().getPath() + ", Test.ongoing=" + Test.ongoing.get());
 				var h2 = WebHandling.TEST_ONGOING.get() && !ex.request().getPath().startsWith("/test/")
-						? frontend.handler()
+						? frontend.httpHandler()
 						: (HttpHandler) y -> {
 							var h = f.createHandler(Objects.requireNonNullElse(y.exception(), y.request()));
 							if (h == null)

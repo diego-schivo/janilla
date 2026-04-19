@@ -22,7 +22,7 @@ import java.nio.channels.Channels;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.java.Configuration;
-import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.json.Json;
 import com.janilla.petclinic.Pet;
@@ -45,7 +45,7 @@ class PetApiImpl implements PetApi {
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(pet, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);
-		return new Converter().convert(o, Pet.class);
+		return new DefaultConverter().convert(o, Pet.class);
 	}
 
 	@Override
@@ -53,7 +53,7 @@ class PetApiImpl implements PetApi {
 		var u = URI.create(configuration.getProperty("petclinic.api.url") + "/pets/" + id + "?"
 				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
-		return new Converter().convert(o, Pet.class);
+		return new DefaultConverter().convert(o, Pet.class);
 	}
 
 	@Override
@@ -63,6 +63,6 @@ class PetApiImpl implements PetApi {
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(pet, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);
-		return new Converter().convert(o, Pet.class);
+		return new DefaultConverter().convert(o, Pet.class);
 	}
 }

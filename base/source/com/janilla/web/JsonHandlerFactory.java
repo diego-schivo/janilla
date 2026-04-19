@@ -62,7 +62,7 @@ public class JsonHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected void render(Object object, HttpExchange exchange) {
-		IO.println("JsonHandlerFactory.render, object=" + object);
+//		IO.println("JsonHandlerFactory.render, object=" + object);
 
 		var rs = exchange.response();
 		rs.setHeaderValue("content-type", "application/json");

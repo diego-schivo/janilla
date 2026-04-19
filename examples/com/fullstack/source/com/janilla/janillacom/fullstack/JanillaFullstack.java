@@ -68,7 +68,7 @@ public class JanillaFullstack extends WebsiteFullstack {
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
 		try {
-			serve(f, JanillaFullstack.class, args.length > 0 ? args[0] : null);
+			serve(f, args.length > 0 ? args[0] : null);
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}

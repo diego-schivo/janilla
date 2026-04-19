@@ -24,41 +24,76 @@
  */
 package com.janilla.web;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.net.ssl.SSLContext;
 
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Configuration;
+import com.janilla.java.Converter;
+import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.Java;
+import com.janilla.java.TypeResolver;
 
-public abstract class AbstractApp {
+public abstract class AbstractWebApp implements WebApp {
 
-	protected static void serve(DiFactory diFactory, String configurationPath, String configurationKey) {
-		AbstractApp a;
+	protected static void serve(DiFactory diFactory, String configurationPath) {
+		WebApp a;
 		{
-			var cf = configurationPath != null ? Path.of(
+			var f = configurationPath != null ? Path.of(
 					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
 							: configurationPath)
 					: null;
-			a = diFactory.newInstance(diFactory.classFor(AbstractApp.class), Java.hashMap("diFactory", diFactory,
-					"configurationFile", cf, "configurationKey", configurationKey));
+			a = diFactory.newInstance(diFactory.classFor(WebApp.class),
+					Java.hashMap("diFactory", diFactory, "configurationFile", f));
 		}
+
+		var c = sslContext(a.configuration(), a.configurationKey());
 
 		HttpServer s;
 		{
-			var p = Integer.parseInt(a.configuration.getProperty(a.configurationKey + ".server.port"));
-			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
+			var p = Integer.parseInt(a.configuration().getProperty(a.configurationKey() + ".server.port"));
+			s = diFactory.newInstance(diFactory.classFor(HttpServer.class),
+					Java.hashMap("endpoint", new InetSocketAddress(p), "sslContext", c, "handler", a.httpHandler()));
 		}
 		s.serve();
+	}
+
+	protected static SSLContext sslContext(Configuration configuration, String configurationKey) {
+		var p = configuration.getProperty(configurationKey + ".server.keystore.path");
+		if (p != null) {
+			var w = configuration.getProperty(configurationKey + ".server.keystore.password");
+			if (p.startsWith("~"))
+				p = System.getProperty("user.home") + p.substring(1);
+			var f = Path.of(p);
+			if (!Files.exists(f)) {
+				var cn = configuration.getProperty(configurationKey + ".server.keystore.common-name");
+				var san = configuration.getProperty(configurationKey + ".server.keystore.subject-alternative-name");
+				Java.generateKeyPair(cn != null ? cn : "localhost", f, w,
+						san != null ? san : "dns:localhost,ip:127.0.0.1");
+			}
+			try (var s = Files.newInputStream(f)) {
+				return Java.sslContext(s, w.toCharArray());
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+		return null;
 	}
 
 	protected final Configuration configuration;
@@ -67,26 +102,41 @@ public abstract class AbstractApp {
 
 	protected final String configurationKey;
 
+	protected final Converter converter;
+
 	protected final DiFactory diFactory;
 
-	protected final HttpHandler handler;
+	protected final HttpHandler httpHandler;
 
 	protected final InvocationResolver invocationResolver;
 
 	protected final RenderableFactory renderableFactory;
 
-	protected AbstractApp(DiFactory diFactory, Path configurationFile, String configurationKey) {
+	protected final List<Class<?>> resolvables;
+
+	protected final TypeResolver typeResolver;
+
+	protected AbstractWebApp(DiFactory diFactory, Path configurationFile, String configurationKey) {
 		this.diFactory = diFactory;
 		this.configurationFile = configurationFile;
 		this.configurationKey = configurationKey;
 		diFactory.context(this);
 
 		configuration = newConfiguration();
+		{
+			Map<String, Class<?>> m = diFactory.types().stream().filter(x -> x.getEnclosingClass() == null)
+					.collect(Collectors.toMap(x -> x.getSimpleName(), x -> x, (_, x) -> x, LinkedHashMap::new));
+//			IO.println("AbstractBackend.newInvocationResolver, m=" + m);
+			resolvables = m.values().stream().toList();
+		}
+		typeResolver = diFactory.newInstance(diFactory.classFor(DollarTypeResolver.class));
+		converter = diFactory.newInstance(diFactory.classFor(Converter.class));
 		invocationResolver = newInvocationResolver();
 		renderableFactory = newRenderableFactory();
-		handler = newHandler();
+		httpHandler = newHttpHandler();
 	}
 
+	@Override
 	public Configuration configuration() {
 		return configuration;
 	}
@@ -95,16 +145,22 @@ public abstract class AbstractApp {
 		return configurationFile;
 	}
 
+	@Override
 	public String configurationKey() {
 		return configurationKey;
+	}
+
+	public Converter converter() {
+		return converter;
 	}
 
 	public DiFactory diFactory() {
 		return diFactory;
 	}
 
-	public HttpHandler handler() {
-		return handler;
+	@Override
+	public HttpHandler httpHandler() {
+		return httpHandler;
 	}
 
 	public InvocationResolver invocationResolver() {
@@ -115,12 +171,20 @@ public abstract class AbstractApp {
 		return renderableFactory;
 	}
 
+	public List<Class<?>> resolvables() {
+		return resolvables;
+	}
+
+	public TypeResolver typeResolver() {
+		return typeResolver;
+	}
+
 	protected Configuration newConfiguration() {
 		return diFactory.newInstance(diFactory.classFor(Configuration.class),
 				Collections.singletonMap("path", configurationFile));
 	}
 
-	protected HttpHandler newHandler() {
+	protected HttpHandler newHttpHandler() {
 		var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
 		return x -> {
 			var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));

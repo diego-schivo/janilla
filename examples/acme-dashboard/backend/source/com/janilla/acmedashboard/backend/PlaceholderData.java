@@ -28,14 +28,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 
-import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.json.Json;
 
 record PlaceholderData(List<Customer> customers, List<Invoice> invoices, List<Revenue> revenue, List<User> users) {
 
 	public static PlaceholderData read() {
 		try (var x = PlaceholderData.class.getResourceAsStream("placeholder-data.json")) {
-			return (PlaceholderData) new Converter().convert(Json.parse(new String(x.readAllBytes())),
+			return (PlaceholderData) new DefaultConverter().convert(Json.parse(new String(x.readAllBytes())),
 					PlaceholderData.class);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);

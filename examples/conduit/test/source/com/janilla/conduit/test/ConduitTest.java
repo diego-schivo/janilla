@@ -141,7 +141,7 @@ public class ConduitTest {
 //				IO.println(
 //						"ConduitTesting, " + hx.request().getPath() + ", Test.ongoing=" + Test.ongoing.get());
 				var h2 = WebHandling.TEST_ONGOING.get() && !hx.request().getPath().startsWith("/test/")
-						? fullstack.handler()
+						? fullstack.httpHandler()
 						: (HttpHandler) y -> {
 							var h = f.createHandler(Objects.requireNonNullElse(y.exception(), y.request()));
 							if (h == null)

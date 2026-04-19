@@ -57,7 +57,9 @@ public class PersistenceBuilder {
 	public Persistence build(DiFactory diFactory) {
 		var d = createDatabase();
 //		IO.println("PersistenceBuilder.build, d=" + d);
-		return diFactory.newInstance(diFactory.classFor(Persistence.class), Map.of("database", d));
+		var p = diFactory.newInstance(diFactory.classFor(Persistence.class), Map.of("database", d));
+//		IO.println("PersistenceBuilder.build, p=" + p);
+		return p;
 	}
 
 	protected SqliteDatabase createDatabase() {

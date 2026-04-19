@@ -26,6 +26,6 @@ class HttpClientImpl extends DirectHttpClient {
 
 	public HttpClientImpl() {
 		var b = PetclinicFullstack.INSTANCE.get().backend();
-		super(b.diFactory().newInstance(b.diFactory().classFor(HttpServer.class), Map.of("handler", b.handler())));
+		super(b.diFactory().newInstance(b.diFactory().classFor(HttpServer.class), Map.of("handler", b.httpHandler())));
 	}
 }

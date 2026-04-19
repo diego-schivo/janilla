@@ -25,7 +25,6 @@
 package com.janilla.acmedashboard.frontend;
 
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.AbstractFrontend;
@@ -47,15 +46,15 @@ public class AcmeDashboardFrontend extends AbstractFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null, "acme-dashboard");
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected Fetcher fetcher;
 
 	protected HttpClient httpClient;
 
-	public AcmeDashboardFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public AcmeDashboardFrontend(DiFactory diFactory, Path configurationFile) {
+		super(diFactory, configurationFile, "acme-dashboard");
 	}
 
 	public Fetcher fetcher() {
@@ -74,8 +73,8 @@ public class AcmeDashboardFrontend extends AbstractFrontend {
 	}
 
 	@Override
-	protected void putResourcePrefixes(Map<String, String> prefixes) {
-		super.putResourcePrefixes(prefixes);
-		prefixes.put("com.janilla.acmedashboard.frontend", "");
+	protected void putResourcePrefixes() {
+		super.putResourcePrefixes();
+		resourcePrefixes.put("com.janilla.acmedashboard.frontend", "");
 	}
 }

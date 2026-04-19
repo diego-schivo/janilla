@@ -118,7 +118,7 @@ public class AcmeDashboardFullstack {
 		});
 
 		handler = x -> {
-			var h = x.request().getPath().startsWith("/api/") ? backend.handler() : frontend.handler();
+			var h = x.request().getPath().startsWith("/api/") ? backend.httpHandler() : frontend.httpHandler();
 			return h.handle(x);
 		};
 	}

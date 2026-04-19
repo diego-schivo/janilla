@@ -49,14 +49,14 @@ public class EcommerceBackend extends WebsiteBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, EcommerceBackend.class, args.length > 0 ? args[0] : null);
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	public EcommerceBackend(DiFactory diFactory, Path configurationFile) {
 		this(diFactory, configurationFile, "ecommerce-template");
 	}
 
-	public EcommerceBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
+	protected EcommerceBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
 		super(diFactory, configurationFile, configurationKey);
 	}
 

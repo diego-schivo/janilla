@@ -55,6 +55,8 @@ public class DefaultPersistence implements Persistence {
 
 	public DefaultPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 			Converter converter) {
+//		IO.println(
+//				"DefaultPersistence, database=" + database + ", storables=" + storables + ", converter=" + converter);
 		this.database = database;
 		this.storables = storables;
 		this.converter = converter;
@@ -76,7 +78,7 @@ public class DefaultPersistence implements Persistence {
 
 	@Override
 	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> type) {
-//		IO.println("Persistence.crud, type=" + type);
+//		IO.println("DefaultPersistence.crud, type=" + type);
 		var o = cruds.computeIfAbsent(type, _ -> {
 			var ae = JavaReflect.inheritedAnnotation(type, Store.class);
 			var c = ae != null ? configuration.cruds.get(ae.annotated()) : null;
@@ -90,7 +92,7 @@ public class DefaultPersistence implements Persistence {
 	}
 
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
-//		IO.println("Persistence.configure, type=" + type);
+//		IO.println("DefaultPersistence.configure, type=" + type);
 		Crud<?, E> c = newCrud(type);
 		if (c == null)
 			return;
@@ -98,7 +100,7 @@ public class DefaultPersistence implements Persistence {
 
 		for (var pp = JavaReflect.properties(type).iterator(); pp.hasNext();) {
 			var p = pp.next();
-//			IO.println("Persistence.configure, p=" + p);
+//			IO.println("DefaultPersistence.configure, p=" + p);
 			var i = JavaReflect.inheritedAnnotation((Method) p.member(), Index.class);
 			if (i == null)
 				continue;
@@ -119,6 +121,7 @@ public class DefaultPersistence implements Persistence {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
+//		IO.println("DefaultPersistence.newCrud, type=" + type);
 		return new DefaultCrud(type, idConverter(type), this);
 	}
 

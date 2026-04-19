@@ -50,7 +50,7 @@ public class JanillaBackend extends WebsiteBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, JanillaBackend.class, args.length > 0 ? args[0] : null);
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
 	protected final Map<String, Object> applications = new ConcurrentHashMap<>();
@@ -99,11 +99,11 @@ public class JanillaBackend extends WebsiteBackend {
 		return Data.class;
 	}
 
-	@Override
-	protected boolean handle(HttpExchange exchange) {
-//		IO.println("JanillaBackend.handle, exchange=" + exchange);
-		var a = JanillaDomain.APPLICATION.get();
-		return a == this ? super.handle(exchange)
-				: ((HttpHandler) JavaReflect.property(a.getClass(), "handler").get(a)).handle(exchange);
-	}
+//	@Override
+//	protected boolean handle(HttpExchange exchange) {
+////		IO.println("JanillaBackend.handle, exchange=" + exchange);
+//		var a = JanillaDomain.APPLICATION.get();
+//		return a == this ? super.handle(exchange)
+//				: ((HttpHandler) JavaReflect.property(a.getClass(), "handler").get(a)).handle(exchange);
+//	}
 }

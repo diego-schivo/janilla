@@ -23,7 +23,7 @@ import java.util.List;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.java.Configuration;
-import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.json.Json;
@@ -48,7 +48,7 @@ class OwnerApiImpl implements OwnerApi {
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(owner, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);
-		return new Converter().convert(o, Owner.class);
+		return new DefaultConverter().convert(o, Owner.class);
 	}
 
 	@Override
@@ -59,7 +59,7 @@ class OwnerApiImpl implements OwnerApi {
 						.append("skip", skip != null ? skip.toString() : null)
 						.append("limit", limit != null ? limit.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
-		return new Converter().convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Owner.class)));
+		return new DefaultConverter().convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Owner.class)));
 	}
 
 	@Override
@@ -67,7 +67,7 @@ class OwnerApiImpl implements OwnerApi {
 		var u = URI.create(configuration.getProperty("petclinic.api.url") + "/owners/" + id + "?"
 				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
-		return new Converter().convert(o, Owner.class);
+		return new DefaultConverter().convert(o, Owner.class);
 	}
 
 	@Override
@@ -77,6 +77,6 @@ class OwnerApiImpl implements OwnerApi {
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(owner, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);
-		return new Converter().convert(o, Owner.class);
+		return new DefaultConverter().convert(o, Owner.class);
 	}
 }

@@ -44,10 +44,10 @@ public class AcmeDashboardBackend extends AbstractBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null, "acme-dashboard");
+		serve(f, args.length > 0 ? args[0] : null);
 	}
 
-	public AcmeDashboardBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public AcmeDashboardBackend(DiFactory diFactory, Path configurationFile) {
+		super(diFactory, configurationFile, "acme-dashboard");
 	}
 }

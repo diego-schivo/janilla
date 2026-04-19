@@ -25,67 +25,36 @@
 package com.janilla.backend.web;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Converter;
-import com.janilla.java.DollarTypeResolver;
-import com.janilla.java.TypeResolver;
 import com.janilla.persistence.Store;
-import com.janilla.web.AbstractApp;
+import com.janilla.web.AbstractWebApp;
 import com.janilla.web.InvocationResolver;
 
-public abstract class AbstractBackend extends AbstractApp {
-
-	protected Converter converter;
+public abstract class AbstractBackend extends AbstractWebApp {
 
 	protected Persistence persistence;
 
-	protected List<Class<?>> resolvables;
-
 	protected List<Class<?>> storables;
-
-	protected TypeResolver typeResolver;
 
 	protected AbstractBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
 		super(diFactory, configurationFile, configurationKey);
-	}
-
-	public Converter converter() {
-		return converter;
 	}
 
 	public Persistence persistence() {
 		return persistence;
 	}
 
-	public List<Class<?>> resolvables() {
-		return resolvables;
-	}
-
 	public List<Class<?>> storables() {
 		return storables;
 	}
 
-	public TypeResolver typeResolver() {
-		return typeResolver;
-	}
-
 	@Override
 	protected InvocationResolver newInvocationResolver() {
-		{
-			Map<String, Class<?>> m = diFactory.types().stream()
-					.collect(Collectors.toMap(x -> x.getSimpleName(), x -> x, (_, x) -> x, LinkedHashMap::new));
-			resolvables = m.values().stream().toList();
-		}
-		typeResolver = diFactory.newInstance(diFactory.classFor(DollarTypeResolver.class));
-		converter = diFactory.newInstance(diFactory.classFor(Converter.class));
-
 		storables = resolvables.stream().filter(x -> x.isAnnotationPresent(Store.class)).toList();
 		{
 			var f = configuration.getProperty(configurationKey + ".database.file");

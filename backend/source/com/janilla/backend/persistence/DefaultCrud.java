@@ -448,9 +448,9 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected String format(Object object) {
-		IO.println("DefaultCrud.format, object=" + object);
+//		IO.println("DefaultCrud.format, object=" + object);
 		var s = Json.format(new CustomJsonIterator(object, persistence.converter().typeResolver()));
-		IO.println("DefaultCrud.format, s=" + s);
+//		IO.println("DefaultCrud.format, s=" + s);
 		return s;
 	}
 

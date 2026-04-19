@@ -22,13 +22,16 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.java;
+package com.janilla.web;
 
-import java.lang.reflect.Type;
+import com.janilla.http.HttpHandler;
+import com.janilla.java.Configuration;
 
-public interface Converter {
+public interface WebApp {
 
-	TypeResolver typeResolver();
+	Configuration configuration();
 
-	<T> T convert(Object object, Type target);
+	String configurationKey();
+
+	HttpHandler httpHandler();
 }
