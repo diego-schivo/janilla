@@ -25,13 +25,15 @@
 package com.janilla.web;
 
 import com.janilla.http.HttpHandler;
-import com.janilla.java.Configuration;
+import com.janilla.ioc.DiFactory;
 
-public interface WebApp {
+public interface WebApp<C extends WebAppConfig> {
 
-	Configuration configuration();
+	static ScopedValue<WebApp<?>> INSTANCE = ScopedValue.newInstance();
 
-	String configurationKey();
+	C config();
+
+	DiFactory diFactory();
 
 	HttpHandler httpHandler();
 }

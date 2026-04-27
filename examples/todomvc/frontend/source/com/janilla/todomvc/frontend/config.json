@@ -1,0 +1,7 @@
+{
+	"api": {},
+	"httpServer": {
+		"port": 8080
+	},
+	"title": "TodoMVC: Janilla"
+}

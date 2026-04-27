@@ -26,8 +26,6 @@
  */
 package com.janilla.fullstack.web;
 
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.backend.web.AbstractBackend;
@@ -41,9 +39,7 @@ import com.janilla.web.AbstractWebApp;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
 
-public abstract class AbstractFullstack extends AbstractWebApp {
-
-	public static final ScopedValue<AbstractFullstack> INSTANCE = ScopedValue.newInstance();
+public abstract class AbstractFullstack<C extends FullstackConfig> extends AbstractWebApp<C> implements Fullstack<C> {
 
 	protected static Stream<Class<?>> diTypes(Class<?> class1) {
 		try {
@@ -53,26 +49,26 @@ public abstract class AbstractFullstack extends AbstractWebApp {
 		}
 	}
 
-	protected final Class<? extends AbstractBackend> backendClass;
+	protected final Class<? extends AbstractBackend<?>> backendClass;
 
-	protected final Class<? extends AbstractFrontend> frontendClass;
+	protected final Class<? extends AbstractFrontend<?>> frontendClass;
 
-	protected AbstractBackend backend;
+	protected AbstractBackend<?> backend;
 
-	protected AbstractFrontend frontend;
+	protected AbstractFrontend<?> frontend;
 
-	protected AbstractFullstack(DiFactory diFactory, Path configurationFile, String configurationKey,
-			Class<? extends AbstractFrontend> frontendClass, Class<? extends AbstractBackend> backendClass) {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected AbstractFullstack(C config, DiFactory diFactory, Class frontendClass, Class backendClass) {
 		this.frontendClass = frontendClass;
 		this.backendClass = backendClass;
-		super(diFactory, configurationFile, configurationKey);
+		super(config, diFactory);
 	}
 
-	public AbstractBackend backend() {
+	public AbstractBackend<?> backend() {
 		return backend;
 	}
 
-	public AbstractFrontend frontend() {
+	public AbstractFrontend<?> frontend() {
 		return frontend;
 	}
 
@@ -86,29 +82,19 @@ public abstract class AbstractFullstack extends AbstractWebApp {
 
 	@Override
 	protected HttpHandler newHttpHandler() {
-		Path cf;
-		try {
-			cf = configurationFile != null ? configurationFile
-					: Path.of(getClass().getResource("configuration.properties").toURI());
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
+			var f = new DefaultDiFactory(diFrontendTypes().toList(), "frontend");
+			return f.newInstance(frontendClass, Java.hashMap("config", config, "diFactory", f));
+		});
 
 		backend = ScopedValue.where(INSTANCE, this).call(() -> {
 			var f = new DefaultDiFactory(diBackendTypes().toList(), "backend");
-			return f.newInstance(backendClass,
-					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
-		});
-
-		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
-			var f = new DefaultDiFactory(diFrontendTypes().toList(), "frontend");
-			return f.newInstance(frontendClass,
-					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
+			return f.newInstance(backendClass, Java.hashMap("config", config, "diFactory", f));
 		});
 
 		return x -> {
-			var h = x.request().getPath().startsWith("/api/") ? backend.httpHandler() : frontend.httpHandler();
-			return h.handle(x);
+			var a = x.request().getPath().startsWith("/api/") ? backend : frontend;
+			return ScopedValue.where(INSTANCE, a).call(() -> a.httpHandler().handle(x));
 		};
 	}
 

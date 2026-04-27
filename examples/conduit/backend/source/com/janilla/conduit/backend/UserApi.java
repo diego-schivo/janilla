@@ -28,13 +28,13 @@ import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.HexFormat;
 import java.util.Map;
-import com.janilla.java.Configuration;
 import java.util.Random;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.JavaReflect;
 import com.janilla.json.Jwt;
@@ -43,14 +43,14 @@ import com.janilla.web.Handle;
 @Handle(path = "/api/users")
 public class UserApi {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	protected final DiFactory diFactory;
 
 	protected final Persistence persistence;
 
-	public UserApi(Configuration configuration, Persistence persistence, DiFactory diFactory) {
-		this.configuration = configuration;
+	public UserApi(BackendConfig config, Persistence persistence, DiFactory diFactory) {
+		this.config = config;
 		this.persistence = persistence;
 		this.diFactory = diFactory;
 	}
@@ -58,10 +58,7 @@ public class UserApi {
 	@Handle(method = "GET", path = "/api/user")
 	public Object getCurrent(User user) {
 		var p = user != null ? Map.of("loggedInAs", user.email()) : null;
-		var t = p != null
-				? Jwt.generateToken(Map.of("alg", "HS256", "typ", "JWT"), p,
-						configuration.getProperty("conduit.jwt.key"))
-				: null;
+		var t = p != null ? Jwt.generateToken(Map.of("alg", "HS256", "typ", "JWT"), p, config.jwt().key()) : null;
 		return Collections.singletonMap("user",
 				user != null ? new CurrentUser(user.email(), t, user.username(), user.bio(), user.image()) : null);
 	}
@@ -104,7 +101,7 @@ public class UserApi {
 			v.isSafe("password", u.password);
 		v.orThrow();
 
-		if (Boolean.parseBoolean(configuration.getProperty("conduit.live-demo"))) {
+		if (config.liveDemo() != null && config.liveDemo()) {
 			var c = persistence.crud(User.class).count();
 			if (c >= 1000)
 				throw new ValidationException("existing users", "are too many (" + c + ")");

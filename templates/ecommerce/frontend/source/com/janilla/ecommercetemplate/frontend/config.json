@@ -1,0 +1,21 @@
+{
+	"api": {
+		"url": "http://localhost:8081/api"
+	},
+	"download": {
+		"directory": "~/janilla/download"
+	},
+	"httpServer": {
+		"port": 8080
+	},
+	"jwt": {
+		"cookie": "ecommerce-token",
+		"key": "secretkey"
+	},
+	"key": "ecommerce",
+	"stripe": {
+		"publishable-key": "pk_test_",
+		"url": "http://js.stripe.com/clover/stripe.js"
+	},
+	"title": "Janilla Ecommerce Template"
+}

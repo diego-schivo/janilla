@@ -38,10 +38,10 @@ import com.janilla.http.HttpResponse;
 
 class HttpServerImpl extends DefaultHttpServer {
 
-	protected final BlankFullstack fullstack;
+	protected final BlankFullstack<?> fullstack;
 
 	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
-			BlankFullstack fullstack) {
+			BlankFullstack<?> fullstack) {
 		super(endpoint, sslContext, handler);
 		this.fullstack = fullstack;
 	}
@@ -49,9 +49,9 @@ class HttpServerImpl extends DefaultHttpServer {
 	@Override
 	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 		if (WebHandling.TEST_ONGOING.get()) {
-			var f = request.getPath().startsWith("/api/") ? fullstack.backend().diFactory()
-					: fullstack.frontend().diFactory();
-			return f.newInstance(f.classFor(HttpExchange.class), Map.of("request", request, "response", response));
+			var a = request.getPath().startsWith("/api/") ? fullstack.backend() : fullstack.frontend();
+			return a.diFactory().newInstance(a.diFactory().classFor(HttpExchange.class),
+					Map.of("request", request, "response", response));
 		}
 		return super.createExchange(request, response);
 	}

@@ -25,28 +25,28 @@ package com.janilla.conduit.backend;
 
 import java.util.stream.Collectors;
 
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.java.Configuration;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationResolver;
 
 public class Cors {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	protected final InvocationResolver invocationResolver;
 
-	public Cors(Configuration configuration, InvocationResolver invocationResolver) {
-		this.configuration = configuration;
+	public Cors(BackendConfig config, InvocationResolver invocationResolver) {
+		this.config = config;
 		this.invocationResolver = invocationResolver;
 	}
 
 	@Handle(method = "OPTIONS", path = "/api/(.*)")
 	public void allow(HttpRequest request, HttpResponse response) {
-		var o = configuration.getProperty("conduit.api.cors.origin");
+		var o = config.api().cors().origin();
 		var m = invocationResolver.groups(request.getPath()).flatMap(x -> x.methods().keySet().stream()).toList();
-		var h = configuration.getProperty("conduit.api.cors.headers");
+		var h = config.api().cors().headers();
 
 		response.setHeaderValue(":status", "204");
 		response.setHeaderValue("access-control-allow-origin", o);

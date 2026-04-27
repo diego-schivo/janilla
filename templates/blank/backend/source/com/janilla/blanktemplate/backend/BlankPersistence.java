@@ -39,9 +39,8 @@ public class BlankPersistence extends CmsPersistence {
 
 	protected final DiFactory diFactory;
 
-	public BlankPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver,
-			Converter converter, DiFactory diFactory) {
+	public BlankPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, Converter converter,
+			DiFactory diFactory) {
 		this.diFactory = diFactory;
 		super(database, storables, converter);
 	}

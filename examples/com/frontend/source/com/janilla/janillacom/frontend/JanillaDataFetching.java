@@ -26,10 +26,10 @@ package com.janilla.janillacom.frontend;
 import java.net.URI;
 import java.util.List;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.janillacom.Application;
-import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -38,14 +38,13 @@ import com.janilla.websitetemplate.frontend.WebsiteDataFetching;
 
 public class JanillaDataFetching extends WebsiteDataFetching {
 
-	public JanillaDataFetching(Configuration configuration, String configurationKey, HttpClient httpClient,
-			Converter converter) {
-		super(configuration, configurationKey, httpClient, converter);
+	public JanillaDataFetching(FrontendConfig config, HttpClient httpClient, Converter converter) {
+		super(config, httpClient, converter);
 	}
 
 	public ListPortion<Application> applications(String slug, String search, Boolean reverse, Long skip, Long limit,
 			Integer depth) {
-		var u = URI.create(apiUrl + "/applications?"
+		var u = URI.create(config.api().url() + "/applications?"
 				+ new UriQueryBuilder().append("slug", slug).append("search", search)
 						.append("reverse", reverse != null ? reverse.toString() : null)
 						.append("skip", skip != null ? skip.toString() : null)

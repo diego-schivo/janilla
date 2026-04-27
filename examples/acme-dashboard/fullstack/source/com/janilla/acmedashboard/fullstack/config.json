@@ -1,0 +1,8 @@
+{
+	"api": {
+		"url": "/api"
+	},
+	"httpServer": {
+		"port": 8080
+	}
+}

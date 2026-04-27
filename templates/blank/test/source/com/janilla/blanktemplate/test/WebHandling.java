@@ -42,18 +42,14 @@ public class WebHandling {
 
 	protected final IndexFactory indexFactory;
 
-	protected final String configurationKey;
-
 	protected final DiFactory diFactory;
 
-	protected final BlankFullstack fullstack;
+	protected final BlankFullstack<?> fullstack;
 
-	public WebHandling(IndexFactory indexFactory, BlankFullstack fullstack, DiFactory diFactory,
-			String configurationKey) {
+	public WebHandling(IndexFactory indexFactory, BlankFullstack<?> fullstack, DiFactory diFactory) {
 		this.indexFactory = indexFactory;
 		this.fullstack = fullstack;
 		this.diFactory = diFactory;
-		this.configurationKey = configurationKey;
 	}
 
 	@Handle(method = "GET", path = "/")
@@ -68,9 +64,10 @@ public class WebHandling {
 			throw new IllegalStateException();
 
 		var d = fullstack.backend().persistence().database();
+		var f = fullstack.backend().config().database().file();
 		var ch1 = (FileChannel) d.channel().channel();
 		try (var ch2 = Channels
-				.newChannel(diFactory.context().getClass().getResourceAsStream(configurationKey + "-test.db"))) {
+				.newChannel(diFactory.context().getClass().getResourceAsStream(f.substring(f.lastIndexOf('/') + 1)))) {
 			var s = ch1.transferFrom(ch2, 0, Long.MAX_VALUE);
 			ch1.truncate(s);
 		}

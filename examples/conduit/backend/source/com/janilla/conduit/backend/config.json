@@ -1,0 +1,16 @@
+{
+	"apiCors": {
+		"headers": "Content-Type",
+		"origin": "http://localhost:8080"
+	},
+	"database": {
+		"file": "~/janilla/sample-data/conduit.db",
+		"seed": true
+	},
+	"httpServer": {
+		"port": 8081
+	},
+	"jwt": {
+		"key": "secretkey"
+	}
+}

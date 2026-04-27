@@ -31,26 +31,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.http.SimpleHttpExchange;
-import com.janilla.java.Configuration;
 import com.janilla.json.Jwt;
 import com.janilla.web.UnauthorizedException;
 
 class HttpExchangeImpl extends SimpleHttpExchange {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	protected final Persistence persistence;
 
 	protected final Map<String, Object> session = new HashMap<>();
 
-	public HttpExchangeImpl(HttpRequest request, HttpResponse response, Configuration configuration,
-			Persistence persistence) {
+	public HttpExchangeImpl(HttpRequest request, HttpResponse response, BackendConfig config, Persistence persistence) {
 		super(request, response);
-		this.configuration = configuration;
+		this.config = config;
 		this.persistence = persistence;
 	}
 
@@ -61,9 +60,7 @@ class HttpExchangeImpl extends SimpleHttpExchange {
 //			IO.println("CustomHttpExchange.getSessionEmail, c=" + c);
 			Map<String, ?> p;
 			try {
-				p = c != null && c.value() != null
-						? Jwt.verifyToken(c.value(), configuration.getProperty("acme-dashboard.jwt.key"))
-						: null;
+				p = c != null && c.value() != null ? Jwt.verifyToken(c.value(), config.jwt().key()) : null;
 			} catch (IllegalArgumentException e) {
 				p = null;
 			}

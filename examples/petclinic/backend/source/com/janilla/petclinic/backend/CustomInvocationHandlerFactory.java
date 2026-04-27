@@ -18,30 +18,29 @@ package com.janilla.petclinic.backend;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.web.HandleException;
 import com.janilla.web.Invocation;
 import com.janilla.web.InvocationHandlerFactory;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
+import com.janilla.web.WebAppConfig;
 
 /**
  * @author Diego Schivo
  */
 class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 
-	protected final Configuration configuration;
+	protected final WebAppConfig config;
 
 	public CustomInvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory, DiFactory diFactory, Configuration configuration) {
+			HttpHandlerFactory rootFactory, DiFactory diFactory, WebAppConfig config) {
 		super(invocationResolver, renderableFactory, rootFactory, diFactory);
-		this.configuration = configuration;
+		this.config = config;
 	}
 
 	@Override
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
-		if (Boolean.parseBoolean(configuration.getProperty("petclinic.live-demo"))
-				&& !exchange.request().getHeaderValue(":method").equals("GET"))
+		if (config.liveDemo() && !exchange.request().getHeaderValue(":method").equals("GET"))
 			throw new HandleException(new InvocationBlockedException());
 
 		return super.handle(invocation, exchange);

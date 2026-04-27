@@ -32,13 +32,13 @@ import com.janilla.web.RenderableFactory;
 
 public class BlankFrontendExceptionHandlerFactory extends ExceptionHandlerFactory {
 
-	protected final BlankIndexFactory indexFactory;
+	protected final BlankIndexFactory<?> indexFactory;
 
 	protected final RenderableFactory renderableFactory;
 
 	protected final HttpHandlerFactory rootFactory;
 
-	public BlankFrontendExceptionHandlerFactory(BlankIndexFactory indexFactory, RenderableFactory renderableFactory,
+	public BlankFrontendExceptionHandlerFactory(BlankIndexFactory<?> indexFactory, RenderableFactory renderableFactory,
 			HttpHandlerFactory rootFactory) {
 		this.indexFactory = indexFactory;
 		this.renderableFactory = renderableFactory;

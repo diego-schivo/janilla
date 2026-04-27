@@ -24,38 +24,29 @@
  */
 package com.janilla.websitetemplate.backend;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import com.janilla.java.Configuration;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.ioc.DiFactory;
 
 public class WebsitePersistenceBuilder extends PersistenceBuilder {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
-	protected final String configurationKey;
-
-	public WebsitePersistenceBuilder(Path databaseFile, Configuration configuration, String configurationKey) {
+	public WebsitePersistenceBuilder(Path databaseFile, BackendConfig config) {
 		super(databaseFile);
-		this.configuration = configuration;
-		this.configurationKey = configurationKey;
+		this.config = config;
 	}
 
 	@Override
 	public Persistence build(DiFactory diFactory) {
-		var fe = Files.exists(databaseFile);
+		var e = Files.exists(databaseFile);
 		var p = super.build(diFactory);
-		if (!fe && Boolean.parseBoolean(configuration.getProperty(configurationKey + ".live-demo")))
-			try {
-				((WebsitePersistence) p).seed();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+		if (!e && config.liveDemo())
+			((WebsitePersistence<?>) p).seed();
 		return p;
 	}
 }

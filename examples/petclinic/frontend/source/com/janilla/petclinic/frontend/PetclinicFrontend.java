@@ -15,10 +15,10 @@
  */
 package com.janilla.petclinic.frontend;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.AbstractFrontend;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
@@ -29,24 +29,28 @@ import com.janilla.petclinic.PetTypeApi;
 import com.janilla.petclinic.VetApi;
 import com.janilla.petclinic.VisitApi;
 import com.janilla.web.InvocationResolver;
+import com.janilla.web.WebApp;
 
 /**
  * @author Diego Schivo
  * @author Dave Syer
  */
-public class PetclinicFrontend extends AbstractFrontend {
+public class PetclinicFrontend extends AbstractFrontend<FrontendConfig> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.frontend", _ -> true), Java.getPackageTypes("com.janilla.petclinic"),
-				Java.getPackageTypes("com.janilla.petclinic.frontend")).flatMap(x -> x);
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
+				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
+				Java.getPackageTypes("com.janilla.petclinic"), Java.getPackageTypes("com.janilla.petclinic.frontend"))
+				.flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { PetclinicFrontend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
 	protected HttpClient httpClient;
@@ -61,8 +65,8 @@ public class PetclinicFrontend extends AbstractFrontend {
 
 	protected VisitApi visitApi;
 
-	public PetclinicFrontend(DiFactory diFactory, Path configurationFile) {
-		super(diFactory, configurationFile, "petclinic");
+	public PetclinicFrontend(FrontendConfig config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	public HttpClient httpClient() {

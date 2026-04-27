@@ -20,9 +20,9 @@ import java.net.URI;
 import java.nio.channels.Channels;
 import java.util.List;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -33,18 +33,18 @@ import com.janilla.petclinic.OwnerApi;
 
 class OwnerApiImpl implements OwnerApi {
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
 	protected final HttpClient httpClient;
 
-	public OwnerApiImpl(Configuration configuration, HttpClient httpClient) {
-		this.configuration = configuration;
+	public OwnerApiImpl(FrontendConfig config, HttpClient httpClient) {
+		this.config = config;
 		this.httpClient = httpClient;
 	}
 
 	@Override
 	public Owner create(Owner owner) {
-		var rq = new HttpRequest("POST", URI.create(configuration.getProperty("petclinic.api.url") + "/owners"));
+		var rq = new HttpRequest("POST", URI.create(config.api().url() + "/owners"));
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(owner, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);
@@ -53,7 +53,7 @@ class OwnerApiImpl implements OwnerApi {
 
 	@Override
 	public ListPortion<Owner> read(String lastName, Integer depth, Integer skip, Integer limit) {
-		var u = URI.create(configuration.getProperty("petclinic.api.url") + "/owners?"
+		var u = URI.create(config.api().url() + "/owners?"
 				+ new UriQueryBuilder().append("lastName", lastName)
 						.append("depth", depth != null ? depth.toString() : null)
 						.append("skip", skip != null ? skip.toString() : null)
@@ -64,7 +64,7 @@ class OwnerApiImpl implements OwnerApi {
 
 	@Override
 	public Owner read(Long id, Integer depth) {
-		var u = URI.create(configuration.getProperty("petclinic.api.url") + "/owners/" + id + "?"
+		var u = URI.create(config.api().url() + "/owners/" + id + "?"
 				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
 		return new DefaultConverter().convert(o, Owner.class);
@@ -73,7 +73,7 @@ class OwnerApiImpl implements OwnerApi {
 	@Override
 	public Owner update(Long id, Owner owner) {
 		IO.println("FrontendOwnerApi.update, id=" + id + ", owner=" + owner);
-		var rq = new HttpRequest("PUT", URI.create(configuration.getProperty("petclinic.api.url") + "/owners/" + id));
+		var rq = new HttpRequest("PUT", URI.create(config.api().url() + "/owners/" + id));
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(owner, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);

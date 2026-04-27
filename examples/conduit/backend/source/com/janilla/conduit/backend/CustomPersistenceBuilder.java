@@ -35,16 +35,16 @@ import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 
 class CustomPersistenceBuilder extends PersistenceBuilder {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
-	public CustomPersistenceBuilder(Path databaseFile, Configuration configuration) {
+	public CustomPersistenceBuilder(Path databaseFile, BackendConfig config) {
 		super(databaseFile);
-		this.configuration = configuration;
+		this.config = config;
 	}
 
 	@Override
@@ -52,8 +52,8 @@ class CustomPersistenceBuilder extends PersistenceBuilder {
 		var e = Files.exists(databaseFile);
 		var x = super.build(diFactory);
 		if (!e) {
-			var s = Boolean.parseBoolean(configuration.getProperty("conduit.database.seed"));
-			if (s)
+			var s = config.database() != null ? config.database().seed() : null;
+			if (s != null && s)
 				seed(x);
 		}
 		return x;

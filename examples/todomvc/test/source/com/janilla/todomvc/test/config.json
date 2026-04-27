@@ -1,0 +1,5 @@
+{
+	"httpServer": {
+		"port": 8080
+	}
+}

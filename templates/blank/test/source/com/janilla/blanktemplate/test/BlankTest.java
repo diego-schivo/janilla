@@ -24,195 +24,62 @@
  */
 package com.janilla.blanktemplate.test;
 
-import java.lang.reflect.Modifier;
-import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
-import com.janilla.frontend.IndexFactory;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpServer;
+import com.janilla.frontend.web.AbstractFrontend;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Java;
-import com.janilla.web.ApplicationHandlerFactory;
-import com.janilla.web.Invocable;
-import com.janilla.web.InvocationResolver;
-import com.janilla.web.NotFoundException;
-import com.janilla.web.RenderableFactory;
-import com.janilla.web.ResourceMap;
+import com.janilla.web.WebApp;
 
-public class BlankTest {
+public class BlankTest extends AbstractFrontend<FrontendConfig> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(
-				Java.getPackageTypes("com.janilla",
-						x -> !x.equals("com.janilla.backend") && !x.equals("com.janilla.blanktemplate")),
-				Java.getPackageTypes("com.janilla.blanktemplate.frontend"),
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
+				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
 				Java.getPackageTypes("com.janilla.blanktemplate.test")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList(), "test");
-		serve(f, BlankTest.class, args.length > 0 ? args[0] : null);
+		var f = new DefaultDiFactory(diTypes().toList());
+		var c = newConfig(new Class<?>[] { BlankTest.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	protected static <T extends BlankTest> void serve(DiFactory diFactory, Class<T> applicationType,
-			String configurationPath) {
-		T a;
-		{
-			var cf = configurationPath != null ? Path.of(
-					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-							: configurationPath)
-					: null;
-			a = diFactory.newInstance(applicationType, Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-		}
+	protected final BlankFullstack<?> fullstack;
 
-		HttpServer s;
-		{
-			var p = Integer.parseInt(a.configuration.getProperty(a.configurationKey + ".server.port"));
-			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
-		}
-		s.serve();
-	}
-
-	protected final Configuration configuration;
-
-	protected final Path configurationFile;
-
-	protected final String configurationKey;
-
-	protected final DiFactory diFactory;
-
-	protected final BlankFullstack fullstack;
-
-	protected final HttpHandler handler;
-
-	protected final IndexFactory indexFactory;
-
-	protected final InvocationResolver invocationResolver;
-
-	protected final RenderableFactory renderableFactory;
-
-	protected final ResourceMap resourceMap;
-
-	public BlankTest(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "blank-template");
-	}
-
-	public BlankTest(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		this.diFactory = diFactory;
-		this.configurationFile = configurationFile;
-		this.configurationKey = configurationKey;
-		diFactory.context(this);
-		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-				Collections.singletonMap("path", configurationFile));
-
-		Path cf;
-		try {
-			cf = configurationFile != null ? configurationFile
-					: Path.of(getClass().getResource("configuration.properties").toURI());
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+	public BlankTest(FrontendConfig config, DiFactory diFactory) {
+		super(config, diFactory);
 
 		{
 			var f = new DefaultDiFactory(diFullstackTypes().toList(), "fullstack");
-			fullstack = f.newInstance(f.classFor(BlankFullstack.class),
-					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
-		}
-
-		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths", resourcePaths()));
-//		IO.println("resourceMap=" + resourceMap);
-		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
-		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
-				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
-						.flatMap(x -> Arrays.stream(x.getMethods())
-								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-								.map(y -> new Invocable(x, y)))
-						.toList(),
-				"instanceResolver", (Function<Class<?>, Object>) x -> {
-					var y = diFactory.context();
-//							IO.println("x=" + x + ", y=" + y);
-					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-							: diFactory.newInstance(diFactory.classFor(x));
-				}));
-		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
-		{
-			var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
-			HttpHandler h0 = ex -> {
-				var h = f.createHandler(Objects.requireNonNullElse(ex.exception(), ex.request()));
-				if (h == null)
-					throw new NotFoundException(ex.request().getHeaderValue(":method") + " " + ex.request().getHeaderValue(":path"));
-				return h.handle(ex);
-			};
-			handler = ex -> {
-//				IO.println("BlankTest, " + ex.request().getPath() + ", Test.ongoing=" + Test.ONGOING.get());
-				var h = WebHandling.TEST_ONGOING.get() && !ex.request().getPath().startsWith("/test/")
-						? fullstack.httpHandler()
-						: h0;
-				return h.handle(ex);
-			};
+			Class<?>[] cc;
+			try {
+				cc = (Class<?>[]) f.classFor(WebApp.class).getDeclaredField("CONFIG_CLASSES").get(null);
+			} catch (ReflectiveOperationException e) {
+				throw new RuntimeException(e);
+			}
+			var c = newConfig(cc, null, f);
+			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
 		}
 	}
 
-	public Configuration configuration() {
-		return configuration;
-	}
-
-	public String configurationKey() {
-		return configurationKey;
-	}
-
-	public DiFactory diFactory() {
-		return diFactory;
-	}
-
-	public BlankFullstack fullstack() {
+	public BlankFullstack<?> fullstack() {
 		return fullstack;
-	}
-
-	public HttpHandler handler() {
-		return handler;
-	}
-
-	public IndexFactory indexFactory() {
-		return indexFactory;
-	}
-
-	public InvocationResolver invocationResolver() {
-		return invocationResolver;
-	}
-
-	public RenderableFactory renderableFactory() {
-		return renderableFactory;
-	}
-
-	public ResourceMap resourceMap() {
-		return resourceMap;
 	}
 
 	protected Stream<Class<?>> diFullstackTypes() {
 		return BlankFullstack.diTypes();
 	};
 
-	protected Map<String, List<Path>> resourcePaths() {
-		return Map.of("/base", Java.getPackagePaths("com.janilla.frontend").filter(Files::isRegularFile).toList(), "",
-//				Stream.of("com.janilla.blanktemplate.frontend", "com.janilla.blanktemplate.test")
-//						.flatMap(Java::getPackagePaths).filter(Files::isRegularFile).toList());
-				Java.getPackagePaths("com.janilla.blanktemplate.test").filter(Files::isRegularFile).toList());
+	@Override
+	protected void putResourcePrefixes() {
+		super.putResourcePrefixes();
+		resourcePrefixes.put("com.janilla.blanktemplate.test", "");
 	}
 }

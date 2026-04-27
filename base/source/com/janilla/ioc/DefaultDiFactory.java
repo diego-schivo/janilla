@@ -56,7 +56,7 @@ public class DefaultDiFactory implements DiFactory {
 	}
 
 	public DefaultDiFactory(List<Class<?>> types, String name) {
-//		IO.println("DefaultDiFactory, types=" + types);
+		IO.println("DefaultDiFactory, types=" + types + ", name=" + name);
 		this.types = types;
 		this.name = name;
 	}
@@ -83,12 +83,12 @@ public class DefaultDiFactory implements DiFactory {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T, U extends T> Class<U> classFor(Class<T> type) {
-//		IO.println("DefaultDiFactory.classFor, type=" + type);
+		IO.println("DefaultDiFactory.classFor, type=" + type);
 		var c = (Class<U>) classes
 				.computeIfAbsent(type,
 						_ -> Stream.concat(Stream.of(type), types.stream()).filter(predicate(type)).reduce((_, x) -> x))
 				.orElse(null);
-//		IO.println("DefaultDiFactory.classFor, c=" + c);
+		IO.println("DefaultDiFactory.classFor, c=" + c);
 		return c;
 	}
 

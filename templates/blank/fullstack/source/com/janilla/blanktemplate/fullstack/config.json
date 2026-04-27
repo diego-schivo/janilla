@@ -1,0 +1,9 @@
+{
+	"api": {
+		"cors": {
+			"headers": "",
+			"origin": ""
+		},
+		"url": "/api"
+	}
+}

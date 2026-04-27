@@ -30,7 +30,7 @@ import java.util.Map;
 import com.janilla.web.JsonRenderer;
 import com.janilla.web.Render;
 
-@Render(template = "index", resource = "/base/index.html")
+@Render(template = "index", resource = { "/base/index.html", "/index.html" })
 public interface Index {
 
 	String title();

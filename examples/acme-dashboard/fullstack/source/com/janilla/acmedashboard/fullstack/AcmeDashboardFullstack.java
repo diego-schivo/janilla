@@ -24,122 +24,35 @@
  */
 package com.janilla.acmedashboard.fullstack;
 
-import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.acmedashboard.backend.AcmeDashboardBackend;
 import com.janilla.acmedashboard.frontend.AcmeDashboardFrontend;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpServer;
+import com.janilla.fullstack.web.AbstractFullstack;
+import com.janilla.fullstack.web.FullstackConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 
-public class AcmeDashboardFullstack {
-
-	public static final ScopedValue<AcmeDashboardFullstack> INSTANCE = ScopedValue.newInstance();
+public class AcmeDashboardFullstack extends AbstractFullstack<FullstackConfig> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(
-				Java.getPackageTypes("com.janilla", x -> !x.endsWith(".cms") && !x.equals("com.janilla.acmedashboard")),
-				Java.getPackageTypes("com.janilla.acmedashboard.fullstack"));
+		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.fullstack.web"),
+				Java.getPackageTypes("com.janilla.acmedashboard.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class, AcmeDashboardFrontend.class,
+				AcmeDashboardFullstack.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	protected static void serve(DiFactory diFactory, String configurationPath) {
-		AcmeDashboardFullstack a;
-		{
-			var cf = configurationPath != null ? Path.of(
-					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-							: configurationPath)
-					: null;
-			a = diFactory.newInstance(diFactory.classFor(AcmeDashboardFullstack.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-		}
-
-		HttpServer s;
-		{
-			var p = Integer.parseInt(a.configuration.getProperty("acme-dashboard.server.port"));
-			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
-		}
-		s.serve();
-	}
-
-	protected final AcmeDashboardBackend backend;
-
-	protected final Configuration configuration;
-
-	protected final DiFactory diFactory;
-
-	protected final AcmeDashboardFrontend frontend;
-
-	protected final HttpHandler handler;
-
-	public AcmeDashboardFullstack(DiFactory diFactory, Path configurationFile) {
-		this.diFactory = diFactory;
-		diFactory.context(this);
-
-		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-				Collections.singletonMap("path", configurationFile));
-
-		Path cf;
-		try {
-			cf = configurationFile != null ? configurationFile
-					: Path.of(AcmeDashboardFullstack.class.getResource("configuration.properties").toURI());
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-
-		backend = ScopedValue.where(INSTANCE, this).call(() -> {
-			var f = new DefaultDiFactory(Stream
-					.concat(AcmeDashboardBackend.diTypes(), Java.getPackageTypes("com.janilla.acmedashboard.fullstack"))
-					.toList(), "backend");
-			return diFactory.newInstance(diFactory.classFor(AcmeDashboardBackend.class),
-					Java.hashMap("diFactory", f, "configurationFile", cf));
-		});
-
-		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
-			var f = new DefaultDiFactory(Stream.concat(AcmeDashboardFrontend.diTypes(),
-					Java.getPackageTypes("com.janilla.acmedashboard.fullstack")).toList(), "frontend");
-			return diFactory.newInstance(diFactory.classFor(AcmeDashboardFrontend.class),
-					Java.hashMap("diFactory", f, "configurationFile", cf));
-		});
-
-		handler = x -> {
-			var h = x.request().getPath().startsWith("/api/") ? backend.httpHandler() : frontend.httpHandler();
-			return h.handle(x);
-		};
-	}
-
-	public AcmeDashboardBackend backend() {
-		return backend;
-	}
-
-	public Configuration configuration() {
-		return configuration;
-	}
-
-	public DiFactory diFactory() {
-		return diFactory;
-	}
-
-	public AcmeDashboardFrontend frontend() {
-		return frontend;
-	}
-
-	public HttpHandler handler() {
-		return handler;
+	public AcmeDashboardFullstack(FullstackConfig config, DiFactory diFactory) {
+		super(config, diFactory, AcmeDashboardFrontend.class, AcmeDashboardBackend.class);
 	}
 }

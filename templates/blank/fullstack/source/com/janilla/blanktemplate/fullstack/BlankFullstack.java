@@ -24,7 +24,6 @@
  */
 package com.janilla.blanktemplate.fullstack;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.backend.BlankBackend;
@@ -33,62 +32,42 @@ import com.janilla.fullstack.web.AbstractFullstack;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 
-public class BlankFullstack extends AbstractFullstack {
+public class BlankFullstack<C extends BlankFullstackConfig> extends AbstractFullstack<C> {
 
-//	public static final ScopedValue<BlankFullstack> INSTANCE = ScopedValue.newInstance();
+	public static final Class<?>[] CONFIG_CLASSES = { BlankBackend.class, BlankFrontend.class, BlankFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
-		return Java.getPackageTypes("com.janilla.blanktemplate.fullstack");
+		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
+				Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.frontend", _ -> true),
+				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
+				Java.getPackageTypes("com.janilla.blanktemplate.backend"),
+				Java.getPackageTypes("com.janilla.blanktemplate.frontend"),
+				Java.getPackageTypes("com.janilla.blanktemplate.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-//	protected static <T extends BlankFullstack> void serve(DiFactory diFactory, Class<T> applicationType,
-//			String configurationPath) {
-//		T a;
-//		{
-//			var cf = configurationPath != null ? Path.of(
-//					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-//							: configurationPath)
-//					: null;
-//			a = diFactory.newInstance(applicationType, Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-//		}
-//
-//		HttpServer s;
-//		{
-//			var p = Integer.parseInt(a.configuration.getProperty(a.configurationKey + ".server.port"));
-//			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-//					Map.of("endpoint", new InetSocketAddress(p), "handler", a.handler));
-//		}
-//		s.serve();
-//	}
-
-//	protected final BlankBackend backend;
-//
-//	protected final Configuration configuration;
-//
-//	protected final Path configurationFile;
-//
-//	protected final String configurationKey;
-//
-//	protected final DiFactory diFactory;
-//
-//	protected final BlankFrontend frontend;
-//
-//	protected final HttpHandler handler;
-
-	public BlankFullstack(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "blank-template");
+	public BlankFullstack(C config, DiFactory diFactory) {
+		this(config, diFactory, BlankFrontend.class, BlankBackend.class);
 	}
 
-	protected BlankFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey, BlankFrontend.class, BlankBackend.class);
+	@SuppressWarnings("rawtypes")
+	protected BlankFullstack(C config, DiFactory diFactory, Class frontendClass, Class backendClass) {
+		super(config, diFactory, frontendClass, backendClass);
+	}
+
+//	protected BlankFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
+//		super(diFactory, configurationFile, configurationKey, BlankFrontend.class, BlankBackend.class);
 //		this.diFactory = diFactory;
 //		this.configurationFile = configurationFile;
 //		this.configurationKey = configurationKey;
@@ -117,32 +96,8 @@ public class BlankFullstack extends AbstractFullstack {
 //		});
 //
 //		handler = this::handle;
-	}
+//	}
 
-//	public BlankBackend backend() {
-//		return backend;
-//	}
-//
-//	public Configuration configuration() {
-//		return configuration;
-//	}
-//
-//	public String configurationKey() {
-//		return configurationKey;
-//	}
-//
-//	public DiFactory diFactory() {
-//		return diFactory;
-//	}
-//
-//	public BlankFrontend frontend() {
-//		return frontend;
-//	}
-//
-//	public HttpHandler handler() {
-//		return handler;
-//	}
-//
 //	protected Stream<Class<?>> diBackendTypes() {
 //		return Stream.concat(BlankBackend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"));
 //	};

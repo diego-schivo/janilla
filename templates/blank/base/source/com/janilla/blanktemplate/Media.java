@@ -26,6 +26,7 @@ package com.janilla.blanktemplate;
 
 import com.janilla.cms.Document;
 import com.janilla.persistence.Store;
+import com.janilla.web.WebApp;
 
 @Store
 public interface Media extends Document<Long> {
@@ -38,6 +39,6 @@ public interface Media extends Document<Long> {
 
 	default String uri() {
 		var f = file();
-		return f != null ? (Configuration.PROPERTY_GETTER.get().apply("api.url") + "/media/" + f.name()) : null;
+		return f != null ? WebApp.INSTANCE.get().config().api().url() + "/media/" + f.name() : null;
 	}
 }

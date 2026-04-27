@@ -28,62 +28,139 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
 
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
+import com.janilla.java.DefaultConverter;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.Java;
 import com.janilla.java.TypeResolver;
+import com.janilla.java.TypedData;
+import com.janilla.json.Json;
 
-public abstract class AbstractWebApp implements WebApp {
+public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C> {
 
-	protected static void serve(DiFactory diFactory, String configurationPath) {
-		WebApp a;
-		{
-			var f = configurationPath != null ? Path.of(
-					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-							: configurationPath)
-					: null;
-			a = diFactory.newInstance(diFactory.classFor(WebApp.class),
-					Java.hashMap("diFactory", diFactory, "configurationFile", f));
+	protected static WebAppConfig newConfig(Class<?>[] classes, String path, DiFactory factory) {
+//		Stream<Path> ff;
+//		ff = Arrays.stream(classes).map(x -> {
+//			var r = x.getResource("config.json");
+//			try {
+//				return r != null ? Path.of(r.toURI()) : null;
+//			} catch (URISyntaxException e) {
+//				throw new RuntimeException(e);
+//			}
+//		}).filter(x -> x != null);
+		Stream<Map<?, ?>> mm = Arrays.stream(classes).map(x -> toConfigMap(x));
+
+		if (path != null) {
+//			var f = Path.of(path.startsWith("~") ? System.getProperty("user.home") + path.substring(1) : path);
+			var m = toConfigMap(path);
+			mm = Stream.concat(mm, Stream.of(m));
 		}
 
-		var c = sslContext(a.configuration(), a.configurationKey());
+//		var mm = ff.map(f -> {
+//			Object o;
+//			try {
+//				var s = Files.readString(f);
+//				o = Json.parse(s);
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+//			return (Map<?, ?>) o;
+//		}).toArray(Map<?, ?>[]::new);
+
+		return newConfig(mm.toArray(Map<?, ?>[]::new), factory);
+	}
+
+	protected static Map<?, ?> toConfigMap(Class<?> type) {
+		var r = type.getResource("config.json");
+		Path f;
+		try {
+			f = r != null ? Path.of(r.toURI()) : null;
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+		return f != null ? toConfigMap(f) : null;
+	}
+
+	protected static Map<?, ?> toConfigMap(String path) {
+		var f = Path.of(path.startsWith("~") ? System.getProperty("user.home") + path.substring(1) : path);
+		return f != null ? toConfigMap(f) : null;
+	}
+
+	protected static Map<?, ?> toConfigMap(Path file) {
+		Object o;
+		try {
+			var s = Files.readString(file);
+			o = Json.parse(s);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		return (Map<?, ?>) o;
+	}
+
+	protected static WebAppConfig newConfig(Map<?, ?>[] maps, DiFactory factory) {
+		var m = Arrays.stream(maps).flatMap(x -> x.entrySet().stream()).filter(x -> x.getValue() != null)
+				.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue(), (_, x) -> x, LinkedHashMap::new));
+
+		return new DefaultConverter(new TypeResolver() {
+
+			@Override
+			public TypedData apply(TypedData t) {
+				return t.type() instanceof Class<?> c && c.isInterface() ? t.withType(factory.classFor(c)) : null;
+			}
+
+			@Override
+			public Class<?> parse(String string) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public String format(Class<?> type) {
+				throw new UnsupportedOperationException();
+			}
+		}).convert(m, factory.classFor(WebAppConfig.class));
+	}
+
+	protected static void serve(WebApp<?> app) {
+		var c = sslContext(app.config());
 
 		HttpServer s;
 		{
-			var p = Integer.parseInt(a.configuration().getProperty(a.configurationKey() + ".server.port"));
-			s = diFactory.newInstance(diFactory.classFor(HttpServer.class),
-					Java.hashMap("endpoint", new InetSocketAddress(p), "sslContext", c, "handler", a.httpHandler()));
+			var e = new InetSocketAddress(app.config().httpServer().port());
+			var h = app.httpHandler();
+			s = app.diFactory().newInstance(app.diFactory().classFor(HttpServer.class),
+					Java.hashMap("endpoint", e, "sslContext", c, "handler", h));
 		}
 		s.serve();
 	}
 
-	protected static SSLContext sslContext(Configuration configuration, String configurationKey) {
-		var p = configuration.getProperty(configurationKey + ".server.keystore.path");
-		if (p != null) {
-			var w = configuration.getProperty(configurationKey + ".server.keystore.password");
+	protected static SSLContext sslContext(WebAppConfig config) {
+		var k = config.httpServer().keystore();
+		if (k != null) {
+			var p = k.path();
+			var w = k.password();
 			if (p.startsWith("~"))
 				p = System.getProperty("user.home") + p.substring(1);
 			var f = Path.of(p);
 			if (!Files.exists(f)) {
-				var cn = configuration.getProperty(configurationKey + ".server.keystore.common-name");
-				var san = configuration.getProperty(configurationKey + ".server.keystore.subject-alternative-name");
+				var cn = k.commonName();
+				var san = k.subjectAlternativeName();
 				Java.generateKeyPair(cn != null ? cn : "localhost", f, w,
 						san != null ? san : "dns:localhost,ip:127.0.0.1");
 			}
@@ -96,11 +173,7 @@ public abstract class AbstractWebApp implements WebApp {
 		return null;
 	}
 
-	protected final Configuration configuration;
-
-	protected final Path configurationFile;
-
-	protected final String configurationKey;
+	protected final C config;
 
 	protected final Converter converter;
 
@@ -116,13 +189,11 @@ public abstract class AbstractWebApp implements WebApp {
 
 	protected final TypeResolver typeResolver;
 
-	protected AbstractWebApp(DiFactory diFactory, Path configurationFile, String configurationKey) {
+	protected AbstractWebApp(C config, DiFactory diFactory) {
+		this.config = config;
 		this.diFactory = diFactory;
-		this.configurationFile = configurationFile;
-		this.configurationKey = configurationKey;
 		diFactory.context(this);
 
-		configuration = newConfiguration();
 		{
 			Map<String, Class<?>> m = diFactory.types().stream().filter(x -> x.getEnclosingClass() == null)
 					.collect(Collectors.toMap(x -> x.getSimpleName(), x -> x, (_, x) -> x, LinkedHashMap::new));
@@ -130,30 +201,22 @@ public abstract class AbstractWebApp implements WebApp {
 			resolvables = m.values().stream().toList();
 		}
 		typeResolver = diFactory.newInstance(diFactory.classFor(DollarTypeResolver.class));
-		converter = diFactory.newInstance(diFactory.classFor(Converter.class));
+		converter = newConverter();
 		invocationResolver = newInvocationResolver();
 		renderableFactory = newRenderableFactory();
 		httpHandler = newHttpHandler();
 	}
 
 	@Override
-	public Configuration configuration() {
-		return configuration;
-	}
-
-	public Path configurationFile() {
-		return configurationFile;
-	}
-
-	@Override
-	public String configurationKey() {
-		return configurationKey;
+	public C config() {
+		return config;
 	}
 
 	public Converter converter() {
 		return converter;
 	}
 
+	@Override
 	public DiFactory diFactory() {
 		return diFactory;
 	}
@@ -179,9 +242,8 @@ public abstract class AbstractWebApp implements WebApp {
 		return typeResolver;
 	}
 
-	protected Configuration newConfiguration() {
-		return diFactory.newInstance(diFactory.classFor(Configuration.class),
-				Collections.singletonMap("path", configurationFile));
+	protected Converter newConverter() {
+		return diFactory.newInstance(diFactory.classFor(Converter.class));
 	}
 
 	protected HttpHandler newHttpHandler() {
@@ -191,7 +253,7 @@ public abstract class AbstractWebApp implements WebApp {
 			if (h == null)
 				throw new NotFoundException(
 						x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
-			return h.handle(x);
+			return ScopedValue.where(INSTANCE, this).call(() -> h.handle(x));
 		};
 	}
 

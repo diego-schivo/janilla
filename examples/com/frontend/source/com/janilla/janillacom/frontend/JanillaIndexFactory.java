@@ -29,15 +29,14 @@ import java.util.stream.Stream;
 import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.web.ResourceMap;
 import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 
-public class JanillaIndexFactory extends WebsiteIndexFactory {
+public class JanillaIndexFactory extends WebsiteIndexFactory<JanillaFrontendConfig> {
 
-	public JanillaIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
-			String configurationKey, DiFactory diFactory) {
-		super(resourceMap, dataFetching, configuration, configurationKey, diFactory);
+	public JanillaIndexFactory(JanillaFrontendConfig config, ResourceMap resourceMap, DiFactory diFactory,
+			CmsDataFetching dataFetching) {
+		super(config, resourceMap, diFactory, dataFetching);
 	}
 
 	public Template janillaTemplate(String name) {

@@ -27,17 +27,15 @@ package com.janilla.blanktemplate.backend;
 import com.janilla.backend.cms.AbstractUserHttpExchange;
 import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.cms.User;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.java.Configuration;
 
 class HttpExchangeImpl extends AbstractUserHttpExchange<User<?>> {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public HttpExchangeImpl(HttpRequest request, HttpResponse response, Configuration configuration,
-			String configurationKey, Persistence persistence) {
-		super(request, response, configuration.getProperty(configurationKey + ".jwt.cookie"),
-				configuration.getProperty(configurationKey + ".jwt.key"), (Crud) persistence.crud(User.class));
+	public HttpExchangeImpl(HttpRequest request, HttpResponse response, BackendConfig config, Persistence persistence) {
+		super(request, response, config.jwt().cookie(), config.jwt().key(), (Crud) persistence.crud(User.class));
 	}
 }

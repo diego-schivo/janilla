@@ -1,0 +1,13 @@
+{
+	"apiCors": {
+		"headers": "Content-Type",
+		"origin": "http://localhost:8080"
+	},
+	"database": {
+		"file": "~/janilla/sample-data/address-book.db"
+	},
+	"liveDemo": false,
+	"httpServer": {
+		"port": 8081
+	}
+}

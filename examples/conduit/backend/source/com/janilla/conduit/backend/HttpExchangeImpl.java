@@ -27,24 +27,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.http.SimpleHttpExchange;
-import com.janilla.java.Configuration;
 import com.janilla.json.Jwt;
 
 class HttpExchangeImpl extends SimpleHttpExchange {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	protected final Persistence persistence;
 
 	protected final Map<String, Object> session = new HashMap<>();
 
-	public HttpExchangeImpl(HttpRequest request, HttpResponse response, Configuration configuration,
-			Persistence persistence) {
+	public HttpExchangeImpl(HttpRequest request, HttpResponse response, BackendConfig config, Persistence persistence) {
 		super(request, response);
-		this.configuration = configuration;
+		this.config = config;
 		this.persistence = persistence;
 	}
 
@@ -52,7 +51,7 @@ class HttpExchangeImpl extends SimpleHttpExchange {
 		if (!session.containsKey("user")) {
 			var a = request().getHeaderValue("authorization");
 			var t = a != null && a.startsWith("Token ") ? a.substring("Token ".length()) : null;
-			var p = t != null ? Jwt.verifyToken(t, configuration.getProperty("conduit.jwt.key")) : null;
+			var p = t != null ? Jwt.verifyToken(t, config.jwt().key()) : null;
 			var e = p != null ? (String) p.get("loggedInAs") : null;
 			User u;
 			if (e != null) {

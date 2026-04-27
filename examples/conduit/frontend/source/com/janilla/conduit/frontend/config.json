@@ -1,0 +1,9 @@
+{
+	"api": {
+		"url": "http://localhost:8081/api"
+	},
+	"httpServer": {
+		"port": 8080
+	},
+	"title": "Conduit"
+}

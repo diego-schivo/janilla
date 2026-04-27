@@ -25,7 +25,6 @@ package com.janilla.janillacom.fullstack;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
@@ -36,16 +35,23 @@ import com.janilla.ioc.DiFactory;
 import com.janilla.janillacom.backend.JanillaBackend;
 import com.janilla.janillacom.frontend.JanillaFrontend;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.fullstack.WebsiteFullstack;
 
-public class JanillaFullstack extends WebsiteFullstack {
+public class JanillaFullstack extends WebsiteFullstack<JanillaFullstackConfig> {
+
+	public static final Class<?>[] CONFIG_CLASSES = { JanillaBackend.class, JanillaFrontend.class,
+			JanillaFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(WebsiteFullstack.diTypes(), Java.getPackageTypes("com.janilla.janillacom.fullstack"));
+		return Stream.of(WebsiteFullstack.diTypes(), Java.getPackageTypes("com.janilla.janillacom.backend"),
+				Java.getPackageTypes("com.janilla.janillacom.frontend"),
+				Java.getPackageTypes("com.janilla.janillacom.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println("pid=" + ProcessHandle.current().pid());
+
 		var r = Runtime.getRuntime();
 		IO.println("maxMemory=" + r.maxMemory());
 
@@ -67,24 +73,26 @@ public class JanillaFullstack extends WebsiteFullstack {
 		});
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		try {
-			serve(f, args.length > 0 ? args[0] : null);
-		} catch (Throwable t) {
-			t.printStackTrace();
-		}
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public JanillaFullstack(DiFactory diFactory, Path configurationFile) {
-		super(diFactory, configurationFile, "janilla-com");
+	public JanillaFullstack(JanillaFullstackConfig config, DiFactory diFactory) {
+		super(config, diFactory, JanillaFrontend.class, JanillaBackend.class);
 	}
 
 	@Override
 	protected Stream<Class<?>> diBackendTypes() {
-		return Stream.concat(JanillaBackend.diTypes(), Java.getPackageTypes("com.janilla.janillacom.fullstack"));
+		return Stream.of(diTypes(backendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.websitetemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.janillacom.fullstack")).flatMap(x -> x);
 	}
 
 	@Override
 	protected Stream<Class<?>> diFrontendTypes() {
-		return Stream.concat(JanillaFrontend.diTypes(), Java.getPackageTypes("com.janilla.janillacom.fullstack"));
+		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.websitetemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.janillacom.fullstack")).flatMap(x -> x);
 	}
 }

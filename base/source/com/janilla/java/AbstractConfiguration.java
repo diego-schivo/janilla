@@ -22,33 +22,33 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.java;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Properties;
-
-public abstract class AbstractConfiguration extends Properties implements Configuration {
-
-	private static final long serialVersionUID = -4803096356071005362L;
-
-	protected AbstractConfiguration(Class<?> class1, Path path) {
-//		IO.println("AbstractConfiguration, class1=" + class1 + ", path=" + path);
-		try {
-			try (var in = class1.getResourceAsStream("configuration.properties")) {
-				load(in);
-//				IO.println("AbstractConfiguration, this=" + this);
-			}
-
-			if (path != null)
-				try (var in = Files.newInputStream(path)) {
-					load(in);
-//					IO.println("AbstractConfiguration, this=" + this);
-				}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
-}
+//package com.janilla.java;
+//
+//import java.io.IOException;
+//import java.io.UncheckedIOException;
+//import java.nio.file.Files;
+//import java.nio.file.Path;
+//import java.util.Properties;
+//
+//public abstract class AbstractConfiguration extends Properties implements Configuration {
+//
+//	private static final long serialVersionUID = -4803096356071005362L;
+//
+//	protected AbstractConfiguration(Class<?> class1, Path path) {
+////		IO.println("AbstractConfiguration, class1=" + class1 + ", path=" + path);
+//		try {
+//			try (var in = class1.getResourceAsStream("configuration.properties")) {
+//				load(in);
+////				IO.println("AbstractConfiguration, this=" + this);
+//			}
+//
+//			if (path != null)
+//				try (var in = Files.newInputStream(path)) {
+//					load(in);
+////					IO.println("AbstractConfiguration, this=" + this);
+//				}
+//		} catch (IOException e) {
+//			throw new UncheckedIOException(e);
+//		}
+//	}
+//}

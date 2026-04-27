@@ -18,9 +18,9 @@ package com.janilla.petclinic.frontend;
 import java.net.URI;
 import java.util.List;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -30,18 +30,18 @@ import com.janilla.petclinic.VetApi;
 
 class VetApiImpl implements VetApi {
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
 	protected final HttpClient httpClient;
 
-	public VetApiImpl(Configuration configuration, HttpClient httpClient) {
-		this.configuration = configuration;
+	public VetApiImpl(FrontendConfig config, HttpClient httpClient) {
+		this.config = config;
 		this.httpClient = httpClient;
 	}
 
 	@Override
 	public ListPortion<Vet> read(Integer depth, Integer skip, Integer limit) {
-		var u = URI.create(configuration.getProperty("petclinic.api.url") + "/vets?"
+		var u = URI.create(config.api().url() + "/vets?"
 				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null)
 						.append("skip", skip != null ? skip.toString() : null)
 						.append("limit", limit != null ? limit.toString() : null));

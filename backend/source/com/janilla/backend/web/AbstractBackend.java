@@ -35,14 +35,14 @@ import com.janilla.persistence.Store;
 import com.janilla.web.AbstractWebApp;
 import com.janilla.web.InvocationResolver;
 
-public abstract class AbstractBackend extends AbstractWebApp {
+public abstract class AbstractBackend<C extends BackendConfig> extends AbstractWebApp<C> implements Backend<C> {
 
 	protected Persistence persistence;
 
 	protected List<Class<?>> storables;
 
-	protected AbstractBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	protected AbstractBackend(C config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	public Persistence persistence() {
@@ -57,7 +57,7 @@ public abstract class AbstractBackend extends AbstractWebApp {
 	protected InvocationResolver newInvocationResolver() {
 		storables = resolvables.stream().filter(x -> x.isAnnotationPresent(Store.class)).toList();
 		{
-			var f = configuration.getProperty(configurationKey + ".database.file");
+			var f = ((BackendConfig) config).database().file();
 			if (f.startsWith("~"))
 				f = System.getProperty("user.home") + f.substring(1);
 			var b = diFactory.newInstance(diFactory.classFor(PersistenceBuilder.class),

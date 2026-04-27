@@ -26,10 +26,10 @@ package com.janilla.acmedashboard.backend;
 
 import java.util.Set;
 
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.web.HandleException;
 import com.janilla.web.Invocation;
 import com.janilla.web.InvocationHandlerFactory;
@@ -38,12 +38,12 @@ import com.janilla.web.RenderableFactory;
 
 class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	public CustomInvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory, DiFactory diFactory, Configuration configuration) {
+			HttpHandlerFactory rootFactory, DiFactory diFactory, BackendConfig config) {
 		super(invocationResolver, renderableFactory, rootFactory, diFactory);
-		this.configuration = configuration;
+		this.config = config;
 	}
 
 	@Override
@@ -52,7 +52,7 @@ class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 		var rq = ex.request();
 		var rs = ex.response();
 
-		if (Boolean.parseBoolean(configuration.getProperty("acme-dashboard.live-demo")))
+		if (config.liveDemo() != null && config.liveDemo())
 			if (rq.getHeaderValue(":method").equals("GET") || rq.getPath().equals("/api/authentication"))
 				;
 			else
@@ -71,7 +71,7 @@ class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 			rs.setHeaderValue("location", "/login");
 		}
 
-		var o = configuration.getProperty("acme-dashboard.api.cors.origin");
+		var o = config.api().cors().origin();
 		if (o != null && !o.isEmpty()) {
 			rs.setHeaderValue("access-control-allow-credentials", "true");
 			rs.setHeaderValue("access-control-allow-origin", o);

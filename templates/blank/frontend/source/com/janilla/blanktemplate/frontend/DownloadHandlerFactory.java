@@ -43,7 +43,6 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.Java;
 
 public class DownloadHandlerFactory implements HttpHandlerFactory {
@@ -52,8 +51,8 @@ public class DownloadHandlerFactory implements HttpHandlerFactory {
 
 	protected final Map<String, byte[]> bodies = new ConcurrentHashMap<>();
 
-	public DownloadHandlerFactory(Configuration configuration, String configurationKey) {
-		var d = configuration.getProperty(configurationKey + ".download.directory");
+	public DownloadHandlerFactory(BlankFrontendConfig config, String configurationKey) {
+		var d = config.download().directory();
 		if (d.startsWith("~"))
 			d = System.getProperty("user.home") + d.substring(1);
 		Path d2;

@@ -33,23 +33,13 @@ import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.web.ResourceMap;
 
-public class WebsiteIndexFactory extends BlankIndexFactory {
+public class WebsiteIndexFactory<C extends WebsiteFrontendConfig> extends BlankIndexFactory<C> {
 
-	public WebsiteIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
-			String configurationKey, DiFactory diFactory) {
-		super(resourceMap, dataFetching, configuration, configurationKey, diFactory);
+	public WebsiteIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
+		super(config, resourceMap, diFactory, dataFetching);
 	}
-
-//	@Override
-//	public Index newIndex(HttpExchange exchange) {
-//		return new IndexImpl(configuration.getProperty(configurationKey + ".title"), imports(), scripts(),
-//				new AppImpl(configurationKey, configuration.getProperty(configurationKey + ".api.url"),
-//						state(exchange)),
-//				templates());
-//	}
 
 	@Override
 	public Template blankTemplate(String name) {

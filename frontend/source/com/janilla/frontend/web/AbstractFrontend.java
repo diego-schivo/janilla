@@ -39,7 +39,7 @@ import com.janilla.web.AbstractWebApp;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.ResourceMap;
 
-public abstract class AbstractFrontend extends AbstractWebApp {
+public abstract class AbstractFrontend<C extends FrontendConfig> extends AbstractWebApp<C> implements Frontend<C> {
 
 	protected IndexFactory indexFactory;
 
@@ -47,8 +47,8 @@ public abstract class AbstractFrontend extends AbstractWebApp {
 
 	protected Map<String, String> resourcePrefixes;
 
-	protected AbstractFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	protected AbstractFrontend(C config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	public IndexFactory indexFactory() {

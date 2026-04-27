@@ -24,16 +24,14 @@
  */
 package com.janilla.ecommercetemplate.test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.ecommercetemplate.fullstack.EcommerceFullstack;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.test.WebsiteTest;
 
 public class EcommerceTest extends WebsiteTest {
@@ -46,15 +44,13 @@ public class EcommerceTest extends WebsiteTest {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, EcommerceTest.class, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { EcommerceTest.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public EcommerceTest(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "ecommerce-template");
-	}
-
-	public EcommerceTest(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public EcommerceTest(FrontendConfig config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	@Override
@@ -63,10 +59,8 @@ public class EcommerceTest extends WebsiteTest {
 	}
 
 	@Override
-	protected Map<String, List<Path>> resourcePaths() {
-		return Map.of("",
-				Stream.of("com.janilla.frontend", "com.janilla.blanktemplate.test", "com.janilla.websitetemplate.test",
-						"com.janilla.ecommercetemplate.test")
-						.flatMap(x -> Java.getPackagePaths(x, false).filter(Files::isRegularFile)).toList());
+	protected void putResourcePrefixes() {
+		super.putResourcePrefixes();
+		resourcePrefixes.put("com.janilla.ecommercetemplate.test", "");
 	}
 }

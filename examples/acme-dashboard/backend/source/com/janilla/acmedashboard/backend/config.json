@@ -1,0 +1,15 @@
+{
+	"apiCors": {
+		"headers": "Content-Type",
+		"origin": "http://localhost:8080"
+	},
+	"database": {
+		"file": "~/janilla/sample-data/acme-dashboard.db"
+	},
+	"httpServer": {
+		"port": 8081
+	},
+	"jwt": {
+		"key": "secretkey"
+	}
+}

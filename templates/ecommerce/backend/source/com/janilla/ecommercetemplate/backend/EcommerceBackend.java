@@ -24,7 +24,6 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -36,9 +35,10 @@ import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
+import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
 
-public class EcommerceBackend extends WebsiteBackend {
+public class EcommerceBackend<C extends EcommerceBackendConfig> extends WebsiteBackend<C> {
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(WebsiteBackend.diTypes(), Java.getPackageTypes("com.janilla.ecommercetemplate"),
@@ -49,15 +49,13 @@ public class EcommerceBackend extends WebsiteBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { EcommerceBackend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public EcommerceBackend(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "ecommerce-template");
-	}
-
-	protected EcommerceBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public EcommerceBackend(C config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	@Override

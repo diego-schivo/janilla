@@ -1,0 +1,8 @@
+{
+	"database": {
+		"file": "~/janilla/sample-data/address-book-test.db"
+	},
+	"httpServer": {
+		"port": 8080
+	}
+}

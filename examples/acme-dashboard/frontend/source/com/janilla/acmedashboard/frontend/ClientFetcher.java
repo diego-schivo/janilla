@@ -29,77 +29,72 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.UriQueryBuilder;
 
 class ClientFetcher implements Fetcher {
 
 	protected final HttpClient client;
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
 	protected final HttpRequest request;
 
-	public ClientFetcher(HttpClient httpClient, Configuration configuration, HttpRequest request) {
+	public ClientFetcher(HttpClient httpClient, FrontendConfig config, HttpRequest request) {
 		this.client = httpClient;
-		this.configuration = configuration;
+		this.config = config;
 		this.request = request;
 	}
 
 	@Override
 	public Object authentication() {
-		var r = new HttpRequest("GET",
-				URI.create(configuration.getProperty("acme-dashboard.api.url") + "/authentication"), cookie());
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/authentication"), cookie());
 		return client.send(r, HttpClient.JSON);
 	}
 
 	@Override
 	public List<?> customers(String query) {
-		var r = new HttpRequest("GET", URI.create(configuration.getProperty("acme-dashboard.api.url") + "/customers?"
-				+ new UriQueryBuilder().append("query", query)), cookie());
+		var r = new HttpRequest("GET",
+				URI.create(config.api().url() + "/customers?" + new UriQueryBuilder().append("query", query)),
+				cookie());
 		return (List<?>) client.send(r, HttpClient.JSON);
 	}
 
 	@Override
 	public List<?> customerNames() {
-		var r = new HttpRequest("GET",
-				URI.create(configuration.getProperty("acme-dashboard.api.url") + "/customers/names"), cookie());
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/customers/names"), cookie());
 		return (List<?>) client.send(r, HttpClient.JSON);
 	}
 
 	@Override
 	public Object dashboardCards() {
-		var r = new HttpRequest("GET",
-				URI.create(configuration.getProperty("acme-dashboard.api.url") + "/dashboard/cards"), cookie());
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/dashboard/cards"), cookie());
 		return client.send(r, HttpClient.JSON);
 	}
 
 	@Override
 	public List<?> dashboardInvoices() {
-		var r = new HttpRequest("GET",
-				URI.create(configuration.getProperty("acme-dashboard.api.url") + "/dashboard/invoices"), cookie());
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/dashboard/invoices"), cookie());
 		return (List<?>) client.send(r, HttpClient.JSON);
 	}
 
 	@Override
 	public List<?> dashboardRevenue() {
-		var r = new HttpRequest("GET",
-				URI.create(configuration.getProperty("acme-dashboard.api.url") + "/dashboard/revenue"), cookie());
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/dashboard/revenue"), cookie());
 		return (List<?>) client.send(r, HttpClient.JSON);
 	}
 
 	@Override
 	public Object invoice(UUID id) {
-		var r = new HttpRequest("GET",
-				URI.create(configuration.getProperty("acme-dashboard.api.url") + "/invoices/" + id), cookie());
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/invoices/" + id), cookie());
 		return client.send(r, HttpClient.JSON);
 	}
 
 	@Override
 	public Object invoices(String query, Integer page) {
-		var r = new HttpRequest("GET", URI.create(configuration.getProperty("acme-dashboard.api.url") + "/invoices?"
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/invoices?"
 				+ new UriQueryBuilder().append("query", query).append("page", page != null ? page.toString() : null)),
 				cookie());
 		return client.send(r, HttpClient.JSON);

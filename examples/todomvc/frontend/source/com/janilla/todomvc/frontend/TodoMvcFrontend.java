@@ -23,15 +23,16 @@
  */
 package com.janilla.todomvc.frontend;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.AbstractFrontend;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 
-public class TodoMvcFrontend extends AbstractFrontend {
+public class TodoMvcFrontend extends AbstractFrontend<FrontendConfig> {
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
@@ -43,11 +44,13 @@ public class TodoMvcFrontend extends AbstractFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length != 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { TodoMvcFrontend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public TodoMvcFrontend(DiFactory diFactory, Path configurationFile) {
-		super(diFactory, configurationFile, "todomvc");
+	public TodoMvcFrontend(FrontendConfig config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	@Override

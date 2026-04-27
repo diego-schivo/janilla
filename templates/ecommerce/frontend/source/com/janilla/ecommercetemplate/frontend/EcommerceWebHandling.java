@@ -24,7 +24,6 @@
  */
 package com.janilla.ecommercetemplate.frontend;
 
-import com.janilla.java.Configuration;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankFrontendHttpExchange;
@@ -41,15 +40,12 @@ import com.janilla.websitetemplate.frontend.WebsiteWebHandling;
 
 public class EcommerceWebHandling extends WebsiteWebHandling {
 
-	protected final Configuration configuration;
-
-	protected final String configurationKey;
+	protected final EcommerceFrontendConfig config;
 
 	public EcommerceWebHandling(IndexFactory indexFactory, WebsiteDomain domain, WebsiteDataFetching dataFetching,
-			Configuration configuration, String configurationKey) {
+			EcommerceFrontendConfig config) {
 		super(indexFactory, domain, dataFetching);
-		this.configuration = configuration;
-		this.configurationKey = configurationKey;
+		this.config = config;
 	}
 
 	@Handle(method = "GET", path = "/account")
@@ -68,7 +64,7 @@ public class EcommerceWebHandling extends WebsiteWebHandling {
 	public Index checkout(HttpExchange exchange) {
 //		IO.println("WebHandling.checkout");
 		var i = indexFactory.newIndex(exchange);
-		i.scripts().add(new Script(configuration.getProperty(configurationKey + ".stripe.url")));
+		i.scripts().add(new Script(config.stripe().url()));
 		return i;
 	}
 
@@ -124,7 +120,7 @@ public class EcommerceWebHandling extends WebsiteWebHandling {
 		var i = indexFactory.newIndex(exchange);
 		i.app().state().put("product", pp.elements().getFirst());
 		Stream.of("call-to-action", "content", "media-block", "price", "product", "product-description",
-				"product-gallery", "variant-selector").map(((EcommerceIndexFactory) indexFactory)::ecommerceTemplate)
+				"product-gallery", "variant-selector").map(((EcommerceIndexFactory<?>) indexFactory)::ecommerceTemplate)
 				.forEach(i.templates()::add);
 		return i;
 	}
@@ -138,7 +134,7 @@ public class EcommerceWebHandling extends WebsiteWebHandling {
 				((EcommerceDataFetching) dataFetching)
 						.products(null, query, category, sort, 1, ((BlankFrontendHttpExchange) exchange).tokenCookie())
 						.elements());
-		Stream.of("card", "shop").map(((EcommerceIndexFactory) indexFactory)::ecommerceTemplate)
+		Stream.of("card", "shop").map(((EcommerceIndexFactory<?>) indexFactory)::ecommerceTemplate)
 				.forEach(i.templates()::add);
 		return i;
 	}

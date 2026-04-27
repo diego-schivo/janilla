@@ -15,34 +15,38 @@
  */
 package com.janilla.petclinic.backend;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.backend.web.AbstractBackend;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 
 /**
  * @author Diego Schivo
  * @author Dave Syer
  */
-public class PetclinicBackend extends AbstractBackend {
+public class PetclinicBackend extends AbstractBackend<BackendConfig> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", _ -> true), Java.getPackageTypes("com.janilla.petclinic"),
-				Java.getPackageTypes("com.janilla.petclinic.backend")).flatMap(x -> x);
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
+				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.petclinic"), Java.getPackageTypes("com.janilla.petclinic.backend"))
+				.flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { PetclinicBackend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public PetclinicBackend(DiFactory diFactory, Path configurationFile) {
-		super(diFactory, configurationFile, "petclinic");
+	public PetclinicBackend(BackendConfig config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 }

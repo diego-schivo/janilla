@@ -25,6 +25,7 @@
 package com.janilla.websitetemplate.backend;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.ParameterizedType;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,7 +38,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import com.janilla.java.Configuration;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,19 +55,15 @@ import com.janilla.json.Json;
 import com.janilla.persistence.Entity;
 import com.janilla.websitetemplate.SearchResult;
 
-public class WebsitePersistence extends BlankPersistence {
+public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPersistence {
 
 	private SearchObserver<?> searchObserver;
 
-	protected final Configuration configuration;
+	protected final C config;
 
-	protected final String configurationKey;
-
-	public WebsitePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver,
-			Converter converter, DiFactory diFactory, Configuration configuration, String configurationKey) {
-		this.configuration = configuration;
-		this.configurationKey = configurationKey;
+	public WebsitePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, Converter converter,
+			DiFactory diFactory, C config) {
+		this.config = config;
 		super(database, storables, converter, diFactory);
 	}
 
@@ -90,7 +86,7 @@ public class WebsitePersistence extends BlankPersistence {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void seed() throws IOException {
+	public void seed() {
 		var pp = properties();
 		pp.forEach(x -> database.perform(() -> {
 //			IO.println("WebsitePersistence.seed, x=" + x);
@@ -104,6 +100,8 @@ public class WebsitePersistence extends BlankPersistence {
 		try (var is = getClass().getResourceAsStream("seed-data.json")) {
 			var s = new String(is.readAllBytes());
 			sd = diFactory.newInstance(diFactory.classFor(Converter.class)).convert(Json.parse(s), seedDataClass());
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 
 //		IO.println("pp=" + pp);
@@ -125,19 +123,23 @@ public class WebsitePersistence extends BlankPersistence {
 		if (!u.toString().startsWith("jar:"))
 			u = URI.create("jar:" + u);
 		var s = Java.zipFileSystem(u).getPath("/");
-		var ud = configuration.getProperty(configurationKey + ".upload.directory");
+		var ud = config.upload().directory();
 		if (ud.startsWith("~"))
 			ud = System.getProperty("user.home") + ud.substring(1);
-		var d = Files.createDirectories(Path.of(ud));
-		Files.walkFileTree(s, new SimpleFileVisitor<>() {
+		try {
+			var d = Files.createDirectories(Path.of(ud));
+			Files.walkFileTree(s, new SimpleFileVisitor<>() {
 
-			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				var t = d.resolve(s.relativize(file).toString());
-				Files.copy(file, t, StandardCopyOption.REPLACE_EXISTING);
-				return FileVisitResult.CONTINUE;
-			}
-		});
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					var t = d.resolve(s.relativize(file).toString());
+					Files.copy(file, t, StandardCopyOption.REPLACE_EXISTING);
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	protected Class<?> seedDataClass() {

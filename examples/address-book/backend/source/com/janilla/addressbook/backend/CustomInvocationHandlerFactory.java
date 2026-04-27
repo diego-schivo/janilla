@@ -26,10 +26,10 @@
  */
 package com.janilla.addressbook.backend;
 
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.web.HandleException;
 import com.janilla.web.Invocation;
 import com.janilla.web.InvocationHandlerFactory;
@@ -38,12 +38,12 @@ import com.janilla.web.RenderableFactory;
 
 class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	public CustomInvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory, DiFactory diFactory, Configuration configuration) {
+			HttpHandlerFactory rootFactory, DiFactory diFactory, BackendConfig config) {
 		super(invocationResolver, renderableFactory, rootFactory, diFactory);
-		this.configuration = configuration;
+		this.config = config;
 	}
 
 	@Override
@@ -51,12 +51,12 @@ class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 		var rq = exchange.request();
 		var rs = exchange.response();
 
-		if (Boolean.parseBoolean(configuration.getProperty("address-book.live-demo"))) {
+		if (config.liveDemo() != null && config.liveDemo()) {
 			if (!rq.getHeaderValue(":method").equals("GET"))
 				throw new HandleException(new MethodBlockedException());
 		}
 
-		var o = configuration.getProperty("address-book.api.cors.origin");
+		var o = config.api().cors().origin();
 		if (o != null && !o.isEmpty())
 			rs.setHeaderValue("access-control-allow-origin", o);
 

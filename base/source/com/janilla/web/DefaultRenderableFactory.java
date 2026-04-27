@@ -92,14 +92,15 @@ public class DefaultRenderableFactory implements RenderableFactory {
 					var r2 = resourceMap.get(x);
 					if (r2 instanceof DefaultResource r3)
 						try (var in = r3.newInputStream()) {
-							if (in == null)
-								throw new NullPointerException(t);
-							return new String(in.readAllBytes());
+//							if (in == null)
+//								throw new NullPointerException(t);
+							return in != null ? new String(in.readAllBytes()) : "";
 						} catch (IOException e) {
 							throw new UncheckedIOException(e);
 						}
 					else
-						throw new NullPointerException(x);
+//						throw new NullPointerException(x);
+						return "";
 				}).collect(Collectors.joining());
 
 				var m = new LinkedHashMap<String, String>();

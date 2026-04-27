@@ -1,0 +1,9 @@
+{
+	"database": {
+		"file": "~/janilla/sample-data/petclinic.db"
+	},
+	"liveDemo": false,
+	"httpServer": {
+		"port": 8081
+	}
+}

@@ -53,10 +53,10 @@ import java.net.URI;
 import java.util.List;
 
 import com.janilla.cms.User;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -64,30 +64,30 @@ import com.janilla.persistence.ListPortion;
 
 public abstract class CmsDataFetching {
 
-	protected final String apiUrl;
+	protected final FrontendConfig config;
 
 	protected final HttpClient httpClient;
 
 	protected final Converter converter;
 
-	protected CmsDataFetching(Configuration configuration, String configurationKey, HttpClient httpClient,
-			Converter converter) {
-		apiUrl = configuration.getProperty(configurationKey + ".api.url");
+	protected CmsDataFetching(FrontendConfig config, HttpClient httpClient, Converter converter) {
+		this.config = config;
 		this.httpClient = httpClient;
 		this.converter = converter;
 	}
 
 	public User<?> sessionUser(HttpCookie token) {
-		var r = new HttpRequest("GET", URI.create(apiUrl + "/users/me"), token != null ? token.format() : null);
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/users/me"),
+				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, User.class);
 	}
 
 	public ListPortion<User<?>> users(Long skip, Long limit) {
 		var r = new HttpRequest("GET",
-				URI.create(
-						apiUrl + "/users?" + new UriQueryBuilder().append("skip", skip != null ? skip.toString() : null)
-								.append("limit", limit != null ? limit.toString() : null)));
+				URI.create(config.api().url() + "/users?"
+						+ new UriQueryBuilder().append("skip", skip != null ? skip.toString() : null).append("limit",
+								limit != null ? limit.toString() : null)));
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(User.class)));
 	}

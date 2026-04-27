@@ -32,17 +32,14 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.User;
 import com.janilla.ecommercetemplate.UserRoleImpl;
 import com.janilla.http.HttpExchange;
-import com.janilla.java.Configuration;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/users")
 public class UserApi extends AbstractUserApi<Long, User<Long>> {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, Configuration configuration,
-			String configurationKey) {
-		super((Class) User.class, drafts, persistence, "name",
-				configuration.getProperty(configurationKey + ".jwt.key"));
+	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, EcommerceBackendConfig config) {
+		super((Class) User.class, drafts, persistence, "name", config.jwt().key());
 	}
 
 	@Handle(method = "POST")

@@ -23,19 +23,20 @@
  */
 package com.janilla.conduit.frontend;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.AbstractFrontend;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 
-public class ConduitFrontend extends AbstractFrontend {
+public class ConduitFrontend extends AbstractFrontend<FrontendConfig> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.frontend", _ -> true),
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
+				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
 				Java.getPackageTypes("com.janilla.conduit.frontend")).flatMap(x -> x);
 	};
 
@@ -43,11 +44,13 @@ public class ConduitFrontend extends AbstractFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { ConduitFrontend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public ConduitFrontend(DiFactory diFactory, Path configurationFile) {
-		super(diFactory, configurationFile, "conduit");
+	public ConduitFrontend(FrontendConfig config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	@Override

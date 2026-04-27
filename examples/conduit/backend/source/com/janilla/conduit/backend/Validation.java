@@ -26,19 +26,20 @@ package com.janilla.conduit.backend;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import com.janilla.java.Configuration;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.janilla.backend.web.BackendConfig;
+
 public class Validation {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	protected final Map<String, Set<String>> errors = new LinkedHashMap<>();
 
-	public Validation(Configuration configuration) {
-		this.configuration = configuration;
+	public Validation(BackendConfig config) {
+		this.config = config;
 	}
 
 	public boolean hasNotBeenTaken(String name, Object value) {
@@ -72,7 +73,7 @@ public class Validation {
 			.map(String::toLowerCase).sorted().collect(Collectors.toCollection(LinkedHashSet::new));
 
 	public boolean isSafe(String name, String value) {
-		if (!Boolean.parseBoolean(configuration.getProperty("conduit.live-demo")))
+		if (!(config.liveDemo() != null && config.liveDemo()))
 			return true;
 		if (value == null || value.isEmpty()
 				|| NON_WORD.splitAsStream(value).allMatch(w -> w.isEmpty() || SAFE_WORDS.contains(w.toLowerCase())))
@@ -110,7 +111,7 @@ public class Validation {
 	protected static final Pattern OTHER_SYMBOL = Pattern.compile("\\p{So}", Pattern.UNICODE_CHARACTER_CLASS);
 
 	public boolean isEmoji(String name, String value) {
-		if (!Boolean.parseBoolean(configuration.getProperty("conduit.live-demo")))
+		if (!(config.liveDemo() != null && config.liveDemo()))
 			return true;
 		if (value == null || value.isEmpty()
 				|| (value.startsWith(EMOJI_PREFIX) && value.endsWith(EMOJI_SUFFIX)

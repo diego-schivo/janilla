@@ -26,10 +26,10 @@ package com.janilla.conduit.backend;
 import java.lang.reflect.Type;
 import java.util.function.Supplier;
 
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.web.Invocation;
 import com.janilla.web.InvocationHandlerFactory;
@@ -38,17 +38,17 @@ import com.janilla.web.RenderableFactory;
 
 class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	public CustomInvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory, DiFactory diFactory, Configuration configuration) {
+			HttpHandlerFactory rootFactory, DiFactory diFactory, BackendConfig config) {
 		super(invocationResolver, renderableFactory, rootFactory, diFactory);
-		this.configuration = configuration;
+		this.config = config;
 	}
 
 	@Override
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
-		var o = configuration.getProperty("conduit.api.cors.origin");
+		var o = config.api().cors().origin();
 		if (o != null && !o.isEmpty())
 			exchange.response().setHeaderValue("access-control-allow-origin", o);
 

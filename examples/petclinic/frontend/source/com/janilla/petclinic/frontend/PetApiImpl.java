@@ -19,9 +19,9 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.channels.Channels;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.DefaultConverter;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.json.Json;
@@ -30,18 +30,18 @@ import com.janilla.petclinic.PetApi;
 
 class PetApiImpl implements PetApi {
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
 	protected final HttpClient httpClient;
 
-	public PetApiImpl(Configuration configuration, HttpClient httpClient) {
-		this.configuration = configuration;
+	public PetApiImpl(FrontendConfig config, HttpClient httpClient) {
+		this.config = config;
 		this.httpClient = httpClient;
 	}
 
 	@Override
 	public Pet create(Pet pet) {
-		var rq = new HttpRequest("POST", URI.create(configuration.getProperty("petclinic.api.url") + "/pets"));
+		var rq = new HttpRequest("POST", URI.create(config.api().url() + "/pets"));
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(pet, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);
@@ -50,7 +50,7 @@ class PetApiImpl implements PetApi {
 
 	@Override
 	public Pet read(Long id, Integer depth) {
-		var u = URI.create(configuration.getProperty("petclinic.api.url") + "/pets/" + id + "?"
+		var u = URI.create(config.api().url() + "/pets/" + id + "?"
 				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
 		return new DefaultConverter().convert(o, Pet.class);
@@ -58,8 +58,8 @@ class PetApiImpl implements PetApi {
 
 	@Override
 	public Pet update(Long id, Pet pet) {
-//		IO.println("FrontendPetApi.update, id=" + id + ", pet=" + pet);
-		var rq = new HttpRequest("PUT", URI.create(configuration.getProperty("petclinic.api.url") + "/pets/" + id));
+//		IO.println("PetApiImpl.update, id=" + id + ", pet=" + pet);
+		var rq = new HttpRequest("PUT", URI.create(config.api().url() + "/pets/" + id));
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(pet, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);

@@ -18,9 +18,9 @@ package com.janilla.petclinic.frontend;
 import java.net.URI;
 import java.util.List;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.petclinic.PetType;
@@ -28,18 +28,18 @@ import com.janilla.petclinic.PetTypeApi;
 
 class PetTypeApiImpl implements PetTypeApi {
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
 	protected final HttpClient httpClient;
 
-	public PetTypeApiImpl(Configuration configuration, HttpClient httpClient) {
-		this.configuration = configuration;
+	public PetTypeApiImpl(FrontendConfig config, HttpClient httpClient) {
+		this.config = config;
 		this.httpClient = httpClient;
 	}
 
 	@Override
 	public List<PetType> read() {
-		var u = URI.create(configuration.getProperty("petclinic.api.url") + "/pet-types");
+		var u = URI.create(config.api().url() + "/pet-types");
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
 		return new DefaultConverter().convert(o, new SimpleParameterizedType(List.class, List.of(PetType.class)));
 	}

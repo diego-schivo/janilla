@@ -75,156 +75,145 @@ public class DefaultConverter implements Converter {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object object, Type target) {
-//		IO.println("Converter.convert, object=" + object + ", target=" + target);
+//		IO.println("DefaultConverter.convert, object=" + object + ", target=" + target);
 //		IO.println(Json.format(object));
 		var c = Java.toClass(target);
-
+		T t;
 		if (object == null || (object instanceof String x && x.isEmpty())) {
 			if (c == Boolean.TYPE)
-				return (T) Boolean.FALSE;
-			if (c == Double.TYPE)
-				return (T) Double.valueOf(0);
-			if (c == Integer.TYPE)
-				return (T) Integer.valueOf(0);
-			if (c == Long.TYPE)
-				return (T) Long.valueOf(0);
-			if (c == String.class)
-				return (T) object;
-			return null;
+				t = (T) Boolean.FALSE;
+			else if (c == Double.TYPE)
+				t = (T) Double.valueOf(0);
+			else if (c == Integer.TYPE)
+				t = (T) Integer.valueOf(0);
+			else if (c == Long.TYPE)
+				t = (T) Long.valueOf(0);
+			else if (c == String.class)
+				t = (T) object;
+			else
+				t = null;
+		} else {
+			if (c != null && c.isAssignableFrom(object.getClass()) && c != Object.class && !c.isArray()
+					&& !Collection.class.isAssignableFrom(c) && !Map.class.isAssignableFrom(c))
+				t = (T) object;
+			else if (c == BigDecimal.class)
+				t = (T) switch (object) {
+				case Double x -> BigDecimal.valueOf(x);
+				case Integer x -> BigDecimal.valueOf(x);
+				case Long x -> BigDecimal.valueOf(x);
+				case String x -> new BigDecimal(x);
+				default -> throw new IllegalArgumentException();
+				};
+			else if (c == Boolean.class || c == Boolean.TYPE)
+				t = (T) switch (object) {
+				case Boolean _ -> object;
+				case String x -> Boolean.parseBoolean(x);
+				default -> throw new IllegalArgumentException();
+				};
+			else if (c == Class.class)
+				t = (T) typeResolver.parse((String) object);
+			else if (c == Instant.class)
+				t = (T) Instant.parse((String) object);
+			else if (c == Integer.class || c == Integer.TYPE)
+				t = (T) switch (object) {
+				case Integer _ -> object;
+				case Long x -> x.intValue();
+				case String x -> Integer.parseInt(x);
+				default -> throw new IllegalArgumentException();
+				};
+			else if (c == LocalDate.class)
+				t = (T) LocalDate.parse((String) object);
+			else if (c == Locale.class)
+				t = (T) Locale.forLanguageTag((String) object);
+			else if (c == Long.class || c == Long.TYPE)
+				t = (T) switch (object) {
+				case Integer x -> x.longValue();
+				case Long _ -> object;
+				case String x -> Long.parseLong(x);
+				default -> throw new IllegalArgumentException("object=" + object);
+				};
+			else if (c == OffsetDateTime.class)
+				t = (T) OffsetDateTime.parse((String) object);
+			else if (c == Path.class)
+				t = (T) Path.of((String) object);
+			else if (c == String.class)
+				t = (T) typeResolver.format((Class<?>) object);
+			else if (c == URI.class)
+				t = (T) URI.create((String) object);
+			else if (c == UUID.class)
+				t = (T) UUID.fromString((String) object);
+			else if (c == byte[].class)
+				t = (T) Base64.getDecoder().decode((String) object);
+			else if (c != null && c.isEnum()) {
+				var n = switch (object) {
+				case String x -> x;
+				case Map<?, ?> x -> (String) x.get("name");
+				default -> throw new IllegalArgumentException();
+				};
+				@SuppressWarnings("rawtypes")
+				var x = Enum.valueOf((Class) c, n);
+				t = (T) x;
+			} else if (c != null && (c.isArray() || Collection.class.isAssignableFrom(c))) {
+				var oo = switch (object) {
+				case Object[] x -> Arrays.stream(x);
+				case Collection<?> x -> x.stream();
+				default -> throw new IllegalArgumentException();
+				};
+				var t2 = c.isArray() ? c.componentType() : ((ParameterizedType) target).getActualTypeArguments()[0];
+				oo = oo.map(x -> convert(x, t2));
+
+				if (c.isArray()) {
+					if (c.componentType() == Double.TYPE)
+						t = (T) oo.mapToDouble(x -> (double) x).toArray();
+					else if (c.componentType() == Integer.TYPE)
+						t = (T) oo.mapToInt(x -> (int) x).toArray();
+					else if (c.componentType() == Long.TYPE)
+						t = (T) oo.mapToLong(x -> (long) x).toArray();
+					else
+						t = (T) oo.toArray(x -> (Object[]) Array.newInstance(Java.toClass(t2), x));
+				} else if (c == List.class)
+					t = (T) oo.toList();
+				else if (c == Set.class)
+					t = (T) oo.collect(Collectors.toCollection(LinkedHashSet::new));
+				else
+					t = (T) object;
+			} else if (object instanceof Map<?, ?> m) {
+				if (c == Map.class) {
+					var aa = ((ParameterizedType) target).getActualTypeArguments();
+					t = (T) m.entrySet().stream().map(x -> {
+						var k = convert(x.getKey(), aa[0]);
+						var v = convert(x.getValue(), aa[1]);
+						return Java.mapEntry(k, v);
+					}).collect(
+							Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (_, x) -> x, LinkedHashMap::new));
+				} else if (c == Map.Entry.class) {
+					var aa = ((ParameterizedType) target).getActualTypeArguments();
+					var k = convert(m.get("key"), aa[0]);
+					var v = convert(m.get("value"), aa[1]);
+					t = (T) Java.mapEntry(k, v);
+				} else
+					t = (T) convertMap(m, target, typeResolver);
+			} else
+				t = (T) object;
 		}
-
-		if (c != null && c.isAssignableFrom(object.getClass()))
-			if (c != Object.class && !c.isArray() && !Collection.class.isAssignableFrom(c)
-					&& !Map.class.isAssignableFrom(c))
-				return (T) object;
-
-		if (c == BigDecimal.class)
-			return (T) switch (object) {
-			case Double x -> BigDecimal.valueOf(x);
-			case Integer x -> BigDecimal.valueOf(x);
-			case Long x -> BigDecimal.valueOf(x);
-			case String x -> new BigDecimal(x);
-			default -> throw new IllegalArgumentException();
-			};
-
-		if (c == Boolean.class || c == Boolean.TYPE)
-			return (T) switch (object) {
-			case Boolean _ -> object;
-			case String x -> Boolean.parseBoolean(x);
-			default -> throw new IllegalArgumentException();
-			};
-
-		if (c == Class.class)
-			return (T) typeResolver.parse((String) object);
-
-		if (c == Instant.class)
-			return (T) Instant.parse((String) object);
-
-		if (c == Integer.class || c == Integer.TYPE)
-			return (T) switch (object) {
-			case Integer _ -> object;
-			case Long x -> x.intValue();
-			case String x -> Integer.parseInt(x);
-			default -> throw new IllegalArgumentException();
-			};
-
-		if (c == LocalDate.class)
-			return (T) LocalDate.parse((String) object);
-
-		if (c == Locale.class)
-			return (T) Locale.forLanguageTag((String) object);
-
-		if (c == Long.class || c == Long.TYPE)
-			return (T) switch (object) {
-			case Integer x -> x.longValue();
-			case Long _ -> object;
-			case String x -> Long.parseLong(x);
-			default -> throw new IllegalArgumentException("object=" + object);
-			};
-
-		if (c == OffsetDateTime.class)
-			return (T) OffsetDateTime.parse((String) object);
-
-		if (c == Path.class)
-			return (T) Path.of((String) object);
-
-		if (c == String.class)
-			return (T) typeResolver.format((Class<?>) object);
-
-		if (c == URI.class)
-			return (T) URI.create((String) object);
-
-		if (c == UUID.class)
-			return (T) UUID.fromString((String) object);
-
-		if (c == byte[].class)
-			return (T) Base64.getDecoder().decode((String) object);
-
-		if (c != null && c.isEnum()) {
-			var n = switch (object) {
-			case String x -> x;
-			case Map<?, ?> x -> (String) x.get("name");
-			default -> throw new IllegalArgumentException();
-			};
-			@SuppressWarnings("rawtypes")
-			var x = Enum.valueOf((Class) c, n);
-			return (T) x;
-		}
-
-		if (c != null && (c.isArray() || Collection.class.isAssignableFrom(c))) {
-			var oo = switch (object) {
-			case Object[] x -> Arrays.stream(x);
-			case Collection<?> x -> x.stream();
-			default -> throw new IllegalArgumentException();
-			};
-			var t = c.isArray() ? c.componentType() : ((ParameterizedType) target).getActualTypeArguments()[0];
-			oo = oo.map(x -> convert(x, t));
-
-			if (c.isArray()) {
-				if (c.componentType() == Double.TYPE)
-					return (T) oo.mapToDouble(x -> (double) x).toArray();
-				if (c.componentType() == Integer.TYPE)
-					return (T) oo.mapToInt(x -> (int) x).toArray();
-				if (c.componentType() == Long.TYPE)
-					return (T) oo.mapToLong(x -> (long) x).toArray();
-				return (T) oo.toArray(x -> (Object[]) Array.newInstance(Java.toClass(t), x));
-			}
-			if (c == List.class)
-				return (T) oo.toList();
-			if (c == Set.class)
-				return (T) oo.collect(Collectors.toCollection(LinkedHashSet::new));
-		}
-
-		if (object instanceof Map<?, ?> m) {
-			if (c == Map.class) {
-				var aa = ((ParameterizedType) target).getActualTypeArguments();
-				return (T) m.entrySet().stream().map(x -> {
-					var k = convert(x.getKey(), aa[0]);
-					var v = convert(x.getValue(), aa[1]);
-					return Java.mapEntry(k, v);
-				}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (_, x) -> x, LinkedHashMap::new));
-			}
-			if (c == Map.Entry.class) {
-				var aa = ((ParameterizedType) target).getActualTypeArguments();
-				var k = convert(m.get("key"), aa[0]);
-				var v = convert(m.get("value"), aa[1]);
-				return (T) Java.mapEntry(k, v);
-			}
-			return (T) convertMap(m, target, typeResolver);
-		}
-
-		return (T) object;
+//		IO.println("DefaultConverter.convert, t=" + t);
+		return t;
 	}
 
 	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
-//		IO.println("Converter.convertMap, map=" + map + ", target=" + target + ", typeResolver=" + typeResolver);
+//		IO.println("DefaultConverter.convertMap, map=" + map + ", target=" + target + ", typeResolver=" + typeResolver);
 //		IO.println(Json.format(map));
-		var c = target != null ? Java.toClass(target) : null;
 		var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
-//		IO.println("td=" + td);
+		var c = target != null ? Java.toClass(target) : null;
+
 		if (td != null) {
-			if (c != null && !c.isAssignableFrom(Java.toClass(td.type())))
-				throw new RuntimeException("c=" + c + ", td.type()=" + td.type());
+			if (c != null) {
+				if (td.type() == null)
+					throw new NullPointerException("c=" + c + ", td.type()=" + td.type());
+				if (!c.isAssignableFrom(Java.toClass(td.type())))
+					throw new IllegalArgumentException("c=" + c + ", td.type()=" + td.type());
+			}
+
 			map = (Map<?, ?>) td.data();
 			target = td.type();
 			c = Java.toClass(target);
@@ -233,10 +222,12 @@ public class DefaultConverter implements Converter {
 		var c2 = diFactory != null ? diFactory.classFor(c) : null;
 		if (c2 != null)
 			c = c2;
-//		IO.println("Converter.convertMap, c=" + c + ", c2=" + c2);
+//		IO.println("DefaultConverter.convertMap, c=" + c + ", c2=" + c2);
 
 		Object o;
-		if (c.isEnum()) {
+		if (c == Object.class)
+			o = map;
+		else if (c.isEnum()) {
 			var n = (String) map.get("name");
 			if (n != null && !n.isEmpty()) {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -247,7 +238,7 @@ public class DefaultConverter implements Converter {
 		} else {
 			var t0 = target;
 			var c0 = JavaInvoke.methodHandle(JavaReflect.constructor(c));
-//			IO.println("Converter.convertMap, c0=" + c0);
+//			IO.println("DefaultConverter.convertMap, c0=" + c0);
 			var tt = c.isRecord()
 					? Arrays.stream(c.getRecordComponents()).collect(Collectors.toMap(x -> x.getName(), x -> {
 //						return x.getType();
@@ -271,7 +262,7 @@ public class DefaultConverter implements Converter {
 					}
 					return (f != null && f.isAnnotationPresent(Flat.class)) ? convertMap(m, t2, null) : null;
 				}).toArray();
-//				IO.println("Converter.convertMap, c0=" + c0 + ", oo=" + Arrays.toString(oo));
+//				IO.println("DefaultConverter.convertMap, c0=" + c0 + ", oo=" + Arrays.toString(oo));
 				try {
 					o = c0.invokeWithArguments(oo);
 				} catch (Throwable e) {
@@ -284,12 +275,12 @@ public class DefaultConverter implements Converter {
 					throw e instanceof RuntimeException e2 ? e2 : new RuntimeException(e);
 				}
 				for (var x : map.entrySet()) {
-//						IO.println("Converter.convertMap, x=" + x);
+//						IO.println("DefaultConverter.convertMap, x=" + x);
 					var n = (String) x.getKey();
 					var p = !n.startsWith("$") ? JavaReflect.property(target, n) : null;
 					if (p != null) {
 						var v = convert(x.getValue(), p.genericType());
-//							IO.println("Converter.convertMap, p=" + p + ", v=" + v);
+//							IO.println("DefaultConverter.convertMap, p=" + p + ", v=" + v);
 						p.set(o, v);
 					}
 				}
@@ -298,6 +289,8 @@ public class DefaultConverter implements Converter {
 //				throw new RuntimeException(e);
 //			}
 		}
+
+//		IO.println("DefaultConverter.convertMap, o=" + o);
 		return o;
 	}
 }

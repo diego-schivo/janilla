@@ -31,7 +31,6 @@ import com.janilla.ecommercetemplate.Product;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -41,13 +40,12 @@ import com.janilla.websitetemplate.frontend.WebsiteDataFetching;
 
 public class EcommerceDataFetching extends WebsiteDataFetching {
 
-	public EcommerceDataFetching(Configuration configuration, String configurationKey, HttpClient httpClient,
-			Converter converter) {
-		super(configuration, configurationKey, httpClient, converter);
+	public EcommerceDataFetching(EcommerceFrontendConfig config, HttpClient httpClient, Converter converter) {
+		super(config, httpClient, converter);
 	}
 
 	public ListPortion<Category> categories() {
-		var r = new HttpRequest("GET", URI.create(apiUrl + "/categories"));
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/categories"));
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Category.class)));
 	}
@@ -55,7 +53,7 @@ public class EcommerceDataFetching extends WebsiteDataFetching {
 	public ListPortion<Product> products(String slug, String query, Long category, String sort, Integer depth,
 			HttpCookie token) {
 		var r = new HttpRequest("GET",
-				URI.create(apiUrl + "/products?"
+				URI.create(config.api().url() + "/products?"
 						+ new UriQueryBuilder().append("slug", slug).append("q", query)
 								.append("category", category != null ? category.toString() : null).append("sort", sort)
 								.append("depth", depth != null ? depth.toString() : null)),

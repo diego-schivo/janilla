@@ -24,8 +24,6 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
-import com.janilla.java.Configuration;
-
 import com.janilla.backend.cms.AbstractUserHttpExchange;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.User;
@@ -35,9 +33,8 @@ import com.janilla.http.HttpResponse;
 public class BackendHttpExchange extends AbstractUserHttpExchange<User<?>> {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public BackendHttpExchange(HttpRequest request, HttpResponse response, Configuration configuration,
-			String configurationKey, Persistence persistence) {
-		super(request, response, configuration.getProperty(configurationKey + ".jwt.cookie"),
-				configuration.getProperty(configurationKey + ".jwt.key"), persistence.crud((Class) User.class));
+	public BackendHttpExchange(HttpRequest request, HttpResponse response, EcommerceBackendConfig config,
+			Persistence persistence) {
+		super(request, response, config.jwt().cookie(), config.jwt().key(), persistence.crud((Class) User.class));
 	}
 }

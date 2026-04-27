@@ -28,44 +28,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.Index;
-import com.janilla.frontend.SimpleApp;
 import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.frontend.cms.CmsIndexFactory;
 import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
-import com.janilla.java.Java;
 import com.janilla.web.ResourceMap;
 
-public class BlankIndexFactory extends CmsIndexFactory {
+public class BlankIndexFactory<C extends BlankFrontendConfig> extends CmsIndexFactory<C> {
 
-	protected final Configuration configuration;
-
-	protected final String configurationKey;
-
-	protected final DiFactory diFactory;
-
-	public BlankIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
-			String configurationKey, DiFactory diFactory) {
-		super(resourceMap, dataFetching);
-		this.configuration = configuration;
-		this.configurationKey = configurationKey;
-		this.diFactory = diFactory;
-	}
-
-	@Override
-	public Index newIndex(HttpExchange exchange) {
-		return diFactory.newInstance(diFactory.classFor(Index.class),
-				Java.hashMap("title", configuration.getProperty(configurationKey + ".title"), "imports", imports(),
-						"scripts", scripts(), "app",
-						new SimpleApp(configuration.getProperty(configurationKey + ".api.url"), state(exchange)),
-						"templates", templates()));
+	public BlankIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
+		super(config, resourceMap, diFactory, dataFetching);
 	}
 
 	public Template blankTemplate(String name) {
 		return template(name);
+	}
+
+	@Override
+	protected void putAppInitArgs(Map<String, Object> args, HttpExchange exchange) {
+		super.putAppInitArgs(args, exchange);
+		args.put("key", config.key());
 	}
 
 	@Override

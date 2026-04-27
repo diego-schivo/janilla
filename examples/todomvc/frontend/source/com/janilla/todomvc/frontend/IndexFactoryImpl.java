@@ -27,22 +27,14 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.DefaultIndexFactory;
-import com.janilla.frontend.Index;
-import com.janilla.frontend.SimpleApp;
 import com.janilla.frontend.Template;
-import com.janilla.http.HttpExchange;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.web.ResourceMap;
 
-class IndexFactoryImpl extends DefaultIndexFactory {
+class IndexFactoryImpl extends DefaultIndexFactory<FrontendConfig> {
 
-	public IndexFactoryImpl(ResourceMap resourceMap) {
-		super(resourceMap);
-	}
-
-	@Override
-	public Index newIndex(HttpExchange exchange) {
-		return new IndexImpl("TodoMVC: Janilla", imports(), scripts(), new SimpleApp(null, state(exchange)),
-				templates());
+	public IndexFactoryImpl(FrontendConfig config, ResourceMap resourceMap) {
+		super(config, resourceMap);
 	}
 
 	@Override

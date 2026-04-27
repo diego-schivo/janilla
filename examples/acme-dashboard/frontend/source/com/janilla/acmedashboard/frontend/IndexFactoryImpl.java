@@ -29,25 +29,14 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.DefaultIndexFactory;
-import com.janilla.frontend.Index;
 import com.janilla.frontend.Template;
-import com.janilla.http.HttpExchange;
-import com.janilla.java.Configuration;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.web.ResourceMap;
 
-class IndexFactoryImpl extends DefaultIndexFactory {
+class IndexFactoryImpl extends DefaultIndexFactory<FrontendConfig> {
 
-	protected final Configuration configuration;
-
-	public IndexFactoryImpl(ResourceMap resourceMap, Configuration configuration) {
-		super(resourceMap);
-		this.configuration = configuration;
-	}
-
-	@Override
-	public Index newIndex(HttpExchange exchange) {
-		return new IndexImpl("Acme Dashboard", imports(), scripts(),
-				new AppImpl(configuration.getProperty("acme-dashboard.api.url"), state(exchange)), templates());
+	public IndexFactoryImpl(FrontendConfig config, ResourceMap resourceMap) {
+		super(config, resourceMap);
 	}
 
 	@Override

@@ -28,27 +28,26 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.http.SimpleHttpExchange;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.json.Jwt;
 import com.janilla.web.UnauthorizedException;
 
 class HttpExchangeImpl extends SimpleHttpExchange {
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
 	protected final DiFactory diFactory;
 
 	protected final Map<String, Object> session = new HashMap<>();
 
-	public HttpExchangeImpl(HttpRequest request, HttpResponse response, Configuration configuration,
-			DiFactory diFactory) {
+	public HttpExchangeImpl(HttpRequest request, HttpResponse response, FrontendConfig config, DiFactory diFactory) {
 		super(request, response);
-		this.configuration = configuration;
+		this.config = config;
 		this.diFactory = diFactory;
 //		IO.println("HttpExchangeImpl, configuration=" + configuration);
 	}
@@ -60,9 +59,7 @@ class HttpExchangeImpl extends SimpleHttpExchange {
 //			IO.println("HttpExchangeImpl.getSessionEmail, c=" + c);
 			Map<String, ?> p;
 			try {
-				p = c != null && c.value() != null
-						? Jwt.verifyToken(c.value(), configuration.getProperty("acme-dashboard.jwt.key"))
-						: null;
+				p = c != null && c.value() != null ? Jwt.verifyToken(c.value(), config.jwt().key()) : null;
 			} catch (IllegalArgumentException e) {
 				p = null;
 			}

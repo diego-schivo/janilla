@@ -31,12 +31,13 @@ import java.util.Map;
 import com.janilla.http.DirectHttpClient;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.Context;
+import com.janilla.web.WebApp;
 
 @Context("frontend")
 class HttpClientImpl extends DirectHttpClient {
 
 	public HttpClientImpl() {
-		var b = AddressBookFullstack.INSTANCE.get().backend();
+		var b = ((AddressBookFullstack) WebApp.INSTANCE.get()).backend();
 		super(b.diFactory().newInstance(b.diFactory().classFor(HttpServer.class), Map.of("handler", b.httpHandler())));
 	}
 }

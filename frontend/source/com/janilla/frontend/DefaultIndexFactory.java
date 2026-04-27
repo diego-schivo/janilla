@@ -27,16 +27,23 @@ package com.janilla.frontend;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpExchange;
+import com.janilla.ioc.DiFactory;
 import com.janilla.web.DefaultResource;
 import com.janilla.web.ResourceMap;
 
-public class DefaultIndexFactory implements IndexFactory {
+public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFactory {
+
+	protected final C config;
+
+	protected final DiFactory diFactory;
 
 	protected final ResourceMap resourceMap;
 
@@ -46,13 +53,53 @@ public class DefaultIndexFactory implements IndexFactory {
 
 	protected List<Template> templates;
 
-	public DefaultIndexFactory(ResourceMap resourceMap) {
+	public DefaultIndexFactory(C config, ResourceMap resourceMap) {
+		this(config, resourceMap, null);
+	}
+
+	public DefaultIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory) {
+		this.config = config;
 		this.resourceMap = resourceMap;
+		this.diFactory = diFactory;
 	}
 
 	@Override
 	public Index newIndex(HttpExchange exchange) {
-		return new SimpleIndex(null, imports(), scripts(), new SimpleApp(null, state(exchange)), templates());
+		var a = newApp(exchange);
+		Index i;
+		if (diFactory != null) {
+			var aa = new HashMap<String, Object>();
+			putIndexInitArgs(aa, exchange);
+			i = diFactory.newInstance(diFactory.classFor(Index.class), aa);
+		} else
+			i = new DefaultIndex(config.title(), imports(), scripts(), a, templates());
+//		IO.println("DefaultIndexFactory.newIndex, i=" + i);
+		return i;
+	}
+
+	protected void putIndexInitArgs(Map<String, Object> args, HttpExchange exchange) {
+		args.put("title", config.title());
+		args.put("imports", imports());
+		args.put("scripts", scripts());
+		args.put("app", newApp(exchange));
+		args.put("templates", templates());
+	}
+
+	protected App newApp(HttpExchange exchange) {
+		App a;
+		if (diFactory != null) {
+			var aa = new HashMap<String, Object>();
+			putAppInitArgs(aa, exchange);
+			a = diFactory.newInstance(diFactory.classFor(App.class), aa);
+		} else
+			a = new DefaultApp(config.api().url(), state(exchange));
+//		IO.println("DefaultIndexFactory.newApp, a=" + a);
+		return a;
+	}
+
+	protected void putAppInitArgs(Map<String, Object> args, HttpExchange exchange) {
+		args.put("apiUrl", config.api().url());
+		args.put("state", state(exchange));
 	}
 
 	protected Map<String, Object> state(HttpExchange exchange) {

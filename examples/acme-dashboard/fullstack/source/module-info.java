@@ -30,4 +30,5 @@ module com.janilla.acmedashboard.fullstack {
 
 	requires transitive com.janilla.acmedashboard.backend;
 	requires transitive com.janilla.acmedashboard.frontend;
+	requires transitive com.janilla.fullstack;
 }

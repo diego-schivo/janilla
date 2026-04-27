@@ -28,12 +28,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import com.janilla.java.Configuration;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.JavaReflect;
 import com.janilla.persistence.ListPortion;
@@ -43,14 +43,14 @@ import com.janilla.web.Handle;
 @Handle(path = "/api/articles")
 public class ArticleApi {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	protected final DiFactory diFactory;
 
 	protected final Persistence persistence;
 
-	public ArticleApi(Configuration configuration, Persistence persistence, DiFactory diFactory) {
-		this.configuration = configuration;
+	public ArticleApi(BackendConfig config, Persistence persistence, DiFactory diFactory) {
+		this.config = config;
 		this.persistence = persistence;
 		this.diFactory = diFactory;
 	}
@@ -60,7 +60,7 @@ public class ArticleApi {
 		var s = toSlug(form.article.title);
 		validate(null, s, form.article);
 
-		if (Boolean.parseBoolean(configuration.getProperty("conduit.live-demo"))) {
+		if (config.liveDemo() != null && config.liveDemo()) {
 			var c = persistence.crud(Article.class).count();
 			if (c >= 1000)
 				throw new ValidationException("existing articles", "are too many (" + c + ")");
@@ -148,7 +148,7 @@ public class ArticleApi {
 			v.isSafe("body", form.comment.body);
 		v.orThrow();
 
-		if (Boolean.parseBoolean(configuration.getProperty("conduit.live-demo"))) {
+		if (config.liveDemo() != null && config.liveDemo()) {
 			var c = persistence.crud(Comment.class).count();
 			if (c >= 1000)
 				throw new ValidationException("existing comments", "are too many (" + c + ")");

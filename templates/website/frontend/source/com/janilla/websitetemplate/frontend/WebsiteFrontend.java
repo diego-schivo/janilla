@@ -24,15 +24,15 @@
  */
 package com.janilla.websitetemplate.frontend;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankFrontend;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 
-public class WebsiteFrontend extends BlankFrontend {
+public class WebsiteFrontend<C extends WebsiteFrontendConfig> extends BlankFrontend<C> {
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(BlankFrontend.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate"),
@@ -43,15 +43,13 @@ public class WebsiteFrontend extends BlankFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { WebsiteFrontend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public WebsiteFrontend(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "website-template");
-	}
-
-	protected WebsiteFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public WebsiteFrontend(C config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	@Override

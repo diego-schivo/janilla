@@ -31,31 +31,31 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.UriQueryBuilder;
 
 public class DataFetching {
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
 	protected final HttpClient httpClient;
 
-	public DataFetching(Configuration configuration, HttpClient httpClient) {
-		this.configuration = configuration;
+	public DataFetching(FrontendConfig config, HttpClient httpClient) {
+		this.config = config;
 		this.httpClient = httpClient;
 	}
 
 	public Object contact(String id) {
-		var r = new HttpRequest("GET", URI.create(configuration.getProperty("address-book.api.url") + "/contacts/"
-				+ URLEncoder.encode(id, StandardCharsets.UTF_8)));
+		var r = new HttpRequest("GET",
+				URI.create(config.api().url() + "/contacts/" + URLEncoder.encode(id, StandardCharsets.UTF_8)));
 		return httpClient.send(r, HttpClient.JSON);
 	}
 
 	public List<?> contacts(String query) {
-		var r = new HttpRequest("GET", URI.create(configuration.getProperty("address-book.api.url") + "/contacts?"
-				+ new UriQueryBuilder().append("query", query)));
+		var r = new HttpRequest("GET",
+				URI.create(config.api().url() + "/contacts?" + new UriQueryBuilder().append("query", query)));
 		return (List<?>) httpClient.send(r, HttpClient.JSON);
 	}
 }

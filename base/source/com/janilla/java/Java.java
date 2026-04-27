@@ -198,6 +198,12 @@ public final class Java {
 		return A.RESULTS.computeIfAbsent(path, Files::isDirectory);
 	}
 
+	public static <K, V> HashMap<K, V> hashMap(K k1, V v1) {
+		var x = HashMap.<K, V>newHashMap(1);
+		x.put(k1, v1);
+		return x;
+	}
+
 	public static <K, V> HashMap<K, V> hashMap(K k1, V v1, K k2, V v2) {
 		var x = HashMap.<K, V>newHashMap(2);
 		x.put(k1, v1);

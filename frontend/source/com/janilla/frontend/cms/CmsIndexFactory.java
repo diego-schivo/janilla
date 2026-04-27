@@ -53,14 +53,16 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.DefaultIndexFactory;
+import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 
-public abstract class CmsIndexFactory extends DefaultIndexFactory {
+public abstract class CmsIndexFactory<C extends FrontendConfig> extends DefaultIndexFactory<C> {
 
 	protected final CmsDataFetching dataFetching;
 
-	protected CmsIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching) {
-		super(resourceMap);
+	protected CmsIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
+		super(config, resourceMap, diFactory);
 		this.dataFetching = dataFetching;
 	}
 

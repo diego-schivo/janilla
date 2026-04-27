@@ -26,27 +26,23 @@ package com.janilla.blanktemplate.frontend;
 
 import java.util.Arrays;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.http.SimpleHttpExchange;
-import com.janilla.java.Configuration;
 
 public class BlankFrontendHttpExchange extends SimpleHttpExchange {
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
-	protected final String configurationKey;
-
-	public BlankFrontendHttpExchange(HttpRequest request, HttpResponse response, Configuration configuration,
-			String configurationKey) {
+	public BlankFrontendHttpExchange(HttpRequest request, HttpResponse response, FrontendConfig config) {
 		super(request, response);
-		this.configuration = configuration;
-		this.configurationKey = configurationKey;
+		this.config = config;
 	}
 
 	public HttpCookie tokenCookie() {
-		var c = configuration.getProperty(configurationKey + ".jwt.cookie");
+		var c = config.jwt().cookie();
 		return request.getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; "))).map(HttpCookie::parse)
 				.filter(x -> x.name().equals(c)).findFirst().orElse(null);
 	}

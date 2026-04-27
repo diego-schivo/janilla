@@ -25,7 +25,6 @@
 package com.janilla.websitetemplate.backend;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -37,8 +36,9 @@ import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
+import com.janilla.web.WebApp;
 
-public class WebsiteBackend extends BlankBackend {
+public class WebsiteBackend<C extends WebsiteBackendConfig> extends BlankBackend<C> {
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(BlankBackend.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate"),
@@ -49,23 +49,20 @@ public class WebsiteBackend extends BlankBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { WebsiteBackend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
 	protected final SmtpClient smtpClient;
 
-	public WebsiteBackend(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "website-template");
-	}
+	public WebsiteBackend(C config, DiFactory diFactory) {
+		super(config, diFactory);
 
-	protected WebsiteBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
-
-		var h = configuration.getProperty(configurationKey + ".mail.host");
+		var h = config.mail().host();
 		smtpClient = h != null && !h.isEmpty() ? diFactory.newInstance(diFactory.classFor(SmtpClient.class),
-				Map.of("host", h, "port", Integer.parseInt(configuration.getProperty(configurationKey + ".mail.port")),
-						"username", configuration.getProperty(configurationKey + ".mail.username"), "password",
-						configuration.getProperty(configurationKey + ".mail.password")))
+				Map.of("host", h, "port", config.mail().port(), "username", config.mail().username(), "password",
+						config.mail().password()))
 				: null;
 	}
 
@@ -75,7 +72,7 @@ public class WebsiteBackend extends BlankBackend {
 
 	@Handle(method = "POST", path = "/api/seed")
 	public void seed() throws IOException {
-		((WebsitePersistence) persistence).seed();
+		((WebsitePersistence<?>) persistence).seed();
 	}
 
 	@Override

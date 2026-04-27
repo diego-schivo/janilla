@@ -52,7 +52,6 @@ import com.janilla.ecommercetemplate.Transaction;
 import com.janilla.http.DefaultHttpClient;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -63,12 +62,13 @@ import com.janilla.web.Handle;
 @Handle(path = "/api/payments/stripe")
 public class StripeApi extends PaymentApi {
 
+	protected final EcommerceBackendConfig config;
+
 	protected final EcommerceDomain domain;
 
-	protected final String secretKey = configuration.getProperty("ecommerce-template.stripe.secret-key");
-
-	public StripeApi(Configuration configuration, Persistence persistence, EcommerceDomain domain) {
-		super(configuration, persistence);
+	public StripeApi(Persistence persistence, EcommerceBackendConfig config, EcommerceDomain domain) {
+		super(persistence);
+		this.config = config;
 		this.domain = domain;
 	}
 
@@ -83,7 +83,7 @@ public class StripeApi extends PaymentApi {
 		{
 			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/customers?"
 					+ new UriQueryBuilder().append("email", user != null ? user.email() : guestEmail)));
-			rq.setBasicAuthorization(secretKey + ":");
+			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var r = new DefaultHttpClient().send(rq,
 					HttpClient.JSON.andThen(x -> (R) new DefaultConverter().convert(x, R.class)));
 //			IO.println("r=" + r);
@@ -92,7 +92,7 @@ public class StripeApi extends PaymentApi {
 
 		if (c == null) {
 			var rq = new HttpRequest("POST", URI.create("https://api.stripe.com/v1/customers"));
-			rq.setBasicAuthorization(secretKey + ":");
+			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var bb = new UriQueryBuilder().append("email", user != null ? user.email() : guestEmail).toString()
 					.getBytes();
 			rq.setHeaderValue("content-type", "application/x-www-form-urlencoded");
@@ -108,7 +108,7 @@ public class StripeApi extends PaymentApi {
 		PI pi;
 		{
 			var rq = new HttpRequest("POST", URI.create("https://api.stripe.com/v1/payment_intents"));
-			rq.setBasicAuthorization(secretKey + ":");
+			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var q = new UriQueryBuilder()
 					.append("amount", String.valueOf(cart.subtotal().multiply(BigDecimal.valueOf(100)).longValue()))
 					.append("automatic_payment_methods[enabled]", "true")
@@ -147,7 +147,7 @@ public class StripeApi extends PaymentApi {
 		PI pi;
 		{
 			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/payment_intents/" + paymentIntent));
-			rq.setBasicAuthorization(configuration.getProperty("ecommerce-template.stripe.secret-key") + ":");
+			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			pi = new DefaultHttpClient().send(rq,
 					HttpClient.JSON.andThen(x -> new DefaultConverter().convert(x, PI.class)));
 //			IO.println("pi=" + pi);
@@ -185,7 +185,7 @@ public class StripeApi extends PaymentApi {
 						.collect(Collectors.toMap(x -> x[0], x -> x[1]));
 //				IO.println("StripeApi.webhooks, ssm=" + ssm);
 
-				var k = configuration.getProperty("ecommerce-template.stripe.webhooks-signing-secret");
+				var k = config.stripe().webhooksSigningSecret();
 				var m = ssm.get("t") + "." + bs;
 
 				var a = Mac.getInstance("HmacSHA256");

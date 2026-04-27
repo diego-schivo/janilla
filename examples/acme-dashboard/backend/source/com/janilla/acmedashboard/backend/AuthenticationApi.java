@@ -27,19 +27,19 @@ package com.janilla.acmedashboard.backend;
 import java.util.Map;
 
 import com.janilla.backend.persistence.Persistence;
-import com.janilla.java.Configuration;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.json.Jwt;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/authentication")
 class AuthenticationApi {
 
-	protected final Configuration configuration;
+	protected final BackendConfig config;
 
 	protected final Persistence persistence;
 
-	public AuthenticationApi(Configuration configuration, Persistence persistence) {
-		this.configuration = configuration;
+	public AuthenticationApi(BackendConfig config, Persistence persistence) {
+		this.config = config;
 		this.persistence = persistence;
 	}
 
@@ -53,7 +53,7 @@ class AuthenticationApi {
 			return null;
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
-		var t = Jwt.generateToken(h, p, configuration.getProperty("acme-dashboard.jwt.key"));
+		var t = Jwt.generateToken(h, p, config.jwt().key());
 		exchange.setSessionCookie(t);
 		return u;
 	}

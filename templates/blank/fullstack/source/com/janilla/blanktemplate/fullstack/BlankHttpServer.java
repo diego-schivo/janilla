@@ -42,12 +42,12 @@ import com.janilla.ioc.DiFactory;
 @Context("fullstack")
 public class BlankHttpServer extends DefaultHttpServer {
 
-	protected final BlankBackend backend;
+	protected final BlankBackend<?> backend;
 
-	protected final BlankFrontend frontend;
+	protected final BlankFrontend<?> frontend;
 
 	public BlankHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, DiFactory diFactory,
-			BlankBackend backend, BlankFrontend frontend) {
+			BlankFrontend<?> frontend, BlankBackend<?> backend) {
 		super(endpoint, sslContext, handler, diFactory);
 		this.backend = backend;
 		this.frontend = frontend;
@@ -56,8 +56,9 @@ public class BlankHttpServer extends DefaultHttpServer {
 	@Override
 	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 //		IO.println("BlankHttpServer.createExchange, request.getPath()=" + request.getPath());
-		var f = request.getPath().startsWith("/api/") ? backend.diFactory() : frontend.diFactory();
-		var x = f.newInstance(f.classFor(HttpExchange.class), Map.of("request", request, "response", response));
+		var a = request.getPath().startsWith("/api/") ? backend : frontend;
+		var x = a.diFactory().newInstance(a.diFactory().classFor(HttpExchange.class),
+				Map.of("request", request, "response", response));
 		return x != null ? x : super.createExchange(request, response);
 	}
 }

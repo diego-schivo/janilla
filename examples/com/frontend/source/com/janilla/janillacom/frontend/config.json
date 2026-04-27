@@ -1,0 +1,26 @@
+{
+	"api": {
+		"url": "http://janilla.local:8081/api"
+	},
+	"authority": "janilla.local:8080",
+	"download": {
+		"directory": "~/janilla/download"
+	},
+	"frontends": {
+		"petclinic": {
+			"api": {
+				"url": "http://petclinic.janilla.local:8081/api"
+			}
+		},
+		"todoMvc": {}
+	},
+	"httpServer": {
+		"port": 8080
+	},
+	"jwt": {
+		"cookie": "janilla-token",
+		"key": "secretkey"
+	},
+	"key": "janilla",
+	"title": "Janilla"
+}

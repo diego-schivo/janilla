@@ -24,13 +24,13 @@
  */
 package com.janilla.blanktemplate.backend;
 
-import com.janilla.java.Configuration;
 import java.util.Set;
 import java.util.function.Predicate;
 
 import com.janilla.backend.cms.AbstractUserApi;
 import com.janilla.backend.cms.UserHttpExchange;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.blanktemplate.BlankDomain;
 import com.janilla.cms.User;
 import com.janilla.http.HttpExchange;
@@ -42,10 +42,8 @@ public class UserApi extends AbstractUserApi<Long, User<Long>> {
 	protected final BlankDomain domain;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, Configuration configuration,
-			String configurationKey, BlankDomain domain) {
-		super((Class) User.class, drafts, persistence, "title",
-				configuration.getProperty(configurationKey + ".jwt.key"));
+	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, BackendConfig config, BlankDomain domain) {
+		super((Class) User.class, drafts, persistence, "title", config.jwt().key());
 		this.domain = domain;
 	}
 

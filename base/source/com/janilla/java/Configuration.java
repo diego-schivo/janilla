@@ -22,9 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.java;
-
-public interface Configuration {
-
-	String getProperty(String key);
-}
+//package com.janilla.java;
+//
+//public interface Configuration {
+//
+//	String getProperty(String key);
+//}

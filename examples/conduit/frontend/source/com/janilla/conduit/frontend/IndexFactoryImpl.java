@@ -27,32 +27,17 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.DefaultIndexFactory;
-import com.janilla.frontend.Index;
-import com.janilla.frontend.SimpleApp;
-import com.janilla.http.HttpExchange;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
-import com.janilla.java.Java;
 import com.janilla.web.ResourceMap;
 
-class IndexFactoryImpl extends DefaultIndexFactory {
-
-	protected final Configuration configuration;
+class IndexFactoryImpl extends DefaultIndexFactory<FrontendConfig> {
 
 	protected final DiFactory diFactory;
 
-	public IndexFactoryImpl(ResourceMap resourceMap, Configuration configuration, DiFactory diFactory) {
-		super(resourceMap);
-		this.configuration = configuration;
+	public IndexFactoryImpl(FrontendConfig config, ResourceMap resourceMap, DiFactory diFactory) {
+		super(config, resourceMap);
 		this.diFactory = diFactory;
-	}
-
-	@Override
-	public Index newIndex(HttpExchange exchange) {
-		return diFactory.newInstance(diFactory.classFor(Index.class),
-				Java.hashMap("title", "Conduit", "imports", imports(), "scripts", scripts(), "app",
-						new SimpleApp(configuration.getProperty("conduit.api.url"), state(exchange)), "templates",
-						templates()));
 	}
 
 	@Override

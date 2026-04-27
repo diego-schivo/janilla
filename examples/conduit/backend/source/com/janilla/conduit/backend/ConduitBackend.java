@@ -23,19 +23,20 @@
  */
 package com.janilla.conduit.backend;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.backend.web.AbstractBackend;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 
-public class ConduitBackend extends AbstractBackend {
+public class ConduitBackend extends AbstractBackend<BackendConfig> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", _ -> true),
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
+				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.backend", _ -> true),
 				Java.getPackageTypes("com.janilla.conduit.backend")).flatMap(x -> x);
 	};
 
@@ -43,10 +44,12 @@ public class ConduitBackend extends AbstractBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { ConduitBackend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public ConduitBackend(DiFactory diFactory, Path configurationFile) {
-		super(diFactory, configurationFile, "conduit");
+	public ConduitBackend(BackendConfig config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 }

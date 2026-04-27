@@ -27,7 +27,6 @@ package com.janilla.ecommercetemplate.backend;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import com.janilla.java.Configuration;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -44,12 +43,11 @@ import com.janilla.java.Property;
 import com.janilla.persistence.Entity;
 import com.janilla.websitetemplate.backend.WebsitePersistence;
 
-public class EcommercePersistence extends WebsitePersistence {
+public class EcommercePersistence<C extends EcommerceBackendConfig> extends WebsitePersistence<C> {
 
 	public EcommercePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver, 
-			Converter converter, DiFactory diFactory, Configuration configuration, String configurationKey) {
-		super(database, storables, converter, diFactory, configuration, configurationKey);
+			Converter converter, DiFactory diFactory, C config) {
+		super(database, storables, converter, diFactory, config);
 	}
 
 	@Override

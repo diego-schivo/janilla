@@ -1,0 +1,38 @@
+{
+	"api": {
+		"cors": {
+			"headers": "Content-Type",
+			"origin": "http://janilla.local:8080"
+		},
+		"url": "http://janilla.local:8081/api"
+	},
+	"authority": "janilla.local:8081",
+	"backends": {
+		"petclinic": {
+			"api": {
+				"url": "http://petclinic.janilla.local:8081/api"
+			}
+		},
+		"todoMvc": {}
+	},
+	"database": {
+		"file": "~/janilla/sample-data/janilla-com.db"
+	},
+	"httpServer": {
+		"port": 8081
+	},
+	"jwt": {
+		"cookie": "janilla-token",
+		"key": "secretkey"
+	},
+	"liveDemo": true,
+	"mail": {
+		"host": "smtp.example.com",
+		"password": "password",
+		"port": 465,
+		"username": "foo.bar@example.com"
+	},
+	"upload": {
+		"directory": "~/janilla/sample-data/janilla-com-upload"
+	}
+}

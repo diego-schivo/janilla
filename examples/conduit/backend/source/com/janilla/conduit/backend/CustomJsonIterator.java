@@ -31,20 +31,16 @@ import java.util.Set;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpServer;
-import com.janilla.java.Configuration;
 import com.janilla.java.JavaReflect;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 
 class CustomJsonIterator extends ReflectionJsonIterator {
 
-	protected final Configuration configuration;
-
 	protected final Persistence persistence;
 
-	public CustomJsonIterator(Object object, Configuration configuration, Persistence persistence) {
+	public CustomJsonIterator(Object object, Persistence persistence) {
 		super(object);
-		this.configuration = configuration;
 		this.persistence = persistence;
 	}
 

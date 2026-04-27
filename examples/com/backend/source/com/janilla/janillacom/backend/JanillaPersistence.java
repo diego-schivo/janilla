@@ -24,7 +24,6 @@
 package com.janilla.janillacom.backend;
 
 import java.util.List;
-import com.janilla.java.Configuration;
 
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.ioc.DiFactory;
@@ -32,12 +31,11 @@ import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 import com.janilla.websitetemplate.backend.WebsitePersistence;
 
-public class JanillaPersistence extends WebsitePersistence {
+public class JanillaPersistence extends WebsitePersistence<JanillaBackendConfig> {
 
-	public JanillaPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver, 
-			Converter converter, DiFactory diFactory, Configuration configuration, String configurationKey) {
-		super(database, storables, converter, diFactory, configuration, configurationKey);
+	public JanillaPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, Converter converter,
+			DiFactory diFactory, JanillaBackendConfig config) {
+		super(database, storables, converter, diFactory, config);
 	}
 
 	@Override

@@ -28,10 +28,10 @@ import java.net.URI;
 import java.util.List;
 
 import com.janilla.frontend.cms.CmsDataFetching;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -44,27 +44,26 @@ import com.janilla.websitetemplate.SearchResult;
 
 public class WebsiteDataFetching extends CmsDataFetching {
 
-	public WebsiteDataFetching(Configuration configuration, String configurationKey, HttpClient httpClient,
-			Converter converter) {
-		super(configuration, configurationKey, httpClient, converter);
+	public WebsiteDataFetching(FrontendConfig config, HttpClient httpClient, Converter converter) {
+		super(config, httpClient, converter);
 	}
 
 	public Footer footer() {
-		var r = new HttpRequest("GET", URI.create(apiUrl + "/footer"));
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/footer"));
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, Footer.class);
 	}
 
 	public Header header(Integer depth) {
 		var r = new HttpRequest("GET", URI.create(
-				apiUrl + "/header?" + new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null)));
+				config.api().url() + "/header?" + new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null)));
 		var o = httpClient.send(r, HttpClient.JSON);
 //		IO.println("o=" + o);
 		return converter.convert(o, Header.class);
 	}
 
 	public ListPortion<Page> pages(String slug, Integer depth, HttpCookie token) {
-		var r = new HttpRequest("GET", URI.create(apiUrl + "/pages?"
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/pages?"
 				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
@@ -73,7 +72,7 @@ public class WebsiteDataFetching extends CmsDataFetching {
 	}
 
 	public ListPortion<Post> posts(String slug, Integer depth, HttpCookie token) {
-		var r = new HttpRequest("GET", URI.create(apiUrl + "/posts?"
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/posts?"
 				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
@@ -82,7 +81,7 @@ public class WebsiteDataFetching extends CmsDataFetching {
 
 	public ListPortion<SearchResult> searchResults(String query) {
 		var r = new HttpRequest("GET",
-				URI.create(apiUrl + "/search-results?" + new UriQueryBuilder().append("query", query)));
+				URI.create(config.api().url() + "/search-results?" + new UriQueryBuilder().append("query", query)));
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(SearchResult.class)));
 	}

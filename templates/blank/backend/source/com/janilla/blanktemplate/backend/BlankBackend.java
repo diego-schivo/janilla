@@ -24,12 +24,16 @@
  */
 package com.janilla.blanktemplate.backend;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import com.janilla.backend.cms.CmsResourceHandling;
 import com.janilla.backend.cms.CmsSchema;
 import com.janilla.backend.web.AbstractBackend;
 import com.janilla.blanktemplate.BlankDomain;
@@ -39,12 +43,14 @@ import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationResolver;
+import com.janilla.web.WebApp;
 
-public class BlankBackend extends AbstractBackend {
+public class BlankBackend<C extends BlankBackendConfig> extends AbstractBackend<C> {
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.cms"), Java.getPackageTypes("com.janilla.http"),
-				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
+				Java.getPackageTypes("com.janilla.backend", _ -> true),
 				Java.getPackageTypes("com.janilla.blanktemplate"),
 				Java.getPackageTypes("com.janilla.blanktemplate.backend")).flatMap(x -> x);
 	};
@@ -53,94 +59,23 @@ public class BlankBackend extends AbstractBackend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { BlankBackend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-//	protected static <T extends BlankBackend> void serve(DiFactory diFactory, Class<T> applicationType,
-//			String configurationPath) {
-//		T a;
-//		{
-//			var cf = configurationPath != null ? Path.of(
-//					configurationPath.startsWith("~") ? System.getProperty("user.home") + configurationPath.substring(1)
-//							: configurationPath)
-//					: null;
-//			a = diFactory.newInstance(applicationType, Java.hashMap("diFactory", diFactory, "configurationFile", cf));
-//		}
-//
-//		SSLContext c;
-//		{
-//			var p = a.configuration.getProperty(a.configurationKey + ".server.keystore.path");
-//			if (p != null) {
-//				var w = a.configuration.getProperty(a.configurationKey + ".server.keystore.password");
-//				if (p.startsWith("~"))
-//					p = System.getProperty("user.home") + p.substring(1);
-//				var f = Path.of(p);
-//				if (!Files.exists(f)) {
-//					var cn = a.configuration.getProperty(a.configurationKey + ".server.keystore.common-name");
-//					var san = a.configuration
-//							.getProperty(a.configurationKey + ".server.keystore.subject-alternative-name");
-//					Java.generateKeyPair(cn != null ? cn : "localhost", f, w,
-//							san != null ? san : "dns:localhost,ip:127.0.0.1");
-//				}
-//				try (var s = Files.newInputStream(f)) {
-//					c = Java.sslContext(s, w.toCharArray());
-//				} catch (IOException e) {
-//					throw new UncheckedIOException(e);
-//				}
-//			} else
-	//// c = DefaultHttpClient.sslContext("TLSv1.3");
-//				c = null;
-//		}
-//
-//		HttpServer s;
-//		{
-//			var p = Integer.parseInt(a.configuration.getProperty(a.configurationKey + ".server.port"));
-//			s = a.diFactory.newInstance(a.diFactory.classFor(HttpServer.class),
-//					Java.hashMap("endpoint", new InetSocketAddress(p), "sslContext", c, "handler", a.handler));
-//		}
-//		s.serve();
-//	}
-
-//	protected final Configuration configuration;
-//
-//	protected final Path configurationFile;
-//
-//	protected final String configurationKey;
+	protected CmsResourceHandling cmsResourceHandling;
 
 	protected BlankDomain domain;
 
-//	protected final Converter converter;
-
 	protected final Predicate<HttpExchange> drafts = this::testDrafts;
 
-//	protected final DiFactory diFactory;
-//
-//	protected final CmsResourceHandling cmsResourceHandling;
-//
-//	protected final HttpHandler handler;
-//
-//	protected final HttpHandlerFactory handlerFactory;
-//
-//	protected final boolean includeType;
-//
-//	protected final InvocationResolver invocationResolver;
-//
-//	protected final Persistence persistence;
-//
-//	protected final RenderableFactory renderableFactory;
-//
-//	protected final List<Class<?>> resolvables;
-//
-//	protected final List<Class<?>> storables;
-//
-//	protected final TypeResolver typeResolver;
-
-	public BlankBackend(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "blank-template");
+	public BlankBackend(C config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
-	protected BlankBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+//	protected BlankBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
+//		super(diFactory, configurationFile, configurationKey);
 //		this.diFactory = diFactory;
 //		this.configurationFile = configurationFile;
 //		this.configurationKey = configurationKey;
@@ -190,7 +125,7 @@ public class BlankBackend extends AbstractBackend {
 //						.toList(),
 //				"instanceResolver", (Function<Class<?>, Object>) x -> {
 //					var y = diFactory.context();
-		//// IO.println("x=" + x + ", y=" + y);
+	//// IO.println("x=" + x + ", y=" + y);
 //					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
 //							: diFactory.newInstance(diFactory.classFor(x),
 //									Map.of("invocationResolver", DefaultInvocationResolver.INSTANCE.get()));
@@ -198,19 +133,11 @@ public class BlankBackend extends AbstractBackend {
 //		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
 //		handlerFactory = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
 //		handler = this::handle;
-	}
+//	}
 
-//	public Configuration configuration() {
-//		return configuration;
-//	}
-//
-//	public String configurationKey() {
-//		return configurationKey;
-//	}
-//
-//	public Converter converter() {
-//		return converter;
-//	}
+	public CmsResourceHandling cmsResourceHandling() {
+		return cmsResourceHandling;
+	}
 
 	public BlankDomain domain() {
 		return domain;
@@ -219,46 +146,6 @@ public class BlankBackend extends AbstractBackend {
 	public Predicate<HttpExchange> drafts() {
 		return drafts;
 	}
-
-//	public DiFactory diFactory() {
-//		return diFactory;
-//	}
-//
-//	public CmsResourceHandling cmsResourceHandling() {
-//		return cmsResourceHandling;
-//	}
-//
-//	public HttpHandler handler() {
-//		return handler;
-//	}
-//
-//	public boolean includeType() {
-//		return includeType;
-//	}
-//
-//	public InvocationResolver invocationResolver() {
-//		return invocationResolver;
-//	}
-//
-//	public Persistence persistence() {
-//		return persistence;
-//	}
-//
-//	public RenderableFactory renderableFactory() {
-//		return renderableFactory;
-//	}
-//
-//	public List<Class<?>> resolvables() {
-//		return resolvables;
-//	}
-//
-//	public List<Class<?>> storables() {
-//		return storables;
-//	}
-//
-//	public TypeResolver typeResolver() {
-//		return typeResolver;
-//	}
 
 	@Handle(method = "GET", path = "/api/schema")
 	public Map<String, Object> schema() {
@@ -289,6 +176,21 @@ public class BlankBackend extends AbstractBackend {
 	@Override
 	protected InvocationResolver newInvocationResolver() {
 		domain = diFactory.newInstance(diFactory.classFor(BlankDomain.class));
+
+		{
+			var x = config.upload().directory();
+			if (x.startsWith("~"))
+				x = System.getProperty("user.home") + x.substring(1);
+			var d = Path.of(x);
+			if (!Files.exists(d))
+				try {
+					Files.createDirectories(d);
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			cmsResourceHandling = diFactory.newInstance(CmsResourceHandling.class, Map.of("directory", d));
+		}
+
 		return super.newInvocationResolver();
 	}
 

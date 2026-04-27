@@ -1,0 +1,16 @@
+{
+	"api": {
+		"url": "http://localhost:8081/api"
+	},
+	"download": {
+		"directory": "~/janilla/download"
+	},
+	"httpServer": {
+		"port": 8080
+	},
+	"jwt": {
+		"cookie": "blank-token",
+		"key": "secretkey"
+	},
+	"key": "blank"
+}

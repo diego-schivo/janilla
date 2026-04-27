@@ -24,7 +24,6 @@
  */
 package com.janilla.blanktemplate.frontend;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.stream.Stream;
 
@@ -37,12 +36,13 @@ import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.web.InvocationResolver;
+import com.janilla.web.WebApp;
 
-public class BlankFrontend extends AbstractFrontend {
+public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFrontend<C> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.frontend", _ -> true),
+		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
+				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
 				Java.getPackageTypes("com.janilla.blanktemplate"),
 				Java.getPackageTypes("com.janilla.blanktemplate.frontend")).flatMap(x -> x);
 	};
@@ -51,101 +51,28 @@ public class BlankFrontend extends AbstractFrontend {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { BlankFrontend.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-//	protected final HttpHandlerFactory handlerFactory;
-
 	protected BlankDomain domain;
-
-//	protected Converter converter;
 
 	protected CmsDataFetching dataFetching;
 
 	protected HttpClient httpClient;
 
-//	protected final List<Class<?>> resolvables;
-
-//	protected TypeResolver typeResolver;
-
-	public BlankFrontend(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "blank-template");
+	public BlankFrontend(C config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
-
-	protected BlankFrontend(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
-//		this.diFactory = diFactory;
-//		this.configurationFile = configurationFile;
-//		this.configurationKey = configurationKey;
-//		diFactory.context(this);
-//		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-//				Collections.singletonMap("path", configurationFile));
-//		domain = diFactory.newInstance(diFactory.classFor(BlankDomain.class));
-
-//		{
-//			Map<String, Class<?>> m = diFactory.types().stream()
-//					.collect(Collectors.toMap(x -> x.getSimpleName(), x -> x, (_, x) -> x, LinkedHashMap::new));
-		//// IO.println("m=" + m);
-//			resolvables = m.values().stream().toList();
-//		}
-//		typeResolver = diFactory.newInstance(diFactory.classFor(DollarTypeResolver.class));
-//		converter = diFactory.newInstance(diFactory.classFor(Converter.class));
-
-//		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class),
-//				Collections.singletonMap("sslContext", sslContext(configuration, configurationKey)));
-//		{
-//			var c = diFactory.classFor(CmsDataFetching.class);
-//			dataFetching = c != null ? diFactory.newInstance(c) : null;
-//		}
-
-//		putResourcePrefixes();
-//		resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths", resourcePaths()));
-//		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
-//
-//		invocationResolver = diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
-//				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
-//						.flatMap(x -> Arrays.stream(x.getMethods())
-//								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-//								.map(y -> new Invocable(x, y)))
-//						.toList(),
-//				"instanceResolver", (Function<Class<?>, Object>) x -> {
-//					var y = diFactory.context();
-		//// IO.println("x=" + x + ", y=" + y);
-//					return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-//							: diFactory.newInstance(diFactory.classFor(x));
-//				}));
-//		renderableFactory = diFactory.newInstance(diFactory.classFor(RenderableFactory.class));
-//		handlerFactory = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
-//		handler = this::handle;
-	}
-
-//	public Configuration configuration() {
-//		return configuration;
-//	}
-//
-//	public String configurationKey() {
-//		return configurationKey;
-//	}
 
 	public BlankDomain domain() {
 		return domain;
 	}
 
-//	public Converter converter() {
-//		return converter;
-//	}
-
 	public CmsDataFetching dataFetching() {
 		return dataFetching;
 	}
-
-//	public DiFactory diFactory() {
-//		return diFactory;
-//	}
-//
-//	public HttpHandler handler() {
-//		return handler;
-//	}
 
 	public HttpClient httpClient() {
 		return httpClient;
@@ -154,30 +81,6 @@ public class BlankFrontend extends AbstractFrontend {
 	public IndexFactory indexFactory() {
 		return indexFactory;
 	}
-
-//	public InvocationResolver invocationResolver() {
-//		return invocationResolver;
-//	}
-//
-//	public RenderableFactory renderableFactory() {
-//		return renderableFactory;
-//	}
-
-//	public List<Class<?>> resolvables() {
-//		return resolvables;
-//	}
-
-//	public ResourceMap resourceMap() {
-//		return resourceMap;
-//	}
-//
-//	public Map<String, String> resourcePrefixes() {
-//		return resourcePrefixes;
-//	}
-
-//	public TypeResolver typeResolver() {
-//		return typeResolver;
-//	}
 
 //	protected boolean handle(HttpExchange exchange) {
 //		return ScopedValue.where(com.janilla.blanktemplate.Configuration.PROPERTY_GETTER,
@@ -209,7 +112,7 @@ public class BlankFrontend extends AbstractFrontend {
 	protected InvocationResolver newInvocationResolver() {
 		domain = diFactory.newInstance(diFactory.classFor(BlankDomain.class));
 		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class),
-				Collections.singletonMap("sslContext", sslContext(configuration, configurationKey)));
+				Collections.singletonMap("sslContext", sslContext(config)));
 		{
 			var c = diFactory.classFor(CmsDataFetching.class);
 			dataFetching = c != null ? diFactory.newInstance(c) : null;

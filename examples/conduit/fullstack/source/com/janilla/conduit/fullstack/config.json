@@ -1,0 +1,12 @@
+{
+	"apiCors": {
+		"headers": "",
+		"origin": ""
+	},
+	"api": {
+		"url": "/api"
+	},
+	"httpServer": {
+		"port": 8080
+	}
+}

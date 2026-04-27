@@ -23,9 +23,10 @@
  */
 package com.janilla.janillacom;
 
+import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.WebsiteDomain;
 
 public class JanillaDomain extends WebsiteDomain {
 
-	public static final ScopedValue<Object> APPLICATION = ScopedValue.newInstance();
+	public static final ScopedValue<WebApp<?>> WEB_APP = ScopedValue.newInstance();
 }

@@ -1,0 +1,12 @@
+{
+	"api": {
+		"url": "http://localhost:8081/api"
+	},
+	"httpServer": {
+		"port": 8080
+	},
+	"jwt": {
+		"key": "secretkey"
+	},
+	"title": "Acme Dashboard"
+}

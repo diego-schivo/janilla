@@ -1,0 +1,11 @@
+{
+	"api": {
+		"url": "/api"
+	},
+	"database": {
+		"file": "~/janilla/sample-data/website-template-test.db"
+	},
+	"httpServer": {
+		"port": 8080
+	}
+}

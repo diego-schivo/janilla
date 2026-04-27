@@ -31,11 +31,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.backend.cms.UserHttpExchange;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.java.Converter;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.NullTypeResolver;
@@ -49,9 +49,7 @@ import com.janilla.web.RenderableFactory;
 
 public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFactory {
 
-	protected final Configuration configuration;
-
-	protected final String configurationKey;
+	protected final BackendConfig config;
 
 	protected final Set<String> guestPost;
 
@@ -59,10 +57,9 @@ public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFacto
 
 	public BlankBackendInvocationHandlerFactory(InvocationResolver invocationResolver,
 			RenderableFactory renderableFactory, HttpHandlerFactory rootFactory, DiFactory diFactory,
-			Configuration configuration, String configurationKey) {
+			BackendConfig config) {
 		super(invocationResolver, renderableFactory, rootFactory, diFactory);
-		this.configuration = configuration;
-		this.configurationKey = configurationKey;
+		this.config = config;
 		guestPost = Stream.of("/api/users/first-register", "/api/users/forgot-password", "/api/users/login",
 				"/api/users/reset-password").collect(Collectors.toCollection(HashSet::new));
 		userLoginLogout = Stream.of("/api/users/login", "/api/users/logout")
@@ -71,7 +68,7 @@ public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFacto
 
 	@Override
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
-		var o = configuration.getProperty(configurationKey + ".api.cors.origin");
+		var o = config.api().cors().origin();
 		if (o != null && !o.isEmpty()) {
 			var rs = exchange.response();
 			rs.setHeaderValue("Access-Control-Allow-Credentials", "true");
@@ -82,7 +79,7 @@ public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFacto
 		if (requireSessionEmail(rq))
 			((UserHttpExchange<?>) exchange).requireSessionEmail();
 
-		if (Boolean.parseBoolean(configuration.getProperty(configurationKey + ".live-demo"))) {
+		if (config.liveDemo()) {
 			if (rq.getHeaderValue(":method").equals("GET") || userLoginLogout.contains(rq.getPath()))
 				;
 			else
@@ -116,7 +113,7 @@ public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFacto
 
 	@Override
 	protected Converter converter(Class<? extends TypeResolver> type) {
-		return diFactory.newInstance(Converter.class,
+		return diFactory.newInstance(diFactory.classFor(Converter.class),
 				type != DollarTypeResolver.class
 						? Collections.singletonMap("typeResolver",
 								type != null && type != NullTypeResolver.class ? diFactory.newInstance(type) : null)

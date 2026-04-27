@@ -19,9 +19,9 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.channels.Channels;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
-import com.janilla.java.Configuration;
 import com.janilla.java.DefaultConverter;
 import com.janilla.json.Json;
 import com.janilla.petclinic.Visit;
@@ -29,18 +29,18 @@ import com.janilla.petclinic.VisitApi;
 
 class VisitApiImpl implements VisitApi {
 
-	protected final Configuration configuration;
+	protected final FrontendConfig config;
 
 	protected final HttpClient httpClient;
 
-	public VisitApiImpl(Configuration configuration, HttpClient httpClient) {
-		this.configuration = configuration;
+	public VisitApiImpl(FrontendConfig config, HttpClient httpClient) {
+		this.config = config;
 		this.httpClient = httpClient;
 	}
 
 	@Override
 	public Visit create(Visit visit) {
-		var rq = new HttpRequest("POST", URI.create(configuration.getProperty("petclinic.api.url") + "/visits"));
+		var rq = new HttpRequest("POST", URI.create(config.api().url() + "/visits"));
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(visit, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);

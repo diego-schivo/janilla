@@ -28,29 +28,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.Index;
 import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Configuration;
 import com.janilla.web.ResourceMap;
 import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 
-public class EcommerceIndexFactory extends WebsiteIndexFactory {
+public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends WebsiteIndexFactory<C> {
 
-	public EcommerceIndexFactory(ResourceMap resourceMap, CmsDataFetching dataFetching, Configuration configuration,
-			String configurationKey, DiFactory diFactory) {
-		super(resourceMap, dataFetching, configuration, configurationKey, diFactory);
-	}
-
-	@Override
-	public Index newIndex(HttpExchange exchange) {
-		return new IndexImpl(configuration.getProperty(configurationKey + ".title"), imports(), scripts(),
-				new AppImpl(configurationKey, configuration.getProperty(configurationKey + ".api.url"),
-						configuration.getProperty(configurationKey + ".stripe.publishable-key"),
-						configuration.getProperty(configurationKey + ".stripe.url"), state(exchange)),
-				templates());
+	public EcommerceIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
+		super(config, resourceMap, diFactory, dataFetching);
 	}
 
 	@Override
@@ -60,6 +48,13 @@ public class EcommerceIndexFactory extends WebsiteIndexFactory {
 
 	public Template ecommerceTemplate(String name) {
 		return template(name);
+	}
+
+	@Override
+	protected void putAppInitArgs(Map<String, Object> args, HttpExchange exchange) {
+		super.putAppInitArgs(args, exchange);
+		args.put("stripePublishableKey", config.stripe().publishableKey());
+		args.put("stripeUrl", config.stripe().url());
 	}
 
 	@Override

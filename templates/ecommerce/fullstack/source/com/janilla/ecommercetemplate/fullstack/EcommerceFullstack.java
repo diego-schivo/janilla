@@ -24,7 +24,6 @@
  */
 package com.janilla.ecommercetemplate.fullstack;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.ecommercetemplate.backend.EcommerceBackend;
@@ -32,40 +31,48 @@ import com.janilla.ecommercetemplate.frontend.EcommerceFrontend;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.fullstack.WebsiteFullstack;
 
-public class EcommerceFullstack extends WebsiteFullstack {
+public class EcommerceFullstack<C extends EcommerceFullstackConfig> extends WebsiteFullstack<C> {
+
+	public static final Class<?>[] CONFIG_CLASSES = { EcommerceBackend.class, EcommerceFrontend.class,
+			EcommerceFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(WebsiteFullstack.diTypes(),
-				Java.getPackageTypes("com.janilla.ecommercetemplate.fullstack"));
+		return Stream.of(WebsiteFullstack.diTypes(), Java.getPackageTypes("com.janilla.ecommercetemplate.backend"),
+				Java.getPackageTypes("com.janilla.ecommercetemplate.frontend"),
+				Java.getPackageTypes("com.janilla.ecommercetemplate.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public EcommerceFullstack(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "ecommerce-template");
+	public EcommerceFullstack(C config, DiFactory diFactory) {
+		this(config, diFactory, EcommerceFrontend.class, EcommerceBackend.class);
 	}
 
-	protected EcommerceFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	@SuppressWarnings("rawtypes")
+	protected EcommerceFullstack(C config, DiFactory diFactory, Class frontendClass, Class backendClass) {
+		super(config, diFactory, frontendClass, backendClass);
 	}
 
 	@Override
 	protected Stream<Class<?>> diBackendTypes() {
-		return Stream.of(EcommerceBackend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+		return Stream.of(diTypes(backendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
 				Java.getPackageTypes("com.janilla.websitetemplate.fullstack"),
 				Java.getPackageTypes("com.janilla.ecommercetemplate.fullstack")).flatMap(x -> x);
 	}
 
 	@Override
 	protected Stream<Class<?>> diFrontendTypes() {
-		return Stream.of(EcommerceFrontend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
 				Java.getPackageTypes("com.janilla.websitetemplate.fullstack"),
 				Java.getPackageTypes("com.janilla.ecommercetemplate.fullstack")).flatMap(x -> x);
 	}

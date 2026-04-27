@@ -24,46 +24,54 @@
  */
 package com.janilla.websitetemplate.fullstack;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
 import com.janilla.websitetemplate.frontend.WebsiteFrontend;
 
-public class WebsiteFullstack extends BlankFullstack {
+public class WebsiteFullstack<C extends WebsiteFullstackConfig> extends BlankFullstack<C> {
+
+	public static final Class<?>[] CONFIG_CLASSES = { WebsiteBackend.class, WebsiteFrontend.class,
+			WebsiteFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate.fullstack"));
+		return Stream.of(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate.backend"),
+				Java.getPackageTypes("com.janilla.websitetemplate.frontend"),
+				Java.getPackageTypes("com.janilla.websitetemplate.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public WebsiteFullstack(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "website-template");
+	public WebsiteFullstack(C config, DiFactory diFactory) {
+		this(config, diFactory, WebsiteFrontend.class, WebsiteBackend.class);
 	}
 
-	protected WebsiteFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	@SuppressWarnings("rawtypes")
+	protected WebsiteFullstack(C config, DiFactory diFactory, Class frontendClass, Class backendClass) {
+		super(config, diFactory, frontendClass, backendClass);
 	}
 
 	@Override
 	protected Stream<Class<?>> diBackendTypes() {
-		return Stream.of(WebsiteBackend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+		return Stream.of(diTypes(backendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
 				Java.getPackageTypes("com.janilla.websitetemplate.fullstack")).flatMap(x -> x);
 	}
 
 	@Override
 	protected Stream<Class<?>> diFrontendTypes() {
-		return Stream.of(WebsiteFrontend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
 				Java.getPackageTypes("com.janilla.websitetemplate.fullstack")).flatMap(x -> x);
 	}
 }

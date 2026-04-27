@@ -1,0 +1,8 @@
+{
+	"database": {
+		"file": "~/janilla/sample-data/acme-dashboard-test.db"
+	},
+	"httpServer": {
+		"port": 8080
+	}
+}

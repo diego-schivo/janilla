@@ -1,0 +1,23 @@
+{
+	"api": {
+		"url": "http://localhost:8081/api"
+	},
+	"apiCors": {
+		"headers": "Content-Type",
+		"origin": "http://localhost:8080"
+	},
+	"database": {
+		"file": "~/janilla/sample-data/blank-template.db"
+	},
+	"httpServer": {
+		"port": 8081
+	},
+	"jwt": {
+		"cookie": "blank-token",
+		"key": "secretkey"
+	},
+	"liveDemo": false,
+	"upload": {
+		"directory": "~/janilla/sample-data/blank-template-upload"
+	}
+}

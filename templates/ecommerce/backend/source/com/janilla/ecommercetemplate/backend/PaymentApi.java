@@ -24,8 +24,6 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
-import com.janilla.java.Configuration;
-
 import com.janilla.backend.cms.UserHttpExchange;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.User;
@@ -35,12 +33,9 @@ import com.janilla.web.Handle;
 
 public abstract class PaymentApi {
 
-	protected final Configuration configuration;
-
 	protected final Persistence persistence;
 
-	protected PaymentApi(Configuration configuration, Persistence persistence) {
-		this.configuration = configuration;
+	protected PaymentApi(Persistence persistence) {
 		this.persistence = persistence;
 	}
 

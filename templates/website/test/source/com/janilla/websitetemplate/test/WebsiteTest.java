@@ -24,36 +24,33 @@
  */
 package com.janilla.websitetemplate.test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.test.BlankTest;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.fullstack.WebsiteFullstack;
 
 public class WebsiteTest extends BlankTest {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(BlankTest.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.test"));
+		return Stream.concat(BlankTest.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate.test"));
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
+
 		var f = new DefaultDiFactory(diTypes().toList());
-		serve(f, WebsiteTest.class, args.length > 0 ? args[0] : null);
+		var c = newConfig(new Class<?>[] { WebsiteTest.class }, args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public WebsiteTest(DiFactory diFactory, Path configurationFile) {
-		this(diFactory, configurationFile, "website-template");
-	}
-
-	public WebsiteTest(DiFactory diFactory, Path configurationFile, String configurationKey) {
-		super(diFactory, configurationFile, configurationKey);
+	public WebsiteTest(FrontendConfig config, DiFactory diFactory) {
+		super(config, diFactory);
 	}
 
 	@Override
@@ -62,9 +59,8 @@ public class WebsiteTest extends BlankTest {
 	}
 
 	@Override
-	protected Map<String, List<Path>> resourcePaths() {
-		return Map.of("",
-				Stream.of("com.janilla.frontend", "com.janilla.blanktemplate.test", "com.janilla.websitetemplate.test")
-						.flatMap(x -> Java.getPackagePaths(x, false).filter(Files::isRegularFile)).toList());
+	protected void putResourcePrefixes() {
+		super.putResourcePrefixes();
+		resourcePrefixes.put("com.janilla.websitetemplate.test", "");
 	}
 }

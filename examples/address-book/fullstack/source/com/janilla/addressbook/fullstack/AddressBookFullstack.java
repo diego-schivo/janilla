@@ -26,30 +26,36 @@
  */
 package com.janilla.addressbook.fullstack;
 
-import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import com.janilla.addressbook.backend.AddressBookBackend;
 import com.janilla.addressbook.frontend.AddressBookFrontend;
 import com.janilla.fullstack.web.AbstractFullstack;
+import com.janilla.fullstack.web.FullstackConfig;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.WebApp;
 
-public class AddressBookFullstack extends AbstractFullstack {
+public class AddressBookFullstack extends AbstractFullstack<FullstackConfig> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Java.getPackageTypes("com.janilla.addressbook.fullstack");
+		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.fullstack.web"),
+				Java.getPackageTypes("com.janilla.addressbook.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		serve(f, args.length > 0 ? args[0] : null);
+		var c = newConfig(
+				new Class<?>[] { AddressBookBackend.class, AddressBookFrontend.class, AddressBookFullstack.class },
+				args.length != 0 ? args[0] : null, f);
+		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+		serve(a);
 	}
 
-	public AddressBookFullstack(DiFactory diFactory, Path configurationFile) {
-		super(diFactory, configurationFile, "address-book", AddressBookFrontend.class, AddressBookBackend.class);
+	public AddressBookFullstack(FullstackConfig config, DiFactory diFactory) {
+		super(config, diFactory, AddressBookFrontend.class, AddressBookBackend.class);
 	}
 }
