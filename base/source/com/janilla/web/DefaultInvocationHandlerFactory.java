@@ -79,7 +79,7 @@ public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory impl
 	@Override
 	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest r) {
-			var p = foo(r);
+			var p = path(r);
 //			IO.println("DefaultInvocationHandlerFactory.createHandler, p=" + p);
 			var ii = invocationResolver.lookup(r.getHeaderValue(":method"), p).toList();
 			if (!ii.isEmpty())

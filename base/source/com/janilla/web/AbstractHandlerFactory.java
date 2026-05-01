@@ -42,7 +42,7 @@ public abstract class AbstractHandlerFactory implements HttpHandlerFactory {
 		this.diFactory = diFactory;
 	}
 
-	protected String foo(HttpRequest request) {
+	protected String path(HttpRequest request) {
 		return config.basePath().isEmpty() ? request.getPath()
 				: request.getPath().equals(config.basePath()) ? "/"
 						: request.getPath().startsWith(config.basePath() + "/")

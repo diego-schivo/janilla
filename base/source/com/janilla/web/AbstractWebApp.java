@@ -94,7 +94,7 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 
 	protected static WebAppConfig newConfig(Map<?, ?>[] maps, DiFactory factory) {
 		var m = Arrays.stream(maps).flatMap(x -> x.entrySet().stream()).filter(x -> x.getValue() != null)
-				.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue(), (Object x, Object y) -> foo(x, y),
+				.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue(), (Object x, Object y) -> merge(x, y),
 						LinkedHashMap::new));
 //		IO.println("AbstractWebApp.newConfig, m=" + m);
 
@@ -117,11 +117,12 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 		}).convert(m, factory.classFor(WebAppConfig.class));
 	}
 
-	protected static Object foo(Object o1, Object o2) {
-		return (o1 instanceof Map<?, ?> m1 && o2 instanceof Map<?, ?> m2) ? Stream.of(m1, m2)
-				.flatMap(x -> x.entrySet().stream()).filter(x -> x.getValue() != null).collect(Collectors.toMap(
-						x -> x.getKey(), x -> x.getValue(), (Object x, Object y) -> foo(x, y), LinkedHashMap::new))
-				: o2 != null ? o2 : o1;
+	protected static Object merge(Object object1, Object object2) {
+		return (object1 instanceof Map<?, ?> m1 && object2 instanceof Map<?, ?> m2)
+				? Stream.of(m1, m2).flatMap(x -> x.entrySet().stream()).filter(x -> x.getValue() != null)
+						.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue(),
+								(Object x, Object y) -> merge(x, y), LinkedHashMap::new))
+				: object2 != null ? object2 : object1;
 	}
 
 	protected static void serve(WebApp<?> app) {
