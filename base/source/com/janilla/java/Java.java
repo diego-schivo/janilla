@@ -254,10 +254,10 @@ public final class Java {
 		return new AbstractMap.SimpleImmutableEntry<>(k, v);
 	}
 
-	public static SSLContext sslContext(InputStream keyStore, char[] password) {
+	public static SSLContext sslContext(InputStream stream, char[] password) {
 		try {
 			var ks = KeyStore.getInstance("PKCS12");
-			ks.load(keyStore, password);
+			ks.load(stream, password);
 			var kmf = KeyManagerFactory.getInstance("SunX509");
 			kmf.init(ks, password);
 			var tmf = TrustManagerFactory.getInstance("SunX509");

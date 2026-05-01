@@ -25,7 +25,7 @@
 package com.janilla.ecommercetemplate;
 
 public record DefaultEcommerceConfig(Api api, HttpServer httpServer, Jwt jwt, String key, Boolean liveDemo,
-		Stripe stripe) implements EcommerceConfig {
+		String basePath, Stripe stripe) implements EcommerceConfig {
 
 	public record DefaultStripe(String publishableKey, String secretKey, String url, String webhooksSigningSecret)
 			implements Stripe {

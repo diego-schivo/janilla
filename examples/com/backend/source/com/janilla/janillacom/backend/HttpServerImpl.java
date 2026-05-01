@@ -25,7 +25,6 @@ package com.janilla.janillacom.backend;
 
 import java.net.SocketAddress;
 import java.util.Map;
-import java.util.function.Function;
 
 import javax.net.ssl.SSLContext;
 
@@ -39,20 +38,21 @@ import com.janilla.janillacom.JanillaDomain;
 
 class HttpServerImpl extends DefaultHttpServer {
 
-	protected final Function<String, Backend<?>> authorityToBackend;
+//	protected final Function<String, Backend<?>> authorityToBackend;
+	protected final JanillaBackend backend;
 
-	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
-			Function<String, Backend<?>> authorityToBackend) {
+	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, JanillaBackend backend) {
 		super(endpoint, sslContext, handler);
-		this.authorityToBackend = authorityToBackend;
+		this.backend = backend;
 	}
 
 	@Override
-	protected void exchange(HttpRequest request, HttpResponse response) {
-		var a = request.getHeaderValue(":authority");
-		if (a == null)
-			a = request.getHeaderValue("Host");
-		var b = authorityToBackend.apply(a);
+	public void exchange(HttpRequest request, HttpResponse response) {
+//		var a = request.getHeaderValue(":authority");
+//		if (a == null)
+//			a = request.getHeaderValue("Host");
+//		var b = authorityToBackend.apply(a);
+		var b = backend.backend(request);
 //		IO.println("HttpServerImpl.exchange, a=" + a + ", b=" + b);
 		ScopedValue.where(JanillaDomain.WEB_APP, b).run(() -> super.exchange(request, response));
 	}

@@ -62,7 +62,8 @@ public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFronte
 
 	protected HttpClient httpClient;
 
-	public BlankFrontend(C config, DiFactory diFactory) {
+	public BlankFrontend(C config, DiFactory diFactory, HttpClient httpClient) {
+		this.httpClient = httpClient;
 		super(config, diFactory);
 	}
 
@@ -111,8 +112,9 @@ public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFronte
 	@Override
 	protected InvocationResolver newInvocationResolver() {
 		domain = diFactory.newInstance(diFactory.classFor(BlankDomain.class));
-		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class),
-				Collections.singletonMap("sslContext", sslContext(config)));
+		if (httpClient == null)
+			httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class),
+					Collections.singletonMap("sslContext", sslContext(config)));
 		{
 			var c = diFactory.classFor(CmsDataFetching.class);
 			dataFetching = c != null ? diFactory.newInstance(c) : null;

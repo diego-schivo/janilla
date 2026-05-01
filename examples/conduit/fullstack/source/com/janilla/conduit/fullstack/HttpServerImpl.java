@@ -53,7 +53,8 @@ class HttpServerImpl extends DefaultHttpServer {
 
 	@Override
 	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		var f = request.getPath().startsWith("/api/") ? backend.diFactory() : frontend.diFactory();
+		var f = request.getPath().startsWith(backend.config().basePath() + "/api/") ? backend.diFactory()
+				: frontend.diFactory();
 		var c = f.classFor(HttpExchange.class);
 		return c != null ? f.newInstance(c, Map.of("request", request, "response", response))
 				: super.createExchange(request, response);

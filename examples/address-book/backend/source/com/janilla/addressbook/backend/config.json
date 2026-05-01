@@ -1,8 +1,11 @@
 {
-	"apiCors": {
-		"headers": "Content-Type",
-		"origin": "http://localhost:8080"
+	"api": {
+		"cors": {
+			"headers": "Content-Type",
+			"origin": "http://localhost:8080"
+		}
 	},
+	"basePath": "/addressbook",
 	"database": {
 		"file": "~/janilla/sample-data/address-book.db"
 	},

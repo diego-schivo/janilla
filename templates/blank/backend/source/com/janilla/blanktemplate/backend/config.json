@@ -1,10 +1,10 @@
 {
 	"api": {
+		"cors": {
+			"headers": "Content-Type",
+			"origin": "http://localhost:8080"
+		},
 		"url": "http://localhost:8081/api"
-	},
-	"apiCors": {
-		"headers": "Content-Type",
-		"origin": "http://localhost:8080"
 	},
 	"database": {
 		"file": "~/janilla/sample-data/blank-template.db"

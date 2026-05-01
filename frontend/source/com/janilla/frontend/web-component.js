@@ -199,6 +199,9 @@ const evaluate = (expression, context) => {
             const index = subexpr.endsWith("]") ? subexpr.indexOf("[") : -1;
             value = index === -1 ? value[subexpr] : value[subexpr.substring(0, index)]?.[parseInt(subexpr.substring(index + 1, subexpr.length - 1))];
         }
+	//console.log("expression", expression, "value", value);
+	if (value === undefined && expression === "basePath")
+		value = document.querySelector("app-element").dataset.basePath;
     return value;
 };
 

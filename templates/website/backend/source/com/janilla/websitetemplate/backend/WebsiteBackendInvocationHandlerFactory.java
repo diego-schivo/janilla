@@ -24,19 +24,18 @@
  */
 package com.janilla.websitetemplate.backend;
 
-import com.janilla.backend.web.BackendConfig;
 import com.janilla.blanktemplate.backend.BlankBackendInvocationHandlerFactory;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
+import com.janilla.web.WebAppConfig;
 
 public class WebsiteBackendInvocationHandlerFactory extends BlankBackendInvocationHandlerFactory {
 
-	public WebsiteBackendInvocationHandlerFactory(InvocationResolver invocationResolver,
-			RenderableFactory renderableFactory, HttpHandlerFactory rootFactory, DiFactory diFactory,
-			BackendConfig config) {
-		super(invocationResolver, renderableFactory, rootFactory, diFactory, config);
+	public WebsiteBackendInvocationHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory,
+			DiFactory diFactory, InvocationResolver invocationResolver, RenderableFactory renderableFactory) {
+		super(config, rootFactory, diFactory, invocationResolver, renderableFactory);
 		guestPost.add("/api/form-submissions");
 	}
 }

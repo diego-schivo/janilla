@@ -27,5 +27,5 @@
 package com.janilla.fullstack.web;
 
 public record DefaultFullstackConfig(Api api, Database database, HttpServer httpServer, Jwt jwt, Boolean liveDemo,
-		String title) implements FullstackConfig {
+		String basePath, String title) implements FullstackConfig {
 }

@@ -26,6 +26,9 @@ package com.janilla.janillacom.backend;
 
 import java.util.Map;
 
-record ConfigImpl(Api api, String authority, Map<String, ?> backends, Database database, HttpServer httpServer, Jwt jwt,
-		Boolean liveDemo, Mail mail, Upload upload) implements JanillaBackendConfig {
+import com.janilla.janillacom.AppResolution;
+
+record ConfigImpl(Api api, AppResolution appResolution, Map<String, ?> backends, Database database,
+		HttpServer httpServer, Jwt jwt, Boolean liveDemo, Mail mail, String basePath, Upload upload)
+		implements JanillaBackendConfig {
 }

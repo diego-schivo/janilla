@@ -24,8 +24,8 @@
  */
 package com.janilla.blanktemplate.backend;
 
-record ConfigImpl(Api api, Database database, HttpServer httpServer, Jwt jwt, Boolean liveDemo, Upload upload)
-		implements BlankBackendConfig {
+record ConfigImpl(Api api, String basePath, Database database, HttpServer httpServer, Jwt jwt, Boolean liveDemo,
+		Upload upload) implements BlankBackendConfig {
 
 	record UploadImpl(String directory) implements Upload {
 	}

@@ -58,7 +58,8 @@ export default class App extends BaseApp {
         const hs = history.state;
         const ss = this.serverState;
 
-        const p = location.pathname;
+		const p = this.path;
+		console.log("p", p);
         const o = {
             $template: "",
             sidebar: (() => {

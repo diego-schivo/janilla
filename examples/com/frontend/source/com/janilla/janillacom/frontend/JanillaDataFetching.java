@@ -42,10 +42,10 @@ public class JanillaDataFetching extends WebsiteDataFetching {
 		super(config, httpClient, converter);
 	}
 
-	public ListPortion<Application> applications(String slug, String search, Boolean reverse, Long skip, Long limit,
+	public ListPortion<Application> applications(String id, String search, Boolean reverse, Long skip, Long limit,
 			Integer depth) {
 		var u = URI.create(config.api().url() + "/applications?"
-				+ new UriQueryBuilder().append("slug", slug).append("search", search)
+				+ new UriQueryBuilder().append("id", id).append("search", search)
 						.append("reverse", reverse != null ? reverse.toString() : null)
 						.append("skip", skip != null ? skip.toString() : null)
 						.append("limit", limit != null ? limit.toString() : null)

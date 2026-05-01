@@ -1,7 +1,9 @@
 {
-	"apiCors": {
-		"headers": "",
-		"origin": ""
+	"api": {
+		"cors": {
+			"headers": "",
+			"origin": ""
+		}
 	},
 	"api": {
 		"url": "/api"

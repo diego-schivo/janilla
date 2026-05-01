@@ -56,7 +56,7 @@ public class BlankHttpServer extends DefaultHttpServer {
 	@Override
 	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 //		IO.println("BlankHttpServer.createExchange, request.getPath()=" + request.getPath());
-		var a = request.getPath().startsWith("/api/") ? backend : frontend;
+		var a = request.getPath().startsWith(backend.config().basePath() + "/api/") ? backend : frontend;
 		var x = a.diFactory().newInstance(a.diFactory().classFor(HttpExchange.class),
 				Map.of("request", request, "response", response));
 		return x != null ? x : super.createExchange(request, response);

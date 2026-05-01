@@ -27,6 +27,7 @@ package com.janilla.websitetemplate.frontend;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankFrontend;
+import com.janilla.http.HttpClient;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
@@ -48,8 +49,8 @@ public class WebsiteFrontend<C extends WebsiteFrontendConfig> extends BlankFront
 		serve(a);
 	}
 
-	public WebsiteFrontend(C config, DiFactory diFactory) {
-		super(config, diFactory);
+	public WebsiteFrontend(C config, DiFactory diFactory, HttpClient httpClient) {
+		super(config, diFactory, httpClient);
 	}
 
 	@Override

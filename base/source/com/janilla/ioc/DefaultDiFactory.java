@@ -56,7 +56,7 @@ public class DefaultDiFactory implements DiFactory {
 	}
 
 	public DefaultDiFactory(List<Class<?>> types, String name) {
-		IO.println("DefaultDiFactory, types=" + types + ", name=" + name);
+//		IO.println("DefaultDiFactory, types=" + types + ", name=" + name);
 		this.types = types;
 		this.name = name;
 	}
@@ -83,12 +83,12 @@ public class DefaultDiFactory implements DiFactory {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T, U extends T> Class<U> classFor(Class<T> type) {
-		IO.println("DefaultDiFactory.classFor, type=" + type);
+//		IO.println("DefaultDiFactory.classFor, type=" + type);
 		var c = (Class<U>) classes
 				.computeIfAbsent(type,
 						_ -> Stream.concat(Stream.of(type), types.stream()).filter(predicate(type)).reduce((_, x) -> x))
 				.orElse(null);
-		IO.println("DefaultDiFactory.classFor, c=" + c);
+//		IO.println("DefaultDiFactory.classFor, c=" + c);
 		return c;
 	}
 
@@ -141,7 +141,9 @@ public class DefaultDiFactory implements DiFactory {
 				if (arguments != null && arguments.containsKey(x.getName()))
 					return arguments.get(x.getName());
 				var p = context != null ? JavaReflect.property(context.getClass(), x.getName()) : null;
-				return p != null ? p.get(context) : null;
+				if (p != null)
+					return p.get(context);
+				return x.getType().isAssignableFrom(context.getClass()) ? context : null;
 			}).toArray();
 			var n = (int) Arrays.stream(aa).filter(Objects::nonNull).count();
 			var f = Arrays.stream(aa).anyMatch(x -> x instanceof DiFactory);

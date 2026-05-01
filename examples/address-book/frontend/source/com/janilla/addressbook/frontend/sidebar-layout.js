@@ -70,7 +70,8 @@ export default class SidebarLayout extends WebComponent {
                     contacts: a.serverState.contacts
                 }, "");
 
-            const c = location.pathname.match(/\/contacts\/([^/]+)(\/edit)?/);
+			const p = a.path;
+            const c = p.match(/\/contacts\/([^/]+)(\/edit)?/);
             const q = new URLSearchParams(location.search).get("q");
             const o = {
                 $template: "",
@@ -90,13 +91,13 @@ export default class SidebarLayout extends WebComponent {
                         $template: "item",
                         ...x,
                         href: (() => {
-                            const u = new URL(`/contacts/${x.id}`, location.href);
+                            const u = new URL(`${a.dataset.basePath}/contacts/${x.id}`, location.href);
                             if (q)
                                 u.searchParams.append("q", q);
                             return u.pathname + u.search;
                         })(),
                         class: x.id === hs.contact?.id ? "active"
-                            : `${location.pathname}/`.startsWith(`/contacts/${x.id}/`) ? "pending" : null,
+                            : (p + "/").startsWith(`/contacts/${x.id}/`) ? "pending" : null,
                         name: {
                             $template: x.full ? "name" : "no-name",
                             ...x
@@ -194,7 +195,7 @@ export default class SidebarLayout extends WebComponent {
                 history.pushState({
                     ...history.state,
                     contact: c
-                }, "", `/contacts/${c.id}/edit`);
+                }, "", `${a.dataset.basePath}/contacts/${c.id}/edit`);
                 dispatchEvent(new CustomEvent("popstate"));
             } else
                 alert(await r.text());

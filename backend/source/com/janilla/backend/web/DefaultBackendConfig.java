@@ -24,8 +24,8 @@
  */
 package com.janilla.backend.web;
 
-public record DefaultBackendConfig(Api api, Database database, HttpServer httpServer, Jwt jwt, Boolean liveDemo)
-		implements BackendConfig {
+public record DefaultBackendConfig(Api api, String basePath, Database database, HttpServer httpServer, Jwt jwt,
+		Boolean liveDemo) implements BackendConfig {
 
 	public record DefaultDatabase(String file, Boolean seed) implements Database {
 	}

@@ -56,34 +56,12 @@ import com.janilla.json.Json;
 public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C> {
 
 	protected static WebAppConfig newConfig(Class<?>[] classes, String path, DiFactory factory) {
-//		Stream<Path> ff;
-//		ff = Arrays.stream(classes).map(x -> {
-//			var r = x.getResource("config.json");
-//			try {
-//				return r != null ? Path.of(r.toURI()) : null;
-//			} catch (URISyntaxException e) {
-//				throw new RuntimeException(e);
-//			}
-//		}).filter(x -> x != null);
-		Stream<Map<?, ?>> mm = Arrays.stream(classes).map(x -> toConfigMap(x));
+		var mm = Arrays.stream(classes).map(x -> toConfigMap(x));
 
 		if (path != null) {
-//			var f = Path.of(path.startsWith("~") ? System.getProperty("user.home") + path.substring(1) : path);
 			var m = toConfigMap(path);
 			mm = Stream.concat(mm, Stream.of(m));
 		}
-
-//		var mm = ff.map(f -> {
-//			Object o;
-//			try {
-//				var s = Files.readString(f);
-//				o = Json.parse(s);
-//			} catch (IOException e) {
-//				throw new UncheckedIOException(e);
-//			}
-//			return (Map<?, ?>) o;
-//		}).toArray(Map<?, ?>[]::new);
-
 		return newConfig(mm.toArray(Map<?, ?>[]::new), factory);
 	}
 
@@ -151,7 +129,7 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 	}
 
 	protected static SSLContext sslContext(WebAppConfig config) {
-		var k = config.httpServer().keystore();
+		var k = config.httpServer().keyStore();
 		if (k != null) {
 			var p = k.path();
 			var w = k.password();
@@ -190,6 +168,7 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 	protected final TypeResolver typeResolver;
 
 	protected AbstractWebApp(C config, DiFactory diFactory) {
+		IO.println("AbstractWebApp, this=" + this + ", config=" + config);
 		this.config = config;
 		this.diFactory = diFactory;
 		diFactory.context(this);
@@ -247,7 +226,7 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 	}
 
 	protected HttpHandler newHttpHandler() {
-		var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
+		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
 			var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));
 			if (h == null)

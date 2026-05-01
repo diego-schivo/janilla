@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.backend.cms.UserHttpExchange;
-import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
@@ -41,25 +40,22 @@ import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.NullTypeResolver;
 import com.janilla.java.TypeResolver;
 import com.janilla.java.UriQueryBuilder;
+import com.janilla.web.DefaultInvocationHandlerFactory;
 import com.janilla.web.HandleException;
 import com.janilla.web.Invocation;
-import com.janilla.web.InvocationHandlerFactory;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
+import com.janilla.web.WebAppConfig;
 
-public class BlankBackendInvocationHandlerFactory extends InvocationHandlerFactory {
-
-	protected final BackendConfig config;
+public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandlerFactory {
 
 	protected final Set<String> guestPost;
 
 	protected final Set<String> userLoginLogout;
 
-	public BlankBackendInvocationHandlerFactory(InvocationResolver invocationResolver,
-			RenderableFactory renderableFactory, HttpHandlerFactory rootFactory, DiFactory diFactory,
-			BackendConfig config) {
-		super(invocationResolver, renderableFactory, rootFactory, diFactory);
-		this.config = config;
+	public BlankBackendInvocationHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory,
+			DiFactory diFactory, InvocationResolver invocationResolver, RenderableFactory renderableFactory) {
+		super(config, rootFactory, diFactory, invocationResolver, renderableFactory);
 		guestPost = Stream.of("/api/users/first-register", "/api/users/forgot-password", "/api/users/login",
 				"/api/users/reset-password").collect(Collectors.toCollection(HashSet::new));
 		userLoginLogout = Stream.of("/api/users/login", "/api/users/logout")

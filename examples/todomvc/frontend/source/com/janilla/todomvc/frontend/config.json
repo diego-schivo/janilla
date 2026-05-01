@@ -3,5 +3,6 @@
 	"httpServer": {
 		"port": 8080
 	},
+	"basePath": "",
 	"title": "TodoMVC: Janilla"
 }

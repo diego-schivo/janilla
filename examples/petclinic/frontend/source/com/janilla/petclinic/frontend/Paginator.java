@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.janilla.java.UriQueryBuilder;
+import com.janilla.web.HtmlEvaluator;
 import com.janilla.web.HtmlRenderer;
 import com.janilla.web.Render;
 
@@ -72,6 +73,10 @@ record Paginator(int index, int length, URI uri) {
 	}
 
 	public static class ItemRenderer extends HtmlRenderer<Item> {
+
+		public ItemRenderer(HtmlEvaluator htmlEvaluator) {
+			super(htmlEvaluator);
+		}
 
 		@Override
 		protected String template(Item value) {

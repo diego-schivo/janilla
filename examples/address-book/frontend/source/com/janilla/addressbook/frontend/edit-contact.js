@@ -105,7 +105,7 @@ export default class EditContact extends WebComponent {
             body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
         });
         if (r.ok)
-            a.navigate(new URL(`/contacts/${hs.contact.id}`, location.href));
+            a.navigate(new URL(`${a.dataset.basePath}/contacts/${hs.contact.id}`, location.href));
         else
             alert(await r.text());
     }

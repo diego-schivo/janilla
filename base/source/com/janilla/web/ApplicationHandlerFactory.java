@@ -22,100 +22,103 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.web;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpHandlerFactory;
-import com.janilla.ioc.DiFactory;
-import com.janilla.java.Java;
-
-public class ApplicationHandlerFactory implements HttpHandlerFactory {
-
-	protected final DiFactory diFactory;
-
-	protected final List<HttpHandlerFactory> handlerFactories;
-
-	protected final InvocationResolver invocationResolver;
-
-	protected final RenderableFactory renderableFactory;
-
-	protected final ResourceMap resourceMap;
-
-	public ApplicationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			ResourceMap resourceMap) {
-		this(invocationResolver, renderableFactory, resourceMap, null);
-	}
-
-	public ApplicationHandlerFactory(DiFactory diFactory) {
-		this(null, null, null, diFactory);
-	}
-
-	protected ApplicationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			ResourceMap resourceMap, DiFactory diFactory) {
-		this.invocationResolver = invocationResolver;
-		this.renderableFactory = renderableFactory;
-		this.resourceMap = resourceMap;
-		this.diFactory = diFactory;
-		handlerFactories = buildFactories();
-//		IO.println("ApplicationHandlerFactory, handlerFactories=" + handlerFactories);
-	}
-
-	@Override
-	public HttpHandler createHandler(Object object) {
-		for (var f : handlerFactories)
-			if (f != null) {
-				var h = f.createHandler(object);
-				if (h != null) {
-//					IO.println("ApplicationHandlerBuilder.createHandler, f=" + f + ", h=" + h);
-					return h;
-				}
-			}
-		return null;
-	}
-
-	protected HttpHandlerFactory buildExceptionHandlerFactory() {
-		return diFactory != null ? Objects.requireNonNull(
-				diFactory.newInstance(diFactory.classFor(ExceptionHandlerFactory.class), Map.of("rootFactory", this)))
-				: new ExceptionHandlerFactory();
-	}
-
-	protected List<HttpHandlerFactory> buildFactories() {
-		return List.of(buildInvocationHandlerFactory(), buildTemplateHandlerFactory(), buildJsonHandlerFactory(),
-				buildResourceHandlerFactory(), buildExceptionHandlerFactory());
-	}
-
-	protected HttpHandlerFactory buildInvocationHandlerFactory() {
-		return diFactory != null
-				? Objects.requireNonNull(diFactory.newInstance(diFactory.classFor(InvocationHandlerFactory.class),
-						Java.hashMap("instanceResolver", (Function<Class<?>, Object>) x -> {
-							var y = diFactory.context();
-//					IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
-							return x.isAssignableFrom(y.getClass()) ? diFactory.context()
-									: diFactory.newInstance(diFactory.classFor(x));
-						}, "rootFactory", this)))
-				: new InvocationHandlerFactory(invocationResolver, renderableFactory, this);
-	}
-
-	protected HttpHandlerFactory buildJsonHandlerFactory() {
-		return diFactory != null ? Objects.requireNonNull(
-				diFactory.newInstance(diFactory.classFor(JsonHandlerFactory.class), Map.of("rootFactory", this)))
-				: new JsonHandlerFactory();
-	}
-
-	protected ResourceHandlerFactory buildResourceHandlerFactory() {
-		return diFactory != null ? Objects.requireNonNull(
-				diFactory.newInstance(diFactory.classFor(ResourceHandlerFactory.class), Map.of("rootFactory", this)))
-				: new DefaultResourceHandlerFactory(resourceMap);
-	}
-
-	protected HttpHandlerFactory buildTemplateHandlerFactory() {
-		return diFactory != null ? Objects.requireNonNull(
-				diFactory.newInstance(diFactory.classFor(TemplateHandlerFactory.class), Map.of("rootFactory", this)))
-				: new TemplateHandlerFactory();
-	}
-}
+//package com.janilla.web;
+//
+//import java.util.List;
+//import java.util.Map;
+//import java.util.Objects;
+//import java.util.function.Function;
+//
+//import com.janilla.http.HttpHandler;
+//import com.janilla.http.HttpHandlerFactory;
+//import com.janilla.ioc.DiFactory;
+//import com.janilla.java.Java;
+//
+//public class ApplicationHandlerFactory implements HttpHandlerFactory {
+//
+//	protected final WebAppConfig config;
+//
+//	protected final DiFactory diFactory;
+//
+//	protected final List<HttpHandlerFactory> handlerFactories;
+//
+//	protected final InvocationResolver invocationResolver;
+//
+//	protected final RenderableFactory renderableFactory;
+//
+//	protected final ResourceMap resourceMap;
+//
+//	public ApplicationHandlerFactory(WebAppConfig config, InvocationResolver invocationResolver,
+//			RenderableFactory renderableFactory, ResourceMap resourceMap) {
+//		this(config, invocationResolver, renderableFactory, resourceMap, null);
+//	}
+//
+//	public ApplicationHandlerFactory(WebAppConfig config, DiFactory diFactory) {
+//		this(config, null, null, null, diFactory);
+//	}
+//
+//	protected ApplicationHandlerFactory(WebAppConfig config, InvocationResolver invocationResolver,
+//			RenderableFactory renderableFactory, ResourceMap resourceMap, DiFactory diFactory) {
+//		this.config = config;
+//		this.invocationResolver = invocationResolver;
+//		this.renderableFactory = renderableFactory;
+//		this.resourceMap = resourceMap;
+//		this.diFactory = diFactory;
+//		handlerFactories = buildFactories();
+////		IO.println("ApplicationHandlerFactory, handlerFactories=" + handlerFactories);
+//	}
+//
+//	@Override
+//	public HttpHandler createHandler(Object object) {
+//		for (var f : handlerFactories)
+//			if (f != null) {
+//				var h = f.createHandler(object);
+//				if (h != null) {
+////					IO.println("ApplicationHandlerBuilder.createHandler, f=" + f + ", h=" + h);
+//					return h;
+//				}
+//			}
+//		return null;
+//	}
+//
+//	protected HttpHandlerFactory buildExceptionHandlerFactory() {
+//		return diFactory != null ? Objects.requireNonNull(
+//				diFactory.newInstance(diFactory.classFor(ExceptionHandlerFactory.class), Map.of("rootFactory", this)))
+//				: new ExceptionHandlerFactory();
+//	}
+//
+//	protected List<HttpHandlerFactory> buildFactories() {
+//		return List.of(buildInvocationHandlerFactory(), buildTemplateHandlerFactory(), buildJsonHandlerFactory(),
+//				buildResourceHandlerFactory(), buildExceptionHandlerFactory());
+//	}
+//
+//	protected HttpHandlerFactory buildInvocationHandlerFactory() {
+//		return diFactory != null
+//				? Objects.requireNonNull(diFactory.newInstance(diFactory.classFor(InvocationHandlerFactory.class),
+//						Java.hashMap("instanceResolver", (Function<Class<?>, Object>) x -> {
+//							var y = diFactory.context();
+////							IO.println("ApplicationHandlerFactory.buildMethodHandlerFactory, x=" + x + ", y=" + y);
+//							return x.isAssignableFrom(y.getClass()) ? diFactory.context()
+//									: diFactory.newInstance(diFactory.classFor(x));
+//						}, "rootFactory", this)))
+//				: new DefaultInvocationHandlerFactory(config, this, null, invocationResolver, renderableFactory);
+//	}
+//
+//	protected HttpHandlerFactory buildJsonHandlerFactory() {
+//		return diFactory != null ? Objects.requireNonNull(
+//				diFactory.newInstance(diFactory.classFor(JsonHandlerFactory.class), Map.of("rootFactory", this)))
+//				: new JsonHandlerFactory();
+//	}
+//
+//	protected ResourceHandlerFactory buildResourceHandlerFactory() {
+//		return diFactory != null ? Objects.requireNonNull(
+//				diFactory.newInstance(diFactory.classFor(ResourceHandlerFactory.class), Map.of("rootFactory", this)))
+//				: new DefaultResourceHandlerFactory(config, this, null, resourceMap);
+//	}
+//
+//	protected HttpHandlerFactory buildTemplateHandlerFactory() {
+//		return diFactory != null ? Objects.requireNonNull(
+//				diFactory.newInstance(diFactory.classFor(TemplateHandlerFactory.class), Map.of("rootFactory", this)))
+//				: new TemplateHandlerFactory();
+//	}
+//}

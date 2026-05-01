@@ -56,7 +56,8 @@ public class AcmeDashboardFrontend extends AbstractFrontend<FrontendConfig> {
 
 	protected HttpClient httpClient;
 
-	public AcmeDashboardFrontend(FrontendConfig config, DiFactory diFactory) {
+	public AcmeDashboardFrontend(FrontendConfig config, DiFactory diFactory, HttpClient httpClient) {
+		this.httpClient = httpClient;
 		super(config, diFactory);
 	}
 
@@ -70,7 +71,8 @@ public class AcmeDashboardFrontend extends AbstractFrontend<FrontendConfig> {
 
 	@Override
 	protected InvocationResolver newInvocationResolver() {
-		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
+		if (httpClient == null)
+			httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
 		fetcher = diFactory.newInstance(diFactory.classFor(Fetcher.class));
 		return super.newInvocationResolver();
 	}

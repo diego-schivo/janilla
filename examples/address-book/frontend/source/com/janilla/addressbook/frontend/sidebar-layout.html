@@ -1,7 +1,7 @@
-<link rel="stylesheet" href="/style.css" />
+<link rel="stylesheet" href="${basePath}/style.css" />
 <div id="sidebar">
   <h1>
-    <a href="/about">React Router Contacts</a>
+    <a href="${basePath}/about">React Router Contacts</a>
   </h1>
   <div>
     <form id="search-form" role="search">
@@ -50,7 +50,7 @@
 
 <template id="item">
   <li>
-    <a href="${href}" class="${class}"><!--${name}--><!--${favorite}--></a>
+    <a href="${basePath}${href}" class="${class}"><!--${name}--><!--${favorite}--></a>
   </li>
 </template>
 

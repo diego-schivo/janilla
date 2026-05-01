@@ -25,8 +25,5 @@
 package com.janilla.ecommercetemplate.backend;
 
 record ConfigImpl(Api api, Database database, HttpServer httpServer, Jwt jwt, Boolean liveDemo, Mail mail,
-		Stripe stripe, Upload upload) implements EcommerceBackendConfig {
-
-//	record StripeImpl(String secretKey, String url, String webhooksSigningSecret) implements Stripe {
-//	}
+		String basePath, Stripe stripe, Upload upload) implements EcommerceBackendConfig {
 }

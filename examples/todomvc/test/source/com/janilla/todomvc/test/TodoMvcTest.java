@@ -33,9 +33,9 @@ import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.todomvc.frontend.TodoMvcFrontend;
-import com.janilla.web.ApplicationHandlerFactory;
 import com.janilla.web.NotFoundException;
 import com.janilla.web.WebApp;
+import com.janilla.web.WebAppHandlerFactory;
 
 public class TodoMvcTest extends AbstractFrontend<FrontendConfig> {
 
@@ -72,7 +72,7 @@ public class TodoMvcTest extends AbstractFrontend<FrontendConfig> {
 
 	@Override
 	protected HttpHandler newHttpHandler() {
-		var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
+		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
 //			IO.println(
 //			"TodoMvcTest, " + ex.request().getPath() + ", Test.ongoing=" + Test.ongoing.get());

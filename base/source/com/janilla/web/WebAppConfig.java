@@ -28,6 +28,8 @@ public interface WebAppConfig {
 
 	Api api();
 
+	String basePath();
+
 	HttpServer httpServer();
 
 	Jwt jwt();
@@ -50,11 +52,11 @@ public interface WebAppConfig {
 
 	interface HttpServer {
 
-		Keystore keystore();
+		KeyStore keyStore();
 
 		Integer port();
 
-		interface Keystore {
+		interface KeyStore {
 
 			String commonName();
 

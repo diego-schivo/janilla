@@ -26,6 +26,9 @@ package com.janilla.janillacom.frontend;
 
 import java.util.Map;
 
-record ConfigImpl(Api api, String authority, Download download, Map<String, ?> frontends, HttpServer httpServer,
-		Jwt jwt, String key, Boolean liveDemo, String title) implements JanillaFrontendConfig {
+import com.janilla.janillacom.AppResolution;
+
+record ConfigImpl(Api api, AppResolution appResolution, Download download, Map<String, ?> frontends,
+		HttpServer httpServer, Jwt jwt, String key, Boolean liveDemo, String basePath, String title)
+		implements JanillaFrontendConfig {
 }

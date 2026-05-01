@@ -24,12 +24,12 @@
  */
 @font-face {
   font-family: "Lusitana";
-  src: url("/fonts/lusitana/Lusitana-Regular.ttf");
+  src: url("fonts/lusitana/Lusitana-Regular.ttf");
 }
 
 @font-face {
   font-family: "Inter";
-  src: url("/fonts/inter/Inter_18pt-Regular.ttf");
+  src: url("fonts/inter/Inter_18pt-Regular.ttf");
 }
 
 :root {

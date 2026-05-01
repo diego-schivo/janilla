@@ -26,6 +26,7 @@ package com.janilla.ecommercetemplate.frontend;
 
 import java.util.stream.Stream;
 
+import com.janilla.http.HttpClient;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
@@ -48,8 +49,8 @@ public class EcommerceFrontend<C extends EcommerceFrontendConfig> extends Websit
 		serve(a);
 	}
 
-	public EcommerceFrontend(C config, DiFactory diFactory) {
-		super(config, diFactory);
+	public EcommerceFrontend(C config, DiFactory diFactory, HttpClient httpClient) {
+		super(config, diFactory, httpClient);
 	}
 
 	@Override

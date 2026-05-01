@@ -1,7 +1,8 @@
 {
 	"api": {
-		"url": "http://localhost:8081/api"
+		"url": "http://localhost:8081/petclinic/api"
 	},
+	"basePath": "/petclinic",
 	"httpServer": {
 		"port": 8080
 	}

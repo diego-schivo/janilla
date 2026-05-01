@@ -24,45 +24,7 @@
  */
 package com.janilla.web;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
-
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 
-public class TemplateHandlerFactory implements HttpHandlerFactory {
-
-	@Override
-	public HttpHandler createHandler(Object object) {
-		return object instanceof Renderable r && r.renderer() != null && r.renderer().annotation != null ? x -> {
-			render(r, x);
-			return true;
-		} : null;
-	}
-
-	protected void render(Renderable<?> renderable, HttpExchange exchange) {
-//		IO.println("TemplateHandlerFactory.render, renderable=" + renderable);
-		var rs = exchange.response();
-		if (rs.getHeaderValue(":status") == null)
-			rs.setHeaderValue(":status", "200");
-		if (rs.getHeader("cache-control") == null)
-			rs.setHeaderValue("cache-control", "no-cache");
-		if (rs.getHeader("content-type") == null)
-			rs.setHeaderValue("content-type", "text/html");
-		var s = renderable.get();
-		if (s != null) {
-			var bb = s.getBytes();
-			rs.setHeaderValue("content-length", String.valueOf(bb.length));
-			try {
-				var n = ((WritableByteChannel) rs.getBody()).write(ByteBuffer.wrap(bb));
-				if (n != bb.length)
-					throw new RuntimeException();
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		}
-	}
+public interface TemplateHandlerFactory extends HttpHandlerFactory {
 }

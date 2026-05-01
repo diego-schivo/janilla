@@ -34,7 +34,7 @@ import com.janilla.persistence.ListPortion;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/applications")
-public class BackendApplicationApi extends AbstractCollectionApi<Long, Application> {// implements ApplicationApi {
+public class BackendApplicationApi extends AbstractCollectionApi<String, Application> {// implements ApplicationApi {
 
 	public BackendApplicationApi(Predicate<HttpExchange> drafts, Persistence persistence) {
 		super(Application.class, drafts, persistence, "title");
@@ -42,11 +42,12 @@ public class BackendApplicationApi extends AbstractCollectionApi<Long, Applicati
 
 //	@Override
 	@Handle(method = "GET")
-	public ListPortion<Application> read(String slug, String search, Boolean reverse, Long skip, Long limit,
+	public ListPortion<Application> read(String id, String search, Boolean reverse, Long skip, Long limit,
 			Integer depth) {
-		if (slug != null) {
-			var ll = crud().filter("slug", new Object[] { slug });
-			var a = !ll.isEmpty() ? crud().read(ll.getFirst(), depth != null ? depth : 0) : null;
+		if (id != null) {
+//			var ll = crud().filter("slug", new Object[] { slug });
+//			var a = !ll.isEmpty() ? crud().read(ll.getFirst(), depth != null ? depth : 0) : null;
+			var a = crud().read(id, depth != null ? depth : 0);
 			return a != null ? new ListPortion<>(List.of(a), 1) : ListPortion.empty();
 		}
 		return read(search, reverse, skip, limit, depth);

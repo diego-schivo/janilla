@@ -82,18 +82,21 @@ public abstract class AbstractFullstack<C extends FullstackConfig> extends Abstr
 
 	@Override
 	protected HttpHandler newHttpHandler() {
-		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
-			var f = new DefaultDiFactory(diFrontendTypes().toList(), "frontend");
-			return f.newInstance(frontendClass, Java.hashMap("config", config, "diFactory", f));
-		});
-
 		backend = ScopedValue.where(INSTANCE, this).call(() -> {
 			var f = new DefaultDiFactory(diBackendTypes().toList(), "backend");
 			return f.newInstance(backendClass, Java.hashMap("config", config, "diFactory", f));
 		});
 
+		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
+			var f = new DefaultDiFactory(diFrontendTypes().toList(), "frontend");
+			return f.newInstance(frontendClass, Java.hashMap("config", config, "diFactory", f));
+		});
+
 		return x -> {
-			var a = x.request().getPath().startsWith("/api/") ? backend : frontend;
+			var p1 = x.request().getPath();
+			var p2 = backend.config().basePath() + "/api/";
+			var a = p1.startsWith(p2) ? backend : frontend;
+			IO.println("AbstractFullstack.newHttpHandler, p1=" + p1 + ", p2=" + p2 + ", a=" + a);
 			return ScopedValue.where(INSTANCE, a).call(() -> a.httpHandler().handle(x));
 		};
 	}

@@ -26,24 +26,21 @@ package com.janilla.conduit.backend;
 import java.lang.reflect.Type;
 import java.util.function.Supplier;
 
-import com.janilla.backend.web.BackendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Converter;
+import com.janilla.web.DefaultInvocationHandlerFactory;
 import com.janilla.web.Invocation;
-import com.janilla.web.InvocationHandlerFactory;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
+import com.janilla.web.WebAppConfig;
 
-class CustomInvocationHandlerFactory extends InvocationHandlerFactory {
+class CustomInvocationHandlerFactory extends DefaultInvocationHandlerFactory {
 
-	protected final BackendConfig config;
-
-	public CustomInvocationHandlerFactory(InvocationResolver invocationResolver, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory, DiFactory diFactory, BackendConfig config) {
-		super(invocationResolver, renderableFactory, rootFactory, diFactory);
-		this.config = config;
+	public CustomInvocationHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
+			InvocationResolver invocationResolver, RenderableFactory renderableFactory) {
+		super(config, rootFactory, diFactory, invocationResolver, renderableFactory);
 	}
 
 	@Override

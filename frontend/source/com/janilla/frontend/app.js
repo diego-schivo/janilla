@@ -49,6 +49,11 @@ export default class App extends WebComponent {
         if (!history.state || this.serverState)
             history.replaceState({}, "");
     }
+	
+	get path() {
+		const x = location.pathname.substring(this.dataset.basePath.length);
+		return x !== "" ? x : "/";
+	}
 
     connectedCallback() {
         super.connectedCallback();

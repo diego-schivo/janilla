@@ -64,8 +64,8 @@ import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.JavaReflect;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
+import com.janilla.web.DefaultInvocationHandlerFactory;
 import com.janilla.web.Handle;
-import com.janilla.web.InvocationHandlerFactory;
 
 public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends Document<ID>>
 		implements CollectionApi<ID, D> {
@@ -144,7 +144,7 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	@Override
 	@Handle(method = "PATCH")
 	public List<D> patch(@Bind(resolver = DollarTypeResolver.class) D document, @Bind("id") List<ID> ids) {
-		return crud().patch(ids, document, InvocationHandlerFactory.JSON_KEYS.get());
+		return crud().patch(ids, document, DefaultInvocationHandlerFactory.JSON_KEYS.get());
 	}
 
 	@Override

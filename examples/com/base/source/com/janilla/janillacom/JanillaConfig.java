@@ -28,5 +28,5 @@ import com.janilla.websitetemplate.WebsiteConfig;
 
 public interface JanillaConfig extends WebsiteConfig {
 
-	String authority();
+	AppResolution appResolution();
 }

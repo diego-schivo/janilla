@@ -24,16 +24,15 @@
 package com.janilla.janillacom;
 
 import com.janilla.cms.Document;
-import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
 @Store
-public interface Application extends Document<Long> {
+public interface Application extends Document<String> {
 
 	String title();
 
-	@Index
-	String slug();
+//	@Index
+//	String slug();
 
 	String frontend();
 

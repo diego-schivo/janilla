@@ -36,8 +36,8 @@ class HttpServerImpl extends DefaultHttpServer {
 
 	protected final PetclinicFrontend frontend;
 
-	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
-			PetclinicBackend backend, PetclinicFrontend frontend) {
+	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, PetclinicBackend backend,
+			PetclinicFrontend frontend) {
 		super(endpoint, sslContext, handler);
 		this.backend = backend;
 		this.frontend = frontend;
@@ -45,7 +45,8 @@ class HttpServerImpl extends DefaultHttpServer {
 
 	@Override
 	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		var f = request.getPath().startsWith("/api/") ? backend.diFactory() : frontend.diFactory();
+		var f = request.getPath().startsWith(backend.config().basePath() + "/api/") ? backend.diFactory()
+				: frontend.diFactory();
 		return f.newInstance(f.classFor(HttpExchange.class), Map.of("request", request, "response", response));
 	}
 }

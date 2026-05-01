@@ -104,7 +104,7 @@ export default class ContactPage extends WebComponent {
 
         switch (event.target.method) {
             case "get":
-                const u = new URL(`/contacts/${hs.contact.id}/edit`, location.href);
+                const u = new URL(`${a.dataset.basePath}/contacts/${hs.contact.id}/edit`, location.href);
                 const q = new URLSearchParams(location.search).get("q");
                 if (q)
                     u.searchParams.append("q", q);

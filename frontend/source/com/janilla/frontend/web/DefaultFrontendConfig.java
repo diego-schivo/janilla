@@ -24,6 +24,6 @@
  */
 package com.janilla.frontend.web;
 
-public record DefaultFrontendConfig(Api api, HttpServer httpServer, Jwt jwt, Boolean liveDemo, String title)
-		implements FrontendConfig {
+public record DefaultFrontendConfig(Api api, HttpServer httpServer, Jwt jwt, Boolean liveDemo, String basePath,
+		String title) implements FrontendConfig {
 }

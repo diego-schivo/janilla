@@ -24,7 +24,8 @@
  */
 package com.janilla.web;
 
-public record DefaultWebAppConfig(Api api, HttpServer httpServer, Jwt jwt, Boolean liveDemo) implements WebAppConfig {
+public record DefaultWebAppConfig(Api api, String basePath, HttpServer httpServer, Jwt jwt, Boolean liveDemo)
+		implements WebAppConfig {
 
 	public record DefaultApi(Cors cors, String url) implements Api {
 
@@ -32,10 +33,10 @@ public record DefaultWebAppConfig(Api api, HttpServer httpServer, Jwt jwt, Boole
 		}
 	}
 
-	public record DefaultHttpServer(DefaultKeystore keystore, Integer port) implements HttpServer {
+	public record DefaultHttpServer(DefaultKeyStore keyStore, Integer port) implements HttpServer {
 
-		public record DefaultKeystore(String commonName, String password, String path, String subjectAlternativeName)
-				implements Keystore {
+		public record DefaultKeyStore(String commonName, String password, String path, String subjectAlternativeName)
+				implements KeyStore {
 		}
 	}
 

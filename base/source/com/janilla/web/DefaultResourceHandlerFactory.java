@@ -33,20 +33,24 @@ import java.nio.file.Files;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
+import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 
-public class DefaultResourceHandlerFactory implements ResourceHandlerFactory {
+public class DefaultResourceHandlerFactory extends AbstractHandlerFactory implements ResourceHandlerFactory {
 
 	protected final ResourceMap resourceMap;
 
-	public DefaultResourceHandlerFactory(ResourceMap resourceMap) {
+	public DefaultResourceHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
+			ResourceMap resourceMap) {
+		super(config, rootFactory, diFactory);
 		this.resourceMap = resourceMap;
 	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {
-		var p = object instanceof HttpRequest r ? r.getPath() : null;
+		var p = object instanceof HttpRequest r ? foo(r) : null;
 		var r = resourceMap != null && p != null ? resourceMap.get(p) : null;
 //		IO.println("p=" + p + ", r=" + r);
 		return r != null ? x -> {

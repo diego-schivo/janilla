@@ -71,12 +71,13 @@ public class DefaultHttpClient implements HttpClient {
 	}
 
 	public DefaultHttpClient(SSLContext sslContext) {
+//		IO.println("DefaultHttpClient, sslContext=" + sslContext);
 		this.sslContext = sslContext;
 	}
 
 	@Override
 	public <R> R send(HttpRequest request, Function<HttpResponse, R> function) {
-//		IO.println("HttpClient.send, " + request.getMethod() + " " + request.getUri());
+//		IO.println("DefaultHttpClient.send, " + request.getHeaderValue(":method") + " " + request.getUri());
 		try (var ch = SocketChannel.open()) {
 			{
 				var a = request.getHeaderValue(":authority");
@@ -85,7 +86,7 @@ public class DefaultHttpClient implements HttpClient {
 				var i = a.indexOf(':');
 				var h = i != -1 ? a.substring(0, i) : a;
 				var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : 443;
-//				IO.println("HttpClient.send, h=" + h + ", p=" + p);
+//				IO.println("DefaultHttpClient.send, h=" + h + ", p=" + p);
 				ch.connect(new InetSocketAddress(h, p));
 			}
 
@@ -272,7 +273,7 @@ public class DefaultHttpClient implements HttpClient {
 					rs.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
 				}
 			}
-//			IO.println("HttpClient.send, rs=" + rs);
+//			IO.println("DefaultHttpClient.send, rs=" + rs);
 
 			R r;
 			try (var rs2 = rs) {
@@ -282,7 +283,7 @@ public class DefaultHttpClient implements HttpClient {
 			if (t instanceof SecureTransfer st) {
 				t2.writeFrame(new GoawayFrame(1, 0, new byte[0]));
 
-//				IO.println("HttpClient.send, closeOutbound");
+//				IO.println("DefaultHttpClient.send, closeOutbound");
 				st.engine().closeOutbound();
 				do
 					st.write();
@@ -291,16 +292,16 @@ public class DefaultHttpClient implements HttpClient {
 
 //			var ci = true;
 //			do {
-//				IO.println("HttpClient.send, ci=" + ci);
+//				IO.println("DefaultHttpClient.send, ci=" + ci);
 //				var n = t.read();
-//				IO.println("HttpClient.send, n=" + n);
+//				IO.println("DefaultHttpClient.send, n=" + n);
 //				if (n == -1) {
 //					ci = false;
 //					break;
 //				}
 //			} while (!e.isInboundDone());
 //			if (ci) {
-//				IO.println("HttpClient.send, closeInbound");
+//				IO.println("DefaultHttpClient.send, closeInbound");
 //				e.closeInbound();
 //			}
 			return r;

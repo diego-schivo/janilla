@@ -4,6 +4,122 @@
 			"headers": "",
 			"origin": ""
 		},
-		"url": "/api"
-	}
+		"url": "http://localhost:8080/api"
+	},
+	"appResolution": "BY_PATH",
+	"backends": {
+		"acmedashboard": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				}
+			},
+			"basePath": "/acmedashboard"
+		},
+		"addressbook": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				}
+			},
+			"basePath": "/addressbook"
+		},
+		"blanktemplate": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				}
+			},
+			"basePath": "/blanktemplate"
+		},
+		"conduit": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				}
+			},
+			"basePath": "/conduit"
+		},
+		"ecommercetemplate": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				}
+			},
+			"basePath": "/ecommercetemplate"
+		},
+		"petclinic": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				}
+			},
+			"basePath": "/petclinic"
+		},
+		"websitetemplate": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				}
+			},
+			"basePath": "/websitetemplate"
+		}
+	},
+	"frontends": {
+		"acmedashboard": {
+			"api": {
+				"url": "http://localhost:8080/acmedashboard/api"
+			},
+			"basePath": "/acmedashboard"
+		},
+		"addressbook": {
+			"api": {
+				"url": "http://localhost:8080/addressbook/api"
+			},
+			"basePath": "/addressbook"
+		},
+		"blanktemplate": {
+			"api": {
+				"url": "http://localhost:8080/blanktemplate/api"
+			},
+			"basePath": "/blanktemplate"
+		},
+		"conduit": {
+			"api": {
+				"url": "http://localhost:8080/conduit/api"
+			},
+			"basePath": "/conduit"
+		},
+		"ecommercetemplate": {
+			"api": {
+				"url": "http://localhost:8080/ecommercetemplate/api"
+			},
+			"basePath": "/ecommercetemplate"
+		},
+		"petclinic": {
+			"api": {
+				"url": "http://localhost:8080/petclinic/api"
+			},
+			"basePath": "/petclinic"
+		},
+		"todomvc": {
+			"basePath": "/todomvc"
+		},
+		"websitetemplate": {
+			"api": {
+				"url": "http://localhost:8080/websitetemplate/api"
+			},
+			"basePath": "/websitetemplate"
+		}
+	},
+	"httpServer": {
+		"port": 8080
+	},
 }

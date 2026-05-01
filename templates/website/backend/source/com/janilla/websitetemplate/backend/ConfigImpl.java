@@ -25,7 +25,7 @@
 package com.janilla.websitetemplate.backend;
 
 record ConfigImpl(Api api, Database database, HttpServer httpServer, Jwt jwt, Boolean liveDemo, Mail mail,
-		Upload upload) implements WebsiteBackendConfig {
+		String basePath, Upload upload) implements WebsiteBackendConfig {
 
 	record MailImpl(String host, String password, Integer port, String username) implements Mail {
 	}

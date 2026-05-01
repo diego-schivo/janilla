@@ -27,6 +27,8 @@ import java.time.Instant;
 
 import com.janilla.cms.DocumentStatus;
 
-record ApplicationImpl(Long id, String title, String slug, String frontend, String backend, Instant createdAt,
-		Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt) implements Application {
+record ApplicationImpl(String id, String title,
+//		String slug, 
+		String frontend, String backend, Instant createdAt, Instant updatedAt, DocumentStatus documentStatus,
+		Instant publishedAt) implements Application {
 }

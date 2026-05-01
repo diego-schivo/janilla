@@ -25,19 +25,19 @@ package com.janilla.janillacom.frontend;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.Frontend;
 import com.janilla.http.HttpHandler;
+import com.janilla.http.HttpRequest;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.java.Java;
-import com.janilla.web.ApplicationHandlerFactory;
 import com.janilla.web.NotFoundException;
 import com.janilla.web.WebApp;
+import com.janilla.web.WebAppHandlerFactory;
 import com.janilla.websitetemplate.frontend.WebsiteFrontend;
 
 public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
@@ -56,55 +56,46 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
 		serve(a);
 	}
 
-	protected final Map<String, Frontend<?>> frontends = new ConcurrentHashMap<>();
-
-	protected final Function<String, Frontend<?>> authorityToFrontend = authority -> {
-		IO.println("JanillaFrontend.authorityToFrontend, authority=" + authority);
-		var s = "." + config.authority();
-		var a = authority.endsWith(s)
-				? frontends.computeIfAbsent(authority.substring(0, authority.length() - s.length()), k -> {
-					IO.println("JanillaFrontend.authorityToFrontend, k=" + k);
-					var a2 = ((JanillaDataFetching) dataFetching).applications(k, null, null, null, null, null)
-							.elements().getFirst();
-					IO.println("JanillaFrontend.authorityToFrontend, a2=" + a2);
-					if (a2 != null)
-						try {
-							var c = Class.forName(a2.frontend());
-							@SuppressWarnings("unchecked")
-							var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
-							var f = new DefaultDiFactory(tt);
-							var c2 = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.frontends().get(a2.slug()))
-									.filter(x -> x != null).toArray(Map<?, ?>[]::new), f);
-							return (Frontend<?>) f.newInstance(c, Java.hashMap("config", c2, "diFactory", f));
-						} catch (ReflectiveOperationException e) {
-							throw new RuntimeException(e);
-						}
-					return this;
-				})
-				: this;
-		IO.println("JanillaFrontend.authorityToFrontend, a=" + a);
-		return a;
-	};
+	protected final Map<String, Frontend<?>> frontends;
 
 	public JanillaFrontend(JanillaFrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+		super(config, diFactory, null);
+
+		frontends = config.frontends().entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> {
+			var a = ((JanillaDataFetching) dataFetching).applications(x.getKey(), null, null, null, null, null)
+					.elements().getFirst();
+			try {
+				var c = Class.forName(a.frontend());
+				@SuppressWarnings("unchecked")
+				var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
+				var f = new DefaultDiFactory(tt);
+				var c2 = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) x.getValue()).filter(y -> y != null)
+						.toArray(Map<?, ?>[]::new), f);
+				return (Frontend<?>) f.newInstance(c,
+						Java.hashMap("config", c2, "diFactory", f, "httpClient", httpClient));
+			} catch (ReflectiveOperationException e) {
+				throw new RuntimeException(e);
+			}
+		}));
 	}
 
-	public Function<String, Frontend<?>> authorityToFrontend() {
-		return authorityToFrontend;
+	public Frontend<?> frontend(HttpRequest request) {
+		var x = frontends.get(config.appResolution().id(request));
+		return x != null ? x : this;
 	}
 
 	@Override
 	protected HttpHandler newHttpHandler() {
-		var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
+		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
-			var a = JanillaDomain.WEB_APP.get();
-			var h = a == this ? f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()))
-					: a.httpHandler();
+			var fa = (Frontend<?>) JanillaDomain.WEB_APP.get();
+//			IO.println("JanillaFrontend.newHttpHandler, fa=" + fa);
+			var h = fa == this ? f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()))
+					: fa.httpHandler();
 			if (h == null)
 				throw new NotFoundException(
 						x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
-			return ScopedValue.where(INSTANCE, a).call(() -> h.handle(x));
+			return ScopedValue.where(INSTANCE, fa).call(() -> h.handle(x));
 		};
 	}
 

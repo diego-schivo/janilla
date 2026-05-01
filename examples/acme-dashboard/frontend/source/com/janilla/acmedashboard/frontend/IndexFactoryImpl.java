@@ -45,7 +45,7 @@ class IndexFactoryImpl extends DefaultIndexFactory<FrontendConfig> {
 		Stream.of("acme-logo", "app", "breadcrumb-nav", "card-wrapper", "customers-page", "dashboard-page",
 				"dashboard-layout", "dashboard-nav", "hero-icon", "invoice-page", "invoice-status", "invoices-layout",
 				"invoices-page", "latest-invoices", "login-page", "pagination-nav", "revenue-chart", "single-card",
-				"welcome-page").forEach(x -> map.put(x, "/" + x + ".js"));
+				"welcome-page").forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	@Override

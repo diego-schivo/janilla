@@ -1,4 +1,5 @@
 {
+	"basePath": "/petclinic",
 	"database": {
 		"file": "~/janilla/sample-data/petclinic.db"
 	},

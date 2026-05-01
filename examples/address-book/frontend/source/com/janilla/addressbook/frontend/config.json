@@ -1,7 +1,8 @@
 {
 	"api": {
-		"url": "http://localhost:8081/api"
+		"url": "http://localhost:8081/addressbook/api"
 	},
+	"basePath": "/addressbook",
 	"httpServer": {
 		"port": 8080
 	},

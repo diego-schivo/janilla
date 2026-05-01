@@ -44,12 +44,15 @@ public class DirectHttpClient extends DefaultHttpClient {
 
 	@Override
 	public <R> R send(HttpRequest request, Function<HttpResponse, R> function) {
+//		IO.println("DirectHttpClient.send, " + request.getHeaderValue(":method") + " " + request.getUri());
 		var rs0 = new HttpResponse();
 		var o = new ByteArrayOutputStream();
 		try (var rs = rs0) {
 			rs.setBody(Channels.newChannel(o));
-			var ex = server.createExchange(request, rs);
-			ScopedValue.where(HttpServer.HTTP_EXCHANGE, ex).call(() -> server.handleExchange(ex));
+//			IO.println("DirectHttpClient.send, this=" + this + ", server=" + server);
+//			var ex = server.createExchange(request, rs);
+//			ScopedValue.where(HttpServer.HTTP_EXCHANGE, ex).call(() -> server.handleExchange(ex));
+			server.exchange(request, rs);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

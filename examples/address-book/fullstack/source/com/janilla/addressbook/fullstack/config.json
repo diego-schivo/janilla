@@ -1,7 +1,12 @@
 {
 	"api": {
-		"url": "/api"
+		"url": "http://localhost:8080/addressbook/api",
+		"cors": {
+			"headers": "",
+			"origin": ""
+		},
 	},
+	"basePath": "/addressbook",
 	"httpServer": {
 		"port": 8080
 	}

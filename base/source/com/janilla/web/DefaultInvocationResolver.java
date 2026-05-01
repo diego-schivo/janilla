@@ -86,13 +86,43 @@ public class DefaultInvocationResolver implements InvocationResolver {
 		}, LinkedHashMap::new));
 	}
 
+	@Override
+	public Stream<Invocation> lookup(String method, String path) {
+		var s = groups(path).map(i -> {
+			var m = i.methods().get(method);
+			if (m == null)
+				m = i.methods().get("");
+			return m != null ? new Invocation(i.object(), m, i.regexGroups()) : null;
+		}).filter(Objects::nonNull);
+		return invocationComparator != null ? s.sorted(invocationComparator) : s;
+	}
+
+	@Override
+	public Stream<InvocationGroup> groups(String path) {
+		if (path == null)
+			return Stream.empty();
+		if (groups == null)
+			initGroups();
+		var a = Optional.ofNullable(groups.get(path)).stream();
+		var b = regexGroups.entrySet().stream().map(x -> {
+			var m = x.getKey().matcher(path);
+			if (m.matches()) {
+				var ig = x.getValue();
+				var ss = IntStream.range(1, 1 + m.groupCount()).mapToObj(m::group).toArray(String[]::new);
+				return ss.length != 0 ? ig.withRegexGroups(ss) : ig;
+			}
+			return null;
+		}).filter(Objects::nonNull);
+		return Stream.concat(a, b);
+	}
+
 	record A(String m1, Method m2) {
 	}
 
 	record B(String p, Class<?> t, List<A> aa) {
 	}
 
-	synchronized void foo() {
+	synchronized void initGroups() {
 		if (groups != null)
 			return;
 		var oo = new HashMap<Class<?>, Object>();
@@ -117,36 +147,6 @@ public class DefaultInvocationResolver implements InvocationResolver {
 		regexGroups = kk.stream().sorted(Comparator.comparingInt((String x) -> x.indexOf('(')).reversed())
 				.collect(Collectors.toMap(k -> Pattern.compile(k), groups::get, (_, x) -> x, LinkedHashMap::new));
 		groups.keySet().removeAll(kk);
-//		IO.println("m=" + m + "\nx=" + x);
-	}
-
-	@Override
-	public Stream<Invocation> lookup(String method, String path) {
-		var s = groups(path).map(i -> {
-			var m = i.methods().get(method);
-			if (m == null)
-				m = i.methods().get("");
-			return m != null ? new Invocation(i.object(), m, i.regexGroups()) : null;
-		}).filter(Objects::nonNull);
-		return invocationComparator != null ? s.sorted(invocationComparator) : s;
-	}
-
-	@Override
-	public Stream<InvocationGroup> groups(String path) {
-		if (path == null)
-			return Stream.empty();
-		if (groups == null)
-			foo();
-		var a = Optional.ofNullable(groups.get(path)).stream();
-		var b = regexGroups.entrySet().stream().map(x -> {
-			var m = x.getKey().matcher(path);
-			if (m.matches()) {
-				var ig = x.getValue();
-				var ss = IntStream.range(1, 1 + m.groupCount()).mapToObj(m::group).toArray(String[]::new);
-				return ss.length != 0 ? ig.withRegexGroups(ss) : ig;
-			}
-			return null;
-		}).filter(Objects::nonNull);
-		return Stream.concat(a, b);
+//		IO.println("DefaultInvocationResolver.initGroups, groups=" + groups);
 	}
 }

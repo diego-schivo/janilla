@@ -2,64 +2,56 @@
 	"applications": [
 		{
 			"$type": "Application",
-			"id": 1,
+			"id": "todomvc",
 			"title": "TodoMVC",
-			"slug": "todomvc",
 			"frontend": "com.janilla.todomvc.frontend.TodoMvcFrontend"
 		},
 		{
 			"$type": "Application",
-			"id": 2,
+			"id": "petclinic",
 			"title": "PetClinic",
-			"slug": "petclinic",
 			"frontend": "com.janilla.petclinic.frontend.PetclinicFrontend",
 			"backend": "com.janilla.petclinic.backend.PetclinicBackend"
 		},
 		{
 			"$type": "Application",
-			"id": 3,
+			"id": "addressbook",
 			"title": "Address Book",
-			"slug": "addressbook",
 			"frontend": "com.janilla.addressbook.frontend.AddressBookFrontend",
 			"backend": "com.janilla.addressbook.backend.AddressBookBackend"
 		},
 		{
 			"$type": "Application",
-			"id": 4,
+			"id": "acmedashboard",
 			"title": "Acme Dashboard",
-			"slug": "acmedashboard",
 			"frontend": "com.janilla.acmedashboard.frontend.AcmeDashboardFrontend",
 			"backend": "com.janilla.acmedashboard.backend.AcmeDashboardBackend"
 		},
 		{
 			"$type": "Application",
-			"id": 5,
+			"id": "conduit",
 			"title": "RealWorld Conduit",
-			"slug": "conduit",
 			"frontend": "com.janilla.conduit.frontend.ConduitFrontend",
 			"backend": "com.janilla.conduit.backend.ConduitBackend"
 		},
 		{
 			"$type": "Application",
-			"id": 6,
+			"id": "blanktemplate",
 			"title": "Blank Template",
-			"slug": "blanktemplate",
 			"frontend": "com.janilla.blanktemplate.frontend.BlankFrontend",
 			"backend": "com.janilla.blanktemplate.backend.BlankBackend"
 		},
 		{
 			"$type": "Application",
-			"id": 7,
+			"id": "websitetemplate",
 			"title": "Website Template",
-			"slug": "websitetemplate",
 			"frontend": "com.janilla.websitetemplate.frontend.WebsiteFrontend",
 			"backend": "com.janilla.websitetemplate.backend.WebsiteBackend"
 		},
 		{
 			"$type": "Application",
-			"id": 8,
+			"id": "ecommercetemplate",
 			"title": "Ecommerce Template",
-			"slug": "ecommercetemplate",
 			"frontend": "com.janilla.ecommercetemplate.frontend.EcommerceFrontend",
 			"backend": "com.janilla.ecommercetemplate.backend.EcommerceBackend"
 		}

@@ -24,8 +24,8 @@
  */
 package com.janilla.blanktemplate.frontend;
 
-record ConfigImpl(Api api, Download download, HttpServer httpServer, Jwt jwt, String key, Boolean liveDemo,
-		String title) implements BlankFrontendConfig {
+record ConfigImpl(Api api, String basePath, Download download, HttpServer httpServer, Jwt jwt, String key,
+		Boolean liveDemo, String title) implements BlankFrontendConfig {
 
 	record DownloadImpl(String directory) implements Download {
 	}

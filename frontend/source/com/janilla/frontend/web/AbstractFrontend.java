@@ -31,15 +31,32 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import com.janilla.frontend.IndexFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.web.AbstractWebApp;
+import com.janilla.web.AnnotatedValue;
+import com.janilla.web.HtmlEvaluator;
+import com.janilla.web.HtmlRenderer;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.ResourceMap;
 
 public abstract class AbstractFrontend<C extends FrontendConfig> extends AbstractWebApp<C> implements Frontend<C> {
+
+	protected final HtmlEvaluator htmlEvaluator = new HtmlEvaluator() {
+
+		@Override
+		public String evaluate(AnnotatedValue input, String expression, Consumer<Object> consumer,
+				HtmlRenderer<?> renderer) {
+			var x = super.evaluate(input, expression, consumer, renderer);
+			if (x.isEmpty() && expression.equals("basePath"))
+				x = config.basePath();
+//			IO.println("expression=" + expression + ", x=" + x);
+			return x;
+		}
+	};
 
 	protected IndexFactory indexFactory;
 
@@ -49,6 +66,10 @@ public abstract class AbstractFrontend<C extends FrontendConfig> extends Abstrac
 
 	protected AbstractFrontend(C config, DiFactory diFactory) {
 		super(config, diFactory);
+	}
+
+	public HtmlEvaluator htmlEvaluator() {
+		return htmlEvaluator;
 	}
 
 	public IndexFactory indexFactory() {

@@ -73,7 +73,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 
 	@Override
 	protected void handleConnection(Transfer transfer) throws IOException {
-//		IO.println("HttpServer.handleConnection");
+//		IO.println("DefaultHttpServer.handleConnection");
 
 		var t = transfer instanceof FilterTransfer x ? x.transfer() : transfer;
 		if (t instanceof SecureTransfer st) {
@@ -81,19 +81,22 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 				if (st.read() == -1)
 					return;
 			while (st.in().position() < 16);
-//		IO.println("bb=" + new String(st.in().array(), 0, 16));
+//			IO.println("DefaultHttpServer.handleConnection, bb=" + new String(st.in().array(), 0, 16));
 
 			var p = st.engine().getApplicationProtocol();
-//		IO.println("p=" + p);
-			if (p.equals("h2"))
+//			IO.println("DefaultHttpServer.handleConnection, p=" + p);
+
+			if (p.equals("h2")) {
 				handleConnection2(t);
+				return;
+			}
 		}
 
 		handleConnection1(t);
 	}
 
 	protected void handleConnection1(Transfer transfer) throws IOException {
-//		IO.println("HttpServer.handleConnection1");
+//		IO.println("DefaultHttpServer.handleConnection1");
 		for (;;) {
 //			IO.println("st.in().position()=" + st.in().position());
 			var ll = new ArrayList<String>();
@@ -141,7 +144,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 				}
 
 				var cl = rq.getHeaderValue("Content-Length");
-//				IO.println("HttpServer.handleConnection1, cl=" + cl);
+//				IO.println("DefaultHttpServer.handleConnection1, cl=" + cl);
 				if (cl != null) {
 					var bb = new byte[Integer.parseInt(cl)];
 					for (var i = 0; i < bb.length;) {
@@ -152,7 +155,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 						transfer.in().get(bb, i, n);
 						transfer.in().compact();
 						i += n;
-//						IO.println("HttpServer.handleConnection1, i=" + i);
+//						IO.println("DefaultHttpServer.handleConnection1, i=" + i);
 					}
 					rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
 				}
@@ -195,7 +198,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 	}
 
 	protected void handleConnection2(Transfer transfer) throws IOException {
-//		IO.println("HttpServer.handleConnection2");
+//		IO.println("DefaultHttpServer.handleConnection2");
 		var st = (SecureTransfer) transfer;
 		while (st.in().position() < 24)
 			if (st.read() == -1)
@@ -225,7 +228,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 			if (f == null)
 				break;
 
-//			IO.println("HttpServer.handleConnection2, f=" + f);
+//			IO.println("DefaultHttpServer.handleConnection2, f=" + f);
 			switch (f) {
 			case DataFrame _:
 			case HeadersFrame _:
@@ -290,7 +293,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 				else
 					dbb.put(((DataFrame) f).data());
 			rq.setHeaders(hff);
-//			IO.println("HttpServer.handleStream, " + rq.getMethod() + " " + rq.getScheme() + "://" + rq.getAuthority()
+//			IO.println("DefaultHttpServer.handleStream, " + rq.getMethod() + " " + rq.getScheme() + "://" + rq.getAuthority()
 //					+ rq.getTarget());
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(dbb.array())));
 			try (var rs = new HttpResponse()) {
@@ -308,7 +311,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 
 					@Override
 					public void close() throws IOException {
-//						IO.println("HttpServer.handleStream, close");
+//						IO.println("DefaultHttpServer.handleStream, close");
 						if (closed)
 							return;
 						transfer.writeFrame(
@@ -321,7 +324,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 
 					@Override
 					public int write(ByteBuffer src) throws IOException {
-//						IO.println("HttpServer.handleStream, WritableByteChannel.write");
+//						IO.println("DefaultHttpServer.handleStream, WritableByteChannel.write");
 						if (closed)
 							throw new IOException("closed");
 						var w = written;
@@ -339,12 +342,12 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 							written += n;
 						}
 						var n = (int) (written - w);
-//						IO.println("HttpServer.handleStream, WritableByteChannel.write, n=" + n);
+//						IO.println("DefaultHttpServer.handleStream, WritableByteChannel.write, n=" + n);
 						return n;
 					}
 				});
 				exchange(rq, rs);
-//				IO.println("HttpServer.handleStream, " + rq.getMethod() + " " + rq.getScheme() + "://"
+//				IO.println("DefaultHttpServer.handleStream, " + rq.getMethod() + " " + rq.getScheme() + "://"
 //						+ rq.getAuthority() + rq.getTarget() + " " + rs.getStatus());
 			}
 		} catch (Exception e) {
@@ -352,20 +355,19 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 		}
 	}
 
-	protected void exchange(HttpRequest request, HttpResponse response) {
+	@Override
+	public void exchange(HttpRequest request, HttpResponse response) {
 		var ex = createExchange(request, response);
 		ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
 	}
 
-	@Override
-	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
+	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 		var c = diFactory != null ? diFactory.classFor(HttpExchange.class) : null;
 		return c != null ? diFactory.newInstance(c, Map.of("request", request, "response", response))
 				: new SimpleHttpExchange(request, response);
 	}
 
-	@Override
-	public boolean handleExchange(HttpExchange exchange) {
+	protected boolean handleExchange(HttpExchange exchange) {
 		if (exchange == null)
 			throw new NullPointerException();
 
@@ -383,7 +385,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 				throw y;
 			e = x;
 		}
-//		IO.println("HttpServer.handleExchange, e=" + e);
+//		IO.println("DefaultHttpServer.handleExchange, e=" + e);
 		if (e != null)
 			try {
 				if (e instanceof NotFoundException)

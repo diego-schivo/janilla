@@ -72,17 +72,18 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 			putIndexInitArgs(aa, exchange);
 			i = diFactory.newInstance(diFactory.classFor(Index.class), aa);
 		} else
-			i = new DefaultIndex(config.title(), imports(), scripts(), a, templates());
+			i = new DefaultIndex(a, imports(), config.basePath(), scripts(), templates(), config.title());
 //		IO.println("DefaultIndexFactory.newIndex, i=" + i);
 		return i;
 	}
 
 	protected void putIndexInitArgs(Map<String, Object> args, HttpExchange exchange) {
-		args.put("title", config.title());
-		args.put("imports", imports());
-		args.put("scripts", scripts());
 		args.put("app", newApp(exchange));
+		args.put("imports", imports());
+		args.put("basePath", config.basePath());
+		args.put("scripts", scripts());
 		args.put("templates", templates());
+		args.put("title", config.title());
 	}
 
 	protected App newApp(HttpExchange exchange) {
@@ -119,7 +120,7 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 
 	protected void putImports(Map<String, String> map) {
 		Stream.of("app", "intl-format", "janilla-logo", "toaster", "web-component").map(this::baseImportKey)
-				.forEach(x -> map.put(x, "/" + x + ".js"));
+				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	protected String baseImportKey(String name) {

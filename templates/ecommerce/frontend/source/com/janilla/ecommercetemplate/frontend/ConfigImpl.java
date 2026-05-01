@@ -25,5 +25,5 @@
 package com.janilla.ecommercetemplate.frontend;
 
 record ConfigImpl(Api api, Download download, HttpServer httpServer, Jwt jwt, String key, Boolean liveDemo,
-		Stripe stripe, String title) implements EcommerceFrontendConfig {
+		String basePath, Stripe stripe, String title) implements EcommerceFrontendConfig {
 }

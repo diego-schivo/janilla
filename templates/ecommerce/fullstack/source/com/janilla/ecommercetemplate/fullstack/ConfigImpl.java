@@ -25,5 +25,6 @@
 package com.janilla.ecommercetemplate.fullstack;
 
 record ConfigImpl(Api api, Database database, Download download, HttpServer httpServer, Jwt jwt, String key,
-		Boolean liveDemo, Mail mail, Stripe stripe, String title, Upload upload) implements EcommerceFullstackConfig {
+		Boolean liveDemo, Mail mail, String basePath, Stripe stripe, String title, Upload upload)
+		implements EcommerceFullstackConfig {
 }

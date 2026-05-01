@@ -2,24 +2,67 @@
 	"api": {
 		"cors": {
 			"headers": "Content-Type",
-			"origin": "http://janilla.local:8080"
+			"origin": "https://janilla.local:8443"
 		},
-		"url": "http://janilla.local:8081/api"
+		"url": "https://janilla.local:8444/api"
 	},
-	"authority": "janilla.local:8081",
+	"appResolution": "BY_AUTHORITY",
 	"backends": {
-		"petclinic": {
+		"acmedashboard": {
 			"api": {
-				"url": "http://petclinic.janilla.local:8081/api"
-			}
+				"cors": {}
+			},
+			"basePath": ""
 		},
-		"todoMvc": {}
+		"addressbook": {
+			"api": {
+				"cors": {}
+			},
+			"basePath": ""
+		},
+		"blanktemplate": {
+			"api": {
+				"cors": {}
+			},
+			"basePath": ""
+		},
+		"conduit": {
+			"api": {
+				"cors": {}
+			},
+			"basePath": ""
+		},
+		"ecommercetemplate": {
+			"api": {
+				"cors": {}
+			},
+			"basePath": ""
+		},
+		"petclinic": {
+			"basePath": ""
+		},
+		"todomvc": {
+			"basePath": ""
+		},
+		"websitetemplate": {
+			"api": {
+				"cors": {}
+			},
+			"basePath": ""
+		}
 	},
+	"basePath": "",
 	"database": {
 		"file": "~/janilla/sample-data/janilla-com.db"
 	},
 	"httpServer": {
-		"port": 8081
+		"keyStore": {
+			"commonName": "*.janilla.local",
+			"password": "password",
+			"path": "~/janilla/janilla.local",
+			"subjectAlternativeName": "dns:janilla.local,ip:127.0.0.1,dns:acmedashboard.janilla.local,dns:addressbook.janilla.local,dns:blanktemplate.janilla.local,dns:conduit.janilla.local,dns:ecommercetemplate.janilla.local,dns:petclinic.janilla.local,dns:todomvc.janilla.local,dns:websitetemplate.janilla.local"
+		},
+		"port": 8444
 	},
 	"jwt": {
 		"cookie": "janilla-token",

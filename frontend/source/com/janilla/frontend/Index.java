@@ -33,15 +33,17 @@ import com.janilla.web.Render;
 @Render(template = "index", resource = { "/base/index.html", "/index.html" })
 public interface Index {
 
-	String title();
+	@Render(template = "app")
+	App app();
+
+	String basePath();
 
 	@Render(renderer = JsonRenderer.class)
 	Map<String, String> imports();
 
 	List<@Render(template = "script") Script> scripts();
 
-	@Render(template = "app")
-	App app();
-
 	List<@Render(template = "template") Template> templates();
+
+	String title();
 }

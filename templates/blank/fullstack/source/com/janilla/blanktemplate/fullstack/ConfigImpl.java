@@ -24,6 +24,6 @@
  */
 package com.janilla.blanktemplate.fullstack;
 
-record ConfigImpl(Api api, Database database, Download download, HttpServer httpServer, Jwt jwt, String key,
-		Boolean liveDemo, String title, Upload upload) implements BlankFullstackConfig {
+record ConfigImpl(Api api, String basePath, Database database, Download download, HttpServer httpServer, Jwt jwt,
+		String key, Boolean liveDemo, String title, Upload upload) implements BlankFullstackConfig {
 }

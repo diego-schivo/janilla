@@ -65,7 +65,8 @@ public class PetclinicFrontend extends AbstractFrontend<FrontendConfig> {
 
 	protected VisitApi visitApi;
 
-	public PetclinicFrontend(FrontendConfig config, DiFactory diFactory) {
+	public PetclinicFrontend(FrontendConfig config, DiFactory diFactory, HttpClient httpClient) {
+		this.httpClient = httpClient;
 		super(config, diFactory);
 	}
 
@@ -95,7 +96,8 @@ public class PetclinicFrontend extends AbstractFrontend<FrontendConfig> {
 
 	@Override
 	protected InvocationResolver newInvocationResolver() {
-		httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
+		if (httpClient == null)
+			httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
 		ownerApi = diFactory.newInstance(diFactory.classFor(OwnerApi.class));
 		petApi = diFactory.newInstance(diFactory.classFor(PetApi.class));
 		petTypeApi = diFactory.newInstance(diFactory.classFor(PetTypeApi.class));

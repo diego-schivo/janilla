@@ -16,24 +16,29 @@
 package com.janilla.petclinic.frontend;
 
 import com.janilla.http.HttpExchange;
+import com.janilla.http.HttpHandlerFactory;
+import com.janilla.ioc.DiFactory;
+import com.janilla.web.DefaultTemplateHandlerFactory;
 import com.janilla.web.Renderable;
 import com.janilla.web.RenderableFactory;
-import com.janilla.web.TemplateHandlerFactory;
+import com.janilla.web.WebAppConfig;
 
 /**
  * @author Diego Schivo
  */
-class CustomTemplateHandlerFactory extends TemplateHandlerFactory {
+class CustomTemplateHandlerFactory extends DefaultTemplateHandlerFactory {
 
 	protected final RenderableFactory renderableFactory;
 
-	public CustomTemplateHandlerFactory(RenderableFactory renderableFactory) {
+	public CustomTemplateHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
+			RenderableFactory renderableFactory) {
+		super(config, rootFactory, diFactory);
 		this.renderableFactory = renderableFactory;
 	}
 
 	@Override
 	protected void render(Renderable<?> input, HttpExchange exchange) {
-		var l = new Layout(input);
+		var l = new Layout(input, config.basePath());
 		var r = renderableFactory.createRenderable(null, l);
 		super.render(r, exchange);
 	}

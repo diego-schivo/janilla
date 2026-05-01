@@ -38,10 +38,10 @@ import com.janilla.http.HttpHandler;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
-import com.janilla.web.ApplicationHandlerFactory;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
 import com.janilla.web.WebApp;
+import com.janilla.web.WebAppHandlerFactory;
 
 public class AcmeDashboardTest extends AbstractFrontend<FrontendConfig> {
 
@@ -84,7 +84,7 @@ public class AcmeDashboardTest extends AbstractFrontend<FrontendConfig> {
 
 	@Override
 	protected HttpHandler newHttpHandler() {
-		var f = diFactory.newInstance(diFactory.classFor(ApplicationHandlerFactory.class));
+		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
 			var h = Test.ONGOING.get() && !x.request().getPath().startsWith("/test/") ? fullstack.httpHandler()
 					: (HttpHandler) x2 -> {

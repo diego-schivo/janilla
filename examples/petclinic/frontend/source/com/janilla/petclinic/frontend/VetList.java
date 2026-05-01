@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.janilla.petclinic.Specialty;
 import com.janilla.petclinic.Vet;
+import com.janilla.web.HtmlEvaluator;
 import com.janilla.web.HtmlRenderer;
 import com.janilla.web.Render;
 
@@ -31,6 +32,10 @@ record VetList(List<Result> results, Paginator paginator) {
 	}
 
 	public static class SpecialtiesRenderer extends HtmlRenderer<List<Specialty>> {
+
+		public SpecialtiesRenderer(HtmlEvaluator htmlEvaluator) {
+			super(htmlEvaluator);
+		}
 
 		@Override
 		public String apply(List<Specialty> value) {

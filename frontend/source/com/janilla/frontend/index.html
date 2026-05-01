@@ -4,14 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${title}</title>
-    <link rel="icon" href="/images/favicon.svg" />
-    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="${basePath}/style.css" />
     <script type="importmap">
       {
         "imports": <!--${imports}-->
       }
     </script>
-    <script type="module" src="/script.js"></script>
+    <script type="module" src="${basePath}/script.js"></script>
     <!--${scripts}-->
   </head>
   <body>
@@ -25,7 +24,7 @@
 </ssr-template>
 
 <ssr-template id="app">
-  <app-element data-api-url="${apiUrl}">
+  <app-element data-api-url="${apiUrl}" data-base-path="${basePath}">
     <script type="application/json">
       <!--${state}-->
     </script>

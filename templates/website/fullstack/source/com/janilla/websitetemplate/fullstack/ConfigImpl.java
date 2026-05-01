@@ -25,5 +25,5 @@
 package com.janilla.websitetemplate.fullstack;
 
 record ConfigImpl(Api api, Database database, Download download, HttpServer httpServer, Jwt jwt, String key,
-		Boolean liveDemo, Mail mail, String title, Upload upload) implements WebsiteFullstackConfig {
+		Boolean liveDemo, Mail mail, String basePath, String title, Upload upload) implements WebsiteFullstackConfig {
 }
