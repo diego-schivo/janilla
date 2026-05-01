@@ -38,7 +38,10 @@ import com.janilla.web.WebApp;
 public class AcmeDashboardFullstack extends AbstractFullstack<FullstackConfig> {
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.fullstack.web"),
+		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
+				Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.frontend", _ -> true),
+				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
 				Java.getPackageTypes("com.janilla.acmedashboard.fullstack")).flatMap(x -> x);
 	};
 

@@ -32,6 +32,8 @@ import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
+import com.janilla.websitetemplate.backend.WebsiteBackend;
+import com.janilla.websitetemplate.frontend.WebsiteFrontend;
 import com.janilla.websitetemplate.fullstack.WebsiteFullstack;
 
 public class WebsiteTest extends BlankTest {
@@ -44,7 +46,8 @@ public class WebsiteTest extends BlankTest {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { WebsiteTest.class }, args.length != 0 ? args[0] : null, f);
+		var c = newConfig(new Class<?>[] { WebsiteBackend.class, WebsiteFrontend.class, WebsiteFullstack.class,
+				WebsiteTest.class }, args.length != 0 ? args[0] : null, f);
 		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
 		serve(a);
 	}

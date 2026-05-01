@@ -94,7 +94,9 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 
 	protected static WebAppConfig newConfig(Map<?, ?>[] maps, DiFactory factory) {
 		var m = Arrays.stream(maps).flatMap(x -> x.entrySet().stream()).filter(x -> x.getValue() != null)
-				.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue(), (_, x) -> x, LinkedHashMap::new));
+				.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue(), (Object x, Object y) -> foo(x, y),
+						LinkedHashMap::new));
+//		IO.println("AbstractWebApp.newConfig, m=" + m);
 
 		return new DefaultConverter(new TypeResolver() {
 
@@ -113,6 +115,13 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 				throw new UnsupportedOperationException();
 			}
 		}).convert(m, factory.classFor(WebAppConfig.class));
+	}
+
+	protected static Object foo(Object o1, Object o2) {
+		return (o1 instanceof Map<?, ?> m1 && o2 instanceof Map<?, ?> m2) ? Stream.of(m1, m2)
+				.flatMap(x -> x.entrySet().stream()).filter(x -> x.getValue() != null).collect(Collectors.toMap(
+						x -> x.getKey(), x -> x.getValue(), (Object x, Object y) -> foo(x, y), LinkedHashMap::new))
+				: o2 != null ? o2 : o1;
 	}
 
 	protected static void serve(WebApp<?> app) {
@@ -168,7 +177,7 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 	protected final TypeResolver typeResolver;
 
 	protected AbstractWebApp(C config, DiFactory diFactory) {
-		IO.println("AbstractWebApp, this=" + this + ", config=" + config);
+//		IO.println("AbstractWebApp, this=" + this + ", config=" + config);
 		this.config = config;
 		this.diFactory = diFactory;
 		diFactory.context(this);

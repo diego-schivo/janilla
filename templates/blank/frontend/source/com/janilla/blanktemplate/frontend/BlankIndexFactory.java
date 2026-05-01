@@ -55,7 +55,7 @@ public class BlankIndexFactory<C extends BlankFrontendConfig> extends CmsIndexFa
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
 		Stream.of("app", "lucide-icon", "not-found", "page").map(this::blankImportKey)
-				.forEach(x -> map.put(x, "/" + x + ".js"));
+				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	protected String blankImportKey(String name) {

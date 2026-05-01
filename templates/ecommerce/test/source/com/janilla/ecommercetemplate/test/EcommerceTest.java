@@ -26,6 +26,8 @@ package com.janilla.ecommercetemplate.test;
 
 import java.util.stream.Stream;
 
+import com.janilla.ecommercetemplate.backend.EcommerceBackend;
+import com.janilla.ecommercetemplate.frontend.EcommerceFrontend;
 import com.janilla.ecommercetemplate.fullstack.EcommerceFullstack;
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DefaultDiFactory;
@@ -44,7 +46,8 @@ public class EcommerceTest extends WebsiteTest {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { EcommerceTest.class }, args.length != 0 ? args[0] : null, f);
+		var c = newConfig(new Class<?>[] { EcommerceBackend.class, EcommerceFrontend.class, EcommerceFullstack.class,
+				EcommerceTest.class }, args.length != 0 ? args[0] : null, f);
 		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
 		serve(a);
 	}

@@ -24,15 +24,22 @@
  */
 package com.janilla.blanktemplate.test;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Stream;
 
+import com.janilla.blanktemplate.backend.BlankBackend;
+import com.janilla.blanktemplate.frontend.BlankFrontend;
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.HttpHandler;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
+import com.janilla.web.NotFoundException;
 import com.janilla.web.WebApp;
+import com.janilla.web.WebAppHandlerFactory;
 
 public class BlankTest extends AbstractFrontend<FrontendConfig> {
 
@@ -46,7 +53,9 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { BlankTest.class }, args.length != 0 ? args[0] : null, f);
+		var c = newConfig(
+				new Class<?>[] { BlankBackend.class, BlankFrontend.class, BlankFullstack.class, BlankTest.class },
+				args.length != 0 ? args[0] : null, f);
 		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
 		serve(a);
 	}
@@ -64,7 +73,8 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
-			var c = newConfig(cc, null, f);
+			var c = newConfig(Stream.concat(Arrays.stream(cc), Stream.of(getClass())).toArray(Class<?>[]::new), null,
+					f);
 			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
 		}
 	}
@@ -76,6 +86,23 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 	protected Stream<Class<?>> diFullstackTypes() {
 		return BlankFullstack.diTypes();
 	};
+
+	@Override
+	protected HttpHandler newHttpHandler() {
+		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
+		return x -> {
+			var h = WebHandling.TEST_ONGOING.get() && !x.request().getPath().startsWith("/test/")
+					? fullstack.httpHandler()
+					: (HttpHandler) x2 -> {
+						var h2 = f.createHandler(Objects.requireNonNullElse(x2.exception(), x2.request()));
+						if (h2 == null)
+							throw new NotFoundException(x2.request().getHeaderValue(":method") + " "
+									+ x2.request().getHeaderValue(":path"));
+						return h2.handle(x2);
+					};
+			return h.handle(x);
+		};
+	}
 
 	@Override
 	protected void putResourcePrefixes() {

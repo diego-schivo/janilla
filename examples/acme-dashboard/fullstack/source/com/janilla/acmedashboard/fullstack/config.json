@@ -2,6 +2,7 @@
 	"api": {
 		"url": "/api"
 	},
+	"basePath": "",
 	"httpServer": {
 		"port": 8080
 	}

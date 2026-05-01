@@ -49,7 +49,7 @@ class IndexFactoryImpl extends DefaultIndexFactory<FrontendConfig> {
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
 		Stream.of("about", "app", "contact", "edit-contact", "home", "sidebar-layout", "toggle-favorite")
-				.forEach(x -> map.put(x, "/" + x + ".js"));
+				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	@Override

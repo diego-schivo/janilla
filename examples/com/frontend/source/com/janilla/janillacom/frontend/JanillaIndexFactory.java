@@ -51,7 +51,8 @@ public class JanillaIndexFactory extends WebsiteIndexFactory<JanillaFrontendConf
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
-		Stream.of("header", "link", "post").map(this::janillaImportKey).forEach(x -> map.put(x, "/" + x + ".js"));
+		Stream.of("header", "link", "post").map(this::janillaImportKey)
+				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	protected String janillaImportKey(String name) {

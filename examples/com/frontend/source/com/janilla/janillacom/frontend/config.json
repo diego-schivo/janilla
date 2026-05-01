@@ -1,8 +1,8 @@
 {
 	"api": {
-		"url": "https://janilla.local:8444/api"
+		"url": "http://localhost:8081/api"
 	},
-	"appResolution": "BY_AUTHORITY",
+	"appResolution": "BY_PATH",
 	"basePath": "",
 	"download": {
 		"directory": "~/janilla/download"
@@ -10,28 +10,22 @@
 	"frontends": {
 		"addressbook": {
 			"api": {
-				"url": "https://addressbook.janilla.local:8444/api"
+				"url": "http://localhost:8081/addressbook/api"
 			},
-			"basePath": ""
+			"basePath": "/addressbook"
 		},
 		"petclinic": {
 			"api": {
-				"url": "https://petclinic.janilla.local:8444/api"
+				"url": "http://localhost:8081/petclinic/api"
 			},
-			"basePath": ""
+			"basePath": "/petclinic"
 		},
 		"todomvc": {
-			"basePath": ""
+			"basePath": "/todomvc"
 		}
 	},
 	"httpServer": {
-		"keyStore": {
-			"commonName": "*.janilla.local",
-			"password": "password",
-			"path": "~/janilla/janilla.local",
-			"subjectAlternativeName": "dns:janilla.local,ip:127.0.0.1,dns:acmedashboard.janilla.local,dns:addressbook.janilla.local,dns:blanktemplate.janilla.local,dns:conduit.janilla.local,dns:ecommercetemplate.janilla.local,dns:petclinic.janilla.local,dns:todomvc.janilla.local,dns:websitetemplate.janilla.local"
-		},
-		"port": 8443
+		"port": 8080
 	},
 	"jwt": {
 		"cookie": "janilla-token",

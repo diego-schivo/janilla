@@ -45,6 +45,7 @@ class IndexFactoryImpl extends DefaultIndexFactory<FrontendConfig> {
 		super.putImports(map);
 		Stream.of("app", "article", "article-preview", "articles", "comments", "editor", "errors", "favorite-button",
 				"follow-button", "home", "login", "nav-link", "page-display", "pagination-nav", "popular-tags",
-				"profile", "register", "settings", "tags-input").forEach(x -> map.put(x, "/" + x + ".js"));
+				"profile", "register", "settings", "tags-input")
+				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 }

@@ -1,8 +1,5 @@
 {
 	"database": {
 		"file": "~/janilla/sample-data/conduit-test.db"
-	},
-	"httpServer": {
-		"port": 8080
 	}
 }

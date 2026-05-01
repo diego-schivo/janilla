@@ -66,7 +66,7 @@ public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends We
 				"find-order", "footer", "header", "intl-format", "loading-spinner", "login", "logout", "message",
 				"mobile-menu", "order", "order-item", "orders", "payment", "price", "product", "product-description",
 				"product-gallery", "product-item", "select", "shop", "variant-selector").map(this::ecommerceImportKey)
-				.forEach(x -> map.put(x, "/" + x + ".js"));
+				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	@Override

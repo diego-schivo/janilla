@@ -76,7 +76,7 @@ public abstract class CmsIndexFactory<C extends FrontendConfig> extends DefaultI
 				"admin-page-controls", "admin-pagination", "admin-password", "admin-per-page", "admin-radio-group",
 				"admin-relationship", "admin-rich-text", "admin-search-bar", "admin-search-filter", "admin-select",
 				"admin-slug", "admin-tabs", "admin-text", "admin-unauthorized", "admin-upload", "admin-version",
-				"admin-versions").map(this::cmsImportKey).forEach(x -> map.put(x, "/" + x + ".js"));
+				"admin-versions").map(this::cmsImportKey).forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	protected String cmsImportKey(String name) {

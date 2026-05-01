@@ -66,7 +66,7 @@ class CustomerApi {
 	public record Customer2(@Flat Customer customer, Long invoiceCount, BigDecimal pendingAmount,
 			BigDecimal paidAmount) {
 
-		public static Customer2 of(Customer customer, InvoiceCrud invoiceCrud) {
+		static Customer2 of(Customer customer, InvoiceCrud invoiceCrud) {
 			return new Customer2(customer, invoiceCrud.count("customer", new Object[] { customer.id() }),
 					invoiceCrud.getAmount(customer.id(), InvoiceStatus.PENDING),
 					invoiceCrud.getAmount(customer.id(), InvoiceStatus.PAID));

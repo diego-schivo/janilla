@@ -40,7 +40,8 @@ public class EcommerceFullstack<C extends EcommerceFullstackConfig> extends Webs
 			EcommerceFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(WebsiteFullstack.diTypes(), Java.getPackageTypes("com.janilla.ecommercetemplate.backend"),
+		return Stream.of(WebsiteFullstack.diTypes(), Java.getPackageTypes("com.janilla.ecommercetemplate"),
+				Java.getPackageTypes("com.janilla.ecommercetemplate.backend"),
 				Java.getPackageTypes("com.janilla.ecommercetemplate.frontend"),
 				Java.getPackageTypes("com.janilla.ecommercetemplate.fullstack")).flatMap(x -> x);
 	};

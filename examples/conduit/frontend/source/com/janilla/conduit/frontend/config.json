@@ -2,6 +2,7 @@
 	"api": {
 		"url": "http://localhost:8081/api"
 	},
+	"basePath": "",
 	"httpServer": {
 		"port": 8080
 	},

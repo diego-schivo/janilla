@@ -39,13 +39,13 @@ import com.janilla.http.HttpResponse;
 import com.janilla.ioc.Context;
 
 @Context("fullstack")
-public class CustomHttpServer extends DefaultHttpServer {
+class HttpServerImpl extends DefaultHttpServer {
 
 	protected final AcmeDashboardBackend backend;
 
 	protected final AcmeDashboardFrontend frontend;
 
-	public CustomHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
+	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
 			AcmeDashboardBackend backend, AcmeDashboardFrontend frontend) {
 		super(endpoint, sslContext, handler);
 		this.backend = backend;

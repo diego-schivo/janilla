@@ -57,7 +57,8 @@ public class AddressBookTest extends AbstractFrontend<FrontendConfig> {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { AddressBookTest.class }, args.length != 0 ? args[0] : null, f);
+		var c = newConfig(new Class<?>[] { AddressBookBackend.class, AddressBookFrontend.class,
+				AddressBookFullstack.class, AddressBookTest.class }, args.length != 0 ? args[0] : null, f);
 		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
 		serve(a);
 	}

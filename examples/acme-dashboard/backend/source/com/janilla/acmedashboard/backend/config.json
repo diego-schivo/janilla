@@ -5,6 +5,7 @@
 			"origin": "http://localhost:8080"
 		}
 	},
+	"basePath": "",
 	"database": {
 		"file": "~/janilla/sample-data/acme-dashboard.db"
 	},

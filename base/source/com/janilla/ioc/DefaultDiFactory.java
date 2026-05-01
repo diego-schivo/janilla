@@ -143,7 +143,7 @@ public class DefaultDiFactory implements DiFactory {
 				var p = context != null ? JavaReflect.property(context.getClass(), x.getName()) : null;
 				if (p != null)
 					return p.get(context);
-				return x.getType().isAssignableFrom(context.getClass()) ? context : null;
+				return context != null && x.getType().isAssignableFrom(context.getClass()) ? context : null;
 			}).toArray();
 			var n = (int) Arrays.stream(aa).filter(Objects::nonNull).count();
 			var f = Arrays.stream(aa).anyMatch(x -> x instanceof DiFactory);

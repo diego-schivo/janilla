@@ -72,7 +72,7 @@ public class WebsiteIndexFactory<C extends WebsiteFrontendConfig> extends BlankI
 		Stream.of("admin", "admin-bar", "admin-create-first-user", "admin-dashboard", "app", "archive", "banner",
 				"call-to-action", "card", "content", "footer", "form-block", "header", "hero", "intl-format", "link",
 				"media-block", "not-found", "page", "post", "posts", "rich-text", "search", "theme-selector")
-				.map(this::websiteImportKey).forEach(x -> map.put(x, "/" + x + ".js"));
+				.map(this::websiteImportKey).forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	@Override

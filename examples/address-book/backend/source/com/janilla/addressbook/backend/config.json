@@ -5,7 +5,7 @@
 			"origin": "http://localhost:8080"
 		}
 	},
-	"basePath": "/addressbook",
+	"basePath": "",
 	"database": {
 		"file": "~/janilla/sample-data/address-book.db"
 	},

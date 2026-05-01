@@ -62,13 +62,8 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 	public JanillaBackend(JanillaBackendConfig config, DiFactory diFactory) {
 		super(config, diFactory);
 
-		backends = config.backends().keySet().stream()
-//			.map(x -> {
-//			var c = persistence.crud(Application.class);
-//			return c.read(c.find("slug", new Object[] { x }));
-//		})
-				.map(persistence.crud(Application.class)::read).filter(x -> x.backend() != null)
-				.collect(Collectors.toMap(Application::id, a -> {
+		backends = config.backends().keySet().stream().map(persistence.crud(Application.class)::read)
+				.filter(x -> x.backend() != null).collect(Collectors.toMap(Application::id, a -> {
 					try {
 						var c = Class.forName(a.backend());
 						@SuppressWarnings("unchecked")
@@ -83,9 +78,6 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 				}));
 	}
 
-//	public Function<String, Backend<?>> authorityToBackend() {
-//		return authorityToBackend;
-//	}
 	public Backend<?> backend(HttpRequest request) {
 		var x = backends.get(config.appResolution().id(request));
 		return x != null ? x : this;

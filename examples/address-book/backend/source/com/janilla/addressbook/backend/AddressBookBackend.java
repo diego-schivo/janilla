@@ -39,7 +39,8 @@ public class AddressBookBackend extends AbstractBackend<BackendConfig> {
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
-				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.web"),
+				Java.getPackageTypes("com.janilla.backend", x -> !x.endsWith(".cms")),
 				Java.getPackageTypes("com.janilla.addressbook.backend")).flatMap(x -> x);
 	};
 

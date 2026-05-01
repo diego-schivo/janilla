@@ -55,7 +55,8 @@ public class AcmeDashboardTest extends AbstractFrontend<FrontendConfig> {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { AcmeDashboardTest.class }, args.length != 0 ? args[0] : null, f);
+		var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class, AcmeDashboardFrontend.class,
+				AcmeDashboardFullstack.class, AcmeDashboardTest.class }, args.length != 0 ? args[0] : null, f);
 		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
 		serve(a);
 	}

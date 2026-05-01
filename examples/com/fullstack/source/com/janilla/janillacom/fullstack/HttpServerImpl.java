@@ -135,8 +135,7 @@ class HttpServerImpl extends DefaultHttpServer {
 		var a = request.getHeaderValue(":authority");
 		if (a == null)
 			a = request.getHeaderValue("Host");
-		var wa = request.getPath().startsWith(backend.config().basePath() + "/api/") ? backend.backend(request)
-				: frontend.frontend(request);
+		var wa = request.getPath().contains("/api/") ? backend.backend(request) : frontend.frontend(request);
 //		IO.println("HttpServerImpl.exchange, a=" + a + ", wa=" + wa);
 		ScopedValue.where(JanillaDomain.WEB_APP, wa).run(() -> super.exchange(request, response));
 	}

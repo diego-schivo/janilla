@@ -6,6 +6,7 @@
 		},
 		"url": "http://localhost:8081/api"
 	},
+	"basePath": "",
 	"database": {
 		"file": "~/janilla/sample-data/website-template.db"
 	},

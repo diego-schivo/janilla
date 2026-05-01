@@ -51,7 +51,8 @@ public class ConduitTest extends AbstractFrontend<FrontendConfig> {
 		IO.println(ProcessHandle.current().pid());
 
 		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { ConduitTest.class }, args.length != 0 ? args[0] : null, f);
+		var c = newConfig(new Class<?>[] { ConduitBackend.class, ConduitFrontend.class, ConduitFullstack.class,
+				ConduitTest.class }, args.length != 0 ? args[0] : null, f);
 		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
 		serve(a);
 	}

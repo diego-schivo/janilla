@@ -30,6 +30,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.janillacom.backend.JanillaBackend;
@@ -94,5 +95,13 @@ public class JanillaFullstack extends WebsiteFullstack<JanillaFullstackConfig> {
 		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
 				Java.getPackageTypes("com.janilla.websitetemplate.fullstack"),
 				Java.getPackageTypes("com.janilla.janillacom.fullstack")).flatMap(x -> x);
+	}
+
+	@Override
+	protected WebApp<?> webApp(HttpExchange exchange) {
+		var p = exchange.request().getPath();
+		var a = p.contains("/api/") ? backend : frontend;
+//		IO.println("AbstractFullstack.newHttpHandler, p=" + p + ", a=" + a);
+		return a;
 	}
 }
