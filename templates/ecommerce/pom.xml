@@ -68,6 +68,6 @@
 		<connection>scm:git:git://github.com/diego-schivo/janilla-ecommerce-template.git</connection>
 		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla-ecommerce-template.git</developerConnection>
 		<url>https://github.com/diego-schivo/janilla-ecommerce-template</url>
-		<tag>HEAD</tag>
+		<tag>janilla-13.0.0</tag>
 	</scm>
 </project>
