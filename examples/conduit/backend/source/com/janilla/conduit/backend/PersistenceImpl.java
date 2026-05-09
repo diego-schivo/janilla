@@ -29,15 +29,13 @@ import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
-import com.janilla.java.Converter;
+import com.janilla.ioc.DiFactory;
 import com.janilla.persistence.Entity;
 
 class PersistenceImpl extends DefaultPersistence {
 
-	public PersistenceImpl(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver,
-			Converter converter) {
-		super(database, storables, converter);
+	public PersistenceImpl(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory) {
+		super(database, storables, diFactory);
 	}
 
 	@Override

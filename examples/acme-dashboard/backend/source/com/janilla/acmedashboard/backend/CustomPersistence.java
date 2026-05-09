@@ -30,15 +30,13 @@ import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
-import com.janilla.java.Converter;
+import com.janilla.ioc.DiFactory;
 import com.janilla.persistence.Entity;
 
 class CustomPersistence extends DefaultPersistence {
 
-	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver,
-			Converter converter) {
-		super(database, storables, converter);
+	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory) {
+		super(database, storables, diFactory);
 	}
 
 	@Override

@@ -29,7 +29,7 @@ import com.janilla.petclinic.Specialty;
 class SpecialtyCrud extends DefaultCrud<Long, Specialty> {
 
 	public SpecialtyCrud(Persistence persistence) {
-		super(Specialty.class, null, persistence);
+		super(Specialty.class, null, null, null, persistence);
 	}
 
 	protected Map<Long, Supplier<Specialty>> readCache = new ConcurrentHashMap<>();

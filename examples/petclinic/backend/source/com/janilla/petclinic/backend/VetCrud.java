@@ -41,7 +41,7 @@ class VetCrud extends DefaultCrud<Long, Vet> {
 	Map<List<?>, Supplier<ListPortion<Long>>> listCache2 = new ConcurrentHashMap<>();
 
 	public VetCrud(Persistence persistence) {
-		super(Vet.class, null, persistence);
+		super(Vet.class, null, null, null, persistence);
 	}
 
 	@Override

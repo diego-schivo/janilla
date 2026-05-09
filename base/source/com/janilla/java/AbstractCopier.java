@@ -22,16 +22,32 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.ioc;
+package com.janilla.java;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE })
-public @interface Context {
+public abstract class AbstractCopier implements Copier {
 
-	String[] value();
+	private static final Logger LOGGER = System.getLogger(AbstractCopier.class.getName());
+
+	@Override
+	public <T> T copy(Object source, T destination, Predicate<String> filter) {
+		LOGGER.log(Level.DEBUG, "source={0}, destination={1}", source, destination);
+
+		if (source instanceof Map<?, ?> m)
+			return copy(x -> m.containsKey(x) ? Optional.ofNullable(m.get(x)) : null, destination, filter);
+
+		var c = source.getClass();
+		return copy(x -> {
+			var p = JavaReflect.property(c, x);
+			return p != null ? Optional.ofNullable(p.get(source)) : null;
+		}, destination, filter);
+	}
+
+	protected abstract <T> T copy(Function<String, Optional<Object>> source, T destination, Predicate<String> filter);
 }

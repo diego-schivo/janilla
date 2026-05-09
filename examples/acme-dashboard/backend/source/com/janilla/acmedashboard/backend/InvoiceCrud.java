@@ -38,7 +38,7 @@ import com.janilla.backend.persistence.Persistence;
 class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
 
 	public InvoiceCrud(Persistence persistence) {
-		super(Invoice.class, persistence.idConverter(Invoice.class), persistence);
+		super(Invoice.class, persistence.idHelper(Invoice.class), null, null, persistence);
 	}
 
 	public BigDecimal getAmount(InvoiceStatus status) {

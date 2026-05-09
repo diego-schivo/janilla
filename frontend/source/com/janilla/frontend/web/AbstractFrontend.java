@@ -48,9 +48,9 @@ public abstract class AbstractFrontend<C extends FrontendConfig> extends Abstrac
 	protected final HtmlEvaluator htmlEvaluator = new HtmlEvaluator() {
 
 		@Override
-		public String evaluate(AnnotatedValue input, String expression, Consumer<Object> consumer,
+		public String evaluate(AnnotatedValue input, String expression, Consumer<Object> context,
 				HtmlRenderer<?> renderer) {
-			var x = super.evaluate(input, expression, consumer, renderer);
+			var x = super.evaluate(input, expression, context, renderer);
 			if (x.isEmpty() && expression.equals("basePath"))
 				x = config.basePath();
 //			IO.println("expression=" + expression + ", x=" + x);
@@ -64,8 +64,8 @@ public abstract class AbstractFrontend<C extends FrontendConfig> extends Abstrac
 
 	protected Map<String, String> resourcePrefixes;
 
-	protected AbstractFrontend(C config, DiFactory diFactory) {
-		super(config, diFactory);
+	protected AbstractFrontend(C config, DiFactory diFactory, Consumer<Object> consumer) {
+		super(config, diFactory, consumer);
 	}
 
 	public HtmlEvaluator htmlEvaluator() {

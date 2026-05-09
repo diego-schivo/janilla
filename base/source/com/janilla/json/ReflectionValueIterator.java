@@ -24,6 +24,8 @@
  */
 package com.janilla.json;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Base64;
@@ -37,6 +39,8 @@ import com.janilla.java.JavaReflect;
 import com.janilla.java.Property;
 
 public class ReflectionValueIterator extends ValueIterator {
+
+	private static final Logger LOGGER = System.getLogger(ReflectionValueIterator.class.getName());
 
 	public ReflectionValueIterator(TokenIterationContext context, Object object) {
 		super(context, object);
@@ -65,7 +69,8 @@ public class ReflectionValueIterator extends ValueIterator {
 	}
 
 	protected Stream<Map.Entry<String, Object>> entries(Class<?> type) {
-//		IO.println("ReflectionValueIterator.entries, type=" + type);
+		LOGGER.log(Level.DEBUG, "type={0}", type);
+
 		var ee = type.isEnum() ? Stream.of(Map.entry("name", (Object) ((Enum<?>) value).name()))
 				: JavaReflect.properties(type).filter(this::includeEntry).map(x -> {
 //					IO.println("ReflectionValueIterator.entries, x=" + x + ", value=" + value);

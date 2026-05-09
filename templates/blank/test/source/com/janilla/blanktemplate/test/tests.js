@@ -44,7 +44,7 @@ const foo = async content => {
     await delay();
     (await untilElement("a", "Users")(b)).click();
     await delay();
-    (await untilElement("a", "1")(b)).click();
+    (await untilElement("a", "demo-author@janilla.com")(b)).click();
     await delay();
 
     {

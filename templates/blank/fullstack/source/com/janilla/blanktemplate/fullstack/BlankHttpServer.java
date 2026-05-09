@@ -36,10 +36,10 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.ioc.Context;
+import com.janilla.ioc.Scope;
 import com.janilla.ioc.DiFactory;
 
-@Context("fullstack")
+@Scope("fullstack")
 public class BlankHttpServer extends DefaultHttpServer {
 
 	protected final BlankBackend<?> backend;

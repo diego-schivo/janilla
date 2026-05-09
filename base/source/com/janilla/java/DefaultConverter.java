@@ -24,8 +24,9 @@
  */
 package com.janilla.java;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -50,6 +51,8 @@ import com.janilla.ioc.DiFactory;
 
 public class DefaultConverter implements Converter {
 
+	private static final Logger LOGGER = System.getLogger(DefaultConverter.class.getName());
+
 	protected final TypeResolver typeResolver;
 
 	protected final DiFactory diFactory;
@@ -63,6 +66,8 @@ public class DefaultConverter implements Converter {
 	}
 
 	public DefaultConverter(TypeResolver typeResolver, DiFactory diFactory) {
+		LOGGER.log(Level.DEBUG, "typeResolver={0}, diFactory={1}", typeResolver, diFactory);
+
 		this.typeResolver = typeResolver;
 		this.diFactory = diFactory;
 	}
@@ -75,9 +80,15 @@ public class DefaultConverter implements Converter {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T convert(Object object, Type target) {
-//		IO.println("DefaultConverter.convert, object=" + object + ", target=" + target);
-//		IO.println(Json.format(object));
-		var c = Java.toClass(target);
+		LOGGER.log(Level.DEBUG, "object={0}, target={1}", object, target);
+
+		// IO.println(Json.format(object));
+//		var c = Java.toClass(target);
+		var c1 = Java.toClass(target);
+		var c2 = diFactory != null && !c1.getPackageName().startsWith("java.") ? diFactory.classFor(c1) : c1;
+		LOGGER.log(Level.DEBUG, "c1={0}, c2={1}", c1, c2);
+		var c = c2 != null ? c2 : c1;
+
 		T t;
 		if (object == null || (object instanceof String x && x.isEmpty())) {
 			if (c == Boolean.TYPE)
@@ -196,33 +207,35 @@ public class DefaultConverter implements Converter {
 			} else
 				t = (T) object;
 		}
-//		IO.println("DefaultConverter.convert, t=" + t);
+		LOGGER.log(Level.DEBUG, "t={0} ({1})", t, t != null ? t.getClass() : null);
+
 		return t;
 	}
 
 	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
-//		IO.println("DefaultConverter.convertMap, map=" + map + ", target=" + target + ", typeResolver=" + typeResolver);
-//		IO.println(Json.format(map));
+		LOGGER.log(Level.DEBUG, "map={0}, target={1}, typeResolver={2}", map, target, typeResolver);
+
+		// IO.println(Json.format(map));
 		var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
-		var c = target != null ? Java.toClass(target) : null;
+		var c1 = target != null ? Java.toClass(target) : null;
 
 		if (td != null) {
-			if (c != null) {
+			if (c1 != null) {
 				if (td.type() == null)
-					throw new NullPointerException("c=" + c + ", td.type()=" + td.type());
-				if (!c.isAssignableFrom(Java.toClass(td.type())))
-					throw new IllegalArgumentException("c=" + c + ", td.type()=" + td.type());
+					throw new NullPointerException("c1=" + c1 + ", td.type()=" + td.type());
+				if (!c1.isAssignableFrom(Java.toClass(td.type())))
+					throw new IllegalArgumentException("c1=" + c1 + ", td.type()=" + td.type());
 			}
 
 			map = (Map<?, ?>) td.data();
 			target = td.type();
-			c = Java.toClass(target);
+			c1 = Java.toClass(target);
 		}
 
-		var c2 = diFactory != null ? diFactory.classFor(c) : null;
-		if (c2 != null)
-			c = c2;
-//		IO.println("DefaultConverter.convertMap, c=" + c + ", c2=" + c2);
+		var c2 = diFactory != null ? diFactory.classFor(c1) : null;
+//		IO.println("DefaultConverter.convertMap, c1=" + c1 + ", c2=" + c2);
+
+		var c = c2 != null ? c2 : c1;
 
 		Object o;
 		if (c == Object.class)
@@ -239,28 +252,30 @@ public class DefaultConverter implements Converter {
 			var t0 = target;
 			var c0 = JavaInvoke.methodHandle(JavaReflect.constructor(c));
 //			IO.println("DefaultConverter.convertMap, c0=" + c0);
-			var tt = c.isRecord()
-					? Arrays.stream(c.getRecordComponents()).collect(Collectors.toMap(x -> x.getName(), x -> {
-//						return x.getType();
-						return JavaReflect.actualType(x, t0);
-					}, (_, x) -> x, LinkedHashMap::new))
+			var tt = c.isRecord() ? Arrays.stream(c.getRecordComponents()).collect(
+					Collectors.toMap(x -> x, x -> JavaReflect.actualType(x, t0), (_, x) -> x, LinkedHashMap::new))
 					: null;
-//			try {
 			if (tt != null) {
 				var m = map;
 				var t = c;
 				var oo = tt.entrySet().stream().map(x -> {
-					var n2 = x.getKey();
-					var t2 = x.getValue();
-					if (m.containsKey(n2))
-						return convert(m.get(n2), t2);
-					Field f;
 					try {
-						f = t.getDeclaredField(n2);
-					} catch (NoSuchFieldException e) {
-						f = null;
+						var rc = x.getKey();
+						var n2 = rc.getName();
+						var t2 = x.getValue();
+						if (m.containsKey(n2))
+							return convert(m.get(n2), t2);
+
+						var f = t.getDeclaredField(n2);
+						var m2 = rc.getAccessor();
+						if (f.isAnnotationPresent(Flat.class)
+								|| JavaReflect.inheritedAnnotation(m2, Flat.class) != null)
+							return convertMap(m, t2, null);
+
+						return null;
+					} catch (ReflectiveOperationException e) {
+						throw new RuntimeException(e);
 					}
-					return (f != null && f.isAnnotationPresent(Flat.class)) ? convertMap(m, t2, null) : null;
 				}).toArray();
 //				IO.println("DefaultConverter.convertMap, c0=" + c0 + ", oo=" + Arrays.toString(oo));
 				try {
@@ -285,12 +300,9 @@ public class DefaultConverter implements Converter {
 					}
 				}
 			}
-//			} catch (ReflectiveOperationException e) {
-//				throw new RuntimeException(e);
-//			}
 		}
+		LOGGER.log(Level.DEBUG, "o={0} ({1})", o, o != null ? o.getClass() : null);
 
-//		IO.println("DefaultConverter.convertMap, o=" + o);
 		return o;
 	}
 }

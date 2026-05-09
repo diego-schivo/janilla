@@ -49,6 +49,8 @@
  */
 package com.janilla.backend.cms;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.util.Iterator;
 import java.util.List;
@@ -71,18 +73,21 @@ import com.janilla.json.ReflectionJsonIterator;
 import com.janilla.json.ReflectionValueIterator;
 import com.janilla.json.TokenIterationContext;
 
-public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
+public class CmsJsonIterator extends ReflectionJsonIterator {
+
+	private static final Logger LOGGER = System.getLogger(CmsJsonIterator.class.getName());
 
 	protected final Persistence persistence;
 
-	public CmsReflectionJsonIterator(Object object, TypeResolver typeResolver, Persistence persistence) {
+	public CmsJsonIterator(Object object, TypeResolver typeResolver, Persistence persistence) {
 		super(object, typeResolver);
 		this.persistence = persistence;
 	}
 
 	@Override
 	public Iterator<JsonToken<?>> newValueIterator(Object object) {
-//		IO.println("CmsReflectionJsonIterator.newValueIterator, object=" + object);
+		LOGGER.log(Level.DEBUG, "object={0}", object);
+
 		var o = stack().peek();
 		if (o instanceof Map.Entry<?, ?> kv
 				&& stack().stream().filter(x -> x instanceof Document).distinct().count() < 4) {
@@ -113,16 +118,17 @@ public class CmsReflectionJsonIterator extends ReflectionJsonIterator {
 				stack().push(o);
 			}
 		}
-		return new CustomReflectionValueIterator(this, object);
+
+		return new CustomValueIterator(this, object);
 	}
 
 	protected List<?> list(List<?> list) {
 		return list;
 	}
 
-	protected class CustomReflectionValueIterator extends ReflectionValueIterator {
+	protected class CustomValueIterator extends ReflectionValueIterator {
 
-		public CustomReflectionValueIterator(TokenIterationContext context, Object object) {
+		public CustomValueIterator(TokenIterationContext context, Object object) {
 			super(context, object);
 		}
 

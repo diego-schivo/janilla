@@ -27,6 +27,7 @@ package com.janilla.backend.web;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.persistence.PersistenceBuilder;
@@ -36,13 +37,13 @@ import com.janilla.web.AbstractWebApp;
 import com.janilla.web.InvocationResolver;
 
 public abstract class AbstractBackend<C extends BackendConfig> extends AbstractWebApp<C> implements Backend<C> {
-
+	
 	protected Persistence persistence;
 
 	protected List<Class<?>> storables;
 
-	protected AbstractBackend(C config, DiFactory diFactory) {
-		super(config, diFactory);
+	protected AbstractBackend(C config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 	}
 
 	public Persistence persistence() {

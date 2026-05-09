@@ -25,14 +25,15 @@ package com.janilla.janillacom.frontend;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.Frontend;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.java.Java;
 import com.janilla.web.NotFoundException;
@@ -50,16 +51,18 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { JanillaFrontend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
 	protected final Map<String, Frontend<?>> frontends;
 
-	public JanillaFrontend(JanillaFrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory, null);
+	public JanillaFrontend(JanillaFrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, null);
 
 		frontends = config.frontends().entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> {
 			var a = ((JanillaDataFetching) dataFetching).applications(x.getKey(), null, null, null, null, null)
@@ -68,7 +71,8 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
 				var c = Class.forName(a.frontend());
 				@SuppressWarnings("unchecked")
 				var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
-				var f = new DefaultDiFactory(tt);
+				var a2 = new WebApp[1];
+				var f = Ioc.diFactory(tt, () -> a2[0]);
 				var c2 = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) x.getValue()).filter(y -> y != null)
 						.toArray(Map<?, ?>[]::new), f);
 				return (Frontend<?>) f.newInstance(c,

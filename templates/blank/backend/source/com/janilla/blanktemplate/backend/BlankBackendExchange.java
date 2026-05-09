@@ -22,32 +22,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.ecommercetemplate.backend;
+package com.janilla.blanktemplate.backend;
 
-import java.util.Set;
-import java.util.function.Predicate;
-
-import com.janilla.backend.cms.AbstractUserApi;
+import com.janilla.backend.cms.AbstractUserHttpExchange;
+import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.web.BackendConfig;
+import com.janilla.cms.CmsDomain;
 import com.janilla.cms.User;
-import com.janilla.ecommercetemplate.UserRoleImpl;
-import com.janilla.http.HttpExchange;
-import com.janilla.web.Handle;
+import com.janilla.http.HttpRequest;
+import com.janilla.http.HttpResponse;
 
-@Handle(path = "/api/users")
-public class UserApi extends AbstractUserApi<Long, User<Long>> {
+public class BlankBackendExchange extends AbstractUserHttpExchange<User<?>> {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, EcommerceBackendConfig config) {
-		super((Class) User.class, drafts, persistence, "name", config.jwt().key());
-	}
-
-	@Handle(method = "POST")
-	public User<Long> create(UserData<User<Long>> data, BackendHttpExchange exchange) {
-		if (exchange.sessionUser() == null) {
-			var u = data.user().withRoles(Set.of(UserRoleImpl.CUSTOMER));
-			data = data.withUser(u);
-		}
-		return super.create(data);
+	public BlankBackendExchange(HttpRequest request, HttpResponse response, BackendConfig config,
+			Persistence persistence, CmsDomain domain) {
+		super(request, response, config.jwt().cookie(), config.jwt().key(), (Crud) persistence.crud(User.class),
+				domain);
 	}
 }

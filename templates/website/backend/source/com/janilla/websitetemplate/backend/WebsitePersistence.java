@@ -26,6 +26,8 @@ package com.janilla.websitetemplate.backend;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.ParameterizedType;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,14 +59,16 @@ import com.janilla.websitetemplate.SearchResult;
 
 public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPersistence {
 
+	private static final Logger LOGGER = System.getLogger(WebsitePersistence.class.getName());
+
 	private SearchObserver<?> searchObserver;
 
 	protected final C config;
 
-	public WebsitePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, Converter converter,
-			DiFactory diFactory, C config) {
+	public WebsitePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory,
+			C config) {
 		this.config = config;
-		super(database, storables, converter, diFactory);
+		super(database, storables, diFactory);
 	}
 
 	protected SearchObserver<?> searchObserver() {
@@ -103,6 +107,7 @@ public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPer
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+		LOGGER.log(Level.INFO, "sd={0}", sd);
 
 //		IO.println("pp=" + pp);
 		pp.stream().forEach(x -> database.perform(() -> {

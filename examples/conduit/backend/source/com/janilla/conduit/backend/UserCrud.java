@@ -29,7 +29,7 @@ import com.janilla.backend.persistence.Persistence;
 public class UserCrud extends DefaultCrud<Long, User> {
 
 	public UserCrud(Persistence persistence) {
-		super(User.class, persistence.idConverter(User.class), persistence);
+		super(User.class, persistence.idHelper(User.class), null, null, persistence);
 	}
 
 	public boolean follow(Long profile, Long user) {

@@ -30,6 +30,7 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.smtp.SmtpClient;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.FormSubmission;
 import com.janilla.websitetemplate.WebsiteDomain;
@@ -41,9 +42,9 @@ public class FormSubmissionApi extends AbstractCollectionApi<Long, FormSubmissio
 
 	protected final SmtpClient smtpClient;
 
-	public FormSubmissionApi(Predicate<HttpExchange> drafts, Persistence persistence, WebsiteDomain domain,
-			SmtpClient smtpClient) {
-		super(FormSubmission.class, drafts, persistence, "title");
+	public FormSubmissionApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier,
+			WebsiteDomain domain, SmtpClient smtpClient) {
+		super(FormSubmission.class, drafts, persistence, "title", copier);
 		this.domain = domain;
 		this.smtpClient = smtpClient;
 	}

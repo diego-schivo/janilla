@@ -28,11 +28,12 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.http.HttpExchange;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.janillacom.backend.JanillaBackend;
 import com.janilla.janillacom.frontend.JanillaFrontend;
 import com.janilla.java.Java;
@@ -73,14 +74,16 @@ public class JanillaFullstack extends WebsiteFullstack<JanillaFullstackConfig> {
 			}
 		});
 
-		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
-	public JanillaFullstack(JanillaFullstackConfig config, DiFactory diFactory) {
-		super(config, diFactory, JanillaFrontend.class, JanillaBackend.class);
+	public JanillaFullstack(JanillaFullstackConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, JanillaFrontend.class, JanillaBackend.class);
 	}
 
 	@Override

@@ -26,6 +26,8 @@ package com.janilla.web;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collections;
@@ -40,6 +42,8 @@ import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 
 public class JsonHandlerFactory implements HttpHandlerFactory {
+
+	private static final Logger LOGGER = System.getLogger(JsonHandlerFactory.class.getName());
 
 	protected final DiFactory diFactory;
 
@@ -62,7 +66,7 @@ public class JsonHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected void render(Object object, HttpExchange exchange) {
-//		IO.println("JsonHandlerFactory.render, object=" + object);
+		LOGGER.log(Level.DEBUG, "object={0}", object);
 
 		var rs = exchange.response();
 		rs.setHeaderValue("content-type", "application/json");

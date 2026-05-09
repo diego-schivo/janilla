@@ -358,7 +358,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 	@Override
 	public void exchange(HttpRequest request, HttpResponse response) {
 		var ex = createExchange(request, response);
-		ScopedValue.where(HTTP_EXCHANGE, ex).call(() -> handleExchange(ex));
+		ScopedValue.where(HttpExchange.SCOPED, ex).call(() -> handleExchange(ex));
 	}
 
 	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {

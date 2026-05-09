@@ -28,11 +28,5 @@ import com.janilla.net.Server;
 
 public interface HttpServer extends Server {
 
-	static final ScopedValue<HttpExchange> HTTP_EXCHANGE = ScopedValue.newInstance();
-
 	void exchange(HttpRequest request, HttpResponse response);
-
-//	HttpExchange createExchange(HttpRequest request, HttpResponse response);
-//
-//	boolean handleExchange(HttpExchange exchange);
 }

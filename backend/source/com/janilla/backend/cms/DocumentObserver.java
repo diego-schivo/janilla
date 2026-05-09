@@ -49,38 +49,57 @@
  */
 package com.janilla.backend.cms;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.janilla.backend.persistence.CrudObserver;
 import com.janilla.cms.Document;
 import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Versions;
-import com.janilla.java.JavaReflect;
+import com.janilla.java.Copier;
+import com.janilla.java.Java;
 
 public class DocumentObserver<D extends Document<?>> implements CrudObserver<D> {
 
+	private static final Logger LOGGER = System.getLogger(DocumentObserver.class.getName());
+
+	protected final Copier copier;
+
+	public DocumentObserver(Copier copier) {
+		this.copier = copier;
+	}
+
 	@Override
 	public D beforeCreate(D document) {
+		LOGGER.log(Level.DEBUG, "document={0}", document);
+
 		var i = Instant.now();
+		var m = Java.<String, Object>hashMap("createdAt", i, "updatedAt", i);
+
 		var v = document.getClass().getAnnotation(Versions.class);
-		var m = Map.<String, Object>of("createdAt", i, "updatedAt", i);
-		if (document.documentStatus() == null) {
-			m = new HashMap<>(m);
+		if (document.documentStatus() == null)
 			m.put("documentStatus", v != null && v.drafts() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
-		}
-		return JavaReflect.copy(m, document);
+
+		var d = copier.copy(m, document);
+		LOGGER.log(Level.DEBUG, "d={0}", d);
+
+		return d;
 	}
 
 	@Override
 	public D beforeUpdate(D document) {
+		LOGGER.log(Level.DEBUG, "document={0}", document);
+
 		var i = Instant.now();
-		var m = Map.<String, Object>of("updatedAt", i);
-		if (document.documentStatus() == DocumentStatus.PUBLISHED) {
-			m = new HashMap<>(m);
+		var m = Java.<String, Object>hashMap("updatedAt", i);
+
+		if (document.documentStatus() == DocumentStatus.PUBLISHED)
 			m.put("publishedAt", i);
-		}
-		return JavaReflect.copy(m, document);
+
+		var d = copier.copy(m, document);
+		LOGGER.log(Level.DEBUG, "d={0}", d);
+
+		return d;
 	}
 }

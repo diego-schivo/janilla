@@ -23,16 +23,21 @@
  */
 package com.janilla.todomvc.frontend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.frontend.web.FrontendConfig;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
 public class TodoMvcFrontend extends AbstractFrontend<FrontendConfig> {
+
+	private static final Logger LOGGER = System.getLogger(TodoMvcFrontend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
@@ -41,16 +46,18 @@ public class TodoMvcFrontend extends AbstractFrontend<FrontendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.INFO, ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { TodoMvcFrontend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
+		var cfg = newConfig(new Class<?>[] { TodoMvcFrontend.class }, args.length != 0 ? args[0] : null, f);
+		Consumer<Object> ctx = x -> a[0] = (WebApp<?>) x;
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
+		serve(a[0]);
 	}
 
-	public TodoMvcFrontend(FrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public TodoMvcFrontend(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 	}
 
 	@Override

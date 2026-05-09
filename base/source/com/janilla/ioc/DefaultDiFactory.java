@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.janilla.java.JavaInvoke;
@@ -41,43 +42,31 @@ import com.janilla.java.JavaReflect;
 
 public class DefaultDiFactory implements DiFactory {
 
-	protected final List<Class<?>> types;
-
-	protected Object context;
-
-	protected final String name;
-
 	protected final Map<Class<?>, Optional<Class<?>>> classes = new ConcurrentHashMap<>();
+
+	protected final Supplier<Object> context;
 
 	protected final Map<Class<?>, Function<Map<String, Object>, ?>> factories = new ConcurrentHashMap<>();
 
-	public DefaultDiFactory(List<Class<?>> types) {
-		this(types, null);
-	}
+	protected final String scope;
 
-	public DefaultDiFactory(List<Class<?>> types, String name) {
-//		IO.println("DefaultDiFactory, types=" + types + ", name=" + name);
+	protected final List<Class<?>> types;
+
+	public DefaultDiFactory(List<Class<?>> types, Supplier<Object> context, String scope) {
+//		IO.println("DefaultDiFactory, types=" + types + ", scope=" + scope);
 		this.types = types;
-		this.name = name;
+		this.context = context;
+		this.scope = scope;
 	}
 
 	@Override
 	public Object context() {
-		return context;
+		return context.get();
 	}
 
 	@Override
-	public DiFactory context(Object context) {
-//		IO.println("DefaultDiFactory.context, this=" + this + ", context=" + context);
-		if (this.context != null)
-			throw new IllegalStateException();
-		this.context = context;
-		return this;
-	}
-
-	@Override
-	public List<Class<?>> types() {
-		return types;
+	public Stream<Class<?>> types() {
+		return types.stream();
 	}
 
 	@Override
@@ -97,11 +86,11 @@ public class DefaultDiFactory implements DiFactory {
 				|| (x.isMemberClass() && !Modifier.isStatic(x.getModifiers())));
 		p = p.and(type::isAssignableFrom);
 
-		if (name != null)
-			p = p.and(x -> {
-				var a = x.getAnnotation(Context.class);
+		if (scope != null)
+			p = p.and(t -> {
+				var a = t.getAnnotation(Scope.class);
 				var nn = a != null ? a.value() : null;
-				return nn == null || Arrays.stream(nn).anyMatch(y -> y.equals(name));
+				return nn == null || Arrays.stream(nn).anyMatch(x -> x.equals(scope));
 			});
 
 		return p;
@@ -118,17 +107,17 @@ public class DefaultDiFactory implements DiFactory {
 					: null;
 			if (cc == null || cc.length == 0)
 				throw new IllegalArgumentException("class1=" + class1);
-			var o = context;
+			var o = context();
 			var oe = !Modifier.isStatic(class1.getModifiers()) && o != null
 					&& class1.getEnclosingClass() == o.getClass();
-			return aa -> newInstance(cc, aa, o, oe);
+			return aa -> newInstance2(cc, aa, o, oe);
 		});
 		@SuppressWarnings("unchecked")
 		var t = (T) f.apply(arguments);
 		return t;
 	}
 
-	protected <T> T newInstance(Constructor<?>[] constructors, Map<String, Object> arguments, Object context,
+	protected <T> T newInstance2(Constructor<?>[] constructors, Map<String, Object> arguments, Object context,
 			boolean enclosed) {
 //		IO.println("DefaultDiFactory.newInstance, constructors=" + Arrays.toString(constructors) + ", arguments=" + arguments
 //				+ ", context=" + context + ", enclosed=" + enclosed);
@@ -168,7 +157,7 @@ public class DefaultDiFactory implements DiFactory {
 
 //	public static void main(String[] args) {
 //		var z = new Foo("a");
-//		var f = new DefaultDiFactory(List.of(Foo.C.class), () -> z);
+//		var f = Ioc.newDiFactory(List.of(Foo.C.class), () -> z);
 //		var x1 = f.create(f.actualType(Foo.I.class), Map.of("s2", "b"));
 //		IO.println("x1=" + x1);
 //		var x2 = f.create(f.actualType(Foo.I.class), Map.of("s2", "c"));

@@ -24,13 +24,14 @@
  */
 package com.janilla.blanktemplate.fullstack;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.backend.BlankBackend;
 import com.janilla.blanktemplate.frontend.BlankFrontend;
 import com.janilla.fullstack.web.AbstractFullstack;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
@@ -51,19 +52,21 @@ public class BlankFullstack<C extends BlankFullstackConfig> extends AbstractFull
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
-	public BlankFullstack(C config, DiFactory diFactory) {
-		this(config, diFactory, BlankFrontend.class, BlankBackend.class);
+	public BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context) {
+		this(config, diFactory, context, BlankFrontend.class, BlankBackend.class);
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected BlankFullstack(C config, DiFactory diFactory, Class frontendClass, Class backendClass) {
-		super(config, diFactory, frontendClass, backendClass);
+	protected BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass, Class backendClass) {
+		super(config, diFactory, context, frontendClass, backendClass);
 	}
 
 //	protected BlankFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
@@ -84,13 +87,13 @@ public class BlankFullstack<C extends BlankFullstackConfig> extends AbstractFull
 //		}
 //
 //		backend = ScopedValue.where(INSTANCE, this).call(() -> {
-//			var f = new DefaultDiFactory(diBackendTypes().toList(), "backend");
+//			var f = Ioc.newDiFactory(diBackendTypes().toList(), "backend");
 //			return f.newInstance(f.classFor(BlankBackend.class),
 //					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
 //		});
 //
 //		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
-//			var f = new DefaultDiFactory(diFrontendTypes().toList(), "frontend");
+//			var f = Ioc.newDiFactory(diFrontendTypes().toList(), "frontend");
 //			return f.newInstance(f.classFor(BlankFrontend.class),
 //					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
 //		});

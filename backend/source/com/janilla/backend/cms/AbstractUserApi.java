@@ -49,6 +49,8 @@
  */
 package com.janilla.backend.cms;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -59,26 +61,35 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.CmsDomain;
 import com.janilla.cms.User;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.java.Flat;
 import com.janilla.java.JavaReflect;
 import com.janilla.json.Jwt;
+import com.janilla.persistence.ListPortion;
 import com.janilla.web.BadRequestException;
 import com.janilla.web.Bind;
 import com.janilla.web.ForbiddenException;
 import com.janilla.web.Handle;
+import com.janilla.web.InvocationHandlerFactory;
 import com.janilla.web.UnauthorizedException;
 
 public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<ID>>
 		extends AbstractCollectionApi<ID, U> {
 
+	private static final Logger LOGGER = System.getLogger(AbstractUserApi.class.getName());
+
+	protected final CmsDomain domain;
+
 	protected final String jwtKey;
 
 	protected AbstractUserApi(Class<U> type, Predicate<HttpExchange> drafts, Persistence persistence,
-			String searchIndex, String jwtKey) {
-		super(type, drafts, persistence, searchIndex);
+			String searchIndex, Copier copier, String jwtKey, CmsDomain domain) {
+		super(type, drafts, persistence, searchIndex, copier);
 		this.jwtKey = jwtKey;
+		this.domain = domain;
 	}
 
 	protected record UserData<U>(@Flat U user, String password) {
@@ -89,31 +100,71 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	}
 
 	@Handle(method = "POST")
+	@SuppressWarnings("unchecked")
 	public U create(UserData<U> data) {
-		@SuppressWarnings("unchecked")
+		if (!isAdmin(exchange().sessionUser()))
+			throw new UnauthorizedException();
+
 		var u = (U) data.user().withPassword(data.password());
 		return super.create(u);
 	}
 
+	@Override
+	public U read(ID id, Integer depth) {
+		var u = exchange().sessionUser();
+		if (!(id.equals(u.id()) || isAdmin(u)))
+			throw new UnauthorizedException();
+
+		return super.read(id, depth);
+	}
+
+	@Override
+	public ListPortion<U> read(String search, Boolean reverse, Long skip, Long limit, Integer depth) {
+		if (!isAdmin(exchange().sessionUser()))
+			throw new UnauthorizedException();
+
+		return super.read(search, reverse, skip, limit, depth);
+	}
+
 	@Handle(method = "PUT", path = "(\\d+)")
+	@SuppressWarnings("unchecked")
 	public U update(ID id, UserData<U> data, Boolean draft, Boolean autosave) {
-		@SuppressWarnings("unchecked")
+		if (!isAdmin(exchange().sessionUser()))
+			throw new UnauthorizedException();
+
 		var u = (U) data.user().withPassword(data.password());
 		return super.update(id, u, draft, autosave);
+	}
+
+	@Handle(method = "PATCH", path = "(\\d+)")
+	@SuppressWarnings("unchecked")
+	public U patch(ID id, UserData<U> data) {
+		{
+			var u = exchange().sessionUser();
+			if (!(id.equals(u.id()) || isAdmin(u)))
+				throw new UnauthorizedException();
+		}
+
+		var u = (U) data.user();
+		if (data.password() != null && !data.password().isBlank()) {
+			u = (U) u.withPassword(data.password());
+			InvocationHandlerFactory.JSON_KEYS.get().addAll(List.of("salt", "hash"));
+		}
+		return super.patch(id, u);
 	}
 
 	public record LoginData(String email, String password) {
 	}
 
 	@Handle(method = "POST", path = "login")
-	public U login(LoginData data, UserHttpExchange<U> exchange) {
+	public U login(LoginData data) {
 //		IO.println("UserApi.login, data=" + data);
 		if (data == null || data.email() == null || data.email().isBlank() || data.password() == null
 				|| data.password().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
 
-		var u = persistence.database().perform(() -> crud().read(crud().find("email", new Object[] { data.email() })),
-				false);
+		var u = persistence.database().perform(
+				() -> crud().read(crud().find("email", new Object[] { data.email() }), domain.userDepth()), false);
 		if (u != null && !u.passwordEquals(data.password()))
 			u = null;
 		if (u == null)
@@ -122,19 +173,21 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
 		var t = Jwt.generateToken(h, p, jwtKey);
-		exchange.setSessionCookie(t);
+		exchange().setSessionCookie(t);
 
 		return u;
 	}
 
 	@Handle(method = "POST", path = "logout")
-	public void logout(UserHttpExchange<U> exchange) {
-		exchange.setSessionCookie(null);
+	public void logout() {
+		exchange().setSessionCookie(null);
 	}
 
 	@Handle(method = "GET", path = "me")
-	public U me(UserHttpExchange<U> exchange) {
-		return exchange.sessionUser();
+	public U me() {
+		var u = exchange().sessionUser();
+		LOGGER.log(Level.DEBUG, "u={0}", u);
+		return u;
 	}
 
 	public U read(String email) {
@@ -145,7 +198,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	}
 
 	@Handle(method = "POST", path = "first-register")
-	public U firstRegister(UserData<U> data, UserHttpExchange<U> exchange) {
+	public U firstRegister(UserData<U> data) {
 		if (data == null || data.user() == null || data.user().email() == null || data.user().email().isBlank()
 				|| data.password() == null || data.password().isBlank())
 			throw new BadRequestException("Please correct invalid fields.");
@@ -161,7 +214,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
 		var t = Jwt.generateToken(h, p, jwtKey);
-		exchange.setSessionCookie(t);
+		exchange().setSessionCookie(t);
 
 		return u;
 	}
@@ -202,7 +255,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	}
 
 	@Handle(method = "POST", path = "reset-password")
-	public U resetPassword(String token, String password, String confirmPassword, UserHttpExchange<U> exchange) {
+	public U resetPassword(String token, String password, String confirmPassword) {
 		if (token == null || token.isBlank() || password == null || password.isBlank()
 				|| !password.equals(confirmPassword))
 			throw new BadRequestException("Please correct invalid fields.");
@@ -221,36 +274,43 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
 		var t = Jwt.generateToken(h, p, jwtKey);
-		exchange.setSessionCookie(t);
+		exchange().setSessionCookie(t);
 		return u;
 	}
 
+	@Handle(method = "DELETE", path = "(\\d+)")
 	@Override
 	public U delete(ID id) {
-		throw new RuntimeException();
-	}
+		var u = exchange().sessionUser();
+		if (!isAdmin(u))
+			throw new UnauthorizedException();
 
-	@Handle(method = "DELETE", path = "(\\d+)")
-	public U delete(ID id, UserHttpExchange<U> exchange) {
-		var u = exchange.sessionUser();
 		var x = super.delete(id);
 		if (id == u.id())
-			logout(exchange);
+			logout();
 		return x;
-	}
-
-	@Override
-	public List<U> delete(List<ID> ids) {
-		throw new RuntimeException();
 	}
 
 	@Handle(method = "DELETE")
-	public List<U> delete(@Bind("id") List<ID> ids, UserHttpExchange<U> exchange) {
-		var u = exchange.sessionUser();
+	@Override
+	public List<U> delete(@Bind("id") List<ID> ids) {
+		var u = exchange().sessionUser();
+		if (!isAdmin(u))
+			throw new UnauthorizedException();
+
 		var x = super.delete(ids);
 		if (ids.contains(u.id()))
-			logout(exchange);
+			logout();
 		return x;
+	}
+
+	protected boolean isAdmin(U user) {
+		return user.roles().contains(domain.userRole("ADMIN"));
+	}
+
+	@SuppressWarnings("unchecked")
+	protected UserHttpExchange<U> exchange() {
+		return (UserHttpExchange<U>) HttpExchange.SCOPED.get();
 	}
 
 	@Override

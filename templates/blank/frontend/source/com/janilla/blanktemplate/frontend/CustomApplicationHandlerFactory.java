@@ -29,12 +29,12 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import com.janilla.http.HttpHandlerFactory;
-import com.janilla.ioc.Context;
+import com.janilla.ioc.Scope;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceHandlerFactory;
 import com.janilla.web.WebAppHandlerFactory;
 
-@Context("frontend")
+@Scope("frontend")
 public class CustomApplicationHandlerFactory extends WebAppHandlerFactory {
 
 	public CustomApplicationHandlerFactory(DiFactory diFactory) {

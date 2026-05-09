@@ -55,6 +55,7 @@ export default class CartModal extends WebComponent {
         const u = new URL(`${a.dataset.apiUrl}/carts/${c}`, location.href);
         if (!a.currentUser)
             u.searchParams.append("secret", localStorage.getItem("cart_secret"));
+        u.searchParams.append("depth", 2);
         s.cart ??= (c ? await (await fetch(u)).json() : null) ?? {};
         if (c && !s.cart.id)
             localStorage.removeItem("cart");
@@ -84,8 +85,8 @@ export default class CartModal extends WebComponent {
     }
 
     handleCartChanged = event => {
-		this.customState.cart = event.detail;
-		this.requestDisplay();
+        this.customState.cart = event.detail;
+        this.requestDisplay();
     }
 
     handleClick = event => {

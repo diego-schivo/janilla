@@ -18,7 +18,7 @@ package com.janilla.petclinic.frontend;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.janilla.http.HttpServer;
+import com.janilla.http.HttpExchange;
 import com.janilla.web.Render;
 import com.janilla.web.Renderable;
 
@@ -44,7 +44,7 @@ record Layout(Renderable<?> content, String basePath) {
 
 		public String active() {
 			var m1 = PATH_PREFIX.matcher(href);
-			var m2 = PATH_PREFIX.matcher(HttpServer.HTTP_EXCHANGE.get().request().getPath());
+			var m2 = PATH_PREFIX.matcher(HttpExchange.SCOPED.get().request().getPath());
 			return m1.find() && m2.find() && m1.group().equals(m2.group()) ? "active" : null;
 		}
 	}

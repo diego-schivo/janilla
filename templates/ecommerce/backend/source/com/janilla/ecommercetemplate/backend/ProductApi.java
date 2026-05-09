@@ -34,6 +34,7 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.ecommercetemplate.Product;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
@@ -41,8 +42,8 @@ import com.janilla.web.Handle;
 @Handle(path = "/api/products")
 public class ProductApi extends AbstractCollectionApi<Long, Product> {
 
-	public ProductApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Product.class, drafts, persistence, "title");
+	public ProductApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Product.class, drafts, persistence, "title", copier);
 	}
 
 	@Handle(method = "GET")

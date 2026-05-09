@@ -33,6 +33,7 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.blanktemplate.Media;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpResponse;
+import com.janilla.java.Copier;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/media")
@@ -40,8 +41,9 @@ public class MediaApi extends AbstractCollectionApi<Long, Media> {
 
 	protected final CmsResourceHandling handling;
 
-	public MediaApi(Predicate<HttpExchange> drafts, Persistence persistence, CmsResourceHandling cmsResourceHandling) {
-		super(Media.class, drafts, persistence, "title");
+	public MediaApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier,
+			CmsResourceHandling cmsResourceHandling) {
+		super(Media.class, drafts, persistence, "title", copier);
 		this.handling = cmsResourceHandling;
 	}
 

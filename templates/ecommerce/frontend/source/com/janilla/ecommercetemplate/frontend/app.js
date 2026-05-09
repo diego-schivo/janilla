@@ -34,16 +34,16 @@ export default class App extends WebsiteApp {
     }
 
     static get templateNames() {
-		return ["/base/app", "/blank/app", "/website/app", "app"];
+        return ["/base/app", "/blank/app", "/website/app", "app"];
     }
 
     async updateDisplaySite() {
         const s = this.customState;
 
-        const u0 = this.currentUser;
+        s.user0 = this.currentUser;
         const p = location.pathname;
 
-        if (u0)
+        if (s.user0)
             switch (p) {
                 case "/create-account":
                 case "/login":
@@ -51,6 +51,7 @@ export default class App extends WebsiteApp {
                     u.searchParams.append("warning", "You are already logged in.");
                     this.navigate(u);
                     return;
+
                 case "/logout":
                     await fetch(`${this.dataset.apiUrl}/users/logout`, { method: "POST" });
                     s.user = null;
@@ -85,8 +86,10 @@ export default class App extends WebsiteApp {
                         success: spp.get("success"),
                         warning: spp.get("warning")
                     };
+
                 case "/account/addresses":
                     return { $template: "addresses" };
+
                 case "/checkout":
                     if (!Array.from(document.head.querySelectorAll("script"))
                         .some(x => x.src === this.dataset.stripeUrl)) {
@@ -100,25 +103,30 @@ export default class App extends WebsiteApp {
                     } else if (!s.stripe && typeof Stripe !== "undefined")
                         s.stripe = Stripe(this.dataset.stripePublishableKey);
                     return { $template: "checkout" };
+
                 case "/checkout/confirm-order":
                     return {
                         $template: "confirm-order",
                         guestEmail: spp.get("guest_email"),
                         paymentIntent: spp.get("payment_intent")
                     };
+
                 case "/create-account":
                     return { $template: "create-account" };
+
                 case "/find-order":
                     return { $template: "find-order" };
+
                 case "/login":
                     return {
                         $template: "login",
                         warning: spp.get("warning")
                     };
+
                 case "/logout":
                     return {
                         $template: "logout",
-                        noOp: !u0
+                        noOp: !s.user0
                     };
             }
             {

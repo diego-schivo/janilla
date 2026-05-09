@@ -22,6 +22,13 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
+
+import java.lang.System.LoggerFinder;
+
+import com.janilla.ioc.DefaultDiFactoryProvider;
+import com.janilla.ioc.DiFactoryProvider;
+import com.janilla.java.SimpleLoggerFinder;
+
 module com.janilla.base {
 
 	exports com.janilla.cms;
@@ -41,4 +48,10 @@ module com.janilla.base {
 	opens com.janilla.json;
 	opens com.janilla.net;
 	opens com.janilla.web;
+
+	provides LoggerFinder with SimpleLoggerFinder;
+
+	provides DiFactoryProvider with DefaultDiFactoryProvider;
+
+	uses DiFactoryProvider;
 }

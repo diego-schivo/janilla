@@ -38,7 +38,6 @@ import com.janilla.ecommercetemplate.Cart;
 import com.janilla.ecommercetemplate.Product;
 import com.janilla.ecommercetemplate.VariantType;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Converter;
 import com.janilla.java.Property;
 import com.janilla.persistence.Entity;
 import com.janilla.websitetemplate.backend.WebsitePersistence;
@@ -46,8 +45,8 @@ import com.janilla.websitetemplate.backend.WebsitePersistence;
 public class EcommercePersistence<C extends EcommerceBackendConfig> extends WebsitePersistence<C> {
 
 	public EcommercePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-			Converter converter, DiFactory diFactory, C config) {
-		super(database, storables, converter, diFactory, config);
+			DiFactory diFactory, C config) {
+		super(database, storables, diFactory, config);
 	}
 
 	@Override

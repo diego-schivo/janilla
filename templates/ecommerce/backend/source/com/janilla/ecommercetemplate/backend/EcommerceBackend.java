@@ -26,13 +26,14 @@ package com.janilla.ecommercetemplate.backend;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.ecommercetemplate.Country;
 import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.Title;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.WebApp;
@@ -48,14 +49,16 @@ public class EcommerceBackend<C extends EcommerceBackendConfig> extends WebsiteB
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { EcommerceBackend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
-	public EcommerceBackend(C config, DiFactory diFactory) {
-		super(config, diFactory);
+	public EcommerceBackend(C config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 	}
 
 	@Override

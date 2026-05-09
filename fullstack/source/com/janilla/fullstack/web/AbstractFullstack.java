@@ -24,14 +24,15 @@
  */
 package com.janilla.fullstack.web;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.backend.web.AbstractBackend;
 import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.java.JavaInvoke;
 import com.janilla.web.AbstractWebApp;
@@ -58,10 +59,11 @@ public abstract class AbstractFullstack<C extends FullstackConfig> extends Abstr
 	protected AbstractFrontend<?> frontend;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected AbstractFullstack(C config, DiFactory diFactory, Class frontendClass, Class backendClass) {
+	protected AbstractFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
+			Class backendClass) {
 		this.frontendClass = frontendClass;
 		this.backendClass = backendClass;
-		super(config, diFactory);
+		super(config, diFactory, context);
 	}
 
 	public AbstractBackend<?> backend() {
@@ -83,13 +85,17 @@ public abstract class AbstractFullstack<C extends FullstackConfig> extends Abstr
 	@Override
 	protected HttpHandler newHttpHandler() {
 		backend = ScopedValue.where(INSTANCE, this).call(() -> {
-			var f = new DefaultDiFactory(diBackendTypes().toList(), "backend");
-			return f.newInstance(backendClass, Java.hashMap("config", config, "diFactory", f));
+			var a = new WebApp[1];
+			var f = Ioc.diFactory(diBackendTypes().toList(), () -> a[0], "backend");
+			return f.newInstance(backendClass, Java.hashMap("config", config, "diFactory", f, "context",
+					(Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
 		});
 
 		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
-			var f = new DefaultDiFactory(diFrontendTypes().toList(), "frontend");
-			return f.newInstance(frontendClass, Java.hashMap("config", config, "diFactory", f));
+			var a = new WebApp[1];
+			var f = Ioc.diFactory(diFrontendTypes().toList(), () -> a[0], "frontend");
+			return f.newInstance(frontendClass, Java.hashMap("config", config, "diFactory", f, "context",
+					(Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
 		});
 
 		return x -> {

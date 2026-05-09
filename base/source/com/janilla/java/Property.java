@@ -285,6 +285,11 @@ public interface Property {
 			public boolean derived() {
 				return property2.derived();
 			}
+
+			@Override
+			public String toString() {
+				return property2.toString();
+			}
 		};
 	}
 

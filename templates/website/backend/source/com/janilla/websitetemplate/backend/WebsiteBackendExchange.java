@@ -22,34 +22,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.blanktemplate.backend;
+package com.janilla.websitetemplate.backend;
 
-import java.util.Set;
-import java.util.function.Predicate;
-
-import com.janilla.backend.cms.AbstractUserApi;
-import com.janilla.backend.cms.UserHttpExchange;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.web.BackendConfig;
-import com.janilla.blanktemplate.BlankDomain;
-import com.janilla.cms.User;
-import com.janilla.http.HttpExchange;
-import com.janilla.web.Handle;
+import com.janilla.blanktemplate.backend.BlankBackendExchange;
+import com.janilla.cms.CmsDomain;
+import com.janilla.http.HttpRequest;
+import com.janilla.http.HttpResponse;
 
-@Handle(path = "/api/users")
-public class UserApi extends AbstractUserApi<Long, User<Long>> {
+public class WebsiteBackendExchange extends BlankBackendExchange {
 
-	protected final BlankDomain domain;
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public UserApi(Predicate<HttpExchange> drafts, Persistence persistence, BackendConfig config, BlankDomain domain) {
-		super((Class) User.class, drafts, persistence, "title", config.jwt().key());
-		this.domain = domain;
-	}
-
-	@Override
-	public User<Long> firstRegister(UserData<User<Long>> data, UserHttpExchange<User<Long>> exchange) {
-		var u = data.user().withRoles(Set.of(domain.userRole("ADMIN")));
-		return super.firstRegister(data.withUser(u), exchange);
+	public WebsiteBackendExchange(HttpRequest request, HttpResponse response, BackendConfig config,
+			Persistence persistence, CmsDomain domain) {
+		super(request, response, config, persistence, domain);
 	}
 }

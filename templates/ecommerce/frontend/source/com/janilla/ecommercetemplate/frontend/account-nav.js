@@ -38,10 +38,6 @@ export default class AccountNav extends WebComponent {
         return ["data-path"];
     }
 
-    constructor() {
-        super();
-    }
-
     async updateDisplay() {
         this.appendChild(this.interpolateDom({
             $template: "",

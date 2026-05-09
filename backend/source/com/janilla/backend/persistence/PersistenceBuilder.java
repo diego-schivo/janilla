@@ -36,7 +36,6 @@ import java.util.Map;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TransactionalByteChannel;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 
 public class PersistenceBuilder {
@@ -47,11 +46,9 @@ public class PersistenceBuilder {
 		this.databaseFile = databaseFile;
 	}
 
-	public Persistence build(List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver,
-			Converter converter) {
+	public Persistence build(List<Class<? extends Entity<?>>> storables, DiFactory diFactory) {
 		var d = createDatabase();
-		return new DefaultPersistence(d, storables, converter);
+		return new DefaultPersistence(d, storables, diFactory);
 	}
 
 	public Persistence build(DiFactory diFactory) {

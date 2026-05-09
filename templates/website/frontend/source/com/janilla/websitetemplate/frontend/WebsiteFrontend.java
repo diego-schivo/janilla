@@ -24,12 +24,13 @@
  */
 package com.janilla.websitetemplate.frontend;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankFrontend;
 import com.janilla.http.HttpClient;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
@@ -43,14 +44,16 @@ public class WebsiteFrontend<C extends WebsiteFrontendConfig> extends BlankFront
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { WebsiteFrontend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
-	public WebsiteFrontend(C config, DiFactory diFactory, HttpClient httpClient) {
-		super(config, diFactory, httpClient);
+	public WebsiteFrontend(C config, DiFactory diFactory, Consumer<Object> context, HttpClient httpClient) {
+		super(config, diFactory, context, httpClient);
 	}
 
 	@Override

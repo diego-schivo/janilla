@@ -30,9 +30,14 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.janilla.cms.User;
+import com.janilla.java.Converter;
 import com.janilla.websitetemplate.WebsiteDomain;
 
 public class EcommerceDomain extends WebsiteDomain {
+
+	public EcommerceDomain(Converter converter) {
+		super(converter);
+	}
 
 	public Stream<Country> countries() {
 		return Arrays.stream(CountryImpl.class.getEnumConstants());
@@ -63,10 +68,6 @@ public class EcommerceDomain extends WebsiteDomain {
 				cart, amount, currency, stripeCustomer, stripePaymentIntent, null, null, null, null);
 	}
 
-	public TransactionStatus transactionStatus(String name) {
-		return TransactionStatusImpl.valueOf(name);
-	}
-
 	public OrderStatus orderStatus(String name) {
 		return OrderStatusImpl.valueOf(name);
 	}
@@ -77,5 +78,14 @@ public class EcommerceDomain extends WebsiteDomain {
 
 	public Stream<Title> titles() {
 		return Arrays.stream(TitleImpl.class.getEnumConstants());
+	}
+
+	public TransactionStatus transactionStatus(String name) {
+		return TransactionStatusImpl.valueOf(name);
+	}
+
+	@Override
+	public int userDepth() {
+		return 1;
 	}
 }

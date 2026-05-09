@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.janilla.backend.persistence.Persistence;
-import com.janilla.http.HttpServer;
+import com.janilla.http.HttpExchange;
 import com.janilla.java.JavaReflect;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
@@ -70,7 +70,7 @@ class CustomJsonIterator extends ReflectionJsonIterator {
 					var v = x.get(a);
 					return new AbstractMap.SimpleImmutableEntry<>(x.name(), v);
 				}).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
-				var u = ((HttpExchangeImpl) HttpServer.HTTP_EXCHANGE.get()).getUser();
+				var u = ((HttpExchangeImpl) HttpExchange.SCOPED.get()).getUser();
 				m.put("favorited", u != null && a.id() != null && persistence.crud(Article.class)
 						.filter("favoriteList", new Object[] { u.id() }).stream().anyMatch(x -> x.equals(a.id())));
 				m.put("favoritesCount",
@@ -85,7 +85,7 @@ class CustomJsonIterator extends ReflectionJsonIterator {
 							var v = x.get(u);
 							return new AbstractMap.SimpleImmutableEntry<>(x.name(), v);
 						}).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
-				var v = ((HttpExchangeImpl) HttpServer.HTTP_EXCHANGE.get()).getUser();
+				var v = ((HttpExchangeImpl) HttpExchange.SCOPED.get()).getUser();
 				m.put("following", v != null && persistence.crud(User.class)
 						.filter("followList", new Object[] { v.id() }).stream().anyMatch(x -> x.equals(u.id())));
 				object = m;

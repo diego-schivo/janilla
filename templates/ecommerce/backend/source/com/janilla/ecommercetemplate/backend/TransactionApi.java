@@ -30,12 +30,13 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.ecommercetemplate.Transaction;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/transactions")
 public class TransactionApi extends AbstractCollectionApi<Long, Transaction> {
 
-	public TransactionApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Transaction.class, drafts, persistence, "title");
+	public TransactionApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Transaction.class, drafts, persistence, "title", copier);
 	}
 }

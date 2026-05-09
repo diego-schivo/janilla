@@ -35,7 +35,8 @@ import java.util.stream.Stream;
 
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
-import com.janilla.java.Converter;
+import com.janilla.ioc.DiFactory;
+import com.janilla.java.Java;
 import com.janilla.java.JavaReflect;
 import com.janilla.persistence.Entity;
 import com.janilla.persistence.Index;
@@ -43,23 +44,23 @@ import com.janilla.persistence.Store;
 
 public class DefaultPersistence implements Persistence {
 
-	protected final SqliteDatabase database;
-
-	protected final List<Class<? extends Entity<?>>> storables;
-
-	protected final Converter converter;
-
 	protected final PersistenceConfiguration configuration = new PersistenceConfiguration();
 
 	protected final Map<Class<?>, Object> cruds = new ConcurrentHashMap<>();
 
+	protected final SqliteDatabase database;
+
+	protected final DiFactory diFactory;
+
+	protected final List<Class<? extends Entity<?>>> storables;
+
 	public DefaultPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-			Converter converter) {
+			DiFactory diFactory) {
 //		IO.println(
 //				"DefaultPersistence, database=" + database + ", storables=" + storables + ", converter=" + converter);
 		this.database = database;
 		this.storables = storables;
-		this.converter = converter;
+		this.diFactory = diFactory;
 		for (var t : storables)
 			configure(t);
 		if (database.schema().isEmpty())
@@ -69,11 +70,6 @@ public class DefaultPersistence implements Persistence {
 	@Override
 	public SqliteDatabase database() {
 		return database;
-	}
-
-	@Override
-	public Converter converter() {
-		return converter;
 	}
 
 	@Override
@@ -119,14 +115,15 @@ public class DefaultPersistence implements Persistence {
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
 //		IO.println("DefaultPersistence.newCrud, type=" + type);
-		return new DefaultCrud(type, idConverter(type), this);
+//		return new DefaultCrud(type, idHelper(type), this);
+		return diFactory.newInstance(diFactory.classFor(Crud.class),
+				Java.hashMap("type", type, "idHelper", idHelper(type), "persistence", this));
 	}
 
 	@Override
-	public <ID extends Comparable<ID>> IdHelper<ID> idConverter(Class<?> type) {
+	public <ID extends Comparable<ID>> IdHelper<ID> idHelper(Class<?> type) {
 		var t = JavaReflect.property(type, "id").type();
 		@SuppressWarnings("unchecked")
 		var x = (IdHelper<ID>) (t == UUID.class ? new UuidIdHelper() : t == String.class ? new StringIdHelper() : null);

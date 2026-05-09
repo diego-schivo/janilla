@@ -24,11 +24,12 @@
  */
 package com.janilla.blanktemplate;
 
-import com.janilla.cms.UserRole;
+import com.janilla.cms.CmsDomain;
+import com.janilla.java.Converter;
 
-public class BlankDomain {
+public class BlankDomain extends CmsDomain {
 
-	public UserRole userRole(String name) {
-		return UserRoleImpl.valueOf(name);
+	public BlankDomain(Converter converter) {
+		super(converter);
 	}
 }

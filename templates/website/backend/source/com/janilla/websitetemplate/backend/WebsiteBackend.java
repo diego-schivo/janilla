@@ -26,14 +26,15 @@ package com.janilla.websitetemplate.backend;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.backend.cms.UserHttpExchange;
 import com.janilla.backend.smtp.SmtpClient;
 import com.janilla.blanktemplate.backend.BlankBackend;
 import com.janilla.http.HttpExchange;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.WebApp;
@@ -48,16 +49,18 @@ public class WebsiteBackend<C extends WebsiteBackendConfig> extends BlankBackend
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { WebsiteBackend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
 	protected final SmtpClient smtpClient;
 
-	public WebsiteBackend(C config, DiFactory diFactory) {
-		super(config, diFactory);
+	public WebsiteBackend(C config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 
 		var h = config.mail().host();
 		smtpClient = h != null && !h.isEmpty() ? diFactory.newInstance(diFactory.classFor(SmtpClient.class),
@@ -81,8 +84,8 @@ public class WebsiteBackend<C extends WebsiteBackendConfig> extends BlankBackend
 	}
 
 	@Override
-	protected boolean testDrafts(HttpExchange x) {
-		var u = super.testDrafts(x) ? ((UserHttpExchange<?>) x).sessionUser() : null;
+	protected boolean testDrafts(HttpExchange exchange) {
+		var u = super.testDrafts(exchange) ? ((UserHttpExchange<?>) exchange).sessionUser() : null;
 		var rr = u != null ? u.roles() : null;
 		return rr != null && rr.contains(domain.userRole("ADMIN"));
 	}

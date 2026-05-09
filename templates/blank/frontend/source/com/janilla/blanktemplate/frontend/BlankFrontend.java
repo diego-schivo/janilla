@@ -25,6 +25,7 @@
 package com.janilla.blanktemplate.frontend;
 
 import java.util.Collections;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.BlankDomain;
@@ -32,8 +33,8 @@ import com.janilla.frontend.IndexFactory;
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.http.HttpClient;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.WebApp;
@@ -50,10 +51,12 @@ public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFronte
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { BlankFrontend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
 	protected BlankDomain domain;
@@ -62,9 +65,9 @@ public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFronte
 
 	protected HttpClient httpClient;
 
-	public BlankFrontend(C config, DiFactory diFactory, HttpClient httpClient) {
+	public BlankFrontend(C config, DiFactory diFactory, Consumer<Object> context, HttpClient httpClient) {
 		this.httpClient = httpClient;
-		super(config, diFactory);
+		super(config, diFactory, context);
 	}
 
 	public BlankDomain domain() {

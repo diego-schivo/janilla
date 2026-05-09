@@ -25,14 +25,15 @@ package com.janilla.janillacom.backend;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.backend.web.Backend;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.janillacom.Application;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.java.Java;
@@ -51,16 +52,18 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { JanillaBackend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
 	protected final Map<String, Backend<?>> backends;
 
-	public JanillaBackend(JanillaBackendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public JanillaBackend(JanillaBackendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 
 		backends = config.backends().keySet().stream().map(persistence.crud(Application.class)::read)
 				.filter(x -> x.backend() != null).collect(Collectors.toMap(Application::id, a -> {
@@ -68,10 +71,13 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 						var c = Class.forName(a.backend());
 						@SuppressWarnings("unchecked")
 						var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
-						var f = new DefaultDiFactory(tt);
-						var c2 = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.backends().get(a.id()))
+						var a2 = new WebApp[1];
+						var f = Ioc.diFactory(tt, () -> a2[0]);
+						var cfg = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.backends().get(a.id()))
 								.filter(x -> x != null).toArray(Map<?, ?>[]::new), f);
-						return (Backend<?>) f.newInstance(c, Java.hashMap("config", c2, "diFactory", f));
+						Consumer<Object> ctx = x -> a2[0] = (WebApp<?>) x;
+						return (Backend<?>) f.newInstance(c,
+								Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}

@@ -25,16 +25,13 @@
 package com.janilla.backend.persistence;
 
 import com.janilla.backend.sqlite.SqliteDatabase;
-import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 
 public interface Persistence {
 
 	SqliteDatabase database();
 
-	Converter converter();
-
 	<ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> type);
 
-	<ID extends Comparable<ID>> IdHelper<ID> idConverter(Class<?> type);
+	<ID extends Comparable<ID>> IdHelper<ID> idHelper(Class<?> type);
 }

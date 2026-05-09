@@ -24,6 +24,8 @@
  */
 package com.janilla.backend.persistence;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +51,8 @@ import com.janilla.backend.sqlite.Record;
 import com.janilla.backend.sqlite.RecordColumn;
 import com.janilla.backend.sqlite.TableBTree;
 import com.janilla.backend.sqlite.TableLeafCell;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 import com.janilla.java.Java;
 import com.janilla.java.JavaReflect;
 import com.janilla.java.Property;
@@ -63,19 +67,28 @@ import com.janilla.persistence.ListPortion;
 
 public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implements Crud<ID, E> {
 
-	protected final Class<E> type;
+	private static final Logger LOGGER = System.getLogger(DefaultCrud.class.getName());
+
+	protected final Converter converter;
+
+	protected final Copier copier;
 
 	protected final IdHelper<ID> idHelper;
-
-	protected final Persistence persistence;
 
 	protected final Map<String, IndexKeyGetter> indexKeyGetters = new LinkedHashMap<>();
 
 	protected final List<CrudObserver<E>> observers = new ArrayList<>();
 
-	public DefaultCrud(Class<E> type, IdHelper<ID> idHelper, Persistence persistence) {
+	protected final Persistence persistence;
+
+	protected final Class<E> type;
+
+	public DefaultCrud(Class<E> type, IdHelper<ID> idHelper, Converter converter, Copier copier,
+			Persistence persistence) {
 		this.type = type;
 		this.idHelper = idHelper;
+		this.converter = converter;
+		this.copier = copier;
 		this.persistence = persistence;
 	}
 
@@ -90,8 +103,10 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public E create(E entity) {
-//		IO.println("DefaultCrud.create, entity=" + entity);
+		LOGGER.log(Level.DEBUG, "entity={0}", entity);
+
 		return persistence.database().perform(() -> {
 			class A {
 				ID i;
@@ -100,11 +115,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			var a = new A();
 			a.e = entity;
 			if (idHelper != null) {
-				{
-					@SuppressWarnings("unchecked")
-					var x = (ID) JavaReflect.property(type, "id").get(a.e);
-					a.i = x;
-				}
+				a.i = (ID) JavaReflect.property(type, "id").get(a.e);
 				if (a.i == null)
 					a.i = idHelper.random(a.e);
 				a.e = JavaReflect.copy(Map.of("id", a.i), a.e);
@@ -112,9 +123,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 					a.e = o.beforeCreate(a.e);
 				bTree().insert(new Object[] { toDatabaseId(a.i) }, new Object[] { format(a.e) });
 			} else {
-				@SuppressWarnings("unchecked")
 				var y = (ID) Long.valueOf(((TableBTree) bTree()).insert(x -> {
-					a.e = JavaReflect.copy(Map.of("id", x), a.e);
+					a.e = copier.copy(Map.of("id", x), a.e);
 					for (var o : observers)
 						a.e = o.beforeCreate(a.e);
 					return new Object[] { x, format(a.e) };
@@ -146,7 +156,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected E read(BTree<?, ?> bTree, ID id, int depth) {
-//		IO.println("DefaultCrud.read, type=" + type.getSimpleName() + ", id=" + id + ", depth=" + depth);
+		LOGGER.log(Level.DEBUG, "type={0}, id={1}, depth={2}", type.getSimpleName(), id, depth);
+
 		class A {
 			E e;
 		}
@@ -155,9 +166,14 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			var oo = x.findFirst().orElse(null);
 			a.e = oo != null ? parse((String) oo.reduce((_, y) -> y).get()) : null;
 		});
-//		IO.println("DefaultCrud.read, a.e=" + a.e);
+		LOGGER.log(Level.DEBUG, "a.e={0}", a.e);
+
+		if (a.e != null)
+			for (var o : observers)
+				a.e = o.beforePopulate(a.e);
 		a.e = populate(a.e, depth);
-//		IO.println("DefaultCrud.read, depth=" + depth + ", a.e=" + a.e);
+
+		// IO.println("DefaultCrud.read, depth=" + depth + ", a.e=" + a.e);
 		if (a.e != null)
 			for (var o : observers)
 				a.e = o.afterRead(a.e);
@@ -168,12 +184,14 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	public E update(ID id, UnaryOperator<E> operator) {
 		if (id == null)
 			return null;
-		return persistence.database().perform(() -> {
+
+		var e = persistence.database().perform(() -> {
 			class A {
 				E e1;
 				E e2;
 			}
 			var a = new A();
+
 			var t = bTree();
 			var kk = new Object[] { toDatabaseId(id) };
 			t.delete(kk, rr -> {
@@ -181,17 +199,22 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 //				IO.println("oo=" + Arrays.toString(oo));
 				a.e1 = parse((String) oo.reduce((_, y) -> y).get());
 			});
-//			for (var o : observers)
-//				a.e1 = o.afterRead(a.e1);
+
 			a.e2 = operator.apply(a.e1);
+
 			for (var o : observers)
 				a.e2 = o.beforeUpdate(a.e2);
 			t.insert(kk, new Object[] { format(a.e2) });
+
 			updateIndexes(a.e1, a.e2);
 			for (var x : observers)
 				x.afterUpdate(a.e1, a.e2);
+
 			return a.e2;
 		}, true);
+		LOGGER.log(Level.INFO, "e={0}", e);
+
+		return e;
 	}
 
 	@Override
@@ -448,9 +471,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected String format(Object object) {
-//		IO.println("DefaultCrud.format, object=" + object);
-		var s = Json.format(new CustomJsonIterator(object, persistence.converter().typeResolver()));
-//		IO.println("DefaultCrud.format, s=" + s);
+		LOGGER.log(Level.DEBUG, "object={0}", object);
+
+		var s = Json.format(new CustomJsonIterator(object, converter.typeResolver()));
+		LOGGER.log(Level.INFO, "s={0}", s);
+
 		return s;
 	}
 
@@ -458,10 +483,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		return parse(string, type);
 	}
 
+	@SuppressWarnings("unchecked")
 	protected <T> T parse(String string, Class<T> target) {
-//		IO.println("DefaultCrud.parse, string=" + string + ", target=" + target);
-		@SuppressWarnings("unchecked")
-		var t = (T) persistence.converter().convert(Json.parse(string), target);
+		LOGGER.log(Level.INFO, "string={0}, target={1}", string, target);
+
+		var t = (T) converter.convert(Json.parse(string), target);
 //		IO.println("DefaultCrud.parse, t=" + t);
 		return t;
 	}
@@ -548,7 +574,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	public <T> T populate(T input, int depth) {
-//		IO.println("DefaultCrud.populate, input=" + input + ", depth=" + depth);
+		LOGGER.log(Level.DEBUG, "input={0}, depth={1}", input, depth);
+
 		var pp = input != null && depth != 0 && !(input.getClass().getPackageName().startsWith("java."))
 				? JavaReflect.properties(input.getClass()).filter(Property::canGet)
 				: Stream.<Property>empty();
@@ -592,7 +619,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 //		IO.println("DefaultCrud.populate, m=" + m);
 
 		var t = !m.isEmpty() ? JavaReflect.copy(m, input) : input;
-//		IO.println("DefaultCrud.populate, t=" + t);
+		LOGGER.log(Level.DEBUG, "t={0}", t);
+
 		return t;
 	}
 
@@ -618,12 +646,6 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		protected boolean includeEntry(Property property) {
 			return super.includeEntry(property) && DefaultCrud.this.includeEntry(property, this);
 		}
-
-//		@Override
-//		protected String toString(Class<?> type) {
-//			var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
-//			return super.toString(t);
-//		}
 	}
 
 	protected boolean includeEntry(Property property, ReflectionValueIterator valueIterator) {

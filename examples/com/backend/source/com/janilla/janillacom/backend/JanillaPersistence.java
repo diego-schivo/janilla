@@ -27,15 +27,14 @@ import java.util.List;
 
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 import com.janilla.websitetemplate.backend.WebsitePersistence;
 
 public class JanillaPersistence extends WebsitePersistence<JanillaBackendConfig> {
 
-	public JanillaPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, Converter converter,
-			DiFactory diFactory, JanillaBackendConfig config) {
-		super(database, storables, converter, diFactory, config);
+	public JanillaPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory,
+			JanillaBackendConfig config) {
+		super(database, storables, diFactory, config);
 	}
 
 	@Override

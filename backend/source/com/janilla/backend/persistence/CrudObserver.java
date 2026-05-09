@@ -35,6 +35,10 @@ public interface CrudObserver<E extends Entity<?>> {
 	default void afterCreate(E entity) {
 	}
 
+	default E beforePopulate(E entity) {
+		return entity;
+	}
+
 	default E afterRead(E entity) {
 		return entity;
 	}

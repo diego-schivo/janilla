@@ -22,20 +22,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.blanktemplate.backend;
-
-import com.janilla.backend.cms.AbstractUserHttpExchange;
-import com.janilla.backend.persistence.Crud;
-import com.janilla.backend.persistence.Persistence;
-import com.janilla.backend.web.BackendConfig;
-import com.janilla.cms.User;
-import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse;
-
-class HttpExchangeImpl extends AbstractUserHttpExchange<User<?>> {
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public HttpExchangeImpl(HttpRequest request, HttpResponse response, BackendConfig config, Persistence persistence) {
-		super(request, response, config.jwt().cookie(), config.jwt().key(), (Crud) persistence.crud(User.class));
-	}
-}
+//package com.janilla.blanktemplate.backend;
+//
+//import com.janilla.backend.cms.AbstractUserHttpExchange;
+//import com.janilla.backend.persistence.Crud;
+//import com.janilla.backend.persistence.Persistence;
+//import com.janilla.backend.web.BackendConfig;
+//import com.janilla.cms.User;
+//import com.janilla.http.HttpRequest;
+//import com.janilla.http.HttpResponse;
+//
+//class HttpExchangeImpl extends AbstractUserHttpExchange<User<?>> {
+//
+//	@SuppressWarnings({ "rawtypes", "unchecked" })
+//	public HttpExchangeImpl(HttpRequest request, HttpResponse response, BackendConfig config, Persistence persistence) {
+//		super(request, response, config.jwt().cookie(), config.jwt().key(), (Crud) persistence.crud(User.class));
+//	}
+//}

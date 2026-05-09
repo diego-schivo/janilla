@@ -35,9 +35,9 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.ioc.Context;
+import com.janilla.ioc.Scope;
 
-@Context("fullstack")
+@Scope("fullstack")
 class HttpServerImpl extends DefaultHttpServer {
 
 	protected final ConduitBackend backend;

@@ -30,12 +30,13 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.ecommercetemplate.VariantType;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/variant-types")
 public class VariantTypeApi extends AbstractCollectionApi<Long, VariantType> {
 
-	public VariantTypeApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(VariantType.class, drafts, persistence, "title");
+	public VariantTypeApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(VariantType.class, drafts, persistence, "title", copier);
 	}
 }

@@ -48,9 +48,10 @@ public class EcommerceInvocationHandlerFactory extends WebsiteBackendInvocationH
 	protected boolean requireSessionEmail(HttpRequest rq) {
 		if (!super.requireSessionEmail(rq))
 			return false;
+
 		switch (rq.getHeaderValue(":method")) {
 		case "DELETE", "PATCH":
-			return rq.getPath().startsWith("/api/carts/");
+			return !rq.getPath().startsWith("/api/carts/");
 		default:
 			return true;
 		}

@@ -74,8 +74,6 @@ public interface User<ID extends Comparable<ID>> extends Document<ID> {
 
 	Set<UserRole> roles();
 
-//	boolean hasRole(UserRole role);
-
 	boolean passwordEquals(String password);
 
 	User<ID> withPassword(String password);

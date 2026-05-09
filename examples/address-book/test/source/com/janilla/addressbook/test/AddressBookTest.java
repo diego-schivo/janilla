@@ -27,6 +27,7 @@
 package com.janilla.addressbook.test;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.addressbook.backend.AddressBookBackend;
@@ -37,8 +38,8 @@ import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
@@ -56,23 +57,28 @@ public class AddressBookTest extends AbstractFrontend<FrontendConfig> {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { AddressBookBackend.class, AddressBookFrontend.class,
 				AddressBookFullstack.class, AddressBookTest.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
 	protected final AddressBookFullstack fullstack;
 
-	public AddressBookTest(FrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public AddressBookTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 
 		{
-			var f = new DefaultDiFactory(AddressBookFullstack.diTypes().toList(), "fullstack");
-			var c = newConfig(new Class<?>[] { AddressBookBackend.class, AddressBookFrontend.class,
+			var a = new WebApp[1];
+			var f = Ioc.diFactory(AddressBookFullstack.diTypes().toList(), () -> a[0], "fullstack");
+			var cfg = newConfig(new Class<?>[] { AddressBookBackend.class, AddressBookFrontend.class,
 					AddressBookFullstack.class, AddressBookTest.class }, null, f);
-			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+			Consumer<Object> ctx = x -> a[0] = (WebApp<?>) x;
+			fullstack = f.newInstance(f.classFor(WebApp.class),
+					Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		}
 	}
 

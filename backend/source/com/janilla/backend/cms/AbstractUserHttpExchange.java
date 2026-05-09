@@ -57,6 +57,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.janilla.backend.persistence.Crud;
+import com.janilla.cms.CmsDomain;
 import com.janilla.cms.User;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
@@ -68,20 +69,23 @@ import com.janilla.web.UnauthorizedException;
 public abstract class AbstractUserHttpExchange<U extends User<?>> extends SimpleHttpExchange
 		implements UserHttpExchange<U> {
 
+	protected final CmsDomain domain;
+
 	protected final String jwtCookie;
 
 	protected final String jwtKey;
 
-	protected final Crud<?, U> userCrud;
+	protected final Crud<?, U> crud;
 
 	protected final Map<String, Object> session = new HashMap<>();
 
 	protected AbstractUserHttpExchange(HttpRequest request, HttpResponse response, String jwtCookie, String jwtKey,
-			Crud<?, U> userCrud) {
+			Crud<?, U> crud, CmsDomain domain) {
 		super(request, response);
 		this.jwtCookie = jwtCookie;
 		this.jwtKey = jwtKey;
-		this.userCrud = userCrud;
+		this.crud = crud;
+		this.domain = domain;
 	}
 
 	public String sessionEmail() {
@@ -100,14 +104,13 @@ public abstract class AbstractUserHttpExchange<U extends User<?>> extends Simple
 	}
 
 	@Override
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public U sessionUser() {
 		if (!session.containsKey("sessionUser")) {
 			var e = sessionEmail();
-			@SuppressWarnings({ "rawtypes", "unchecked" })
-			var o = e != null ? ((Crud) userCrud).read(userCrud.find("email", new Object[] { e })) : null;
+			var o = e != null ? ((Crud) crud).read(crud.find("email", new Object[] { e }), domain.userDepth()) : null;
 			session.put("sessionUser", o);
 		}
-		@SuppressWarnings("unchecked")
 		var u = (U) session.get("sessionUser");
 		return u;
 	}
@@ -124,7 +127,7 @@ public abstract class AbstractUserHttpExchange<U extends User<?>> extends Simple
 	@Override
 	public void requireSessionEmail() {
 		if (sessionEmail() == null) {
-//			var r = HttpServer.HTTP_EXCHANGE.get().request();
+//			var r = HttpExchange.SCOPED.get().request();
 //			IO.println(r.getHeaderValue(":method") + " " + r.getPath());
 
 			throw new UnauthorizedException("Unauthorized, you must be logged in to make this request.");

@@ -28,13 +28,14 @@ import java.util.function.Predicate;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Post;
 
 @Handle(path = "/api/posts")
 public class PostApi extends AbstractPostApi<Post> {
 
-	public PostApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Post.class, drafts, persistence);
+	public PostApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Post.class, drafts, persistence, copier);
 	}
 }

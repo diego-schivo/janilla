@@ -49,6 +49,8 @@
  */
 package com.janilla.backend.cms;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,17 +62,19 @@ import com.janilla.cms.Document;
 import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Version;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.java.DollarTypeResolver;
-import com.janilla.java.JavaReflect;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
-import com.janilla.web.DefaultInvocationHandlerFactory;
 import com.janilla.web.Handle;
+import com.janilla.web.InvocationHandlerFactory;
 
 public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends Document<ID>>
 		implements CollectionApi<ID, D> {
 
-	protected final Class<D> type;
+	private static final Logger LOGGER = System.getLogger(AbstractCollectionApi.class.getName());
+
+	protected final Copier copier;
 
 	protected final Predicate<HttpExchange> drafts;
 
@@ -78,12 +82,15 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 
 	protected final String searchIndex;
 
+	protected final Class<D> type;
+
 	protected AbstractCollectionApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence,
-			String searchIndex) {
+			String searchIndex, Copier copier) {
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;
 		this.searchIndex = searchIndex;
+		this.copier = copier;
 	}
 
 	@Override
@@ -94,8 +101,8 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 
 	@Override
 	@Handle(method = "GET", path = "(\\d+)")
-	public D read(ID id, Integer depth, HttpExchange exchange) {
-		return crud().read(id, drafts.test(exchange), depth != null ? depth : 0);
+	public D read(ID id, Integer depth) {
+		return crud().read(id, drafts.test(HttpExchange.SCOPED.get()), depth != null ? depth : 0);
 	}
 
 	@Override
@@ -114,13 +121,17 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	@Override
 	@Handle(method = "PUT", path = "(\\d+)")
 	public D update(ID id, @Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
-//		IO.println("AbstractCollectionApi.update, id=" + id + ", document=" + document + ", draft=" + draft
-//				+ ", autosave=" + autosave);
+		LOGGER.log(Level.INFO, "id={0}, document={1}, draft={2}, autosave={3}", id, document, draft, autosave);
+
 		var s = draft != null && draft.booleanValue() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != document.documentStatus())
-			document = JavaReflect.copy(Map.of("documentStatus", s), document);
+			document = copier.copy(Map.of("documentStatus", s), document);
+
 		var nv = !(autosave != null && autosave.booleanValue());
-		return crud().update(id, document, updateInclude(document), nv);
+		var d = crud().update(id, document, updateInclude(document), nv);
+		LOGGER.log(Level.INFO, "d={0}", d);
+
+		return d;
 	}
 
 	@Override
@@ -144,7 +155,7 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	@Override
 	@Handle(method = "PATCH")
 	public List<D> patch(@Bind(resolver = DollarTypeResolver.class) D document, @Bind("id") List<ID> ids) {
-		return crud().patch(ids, document, DefaultInvocationHandlerFactory.JSON_KEYS.get());
+		return crud().patch(ids, document, InvocationHandlerFactory.JSON_KEYS.get());
 	}
 
 	@Override
@@ -166,8 +177,8 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 	}
 
-	protected DefaultDocumentCrud<ID, D> crud() {
-		return (DefaultDocumentCrud<ID, D>) persistence.crud(type);
+	protected DocumentCrud<ID, D> crud() {
+		return (DocumentCrud<ID, D>) persistence.crud(type);
 	}
 
 	protected Set<String> updateInclude(D document) {

@@ -26,6 +26,8 @@ package com.janilla.http;
 
 public interface HttpExchange {
 
+	static final ScopedValue<HttpExchange> SCOPED = ScopedValue.newInstance();
+
 	HttpRequest request();
 
 	HttpResponse response();

@@ -25,7 +25,7 @@
 @import "/cms/admin-base.css";
 
 @import "/cms/admin-array.css";
-@import "/cms/admin-bar.css";
+@import "admin-bar.css";
 @import "/cms/admin-checkbox.css";
 @import "/cms/admin-create-first-user.css";
 @import "admin-dashboard.css";

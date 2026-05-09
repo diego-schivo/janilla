@@ -25,6 +25,7 @@
 package com.janilla.acmedashboard.test;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.acmedashboard.backend.AcmeDashboardBackend;
@@ -35,8 +36,8 @@ import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
@@ -54,23 +55,27 @@ public class AcmeDashboardTest extends AbstractFrontend<FrontendConfig> {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class, AcmeDashboardFrontend.class,
 				AcmeDashboardFullstack.class, AcmeDashboardTest.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
 	protected final AcmeDashboardFullstack fullstack;
 
-	public AcmeDashboardTest(FrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public AcmeDashboardTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 
 		{
-			var f = new DefaultDiFactory(AcmeDashboardFullstack.diTypes().toList(), "fullstack");
+			var a = new WebApp[1];
+			var f = Ioc.diFactory(AcmeDashboardFullstack.diTypes().toList(), () -> a[0], "fullstack");
 			var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class, AcmeDashboardFrontend.class,
 					AcmeDashboardFullstack.class, AcmeDashboardTest.class }, null, f);
-			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+					(Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
 		}
 	}
 

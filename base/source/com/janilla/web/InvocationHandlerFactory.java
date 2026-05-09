@@ -24,7 +24,11 @@
  */
 package com.janilla.web;
 
+import java.util.Set;
+
 import com.janilla.http.HttpHandlerFactory;
 
 public interface InvocationHandlerFactory extends HttpHandlerFactory {
+
+	static ScopedValue<Set<String>> JSON_KEYS = ScopedValue.newInstance();
 }

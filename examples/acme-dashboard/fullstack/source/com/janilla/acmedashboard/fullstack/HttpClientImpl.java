@@ -28,10 +28,10 @@ import java.util.Map;
 
 import com.janilla.http.DirectHttpClient;
 import com.janilla.http.HttpServer;
-import com.janilla.ioc.Context;
+import com.janilla.ioc.Scope;
 import com.janilla.web.WebApp;
 
-@Context("frontend")
+@Scope("frontend")
 class HttpClientImpl extends DirectHttpClient {
 
 	public HttpClientImpl() {

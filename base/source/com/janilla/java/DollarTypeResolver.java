@@ -24,11 +24,15 @@
  */
 package com.janilla.java;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class DollarTypeResolver implements TypeResolver {
+
+	private static final Logger LOGGER = System.getLogger(DollarTypeResolver.class.getName());
 
 	protected final Map<String, Class<?>> parseMap;
 
@@ -55,11 +59,11 @@ public class DollarTypeResolver implements TypeResolver {
 
 	@Override
 	public String format(Class<?> type) {
-//		IO.println("DollarTypeResolver.format, type=" + type);
+		LOGGER.log(Level.DEBUG, "type={0}", type);
 //		var t = Modifier.isPublic(type.getModifiers()) ? type : type.getInterfaces()[0];
 		var t = type;
 		var s = t.getName().substring(t.getPackageName().length() + 1).replace('$', '.');
-//		IO.println("DollarTypeResolver.format, s=" + s);
+		LOGGER.log(Level.DEBUG, "s={0}", s);
 		return s;
 	}
 }

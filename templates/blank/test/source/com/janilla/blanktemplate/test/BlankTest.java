@@ -26,6 +26,7 @@ package com.janilla.blanktemplate.test;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.backend.BlankBackend;
@@ -34,8 +35,8 @@ import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpHandler;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.NotFoundException;
 import com.janilla.web.WebApp;
@@ -52,30 +53,35 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(
 				new Class<?>[] { BlankBackend.class, BlankFrontend.class, BlankFullstack.class, BlankTest.class },
 				args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
 	protected final BlankFullstack<?> fullstack;
 
-	public BlankTest(FrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public BlankTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 
 		{
-			var f = new DefaultDiFactory(diFullstackTypes().toList(), "fullstack");
+			var a = new WebApp[1];
+			var f = Ioc.diFactory(diFullstackTypes().toList(), () -> a[0], "fullstack");
 			Class<?>[] cc;
 			try {
 				cc = (Class<?>[]) f.classFor(WebApp.class).getDeclaredField("CONFIG_CLASSES").get(null);
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
-			var c = newConfig(Stream.concat(Arrays.stream(cc), Stream.of(getClass())).toArray(Class<?>[]::new), null,
+			var cfg = newConfig(Stream.concat(Arrays.stream(cc), Stream.of(getClass())).toArray(Class<?>[]::new), null,
 					f);
-			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+			Consumer<Object> ctx = x -> a[0] = (WebApp<?>) x;
+			fullstack = f.newInstance(f.classFor(WebApp.class),
+					Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		}
 	}
 

@@ -59,27 +59,25 @@ import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.cms.Document;
 import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
-import com.janilla.java.Converter;
+import com.janilla.ioc.DiFactory;
 import com.janilla.persistence.Entity;
 
 public class CmsPersistence extends DefaultPersistence {
 
-	protected static final DocumentObserver<?> DOCUMENT_OBSERVER = new DocumentObserver<>();
-
-	public CmsPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-//			TypeResolver typeResolver,
-			Converter converter) {
-		super(database, storables, converter);
+	public CmsPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory) {
+		super(database, storables, diFactory);
 	}
 
 	@Override
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
 		@SuppressWarnings("unchecked")
 		var t = (Class<? extends Document<?>>) type;
-		@SuppressWarnings({ "rawtypes", "unchecked" })
-		var c = (Crud<?, E>) new DefaultDocumentCrud(t, idConverter(t), this);
+//		@SuppressWarnings({ "rawtypes", "unchecked" })
+//		var c = (Crud<?, E>) new DefaultDocumentCrud(t, idHelper(t), this);
+		@SuppressWarnings({ "unchecked" })
+		var c = (Crud<?, E>) super.newCrud(t);
 		@SuppressWarnings("unchecked")
-		var o = (CrudObserver<E>) DOCUMENT_OBSERVER;
+		var o = (CrudObserver<E>) diFactory.newInstance(DocumentObserver.class);
 		c.observers().add(o);
 		return c;
 	}

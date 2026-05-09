@@ -24,16 +24,14 @@
  */
 package com.janilla.ioc;
 
-import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public interface DiFactory {
 
 	Object context();
 
-	DiFactory context(Object context);
-
-	List<Class<?>> types();
+	Stream<Class<?>> types();
 
 	<T, U extends T> Class<U> classFor(Class<T> type);
 
@@ -41,5 +39,5 @@ public interface DiFactory {
 		return newInstance(class1, null);
 	}
 
-	<T> T newInstance(Class<T> class1, Map<String, Object> arguments);
+	<T> T newInstance(Class<T> class1, Map<String, Object> args);
 }

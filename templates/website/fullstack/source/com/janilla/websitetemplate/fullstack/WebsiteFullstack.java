@@ -24,11 +24,12 @@
  */
 package com.janilla.websitetemplate.fullstack;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
@@ -48,19 +49,22 @@ public class WebsiteFullstack<C extends WebsiteFullstackConfig> extends BlankFul
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
-	public WebsiteFullstack(C config, DiFactory diFactory) {
-		this(config, diFactory, WebsiteFrontend.class, WebsiteBackend.class);
+	public WebsiteFullstack(C config, DiFactory diFactory, Consumer<Object> context) {
+		this(config, diFactory, context, WebsiteFrontend.class, WebsiteBackend.class);
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected WebsiteFullstack(C config, DiFactory diFactory, Class frontendClass, Class backendClass) {
-		super(config, diFactory, frontendClass, backendClass);
+	protected WebsiteFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
+			Class backendClass) {
+		super(config, diFactory, context, frontendClass, backendClass);
 	}
 
 	@Override

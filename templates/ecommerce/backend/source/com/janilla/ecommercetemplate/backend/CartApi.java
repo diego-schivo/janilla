@@ -24,6 +24,8 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.function.Predicate;
 
 import com.janilla.backend.cms.AbstractCollectionApi;
@@ -32,6 +34,7 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.User;
 import com.janilla.ecommercetemplate.Cart;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.web.ForbiddenException;
 import com.janilla.web.Handle;
 import com.janilla.web.UnauthorizedException;
@@ -39,8 +42,10 @@ import com.janilla.web.UnauthorizedException;
 @Handle(path = "/api/carts")
 public class CartApi extends AbstractCollectionApi<Long, Cart> {
 
-	public CartApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Cart.class, drafts, persistence, "title");
+	private static final Logger LOGGER = System.getLogger(CartApi.class.getName());
+
+	public CartApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Cart.class, drafts, persistence, "title", copier);
 	}
 
 	@Handle(method = "POST")
@@ -53,11 +58,15 @@ public class CartApi extends AbstractCollectionApi<Long, Cart> {
 	}
 
 	@Handle(method = "GET", path = "(\\d+)")
-	public Cart read(Long id, String secret, UserHttpExchange<User<?>> exchange) {
-		var u = exchange.sessionUser();
+	public Cart read(Long id, String secret, Integer depth) {
+		LOGGER.log(Level.INFO, "id={0}, secret={1} depth={2}", id, secret, depth);
+
+		@SuppressWarnings("unchecked")
+		var e = (UserHttpExchange<User<?>>) HttpExchange.SCOPED.get();
+		var u = e.sessionUser();
 		if (u == null && (secret == null || secret.isBlank()))
 			throw new UnauthorizedException();
-		var c = super.read(id, 0, exchange);
+		var c = super.read(id, depth);
 		if (u == null && c != null && !c.secret().equals(secret))
 			throw new ForbiddenException();
 		return c;

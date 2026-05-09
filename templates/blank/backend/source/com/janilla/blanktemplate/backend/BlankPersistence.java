@@ -32,17 +32,12 @@ import com.janilla.backend.persistence.CrudObserver;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.blanktemplate.Media;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Converter;
 import com.janilla.persistence.Entity;
 
 public class BlankPersistence extends CmsPersistence {
 
-	protected final DiFactory diFactory;
-
-	public BlankPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, Converter converter,
-			DiFactory diFactory) {
-		this.diFactory = diFactory;
-		super(database, storables, converter);
+	public BlankPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory) {
+		super(database, storables, diFactory);
 	}
 
 	@Override

@@ -23,6 +23,7 @@
  * SOFTWARE.
  */
 import Account from "account";
+import AccountForm from "account-form";
 import AccountNav from "account-nav";
 import AddressEdit from "address-edit";
 import AddressItem from "address-item";
@@ -102,6 +103,7 @@ import Toaster from "base/toaster";
 import VariantSelector from "variant-selector";
 
 customElements.define("account-element", Account);
+customElements.define("account-form", AccountForm);
 customElements.define("account-nav", AccountNav);
 customElements.define("address-edit", AddressEdit);
 customElements.define("address-item", AddressItem);

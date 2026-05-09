@@ -84,17 +84,17 @@ export default class ProductDescription extends WebComponent {
         const o = c ? await (await fetch(u)).json() : null;
         const ii = o ? o.items.map(x => ({
             ...x,
-            product: x.product.id,
-            variant: x.variant.id
+            product: { id: x.product.id },
+            variant: { id: x.variant.id }
         })) : [];
-        const i = ii.findIndex(x => x.product === p.id && x.variant === v.id);
+        const i = ii.findIndex(x => x.product.id === p.id && x.variant.id === v.id);
         if (i !== -1)
             ii[i].quantity++;
         else
             ii.push({
                 $type: "CartItem",
-                product: p.id,
-                variant: v.id,
+                product: { id: p.id },
+                variant: { id: v.id },
                 quantity: 1
             });
         const r = await fetch(u, {
@@ -103,7 +103,10 @@ export default class ProductDescription extends WebComponent {
             body: JSON.stringify(o ? { items: ii } : {
                 $type: "Cart",
                 items: ii,
-                currency: "USD"
+                currency: {
+					$type: "Currency",
+					name: "USD"
+				}
             })
         });
         const j = await r.json();

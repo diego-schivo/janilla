@@ -23,14 +23,15 @@
  */
 package com.janilla.conduit.fullstack;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.conduit.backend.ConduitBackend;
 import com.janilla.conduit.frontend.ConduitFrontend;
 import com.janilla.fullstack.web.AbstractFullstack;
 import com.janilla.fullstack.web.FullstackConfig;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
@@ -47,14 +48,16 @@ public class ConduitFullstack extends AbstractFullstack<FullstackConfig> {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(new Class<?>[] { ConduitBackend.class, ConduitFrontend.class, ConduitFullstack.class },
 				args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
-	public ConduitFullstack(FullstackConfig config, DiFactory diFactory) {
-		super(config, diFactory, ConduitFrontend.class, ConduitBackend.class);
+	public ConduitFullstack(FullstackConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, ConduitFrontend.class, ConduitBackend.class);
 	}
 }

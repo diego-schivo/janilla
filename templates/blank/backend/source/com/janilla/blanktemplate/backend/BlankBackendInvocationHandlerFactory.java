@@ -100,8 +100,10 @@ public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandl
 			if (request.getPath().equals("/api/users"))
 				return !"0".equals(new UriQueryBuilder(request.getQuery()).values("limit").findFirst().orElse(null));
 			return false;
+
 		case "POST":
 			return !guestPost.contains(request.getPath());
+		
 		default:
 			return true;
 		}

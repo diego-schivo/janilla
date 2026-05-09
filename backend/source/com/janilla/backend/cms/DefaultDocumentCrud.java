@@ -49,6 +49,8 @@
  */
 package com.janilla.backend.cms;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,16 +64,21 @@ import com.janilla.cms.Document;
 import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 import com.janilla.java.JavaReflect;
 import com.janilla.json.ReflectionValueIterator;
 
 public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> extends DefaultCrud<ID, D>
 		implements DocumentCrud<ID, D> {
 
+	private static final Logger LOGGER = System.getLogger(DefaultDocumentCrud.class.getName());
+
 	protected final String versionTable;
 
-	public DefaultDocumentCrud(Class<D> type, IdHelper<ID> idHelper, Persistence persistence) {
-		super(type, idHelper, persistence);
+	public DefaultDocumentCrud(Class<D> type, IdHelper<ID> idHelper, Converter converter, Copier copier,
+			Persistence persistence) {
+		super(type, idHelper, converter, copier, persistence);
 		versionTable = type.isAnnotationPresent(Versions.class)
 				? Version.class.getSimpleName() + "<" + type.getSimpleName() + ">"
 				: null;
@@ -151,7 +158,7 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 //		IO.println("DocumentCrud.update, id=" + id + ", document=" + document + ", include=" + include + ", newVersion"
 //				+ newVersion);
 		var exclude = Set.of("id", "createdAt", "updatedAt");
-		return versionTable != null ? persistence.database().perform(() -> {
+		var d = versionTable != null ? persistence.database().perform(() -> {
 			class A {
 				D d1 = read(id, true, 0);
 				D d2;
@@ -214,11 +221,13 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 			return a.d2;
 		}, true) : update(id, d1 -> {
 //			IO.println("d1=" + d1);
-			var d2 = JavaReflect.copy(document, d1,
-					x -> (include == null || include.contains(x)) && !exclude.contains(x));
+			var d2 = copier.copy(document, d1, x -> (include == null || include.contains(x)) && !exclude.contains(x));
 //			IO.println("d2=" + d2);
 			return d2;
 		});
+		LOGGER.log(Level.DEBUG, "d={0}", d);
+
+		return d;
 	}
 
 	@Override

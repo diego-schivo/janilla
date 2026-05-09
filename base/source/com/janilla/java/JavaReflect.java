@@ -89,55 +89,54 @@ public class JavaReflect {
 	protected static <T> T copy(Function<String, Object> source, T destination, Predicate<String> filter) {
 //		IO.println("JavaReflect.copy, source=" + source + ", destination=" + destination);
 		var c = destination.getClass();
+
 		var s = propertyNames(c);
 		if (filter != null)
 			s = s.filter(filter);
 		var kk = s.toList();
 		if (kk == null || kk.isEmpty())
 			return destination;
+
 		var vv = kk.stream().map(k -> {
 			var v = source.apply(k);
 			return v != SKIP_COPY ? Java.mapEntry(k, v) : null;
 		}).filter(Objects::nonNull).collect(HashMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
 		if (vv.isEmpty())
 			return destination;
-		if (c.isRecord()) {
-			var aa = Arrays.stream(c.getRecordComponents()).map(x -> {
-//				IO.println("JavaReflect.copy, x=" + x);
-				if (vv.containsKey(x.getName()))
-					return vv.get(x.getName());
-				var p = property(c, x.getName());
-				if (p != null)
-					return p.get(destination);
 
+		if (c.isRecord()) {
+			var aa = Arrays.stream(c.getRecordComponents()).map(rc -> {
 				try {
-					var f = c.getDeclaredField(x.getName());
-					if (f != null && f.isAnnotationPresent(Flat.class)) {
-						var aa2 = Arrays.stream(f.getType().getRecordComponents()).map(x2 -> {
-							if (vv.containsKey(x2.getName()))
-								return vv.get(x2.getName());
-							var p2 = property(c, x2.getName());
-							return p2 != null ? p2.get(destination) : null;
+//				IO.println("JavaReflect.copy, rc=" + rc);
+					var n = rc.getName();
+					if (vv.containsKey(n))
+						return vv.get(n);
+
+					var p = property(c, n);
+					if (p != null)
+						return p.get(destination);
+
+					var f = c.getDeclaredField(n);
+					var m = rc.getAccessor();
+					if (f.isAnnotationPresent(Flat.class) || JavaReflect.inheritedAnnotation(m, Flat.class) != null) {
+						var aa2 = properties(f.getType()).map(x -> {
+							if (vv.containsKey(x.name()))
+								return vv.get(x.name());
+
+							var p2 = property(c, x.name());
+							if (p2 != null)
+								return p2.get(destination);
+
+							return null;
 						}).toArray();
 						return f.getType().getConstructors()[0].newInstance(aa2);
 					}
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
 
-				try {
-					return x.getAccessor().invoke(destination);
+					return m.invoke(destination);
 				} catch (ReflectiveOperationException e) {
 					throw new RuntimeException(e);
 				}
 			}).toArray();
-//			try {
-//				@SuppressWarnings("unchecked")
-//				var t = (T) constructor(c).newInstance(aa);
-//				return t;
-//			} catch (ReflectiveOperationException e) {
-//				throw new RuntimeException(e);
-//			}
 
 			try {
 				@SuppressWarnings("unchecked")
@@ -249,14 +248,16 @@ public class JavaReflect {
 						}).sorted(Comparator.comparing(Map.Entry::getValue,
 								Comparator.nullsLast(Comparator.naturalOrder())))
 						.map(Map.Entry::getKey).flatMap(x -> {
-							Field f;
-							try {
-								f = c0.getDeclaredField(x.name());
-							} catch (NoSuchFieldException e) {
-								f = null;
-							}
-							if (f != null && f.isAnnotationPresent(Flat.class)) {
-								var ft = actualType(f, t);
+//							Field f;
+//							try {
+//								f = c0.getDeclaredField(x.name());
+//							} catch (NoSuchFieldException e) {
+//								f = null;
+//							}
+//							if (f != null && f.isAnnotationPresent(Flat.class)) {
+							if (inheritedAnnotation((Method) x.member(), Flat.class) != null) {
+//								var ft = actualType(f, t);
+								var ft = x.genericType();
 								var m = A.RESULTS.get(ft);
 								if (m == null)
 //									m = propertyMap(f.getType());

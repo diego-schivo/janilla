@@ -35,7 +35,7 @@ import com.janilla.backend.persistence.Persistence;
 class ArticleCrud extends DefaultCrud<Long, Article> {
 
 	public ArticleCrud(Persistence persistence) {
-		super(Article.class, persistence.idConverter(Article.class), persistence);
+		super(Article.class, persistence.idHelper(Article.class), null, null, persistence);
 	}
 
 	public boolean favorite(Long id, Instant createdAt, Long user) {

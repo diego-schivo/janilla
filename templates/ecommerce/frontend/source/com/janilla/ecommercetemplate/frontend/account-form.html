@@ -1,0 +1,46 @@
+<!--${content}-->
+
+<template id="update-account">
+  <form>
+    <p>
+      Change your account details below, or
+      <a href="#change-password">click here</a>
+      to change your password.
+    </p>
+    <label>
+      Email Address
+      <input type="email" name="email" value="${user.email}" />
+    </label>
+    <label>
+      Name
+      <input type="text" name="name" value="${user.name}" />
+    </label>
+    <button class="button primary" disabled>Update Account</button>
+  </form>
+</template>
+
+<template id="change-password">
+  <form>
+    <p>
+      Change your password below, or
+      <a href="#update-account">cancel</a>.
+    </p>
+    <p>
+      <label for="password">New password</label>
+      <input type="password" id="password" name="password" />
+      <!--${passwordError}-->
+    </p>
+    <p>
+      <label for="passwordConfirm">Confirm password</label>
+      <input type="password" id="passwordConfirm" name="passwordConfirm" />
+      <!--${passwordConfirmError}-->
+    </p>
+    <p>
+      <button class="button primary" disabled>Change Password</button>
+    </p>
+  </form>
+</template>
+
+<template id="error">
+  <span class="error" aria-live="polite">${text}</span>
+</template>

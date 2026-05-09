@@ -25,6 +25,8 @@
 package com.janilla.json;
 
 import java.io.File;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -41,6 +43,8 @@ import java.util.UUID;
 import com.janilla.java.Java;
 
 public class ValueIterator extends TokenIterator {
+
+	private static final Logger LOGGER = System.getLogger(ValueIterator.class.getName());
 
 	protected final Object value;
 
@@ -96,7 +100,8 @@ public class ValueIterator extends TokenIterator {
 	}
 
 	protected Iterator<JsonToken<?>> newIterator() {
-//		IO.println("ValueIterator.newIterator, value=" + value);
+		LOGGER.log(Level.DEBUG, "value={0}", value);
+
 		return value != null ? switch (value) {
 		case Boolean x -> context.newBooleanIterator(x);
 		case Date x -> context.newStringIterator(x.toString());

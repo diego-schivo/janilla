@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,6 +47,7 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpServer;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 import com.janilla.java.DefaultConverter;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.java.Java;
@@ -55,14 +57,40 @@ import com.janilla.json.Json;
 
 public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C> {
 
-	protected static WebAppConfig newConfig(Class<?>[] classes, String path, DiFactory factory) {
+	protected static WebAppConfig newConfig(Class<?>[] classes, String path, DiFactory diFactory) {
 		var mm = Arrays.stream(classes).map(x -> toConfigMap(x));
 
 		if (path != null) {
 			var m = toConfigMap(path);
 			mm = Stream.concat(mm, Stream.of(m));
 		}
-		return newConfig(mm.toArray(Map<?, ?>[]::new), factory);
+
+		return newConfig(mm.toArray(Map<?, ?>[]::new), diFactory);
+	}
+
+	protected static WebAppConfig newConfig(Map<?, ?>[] maps, DiFactory diFactory) {
+		var m = Arrays.stream(maps).flatMap(x -> x.entrySet().stream()).filter(x -> x.getValue() != null)
+				.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue(), (Object x, Object y) -> merge(x, y),
+						LinkedHashMap::new));
+//		IO.println("AbstractWebApp.newConfig, m=" + m);
+
+		return new DefaultConverter(new TypeResolver() {
+
+			@Override
+			public TypedData apply(TypedData t) {
+				return t.type() instanceof Class<?> c && c.isInterface() ? t.withType(diFactory.classFor(c)) : null;
+			}
+
+			@Override
+			public Class<?> parse(String string) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public String format(Class<?> type) {
+				throw new UnsupportedOperationException();
+			}
+		}).convert(m, diFactory.classFor(WebAppConfig.class));
 	}
 
 	protected static Map<?, ?> toConfigMap(Class<?> type) {
@@ -90,31 +118,6 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 			throw new UncheckedIOException(e);
 		}
 		return (Map<?, ?>) o;
-	}
-
-	protected static WebAppConfig newConfig(Map<?, ?>[] maps, DiFactory factory) {
-		var m = Arrays.stream(maps).flatMap(x -> x.entrySet().stream()).filter(x -> x.getValue() != null)
-				.collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue(), (Object x, Object y) -> merge(x, y),
-						LinkedHashMap::new));
-//		IO.println("AbstractWebApp.newConfig, m=" + m);
-
-		return new DefaultConverter(new TypeResolver() {
-
-			@Override
-			public TypedData apply(TypedData t) {
-				return t.type() instanceof Class<?> c && c.isInterface() ? t.withType(factory.classFor(c)) : null;
-			}
-
-			@Override
-			public Class<?> parse(String string) {
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public String format(Class<?> type) {
-				throw new UnsupportedOperationException();
-			}
-		}).convert(m, factory.classFor(WebAppConfig.class));
 	}
 
 	protected static Object merge(Object object1, Object object2) {
@@ -165,6 +168,8 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 
 	protected final Converter converter;
 
+	protected final Copier copier;
+
 	protected final DiFactory diFactory;
 
 	protected final HttpHandler httpHandler;
@@ -177,20 +182,21 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 
 	protected final TypeResolver typeResolver;
 
-	protected AbstractWebApp(C config, DiFactory diFactory) {
+	protected AbstractWebApp(C config, DiFactory diFactory, Consumer<Object> context) {
 //		IO.println("AbstractWebApp, this=" + this + ", config=" + config);
 		this.config = config;
 		this.diFactory = diFactory;
-		diFactory.context(this);
+		context.accept(this);
 
 		{
-			Map<String, Class<?>> m = diFactory.types().stream().filter(x -> x.getEnclosingClass() == null)
+			Map<String, Class<?>> m = diFactory.types().filter(x -> x.getEnclosingClass() == null)
 					.collect(Collectors.toMap(x -> x.getSimpleName(), x -> x, (_, x) -> x, LinkedHashMap::new));
 //			IO.println("AbstractBackend.newInvocationResolver, m=" + m);
 			resolvables = m.values().stream().toList();
 		}
 		typeResolver = diFactory.newInstance(diFactory.classFor(DollarTypeResolver.class));
 		converter = newConverter();
+		copier = newCopier();
 		invocationResolver = newInvocationResolver();
 		renderableFactory = newRenderableFactory();
 		httpHandler = newHttpHandler();
@@ -203,6 +209,10 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 
 	public Converter converter() {
 		return converter;
+	}
+
+	public Copier copier() {
+		return copier;
 	}
 
 	@Override
@@ -235,6 +245,10 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 		return diFactory.newInstance(diFactory.classFor(Converter.class));
 	}
 
+	protected Copier newCopier() {
+		return diFactory.newInstance(diFactory.classFor(Copier.class));
+	}
+
 	protected HttpHandler newHttpHandler() {
 		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
@@ -247,17 +261,18 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 	}
 
 	protected InvocationResolver newInvocationResolver() {
-		return diFactory.newInstance(diFactory.classFor(InvocationResolver.class), Map.of("invocables",
-				diFactory.types().stream().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
-						.flatMap(x -> Arrays.stream(x.getMethods())
-								.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-								.map(y -> new Invocable(x, y)))
-						.toList(),
-				"instanceResolver", (Function<Class<?>, Object>) x -> {
-					var y = diFactory.context();
+		return diFactory.newInstance(diFactory.classFor(InvocationResolver.class),
+				Map.of("invocables",
+						diFactory.types().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
+								.flatMap(x -> Arrays.stream(x.getMethods())
+										.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
+										.map(y -> new Invocable(x, y)))
+								.toList(),
+						"instanceResolver", (Function<Class<?>, Object>) x -> {
+							var y = diFactory.context();
 //							IO.println("x=" + x + ", y=" + y);
-					return x.isAssignableFrom(y.getClass()) ? y : diFactory.newInstance(diFactory.classFor(x));
-				}));
+							return x.isAssignableFrom(y.getClass()) ? y : diFactory.newInstance(diFactory.classFor(x));
+						}));
 	}
 
 	protected RenderableFactory newRenderableFactory() {

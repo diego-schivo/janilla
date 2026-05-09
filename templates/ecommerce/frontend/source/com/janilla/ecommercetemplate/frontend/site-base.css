@@ -242,10 +242,6 @@
     white-space: nowrap;
     width: 1px;
   }
-
-  ::backdrop {
-    background: oklab(0 0 0 / 0.8);
-  }
 }
 */
 
@@ -253,6 +249,26 @@
   > .site {
     color: light-dark(oklch(0.373 0.034 259.733), rgb(209, 213, 219));
     gap: 2rem;
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      color: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.5), oklab(0.983828 -0.00126734 -0.00320476 / 0.5));
+      display: flex;
+      flex-direction: column;
+      font-family: GeistMono;
+
+      &:has([required]) span::after {
+        content: " *";
+      }
+    }
+
+    ::backdrop {
+      background: oklab(0 0 0 / 0.8);
+    }
 
     div:has(> [name="query"]) {
       position: relative;

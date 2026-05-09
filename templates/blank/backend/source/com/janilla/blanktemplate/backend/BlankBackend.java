@@ -30,16 +30,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import com.janilla.backend.cms.CmsResourceHandling;
 import com.janilla.backend.cms.CmsSchema;
+import com.janilla.backend.cms.UserHttpExchange;
 import com.janilla.backend.web.AbstractBackend;
 import com.janilla.blanktemplate.BlankDomain;
 import com.janilla.http.HttpExchange;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationResolver;
@@ -50,18 +52,20 @@ public class BlankBackend<C extends BlankBackendConfig> extends AbstractBackend<
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.cms"), Java.getPackageTypes("com.janilla.http"),
 				Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", _ -> true),
-				Java.getPackageTypes("com.janilla.blanktemplate"),
+				Java.getPackageTypes("com.janilla.backend.persistence"),
+				Java.getPackageTypes("com.janilla.backend.cms"), Java.getPackageTypes("com.janilla.blanktemplate"),
 				Java.getPackageTypes("com.janilla.blanktemplate.backend")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { BlankBackend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
 	protected CmsResourceHandling cmsResourceHandling;
@@ -70,8 +74,8 @@ public class BlankBackend<C extends BlankBackendConfig> extends AbstractBackend<
 
 	protected final Predicate<HttpExchange> drafts = this::testDrafts;
 
-	public BlankBackend(C config, DiFactory diFactory) {
-		super(config, diFactory);
+	public BlankBackend(C config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 	}
 
 //	protected BlankBackend(DiFactory diFactory, Path configurationFile, String configurationKey) {
@@ -194,8 +198,8 @@ public class BlankBackend<C extends BlankBackendConfig> extends AbstractBackend<
 		return super.newInvocationResolver();
 	}
 
-	protected boolean testDrafts(HttpExchange x) {
-		var u = x instanceof HttpExchangeImpl y ? y.sessionUser() : null;
+	protected boolean testDrafts(HttpExchange exchange) {
+		var u = exchange instanceof UserHttpExchange x ? x.sessionUser() : null;
 		return u != null;
 	}
 }

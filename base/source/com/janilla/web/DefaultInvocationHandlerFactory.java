@@ -97,8 +97,6 @@ public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory impl
 		return null;
 	}
 
-	public static final ScopedValue<Set<String>> JSON_KEYS = ScopedValue.newInstance();
-
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
 //		IO.println("DefaultInvocationHandlerFactory.handle, invocation=" + invocation);
 

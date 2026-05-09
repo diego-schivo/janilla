@@ -38,10 +38,6 @@ export default class AddressEdit extends WebComponent {
         return ["data-id"];
     }
 
-    constructor() {
-        super();
-    }
-
     async updateDisplay() {
         const a = this.closest("app-element");
         const u = a.currentUser;

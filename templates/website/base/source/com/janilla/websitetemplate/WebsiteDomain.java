@@ -25,8 +25,13 @@
 package com.janilla.websitetemplate;
 
 import com.janilla.blanktemplate.BlankDomain;
+import com.janilla.java.Converter;
 
 public class WebsiteDomain extends BlankDomain {
+
+	public WebsiteDomain(Converter converter) {
+		super(converter);
+	}
 
 	public Page emptyPage() {
 		return PageImpl.EMPTY;

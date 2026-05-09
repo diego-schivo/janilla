@@ -69,10 +69,6 @@ record UserImpl(Long id, @Index String name, String email, String salt, String h
 		return k.getEncoded();
 	}
 
-//	public boolean hasRole(UserRole role) {
-//		return roles != null && roles.contains(role);
-//	}
-
 	@Override
 	public boolean passwordEquals(String password) {
 		var f = HexFormat.of();

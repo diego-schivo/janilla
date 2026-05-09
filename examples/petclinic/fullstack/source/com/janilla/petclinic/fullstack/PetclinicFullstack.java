@@ -15,12 +15,13 @@
  */
 package com.janilla.petclinic.fullstack;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.fullstack.web.AbstractFullstack;
 import com.janilla.fullstack.web.FullstackConfig;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.petclinic.backend.PetclinicBackend;
 import com.janilla.petclinic.frontend.PetclinicFrontend;
@@ -43,14 +44,16 @@ public class PetclinicFullstack extends AbstractFullstack<FullstackConfig> {
 	public static void main(String[] args) {
 		IO.println(ProcessHandle.current().pid());
 
-		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(new Class<?>[] { PetclinicBackend.class, PetclinicFrontend.class, PetclinicFullstack.class },
 				args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class),
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		serve(a[0]);
 	}
 
-	public PetclinicFullstack(FullstackConfig config, DiFactory diFactory) {
-		super(config, diFactory, PetclinicFrontend.class, PetclinicBackend.class);
+	public PetclinicFullstack(FullstackConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, PetclinicFrontend.class, PetclinicBackend.class);
 	}
 }

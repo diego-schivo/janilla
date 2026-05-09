@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Page;
@@ -37,8 +38,8 @@ import com.janilla.websitetemplate.Page;
 @Handle(path = "/api/pages")
 public class PageApi extends AbstractCollectionApi<Long, Page> {
 
-	public PageApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Page.class, drafts, persistence, "title");
+	public PageApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Page.class, drafts, persistence, "title", copier);
 	}
 
 	@Handle(method = "GET")

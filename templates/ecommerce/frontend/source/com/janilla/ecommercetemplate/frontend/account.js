@@ -38,22 +38,6 @@ export default class Account extends WebComponent {
         return ["data-success", "data-warning"];
     }
 
-    constructor() {
-        super();
-    }
-
-    connectedCallback() {
-        super.connectedCallback();
-        this.addEventListener("input", this.handleInput);
-        this.addEventListener("submit", this.handleSubmit);
-    }
-
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this.removeEventListener("input", this.handleInput);
-        this.removeEventListener("submit", this.handleSubmit);
-    }
-
     async updateDisplay() {
         const s = this.customState;
         const a = this.closest("app-element");
@@ -75,7 +59,6 @@ export default class Account extends WebComponent {
                 $template: "nav",
                 path: a.currentPath
             },
-            user: a.currentUser,
             orders: s.orders?.length ? {
                 $template: "list",
                 items: s.orders.map(x => ({
@@ -84,32 +67,5 @@ export default class Account extends WebComponent {
                 }))
             } : { $template: "empty" }
         }));
-    }
-
-    handleInput = event => {
-        const o = Object.fromEntries(new FormData(event.target.form));
-        const u = this.closest("app-element").currentUser;
-        this.querySelector("button").disabled = o.email === u.email && o.name === u.name;
-    }
-
-    handleSubmit = async event => {
-        event.preventDefault();
-        const u = this.closest("app-element").currentUser;
-        const o = Object.fromEntries(new FormData(event.target));
-        const r = await fetch(`/api/users/${u.id}`, {
-            method: "PATCH",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-                $type: "User",
-                ...o
-            })
-        });
-        if (r.ok) {
-            this.dispatchEvent(new CustomEvent("user-change", {
-                bubbles: true,
-                detail: { user: await r.json() }
-            }));
-            this.requestDisplay();
-        }
     }
 }

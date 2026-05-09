@@ -30,14 +30,15 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
 import com.janilla.janillacom.Application;
+import com.janilla.java.Copier;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/applications")
-public class BackendApplicationApi extends AbstractCollectionApi<String, Application> {// implements ApplicationApi {
+public class BackendApplicationApi extends AbstractCollectionApi<String, Application> {
 
-	public BackendApplicationApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Application.class, drafts, persistence, "title");
+	public BackendApplicationApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Application.class, drafts, persistence, "title", copier);
 	}
 
 //	@Override

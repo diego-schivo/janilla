@@ -60,7 +60,7 @@ public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends We
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
-		Stream.of("account", "account-nav", "address-edit", "address-item", "addresses", "admin",
+		Stream.of("account", "account-form", "account-nav", "address-edit", "address-item", "addresses", "admin",
 				"admin-create-first-user", "admin-fields", "admin-variant-options", "app", "card", "cart-modal",
 				"checkout", "checkout-addresses", "confirm-order", "create-account", "create-address-modal",
 				"find-order", "footer", "header", "intl-format", "loading-spinner", "login", "logout", "message",
