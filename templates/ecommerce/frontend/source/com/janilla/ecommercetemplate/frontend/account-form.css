@@ -24,23 +24,8 @@
  */
 :where(account-form) {
   form {
-    p:has(label) {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    label,
-    span {
-      font-size: 0.875rem;
-    }
-
     input {
       background-color: lab(2.75381 0 0);
-    }
-
-    span {
-      color: lab(35.2211 31.3348 17.9367);
     }
   }
 }

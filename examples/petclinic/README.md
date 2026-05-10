@@ -21,8 +21,8 @@ https://petclinic.janilla.com/
 Janilla PetClinic is a [Janilla](https://janilla.com/) application built using [Maven](https://maven.apache.org/). You can run it from Maven directly (it should work just as well with Java 25 or newer):
 
 ```bash
-git clone https://github.com/diego-schivo/janilla-petclinic.git
-cd janilla-petclinic
+git clone https://github.com/diego-schivo/janilla.git
+cd janilla/examples/petclinic
 mvn compile exec:java
 ```
 
@@ -30,7 +30,7 @@ You can then access the PetClinic at <https://localhost:8443/>.
 
 ## In case you find a bug/suggested improvement for Janilla PetClinic
 
-Our issue tracker is available [here](https://github.com/diego-schivo/janilla-petclinic/issues).
+Our issue tracker is available [here](https://github.com/diego-schivo/janilla/issues).
 
 ## Database configuration
 
@@ -66,12 +66,12 @@ In order to install them all:
 
 | Item | Files |
 | ---- | ----- |
-| The Main Class| [PetClinicApplication](https://github.com/diego-schivo/janilla-petclinic/blob/main/source/com/janilla/petclinic/PetClinicApplication.java) |
-| Configuration File| [configuration.properties](https://github.com/diego-schivo/janilla-petclinic/blob/main/source/com/janilla/petclinic/configuration.properties) |
+| The Main Class| [PetclinicFullstack](https://github.com/diego-schivo/janilla/blob/main/examples/petclinic/fullstack/source/com/janilla/petclinic/fullstack/PetclinicFullstack.java) |
+| Configuration File| [configuration.properties](https://github.com/diego-schivo/janilla/blob/main/examples/petclinic/fullstack/source/com/janilla/petclinic/fullstack/config.json) |
 
 ## Contributing
 
-The [issue tracker](https://github.com/diego-schivo/janilla-petclinic/issues) is the preferred channel for bug reports, feature requests and submitting pull requests.
+The [issue tracker](https://github.com/diego-schivo/janilla/issues) is the preferred channel for bug reports, feature requests and submitting pull requests.
 
 ## License
 

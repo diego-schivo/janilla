@@ -24,6 +24,7 @@
 package com.janilla.conduit.backend;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.sqlite.TraverseOption;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/tags")
@@ -37,8 +38,9 @@ public class TagApi {
 
 	@Handle(method = "GET")
 	public Tags tags() {
-		var tt = persistence.database().perform(() -> persistence.database().index("CountTag", "table").rows(true)
-				.limit(10).map(x -> (String) x.skip(1).findFirst().get()).toList(), false);
+		var tt = persistence.database().perform(() -> persistence.database().index("CountTag", "table")
+				.rows(TraverseOption.REVERSE_ORDER).limit(10).map(x -> (String) x.skip(1).findFirst().get()).toList(),
+				false);
 		return new Tags(tt);
 	}
 }

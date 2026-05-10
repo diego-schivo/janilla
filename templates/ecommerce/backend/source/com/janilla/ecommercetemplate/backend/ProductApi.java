@@ -35,6 +35,7 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.ecommercetemplate.Product;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
@@ -47,8 +48,9 @@ public class ProductApi extends AbstractCollectionApi<Long, Product> {
 	}
 
 	@Handle(method = "GET")
-	public ListPortion<Product> read(String search, Boolean reverse, Long skip, Long limit, Integer depth, String slug,
-			@Bind("q") String query, @Bind("category") Long[] categories, String sort, HttpExchange exchange) {
+	public ListPortion<Product> read(String search, Direction direction, Long skip, Long limit, Integer depth,
+			String slug, @Bind("q") String query, @Bind("category") Long[] categories, String sort,
+			HttpExchange exchange) {
 		{
 			var s = slug != null && !slug.isEmpty() ? slug : null;
 			if (s != null) {
@@ -92,6 +94,6 @@ public class ProductApi extends AbstractCollectionApi<Long, Product> {
 			}
 		}
 
-		return super.read(search, reverse, skip, limit, depth);
+		return super.read(search, direction, skip, limit, depth);
 	}
 }

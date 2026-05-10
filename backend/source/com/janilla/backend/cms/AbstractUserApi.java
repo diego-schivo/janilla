@@ -65,6 +65,7 @@ import com.janilla.cms.CmsDomain;
 import com.janilla.cms.User;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.java.Flat;
 import com.janilla.java.JavaReflect;
 import com.janilla.json.Jwt;
@@ -119,11 +120,11 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	}
 
 	@Override
-	public ListPortion<U> read(String search, Boolean reverse, Long skip, Long limit, Integer depth) {
+	public ListPortion<U> read(String search, Direction direction, Long skip, Long limit, Integer depth) {
 		if (!isAdmin(exchange().sessionUser()))
 			throw new UnauthorizedException();
 
-		return super.read(search, reverse, skip, limit, depth);
+		return super.read(search, direction, skip, limit, depth);
 	}
 
 	@Handle(method = "PUT", path = "(\\d+)")

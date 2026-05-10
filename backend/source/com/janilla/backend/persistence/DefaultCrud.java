@@ -51,8 +51,10 @@ import com.janilla.backend.sqlite.Record;
 import com.janilla.backend.sqlite.RecordColumn;
 import com.janilla.backend.sqlite.TableBTree;
 import com.janilla.backend.sqlite.TableLeafCell;
+import com.janilla.backend.sqlite.TraverseOption;
 import com.janilla.java.Converter;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.java.Java;
 import com.janilla.java.JavaReflect;
 import com.janilla.java.Property;
@@ -162,7 +164,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			E e;
 		}
 		var a = new A();
-		bTree.select(new Object[] { toDatabaseId(id) }, false, x -> {
+		bTree.select(new Object[] { toDatabaseId(id) }, x -> {
 			var oo = x.findFirst().orElse(null);
 			a.e = oo != null ? parse((String) oo.reduce((_, y) -> y).get()) : null;
 		});
@@ -212,7 +214,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 			return a.e2;
 		}, true);
-		LOGGER.log(Level.INFO, "e={0}", e);
+		LOGGER.log(Level.DEBUG, "e={0}", e);
 
 		return e;
 	}
@@ -247,10 +249,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	@Override
-	public List<ID> list(boolean reverse) {
+	public List<ID> list(Direction direction) {
 		return persistence.database().perform(() -> {
 			var t = bTree();
-			return t.cells(reverse).map(c -> {
+			var cc = direction == Direction.BACKWARD ? t.payloadCells(TraverseOption.REVERSE_ORDER) : t.payloadCells();
+			return cc.map(c -> {
 				var o = switch (c) {
 				case TableLeafCell x -> x.key();
 				case PayloadCell x ->
@@ -270,11 +273,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	@Override
-	public ListPortion<ID> listAndCount(boolean reverse, long skip, long limit) {
+	public ListPortion<ID> listAndCount(Direction direction, long skip, long limit) {
 //		IO.println("DefaultCrud.list, skip=" + skip + ", limit=" + limit);
 		return persistence.database().perform(() -> {
 			var t = bTree();
-			var cc = t.cells(reverse);
+			var cc = direction == Direction.BACKWARD ? t.payloadCells(TraverseOption.REVERSE_ORDER) : t.payloadCells();
 			if (skip > 0)
 				cc = cc.skip(skip);
 			if (limit >= 0)
@@ -294,7 +297,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	@Override
-	public List<ID> filter(String index, Object[] keys, boolean reverse, long skip, long limit) {
+	public List<ID> filter(String index, Object[] keys, Direction direction, long skip, long limit) {
 //		IO.println("DefaultCrud.filter, type=" + type.getSimpleName() + ", index=" + index + ", keys="
 //				+ Arrays.toString(keys));
 		return persistence.database().perform(() -> {
@@ -307,7 +310,9 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			var aa = (keys.length != 0 ? Arrays.stream(keys) : Stream.of((Object) null)).map(k -> {
 				var a = new A();
 				var kk = keys.length != 0 ? new Object[] { toDatabaseValue(k) } : new Object[0];
-				t.select(kk, reverse, x -> a.vv = x.map(Stream::toArray).iterator());
+				var oo = direction == Direction.BACKWARD ? new TraverseOption[] { TraverseOption.REVERSE_ORDER }
+						: new TraverseOption[0];
+				t.select(kk, x -> a.vv = x.map(Stream::toArray).iterator(), oo);
 				a.v = a.vv.hasNext() ? a.vv.next() : null;
 				return a;
 			}).toList();
@@ -320,7 +325,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 					return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
 				};
 				var s = aa.stream();
-				var a = (reverse ? s.max(c) : s.min(c)).orElse(null);
+				var a = (direction == Direction.BACKWARD ? s.max(c) : s.min(c)).orElse(null);
 				if (a == null || a.v == null)
 					return null;
 				var v = a.v;
@@ -345,30 +350,30 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	@Override
-	public ListPortion<ID> filterAndCount(String index, Object[] keys, boolean reverse, long skip, long limit) {
-		return persistence.database()
-				.perform(() -> new ListPortion<>(filter(index, keys, reverse, skip, limit), count(index, keys)), false);
+	public ListPortion<ID> filterAndCount(String index, Object[] keys, Direction direction, long skip, long limit) {
+		return persistence.database().perform(
+				() -> new ListPortion<>(filter(index, keys, direction, skip, limit), count(index, keys)), false);
 	}
 
 	@Override
-	public List<ID> filter(String index, Predicate<Object> operation, boolean reverse) {
+	public List<ID> filter(String index, Predicate<Object> operation, Direction direction) {
 		return persistence.database().perform(() -> {
 			var t = getIndex(index);
+			var rr = direction == Direction.BACKWARD ? t.rows(TraverseOption.REVERSE_ORDER) : t.rows();
 			@SuppressWarnings("unchecked")
-			var ii = t.rows(reverse).map(Stream::toArray).filter(x -> operation.test(x[0]))
-					.map(x -> (ID) x[x.length - 1]).toList();
+			var ii = rr.map(Stream::toArray).filter(x -> operation.test(x[0])).map(x -> (ID) x[x.length - 1]).toList();
 			return ii;
 		}, false);
 	}
 
 	@Override
-	public ListPortion<ID> filterAndCount(String index, Predicate<Object> operation, boolean reverse, long skip,
+	public ListPortion<ID> filterAndCount(String index, Predicate<Object> operation, Direction direction, long skip,
 			long limit) {
 		return persistence.database().perform(() -> {
 			var t = getIndex(index);
+			var rr = direction == Direction.BACKWARD ? t.rows(TraverseOption.REVERSE_ORDER) : t.rows();
 			@SuppressWarnings("unchecked")
-			var ii = t.rows(reverse).map(Stream::toArray).filter(x -> operation.test(x[0]))
-					.map(x -> (ID) x[x.length - 1]).toList();
+			var ii = rr.map(Stream::toArray).filter(x -> operation.test(x[0])).map(x -> (ID) x[x.length - 1]).toList();
 			var s = ii.stream();
 			if (skip > 0)
 				s = s.skip(skip);
@@ -379,13 +384,13 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	@Override
-	public ListPortion<ID> filterAndCount(Map<String, Object[]> keys, boolean reverse, long skip, long limit) {
+	public ListPortion<ID> filterAndCount(Map<String, Object[]> keys, Direction direction, long skip, long limit) {
 		var ee = keys.entrySet().stream().filter(x -> x.getValue() != null && x.getValue().length > 0).toList();
 		if (ee.isEmpty())
-			return listAndCount(reverse, skip, limit);
+			return listAndCount(direction, skip, limit);
 		if (ee.size() == 1) {
 			var e = ee.getFirst();
-			return filterAndCount(e.getKey(), e.getValue(), reverse, skip, limit);
+			return filterAndCount(e.getKey(), e.getValue(), direction, skip, limit);
 		}
 		return persistence.database().perform(() -> {
 			class A {
@@ -402,9 +407,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 				}
 				var bb = new ArrayList<B>();
 				var i = getIndex(e.getKey());
+				var oo = direction == Direction.BACKWARD ? new TraverseOption[] { TraverseOption.REVERSE_ORDER }
+						: new TraverseOption[0];
 				for (var k : e.getValue()) {
 					var b = new B();
-					i.select(new Object[] { k }, reverse, x -> b.vvi = x.map(Stream::toArray).iterator());
+					i.select(new Object[] { k }, x -> b.vvi = x.map(Stream::toArray).iterator(), oo);
 					b.v = b.vvi != null && b.vvi.hasNext() ? b.vvi.next() : null;
 					bb.add(b);
 				}
@@ -474,7 +481,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		LOGGER.log(Level.DEBUG, "object={0}", object);
 
 		var s = Json.format(new CustomJsonIterator(object, converter.typeResolver()));
-		LOGGER.log(Level.INFO, "s={0}", s);
+		LOGGER.log(Level.DEBUG, "s={0}", s);
 
 		return s;
 	}
@@ -485,7 +492,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@SuppressWarnings("unchecked")
 	protected <T> T parse(String string, Class<T> target) {
-		LOGGER.log(Level.INFO, "string={0}, target={1}", string, target);
+		LOGGER.log(Level.DEBUG, "string={0}, target={1}", string, target);
 
 		var t = (T) converter.convert(Json.parse(string), target);
 //		IO.println("DefaultCrud.parse, t=" + t);

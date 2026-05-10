@@ -27,6 +27,7 @@ package com.janilla.acmedashboard.backend;
 import java.util.List;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Direction;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/dashboard")
@@ -54,6 +55,6 @@ class DashboardApi {
 	@Handle(method = "GET", path = "invoices")
 	public List<Invoice> getInvoices() {
 		var c = persistence.crud(Invoice.class);
-		return c.filter("date", new Object[0], true, 0, 5).stream().map(x -> c.read(x, 1)).toList();
+		return c.filter("date", new Object[0], Direction.BACKWARD, 0, 5).stream().map(x -> c.read(x, 1)).toList();
 	}
 }

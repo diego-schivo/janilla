@@ -28,6 +28,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
@@ -49,6 +51,8 @@ import com.janilla.web.HandleException;
 import com.janilla.web.NotFoundException;
 
 public class DefaultHttpServer extends AbstractServer implements HttpServer {
+
+	private static final Logger LOGGER = System.getLogger(DefaultHttpServer.class.getName());
 
 	protected final HttpHandler handler;
 
@@ -357,6 +361,8 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 
 	@Override
 	public void exchange(HttpRequest request, HttpResponse response) {
+		LOGGER.log(Level.DEBUG, request.getUri());
+
 		var ex = createExchange(request, response);
 		ScopedValue.where(HttpExchange.SCOPED, ex).call(() -> handleExchange(ex));
 	}

@@ -16,9 +16,9 @@
 package com.janilla.petclinic.frontend;
 
 import java.io.ByteArrayInputStream;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.channels.Channels;
-import java.util.List;
 
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
@@ -59,7 +59,8 @@ class OwnerApiImpl implements OwnerApi {
 						.append("skip", skip != null ? skip.toString() : null)
 						.append("limit", limit != null ? limit.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
-		return new DefaultConverter().convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Owner.class)));
+		return new DefaultConverter().convert(o,
+				new SimpleParameterizedType(ListPortion.class, new Type[] { Owner.class }));
 	}
 
 	@Override

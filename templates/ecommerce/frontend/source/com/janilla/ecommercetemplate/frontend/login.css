@@ -36,13 +36,15 @@
   }
 
   message-element,
-  article {
+  form {
     max-width: 36rem;
   }
 
+  /*
   article {
     padding: 0;
   }
+  */
 
   form {
     margin-top: 1rem;
@@ -59,6 +61,11 @@
     .button {
       flex: 1;
     }
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
   }
 
   input {

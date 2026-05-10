@@ -24,8 +24,8 @@
  */
 package com.janilla.websitetemplate.frontend;
 
+import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.List;
 
 import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.frontend.web.FrontendConfig;
@@ -55,8 +55,8 @@ public class WebsiteDataFetching extends CmsDataFetching {
 	}
 
 	public Header header(Integer depth) {
-		var r = new HttpRequest("GET", URI.create(
-				config.api().url() + "/header?" + new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null)));
+		var r = new HttpRequest("GET", URI.create(config.api().url() + "/header?"
+				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null)));
 		var o = httpClient.send(r, HttpClient.JSON);
 //		IO.println("o=" + o);
 		return converter.convert(o, Header.class);
@@ -68,7 +68,7 @@ public class WebsiteDataFetching extends CmsDataFetching {
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
 //		IO.println("WebsiteDataFetching.pages, o=" + o);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Page.class)));
+		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Page.class }));
 	}
 
 	public ListPortion<Post> posts(String slug, Integer depth, HttpCookie token) {
@@ -76,13 +76,13 @@ public class WebsiteDataFetching extends CmsDataFetching {
 				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Post.class)));
+		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Post.class }));
 	}
 
 	public ListPortion<SearchResult> searchResults(String query) {
 		var r = new HttpRequest("GET",
 				URI.create(config.api().url() + "/search-results?" + new UriQueryBuilder().append("query", query)));
 		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(SearchResult.class)));
+		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { SearchResult.class }));
 	}
 }

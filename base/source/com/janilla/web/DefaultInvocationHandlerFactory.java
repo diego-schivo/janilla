@@ -26,6 +26,8 @@ package com.janilla.web;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.channels.Channels;
@@ -64,6 +66,8 @@ import com.janilla.java.UriQueryBuilder;
 import com.janilla.json.Json;
 
 public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory implements InvocationHandlerFactory {
+
+	private static final Logger LOGGER = System.getLogger(DefaultInvocationHandlerFactory.class.getName());
 
 	protected final InvocationResolver invocationResolver;
 
@@ -228,7 +232,8 @@ public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory impl
 
 	protected Object resolveArgument(Type type, HttpExchange exchange, String[] values, Supplier<String> body,
 			Supplier<Converter> converter) {
-//		IO.println("DefaultInvocationHandlerFactory.resolveArgument, type=" + type);
+		LOGGER.log(Level.DEBUG, "type={0}, values={1}", type, Arrays.toString(values));
+
 		var c0 = Java.toClass(type);
 		var c1 = diFactory.classFor(c0);
 		var c = c1 != null ? c1 : c0;
@@ -240,7 +245,7 @@ public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory impl
 		if (c != null && HttpResponse.class.isAssignableFrom(c))
 			return exchange.response();
 
-		if (values != null && values.length > 0)
+		if (values != null && values.length != 0)
 			return parseParameter(values, type);
 
 		if (c != null) {
@@ -261,6 +266,7 @@ public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory impl
 				}
 				return converter.get().convert(o, type);
 			}
+
 			case "application/x-www-form-urlencoded": {
 //				if (entries == null)
 //					break;
@@ -276,7 +282,11 @@ public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory impl
 					return null;
 				return converter.get().convert(new UriQueryBuilder(b).toMap(), type);
 			}
+
 			default:
+				if (c.isEnum())
+					return parseParameter(values, type);
+
 				if (c.isRecord()) {
 					var tt = Arrays.stream(c.getRecordComponents()).collect(
 							Collectors.toMap(x -> x.getName(), x -> x.getType(), (_, x) -> x, LinkedHashMap::new));

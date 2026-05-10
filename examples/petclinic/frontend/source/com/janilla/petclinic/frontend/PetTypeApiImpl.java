@@ -15,6 +15,7 @@
  */
 package com.janilla.petclinic.frontend;
 
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.List;
 
@@ -41,6 +42,6 @@ class PetTypeApiImpl implements PetTypeApi {
 	public List<PetType> read() {
 		var u = URI.create(config.api().url() + "/pet-types");
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
-		return new DefaultConverter().convert(o, new SimpleParameterizedType(List.class, List.of(PetType.class)));
+		return new DefaultConverter().convert(o, new SimpleParameterizedType(List.class, new Type[] { PetType.class }));
 	}
 }

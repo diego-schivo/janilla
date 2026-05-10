@@ -247,12 +247,22 @@
 
 :where(app-element) {
   > .site {
-    color: light-dark(oklch(0.373 0.034 259.733), rgb(209, 213, 219));
+    /*color: light-dark(oklch(0.373 0.034 259.733), rgb(209, 213, 219));*/
+    color: lab(98.26 0 0);
     gap: 2rem;
 
     form {
-      display: flex;
-      flex-direction: column;
+      gap: 2rem;
+
+      > p {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+
+    main {
+      line-height: 1.5;
     }
 
     label {
@@ -260,10 +270,16 @@
       display: flex;
       flex-direction: column;
       font-family: GeistMono;
+      font-size: 0.875rem;
 
       &:has([required]) span::after {
         content: " *";
       }
+    }
+
+    .error {
+      color: lab(35.2211 31.3348 17.9367);
+      font-size: 0.875rem;
     }
 
     ::backdrop {

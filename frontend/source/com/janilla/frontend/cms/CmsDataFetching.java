@@ -49,8 +49,8 @@
  */
 package com.janilla.frontend.cms;
 
+import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.List;
 
 import com.janilla.cms.User;
 import com.janilla.frontend.web.FrontendConfig;
@@ -89,6 +89,6 @@ public abstract class CmsDataFetching {
 						+ new UriQueryBuilder().append("skip", skip != null ? skip.toString() : null).append("limit",
 								limit != null ? limit.toString() : null)));
 		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(User.class)));
+		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { User.class }));
 	}
 }

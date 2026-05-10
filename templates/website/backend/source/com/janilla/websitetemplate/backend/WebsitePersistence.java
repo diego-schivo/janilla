@@ -107,7 +107,7 @@ public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPer
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-		LOGGER.log(Level.INFO, "sd={0}", sd);
+		LOGGER.log(Level.DEBUG, "sd={0}", sd);
 
 //		IO.println("pp=" + pp);
 		pp.stream().forEach(x -> database.perform(() -> {

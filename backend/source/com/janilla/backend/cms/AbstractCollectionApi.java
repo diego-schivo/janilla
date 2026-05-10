@@ -63,6 +63,7 @@ import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Version;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.java.DollarTypeResolver;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
@@ -107,15 +108,16 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 
 	@Override
 	@Handle(method = "GET")
-	public ListPortion<D> read(String search, Boolean reverse, Long skip, Long limit, Integer depth) {
+	public ListPortion<D> read(String search, Direction direction, Long skip, Long limit, Integer depth) {
 //		IO.println("AbstractCollectionApi.read, search=" + search + ", reverse=" + reverse + ", skip=" + skip
 //				+ ", limit=" + limit + ", depth=" + depth);
 		var s1 = search != null && !search.isBlank() ? search.strip().toLowerCase() : null;
-		var r = reverse != null && reverse.booleanValue();
+//		var r = reverse != null && reverse.booleanValue();
 		var s2 = skip != null ? skip.longValue() : 0;
 		var l = limit != null ? limit.longValue() : -1;
-		return (s1 != null ? crud().filterAndCount(searchIndex, x -> ((String) x).toLowerCase().contains(s1), r, s2, l)
-				: crud().listAndCount(r, s2, l)).map(x -> crud().read(x, depth != null ? depth : 0));
+		return (s1 != null
+				? crud().filterAndCount(searchIndex, x -> ((String) x).toLowerCase().contains(s1), direction, s2, l)
+				: crud().listAndCount(direction, s2, l)).map(x -> crud().read(x, depth != null ? depth : 0));
 	}
 
 	@Override

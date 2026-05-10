@@ -23,8 +23,8 @@
  */
 package com.janilla.janillacom.frontend;
 
+import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.List;
 
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
@@ -51,6 +51,6 @@ public class JanillaDataFetching extends WebsiteDataFetching {
 						.append("limit", limit != null ? limit.toString() : null)
 						.append("depth", depth != null ? depth.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Application.class)));
+		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Application.class }));
 	}
 }

@@ -22,33 +22,9 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.java;
+package com.janilla.backend.sqlite;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.stream.Collectors;
+public enum TraverseOption {
 
-public record SimpleParameterizedType(Type rawType, Type... actualTypeArguments) implements ParameterizedType {
-
-	@Override
-	public Type getRawType() {
-		return rawType;
-	}
-
-	@Override
-	public Type[] getActualTypeArguments() {
-		return actualTypeArguments;
-	}
-
-	@Override
-	public Type getOwnerType() {
-		return null;
-	}
-
-	@Override
-	public final String toString() {
-		return rawType.getTypeName()
-				+ Arrays.stream(actualTypeArguments).map(Type::getTypeName).collect(Collectors.joining(", ", "<", ">"));
-	}
+	REVERSE_ORDER, LEAF_ONLY
 }

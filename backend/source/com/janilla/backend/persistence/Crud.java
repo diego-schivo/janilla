@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
+import com.janilla.java.Direction;
 import com.janilla.persistence.Entity;
 import com.janilla.persistence.ListPortion;
 
@@ -59,45 +60,46 @@ public interface Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 	List<E> delete(List<ID> ids);
 
 	default List<ID> list() {
-		return list(false);
+		return list(Direction.FORWARD);
 	}
 
-	List<ID> list(boolean reverse);
+	List<ID> list(Direction direction);
 
 	long count();
 
-	ListPortion<ID> listAndCount(boolean reverse, long skip, long limit);
+	ListPortion<ID> listAndCount(Direction direction, long skip, long limit);
 
 	default ID find(String index, Object[] keys) {
-		return find(index, keys, false);
+		return find(index, keys, Direction.FORWARD);
 	}
 
-	default ID find(String index, Object[] keys, boolean reverse) {
-		var ii = filter(index, keys, reverse, 0, 1);
+	default ID find(String index, Object[] keys, Direction direction) {
+		var ii = filter(index, keys, direction, 0, 1);
 		return !ii.isEmpty() ? ii.getFirst() : null;
 	}
 
 	default List<ID> filter(String index, Object[] keys) {
-		return filter(index, keys, false);
+		return filter(index, keys, Direction.FORWARD);
 	}
 
-	default List<ID> filter(String index, Object[] keys, boolean reverse) {
-		return filter(index, keys, reverse, 0, -1);
+	default List<ID> filter(String index, Object[] keys, Direction direction) {
+		return filter(index, keys, direction, 0, -1);
 	}
 
-	List<ID> filter(String index, Object[] keys, boolean reverse, long skip, long limit);
+	List<ID> filter(String index, Object[] keys, Direction direction, long skip, long limit);
 
 	long count(String index, Object[] keys);
 
-	ListPortion<ID> filterAndCount(String index, Object[] keys, boolean reverse, long skip, long limit);
+	ListPortion<ID> filterAndCount(String index, Object[] keys, Direction direction, long skip, long limit);
 
 	default List<ID> filter(String index, Predicate<Object> operation) {
-		return filter(index, operation, false);
+		return filter(index, operation, Direction.FORWARD);
 	}
 
-	List<ID> filter(String index, Predicate<Object> operation, boolean reverse);
+	List<ID> filter(String index, Predicate<Object> operation, Direction direction);
 
-	ListPortion<ID> filterAndCount(String index, Predicate<Object> operation, boolean reverse, long skip, long limit);
+	ListPortion<ID> filterAndCount(String index, Predicate<Object> operation, Direction direction, long skip,
+			long limit);
 
-	ListPortion<ID> filterAndCount(Map<String, Object[]> keys, boolean reverse, long skip, long limit);
+	ListPortion<ID> filterAndCount(Map<String, Object[]> keys, Direction direction, long skip, long limit);
 }

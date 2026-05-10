@@ -15,8 +15,8 @@
  */
 package com.janilla.petclinic.frontend;
 
+import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.List;
 
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
@@ -46,6 +46,7 @@ class VetApiImpl implements VetApi {
 						.append("skip", skip != null ? skip.toString() : null)
 						.append("limit", limit != null ? limit.toString() : null));
 		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
-		return new DefaultConverter().convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Vet.class)));
+		return new DefaultConverter().convert(o,
+				new SimpleParameterizedType(ListPortion.class, new Type[] { Vet.class }));
 	}
 }

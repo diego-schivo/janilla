@@ -31,6 +31,7 @@ import com.janilla.ecommercetemplate.Address;
 import com.janilla.ecommercetemplate.Cart;
 import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.EcommerceUser;
+import com.janilla.java.Direction;
 
 public class UserCrudObserver implements CrudObserver<User<?>> {
 
@@ -46,9 +47,9 @@ public class UserCrudObserver implements CrudObserver<User<?>> {
 	@Override
 	public User<?> beforePopulate(User<?> entity) {
 		var e = (EcommerceUser<?>) entity;
-		var cc = persistence.crud(Cart.class).filter("customer", new Object[] { e.id() }, true);
+		var cc = persistence.crud(Cart.class).filter("customer", new Object[] { e.id() }, Direction.BACKWARD);
 		e = e.withCarts(cc.stream().map(x -> domain.emptyCart().withId(x)).toList());
-		var aa = persistence.crud(Address.class).filter("customer", new Object[] { e.id() }, true);
+		var aa = persistence.crud(Address.class).filter("customer", new Object[] { e.id() }, Direction.BACKWARD);
 		e = e.withAddresses(aa.stream().map(x -> domain.emptyAddress().withId(x)).toList());
 		return e;
 	}

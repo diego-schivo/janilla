@@ -24,8 +24,8 @@
  */
 package com.janilla.ecommercetemplate.frontend;
 
+import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.List;
 
 import com.janilla.ecommercetemplate.Product;
 import com.janilla.http.HttpClient;
@@ -47,7 +47,7 @@ public class EcommerceDataFetching extends WebsiteDataFetching {
 	public ListPortion<Category> categories() {
 		var r = new HttpRequest("GET", URI.create(config.api().url() + "/categories"));
 		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Category.class)));
+		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Category.class }));
 	}
 
 	public ListPortion<Product> products(String slug, String query, Long category, String sort, Integer depth,
@@ -59,6 +59,6 @@ public class EcommerceDataFetching extends WebsiteDataFetching {
 								.append("depth", depth != null ? depth.toString() : null)),
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, List.of(Product.class)));
+		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Product.class }));
 	}
 }

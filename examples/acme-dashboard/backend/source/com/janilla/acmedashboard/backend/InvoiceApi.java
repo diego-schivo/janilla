@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Direction;
 import com.janilla.java.JavaReflect;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
@@ -46,7 +47,7 @@ class InvoiceApi {
 	@Handle(method = "GET")
 	public ListPortion<Invoice> list(@Bind("query") String query, @Bind("page") Integer page) {
 		var c = persistence.crud(Invoice.class);
-		var ii = c.filter("date", new Object[0], true).stream().map(x -> c.read(x, 1));
+		var ii = c.filter("date", new Object[0], Direction.BACKWARD).stream().map(x -> c.read(x, 1));
 
 		if (query != null && !query.isBlank())
 			ii = ii.filter(x -> x.customer().name().toLowerCase().contains(query.toLowerCase()));

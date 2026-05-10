@@ -195,7 +195,7 @@
 				"$type": "LinkType",
 				"name": "CUSTOM"
 			},
-				"uri": "https://github.com/diego-schivo/ecommerce-template",
+				"uri": "https://github.com/diego-schivo/janilla/tree/main/templates/ecommerce",
 				"text": "Source Code"
 			},
 			{
@@ -426,7 +426,7 @@
 					"$type": "HeroType",
 					"name": "LOW_IMPACT"
 				},
-				"richText": "<h1>Janilla Ecommerce Template</h1><p><a href=\"/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla-ecommerce-template\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>"
+				"richText": "<h1>Janilla Ecommerce Template</h1><p><a href=\"/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla/tree/main/templates/ecommerce\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>"
 			},
 			"layout": [
 				{

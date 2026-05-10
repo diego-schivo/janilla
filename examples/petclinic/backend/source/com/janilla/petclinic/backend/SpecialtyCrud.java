@@ -21,6 +21,8 @@ import java.util.function.Supplier;
 
 import com.janilla.backend.persistence.DefaultCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 import com.janilla.petclinic.Specialty;
 
 /**
@@ -28,8 +30,8 @@ import com.janilla.petclinic.Specialty;
  */
 class SpecialtyCrud extends DefaultCrud<Long, Specialty> {
 
-	public SpecialtyCrud(Persistence persistence) {
-		super(Specialty.class, null, null, null, persistence);
+	public SpecialtyCrud(Converter converter, Copier copier, Persistence persistence) {
+		super(Specialty.class, null, converter, copier, persistence);
 	}
 
 	protected Map<Long, Supplier<Specialty>> readCache = new ConcurrentHashMap<>();

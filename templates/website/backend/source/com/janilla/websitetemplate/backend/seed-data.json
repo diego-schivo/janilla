@@ -56,7 +56,7 @@
 					"$type": "LinkType",
 					"name": "CUSTOM"
 				},
-				"uri": "https://github.com/diego-schivo/website-template",
+				"uri": "https://github.com/diego-schivo/janilla/tree/main/templates/website",
 				"text": "Source Code"
 			},
 			{
@@ -206,7 +206,7 @@
 					"$type": "HeroType",
 					"name": "HIGH_IMPACT"
 				},
-				"richText": "<h1>Janilla Website Template</h1><p><a href=\"/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla-templates/tree/main/website\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>",
+				"richText": "<h1>Janilla Website Template</h1><p><a href=\"/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla/tree/main/templates/website\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>",
 				"links": [
 					{
 						"$type": "Link",

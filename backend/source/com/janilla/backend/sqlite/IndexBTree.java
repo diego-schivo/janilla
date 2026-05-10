@@ -39,6 +39,8 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import com.janilla.java.Java;
+
 public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 
 	public IndexBTree(SqliteDatabase database, long rootNumber) {
@@ -46,8 +48,8 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 	}
 
 	@Override
-	public boolean select(Object[] key, boolean reverse, Consumer<Stream<Stream<Object>>> rowsOperation) {
-		var s = search(key, reverse);
+	public boolean select(Object[] key, Consumer<Stream<Stream<Object>>> rowsOperation, TraverseOption... options) {
+		var s = search(key, options);
 		if (rowsOperation != null)
 			rowsOperation.accept(s.rows());
 		return s.found() != -1;
@@ -56,8 +58,8 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 	@Override
 	public long count(Object[] key) {
 		if (key.length == 0)
-			return count(true);
-		var x = search(key, false);
+			return count();
+		var x = search(key);
 //		if (x.found() == -1)
 //			return 0l;
 //		var p = x.path().getLast();
@@ -73,7 +75,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 	public boolean insert(Object[] key, Object[] data) {
 //		IO.println("IndexBTree.insert, key=" + Arrays.toString(key) + ", data=" + Arrays.toString(data));
 
-		var s = search(key, false);
+		var s = search(key);
 		if (s.found() != -1)
 			return false;
 
@@ -107,7 +109,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 	public boolean delete(Object[] key, Consumer<Stream<Stream<Object>>> rowsOperation) {
 //		IO.println("IndexBTree.delete, key=" + Arrays.toString(key));
 
-		var s = search(key, false);
+		var s = search(key);
 		if (s.found() == -1)
 			return false;
 
@@ -139,7 +141,7 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 					* (8 + p.getCells().stream().mapToInt(x -> Short.BYTES + x.size()).sum()) < database.usableSize()) {
 				new IndexRebalancer(s.path(), p, p.getCells()).run();
 				if (c != null)
-					s = search(key, false);
+					s = search(key);
 			} else
 				database.writePageBuffer(s.path().pointer(s.path().size()), p.buffer());
 		}
@@ -178,11 +180,11 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 //		return ids(key, false);
 //	}
 
-	public Stream<?> ids(Object[] key, boolean reverse) {
+	public Stream<?> ids(Object[] key, TraverseOption... options) {
 		if (key.length == 0)
-			return cells(reverse)
+			return payloadCells(options)
 					.map(c -> Record.fromBytes(payloadBuffers((PayloadCell) c)).reduce((_, x) -> x).get().toObject());
-		var s = search(key, reverse);
+		var s = search(key, options);
 		if (s.found() == -1)
 			return Stream.empty();
 		var p = s.path().getLast();
@@ -194,39 +196,46 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 		}).takeWhile(x -> x != null);
 	}
 
+//	@Override
+//	public Stream<? extends Cell> cells(boolean reverse) {
+//		return cells(true, reverse);
+//	}
+
 	@Override
-	public Stream<? extends Cell> cells(boolean reverse) {
-		return cells(true, reverse);
+	public Stream<? extends Cell> payloadCells(TraverseOption... options) {
+		if (Java.contains(options, TraverseOption.LEAF_ONLY))
+			throw new IllegalArgumentException();
+		return cells(rootNumber, options);
 	}
 
-	protected Search search(Object[] key, boolean reverse) {
+	protected Search search(Object[] key, TraverseOption... options) {
 //		IO.println("IndexBTree.search, key=" + Arrays.toString(key));
 		var n = rootNumber;
 		var s = new Search(new BTreePath(this), -1, null);
+		var r = Java.contains(options, TraverseOption.REVERSE_ORDER);
 
 		i: for (var i = 0;; i++) {
 			var p = BTreePage.read(n, database);
-			var ci = reverse ? p.getCellCount() - 1 : 0;
+			var ci = r ? p.getCellCount() - 1 : 0;
 			Cell c0 = null;
 
-			for (var it = p.getCells().listIterator(reverse ? ci + 1 : ci); reverse ? it.hasPrevious()
-					: it.hasNext();) {
-				var c = reverse ? it.previous() : it.next();
+			for (var it = p.getCells().listIterator(r ? ci + 1 : ci); r ? it.hasPrevious() : it.hasNext();) {
+				var c = r ? it.previous() : it.next();
 				var d = compare(c, key);
 				if (d == 0)
 					s = s.withFound(i);
 
-				if (reverse ? d <= 0 : d >= 0) {
+				if (r ? d <= 0 : d >= 0) {
 					s.path().add(new BTreePosition(p, ci));
 					if (p instanceof InteriorPage p2) {
-						n = reverse ? c0 != null ? ((InteriorCell) c0).leftChildPointer() : p2.getRightMostPointer()
+						n = r ? c0 != null ? ((InteriorCell) c0).leftChildPointer() : p2.getRightMostPointer()
 								: ((InteriorCell) c).leftChildPointer();
 						continue i;
 					} else
 						break i;
 				}
 
-				if (reverse)
+				if (r)
 					ci--;
 				else
 					ci++;
@@ -235,12 +244,12 @@ public class IndexBTree extends BTree<IndexLeafPage, IndexLeafCell> {
 			s.path().add(new BTreePosition(p, ci));
 
 			if (p instanceof InteriorPage p2)
-				n = reverse ? ((InteriorCell) c0).leftChildPointer() : p2.getRightMostPointer();
+				n = r ? ((InteriorCell) c0).leftChildPointer() : p2.getRightMostPointer();
 			else
 				break;
 		}
 //		IO.println("IndexBTree.search, f=" + f);
-		s = s.withRows(s.found() != -1 ? Stream.iterate(s.path(), x -> (reverse ? x.previous() : x.next()) ? x : null)
+		s = s.withRows(s.found() != -1 ? Stream.iterate(s.path(), x -> (r ? x.previous() : x.next()) ? x : null)
 				.takeWhile(Objects::nonNull).filter(x -> {
 					var pi = x.getLast();
 					return pi.index() != pi.page().getCellCount();

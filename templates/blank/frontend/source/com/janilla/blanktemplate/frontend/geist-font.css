@@ -24,14 +24,14 @@
  */
 @font-face {
   font-family: Geist;
-  src: url(/geist-font/Geist/webfonts/Geist%5Bwght%5D.woff2) format('woff2');
+  src: url(/geist-font-1.8.0/fonts/Geist/webfonts/Geist%5Bwght%5D.woff2) format('woff2');
   font-display: swap;
   font-weight: 100 900;
 }
 
 @font-face {
   font-family: GeistMono;
-  src: url(/geist-font/GeistMono/webfonts/GeistMono%5Bwght%5D.woff2) format('woff2');
+  src: url(/geist-font-1.8.0/fonts/GeistMono/webfonts/GeistMono%5Bwght%5D.woff2) format('woff2');
   font-display: swap;
   font-weight: 100 900;
 }

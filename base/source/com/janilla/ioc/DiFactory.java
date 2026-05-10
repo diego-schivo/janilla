@@ -24,6 +24,7 @@
  */
 package com.janilla.ioc;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -33,7 +34,12 @@ public interface DiFactory {
 
 	Stream<Class<?>> types();
 
-	<T, U extends T> Class<U> classFor(Class<T> type);
+	@SuppressWarnings("unchecked")
+	default <T, U extends T> Class<U> classFor(Class<T> type) {
+		return (Class<U>) classFor((Type) type);
+	}
+
+	Class<?> classFor(Type type);
 
 	default <T> T newInstance(Class<T> class1) {
 		return newInstance(class1, null);

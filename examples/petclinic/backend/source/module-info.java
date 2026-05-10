@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 module com.janilla.petclinic.backend {
 
 	exports com.janilla.petclinic.backend;
@@ -21,4 +22,6 @@ module com.janilla.petclinic.backend {
 
 	requires transitive com.janilla.backend;
 	requires transitive com.janilla.petclinic.base;
+
+//	provides DiFactoryProvider with CustomDiFactoryProvider;
 }

@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.web.BackendConfig;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Direction;
 import com.janilla.java.JavaReflect;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.ForbiddenException;
@@ -116,18 +117,19 @@ public class ArticleApi {
 		var c = persistence.crud(Article.class);
 		ListPortion<Long> p;
 		if (tag != null && !tag.isBlank())
-			p = c.filterAndCount("tagList", new Object[] { tag }, true, skip != null ? skip : 0,
+			p = c.filterAndCount("tagList", new Object[] { tag }, Direction.BACKWARD, skip != null ? skip : 0,
 					limit != null ? limit : -1);
 		else if (author != null && !author.isBlank()) {
 			var a = persistence.crud(User.class).find("username", new Object[] { author });
-			p = c.filterAndCount("author", new Object[] { a }, true, skip != null ? skip : 0,
+			p = c.filterAndCount("author", new Object[] { a }, Direction.BACKWARD, skip != null ? skip : 0,
 					limit != null ? limit : -1);
 		} else if (favorited != null && !favorited.isBlank()) {
 			var f = persistence.crud(User.class).find("username", new Object[] { favorited });
-			p = c.filterAndCount("favoriteList", new Object[] { f }, true, skip != null ? skip : 0,
+			p = c.filterAndCount("favoriteList", new Object[] { f }, Direction.BACKWARD, skip != null ? skip : 0,
 					limit != null ? limit : -1);
 		} else
-			p = c.filterAndCount("createdAt", new Object[0], true, skip != null ? skip : 0, limit != null ? limit : -1);
+			p = c.filterAndCount("createdAt", new Object[0], Direction.BACKWARD, skip != null ? skip : 0,
+					limit != null ? limit : -1);
 		return Map.of("articles", c.read(p.elements()), "articlesCount", p.totalSize());
 	}
 
@@ -135,9 +137,8 @@ public class ArticleApi {
 	public Object listFeed(Long skip, Long limit, User user) {
 		var u = persistence.crud(User.class).filter("followList", new Object[] { user.id() });
 		var c = persistence.crud(Article.class);
-		var p = !u.isEmpty()
-				? c.filterAndCount("author", u.toArray(), true, skip != null ? skip : 0, limit != null ? limit : -1)
-				: ListPortion.<Long>empty();
+		var p = !u.isEmpty() ? c.filterAndCount("author", u.toArray(), Direction.BACKWARD, skip != null ? skip : 0,
+				limit != null ? limit : -1) : ListPortion.<Long>empty();
 		return Map.of("articles", c.read(p.elements()), "articlesCount", p.totalSize());
 	}
 

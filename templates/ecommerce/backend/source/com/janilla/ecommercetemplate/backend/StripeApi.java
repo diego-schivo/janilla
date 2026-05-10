@@ -26,6 +26,7 @@ package com.janilla.ecommercetemplate.backend;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.channels.Channels;
@@ -155,7 +156,7 @@ public class StripeApi extends PaymentApi {
 
 		@SuppressWarnings("unchecked")
 		var cii = (List<CartItem>) new DefaultConverter().convert(Json.parse(pi.metadata().get("cartItems")),
-				new SimpleParameterizedType(List.class, List.of(CartItem.class)));
+				new SimpleParameterizedType(List.class, new Type[] { CartItem.class }));
 		var sa = (AddressData) new DefaultConverter().convert(Json.parse(pi.metadata().get("shippingAddress")),
 				AddressData.class);
 		var o = persistence.crud(Order.class)

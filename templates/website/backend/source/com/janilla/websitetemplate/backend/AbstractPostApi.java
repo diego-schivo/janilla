@@ -31,6 +31,7 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Post;
@@ -42,13 +43,13 @@ public abstract class AbstractPostApi<P extends Post> extends AbstractCollection
 	}
 
 	@Handle(method = "GET")
-	public ListPortion<P> read(String search, Boolean reverse, Long skip, Long limit, Integer depth, String slug,
+	public ListPortion<P> read(String search, Direction direction, Long skip, Long limit, Integer depth, String slug,
 			HttpExchange exchange) {
 		if (slug != null && !slug.isEmpty()) {
 			var p = crud().read(crud().find(drafts.test(exchange) ? "slugDraft" : "slug", new Object[] { slug }),
 					depth != null ? depth : 0);
 			return p != null ? ListPortion.of(List.of(p)) : ListPortion.empty();
 		}
-		return super.read(search, reverse, skip, limit, depth);
+		return super.read(search, direction, skip, limit, depth);
 	}
 }

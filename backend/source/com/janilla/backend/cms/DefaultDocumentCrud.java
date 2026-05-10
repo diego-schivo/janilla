@@ -124,7 +124,7 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 					ID id;
 				}
 				var a = new A();
-				i.select(new Object[] { id }, false, x -> {
+				i.select(new Object[] { id }, x -> {
 					var oo = x.reduce((_, y) -> y).get();
 //					IO.println("oo=" + Arrays.toString(oo));
 					@SuppressWarnings("unchecked")
@@ -198,7 +198,7 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 				});
 			else {
 				var i = persistence.database().index(versionTable + ".documentId");
-				i.select(new Object[] { id }, false, x -> {
+				i.select(new Object[] { id }, x -> {
 					var oo = x.reduce((_, y) -> y).get();
 					@SuppressWarnings("unchecked")
 					var o = (ID) oo.toArray()[1];
@@ -235,12 +235,11 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 		return versionTable != null ? persistence.database().perform(() -> {
 			var d = super.delete(id);
 			var ids = new ArrayList<ID>();
-			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, false,
-					x -> x.map(oo -> {
-						@SuppressWarnings("unchecked")
-						var o = (ID) oo.toArray()[1];
-						return o;
-					}).forEach(ids::add));
+			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, x -> x.map(oo -> {
+				@SuppressWarnings("unchecked")
+				var o = (ID) oo.toArray()[1];
+				return o;
+			}).forEach(ids::add));
 			var t = persistence.database().table(versionTable);
 			var vv = new ArrayList<Version<ID, D>>(ids.size());
 			ids.forEach(x -> t.delete(new Object[] { x }, y -> {
@@ -266,14 +265,13 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 	public List<Version<ID, D>> readVersions(ID id) {
 		return persistence.database().perform(() -> {
 			var ids = new ArrayList<ID>();
-			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, false,
-					x -> x.map(oo -> {
-						@SuppressWarnings("unchecked")
-						var y = (ID) oo.toArray()[1];
-						return y;
-					}).forEach(ids::add));
+			persistence.database().index(versionTable + ".documentId").select(new Object[] { id }, x -> x.map(oo -> {
+				@SuppressWarnings("unchecked")
+				var y = (ID) oo.toArray()[1];
+				return y;
+			}).forEach(ids::add));
 			var vv = new ArrayList<Version<ID, D>>(ids.size());
-			ids.forEach(x -> persistence.database().table(versionTable).select(new Object[] { x }, false, y -> {
+			ids.forEach(x -> persistence.database().table(versionTable).select(new Object[] { x }, y -> {
 				var oo = y.findFirst().get();
 				@SuppressWarnings("unchecked")
 				var v = (Version<ID, D>) parse((String) oo.toArray()[1], Version.class);
@@ -290,7 +288,7 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 				Version<ID, D> v;
 			}
 			var a = new A();
-			persistence.database().table(versionTable).select(new Object[] { versionId }, false, x -> {
+			persistence.database().table(versionTable).select(new Object[] { versionId }, x -> {
 				var oo = x.findFirst().get();
 //				IO.println("oo=" + Arrays.toString(oo));
 				@SuppressWarnings("unchecked")

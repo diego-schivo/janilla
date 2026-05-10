@@ -24,7 +24,10 @@
  */
 package com.janilla.backend.persistence;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,11 +41,14 @@ import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.java.JavaReflect;
+import com.janilla.java.SimpleParameterizedType;
 import com.janilla.persistence.Entity;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
 public class DefaultPersistence implements Persistence {
+
+	private static final Logger LOGGER = System.getLogger(DefaultPersistence.class.getName());
 
 	protected final PersistenceConfiguration configuration = new PersistenceConfiguration();
 
@@ -116,15 +122,22 @@ public class DefaultPersistence implements Persistence {
 	}
 
 	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-//		IO.println("DefaultPersistence.newCrud, type=" + type);
-//		return new DefaultCrud(type, idHelper(type), this);
-		return diFactory.newInstance(diFactory.classFor(Crud.class),
-				Java.hashMap("type", type, "idHelper", idHelper(type), "persistence", this));
+		LOGGER.log(Level.DEBUG, "type={0}", type);
+
+		var t = JavaReflect.getAllActualInterfaces(type).filter(x -> Java.toClass(x) == Entity.class).findFirst()
+				.map(x -> ((ParameterizedType) x).getActualTypeArguments()[0]).get();
+
+		@SuppressWarnings("unchecked")
+		var c = (Class<Crud<?, E>>) diFactory.classFor(new SimpleParameterizedType(Crud.class, t, type));
+
+		return diFactory.newInstance(c, Java.hashMap("type", type, "idHelper", idHelper(type), "persistence", this));
 	}
 
 	@Override
 	public <ID extends Comparable<ID>> IdHelper<ID> idHelper(Class<?> type) {
 		var t = JavaReflect.property(type, "id").type();
+		LOGGER.log(Level.DEBUG, "t={0}", t);
+
 		@SuppressWarnings("unchecked")
 		var x = (IdHelper<ID>) (t == UUID.class ? new UuidIdHelper() : t == String.class ? new StringIdHelper() : null);
 		return x;

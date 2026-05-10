@@ -24,11 +24,18 @@
  */
 package com.janilla.ioc;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Supplier;
+import java.util.stream.StreamSupport;
 
 public class Ioc {
+
+	private static final Logger LOGGER = System.getLogger(Ioc.class.getName());
 
 	public static DiFactory diFactory(List<Class<?>> types, Supplier<Object> context) {
 		return diFactory(types, context, null);
@@ -44,8 +51,12 @@ public class Ioc {
 			synchronized (A.lock) {
 				s = A.service;
 				if (s == null) {
-					s = ServiceLoader.load(DiFactoryProvider.class, ClassLoader.getSystemClassLoader()).iterator()
-							.next();
+					var l = ServiceLoader.load(DiFactoryProvider.class, ClassLoader.getSystemClassLoader());
+					var pp = StreamSupport
+							.stream(Spliterators.spliteratorUnknownSize(l.iterator(), Spliterator.ORDERED), false)
+							.toList();
+					LOGGER.log(Level.DEBUG, "pp={0}", pp);
+					s = pp.getLast();
 					A.service = s;
 				}
 			}

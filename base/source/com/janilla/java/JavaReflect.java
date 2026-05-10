@@ -24,6 +24,8 @@
  */
 package com.janilla.java;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
@@ -36,10 +38,12 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,6 +59,8 @@ import java.util.stream.Stream;
 
 public class JavaReflect {
 
+	private static final Logger LOGGER = System.getLogger(JavaReflect.class.getName());
+
 	public static Stream<String> propertyNames(Type type) {
 //		IO.println("JavaReflect.properties, type=" + type);
 		return propertyMap(type).keySet().stream();
@@ -66,7 +72,7 @@ public class JavaReflect {
 	}
 
 	public static Property property(Type type, String name) {
-//		IO.println("JavaReflect.property, type=" + type + ", name=" + name);
+		LOGGER.log(Level.DEBUG, "type={0}, name={1}", type, name);
 		return propertyMap(type).get(name);
 	}
 
@@ -341,7 +347,7 @@ public class JavaReflect {
 			return m.get(v.getName());
 		case ParameterizedType t:
 			return new SimpleParameterizedType(t.getRawType(), Arrays.stream(t.getActualTypeArguments())
-					.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toList());
+					.map(y -> y instanceof TypeVariable v ? m.get(v.getName()) : y).toArray(Type[]::new));
 		default:
 			return type;
 		}
@@ -588,5 +594,58 @@ public class JavaReflect {
 		if (o instanceof RuntimeException e)
 			throw e;
 		return (Constructor<?>) o;
+	}
+
+	public static Stream<Type> getActualInterfaces(Type type) {
+		var tt = Java.toClass(type).getGenericInterfaces();
+		var m = getActualTypeArguments(type);
+//		IO.println("m=" + m);
+		return Arrays.stream(tt).map(x -> getActualType(x, m));
+	}
+
+	public static Type getActualSuperclass(Type type) {
+		var t = Java.toClass(type).getGenericSuperclass();
+		var m = getActualTypeArguments(type);
+		return getActualType(t, m);
+	}
+
+	public static Type getActualType(Type type, Map<String, Type> arguments) {
+		if (type instanceof ParameterizedType pt && !arguments.isEmpty()) {
+			var c = (Class<?>) pt.getRawType();
+			var pp1 = c.getTypeParameters();
+
+			var pp2 = pt.getActualTypeArguments();
+			return new SimpleParameterizedType(c, IntStream.range(0, pp1.length).mapToObj(i -> {
+				var v = pp2[i] instanceof TypeVariable x ? x : pp1[i];
+				return arguments.get(v.getName());
+			}).toArray(Type[]::new));
+		}
+		return type;
+	}
+
+	public static Map<String, Type> getActualTypeArguments(Type type) {
+		var pp = Java.toClass(type).getTypeParameters();
+		if (type instanceof ParameterizedType pt) {
+			var aa = pt.getActualTypeArguments();
+			return IntStream.range(0, pp.length).collect(HashMap::new, (m, i) -> m.put(pp[i].getName(), aa[i]),
+					Map::putAll);
+		}
+		return Arrays.stream(pp).map(x -> (TypeVariable<?>) x)
+				.collect(Collectors.toMap(x -> x.getName(), x -> Java.toClass(x.getBounds()[0])));
+	}
+
+	public static Stream<Type> getAllActualInterfaces(Type type) {
+		var s = new LinkedHashSet<Type>();
+		for (var q = new ArrayDeque<Type>(List.of(type)); !q.isEmpty();) {
+			var t = q.poll();
+			getActualInterfaces(t).forEach(x -> {
+				if (s.add(x))
+					q.offer(x);
+			});
+			t = getActualSuperclass(t);
+			if (t != null)
+				q.offer(t);
+		}
+		return s.stream();
 	}
 }

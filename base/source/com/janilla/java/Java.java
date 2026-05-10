@@ -44,6 +44,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -65,6 +66,26 @@ public final class Java {
 
 	private Java() {
 		throw new Error("no instances");
+	}
+
+	public static <T> T[] concat(T[] array1, T[] array2) {
+		var tt = Arrays.copyOf(array1, array1.length + array2.length);
+		System.arraycopy(array2, 0, tt, array1.length, array2.length);
+		return tt;
+	}
+
+	public static <T> boolean contains(T[] array, T element) {
+		return indexOf(array, element) != -1;
+	}
+
+	public static <T> int indexOf(T[] array, T element) {
+		var i = 0;
+		for (var x : array)
+			if (x.equals(element))
+				return i;
+			else
+				i++;
+		return -1;
 	}
 
 	public static <E> ArrayList<E> arrayList(E e) {

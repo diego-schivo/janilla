@@ -26,6 +26,8 @@ package com.janilla.ioc;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -35,14 +37,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import com.janilla.java.Java;
 import com.janilla.java.JavaInvoke;
 import com.janilla.java.JavaReflect;
 
 public class DefaultDiFactory implements DiFactory {
 
-	protected final Map<Class<?>, Optional<Class<?>>> classes = new ConcurrentHashMap<>();
+	protected final Map<Type, Optional<Class<?>>> classes = new ConcurrentHashMap<>();
 
 	protected final Supplier<Object> context;
 
@@ -70,21 +74,37 @@ public class DefaultDiFactory implements DiFactory {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public <T, U extends T> Class<U> classFor(Class<T> type) {
+	public Class<?> classFor(Type type) {
 //		IO.println("DefaultDiFactory.classFor, type=" + type);
-		var c = (Class<U>) classes
-				.computeIfAbsent(type,
-						_ -> Stream.concat(Stream.of(type), types.stream()).filter(predicate(type)).reduce((_, x) -> x))
-				.orElse(null);
+		var c = classes.computeIfAbsent(type, k -> {
+			var cc = k instanceof Class x ? Stream.concat(Stream.<Class<?>>of(x), types.stream()) : types.stream();
+			return cc.filter(predicate(k)).reduce((_, x) -> x);
+		}).orElse(null);
 //		IO.println("DefaultDiFactory.classFor, c=" + c);
 		return c;
 	}
 
-	protected Predicate<Class<?>> predicate(Class<?> type) {
+	protected Predicate<Class<?>> predicate(Type type) {
 		Predicate<Class<?>> p = x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())
 				|| (x.isMemberClass() && !Modifier.isStatic(x.getModifiers())));
-		p = p.and(type::isAssignableFrom);
+
+		p = p.and(Java.toClass(type)::isAssignableFrom);
+
+		if (type instanceof ParameterizedType pt1) {
+			var cc1 = Stream.concat(Stream.of(pt1.getRawType()), Arrays.stream(pt1.getActualTypeArguments()))
+					.map(Java::toClass).toList();
+//			IO.println("cc1=" + cc1);
+			p = p.and(t -> JavaReflect.getAllActualInterfaces(t).filter(x -> x instanceof ParameterizedType)
+					.anyMatch(x -> {
+//						IO.println("x=" + x);
+						var cc2 = x instanceof ParameterizedType pt2 ? Stream
+								.concat(Stream.of(pt2.getRawType()), Arrays.stream(pt2.getActualTypeArguments()))
+								.map(Java::toClass).toList() : null;
+//						IO.println("cc2=" + cc2);
+						return cc2 != null && IntStream.range(0, cc1.size())
+								.allMatch(i -> cc2.get(i).isAssignableFrom(cc1.get(i)));
+					}));
+		}
 
 		if (scope != null)
 			p = p.and(t -> {

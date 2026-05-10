@@ -25,6 +25,8 @@
 @import "/blank/site-base.css";
 
 :where(:root:not(:has(.admin)), :host:not(:has(.admin))) {
+  font-feature-settings: normal;
+  font-variation-settings: normal;
   line-height: 1.5;
   text-size-adjust: 100%;
 
@@ -40,6 +42,7 @@
     background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
     color: light-dark(rgb(2, 8, 23), rgb(209, 213, 219));
     font-family: Geist;
+    line-height: 1.5;
   }
 
   button {
@@ -97,9 +100,12 @@
     border: 1px solid rgba(38, 38, 38, 0.8);
     border-radius: 0.25rem;
     box-sizing: border-box;
+    display: block;
     font-family: Geist;
     font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
+    /*padding: 0.5rem 0.75rem;*/
+    padding: 0.25rem 0.75rem;
+    width: 100%;
 
     &:focus {
       outline: 2px solid rgb(255, 255, 255);
@@ -107,11 +113,8 @@
   }
 
   input {
-    height: 2.5rem;
-  }
-
-  label:has([required]) span::after {
-    content: " *";
+    /*height: 2.5rem;*/
+    height: 2.25rem;
   }
 
   ol,
@@ -188,6 +191,18 @@
     gap: 4rem;
     min-height: 100vh;
 
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      > p {
+        &:has([required]) label::after {
+          content: "*";
+        }
+      }
+    }
+
     > header {
       align-items: center;
       display: flex;
@@ -222,12 +237,16 @@
       }
     }
 
+    label {
+      line-height: 1;
+    }
+
     main {
       display: flex;
       flex-direction: column;
       font-size: 1rem;
       gap: 4rem;
-      line-height: 1.75;
+      /*line-height: 1.75;*/
 
       > :not(.hero) {
         padding: 0 1rem;

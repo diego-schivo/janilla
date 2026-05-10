@@ -22,6 +22,9 @@ import java.util.function.Supplier;
 
 import com.janilla.backend.persistence.DefaultCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.persistence.ListPortion;
 import com.janilla.petclinic.Vet;
 
@@ -40,8 +43,8 @@ class VetCrud extends DefaultCrud<Long, Vet> {
 
 	Map<List<?>, Supplier<ListPortion<Long>>> listCache2 = new ConcurrentHashMap<>();
 
-	public VetCrud(Persistence persistence) {
-		super(Vet.class, null, null, null, persistence);
+	public VetCrud(Converter converter, Copier copier, Persistence persistence) {
+		super(Vet.class, null, converter, copier, persistence);
 	}
 
 	@Override
@@ -55,8 +58,8 @@ class VetCrud extends DefaultCrud<Long, Vet> {
 	}
 
 	@Override
-	public ListPortion<Long> listAndCount(boolean reverse, long skip, long limit) {
-		return listCache2.computeIfAbsent(List.of(reverse, skip, limit),
-				_ -> Lazy.of(() -> super.listAndCount(reverse, skip, limit))).get();
+	public ListPortion<Long> listAndCount(Direction direction, long skip, long limit) {
+		return listCache2.computeIfAbsent(List.of(direction, skip, limit),
+				_ -> Lazy.of(() -> super.listAndCount(direction, skip, limit))).get();
 	}
 }

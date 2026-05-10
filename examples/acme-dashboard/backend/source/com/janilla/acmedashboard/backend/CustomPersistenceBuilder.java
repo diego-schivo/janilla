@@ -24,6 +24,8 @@
  */
 package com.janilla.acmedashboard.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -33,6 +35,8 @@ import com.janilla.ioc.DiFactory;
 
 class CustomPersistenceBuilder extends PersistenceBuilder {
 
+	private static final Logger LOGGER = System.getLogger(CustomPersistenceBuilder.class.getName());
+
 	public CustomPersistenceBuilder(Path databaseFile) {
 		super(databaseFile);
 	}
@@ -41,13 +45,17 @@ class CustomPersistenceBuilder extends PersistenceBuilder {
 	public Persistence build(DiFactory diFactory) {
 		var e = Files.exists(databaseFile);
 		var p = super.build(diFactory);
+
 		if (!e) {
 			var d = PlaceholderData.read();
+			LOGGER.log(Level.INFO, "d={0}", d);
+
 			d.customers().forEach(p.crud(Customer.class)::create);
 			d.invoices().forEach(p.crud(Invoice.class)::create);
 			d.revenue().forEach(p.crud(Revenue.class)::create);
 			d.users().forEach(p.crud(User.class)::create);
 		}
+
 		return p;
 	}
 }

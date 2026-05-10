@@ -39,6 +39,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import com.janilla.java.Java;
+
 public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 
 	public TableBTree(SqliteDatabase database, long rootNumber) {
@@ -46,7 +48,7 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	}
 
 	@Override
-	public boolean select(Object[] key, boolean reverse, Consumer<Stream<Stream<Object>>> rowsOperation) {
+	public boolean select(Object[] key, Consumer<Stream<Stream<Object>>> rowsOperation, TraverseOption... options) {
 		var k = (long) key[0];
 		var s = search(k);
 		if (s.found() != s.path().size() - 1)
@@ -59,7 +61,7 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 	@Override
 	public long count(Object[] keys) {
 		if (keys.length == 0)
-			return count(false);
+			return count(TraverseOption.LEAF_ONLY);
 		throw new RuntimeException();
 	}
 
@@ -152,13 +154,20 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 		return true;
 	}
 
-	public LongStream keys(boolean reverse) {
-		return cells(reverse).mapToLong(x -> ((TableLeafCell) x).key());
+	public LongStream keys(TraverseOption... options) {
+		return payloadCells(options).mapToLong(x -> ((TableLeafCell) x).key());
 	}
 
+//	@Override
+//	public Stream<? extends Cell> cells(boolean reverse) {
+//		return cells(false, reverse);
+//	}
+
 	@Override
-	public Stream<? extends Cell> cells(boolean reverse) {
-		return cells(false, reverse);
+	public Stream<? extends Cell> payloadCells(TraverseOption... options) {
+		var oo = Java.contains(options, TraverseOption.LEAF_ONLY) ? options
+				: Java.concat(options, new TraverseOption[] { TraverseOption.LEAF_ONLY });
+		return cells(rootNumber, oo);
 	}
 
 	@Override

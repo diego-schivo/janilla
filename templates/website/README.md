@@ -47,4 +47,4 @@ Then open a browser and navigate to <https://localhost:8443/>.
 
 Please visit [www.janilla.com](https://janilla.com/) for more information.
 
-You can use [GitHub Issues](https://github.com/diego-schivo/janilla-website-template/issues) to give or receive feedback.
+You can use [GitHub Issues](https://github.com/diego-schivo/janilla/issues) to give or receive feedback.

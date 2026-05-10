@@ -26,6 +26,8 @@ package com.janilla.blanktemplate.frontend;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
@@ -33,10 +35,13 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.net.ssl.SSLContext;
 
 import com.janilla.http.DefaultHttpClient;
 import com.janilla.http.HttpExchange;
@@ -46,6 +51,8 @@ import com.janilla.http.HttpRequest;
 import com.janilla.java.Java;
 
 public class DownloadHandlerFactory implements HttpHandlerFactory {
+
+	private static final Logger LOGGER = System.getLogger(DownloadHandlerFactory.class.getName());
 
 	protected final Map<String, Path> files;
 
@@ -67,15 +74,21 @@ public class DownloadHandlerFactory implements HttpHandlerFactory {
 			d2 = x;
 		}
 		files = Stream
-				.of("https://github.com/vercel/geist-font/releases/download/geist%401.7.0/geist-font-v1.7.0.zip",
-						"https://github.com/lucide-icons/lucide/releases/download/0.575.0/lucide-icons-0.575.0.zip")
+				.of("https://github.com/vercel/geist-font/releases/download/1.8.0/geist-font-1.8.0.zip",
+						"https://github.com/lucide-icons/lucide/releases/download/1.14.0/lucide-icons-1.14.0.zip")
 				.map(x -> {
 					var n = x.substring(x.lastIndexOf('/') + 1);
 					var f = d2.resolve(n);
 					if (!Files.exists(f)) {
 						var l = x;
 						do {
-							l = new DefaultHttpClient().send(new HttpRequest("GET", URI.create(l)), rs -> {
+							SSLContext c;
+							try {
+								c = SSLContext.getDefault();
+							} catch (NoSuchAlgorithmException e) {
+								throw new RuntimeException(e);
+							}
+							l = new DefaultHttpClient(c).send(new HttpRequest("GET", URI.create(l)), rs -> {
 								if (rs.getHeaderValue(":status").equals("302"))
 									return rs.getHeaderValue("location");
 								try {
@@ -96,6 +109,7 @@ public class DownloadHandlerFactory implements HttpHandlerFactory {
 						throw new UncheckedIOException(e);
 					}
 				}).collect(Collectors.toMap(x -> x.toString(), x -> x));
+		LOGGER.log(Level.DEBUG, "files={0}", files);
 	}
 
 	@Override

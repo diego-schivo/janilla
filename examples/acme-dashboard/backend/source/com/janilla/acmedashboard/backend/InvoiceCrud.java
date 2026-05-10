@@ -45,7 +45,7 @@ class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
 		return persistence.database().perform(() -> {
 			var i = persistence.database().index("StatusAmount", "table");
 			var a = new BigDecimal[1];
-			i.select(new Object[] { toDatabaseValue(status) }, false,
+			i.select(new Object[] { toDatabaseValue(status) },
 					x -> x.forEach(y -> a[0] = BigDecimal.valueOf((double) y.reduce((_, z) -> z).get())));
 			return Objects.requireNonNullElse(a[0], BigDecimal.ZERO);
 		}, false);
@@ -55,7 +55,7 @@ class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
 		return persistence.database().perform(() -> {
 			var i = persistence.database().index("CustomerStatusAmount", "table");
 			var a = new BigDecimal[1];
-			i.select(new Object[] { toDatabaseValue(customerId), toDatabaseValue(status) }, false,
+			i.select(new Object[] { toDatabaseValue(customerId), toDatabaseValue(status) },
 					x -> x.forEach(y -> a[0] = BigDecimal.valueOf((double) y.reduce((_, z) -> z).get())));
 			return Objects.requireNonNullElse(a[0], BigDecimal.ZERO);
 		}, false);

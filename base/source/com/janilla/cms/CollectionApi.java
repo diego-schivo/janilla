@@ -51,6 +51,7 @@ package com.janilla.cms;
 
 import java.util.List;
 
+import com.janilla.java.Direction;
 import com.janilla.persistence.ListPortion;
 
 public interface CollectionApi<ID extends Comparable<ID>, D extends Document<ID>> {
@@ -59,7 +60,7 @@ public interface CollectionApi<ID extends Comparable<ID>, D extends Document<ID>
 
 	D read(ID id, Integer depth);
 
-	ListPortion<D> read(String search, Boolean reverse, Long skip, Long limit, Integer depth);
+	ListPortion<D> read(String search, Direction direction, Long skip, Long limit, Integer depth);
 
 	D update(ID id, D document, Boolean draft, Boolean autosave);
 

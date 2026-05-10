@@ -27,6 +27,8 @@ package com.janilla.web;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
@@ -44,6 +46,8 @@ import java.util.stream.Stream;
 import com.janilla.java.Java;
 
 public class DefaultResourceMap extends HashMap<String, Resource> implements ResourceMap {
+
+	private static final Logger LOGGER = System.getLogger(DefaultResourceMap.class.getName());
 
 	private static final long serialVersionUID = -334340699116362752L;
 
@@ -148,6 +152,7 @@ public class DefaultResourceMap extends HashMap<String, Resource> implements Res
 				}
 			}
 		}
-//		IO.println("ResourceMap=" + this);
+
+		LOGGER.log(Level.DEBUG, "this={0}", this);
 	}
 }
