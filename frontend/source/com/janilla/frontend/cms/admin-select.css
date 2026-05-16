@@ -47,14 +47,14 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-:where(.admin) {
-  label:has(admin-select) {
+.admin-ui {
+  :where(label:has(admin-select)) {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  admin-select {
+  :where(admin-select) {
     select,
     ::picker(select) {
       appearance: base-select;

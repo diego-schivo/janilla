@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 
 import com.janilla.frontend.Template;
 import com.janilla.frontend.cms.CmsDataFetching;
-import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
@@ -51,22 +50,23 @@ public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends We
 	}
 
 	@Override
-	protected void putAppInitArgs(Map<String, Object> args, HttpExchange exchange) {
-		super.putAppInitArgs(args, exchange);
-		args.put("stripePublishableKey", config.stripe().publishableKey());
-		args.put("stripeUrl", config.stripe().url());
+	protected Map<String, String> env() {
+		var m = super.env();
+		m.put("stripePublishableKey", config.stripe().publishableKey());
+		m.put("stripeUrl", config.stripe().url());
+		return m;
 	}
 
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
 		Stream.of("account", "account-form", "account-nav", "address-edit", "address-item", "addresses", "admin",
-				"admin-create-first-user", "admin-fields", "admin-variant-options", "app", "card", "cart-modal",
-				"checkout", "checkout-addresses", "confirm-order", "create-account", "create-address-modal",
-				"find-order", "footer", "header", "intl-format", "loading-spinner", "login", "logout", "message",
-				"mobile-menu", "order", "order-item", "orders", "payment", "price", "product", "product-description",
-				"product-gallery", "product-item", "select", "shop", "variant-selector").map(this::ecommerceImportKey)
-				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+				"admin-create-first-user", "admin-fields", "admin-login", "admin-variant-options", "app", "card",
+				"cart-modal", "checkout", "checkout-addresses", "confirm-order", "create-account",
+				"create-address-modal", "find-order", "footer", "header", "intl-format", "loading-spinner", "login",
+				"logout", "message", "mobile-menu", "order", "order-item", "orders", "payment", "price", "product",
+				"product-description", "product-gallery", "product-item", "select", "shop", "variant-selector")
+				.map(this::ecommerceImportKey).forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	@Override

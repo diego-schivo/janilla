@@ -45,6 +45,11 @@
     }
   }
 
+  button {
+    display: flex;
+    gap: 0.5rem;
+  }
+
   selectedcontent {
     lucide-icon {
       display: none;

@@ -39,15 +39,15 @@ export default class CardWrapper extends WebComponent {
     }
 
     async updateDisplay() {
-        const d = this.closest("dashboard-page");
+        const d = this.shadowClosest("dashboard-page");
         const hs = history.state;
         this.appendChild(this.interpolateDom({
             $template: "",
             ...(d.slot ? hs.cards : null)
         }));
         if (this.dataset.state === "loading") {
-            const a = this.closest("app-element");
-            const x = a.serverState?.cards ?? await (await fetch(`${a.dataset.apiUrl}/dashboard/cards`,
+            const a = this.shadowClosest("app-element");
+            const x = a.serverState?.cards ?? await (await fetch(`${a.customEnv.apiUrl}/dashboard/cards`,
                 { credentials: "include" })).json();
             history.replaceState({
                 ...history.state,

@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.petclinic.Owner;
 import com.janilla.petclinic.Pet;
 import com.janilla.petclinic.PetApi;
@@ -36,13 +37,16 @@ import com.janilla.web.Handle;
 @Handle(path = "/owners/(\\d+)/pets")
 class PetsHandling {
 
+	protected final FrontendConfig config;
+
 	protected final PetApi petApi;
 
 	protected final PetTypeApi petTypeApi;
 
-	public PetsHandling(PetApi petApi, PetTypeApi petTypeApi) {
+	public PetsHandling(PetApi petApi, PetTypeApi petTypeApi, FrontendConfig config) {
 		this.petApi = petApi;
 		this.petTypeApi = petTypeApi;
+		this.config = config;
 	}
 
 	@Handle(method = "GET", path = "new")
@@ -60,7 +64,7 @@ class PetsHandling {
 			return new PetForm(p, petTypeApi.read(), ee);
 
 		p = petApi.create(p);
-		return URI.create("/owners/" + p.owner().id());
+		return URI.create(config.basePath() + "/owners/" + p.owner().id());
 	}
 
 	@Handle(method = "GET", path = "(\\d+)/edit")
@@ -78,7 +82,7 @@ class PetsHandling {
 			return new PetForm(p, petTypeApi.read(), ee);
 
 		p = petApi.update(id, p);
-		return URI.create("/owners/" + p.owner().id());
+		return URI.create(config.basePath() + "/owners/" + p.owner().id());
 	}
 
 	protected Map<String, List<String>> validate(Pet pet) {

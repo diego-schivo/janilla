@@ -24,6 +24,8 @@
  */
 export default class WebComponent extends HTMLElement {
 
+    static basePath;
+
     static get moduleUrl() {
         return import.meta.url;
     }
@@ -46,9 +48,9 @@ export default class WebComponent extends HTMLElement {
         timeoutID: undefined
     };
 
-    constructor() {
-        super();
-        this.#initializeTemplating = Promise.all((this.constructor.templateNames ?? []).map(x => this.getDocumentFragment(x)))
+    connectedCallback() {
+        // console.log(`WebComponent(${this.constructor.name}).connectedCallback`);
+        this.#initializeTemplating ??= Promise.all((this.constructor.templateNames ?? []).map(x => this.getDocumentFragment(x)))
             .then(x => {
                 const documentFragment = x.reduce((y, z) => {
                     y.appendChild(z.cloneNode(true));
@@ -66,12 +68,29 @@ export default class WebComponent extends HTMLElement {
                     functions: []
                 }]));
             });
+
+        this.customState = {};
+        this.requestDisplay();
+    }
+
+    disconnectedCallback() {
+        // console.log(`WebComponent(${this.constructor.name}).disconnectedCallback`);
+        delete this.customState;
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        // console.log(`WebComponent(${this.constructor.name}).attributeChangedCallback`, "name", name, "oldValue", oldValue, "newValue", newValue);
+        if (this.isConnected && newValue !== oldValue) {
+            if (this.customState && Object.keys(this.customState).length)
+                this.customState = {};
+            this.requestDisplay();
+        }
     }
 
     async getDocumentFragment(name) {
-        const n = this.constructor.moduleUrl
-            ? new URL(name, this.constructor.moduleUrl).pathname.substring(1)
-            : name;
+        const n0 = name.startsWith("/") ? WebComponent.basePath + name : name;
+		const u = this.constructor.moduleUrl;
+        const n = u ? new URL(n0, u).pathname.substring(1) : n0;
         //console.log(name, this.constructor.moduleUrl, n);
         documentFragments[n] ??= (() => {
             const el = document.getElementById(n);
@@ -91,26 +110,6 @@ export default class WebComponent extends HTMLElement {
         })();
         return await documentFragments[n];
     };
-
-    connectedCallback() {
-        // console.log(`WebComponent(${this.constructor.name}).connectedCallback`);
-        this.customState = {};
-        this.requestDisplay();
-    }
-
-    disconnectedCallback() {
-        // console.log(`WebComponent(${this.constructor.name}).disconnectedCallback`);
-        delete this.customState;
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-        // console.log(`WebComponent(${this.constructor.name}).attributeChangedCallback`, "name", name, "oldValue", oldValue, "newValue", newValue);
-        if (this.isConnected && newValue !== oldValue) {
-            if (this.customState && Object.keys(this.customState).length)
-                this.customState = {};
-            this.requestDisplay();
-        }
-    }
 
     requestDisplay(delay = 1) {
         // console.log(`WebComponent(${this.constructor.name}).requestDisplay`);
@@ -133,7 +132,7 @@ export default class WebComponent extends HTMLElement {
             await this.#initializeTemplating;
             if (!this.#displayUpdate.repeat) {
                 await this.updateDisplay();
-				this.dispatchEvent(new Event("displayupdated", { bubbles: true }));
+                this.dispatchEvent(new Event("displayupdated", { bubbles: true }));
             }
         } finally {
             this.#displayUpdate.ongoing = false;
@@ -186,6 +185,10 @@ export default class WebComponent extends HTMLElement {
         }
         return node;
     }
+
+    shadowClosest(selectors) {
+        return shadowClosest(this, selectors);
+    }
 }
 
 const documentFragments = {};
@@ -199,9 +202,11 @@ const evaluate = (expression, context) => {
             const index = subexpr.endsWith("]") ? subexpr.indexOf("[") : -1;
             value = index === -1 ? value[subexpr] : value[subexpr.substring(0, index)]?.[parseInt(subexpr.substring(index + 1, subexpr.length - 1))];
         }
-	//console.log("expression", expression, "value", value);
-	if (value === undefined && expression === "basePath")
-		value = document.querySelector("app-element").dataset.basePath;
+    //console.log("expression", expression, "value", value);
+    /*
+    if (value === undefined && expression === "basePath")
+        value = document.querySelector("app-element").customEnv.basePath;
+    */
     return value;
 };
 
@@ -386,3 +391,11 @@ const compileNode = rootNode => {
         };
     };
 };
+
+const shadowClosest = (element, selectors) => {
+    for (let e = element;;e = e.getRootNode().host) {
+        const a = e.closest(selectors);
+        if (a)
+            return a;
+    }
+}

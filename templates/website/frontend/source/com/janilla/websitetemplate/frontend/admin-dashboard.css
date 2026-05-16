@@ -22,9 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "/cms/admin-dashboard.css";
-
-.admin admin-dashboard {
+.admin-ui :where(admin-dashboard) {
   header {
     button {
       text-decoration: underline;

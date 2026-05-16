@@ -129,6 +129,7 @@ public class DefaultPersistence implements Persistence {
 
 		@SuppressWarnings("unchecked")
 		var c = (Class<Crud<?, E>>) diFactory.classFor(new SimpleParameterizedType(Crud.class, t, type));
+		LOGGER.log(Level.DEBUG, "c={0}", c);
 
 		return diFactory.newInstance(c, Java.hashMap("type", type, "idHelper", idHelper(type), "persistence", this));
 	}

@@ -26,5 +26,5 @@ package com.janilla.frontend;
 
 import java.util.Map;
 
-public record DefaultApp(String apiUrl, Map<String, Object> state) implements App {
+public record DefaultApp(Map<String, String> env, Map<String, Object> state) implements App {
 }

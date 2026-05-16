@@ -24,6 +24,8 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -39,7 +41,10 @@ import com.janilla.web.Handle;
 import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
 
-public class EcommerceBackend<C extends EcommerceBackendConfig> extends WebsiteBackend<C> {
+public class EcommerceBackend<C extends EcommerceBackendConfig, D extends EcommerceDomain>
+		extends WebsiteBackend<C, D> {
+
+	private static final Logger LOGGER = System.getLogger(EcommerceBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(WebsiteBackend.diTypes(), Java.getPackageTypes("com.janilla.ecommercetemplate"),
@@ -47,13 +52,13 @@ public class EcommerceBackend<C extends EcommerceBackendConfig> extends WebsiteB
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { EcommerceBackend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
@@ -68,8 +73,7 @@ public class EcommerceBackend<C extends EcommerceBackendConfig> extends WebsiteB
 
 	@Handle(method = "GET", path = "/api/enums")
 	public Map<String, List<String>> enums() {
-		var cc = ((EcommerceDomain) domain);
-		return Map.of(Title.class.getSimpleName(), cc.titles().map(x -> x.name()).toList(),
-				Country.class.getSimpleName(), cc.countries().map(x -> x.name()).toList());
+		return Map.of(Title.class.getSimpleName(), domain.titles().map(x -> x.name()).toList(),
+				Country.class.getSimpleName(), domain.countries().map(x -> x.name()).toList());
 	}
 }

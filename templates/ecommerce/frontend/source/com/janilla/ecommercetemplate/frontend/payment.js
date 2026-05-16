@@ -131,7 +131,7 @@ export default class Payment extends WebComponent {
             redirect: "if_required"
         });
         if (j.paymentIntent?.status === "succeeded") {
-            j = await (await fetch(`${a.dataset.apiUrl}/payments/stripe/confirm-order`, {
+            j = await (await fetch(`${a.customEnv.apiUrl}/payments/stripe/confirm-order`, {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
@@ -140,12 +140,12 @@ export default class Payment extends WebComponent {
                 })
             })).json();
             if (j?.order) {
-                await fetch(`${a.dataset.apiUrl}/carts/${c.customState.cart.id}`, { method: "DELETE" });
+                await fetch(`${a.customEnv.apiUrl}/carts/${c.customState.cart.id}`, { method: "DELETE" });
                 localStorage.removeItem("cart");
                 u = new URL(`/orders/${j.order}`, location.href);
                 if (this.dataset.guestEmail)
                     u.searchParams.append("guestEmail", this.dataset.guestEmail);
-                a.navigate(u);
+                a.navigateTo(u);
             }
         }
     }

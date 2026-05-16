@@ -53,8 +53,9 @@ export default class InvoicesPage extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.shadowClosest("app-element");
         const s = history.state;
-        const u = new URL("/dashboard/invoices", location.href);
+        const u = new URL(`${a.customEnv.basePath}/dashboard/invoices`, location.href);
         const q = this.dataset.query;
         if (q)
             u.searchParams.append("query", q);
@@ -64,25 +65,26 @@ export default class InvoicesPage extends WebComponent {
             $template: "",
             ...this.dataset,
             articles: this.slot && s.invoices ? s.invoices.elements.map(x => ({
+				...a.baseInput,
                 $template: "article",
                 ...x,
-                href: `/dashboard/invoices/${x.id}/edit`
+                href: `${a.customEnv.basePath}/dashboard/invoices/${x.id}/edit`
             })) : Array.from({ length: 6 }).map(() => ({ $template: "article-skeleton" })),
             rows: this.slot && s.invoices ? s.invoices.elements.map(x => ({
+				...a.baseInput,
                 $template: "row",
                 ...x,
-                href: `/dashboard/invoices/${x.id}/edit`
+                href: `${a.customEnv.basePath}/dashboard/invoices/${x.id}/edit`
             })) : Array.from({ length: 6 }).map(() => ({ $template: "row-skeleton" })),
             pagination: this.slot && s.invoices ? {
-                href: u.pathname + u.search,
+                href: `${u.pathname}${u.search}`,
                 page: p ?? 1,
                 pageCount: Math.ceil((s.invoices.totalSize ?? 0) / 6)
             } : null
         }));
 
         if (this.slot && !s.invoices) {
-            const a = this.closest("app-element");
-            const u = new URL(`${a.dataset.apiUrl}/invoices`, a.dataset.apiUrl.startsWith("/") ? location.href : undefined);
+            const u = new URL(`${a.customEnv.apiUrl}/invoices`, a.customEnv.apiUrl.startsWith("/") ? location.href : undefined);
             ["query", "page"].forEach(x => {
                 if (this.dataset[x])
                     u.searchParams.append(x, this.dataset[x]);
@@ -125,9 +127,9 @@ export default class InvoicesPage extends WebComponent {
             return;
         event.submitter.setAttribute("aria-disabled", "true");
         try {
-            const a = this.closest("app-element");
+            const a = this.shadowClosest("app-element");
             const fd = new FormData(event.target);
-            const r = await fetch(`${a.dataset.apiUrl}/invoices/${fd.get("id")}`, {
+            const r = await fetch(`${a.customEnv.apiUrl}/invoices/${fd.get("id")}`, {
                 method: "DELETE",
                 credentials: "include"
             });

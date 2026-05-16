@@ -88,7 +88,7 @@ export default class AdminList extends WebComponent {
         document.title = `${t} - Janilla`;
         const s = this.customState;
         const a = this.closest("app-element");
-        const u = new URL(`${a.dataset.apiUrl}/${this.dataset.slug}`, location.href);
+        const u = new URL(`${a.customEnv.apiUrl}/${this.dataset.slug}`, location.href);
 
         const l = parseInt(this.dataset.limit);
         {
@@ -148,8 +148,9 @@ export default class AdminList extends WebComponent {
                             value: x.id,
                             content: cc[0]
                         } : {
+							...a.baseInput,
                             $template: "link",
-                            href: `/admin/collections/${this.dataset.slug}/${x.id}`,
+                            uri: `/admin/collections/${this.dataset.slug}/${x.id}`,
                             content: cc[0]
                         };
 
@@ -236,7 +237,7 @@ export default class AdminList extends WebComponent {
                 this.requestDisplay();
                 break;
             case "confirm-delete": {
-                const u = new URL(`${a.dataset.apiUrl}/${n}`, location.href);
+                const u = new URL(`${a.customEnv.apiUrl}/${n}`, location.href);
                 Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
                 const j = await (await fetch(u, {
                     method: "DELETE",
@@ -244,7 +245,7 @@ export default class AdminList extends WebComponent {
                 })).json();
                 if (j.some(x => x.$type === "User" && x.id === a.currentUser.id)) {
                     a.currentUser = null;
-                    a.navigate(new URL(`/admin/collections/${n}`, location.href));
+                    a.navigateTo(new URL(`${a.customEnv.basePath}/admin/collections/${n}`, location.href));
                 } else {
                     delete s.deleteDialog;
                     delete s.data;
@@ -253,7 +254,7 @@ export default class AdminList extends WebComponent {
                 break;
             }
             case "confirm-publish": {
-                const u = new URL(`${a.dataset.apiUrl}/${n}`, location.href);
+                const u = new URL(`${a.customEnv.apiUrl}/${n}`, location.href);
                 Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
                 await (await fetch(u, {
                     method: "PATCH",
@@ -269,7 +270,7 @@ export default class AdminList extends WebComponent {
                 break;
             }
             case "confirm-unpublish": {
-                const u = new URL(`${a.dataset.apiUrl}/${n}`, location.href);
+                const u = new URL(`${a.customEnv.apiUrl}/${n}`, location.href);
                 Array.prototype.forEach.call(this.querySelectorAll("[value]:checked"), x => u.searchParams.append("id", x.value));
                 await (await fetch(u, {
                     method: "PATCH",
@@ -286,7 +287,7 @@ export default class AdminList extends WebComponent {
             }
             case "create": {
                 /*
-                const r = await fetch(`${a.dataset.apiUrl}/${n}`, {
+                const r = await fetch(`${a.customEnv.apiUrl}/${n}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
@@ -294,7 +295,7 @@ export default class AdminList extends WebComponent {
                 });
                 const j = await r.json();
                 if (r.ok)
-                    a.navigate(new URL(`/admin/collections/${n}/${j.id}`, location.href));
+                    a.navigateTo(new URL(`/admin/collections/${n}/${j.id}`, location.href));
                 else
                     a2.error(j);
                 */
@@ -321,25 +322,25 @@ export default class AdminList extends WebComponent {
     }
 
     handleLimitSelected = event => {
-        this.navigate(this.dataset.search, 1, event.detail);
+        this.navigateTo(this.dataset.search, 1, event.detail);
     }
 
     handlePageSelected = event => {
-        this.navigate(this.dataset.search, event.detail, parseInt(this.dataset.limit));
+        this.navigateTo(this.dataset.search, event.detail, parseInt(this.dataset.limit));
     }
 
     handleSearchChanged = event => {
-        this.navigate(event.detail, 1, parseInt(this.dataset.limit));
+        this.navigateTo(event.detail, 1, parseInt(this.dataset.limit));
     }
 
     navigate(search, page, limit) {
-        const u = new URL(`/admin/collections/${this.dataset.slug}`, location.href);
+        const u = new URL(`${a.customEnv.basePath}/admin/collections/${this.dataset.slug}`, location.href);
         if (typeof search === "string" && search.length)
             u.searchParams.append("search", search);
         if (typeof page === "number" && page > 1)
             u.searchParams.append("page", page);
         if (typeof limit === "number" && limit >= 0)
             u.searchParams.append("limit", limit);
-        this.closest("app-element").navigate(u);
+        this.closest("app-element").navigateTo(u);
     }
 }

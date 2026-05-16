@@ -121,7 +121,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 
 	@Override
 	public ListPortion<U> read(String search, Direction direction, Long skip, Long limit, Integer depth) {
-		if (!isAdmin(exchange().sessionUser()))
+		if (!(isAdmin(exchange().sessionUser()) || (limit != null && limit.longValue() == 0)))
 			throw new UnauthorizedException();
 
 		return super.read(search, direction, skip, limit, depth);
@@ -306,7 +306,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 	}
 
 	protected boolean isAdmin(U user) {
-		return user.roles().contains(domain.userRole("ADMIN"));
+		return user != null && user.roles().contains(domain.userRole("ADMIN"));
 	}
 
 	@SuppressWarnings("unchecked")

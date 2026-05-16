@@ -47,7 +47,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin :where(admin-page-controls) {
+.admin-ui :where(admin-page-controls) {
   align-items: center;
   display: grid;
   gap: 0.5rem 1rem;

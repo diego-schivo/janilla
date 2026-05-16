@@ -24,8 +24,6 @@
  */
 package com.janilla.frontend.web;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -35,15 +33,18 @@ import java.util.function.Consumer;
 
 import com.janilla.frontend.IndexFactory;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Java;
 import com.janilla.web.AbstractWebApp;
 import com.janilla.web.AnnotatedValue;
+import com.janilla.web.Domain;
 import com.janilla.web.HtmlEvaluator;
 import com.janilla.web.HtmlRenderer;
 import com.janilla.web.InvocationResolver;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.ResourceMap;
+import com.janilla.web.ResourcesProvider;
 
-public abstract class AbstractFrontend<C extends FrontendConfig> extends AbstractWebApp<C> implements Frontend<C> {
+public abstract class AbstractFrontend<C extends FrontendConfig, D extends Domain> extends AbstractWebApp<C, D>
+		implements Frontend<C, D> {
 
 	protected final HtmlEvaluator htmlEvaluator = new HtmlEvaluator() {
 
@@ -62,7 +63,7 @@ public abstract class AbstractFrontend<C extends FrontendConfig> extends Abstrac
 
 	protected ResourceMap resourceMap;
 
-	protected Map<String, String> resourcePrefixes;
+	protected Map<ResourcesProvider, String> resourcesProviders;
 
 	protected AbstractFrontend(C config, DiFactory diFactory, Consumer<Object> consumer) {
 		super(config, diFactory, consumer);
@@ -80,27 +81,33 @@ public abstract class AbstractFrontend<C extends FrontendConfig> extends Abstrac
 		return resourceMap;
 	}
 
-	public Map<String, String> resourcePrefixes() {
-		return resourcePrefixes;
+	public Map<ResourcesProvider, String> resourcesProviders() {
+		return resourcesProviders;
 	}
 
 	@Override
 	protected InvocationResolver newInvocationResolver() {
 		{
-			resourcePrefixes = new LinkedHashMap<>();
+			resourcesProviders = new LinkedHashMap<>();
 			putResourcePrefixes();
-			resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("paths",
-					resourcePrefixes.entrySet().stream().reduce(new HashMap<String, List<Path>>(), (x, y) -> {
-						x.computeIfAbsent(y.getValue(), _ -> new ArrayList<>())
-								.addAll(Java.getPackagePaths(y.getKey()).filter(Files::isRegularFile).toList());
-						return x;
-					}, (_, x) -> x)));
+
+			var pp = resourcesProviders.entrySet().stream().reduce(new HashMap<String, List<ResourcesProvider>>(),
+					(m, e) -> {
+						var p = e.getKey();
+						var bp = e.getValue();
+						m.computeIfAbsent(bp, _ -> new ArrayList<>()).add(p);
+						return m;
+					}, (m1, m2) -> {
+						m1.putAll(m2);
+						return m1;
+					});
+			resourceMap = diFactory.newInstance(diFactory.classFor(ResourceMap.class), Map.of("providers", pp));
 		}
 		indexFactory = diFactory.newInstance(diFactory.classFor(IndexFactory.class));
 		return super.newInvocationResolver();
 	}
 
 	protected void putResourcePrefixes() {
-		resourcePrefixes.put("com.janilla.frontend", "/base");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.frontend"), "/base");
 	}
 }

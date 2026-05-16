@@ -66,7 +66,7 @@ export default class Search extends WebComponent {
 
         if (!hs.results) {
             const a = this.closest("app-element");
-            const u = new URL(`${a.dataset.apiUrl}/search-results`, location.href);
+            const u = new URL(`${a.customEnv.apiUrl}/search-results`, location.href);
             if (this.dataset.query)
                 u.searchParams.append("query", this.dataset.query);
             history.replaceState(hs = {

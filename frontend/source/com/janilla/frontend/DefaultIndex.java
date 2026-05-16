@@ -27,6 +27,6 @@ package com.janilla.frontend;
 import java.util.List;
 import java.util.Map;
 
-public record DefaultIndex(App app, Map<String, String> imports, String basePath, List<Script> scripts,
-		List<Template> templates, String title) implements Index {
+public record DefaultIndex(App app, Map<String, String> imports, List<Script> scripts, List<Template> templates,
+		String title) implements Index {
 }

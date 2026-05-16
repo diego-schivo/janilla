@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.module.ResolvedModule;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -45,6 +47,7 @@ import java.security.KeyStore;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -63,6 +66,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 public final class Java {
+
+	private static final Logger LOGGER = System.getLogger(Java.class.getName());
 
 	private Java() {
 		throw new Error("no instances");
@@ -115,6 +120,11 @@ public final class Java {
 	}
 
 	public static Stream<Class<?>> getPackageTypes(String package1, Predicate<String> recursive) {
+		return getPackageTypes(package1, recursive, null);
+	}
+
+	public static Stream<Class<?>> getPackageTypes(String package1, Predicate<String> recursive,
+			Comparator<String> sort) {
 //		IO.println("Java.getPackageTypes, package1=" + package1);
 		class A {
 			private static final Map<String, List<Class<?>>> RESULTS = new ConcurrentHashMap<>();
@@ -144,11 +154,15 @@ public final class Java {
 			var l = s.filter(Objects::nonNull).toList();
 //			IO.println("Java.getPackageTypes, l=" + l);
 			return l;
-		});
-		return recursive != null ? Stream.concat(tt.stream(), pp.stream().filter(Java::isDirectory).flatMap(x -> {
-			var p = package1 + '.' + x.getFileName();
-			return recursive.test(p) ? getPackageTypes(p, recursive) : Stream.empty();
-		})) : tt.stream();
+		}).stream();
+
+		if (recursive != null)
+			tt = Stream.concat(tt, pp.stream().filter(Java::isDirectory).map(x -> package1 + '.' + x.getFileName())
+					.filter(recursive)
+					.sorted(sort != null ? sort.thenComparing(Comparator.naturalOrder()) : Comparator.naturalOrder())
+					.peek(x -> LOGGER.log(Level.DEBUG, x)).flatMap(x -> getPackageTypes(x, recursive, sort)));
+
+		return tt;
 	}
 
 	public static Stream<Path> getPackagePaths(String package1) {

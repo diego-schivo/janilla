@@ -53,8 +53,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.janilla.java.Converter;
+import com.janilla.web.Domain;
 
-public class CmsDomain {
+public class CmsDomain implements Domain {
 
 	protected final Converter converter;
 

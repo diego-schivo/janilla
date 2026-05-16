@@ -24,23 +24,29 @@
  */
 package com.janilla.web;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
-import java.nio.file.Files;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.http.HttpRequest;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Java;
 
-public class DefaultResourceHandlerFactory extends AbstractHandlerFactory implements ResourceHandlerFactory {
+public class DefaultResourceHandlerFactory extends AbstractHttpHandlerFactory implements ResourceHandlerFactory {
+
+	private static final Logger LOGGER = System.getLogger(DefaultResourceHandlerFactory.class.getName());
 
 	protected final ResourceMap resourceMap;
+
+	protected final Map<Resource, byte[]> bodies = new ConcurrentHashMap<>();
 
 	public DefaultResourceHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
 			ResourceMap resourceMap) {
@@ -50,7 +56,7 @@ public class DefaultResourceHandlerFactory extends AbstractHandlerFactory implem
 
 	@Override
 	public HttpHandler createHandler(Object object) {
-		var p = object instanceof HttpRequest r ? path(r) : null;
+		var p = object instanceof HttpRequest r ? webAppPath(r) : null;
 		var r = resourceMap != null && p != null ? resourceMap.get(p) : null;
 //		IO.println("p=" + p + ", r=" + r);
 		return r != null ? x -> {
@@ -60,40 +66,38 @@ public class DefaultResourceHandlerFactory extends AbstractHandlerFactory implem
 	}
 
 	protected void handle(Resource resource, HttpExchange exchange) {
-//		IO.println("DefaultResourceHandlerFactory.handle, file=" + file);
+		LOGGER.log(Level.DEBUG, "resource={0}", resource);
+
 		var rs = exchange.response();
 		rs.setHeaderValue(":status", "200");
 		rs.setHeaderValue("cache-control", "max-age=3600");
-		switch (resource.path().substring(resource.path().lastIndexOf('.') + 1).toLowerCase()) {
-		case "html":
-			rs.setHeaderValue("content-type", "text/html");
-			break;
-		case "ico":
-			rs.setHeaderValue("content-type", "image/x-icon");
-			break;
-		case "js":
-			rs.setHeaderValue("content-type", "text/javascript");
-			break;
-		case "svg":
-			rs.setHeaderValue("content-type", "image/svg+xml");
-			break;
+		{
+			var i = resource.path().lastIndexOf('.');
+			var e = i != -1 ? resource.path().substring(i + 1).toLowerCase() : null;
+			var t = e != null ? switch (e) {
+			case "html" -> "text/html";
+			case "ico" -> "image/x-icon";
+			case "js" -> "text/javascript";
+			case "svg" -> "image/svg+xml";
+			default -> null;
+			} : null;
+			if (t != null)
+				rs.setHeaderValue("content-type", t);
 		}
 		rs.setHeaderValue("content-length", String.valueOf(resource.size()));
 
-		try (var in = switch (resource) {
-		case DefaultResource x -> x.newInputStream();
-		case ZipEntryResource x -> {
-			var u = x.archive().uri();
-//			IO.println("DefaultResourceHandlerFactory.handle, u=" + u);
-			var s = u.toString();
-			if (!s.startsWith("jar:"))
-				u = URI.create("jar:" + s);
-			var p = Java.zipFileSystem(u).getPath(x.path());
-//			IO.println("DefaultResourceHandlerFactory.handle, p=" + p);
-			yield Files.newInputStream(p);
-		}
-		default -> throw new IllegalArgumentException();
-		}; var out = Channels.newOutputStream((WritableByteChannel) rs.getBody())) {
+		var bb = resource instanceof ZipEntryResource r && r.archive() instanceof FileResource
+				? bodies.computeIfAbsent(r, _ -> {
+					try {
+						return r.newInputStream().readAllBytes();
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				})
+				: null;
+
+		try (var in = bb != null ? new ByteArrayInputStream(bb) : resource.newInputStream();
+				var out = Channels.newOutputStream((WritableByteChannel) rs.getBody())) {
 			if (in == null)
 				throw new NullPointerException(resource.toString());
 			in.transferTo(out);

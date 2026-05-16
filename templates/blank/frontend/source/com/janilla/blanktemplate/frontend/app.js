@@ -52,10 +52,9 @@ export default class App extends BaseApp {
         if (!Object.hasOwn(s, "user"))
             s.user = ss && Object.hasOwn(ss, "user")
                 ? ss.user
-                : await (await fetch(`${this.dataset.apiUrl}/users/me`, { credentials: "include" })).json();
+                : await (await fetch(`${this.customEnv.apiUrl}/users/me`, { credentials: "include" })).json();
 
-        const p = location.pathname;
-        const m = p.match(adminRegex);
+        const m = this.currentPath.match(adminRegex);
         if (m)
             this.appendChild(this.interpolateDom({
                 $template: "",
@@ -72,16 +71,27 @@ export default class App extends BaseApp {
     async updateDisplaySite() {
         this.appendChild(this.interpolateDom({
             $template: "",
-            site: this.customState.notFound ? { $template: "not-found" } : {
-                $template: "page",
-                slug: location.pathname.split("/").map(x => x === "" ? "home" : x)[1]
-            }
+            site: this.siteData()
         }));
     }
 
-    navigate(url) {
+    siteData() {
+        return {
+            $template: "site",
+            content: this.contentData()
+        };
+    }
+
+    contentData() {
+        return this.customState.notFound ? { $template: "not-found" } : {
+            $template: "page",
+            slug: this.currentPath.split("/").map(x => x === "" ? "home" : x)[1]
+        };
+    }
+
+    navigateTo(url) {
         this.querySelectorAll("dialog[open]").forEach(x => x.close());
-        super.navigate(url);
+        super.navigateTo(url);
     }
 
     updateSeo(meta) {

@@ -49,24 +49,27 @@ export default class DashboardNav extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.shadowClosest("app-element");
+		const p = a.currentPath;
         this.appendChild(this.interpolateDom({
+			...a.baseInput,
             $template: "",
             items: [{
-                href: "/dashboard",
+                uri: "/dashboard",
                 icon: "home",
                 text: "Home"
             }, {
-                href: "/dashboard/invoices",
+                uri: "/dashboard/invoices",
                 icon: "document-duplicate",
                 text: "Invoices"
             }, {
-                href: "/dashboard/customers",
+                uri: "/dashboard/customers",
                 icon: "user-group",
                 text: "Customers"
             }].map(x => ({
                 $template: "item",
                 ...x,
-                active: x.href === location.pathname ? "active" : ""
+                active: x.uri === p ? "active" : ""
             }))
         }));
     }
@@ -81,12 +84,12 @@ export default class DashboardNav extends WebComponent {
             return;
         event.submitter.setAttribute("aria-disabled", "true");
         try {
-            const a = this.getRootNode().host.closest("app-element");
-            await fetch(`${a.dataset.apiUrl}/authentication`, {
+            const a = this.customState.app;
+            await fetch(`${a.customEnv.apiUrl}/authentication`, {
                 method: "DELETE",
                 credentials: "include"
             });
-            a.navigate(new URL("/login", location.href));
+            a.navigateTo(new URL(`${a.customEnv.basePath}/login`, location.href));
         } finally {
             event.submitter.setAttribute("aria-disabled", "false");
         }

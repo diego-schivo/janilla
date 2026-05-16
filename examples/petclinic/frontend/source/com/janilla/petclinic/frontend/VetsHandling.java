@@ -18,6 +18,7 @@ package com.janilla.petclinic.frontend;
 import java.net.URI;
 import java.util.List;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.petclinic.Vet;
 import com.janilla.petclinic.VetApi;
 import com.janilla.web.Bind;
@@ -33,10 +34,13 @@ import com.janilla.web.Handle;
 @Handle(path = "/vets")
 class VetsHandling {
 
+	protected final FrontendConfig config;
+
 	protected final VetApi vetApi;
 
-	public VetsHandling(VetApi vetApi) {
+	public VetsHandling(VetApi vetApi, FrontendConfig config) {
 		this.vetApi = vetApi;
+		this.config = config;
 	}
 
 	@Handle(method = "GET")

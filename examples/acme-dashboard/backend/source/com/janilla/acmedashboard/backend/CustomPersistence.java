@@ -26,7 +26,6 @@ package com.janilla.acmedashboard.backend;
 
 import java.util.List;
 
-import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
@@ -39,11 +38,11 @@ class CustomPersistence extends DefaultPersistence {
 		super(database, storables, diFactory);
 	}
 
-	@Override
-	@SuppressWarnings("unchecked")
-	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		return type == Invoice.class ? (Crud<?, E>) new InvoiceCrud(this) : super.newCrud(type);
-	}
+//	@Override
+//	@SuppressWarnings("unchecked")
+//	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
+//		return type == Invoice.class ? (Crud<?, E>) new InvoiceCrud(this) : super.newCrud(type);
+//	}
 
 	@Override
 	protected void createStoresAndIndexes() {

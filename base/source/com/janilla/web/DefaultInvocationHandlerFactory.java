@@ -65,7 +65,7 @@ import com.janilla.java.TypeResolver;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.json.Json;
 
-public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory implements InvocationHandlerFactory {
+public class DefaultInvocationHandlerFactory extends AbstractHttpHandlerFactory implements InvocationHandlerFactory {
 
 	private static final Logger LOGGER = System.getLogger(DefaultInvocationHandlerFactory.class.getName());
 
@@ -83,7 +83,7 @@ public class DefaultInvocationHandlerFactory extends AbstractHandlerFactory impl
 	@Override
 	public HttpHandler createHandler(Object object) {
 		if (object instanceof HttpRequest r) {
-			var p = path(r);
+			var p = webAppPath(r);
 //			IO.println("DefaultInvocationHandlerFactory.createHandler, p=" + p);
 			var ii = invocationResolver.lookup(r.getHeaderValue(":method"), p).toList();
 			if (!ii.isEmpty())

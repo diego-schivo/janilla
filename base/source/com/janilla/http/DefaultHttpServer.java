@@ -395,7 +395,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 		if (e != null)
 			try {
 				if (e instanceof NotFoundException)
-					IO.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+					LOGGER.log(Level.ERROR, "{0}: {1}", e.getClass().getSimpleName(), e.getMessage());
 				else
 					e.printStackTrace();
 				exchange = exchange.withException(e);

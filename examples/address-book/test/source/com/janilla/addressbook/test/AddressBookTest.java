@@ -26,6 +26,8 @@
  */
 package com.janilla.addressbook.test;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -41,12 +43,16 @@ import com.janilla.http.HttpHandler;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.web.Domain;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 import com.janilla.web.WebAppHandlerFactory;
 
-public class AddressBookTest extends AbstractFrontend<FrontendConfig> {
+public class AddressBookTest extends AbstractFrontend<FrontendConfig, Domain> {
+
+	private static final Logger LOGGER = System.getLogger(AddressBookTest.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
@@ -55,14 +61,14 @@ public class AddressBookTest extends AbstractFrontend<FrontendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { AddressBookBackend.class, AddressBookFrontend.class,
 				AddressBookFullstack.class, AddressBookTest.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
@@ -76,7 +82,7 @@ public class AddressBookTest extends AbstractFrontend<FrontendConfig> {
 			var f = Ioc.diFactory(AddressBookFullstack.diTypes().toList(), () -> a[0], "fullstack");
 			var cfg = newConfig(new Class<?>[] { AddressBookBackend.class, AddressBookFrontend.class,
 					AddressBookFullstack.class, AddressBookTest.class }, null, f);
-			Consumer<Object> ctx = x -> a[0] = (WebApp<?>) x;
+			Consumer<Object> ctx = x -> a[0] = (WebApp<?, ?>) x;
 			fullstack = f.newInstance(f.classFor(WebApp.class),
 					Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		}
@@ -110,6 +116,6 @@ public class AddressBookTest extends AbstractFrontend<FrontendConfig> {
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.addressbook.test", "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.addressbook.test"), "");
 	}
 }

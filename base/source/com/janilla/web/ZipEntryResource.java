@@ -24,5 +24,36 @@
  */
 package com.janilla.web;
 
-public record ZipEntryResource(DefaultResource archive, String path, long size) implements Resource {
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.file.Files;
+
+import com.janilla.java.Java;
+
+public record ZipEntryResource(Resource archive, String path, long size) implements Resource {
+
+	@Override
+	public URI uri() {
+		return URI.create("jar:" + archive.uri() + "!" + path);
+	}
+
+	@Override
+	public InputStream newInputStream() {
+		URI u;
+		{
+			u = archive.uri();
+			var s = u.toString();
+			if (!s.startsWith("jar:"))
+				u = URI.create("jar:" + s);
+		}
+
+		var f = Java.zipFileSystem(u).getPath(path);
+		try {
+			return Files.newInputStream(f);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 }

@@ -92,7 +92,7 @@ export default class AdminForgotPassword extends WebComponent {
                 x[y[0]] = y[1];
             return x;
         }, {});
-        const r = await fetch(`${a.dataset.apiUrl}/users/forgot-password`, {
+        const r = await fetch(`${a.customEnv.apiUrl}/users/forgot-password`, {
             method: "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },

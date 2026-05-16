@@ -26,8 +26,11 @@ package com.janilla.blanktemplate.backend;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -47,30 +50,31 @@ import com.janilla.web.Handle;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.WebApp;
 
-public class BlankBackend<C extends BlankBackendConfig> extends AbstractBackend<C> {
+public class BlankBackend<C extends BlankBackendConfig, D extends BlankDomain> extends AbstractBackend<C, D> {
+
+	private static final Logger LOGGER = System.getLogger(BlankBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.cms"), Java.getPackageTypes("com.janilla.http"),
 				Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend.persistence"),
-				Java.getPackageTypes("com.janilla.backend.cms"), Java.getPackageTypes("com.janilla.blanktemplate"),
+				Java.getPackageTypes("com.janilla.backend", _ -> true,
+						Comparator.comparingInt(x -> x.endsWith(".cms") ? 1 : 0)),
+				Java.getPackageTypes("com.janilla.blanktemplate"),
 				Java.getPackageTypes("com.janilla.blanktemplate.backend")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { BlankBackend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
 	protected CmsResourceHandling cmsResourceHandling;
-
-	protected BlankDomain domain;
 
 	protected final Predicate<HttpExchange> drafts = this::testDrafts;
 
@@ -143,10 +147,6 @@ public class BlankBackend<C extends BlankBackendConfig> extends AbstractBackend<
 		return cmsResourceHandling;
 	}
 
-	public BlankDomain domain() {
-		return domain;
-	}
-
 	public Predicate<HttpExchange> drafts() {
 		return drafts;
 	}
@@ -179,8 +179,6 @@ public class BlankBackend<C extends BlankBackendConfig> extends AbstractBackend<
 
 	@Override
 	protected InvocationResolver newInvocationResolver() {
-		domain = diFactory.newInstance(diFactory.classFor(BlankDomain.class));
-
 		{
 			var x = config.upload().directory();
 			if (x.startsWith("~"))

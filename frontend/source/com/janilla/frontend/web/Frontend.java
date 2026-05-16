@@ -24,7 +24,8 @@
  */
 package com.janilla.frontend.web;
 
+import com.janilla.web.Domain;
 import com.janilla.web.WebApp;
 
-public interface Frontend<C extends FrontendConfig> extends WebApp<C> {
+public interface Frontend<C extends FrontendConfig, D extends Domain> extends WebApp<C, D> {
 }

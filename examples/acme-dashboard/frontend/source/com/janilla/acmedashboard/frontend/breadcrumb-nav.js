@@ -44,8 +44,10 @@ export default class BreadcrumbNav extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.shadowClosest("app-element");
         const l = this.children.length;
         this.shadowRoot.appendChild(this.interpolateDom({
+            ...a.baseInput,
             $template: "",
             items: Array.from({ length: l }, (_, i) => ({
                 $template: i === l - 1 ? "last-item" : "item",

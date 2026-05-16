@@ -48,7 +48,7 @@ class CustomPersistenceBuilder extends PersistenceBuilder {
 
 		if (!e) {
 			var d = PlaceholderData.read();
-			LOGGER.log(Level.INFO, "d={0}", d);
+			LOGGER.log(Level.DEBUG, "d={0}", d);
 
 			d.customers().forEach(p.crud(Customer.class)::create);
 			d.invoices().forEach(p.crud(Invoice.class)::create);

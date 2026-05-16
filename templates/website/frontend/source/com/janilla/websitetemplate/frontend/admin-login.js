@@ -22,10 +22,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.ecommercetemplate.frontend;
+import CmsAdminLogin from "cms/admin-login";
 
-import java.util.Map;
+export default class AdminLogin extends CmsAdminLogin {
 
-record AppImpl(String apiUrl, String key, Map<String, Object> state, String stripePublishableKey, String stripeUrl)
-		implements EcommerceApp {
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
+    static get templateNames() {
+        return ["/cms/admin-login", "admin-login"];
+    }
 }

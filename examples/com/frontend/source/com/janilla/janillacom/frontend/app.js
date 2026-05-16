@@ -22,11 +22,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.blanktemplate.frontend;
+import WebsiteApp from "website/app";
 
-import com.janilla.frontend.App;
+export default class App extends WebsiteApp {
 
-public interface BlankApp extends App {
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	String key();
+    static get templateNames() {
+        return ["/base/app", "/blank/app", "/website/app"];
+    }
+
+    handleClick(event) {
+        const a = event.target.closest("a");
+        const h = a?.getAttribute("href");
+        if (h?.startsWith("#/")) {
+            event.preventDefault();
+            switch (this.customEnv.appResolution) {
+                case "BY_AUTHORITY":
+                    location.href = `//${h.substring(2)}.${location.host}`;
+                    break;
+                case "BY_PATH":
+                    location.href = h.substring(1);
+                    break;
+            }
+        } else
+            super.handleClick(event);
+    }
 }

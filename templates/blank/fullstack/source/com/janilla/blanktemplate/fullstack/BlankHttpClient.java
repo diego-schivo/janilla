@@ -35,7 +35,7 @@ import com.janilla.web.WebApp;
 public class BlankHttpClient extends DirectHttpClient {
 
 	public BlankHttpClient() {
-		var b = ((BlankFullstack<?>) WebApp.INSTANCE.get()).backend();
+		var b = ((BlankFullstack<?, ?>) WebApp.INSTANCE.get()).backend();
 		super(b.diFactory().newInstance(b.diFactory().classFor(HttpServer.class), Map.of("handler", b.httpHandler())));
 	}
 }

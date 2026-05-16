@@ -29,12 +29,14 @@ import java.util.Map;
 import com.janilla.ioc.DiFactory;
 import com.janilla.json.Json;
 import com.janilla.json.ReflectionJsonIterator;
+import com.janilla.web.JsonRenderer;
 import com.janilla.web.Render;
 import com.janilla.web.Renderer;
 
 public interface App {
 
-	default String apiUrl() {
+	@Render(renderer = JsonRenderer.class)
+	default Map<String, String> env() {
 		return null;
 	}
 

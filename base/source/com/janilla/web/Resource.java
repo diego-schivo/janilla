@@ -24,9 +24,16 @@
  */
 package com.janilla.web;
 
+import java.io.InputStream;
+import java.net.URI;
+
 public interface Resource {
 
 	String path();
 
+	URI uri();
+
 	long size();
+
+	InputStream newInputStream();
 }

@@ -14,5 +14,6 @@
 	},
 	"jwt": {
 		"key": "secretkey"
-	}
+	},
+	"liveDemo": false
 }

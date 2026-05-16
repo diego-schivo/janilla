@@ -22,9 +22,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.websitetemplate.frontend;
+import CmsAdminLogin from "cms/admin-login";
 
-import com.janilla.blanktemplate.frontend.BlankApp;
+export default class AdminLogin extends CmsAdminLogin {
 
-public interface WebsiteApp extends BlankApp {
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
+    static get templateNames() {
+        return ["/cms/admin-login", "admin-login"];
+    }
 }

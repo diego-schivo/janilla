@@ -13,65 +13,80 @@
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "http://localhost:8080/acmedashboard/api"
 			},
-			"basePath": "/acmedashboard"
+			"basePath": "/acmedashboard",
+			"liveDemo": true
 		},
 		"addressbook": {
 			"api": {
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "http://localhost:8080/addressbook/api"
 			},
-			"basePath": "/addressbook"
+			"basePath": "/addressbook",
+			"liveDemo": true
 		},
 		"blanktemplate": {
 			"api": {
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "http://localhost:8080/blanktemplate/api"
 			},
-			"basePath": "/blanktemplate"
+			"basePath": "/blanktemplate",
+			"liveDemo": true
 		},
 		"conduit": {
 			"api": {
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "http://localhost:8080/conduit/api"
 			},
-			"basePath": "/conduit"
+			"basePath": "/conduit",
+			"liveDemo": true
 		},
 		"ecommercetemplate": {
 			"api": {
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "http://localhost:8080/ecommercetemplate/api"
 			},
-			"basePath": "/ecommercetemplate"
+			"basePath": "/ecommercetemplate",
+			"liveDemo": true
 		},
 		"petclinic": {
 			"api": {
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "http://localhost:8080/petclinic/api"
 			},
-			"basePath": "/petclinic"
+			"basePath": "/petclinic",
+			"liveDemo": true
 		},
 		"websitetemplate": {
 			"api": {
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "http://localhost:8080/websitetemplate/api"
 			},
-			"basePath": "/websitetemplate"
+			"basePath": "/websitetemplate",
+			"liveDemo": true
 		}
 	},
+	"basePath": "",
 	"frontends": {
 		"acmedashboard": {
 			"api": {
@@ -121,5 +136,5 @@
 	},
 	"httpServer": {
 		"port": 8080
-	},
+	}
 }

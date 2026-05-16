@@ -66,7 +66,7 @@ export default class Login extends WebComponent {
         event.preventDefault();
 
         const a = this.closest("app-element");
-        const r = await fetch(`${a.dataset.apiUrl}/users/login`, {
+        const r = await fetch(`${a.customEnv.apiUrl}/users/login`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(Object.fromEntries(new FormData(f)))
@@ -74,7 +74,7 @@ export default class Login extends WebComponent {
         if (r.ok) {
             const j = await r.json();
             a.currentUser = j;
-            a.navigate(new URL("/account", location.href));
+            a.navigateTo(new URL("/account", location.href));
         }
     }
 }

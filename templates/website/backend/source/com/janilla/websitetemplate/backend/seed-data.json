@@ -206,7 +206,7 @@
 					"$type": "HeroType",
 					"name": "HIGH_IMPACT"
 				},
-				"richText": "<h1>Janilla Website Template</h1><p><a href=\"/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla/tree/main/templates/website\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>",
+				"richText": "<h1>Janilla Website Template</h1><p><a href=\"#/admin\">Visit the admin dashboard</a> to begin managing this site's content. The code for this template is completely open-source and can be found <a href=\"https://github.com/diego-schivo/janilla/tree/main/templates/website\" rel=\"noopener noreferrer\" target=\"_blank\">on our Github</a>. </p>",
 				"links": [
 					{
 						"$type": "Link",
@@ -258,7 +258,7 @@
 								"$type": "ColumnSize",
 								"name": "ONE_THIRD"
 							},
-							"richText": "<h3>Admin Dashboard</h3><p>Manage this site's pages and posts from the <a href=\"/admin\">admin dashboard</a>.</p>"
+							"richText": "<h3>Admin Dashboard</h3><p>Manage this site's pages and posts from the <a href=\"#/admin\">admin dashboard</a>.</p>"
 						},
 						{
 							"$type": "Column",
@@ -282,7 +282,7 @@
 								"$type": "ColumnSize",
 								"name": "ONE_THIRD"
 							},
-							"richText": "<h3>SEO</h3><p>Editors have complete control over SEO data and site content directly from the <a href=\"/admin\">admin dashboard</a>.</p>"
+							"richText": "<h3>SEO</h3><p>Editors have complete control over SEO data and site content directly from the <a href=\"#/admin\">admin dashboard</a>.</p>"
 						},
 						{
 							"$type": "Column",
@@ -307,7 +307,7 @@
 				},
 				{
 					"$type": "CallToAction",
-					"richText": "<h3>This is a call to action</h3><p>This is a custom layout building block <a href=\"/admin\">configured in the admin dashboard</a>.</p>",
+					"richText": "<h3>This is a call to action</h3><p>This is a custom layout building block <a href=\"#/admin\">configured in the admin dashboard</a>.</p>",
 					"links": [
 						{
 							"$type": "Link",
@@ -391,7 +391,7 @@
 						"$type": "BannerStyle",
 						"name": "INFO"
 					},
-					"content": "<p><strong>Disclaimer:</strong> This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard</a>.</p>"
+					"content": "<p><strong>Disclaimer:</strong> This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"#/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard</a>.</p>"
 				},
 				{
 					"$type": "RichText",
@@ -468,7 +468,7 @@
 						"$type": "BannerStyle",
 						"name": "INFO"
 					},
-					"content": "<p><strong>Disclaimer:</strong> This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard.</a></p>"
+					"content": "<p><strong>Disclaimer:</strong> This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"#/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard.</a></p>"
 				},
 				{
 					"$type": "RichText",
@@ -541,7 +541,7 @@
 						"$type": "BannerStyle",
 						"name": "INFO"
 					},
-					"content": "<p><strong>Disclaimer: </strong>This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard.</a></p>"
+					"content": "<p><strong>Disclaimer: </strong>This content is fabricated and for demonstration purposes only. To edit this post, <a href=\"#/admin\" rel=\"noopener noreferrer\" target=\"_blank\">navigate to the admin dashboard.</a></p>"
 				},
 				{
 					"$type": "RichText",

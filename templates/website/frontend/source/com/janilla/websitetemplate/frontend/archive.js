@@ -39,7 +39,7 @@ export default class Archive extends WebComponent {
         const a = this.closest("app-element");
 
         if (!Object.hasOwn(hs, "posts")) {
-            const pp = a.serverState?.posts ?? (await (await fetch(`${a.dataset.apiUrl}/posts`)).json()).elements;
+            const pp = a.serverState?.posts ?? (await (await fetch(`${a.customEnv.apiUrl}/posts`)).json()).elements;
             //console.log("pp=", pp);
             history.replaceState(hs = {
                 ...hs,
@@ -52,6 +52,7 @@ export default class Archive extends WebComponent {
             $template: "",
             ...d,
             posts: hs.posts?.map(x => ({
+				...a.baseInput,
                 $template: "post",
                 ...x
             }))

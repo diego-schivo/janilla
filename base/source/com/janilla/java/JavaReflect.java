@@ -638,13 +638,8 @@ public class JavaReflect {
 		var s = new LinkedHashSet<Type>();
 		for (var q = new ArrayDeque<Type>(List.of(type)); !q.isEmpty();) {
 			var t = q.poll();
-			getActualInterfaces(t).forEach(x -> {
-				if (s.add(x))
-					q.offer(x);
-			});
-			t = getActualSuperclass(t);
-			if (t != null)
-				q.offer(t);
+			getActualInterfaces(t).filter(s::add).forEach(q::offer);
+			Optional.ofNullable(getActualSuperclass(t)).ifPresent(q::offer);
 		}
 		return s.stream();
 	}

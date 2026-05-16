@@ -47,83 +47,81 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin {
-  :where(admin-create-first-user,
-  admin-forgot-password,
-  admin-login,
-  admin-reset-password) {
+.admin-ui :where(admin-create-first-user,
+    admin-forgot-password,
+    admin-login,
+    admin-reset-password) {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  justify-content: center;
+  max-width: 30rem;
+  width: 100%;
+
+  form {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    justify-content: center;
-    max-width: 30rem;
-    width: 100%;
-  
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-  
-      @media (min-width: 1441px) {
-        gap: 1.25rem;
-      }
+
+    @media (min-width: 1441px) {
+      gap: 1.25rem;
     }
-  
-    janilla-logo {
-      margin: 0 auto 2.5rem;
-      width: 12rem;
+  }
+
+  janilla-logo {
+    margin: 0 auto 2.5rem;
+    width: 12rem;
+  }
+
+  h1 {
+    font-size: 1.625rem;
+  }
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  label {
+    &:has([required]) span::after {
+      color: var(--color-8);
+      content: " *";
     }
+  }
   
-    h1 {
-      font-size: 1.625rem;
+  input,
+  .button {
+    border-radius: 0.1875rem;
+    box-sizing: border-box;
+    height: 2.5rem;  
+    padding: 0.5rem 1rem;
+  }
+  
+  input {
+    background: var(--background-2);
+    border: 1px solid var(--border-1);
+
+    &:focus {
+      border: 1px solid var(--border-4);
+    }
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  .button {
+    align-self: auto;
+    background: var(--background-11);
+    color: var(--color-3);
+
+    &:hover {
+      background: var(--background-9);
     }
 
-    ul {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-  
-    label {
-      &:has([required]) span::after {
-        color: var(--color-8);
-        content: " *";
-      }
-    }
-    
-    input,
-    .button {
-      border-radius: 0.1875rem;
-      box-sizing: border-box;
-      height: 2.5rem;  
-      padding: 0.5rem 1rem;
-    }
-    
-    input {
-      background: var(--background-2);
-      border: 1px solid var(--border-1);
-
-      &:focus {
-        border: 1px solid var(--border-4);
-      }
-    }
-  
-    a {
-      text-decoration: underline;
-    }
-  
-    .button {
-      align-self: auto;
-      background: var(--background-11);
-      color: var(--color-3);
-  
-      &:hover {
-        background: var(--background-9);
-      }
-  
-      @media (min-width: 1441px) {
-        margin-bottom: 1.5rem;
-      }
+    @media (min-width: 1441px) {
+      margin-bottom: 1.5rem;
     }
   }
 }

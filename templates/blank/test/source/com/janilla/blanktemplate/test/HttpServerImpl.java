@@ -38,10 +38,10 @@ import com.janilla.http.HttpResponse;
 
 class HttpServerImpl extends DefaultHttpServer {
 
-	protected final BlankFullstack<?> fullstack;
+	protected final BlankFullstack<?, ?> fullstack;
 
 	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
-			BlankFullstack<?> fullstack) {
+			BlankFullstack<?, ?> fullstack) {
 		super(endpoint, sslContext, handler);
 		this.fullstack = fullstack;
 	}

@@ -81,14 +81,14 @@ export default class ContactPage extends WebComponent {
             }));
 
             if (!hs.contact || this.dataset.id != hs.contact.id) {
-                const c = await (await fetch(`${a.dataset.apiUrl}/contacts/${this.dataset.id}`)).json();
+                const c = await (await fetch(`${a.customEnv.apiUrl}/contacts/${this.dataset.id}`)).json();
 
                 history.replaceState({
                     ...history.state,
                     contact: c
                 }, "");
 
-                a.navigate();
+                a.navigateTo();
             }
         } else
             history.replaceState(Object.fromEntries(Object.entries(history.state)
@@ -104,18 +104,18 @@ export default class ContactPage extends WebComponent {
 
         switch (event.target.method) {
             case "get":
-                const u = new URL(`${a.dataset.basePath}/contacts/${hs.contact.id}/edit`, location.href);
+                const u = new URL(`${a.customEnv.basePath}/contacts/${hs.contact.id}/edit`, location.href);
                 const q = new URLSearchParams(location.search).get("q");
                 if (q)
                     u.searchParams.append("q", q);
-                a.navigate(u);
+                a.navigateTo(u);
                 break;
 
             case "post":
                 if (confirm("Please confirm you want to delete this record.")) {
-                    const r = await fetch(`${a.dataset.apiUrl}/contacts/${hs.contact.id}`, { method: "DELETE" });
+                    const r = await fetch(`${a.customEnv.apiUrl}/contacts/${hs.contact.id}`, { method: "DELETE" });
                     if (r.ok)
-                        a.navigate(new URL("/", location.href));
+                        a.navigateTo(new URL("/", location.href));
                     else
                         alert(await r.text());
                 }
@@ -130,13 +130,13 @@ export default class ContactPage extends WebComponent {
         hs.contact.favorite = favorite;
         this.requestDisplay();
 
-        const r = await fetch(`${a.dataset.apiUrl}/contacts/${hs.contact.id}/favorite`, {
+        const r = await fetch(`${a.customEnv.apiUrl}/contacts/${hs.contact.id}/favorite`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(hs.contact.favorite)
         });
         if (r.ok)
-            a.navigate(new URL("/", location.href));
+            a.navigateTo(new URL("/", location.href));
         else
             alert(await r.text());
     }

@@ -26,6 +26,8 @@ package com.janilla.web;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
@@ -34,7 +36,9 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
 
-public class DefaultTemplateHandlerFactory extends AbstractHandlerFactory implements TemplateHandlerFactory {
+public class DefaultTemplateHandlerFactory extends AbstractHttpHandlerFactory implements TemplateHandlerFactory {
+
+	private static final Logger LOGGER = System.getLogger(DefaultTemplateHandlerFactory.class.getName());
 
 	public DefaultTemplateHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory) {
 		super(config, rootFactory, diFactory);
@@ -49,7 +53,8 @@ public class DefaultTemplateHandlerFactory extends AbstractHandlerFactory implem
 	}
 
 	protected void render(Renderable<?> renderable, HttpExchange exchange) {
-//		IO.println("TemplateHandlerFactory.render, renderable=" + renderable);
+		LOGGER.log(Level.DEBUG, "renderable={0}", renderable);
+
 		var rs = exchange.response();
 		if (rs.getHeaderValue(":status") == null)
 			rs.setHeaderValue(":status", "200");

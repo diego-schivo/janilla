@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
-import com.janilla.web.DefaultResource;
+import com.janilla.web.JavaResource;
 import com.janilla.web.ResourceMap;
 
 public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFactory {
@@ -72,7 +72,7 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 			putIndexInitArgs(aa, exchange);
 			i = diFactory.newInstance(diFactory.classFor(Index.class), aa);
 		} else
-			i = new DefaultIndex(a, imports(), config.basePath(), scripts(), templates(), config.title());
+			i = new DefaultIndex(a, imports(), scripts(), templates(), config.title());
 //		IO.println("DefaultIndexFactory.newIndex, i=" + i);
 		return i;
 	}
@@ -93,14 +93,21 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 			putAppInitArgs(aa, exchange);
 			a = diFactory.newInstance(diFactory.classFor(App.class), aa);
 		} else
-			a = new DefaultApp(config.api().url(), state(exchange));
+			a = new DefaultApp(env(), state(exchange));
 //		IO.println("DefaultIndexFactory.newApp, a=" + a);
 		return a;
 	}
 
 	protected void putAppInitArgs(Map<String, Object> args, HttpExchange exchange) {
-		args.put("apiUrl", config.api().url());
+		args.put("env", env());
 		args.put("state", state(exchange));
+	}
+
+	protected Map<String, String> env() {
+		var m = new LinkedHashMap<String, String>();
+		m.put("apiUrl", config.api().url());
+		m.put("basePath", config.basePath());
+		return m;
 	}
 
 	protected Map<String, Object> state(HttpExchange exchange) {
@@ -119,8 +126,8 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 	}
 
 	protected void putImports(Map<String, String> map) {
-		Stream.of("app", "intl-format", "janilla-logo", "toaster", "web-component").map(this::baseImportKey)
-				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+		Stream.of("app", "intl-format", "janilla-logo", "lucide-icon", "toaster", "web-component")
+				.map(this::baseImportKey).forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	protected String baseImportKey(String name) {
@@ -146,7 +153,7 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 	}
 
 	protected Template template(String name) {
-		var f = (DefaultResource) resourceMap.get("/" + name + ".html");
+		var f = (JavaResource) resourceMap.get("/" + name + ".html");
 		try (var in = f != null ? f.newInputStream() : null) {
 			return in != null ? new Template(name, new String(in.readAllBytes())) : null;
 		} catch (IOException e) {

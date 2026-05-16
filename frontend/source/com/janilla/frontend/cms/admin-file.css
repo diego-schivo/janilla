@@ -53,7 +53,7 @@ div:has(> admin-file) {
   gap: 0.25rem;
 }
 
-admin-file {
+.admin-ui :where(admin-file) {
   background: var(--background-2);
   border: 1px solid var(--border-1);
   border-radius: 0.1875rem;
@@ -64,8 +64,10 @@ admin-file {
   padding: 1rem;
   position: relative;
 
+  /*
   .dropzone {
   }
+  */
 
   label {
     align-self: start;

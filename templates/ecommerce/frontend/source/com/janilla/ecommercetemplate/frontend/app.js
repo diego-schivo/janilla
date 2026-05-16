@@ -49,18 +49,18 @@ export default class App extends WebsiteApp {
                 case "/login":
                     const u = new URL("/account", location.href);
                     u.searchParams.append("warning", "You are already logged in.");
-                    this.navigate(u);
+                    this.navigateTo(u);
                     return;
 
                 case "/logout":
-                    await fetch(`${this.dataset.apiUrl}/users/logout`, { method: "POST" });
+                    await fetch(`${this.customEnv.apiUrl}/users/logout`, { method: "POST" });
                     s.user = null;
                     break;
             }
         else if (p === "/account" || p.startsWith("/account/")) {
             const u = new URL("/login", location.href);
             u.searchParams.append("warning", "Please login to access your account settings.");
-            this.navigate(u);
+            this.navigateTo(u);
             return;
         } else if (p === "/orders" || p.startsWith("/orders/"))
             s.notFound = true;
@@ -92,16 +92,16 @@ export default class App extends WebsiteApp {
 
                 case "/checkout":
                     if (!Array.from(document.head.querySelectorAll("script"))
-                        .some(x => x.src === this.dataset.stripeUrl)) {
+                        .some(x => x.src === this.customEnv.stripeUrl)) {
                         const el = document.createElement("script");
                         el.onload = () => {
                             if (!s.stripe && typeof Stripe !== "undefined")
-                                s.stripe = Stripe(this.dataset.stripePublishableKey);
+                                s.stripe = Stripe(this.customEnv.stripePublishableKey);
                         }
                         document.head.append(el);
-                        el.src = this.dataset.stripeUrl;
+                        el.src = this.customEnv.stripeUrl;
                     } else if (!s.stripe && typeof Stripe !== "undefined")
-                        s.stripe = Stripe(this.dataset.stripePublishableKey);
+                        s.stripe = Stripe(this.customEnv.stripePublishableKey);
                     return { $template: "checkout" };
 
                 case "/checkout/confirm-order":
@@ -170,7 +170,7 @@ export default class App extends WebsiteApp {
     async enumValues(name) {
         const s = this.customState;
         if (!Object.hasOwn(s, "enums"))
-            s.enums = await (await fetch(`${this.dataset.apiUrl}/enums`)).json();
+            s.enums = await (await fetch(`${this.customEnv.apiUrl}/enums`)).json();
         return s.enums[name];
     }
 }

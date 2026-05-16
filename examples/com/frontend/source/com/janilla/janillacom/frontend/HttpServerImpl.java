@@ -62,7 +62,7 @@ class HttpServerImpl extends DefaultHttpServer {
 
 	@Override
 	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		var f = (Frontend<?>) JanillaDomain.WEB_APP.get();
+		var f = (Frontend<?, ?>) JanillaDomain.WEB_APP.get();
 //		IO.println("CustomHttpServer.createExchange, a=" + a);
 		var e = f.diFactory().newInstance(f.diFactory().classFor(HttpExchange.class),
 				Map.of("request", request, "response", response));

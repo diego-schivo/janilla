@@ -24,8 +24,6 @@
  */
 package com.janilla.acmedashboard.backend;
 
-import java.util.Set;
-
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
@@ -49,24 +47,26 @@ class CustomInvocationHandlerFactory extends DefaultInvocationHandlerFactory {
 		var rq = ex.request();
 		var rs = ex.response();
 
-		if (config.liveDemo() != null && config.liveDemo())
-			if (rq.getHeaderValue(":method").equals("GET") || rq.getPath().equals("/api/authentication"))
+		if (config.liveDemo())
+			if (rq.getHeaderValue(":method").equals("GET")
+					|| rq.getPath().equals(config.basePath() + "/api/authentication"))
 				;
 			else
 				throw new HandleException(new MethodBlockedException());
 
-		if (rq.getPath().startsWith("/api/")) {
-			if (rq.getHeaderValue(":method").equals("OPTIONS") || rq.getPath().equals("/api/authentication"))
-				;
-			else
-				ex.requireSessionEmail();
-		} else if (Set.of("/", "/login").contains(rq.getPath()) || rq.getPath().contains("."))
+//		if (rq.getPath().startsWith(config.basePath() + "/api/")) {
+		if (rq.getHeaderValue(":method").equals("OPTIONS")
+				|| rq.getPath().equals(config.basePath() + "/api/authentication"))
 			;
-		else if (ex.getSessionEmail() == null) {
-			rs.setHeaderValue(":status", "302");
-			rs.setHeaderValue("cache-control", "no-cache");
-			rs.setHeaderValue("location", "/login");
-		}
+		else
+			ex.requireSessionEmail();
+//		} else if (Set.of("/", "/login").contains(rq.getPath()) || rq.getPath().contains("."))
+//			;
+//		else if (ex.getSessionEmail() == null) {
+//			rs.setHeaderValue(":status", "302");
+//			rs.setHeaderValue("cache-control", "no-cache");
+//			rs.setHeaderValue("location", "/login");
+//		}
 
 		var o = config.api().cors().origin();
 		if (o != null && !o.isEmpty()) {

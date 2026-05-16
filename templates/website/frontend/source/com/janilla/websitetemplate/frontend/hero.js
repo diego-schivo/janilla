@@ -35,18 +35,23 @@ export default class Hero extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.closest("app-element");
         const d = this.closest("[data-slug]").data(this.dataset.path);
+
         this.appendChild(this.interpolateDom({
             $template: "",
-            backgroundImage: d.media ? `url("${d.media.uri}")` : "none",
-            ...d,
+            backgroundImage: d.media ? `background-image: url("${d.media.uri}")` : null,
+			richText: d.richText, //.replace(/\${href\('(.*?)'\)}/g, `${a.customEnv.basePath}$1`),
             links: d.links?.length ? {
                 $template: "links",
                 items: d.links.map(x => ({
+                    ...a.baseInput,
                     $template: "link",
                     ...x,
                     document: x.type.name === "REFERENCE" ? `${x.document.$type}:${x.document.slug}` : null,
-                    href: x.type.name === "CUSTOM" ? x.uri : null,
+                    href: x.type.name === "CUSTOM"
+                        ? (x.uri?.startsWith("/") ? `${a.customEnv.basePath}${x.uri}` : x.uri)
+                        : null,
                     target: x.newTab ? "_blank" : null,
                     class: `button ${x.appearance?.name === "OUTLINE" ? "secondary" : "primary"}`
                 }))

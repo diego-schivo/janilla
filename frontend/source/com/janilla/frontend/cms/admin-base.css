@@ -47,7 +47,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-:where(:root:has(.admin)) {
+:where(:root:has(.admin-ui)) {
   background: var(--background-1);
   color-scheme: light dark;
   line-height: 1.25;
@@ -77,25 +77,25 @@
   --color-7: rgb(255, 255, 255);
   --color-8: rgb(218, 75, 72);
   --color-9: rgb(125, 204, 248);
+}
 
-  body {
-    color: var(--color-1);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 0.75rem;
-    font-weight: 400;
-    margin: 0;
+:where(body:has(.admin-ui)) {
+  color: var(--color-1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin: 0;
 
-    @media (min-width: 1441px) {
-      font-size: 0.8125rem;
-    }
+  @media (min-width: 1441px) {
+    font-size: 0.8125rem;
+  }
 
-    &:has(dialog[open]) {
-      overflow: hidden;
-    }
+  &:has(dialog[open]) {
+    overflow: hidden;
   }
 }
 
-:where(.admin) {
+:where(.admin-ui) {
   a,
   button,
   input,

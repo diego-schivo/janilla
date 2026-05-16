@@ -105,7 +105,7 @@ export default class Addresses extends WebComponent {
             }
         };
 
-        const r = await fetch([a.dataset.apiUrl, "addresses", s.dialog.id].filter(x => x).join("/"), {
+        const r = await fetch([a.customEnv.apiUrl, "addresses", s.dialog.id].filter(x => x).join("/"), {
             method: s.dialog.id ? "PUT" : "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(o)

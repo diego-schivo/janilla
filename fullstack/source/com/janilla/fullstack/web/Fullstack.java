@@ -26,6 +26,7 @@ package com.janilla.fullstack.web;
 
 import com.janilla.backend.web.Backend;
 import com.janilla.frontend.web.Frontend;
+import com.janilla.web.Domain;
 
-public interface Fullstack<C extends FullstackConfig> extends Frontend<C>, Backend<C> {
+public interface Fullstack<C extends FullstackConfig, D extends Domain> extends Frontend<C, D>, Backend<C, D> {
 }

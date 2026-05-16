@@ -60,11 +60,11 @@ export default class App extends BlankApp {
         if (!Object.hasOwn(s, "header"))
             s.header = ss && Object.hasOwn(ss, "header")
                 ? ss.header
-                : await (await fetch(`${this.dataset.apiUrl}/header`)).json();
+                : await (await fetch(`${this.customEnv.apiUrl}/header`)).json();
         if (!Object.hasOwn(s, "footer"))
             s.footer = ss && Object.hasOwn(ss, "footer")
                 ? ss.footer
-                : await (await fetch(`${this.dataset.apiUrl}/footer`)).json();
+                : await (await fetch(`${this.customEnv.apiUrl}/footer`)).json();
         s.colorScheme = localStorage.getItem(`${this.dataset.key}.color-scheme`);
 
         this.appendChild(this.interpolateDom({
@@ -75,11 +75,10 @@ export default class App extends BlankApp {
 
     siteData() {
         return {
-            $template: "site",
+			...super.siteData(),
             colorScheme: this.colorScheme ?? "light dark",
             before: this.currentUser?.roles?.some(x => x.name === "ADMIN") ? { $template: "admin-bar" } : null,
             header: { $template: "header" },
-            content: this.contentData(),
             footer: { $template: "footer" }
         };
     }
@@ -88,7 +87,7 @@ export default class App extends BlankApp {
         const s = this.customState;
         if (s.notFound)
             return { $template: "not-found" };
-        const p = location.pathname;
+        const p = this.currentPath;
         const m = p.match(postsRegex);
         if (m)
             return m[1] ? {
@@ -102,5 +101,15 @@ export default class App extends BlankApp {
             $template: "page",
             slug: p.split("/").map(x => x === "" ? "home" : x)[1]
         };
+    }
+
+    handleClick(event) {
+        const a = event.target.closest("a");
+        const h = a?.getAttribute("href");
+        if (h?.startsWith("#/")) {
+            event.preventDefault();
+            this.navigateTo(new URL(`${this.customEnv.basePath}${h.substring(1)}`, location.href));
+        } else
+            super.handleClick(event);
     }
 }

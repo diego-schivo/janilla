@@ -24,7 +24,10 @@
  */
 package com.janilla.blanktemplate.frontend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Collections;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -37,9 +40,14 @@ import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.InvocationResolver;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 
-public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFrontend<C> {
+public class BlankFrontend<C extends BlankFrontendConfig, D extends BlankDomain> extends AbstractFrontend<C, D> {
+
+	protected static final String LUCIDE_ICONS_DOWNLOAD = "https://github.com/lucide-icons/lucide/releases/download/1.14.0/lucide-icons-1.14.0.zip";
+
+	private static final Logger LOGGER = System.getLogger(BlankFrontend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
@@ -49,17 +57,15 @@ public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFronte
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { BlankFrontend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
-
-	protected BlankDomain domain;
 
 	protected CmsDataFetching dataFetching;
 
@@ -68,10 +74,6 @@ public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFronte
 	public BlankFrontend(C config, DiFactory diFactory, Consumer<Object> context, HttpClient httpClient) {
 		this.httpClient = httpClient;
 		super(config, diFactory, context);
-	}
-
-	public BlankDomain domain() {
-		return domain;
 	}
 
 	public CmsDataFetching dataFetching() {
@@ -86,35 +88,8 @@ public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFronte
 		return indexFactory;
 	}
 
-//	protected boolean handle(HttpExchange exchange) {
-//		return ScopedValue.where(com.janilla.blanktemplate.Configuration.PROPERTY_GETTER,
-//				x -> configuration.getProperty(configurationKey + "." + x)).call(() -> {
-//					var h = handlerFactory
-//							.createHandler(exchange.exception() != null ? exchange.exception() : exchange.request());
-//					if (h == null)
-//						throw new NotFoundException(exchange.request().getHeaderValue(":method") + " "
-//								+ exchange.request().getHeaderValue(":path"));
-//					return h.handle(exchange);
-//				});
-//	}
-
-//	protected Map<String, List<Path>> resourcePaths() {
-//		return resourcePrefixes().entrySet().stream().reduce(new HashMap<>(), (x, y) -> {
-//			x.computeIfAbsent(y.getValue(), _ -> new ArrayList<>())
-//					.addAll(Java.getPackagePaths(y.getKey()).filter(Files::isRegularFile).toList());
-//			return x;
-//		}, (_, x) -> x);
-//	}
-//
-//	protected void putResourcePrefixes() {
-//		resourcePrefixes.put("com.janilla.frontend", "/base");
-//		resourcePrefixes.put("com.janilla.frontend.cms", "");
-//		resourcePrefixes.put("com.janilla.blanktemplate.frontend", "");
-//	}
-
 	@Override
 	protected InvocationResolver newInvocationResolver() {
-		domain = diFactory.newInstance(diFactory.classFor(BlankDomain.class));
 		if (httpClient == null)
 			httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class),
 					Collections.singletonMap("sslContext", sslContext(config)));
@@ -128,7 +103,9 @@ public class BlankFrontend<C extends BlankFrontendConfig> extends AbstractFronte
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.frontend.cms", "");
-		resourcePrefixes.put("com.janilla.blanktemplate.frontend", "");
+		resourcesProviders.put(
+				diFactory.newInstance(DownloadResourcesProvider.class, Map.of("url", LUCIDE_ICONS_DOWNLOAD)), "/base");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.frontend.cms"), "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.blanktemplate.frontend"), "");
 	}
 }

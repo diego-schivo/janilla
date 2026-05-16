@@ -34,11 +34,13 @@ import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.DefaultCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
 class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
 
-	public InvoiceCrud(Persistence persistence) {
-		super(Invoice.class, persistence.idHelper(Invoice.class), null, null, persistence);
+	public InvoiceCrud(Converter converter, Copier copier, Persistence persistence) {
+		super(Invoice.class, persistence.idHelper(Invoice.class), converter, copier, persistence);
 	}
 
 	public BigDecimal getAmount(InvoiceStatus status) {

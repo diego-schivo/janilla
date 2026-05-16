@@ -39,7 +39,7 @@ export default class RevenueChart extends WebComponent {
     }
 
     async updateDisplay() {
-        const d = this.closest("dashboard-page");
+        const d = this.shadowClosest("dashboard-page");
         const hs = history.state;
         var k = d.slot && hs.revenue ? Math.ceil(Math.max(...hs.revenue.map(x => x.revenue)) / 1000) : 0;
         this.appendChild(this.interpolateDom({
@@ -55,8 +55,8 @@ export default class RevenueChart extends WebComponent {
             })) : null
         }));
         if (this.dataset.state === "loading") {
-            const a = this.closest("app-element");
-            const x = a.serverState?.revenue ?? await (await fetch(`${a.dataset.apiUrl}/dashboard/revenue`,
+            const a = this.shadowClosest("app-element");
+            const x = a.serverState?.revenue ?? await (await fetch(`${a.customEnv.apiUrl}/dashboard/revenue`,
                 { credentials: "include" })).json();
             history.replaceState({
                 ...history.state,

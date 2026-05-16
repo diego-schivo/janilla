@@ -78,7 +78,7 @@ export default class ProductDescription extends WebComponent {
         const v = p.variants.find(x => x.id == this.dataset.variant);
         const a = this.closest("app-element");
         const c = localStorage.getItem("cart");
-        const u = new URL(c ? `${a.dataset.apiUrl}/carts/${c}` : `${a.dataset.apiUrl}/carts`, location.href);
+        const u = new URL(c ? `${a.customEnv.apiUrl}/carts/${c}` : `${a.customEnv.apiUrl}/carts`, location.href);
         if (!a.currentUser)
             u.searchParams.append("secret", localStorage.getItem("cart_secret"));
         const o = c ? await (await fetch(u)).json() : null;

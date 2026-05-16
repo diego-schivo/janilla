@@ -26,6 +26,8 @@ package com.janilla.web;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
@@ -47,6 +49,8 @@ public class DefaultRenderableFactory implements RenderableFactory {
 	protected static final Pattern TEMPLATE_ELEMENT = Pattern
 			.compile("<ssr-template id=\"([\\w-]+)\">(.*?)</ssr-template>", Pattern.DOTALL);
 
+	private static final Logger LOGGER = System.getLogger(DefaultRenderableFactory.class.getName());
+
 	protected final DiFactory diFactory;
 
 	protected final ResourceMap resourceMap;
@@ -65,6 +69,8 @@ public class DefaultRenderableFactory implements RenderableFactory {
 	@Override
 	public String template(String key1, String key2) {
 //		IO.println("RenderableFactory.template, key1=" + key1 + ", key2=" + key2);
+		LOGGER.log(Level.INFO, "key1={0}, key2={1}", key1, key2);
+
 		return Optional.ofNullable(templates.get(key1)).map(x -> x.get(key2)).orElse(null);
 	}
 
@@ -90,7 +96,7 @@ public class DefaultRenderableFactory implements RenderableFactory {
 			templates.computeIfAbsent(t, _ -> {
 				var s = resourceKeys(ae).map(x -> {
 					var r2 = resourceMap.get(x);
-					if (r2 instanceof DefaultResource r3)
+					if (r2 instanceof JavaResource r3)
 						try (var in = r3.newInputStream()) {
 //							if (in == null)
 //								throw new NullPointerException(t);

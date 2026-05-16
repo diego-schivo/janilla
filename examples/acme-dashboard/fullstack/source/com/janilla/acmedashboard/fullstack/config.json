@@ -1,6 +1,6 @@
 {
 	"api": {
-		"url": "/api"
+		"url": "http://localhost:8080/api"
 	},
 	"basePath": "",
 	"httpServer": {

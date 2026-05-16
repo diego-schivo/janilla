@@ -23,18 +23,18 @@
  * SOFTWARE.
  */
 page-element {
-  main {
+  article {
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
     height: 100vh;
     margin: 0 auto;
     max-width: 64rem;
     padding: 1.5rem;
-  }
 
-  article {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    @media (min-width: 64rem) {
+      padding: 2.8125rem;
+    }
   }
 
   section {
@@ -78,8 +78,6 @@ page-element {
   }
 
   footer {
-    --link-background: light-dark(rgb(195, 195, 195), rgb(60, 60, 60));
-
     p {
       font-size: 0.9375rem;
       line-height: 1.8;
@@ -98,7 +96,7 @@ page-element {
     }
 
     a {
-      background: var(--link-background);
+      background: light-dark(rgb(195, 195, 195), rgb(60, 60, 60));
       border-radius: 0.25rem;
       display: inline-block;
       line-height: 1.6;

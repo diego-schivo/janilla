@@ -38,7 +38,6 @@ import com.janilla.janillacom.JanillaDomain;
 
 class HttpServerImpl extends DefaultHttpServer {
 
-//	protected final Function<String, Backend<?>> authorityToBackend;
 	protected final JanillaBackend backend;
 
 	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, JanillaBackend backend) {
@@ -59,7 +58,7 @@ class HttpServerImpl extends DefaultHttpServer {
 
 	@Override
 	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		var b = (Backend<?>) JanillaDomain.WEB_APP.get();
+		var b = (Backend<?, ?>) JanillaDomain.WEB_APP.get();
 //		IO.println("HttpServerImpl.createExchange, b=" + b);
 		var e = b.diFactory().newInstance(b.diFactory().classFor(HttpExchange.class),
 				Map.of("request", request, "response", response));

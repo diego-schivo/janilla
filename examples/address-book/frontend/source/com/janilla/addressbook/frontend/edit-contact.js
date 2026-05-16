@@ -71,14 +71,14 @@ export default class EditContact extends WebComponent {
             }));
 
             if (!hs.contact || this.dataset.id != hs.contact.id) {
-                const c = await (await fetch(`${a.dataset.apiUrl}/contacts/${this.dataset.id}`)).json();
+                const c = await (await fetch(`${a.customEnv.apiUrl}/contacts/${this.dataset.id}`)).json();
 
                 history.replaceState({
                     ...history.state,
                     contact: c
                 }, "");
 
-                a.navigate();
+                a.navigateTo();
             }
         } else
             history.replaceState(Object.fromEntries(Object.entries(history.state)
@@ -99,13 +99,13 @@ export default class EditContact extends WebComponent {
         const hs = history.state;
         const a = this.closest("app-element");
 
-        const r = await fetch(`${a.dataset.apiUrl}/contacts/${hs.contact.id}`, {
+        const r = await fetch(`${a.customEnv.apiUrl}/contacts/${hs.contact.id}`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
         });
         if (r.ok)
-            a.navigate(new URL(`${a.dataset.basePath}/contacts/${hs.contact.id}`, location.href));
+            a.navigateTo(new URL(`${a.customEnv.basePath}/contacts/${hs.contact.id}`, location.href));
         else
             alert(await r.text());
     }

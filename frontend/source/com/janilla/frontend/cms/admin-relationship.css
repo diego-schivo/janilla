@@ -47,14 +47,14 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin {
-  label:has(admin-relationship) {
+.admin-ui {
+  :where(label:has(admin-relationship)) {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  admin-relationship {
+  :where(admin-relationship) {
     background: var(--background-2);
     border: 1px solid var(--border-1);
     border-radius: 0.1875rem;

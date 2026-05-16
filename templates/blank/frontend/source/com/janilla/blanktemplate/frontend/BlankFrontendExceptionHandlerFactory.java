@@ -26,9 +26,11 @@ package com.janilla.blanktemplate.frontend;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
+import com.janilla.ioc.DiFactory;
 import com.janilla.web.Error;
 import com.janilla.web.ExceptionHandlerFactory;
 import com.janilla.web.RenderableFactory;
+import com.janilla.web.WebAppConfig;
 
 public class BlankFrontendExceptionHandlerFactory extends ExceptionHandlerFactory {
 
@@ -36,13 +38,11 @@ public class BlankFrontendExceptionHandlerFactory extends ExceptionHandlerFactor
 
 	protected final RenderableFactory renderableFactory;
 
-	protected final HttpHandlerFactory rootFactory;
-
-	public BlankFrontendExceptionHandlerFactory(BlankIndexFactory<?> indexFactory, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory) {
+	public BlankFrontendExceptionHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory,
+			DiFactory diFactory, BlankIndexFactory<?> indexFactory, RenderableFactory renderableFactory) {
+		super(config, rootFactory, diFactory);
 		this.indexFactory = indexFactory;
 		this.renderableFactory = renderableFactory;
-		this.rootFactory = rootFactory;
 	}
 
 	@Override

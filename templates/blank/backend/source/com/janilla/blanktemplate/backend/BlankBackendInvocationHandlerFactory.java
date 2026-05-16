@@ -75,14 +75,15 @@ public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandl
 		if (requireSessionEmail(rq))
 			((UserHttpExchange<?>) exchange).requireSessionEmail();
 
+		var p = webAppPath(rq);
 		if (config.liveDemo()) {
-			if (rq.getHeaderValue(":method").equals("GET") || userLoginLogout.contains(rq.getPath()))
+			if (rq.getHeaderValue(":method").equals("GET") || userLoginLogout.contains(p))
 				;
 			else
 				throw new HandleException(new MethodBlockedException());
 		}
 
-//		if (r.getPath().startsWith("/api/"))
+//		if (p.startsWith("/api/"))
 //			try {
 //				TimeUnit.SECONDS.sleep(1);
 //			} catch (InterruptedException e) {
@@ -93,17 +94,18 @@ public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandl
 	}
 
 	protected boolean requireSessionEmail(HttpRequest request) {
-		if (!request.getPath().startsWith("/api/"))
+		var p = webAppPath(request);
+		if (!p.startsWith("/api/"))
 			return false;
 		switch (request.getHeaderValue(":method")) {
 		case "GET", "OPTIONS":
-			if (request.getPath().equals("/api/users"))
+			if (p.equals("/api/users"))
 				return !"0".equals(new UriQueryBuilder(request.getQuery()).values("limit").findFirst().orElse(null));
 			return false;
 
 		case "POST":
-			return !guestPost.contains(request.getPath());
-		
+			return !guestPost.contains(p);
+
 		default:
 			return true;
 		}

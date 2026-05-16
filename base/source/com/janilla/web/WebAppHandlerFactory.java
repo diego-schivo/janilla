@@ -36,32 +36,11 @@ import com.janilla.java.Java;
 
 public class WebAppHandlerFactory implements HttpHandlerFactory {
 
-//	protected final WebAppConfig config;
-
 	protected final DiFactory diFactory;
 
 	protected final List<HttpHandlerFactory> handlerFactories;
 
-//	protected final InvocationResolver invocationResolver;
-//
-//	protected final RenderableFactory renderableFactory;
-//
-//	protected final ResourceMap resourceMap;
-
-//	public WebAppHandlerFactory(WebAppConfig config, InvocationResolver invocationResolver,
-//			RenderableFactory renderableFactory, ResourceMap resourceMap) {
-//		this(config, invocationResolver, renderableFactory, resourceMap, null);
-//	}
-//
-//	public WebAppHandlerFactory(WebAppConfig config, DiFactory diFactory) {
-//		this(config, null, null, null, diFactory);
-//	}
-
 	public WebAppHandlerFactory(DiFactory diFactory) {
-//		this.config = config;
-//		this.invocationResolver = invocationResolver;
-//		this.renderableFactory = renderableFactory;
-//		this.resourceMap = resourceMap;
 		this.diFactory = diFactory;
 		handlerFactories = buildFactories();
 //		IO.println("ApplicationHandlerFactory, handlerFactories=" + handlerFactories);
@@ -80,15 +59,14 @@ public class WebAppHandlerFactory implements HttpHandlerFactory {
 		return null;
 	}
 
-	protected HttpHandlerFactory buildExceptionHandlerFactory() {
-		return diFactory != null ? Objects.requireNonNull(
-				diFactory.newInstance(diFactory.classFor(ExceptionHandlerFactory.class), Map.of("rootFactory", this)))
-				: new ExceptionHandlerFactory();
-	}
-
 	protected List<HttpHandlerFactory> buildFactories() {
 		return List.of(buildInvocationHandlerFactory(), buildTemplateHandlerFactory(), buildJsonHandlerFactory(),
 				buildResourceHandlerFactory(), buildExceptionHandlerFactory());
+	}
+
+	protected HttpHandlerFactory buildExceptionHandlerFactory() {
+		return Objects.requireNonNull(
+				diFactory.newInstance(diFactory.classFor(ExceptionHandlerFactory.class), Map.of("rootFactory", this)));
 	}
 
 	protected HttpHandlerFactory buildInvocationHandlerFactory() {
@@ -102,9 +80,8 @@ public class WebAppHandlerFactory implements HttpHandlerFactory {
 	}
 
 	protected HttpHandlerFactory buildJsonHandlerFactory() {
-		return diFactory != null ? Objects.requireNonNull(
-				diFactory.newInstance(diFactory.classFor(JsonHandlerFactory.class), Map.of("rootFactory", this)))
-				: new JsonHandlerFactory();
+		return Objects.requireNonNull(
+				diFactory.newInstance(diFactory.classFor(JsonHandlerFactory.class), Map.of("rootFactory", this)));
 	}
 
 	protected ResourceHandlerFactory buildResourceHandlerFactory() {

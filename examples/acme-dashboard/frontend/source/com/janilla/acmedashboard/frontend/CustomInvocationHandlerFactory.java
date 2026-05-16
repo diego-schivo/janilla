@@ -48,12 +48,12 @@ class CustomInvocationHandlerFactory extends DefaultInvocationHandlerFactory {
 		var rq = ex.request();
 		var rs = ex.response();
 
-		if ((rq.getPath() + "/").startsWith("/dashboard/"))
+		if ((rq.getPath() + "/").startsWith(config.basePath() + "/dashboard/"))
 			ex.requireSessionEmail();
 		else if (!Objects.requireNonNullElse(ex.getSessionEmail(), "").isEmpty()) {
 			rs.setHeaderValue(":status", "303");
 			rs.setHeaderValue("cache-control", "no-cache");
-			rs.setHeaderValue("location", "/dashboard");
+			rs.setHeaderValue("location", config.basePath() + "/dashboard");
 			return true;
 		}
 

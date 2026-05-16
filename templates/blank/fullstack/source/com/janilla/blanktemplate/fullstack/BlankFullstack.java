@@ -24,9 +24,13 @@
  */
 package com.janilla.blanktemplate.fullstack;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.Comparator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.janilla.blanktemplate.BlankDomain;
 import com.janilla.blanktemplate.backend.BlankBackend;
 import com.janilla.blanktemplate.frontend.BlankFrontend;
 import com.janilla.fullstack.web.AbstractFullstack;
@@ -35,13 +39,16 @@ import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
-public class BlankFullstack<C extends BlankFullstackConfig> extends AbstractFullstack<C> {
+public class BlankFullstack<C extends BlankFullstackConfig, D extends BlankDomain> extends AbstractFullstack<C, D> {
+
+	private static final Logger LOGGER = System.getLogger(BlankFullstack.class.getName());
 
 	public static final Class<?>[] CONFIG_CLASSES = { BlankBackend.class, BlankFrontend.class, BlankFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.backend", _ -> true,
+						Comparator.comparingInt(x -> x.endsWith(".cms") ? 1 : 0)),
 				Java.getPackageTypes("com.janilla.frontend", _ -> true),
 				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
 				Java.getPackageTypes("com.janilla.blanktemplate.backend"),
@@ -50,13 +57,13 @@ public class BlankFullstack<C extends BlankFullstackConfig> extends AbstractFull
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
@@ -65,7 +72,8 @@ public class BlankFullstack<C extends BlankFullstackConfig> extends AbstractFull
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass, Class backendClass) {
+	protected BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
+			Class backendClass) {
 		super(config, diFactory, context, frontendClass, backendClass);
 	}
 

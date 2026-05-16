@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 module com.janilla.janillacom.fullstack {
 
 	exports com.janilla.janillacom.fullstack;
@@ -30,12 +31,4 @@ module com.janilla.janillacom.fullstack {
 	requires transitive com.janilla.janillacom.backend;
 	requires transitive com.janilla.janillacom.frontend;
 	requires transitive com.janilla.websitetemplate.fullstack;
-
-//	requires com.janilla.acmedashboard.fullstack;
-//	requires com.janilla.addressbook.fullstack;
-//	requires com.janilla.blanktemplate.fullstack;
-//	requires com.janilla.conduit.fullstack;
-//	requires com.janilla.ecommercetemplate.fullstack;
-//	requires com.janilla.petclinic.fullstack;
-//	requires com.janilla.todomvc;
 }

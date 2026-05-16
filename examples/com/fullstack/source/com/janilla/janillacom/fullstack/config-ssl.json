@@ -13,7 +13,8 @@
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "https://acmedashboard.janilla.local:8443/api"
 			},
 			"basePath": "",
 			"liveDemo": true
@@ -23,7 +24,8 @@
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "https://addressbook.janilla.local:8443/api"
 			},
 			"basePath": "",
 			"liveDemo": true
@@ -33,7 +35,8 @@
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "https://blanktemplate.janilla.local:8443/api"
 			},
 			"basePath": "",
 			"liveDemo": true
@@ -43,7 +46,8 @@
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "https://conduit.janilla.local:8443/api"
 			},
 			"basePath": "",
 			"liveDemo": true
@@ -53,7 +57,8 @@
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "https://ecommercetemplate.janilla.local:8443/api"
 			},
 			"basePath": "",
 			"liveDemo": true
@@ -63,7 +68,8 @@
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "https://petclinic.janilla.local:8443/api"
 			},
 			"basePath": "",
 			"liveDemo": true
@@ -73,7 +79,8 @@
 				"cors": {
 					"headers": "",
 					"origin": ""
-				}
+				},
+				"url": "https://websitetemplate.janilla.local:8443/api"
 			},
 			"basePath": "",
 			"liveDemo": true

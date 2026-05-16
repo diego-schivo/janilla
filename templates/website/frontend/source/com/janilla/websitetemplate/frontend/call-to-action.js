@@ -35,10 +35,12 @@ export default class CallToAction extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.closest("app-element");
         const d = this.closest("[data-slug]").data(this.dataset.path);
+
         this.appendChild(this.interpolateDom({
             $template: "",
-            ...d,
+            richText: d.richText, //.replace(/\${href\('(.*?)'\)}/g, `${a.customEnv.basePath}$1`),
             links: d.links.map(x => ({
                 $template: "link",
                 ...x,

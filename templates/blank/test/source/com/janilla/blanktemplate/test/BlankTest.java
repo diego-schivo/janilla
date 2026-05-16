@@ -24,6 +24,8 @@
  */
 package com.janilla.blanktemplate.test;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -38,11 +40,15 @@ import com.janilla.http.HttpHandler;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.web.Domain;
 import com.janilla.web.NotFoundException;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 import com.janilla.web.WebAppHandlerFactory;
 
-public class BlankTest extends AbstractFrontend<FrontendConfig> {
+public class BlankTest extends AbstractFrontend<FrontendConfig, Domain> {
+
+	private static final Logger LOGGER = System.getLogger(BlankTest.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
@@ -51,19 +57,19 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(
 				new Class<?>[] { BlankBackend.class, BlankFrontend.class, BlankFullstack.class, BlankTest.class },
 				args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
-	protected final BlankFullstack<?> fullstack;
+	protected final BlankFullstack<?, ?> fullstack;
 
 	public BlankTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
 		super(config, diFactory, context);
@@ -79,13 +85,13 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 			}
 			var cfg = newConfig(Stream.concat(Arrays.stream(cc), Stream.of(getClass())).toArray(Class<?>[]::new), null,
 					f);
-			Consumer<Object> ctx = x -> a[0] = (WebApp<?>) x;
+			Consumer<Object> ctx = x -> a[0] = (WebApp<?, ?>) x;
 			fullstack = f.newInstance(f.classFor(WebApp.class),
 					Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		}
 	}
 
-	public BlankFullstack<?> fullstack() {
+	public BlankFullstack<?, ?> fullstack() {
 		return fullstack;
 	}
 
@@ -113,6 +119,6 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.blanktemplate.test", "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.blanktemplate.test"), "");
 	}
 }

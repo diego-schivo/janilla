@@ -57,9 +57,9 @@ export default class Shop extends WebComponent {
         let pp = a.serverState?.products ?? hs.products;
         if (!pp)
             [cc, pp] = await Promise.all([
-                fetch(`${a.dataset.apiUrl}/categories`).then(async x => (await x.json()).elements),
+                fetch(`${a.customEnv.apiUrl}/categories`).then(async x => (await x.json()).elements),
                 (() => {
-                    const u = new URL(`${a.dataset.apiUrl}/products`, location.href);
+                    const u = new URL(`${a.customEnv.apiUrl}/products`, location.href);
                     if (this.dataset.query)
                         u.searchParams.append("q", this.dataset.query);
                     if (this.dataset.category)
@@ -127,6 +127,6 @@ export default class Shop extends WebComponent {
         event.preventDefault();
         const u = new URL("/shop", location.href);
         Array.from(new FormData(el).entries()).filter(([_, v]) => v).forEach(([k, v]) => u.searchParams.append(k, v));
-        a.navigate(u);
+        a.navigateTo(u);
     }
 }

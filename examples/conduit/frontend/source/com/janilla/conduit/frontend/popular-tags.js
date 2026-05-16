@@ -72,7 +72,7 @@ export default class PopularTags extends WebComponent {
 		this.appendChild(f);
 
 		if (!hs.tags) {
-			const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+			const { customEnv: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
 			const { tags } = await (await fetch(`${apiUrl}/tags`, { headers: apiHeaders })).json();
 			history.replaceState({
 				...history.state,

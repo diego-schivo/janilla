@@ -36,7 +36,7 @@ public interface Index {
 	@Render(template = "app")
 	App app();
 
-	String basePath();
+//	String basePath();
 
 	@Render(renderer = JsonRenderer.class)
 	Map<String, String> imports();

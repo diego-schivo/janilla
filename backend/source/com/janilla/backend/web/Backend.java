@@ -24,7 +24,8 @@
  */
 package com.janilla.backend.web;
 
+import com.janilla.web.Domain;
 import com.janilla.web.WebApp;
 
-public interface Backend<C extends BackendConfig> extends WebApp<C> {
+public interface Backend<C extends BackendConfig, D extends Domain> extends WebApp<C, D> {
 }

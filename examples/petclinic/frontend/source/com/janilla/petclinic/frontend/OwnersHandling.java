@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.petclinic.Owner;
 import com.janilla.petclinic.OwnerApi;
 import com.janilla.web.Handle;
@@ -38,10 +39,13 @@ class OwnersHandling {
 
 	protected static final Pattern TEN_DIGITS = Pattern.compile("\\d{10}");
 
+	protected final FrontendConfig config;
+
 	protected final OwnerApi ownerApi;
 
-	public OwnersHandling(OwnerApi ownerApi) {
+	public OwnersHandling(OwnerApi ownerApi, FrontendConfig config) {
 		this.ownerApi = ownerApi;
+		this.config = config;
 	}
 
 	@Handle(method = "GET", path = "find")
@@ -56,7 +60,7 @@ class OwnersHandling {
 		var oo = ownerApi.read(lastName, 1, (p - 1) * 5, 5);
 		return switch ((int) oo.totalSize()) {
 		case 0 -> new FindOwners(lastName, Map.of("lastName", List.of("has not been found")));
-		case 1 -> URI.create("/owners/" + oo.elements().getFirst().id());
+		case 1 -> URI.create(config.basePath() + "/owners/" + oo.elements().getFirst().id());
 		default -> OwnersList.of(oo, p);
 		};
 	}
@@ -79,7 +83,7 @@ class OwnersHandling {
 			return new OwnerForm(owner, ee);
 
 		var o = ownerApi.create(owner);
-		return URI.create("/owners/" + o.id());
+		return URI.create(config.basePath() + "/owners/" + o.id());
 	}
 
 	@Handle(method = "GET", path = "(\\d+)/edit")
@@ -96,7 +100,7 @@ class OwnersHandling {
 			return new OwnerForm(owner, ee);
 
 		var o = ownerApi.update(id, owner);
-		return URI.create("/owners/" + o.id());
+		return URI.create(config.basePath() + "/owners/" + o.id());
 	}
 
 	protected Map<String, List<String>> validate(Owner owner) {

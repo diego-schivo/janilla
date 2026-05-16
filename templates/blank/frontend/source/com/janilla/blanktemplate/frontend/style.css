@@ -23,5 +23,6 @@
  * SOFTWARE.
  */
 @import "app.css";
-@import "geist-font.css";
 @import "base/janilla-logo.css";
+@import "base/lucide-icon.css";
+@import "base/toaster.css";

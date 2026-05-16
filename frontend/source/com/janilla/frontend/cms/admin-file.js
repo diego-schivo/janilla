@@ -83,7 +83,7 @@ export default class AdminFile extends WebComponent {
             $template: "",
             content: s.field.data ? {
                 $template: "update",
-				src: `${this.closest("app-element").dataset.apiUrl}/media/file/${s.field.data.name}`,
+				src: `${this.closest("app-element").customEnv.apiUrl}/media/file/${s.field.data.name}`,
                 data: s.field.data
             } : {
                 $template: "create",

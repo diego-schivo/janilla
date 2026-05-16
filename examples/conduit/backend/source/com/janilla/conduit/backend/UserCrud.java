@@ -25,11 +25,13 @@ package com.janilla.conduit.backend;
 
 import com.janilla.backend.persistence.DefaultCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
 public class UserCrud extends DefaultCrud<Long, User> {
 
-	public UserCrud(Persistence persistence) {
-		super(User.class, persistence.idHelper(User.class), null, null, persistence);
+	public UserCrud(Converter converter, Copier copier, Persistence persistence) {
+		super(User.class, persistence.idHelper(User.class), converter, copier, persistence);
 	}
 
 	public boolean follow(Long profile, Long user) {

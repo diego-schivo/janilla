@@ -49,10 +49,10 @@ export default class Page extends WebComponent {
             }, "");
 
         if (this.dataset.slug != hs.page?.slug) {
-            const u = new URL(`${a.dataset.apiUrl}/pages`, location.href);
+            const u = new URL(`${a.customEnv.apiUrl}/pages`, location.href);
             u.searchParams.append("slug", this.dataset.slug);
             u.searchParams.append("depth", 1);
-            const p = (await (await fetch(u)).json())[0] ?? (this.dataset.slug === "home" ? { slug: "home" } : null);
+            const p = (await (await fetch(u)).json()).elements[0] ?? (this.dataset.slug === "home" ? { slug: "home" } : null);
             history.replaceState(hs = {
                 ...hs,
                 page: p
@@ -74,7 +74,7 @@ export default class Page extends WebComponent {
                                         size: { name: "FULL" },
                                         richText: `<h1>${a.customState.title}</h1>
 													<p>
-													  <a href="/admin">Visit the admin dashboard</a>
+													  <a href="${a.customEnv.basePath}/admin">Visit the admin dashboard</a>
 													  to make your account and seed content for your website.
 													</p>`
                                     }

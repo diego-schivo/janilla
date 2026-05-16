@@ -49,9 +49,16 @@ public class JanillaIndexFactory extends WebsiteIndexFactory<JanillaFrontendConf
 	}
 
 	@Override
+	protected Map<String, String> env() {
+		var m = super.env();
+		m.put("appResolution", config.appResolution().toString());
+		return m;
+	}
+
+	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
-		Stream.of("header", "link", "post").map(this::janillaImportKey)
+		Stream.of("app", "header", "link", "post").map(this::janillaImportKey)
 				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 

@@ -36,18 +36,18 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.ioc.Scope;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Scope;
 
 @Scope("fullstack")
 public class BlankHttpServer extends DefaultHttpServer {
 
-	protected final BlankBackend<?> backend;
+	protected final BlankBackend<?, ?> backend;
 
-	protected final BlankFrontend<?> frontend;
+	protected final BlankFrontend<?, ?> frontend;
 
 	public BlankHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, DiFactory diFactory,
-			BlankFrontend<?> frontend, BlankBackend<?> backend) {
+			BlankFrontend<?, ?> frontend, BlankBackend<?, ?> backend) {
 		super(endpoint, sslContext, handler, diFactory);
 		this.backend = backend;
 		this.frontend = frontend;

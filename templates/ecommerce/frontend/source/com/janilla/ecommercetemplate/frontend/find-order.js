@@ -62,6 +62,6 @@ export default class FindOrder extends WebComponent {
         const d = new FormData(f);
         const u = new URL(`/orders/${d.get("order")}`, location.href);
         u.searchParams.append("email", d.get("email"));
-        a.navigate(u);
+        a.navigateTo(u);
     }
 }

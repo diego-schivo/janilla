@@ -34,10 +34,12 @@ import com.janilla.backend.persistence.PersistenceBuilder;
 import com.janilla.ioc.DiFactory;
 import com.janilla.persistence.Store;
 import com.janilla.web.AbstractWebApp;
+import com.janilla.web.Domain;
 import com.janilla.web.InvocationResolver;
 
-public abstract class AbstractBackend<C extends BackendConfig> extends AbstractWebApp<C> implements Backend<C> {
-	
+public abstract class AbstractBackend<C extends BackendConfig, D extends Domain> extends AbstractWebApp<C, D>
+		implements Backend<C, D> {
+
 	protected Persistence persistence;
 
 	protected List<Class<?>> storables;

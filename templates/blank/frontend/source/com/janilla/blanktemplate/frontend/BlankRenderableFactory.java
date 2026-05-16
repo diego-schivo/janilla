@@ -25,30 +25,42 @@
 package com.janilla.blanktemplate.frontend;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.AnnotationAndElement;
-import com.janilla.web.Render;
 import com.janilla.web.DefaultRenderableFactory;
+import com.janilla.web.PackageResourcesProvider;
+import com.janilla.web.Render;
 import com.janilla.web.ResourceMap;
+import com.janilla.web.ResourcesProvider;
 
 public class BlankRenderableFactory extends DefaultRenderableFactory {
 
-	protected final Map<String, String> resourcePrefixes;
+	protected final Map<ResourcesProvider, String> resourcesProviders;
 
-	public BlankRenderableFactory(ResourceMap resourceMap, DiFactory diFactory, Map<String, String> resourcePrefixes) {
+	protected final Map<String, String> foo = new ConcurrentHashMap<>();
+
+	public BlankRenderableFactory(ResourceMap resourceMap, DiFactory diFactory,
+			Map<ResourcesProvider, String> resourcesProviders) {
 		super(resourceMap, diFactory);
-		this.resourcePrefixes = resourcePrefixes;
+		this.resourcesProviders = resourcesProviders;
 	}
 
 	@Override
 	protected Stream<String> resourceKeys(AnnotationAndElement<Render> render) {
 		return super.resourceKeys(render).map(x -> {
-			var y = x.startsWith("/") ? x
-					: resourcePrefixes.get(((Class<?>) render.annotated()).getPackageName()) + "/" + x;
+			String k;
+			if (x.startsWith("/"))
+				k = x;
+			else {
+				var bp = foo.computeIfAbsent(((Class<?>) render.annotated()).getPackageName(),
+						y -> resourcesProviders.get(new PackageResourcesProvider(y)));
+				k = bp + "/" + x;
+			}
 //			IO.println("BlankRenderableFactory.resourceKeys, x=" + x + ", y=" + y);
-			return y;
+			return k;
 		});
 	}
 }

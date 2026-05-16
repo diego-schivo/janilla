@@ -24,9 +24,12 @@
  */
 package com.janilla.ecommercetemplate.fullstack;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.backend.EcommerceBackend;
 import com.janilla.ecommercetemplate.frontend.EcommerceFrontend;
 import com.janilla.ioc.DiFactory;
@@ -35,7 +38,10 @@ import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.fullstack.WebsiteFullstack;
 
-public class EcommerceFullstack<C extends EcommerceFullstackConfig> extends WebsiteFullstack<C> {
+public class EcommerceFullstack<C extends EcommerceFullstackConfig, D extends EcommerceDomain>
+		extends WebsiteFullstack<C, D> {
+
+	private static final Logger LOGGER = System.getLogger(EcommerceFullstack.class.getName());
 
 	public static final Class<?>[] CONFIG_CLASSES = { EcommerceBackend.class, EcommerceFrontend.class,
 			EcommerceFullstack.class };
@@ -48,13 +54,13 @@ public class EcommerceFullstack<C extends EcommerceFullstackConfig> extends Webs
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
@@ -63,7 +69,8 @@ public class EcommerceFullstack<C extends EcommerceFullstackConfig> extends Webs
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected EcommerceFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass, Class backendClass) {
+	protected EcommerceFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
+			Class backendClass) {
 		super(config, diFactory, context, frontendClass, backendClass);
 	}
 

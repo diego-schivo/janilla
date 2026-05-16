@@ -65,7 +65,7 @@ record Paginator(int index, int length, URI uri) {
 	}
 
 	@Render(renderer = ItemRenderer.class)
-	public record Item(URI href, String title, String icon, Object text) {
+	public record Item(URI uri, String title, String icon, Object text) {
 
 		public String className() {
 			return icon != null ? "fa fa-" + icon : null;
@@ -80,7 +80,7 @@ record Paginator(int index, int length, URI uri) {
 
 		@Override
 		protected String template(Item value) {
-			return renderableFactory.template(templateKey1, value.href != null ? "item-on" : "item-off");
+			return renderableFactory.template(templateKey1, value.uri != null ? "item-on" : "item-off");
 		}
 	}
 }

@@ -22,28 +22,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-:where(:root:not(:has(.admin)), :host:not(:has(.admin))) {
-  --body-background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
-  --body-color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
-  --primary-button-background: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
-  --primary-button-color: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
-  --secondary-button-background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
-  --secondary-button-color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
+:where(:root:has(.site-ui)) {
+  color-scheme: light dark;
+}
 
+:where(body:has(.site-ui)) {
+  background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+  color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
+  font-family: system-ui;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+:where(.site-ui) {
   a {
     color: inherit;
-    /*
-    text-decoration: none;
-    */
-  }
-
-  body {
-    background: var(--body-background);
-    color: var(--body-color);
-    font-family: system-ui;
-    font-size: 0.9375rem;
-    line-height: 1.6;
-    margin: 0;
   }
 
   p {
@@ -62,27 +56,15 @@
     }
 
     &.primary {
-      background: var(--primary-button-background);
-      border: 1px solid var(--primary-button-color);
-      color: var(--primary-button-color);
+      background: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
+      border: 1px solid light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+      color: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
     }
 
     &.secondary {
-      background: var(--secondary-button-background);
-      border: 1px solid var(--secondary-button-color);
-      color: var(--secondary-button-color);
+      background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+      border: 1px solid light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
+      color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
     }
-  }
-}
-
-:where(:root:not(:has(.admin))) {
-  color-scheme: light dark;
-
-  &:has([data-color-scheme="light"]) {
-    color-scheme: light;
-  }
-
-  &:has([data-color-scheme="dark"]) {
-    color-scheme: dark;
   }
 }

@@ -55,7 +55,7 @@ import com.janilla.java.TypeResolver;
 import com.janilla.java.TypedData;
 import com.janilla.json.Json;
 
-public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C> {
+public abstract class AbstractWebApp<C extends WebAppConfig, D extends Domain> implements WebApp<C, D> {
 
 	protected static WebAppConfig newConfig(Class<?>[] classes, String path, DiFactory diFactory) {
 		var mm = Arrays.stream(classes).map(x -> toConfigMap(x));
@@ -128,7 +128,7 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 				: object2 != null ? object2 : object1;
 	}
 
-	protected static void serve(WebApp<?> app) {
+	protected static void serve(WebApp<?, ?> app) {
 		var c = sslContext(app.config());
 
 		HttpServer s;
@@ -172,6 +172,8 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 
 	protected final DiFactory diFactory;
 
+	protected final D domain;
+
 	protected final HttpHandler httpHandler;
 
 	protected final InvocationResolver invocationResolver;
@@ -197,6 +199,12 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 		typeResolver = diFactory.newInstance(diFactory.classFor(DollarTypeResolver.class));
 		converter = newConverter();
 		copier = newCopier();
+
+		{
+			Class<D> c = diFactory.classFor(Domain.class);
+			domain = c != null ? diFactory.newInstance(c) : null;
+		}
+
 		invocationResolver = newInvocationResolver();
 		renderableFactory = newRenderableFactory();
 		httpHandler = newHttpHandler();
@@ -218,6 +226,11 @@ public abstract class AbstractWebApp<C extends WebAppConfig> implements WebApp<C
 	@Override
 	public DiFactory diFactory() {
 		return diFactory;
+	}
+
+	@Override
+	public D domain() {
+		return domain;
 	}
 
 	@Override

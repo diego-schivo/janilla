@@ -84,8 +84,9 @@ export default class AdminVersions extends WebComponent {
                 [0]).map((x, i) => ({
                     $template: "cell",
                     content: i === 0 ? {
+						...a.baseInput,
                         $template: "link",
-                        href: `/admin${a.dataset.uri}/${v.id}`,
+                        uri: `/admin${a.dataset.uri}/${v.id}`,
                         content: x
                     } : x
                 }))

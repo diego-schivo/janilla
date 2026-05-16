@@ -27,13 +27,15 @@ package com.janilla.web;
 import com.janilla.http.HttpHandler;
 import com.janilla.ioc.DiFactory;
 
-public interface WebApp<C extends WebAppConfig> {
+public interface WebApp<C extends WebAppConfig, D extends Domain> {
 
-	static ScopedValue<WebApp<?>> INSTANCE = ScopedValue.newInstance();
+	static ScopedValue<WebApp<?, ?>> INSTANCE = ScopedValue.newInstance();
 
 	C config();
 
 	DiFactory diFactory();
+
+	D domain();
 
 	HttpHandler httpHandler();
 }

@@ -25,6 +25,8 @@
 package com.janilla.websitetemplate.backend;
 
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -38,8 +40,11 @@ import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.WebApp;
+import com.janilla.websitetemplate.WebsiteDomain;
 
-public class WebsiteBackend<C extends WebsiteBackendConfig> extends BlankBackend<C> {
+public class WebsiteBackend<C extends WebsiteBackendConfig, D extends WebsiteDomain> extends BlankBackend<C, D> {
+
+	private static final Logger LOGGER = System.getLogger(WebsiteBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(BlankBackend.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate"),
@@ -47,13 +52,13 @@ public class WebsiteBackend<C extends WebsiteBackendConfig> extends BlankBackend
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { WebsiteBackend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 

@@ -79,8 +79,9 @@ export default class AdminDashboard extends WebComponent {
                 title: g.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
                 cards: Object.entries(a.customState.schema[a.customState.schema["Data"][g].type]).map(([k, v]) => {
                     return {
+						...a.baseInput,
                         $template: "card",
-                        href: `/admin/${g === "globals" ? g : "collections"}/${k.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`,
+                        uri: `/admin/${g === "globals" ? g : "collections"}/${k.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`,
                         text: k.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
                         button: g !== "globals" && !a.isReadOnly(v.elementTypes[0]) ? {
                             $template: "button",
@@ -100,7 +101,7 @@ export default class AdminDashboard extends WebComponent {
             case "create": {
                 /*
                 const t = el.closest("a").getAttribute("href").split("/").at(-1);
-                const r = await fetch(`${a.dataset.apiUrl}/${t}`, {
+                const r = await fetch(`${a.customEnv.apiUrl}/${t}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
@@ -108,7 +109,7 @@ export default class AdminDashboard extends WebComponent {
                 });
                 const j = await r.json();
                 if (r.ok)
-                    a.navigate(new URL(`/admin/collections/${t}/${j.id}`, location.href));
+                    a.navigateTo(new URL(`/admin/collections/${t}/${j.id}`, location.href));
                 else
                     a2.error(j);
                 */
@@ -117,7 +118,7 @@ export default class AdminDashboard extends WebComponent {
                 break;
             }
             case "seed": {
-                const r = await fetch(`${a.dataset.apiUrl}/seed`, {
+                const r = await fetch(`${a.customEnv.apiUrl}/seed`, {
                     method: "POST",
                     credentials: "include"
                 });

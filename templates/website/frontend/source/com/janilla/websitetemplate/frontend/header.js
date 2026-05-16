@@ -42,21 +42,30 @@ export default class Header extends WebComponent {
     }
 
     contentData() {
+        const a = this.closest("app-element");
+
         return {
             $template: "navigation",
             navItems: [
-                { $template: "logo" },
-                ...(this.closest("app-element").customState.header?.navItems ?? []).map(x => ({
+                {
+                    ...a.baseInput,
+                    $template: "logo"
+                },
+                ...(a.customState.header?.navItems ?? []).map(x => ({
+                    ...a.baseInput,
                     $template: "link",
                     ...x,
                     document: x.type.name === "REFERENCE" && x.document
                         ? `${x.document.$type}:${x.document.slug}`
                         : null,
-                    href: x.type.name === "CUSTOM" ? x.uri : null,
+                    uri: x.type.name === "CUSTOM" ? x.uri : null,
                     target: x.newTab ? "_blank" : null
                     //class: this.dataset.path === x.uri || this.dataset.path.startsWith(x.uri + "/") ? "active" : null
                 })),
-                { $template: "search" }
+                {
+                    ...a.baseInput,
+                    $template: "search"
+                }
             ]
         };
     }

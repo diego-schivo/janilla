@@ -126,8 +126,10 @@
   }
 }
 
-.admin admin-tabs > [slot^="panel-"] > ul {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.admin-ui :where(admin-tabs) {
+  > [slot^="panel-"] > ul {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 }

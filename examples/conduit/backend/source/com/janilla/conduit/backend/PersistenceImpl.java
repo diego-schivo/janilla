@@ -25,7 +25,6 @@ package com.janilla.conduit.backend;
 
 import java.util.List;
 
-import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
@@ -66,13 +65,13 @@ class PersistenceImpl extends DefaultPersistence {
 		}, true);
 	}
 
-	@SuppressWarnings("unchecked")
-	@Override
-	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		if (type == Article.class)
-			return (Crud<?, E>) new ArticleCrud(this);
-		if (type == User.class)
-			return (Crud<?, E>) new UserCrud(this);
-		return super.newCrud(type);
-	}
+//	@SuppressWarnings("unchecked")
+//	@Override
+//	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
+//		if (type == Article.class)
+//			return (Crud<?, E>) new ArticleCrud(this);
+//		if (type == User.class)
+//			return (Crud<?, E>) new UserCrud(this);
+//		return super.newCrud(type);
+//	}
 }

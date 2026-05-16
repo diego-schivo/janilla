@@ -51,24 +51,26 @@ export default class CustomersPage extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.shadowClosest("app-element");
         const s = history.state;
 
         this.appendChild(this.interpolateDom({
             $template: "",
             ...this.dataset,
             articles: this.slot && s.customers ? s.customers.map(x => ({
+                ...a.baseInput,
                 $template: "article",
                 ...x
             })) : Array.from({ length: 6 }).map(() => ({ $template: "article-skeleton" })),
             rows: this.slot && s.customers ? s.customers.map(x => ({
+                ...a.baseInput,
                 $template: "row",
                 ...x
             })) : Array.from({ length: 6 }).map(() => ({ $template: "row-skeleton" }))
         }));
 
         if (this.slot && !s.customers) {
-            const a = this.closest("app-element");
-            const u = new URL(`${a.dataset.apiUrl}/customers`, a.dataset.apiUrl.startsWith("/") ? location.href : undefined);
+            const u = new URL(`${a.customEnv.apiUrl}/customers`, a.customEnv.apiUrl.startsWith("/") ? location.href : undefined);
             if (this.dataset.query)
                 u.searchParams.append("query", this.dataset.query);
 

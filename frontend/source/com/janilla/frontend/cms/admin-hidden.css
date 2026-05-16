@@ -47,12 +47,8 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin {
-  
-  .field:has(> div > admin-hidden) {
+.admin-ui {
+  :where(.field:has(> div > admin-hidden)) {
     margin-bottom: -1rem;
-  }
-
-  admin-hidden {
   }
 }

@@ -52,7 +52,7 @@ export default class CartModal extends WebComponent {
         const s = this.customState;
         const a = this.closest("app-element");
         const c = localStorage.getItem("cart");
-        const u = new URL(`${a.dataset.apiUrl}/carts/${c}`, location.href);
+        const u = new URL(`${a.customEnv.apiUrl}/carts/${c}`, location.href);
         if (!a.currentUser)
             u.searchParams.append("secret", localStorage.getItem("cart_secret"));
         u.searchParams.append("depth", 2);
@@ -108,7 +108,7 @@ export default class CartModal extends WebComponent {
         const p = parseInt(fd.get("product"));
         const v = parseInt(fd.get("variant"));
         const q = parseInt(fd.get("quantity"));
-        const r = await fetch(`${this.closest("app-element").dataset.apiUrl}/carts/${s.cart.id}`, {
+        const r = await fetch(`${this.closest("app-element").customEnv.apiUrl}/carts/${s.cart.id}`, {
             method: "PATCH",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({

@@ -55,10 +55,10 @@ export default class App extends BaseApp {
         if (!Object.hasOwn(s, "user"))
             s.user = ss && Object.hasOwn(ss, "user")
                 ? ss.user
-                : await (await fetch(`${this.dataset.apiUrl}/authentication`,
+                : await (await fetch(`${this.customEnv.apiUrl}/authentication`,
                     { credentials: "include" })).json();
 
-        const p = location.pathname;
+        const p = this.currentPath;
         const f = this.interpolateDom({
             $template: "",
             welcome: {

@@ -15,6 +15,8 @@
  */
 package com.janilla.petclinic.frontend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -29,14 +31,18 @@ import com.janilla.petclinic.PetApi;
 import com.janilla.petclinic.PetTypeApi;
 import com.janilla.petclinic.VetApi;
 import com.janilla.petclinic.VisitApi;
+import com.janilla.web.Domain;
 import com.janilla.web.InvocationResolver;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 
 /**
  * @author Diego Schivo
  * @author Dave Syer
  */
-public class PetclinicFrontend extends AbstractFrontend<FrontendConfig> {
+public class PetclinicFrontend extends AbstractFrontend<FrontendConfig, Domain> {
+
+	private static final Logger LOGGER = System.getLogger(PetclinicFrontend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
@@ -46,13 +52,13 @@ public class PetclinicFrontend extends AbstractFrontend<FrontendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { PetclinicFrontend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
@@ -68,7 +74,8 @@ public class PetclinicFrontend extends AbstractFrontend<FrontendConfig> {
 
 	protected VisitApi visitApi;
 
-	public PetclinicFrontend(FrontendConfig config, DiFactory diFactory, Consumer<Object> context, HttpClient httpClient) {
+	public PetclinicFrontend(FrontendConfig config, DiFactory diFactory, Consumer<Object> context,
+			HttpClient httpClient) {
 		this.httpClient = httpClient;
 		super(config, diFactory, context);
 	}
@@ -113,6 +120,6 @@ public class PetclinicFrontend extends AbstractFrontend<FrontendConfig> {
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.petclinic.frontend", "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.petclinic.frontend"), "");
 	}
 }

@@ -44,9 +44,9 @@ public class WebHandling {
 
 	protected final DiFactory diFactory;
 
-	protected final BlankFullstack<?> fullstack;
+	protected final BlankFullstack<?, ?> fullstack;
 
-	public WebHandling(IndexFactory indexFactory, BlankFullstack<?> fullstack, DiFactory diFactory) {
+	public WebHandling(IndexFactory indexFactory, BlankFullstack<?, ?> fullstack, DiFactory diFactory) {
 		this.indexFactory = indexFactory;
 		this.fullstack = fullstack;
 		this.diFactory = diFactory;

@@ -70,10 +70,11 @@ export default class SidebarLayout extends WebComponent {
                     contacts: a.serverState.contacts
                 }, "");
 
-			const p = a.path;
+			const p = a.currentPath;
             const c = p.match(/\/contacts\/([^/]+)(\/edit)?/);
             const q = new URLSearchParams(location.search).get("q");
             const o = {
+				...a.baseInput,
                 $template: "",
                 search: (() => {
                     const l = q && this.dataset.loading != null;
@@ -91,7 +92,7 @@ export default class SidebarLayout extends WebComponent {
                         $template: "item",
                         ...x,
                         href: (() => {
-                            const u = new URL(`${a.dataset.basePath}/contacts/${x.id}`, location.href);
+                            const u = new URL(`${a.customEnv.basePath}/contacts/${x.id}`, location.href);
                             if (q)
                                 u.searchParams.append("q", q);
                             return u.pathname + u.search;
@@ -139,7 +140,7 @@ export default class SidebarLayout extends WebComponent {
             this.appendChild(df);
 
             if (!hs.contacts) {
-                const u = new URL(`${a.dataset.apiUrl}/contacts`, location.href);
+                const u = new URL(`${a.customEnv.apiUrl}/contacts`, location.href);
                 if (q)
                     u.searchParams.append("query", q);
                 const cc = await (await fetch(u)).json();
@@ -149,7 +150,7 @@ export default class SidebarLayout extends WebComponent {
                     contacts: cc
                 }, "");
 
-                a.navigate();
+                a.navigateTo();
             }
         } else
             history.replaceState(Object.fromEntries(Object.entries(history.state)
@@ -184,7 +185,7 @@ export default class SidebarLayout extends WebComponent {
             event.preventDefault();
             event.stopPropagation();
             const a = this.closest("app-element");
-            const r = await fetch(`${a.dataset.apiUrl}/contacts`, {
+            const r = await fetch(`${a.customEnv.apiUrl}/contacts`, {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({})
@@ -195,7 +196,7 @@ export default class SidebarLayout extends WebComponent {
                 history.pushState({
                     ...history.state,
                     contact: c
-                }, "", `${a.dataset.basePath}/contacts/${c.id}/edit`);
+                }, "", `${a.customEnv.basePath}/contacts/${c.id}/edit`);
                 dispatchEvent(new CustomEvent("popstate"));
             } else
                 alert(await r.text());

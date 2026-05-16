@@ -83,7 +83,7 @@ export default class AdminEdit extends WebComponent {
         const s = this.customState;
         const a = this.closest("app-element");
         s.document ??= await (await fetch((() => {
-            const u = new URL([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), location.href);
+            const u = new URL([a.customEnv.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), location.href);
 			u.searchParams.append("depth", 1);
 			return u;
         })(), { credentials: "include" })).json();
@@ -109,10 +109,11 @@ export default class AdminEdit extends WebComponent {
                 value: x[1]
             })),
             previewLink: (() => {
-                const h = a2.preview(s.document);
-                return h ? {
+                const u = a2.preview(s.document);
+                return u ? {
+					...a.baseInput,
                     $template: "preview-link",
-                    href: h
+                    uri: u
                 } : null;
             })(),
             button: {
@@ -156,7 +157,7 @@ export default class AdminEdit extends WebComponent {
         const a2 = this.closest("admin-element");
         switch (el.closest("select:not([name])")?.value) {
             case "create": {
-                const r = await fetch(`${a.dataset.apiUrl}/${a2.customState.collectionSlug}`, {
+                const r = await fetch(`${a.customEnv.apiUrl}/${a2.customState.collectionSlug}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
@@ -164,7 +165,7 @@ export default class AdminEdit extends WebComponent {
                 });
                 const j = await r.json();
                 if (r.ok)
-                    a.navigate(new URL(`/admin/collections/${a2.customState.collectionSlug}/${j.id}`, location.href));
+                    a.navigateTo(new URL(`${a.customEnv.basePath}/admin/collections/${a2.customState.collectionSlug}/${j.id}`, location.href));
                 else
                     a2.error(j);
                 break;
@@ -176,7 +177,7 @@ export default class AdminEdit extends WebComponent {
                     a2.initField(f);
                     f.data[k.substring(i + 1)] = v;
                 }
-                const r = await fetch(`${a.dataset.apiUrl}/${a2.customState.collectionSlug}`, {
+                const r = await fetch(`${a.customEnv.apiUrl}/${a2.customState.collectionSlug}`, {
                     method: "POST",
                     credentials: "include",
                     headers: { "content-type": "application/json" },
@@ -184,7 +185,7 @@ export default class AdminEdit extends WebComponent {
                 });
                 const j = await r.json();
                 if (r.ok)
-                    a.navigate(new URL(`/admin/collections/${a2.customState.collectionSlug}/${j.id}`, location.href));
+                    a.navigateTo(new URL(`${a.customEnv.basePath}/admin/collections/${a2.customState.collectionSlug}/${j.id}`, location.href));
                 else
                     a2.error(j);
                 break;
@@ -198,7 +199,7 @@ export default class AdminEdit extends WebComponent {
                 if (r.ok) {
                     if (j.$type === "User" && j.id === a.currentUser.id)
                         a.currentUser = null;
-                    a.navigate(new URL(`/admin/${a2.customState.pathSegments.slice(0, 2).join("/")}`, location.href));
+                    a.navigateTo(new URL(`${a.customEnv.basePath}/admin/${a2.customState.pathSegments.slice(0, 2).join("/")}`, location.href));
                 } else
                     a2.error(j);
                 break;
@@ -265,7 +266,7 @@ export default class AdminEdit extends WebComponent {
     async reloadFieldData(path) {
         const a = this.closest("app-element");
         const a2 = this.closest("admin-element");
-        const d = await (await fetch([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), { credentials: "include" })).json();
+        const d = await (await fetch([a.customEnv.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), { credentials: "include" })).json();
         a2.setFieldData(this.field(path), this.field(path, d).data);
     }
 
@@ -283,7 +284,7 @@ export default class AdminEdit extends WebComponent {
 
     async saveDocument(auto) {
         //console.log('this.closest("admin-element").customState.document', this.closest("admin-element").customState.document);
-        const m = new Map(Array.from(new FormData(this.querySelector("form")).entries())
+        const m = new Map(Array.from(new FormData(this.querySelector("form")))
             .map(([k, v]) => [k.split("."), v]).sort(([k1, _], [k2, __]) => {
                 if (k1.length !== k2.length)
                     return k1.length - k2.length;
@@ -302,7 +303,7 @@ export default class AdminEdit extends WebComponent {
             for (const [k, v] of fee)
                 fd.append(k.join("."), v);
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", `${a.dataset.apiUrl}/files/upload`, true);
+            xhr.open("POST", `${a.customEnv.apiUrl}/files/upload`, true);
             xhr.withCredentials = true;
             xhr.send(fd);
         }
@@ -323,7 +324,7 @@ export default class AdminEdit extends WebComponent {
             f.parent.data[k.substring(k.lastIndexOf(".") + 1)] = v;
         }
         //console.log("s", s);
-        const u = new URL([a.dataset.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), location.href);
+        const u = new URL([a.customEnv.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), location.href);
         if (auto) {
             u.searchParams.append("draft", true);
             u.searchParams.append("autosave", true);

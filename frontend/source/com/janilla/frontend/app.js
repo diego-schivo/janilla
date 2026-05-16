@@ -34,36 +34,40 @@ export default class App extends WebComponent {
         return ["app"];
     }
 
-    constructor() {
-        super();
+    get baseInput() {
+        return { basePath: this.customEnv.basePath }
+    }
+
+    get currentPath() {
+        const x = location.pathname.substring(this.customEnv.basePath.length);
+        return x !== "" ? x : "/";
+    }
+
+    connectedCallback() {
+        this.customEnv ??= JSON.parse(this.dataset.env);
+        WebComponent.basePath = this.customEnv.basePath;
+
+        super.connectedCallback();
 
         this.serverState = (() => {
             const el = this.children.length === 1 ? this.firstElementChild : null;
-            if (el?.matches('[type="application/json"]')) {
+            const s = el?.matches('[type="application/json"]') ? JSON.parse(el.text) : null;
+            if (s !== null)
                 el.remove();
-                return JSON.parse(el.text);
-            }
-            return {};
+            return s;
         })();
 
         if (!history.state || this.serverState)
             history.replaceState({}, "");
-    }
-	
-	get path() {
-		const x = location.pathname.substring(this.dataset.basePath.length);
-		return x !== "" ? x : "/";
-	}
 
-    connectedCallback() {
-        super.connectedCallback();
-
-        this.addEventListener("click", this.handleClick);
+        const s = this.customState;
+        this.addEventListener("click", s.clickHandler = (x => this.handleClick(x)));
         addEventListener("popstate", this.handlePopState);
     }
 
     disconnectedCallback() {
-        this.removeEventListener("click", this.handleClick);
+        const s = this.customState;
+        this.removeEventListener("click", s.clickHandler);
         removeEventListener("popstate", this.handlePopState);
 
         super.disconnectedCallback();
@@ -86,7 +90,7 @@ export default class App extends WebComponent {
         }));
     }
 
-    handleClick = event => {
+    handleClick(event) {
         if (!event.defaultPrevented) {
             const a = event.target.shadowRoot
                 ? event.composedPath().find(x => x instanceof Element && x.matches("a"))
@@ -94,32 +98,32 @@ export default class App extends WebComponent {
             const u = a?.href && !a.target ? new URL(a.href) : null;
             if (u?.origin === location.origin) {
                 event.preventDefault();
-                this.navigate(u);
+                this.navigateTo(u);
             }
         }
     }
 
     handlePopState = () => {
-        // console.log("handlePopState", JSON.stringify(history.state));
-        this.navigate();
+        console.log("handlePopState", location.href, JSON.stringify(history.state));
+        this.navigateTo();
     }
 
-    navigate(url) {
+    navigateTo(url) {
         if (!url || url.pathname !== location.pathname)
             window.scrollTo(0, 0);
 
         if (url) {
-            history.pushState({}, "", url.pathname + url.search);
+            history.pushState({}, "", `${url.pathname}${url.search}`);
             dispatchEvent(new Event("statepushed"));
         }
 
         this.serverState = {};
         delete this.customState.notFound;
-        this.requestDisplay();
+        this.requestDisplay(0);
     }
 
     notFound() {
         this.customState.notFound = true;
-        this.requestDisplay();
+        this.requestDisplay(0);
     }
 }

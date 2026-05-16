@@ -25,8 +25,9 @@
 package com.janilla.net;
 
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.SocketAddress;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
@@ -38,9 +39,10 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLHandshakeException;
 
 public abstract class AbstractServer implements Server {
+
+	private static final Logger LOGGER = System.getLogger(AbstractServer.class.getName());
 
 	public static final ScopedValue<SocketChannel> SOCKET_CHANNEL = ScopedValue.newInstance();
 
@@ -66,10 +68,12 @@ public abstract class AbstractServer implements Server {
 			s.socket().bind(endpoint);
 			for (;;)
 				try {
-					var ch = s.accept();
-//					IO.println("SecureServer.serve, ch=" + ch);
-					var th = startThread(ch);
-					lastUsed.put(ch, new ThreadAndInstant(th, Instant.now()));
+					var c = s.accept();
+					LOGGER.log(Level.DEBUG, "c={0}", c);
+
+					var t = startThread(c);
+
+					lastUsed.put(c, new ThreadAndInstant(t, Instant.now()));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -107,8 +111,8 @@ public abstract class AbstractServer implements Server {
 					}
 				}
 			});
-		} catch (SSLHandshakeException | ClosedByInterruptException e) {
-			IO.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+		} catch (IOException e) {
+			LOGGER.log(Level.ERROR, "{0}: {1}", e.getClass().getSimpleName(), e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

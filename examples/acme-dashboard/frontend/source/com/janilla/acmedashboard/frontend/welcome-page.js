@@ -37,4 +37,13 @@ export default class WelcomePage extends WebComponent {
     static get observedAttributes() {
         return ["slot"];
     }
+
+    async updateDisplay() {
+        const a = this.shadowClosest("app-element");
+
+        this.appendChild(this.interpolateDom({
+            ...a.baseInput,
+            $template: ""
+        }));
+    }
 }

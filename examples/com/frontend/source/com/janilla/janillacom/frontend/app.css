@@ -22,33 +22,5 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.blanktemplate.frontend;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Stream;
-
-import com.janilla.http.HttpHandlerFactory;
-import com.janilla.ioc.Scope;
-import com.janilla.ioc.DiFactory;
-import com.janilla.web.ResourceHandlerFactory;
-import com.janilla.web.WebAppHandlerFactory;
-
-@Scope("frontend")
-public class CustomApplicationHandlerFactory extends WebAppHandlerFactory {
-
-	public CustomApplicationHandlerFactory(DiFactory diFactory) {
-		super(diFactory);
-	}
-
-	@Override
-	protected List<HttpHandlerFactory> buildFactories() {
-		return super.buildFactories().stream().flatMap(
-				x -> x instanceof ResourceHandlerFactory ? Stream.of(x, buildDownloadHandlerFactory()) : Stream.of(x))
-				.toList();
-	}
-
-	protected DownloadHandlerFactory buildDownloadHandlerFactory() {
-		return Objects.requireNonNull(diFactory.newInstance(diFactory.classFor(DownloadHandlerFactory.class)));
-	}
-}
+@import "admin.css";
+@import "site.css";

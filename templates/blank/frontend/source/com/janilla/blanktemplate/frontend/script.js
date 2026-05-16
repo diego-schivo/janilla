@@ -57,7 +57,7 @@ import AdminVersion from "admin-version";
 import AdminVersions from "admin-versions";
 import App from "app";
 import JanillaLogo from "base/janilla-logo";
-import LucideIcon from "lucide-icon";
+import LucideIcon from "base/lucide-icon";
 import NotFound from "not-found";
 import Page from "page";
 import Toaster from "base/toaster";

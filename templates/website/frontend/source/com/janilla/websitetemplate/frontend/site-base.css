@@ -22,27 +22,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "/blank/site-base.css";
-
-:where(:root:not(:has(.admin)), :host:not(:has(.admin))) {
-  font-feature-settings: normal;
-  font-variation-settings: normal;
+:where(:root:has(.site-ui), :host:has(.site-ui)) {
   line-height: 1.5;
-  text-size-adjust: 100%;
+}
 
+:where(:root:has(.site-ui)) {
+  &:has([data-color-scheme="light"]) {
+    color-scheme: light;
+  }
+
+  &:has([data-color-scheme="dark"]) {
+    color-scheme: dark;
+  }
+}
+
+:where(body:has(.site-ui)) {
+  background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
+  color: light-dark(rgb(2, 8, 23), rgb(209, 213, 219));
+  font-family: Geist;
+  line-height: 1.5;
+}
+
+:where(.site-ui) {
   a,
   button,
   input,
   select,
   textarea {
     color: inherit;
-  }
-
-  body {
-    background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
-    color: light-dark(rgb(2, 8, 23), rgb(209, 213, 219));
-    font-family: Geist;
-    line-height: 1.5;
   }
 
   button {
@@ -182,10 +189,8 @@
     white-space: nowrap;
     width: 1px;
   }
-}
 
-:where(app-element) {
-  > .site {
+  & {
     display: flex;
     flex-direction: column;
     gap: 4rem;

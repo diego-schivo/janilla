@@ -24,6 +24,8 @@
  */
 package com.janilla.websitetemplate.fullstack;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -32,10 +34,13 @@ import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
+import com.janilla.websitetemplate.WebsiteDomain;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
 import com.janilla.websitetemplate.frontend.WebsiteFrontend;
 
-public class WebsiteFullstack<C extends WebsiteFullstackConfig> extends BlankFullstack<C> {
+public class WebsiteFullstack<C extends WebsiteFullstackConfig, D extends WebsiteDomain> extends BlankFullstack<C, D> {
+
+	private static final Logger LOGGER = System.getLogger(WebsiteFullstack.class.getName());
 
 	public static final Class<?>[] CONFIG_CLASSES = { WebsiteBackend.class, WebsiteFrontend.class,
 			WebsiteFullstack.class };
@@ -47,13 +52,13 @@ public class WebsiteFullstack<C extends WebsiteFullstackConfig> extends BlankFul
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 

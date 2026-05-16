@@ -36,11 +36,13 @@ import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.java.JavaInvoke;
 import com.janilla.web.AbstractWebApp;
+import com.janilla.web.Domain;
 import com.janilla.web.InvocationResolver;
 import com.janilla.web.RenderableFactory;
 import com.janilla.web.WebApp;
 
-public abstract class AbstractFullstack<C extends FullstackConfig> extends AbstractWebApp<C> implements Fullstack<C> {
+public abstract class AbstractFullstack<C extends FullstackConfig, D extends Domain> extends AbstractWebApp<C, D>
+		implements Fullstack<C, D> {
 
 	protected static Stream<Class<?>> diTypes(Class<?> class1) {
 		try {
@@ -50,13 +52,13 @@ public abstract class AbstractFullstack<C extends FullstackConfig> extends Abstr
 		}
 	}
 
-	protected final Class<? extends AbstractBackend<?>> backendClass;
+	protected final Class<? extends AbstractBackend<?, ?>> backendClass;
 
-	protected final Class<? extends AbstractFrontend<?>> frontendClass;
+	protected final Class<? extends AbstractFrontend<?, ?>> frontendClass;
 
-	protected AbstractBackend<?> backend;
+	protected AbstractBackend<?, ?> backend;
 
-	protected AbstractFrontend<?> frontend;
+	protected AbstractFrontend<?, ?> frontend;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected AbstractFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
@@ -66,11 +68,11 @@ public abstract class AbstractFullstack<C extends FullstackConfig> extends Abstr
 		super(config, diFactory, context);
 	}
 
-	public AbstractBackend<?> backend() {
+	public AbstractBackend<?, ?> backend() {
 		return backend;
 	}
 
-	public AbstractFrontend<?> frontend() {
+	public AbstractFrontend<?, ?> frontend() {
 		return frontend;
 	}
 
@@ -88,14 +90,14 @@ public abstract class AbstractFullstack<C extends FullstackConfig> extends Abstr
 			var a = new WebApp[1];
 			var f = Ioc.diFactory(diBackendTypes().toList(), () -> a[0], "backend");
 			return f.newInstance(backendClass, Java.hashMap("config", config, "diFactory", f, "context",
-					(Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+					(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		});
 
 		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
 			var a = new WebApp[1];
 			var f = Ioc.diFactory(diFrontendTypes().toList(), () -> a[0], "frontend");
 			return f.newInstance(frontendClass, Java.hashMap("config", config, "diFactory", f, "context",
-					(Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+					(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		});
 
 		return x -> {
@@ -104,7 +106,7 @@ public abstract class AbstractFullstack<C extends FullstackConfig> extends Abstr
 		};
 	}
 
-	protected WebApp<?> webApp(HttpExchange exchange) {
+	protected WebApp<?, ?> webApp(HttpExchange exchange) {
 		var p1 = exchange.request().getPath();
 		var p2 = backend.config().basePath() + "/api/";
 		var a = p1.startsWith(p2) ? backend : frontend;

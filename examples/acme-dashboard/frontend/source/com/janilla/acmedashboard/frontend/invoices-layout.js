@@ -44,9 +44,11 @@ export default class InvoicesLayout extends WebComponent {
     }
 
     async updateDisplay() {
-        const p = location.pathname;
+        const a = this.shadowClosest("app-element");
+        const p = a.currentPath;
         const pp = new URLSearchParams(location.search);
         const o = {
+            ...a.baseInput,
             $template: "",
             ...this.dataset,
             invoices: {

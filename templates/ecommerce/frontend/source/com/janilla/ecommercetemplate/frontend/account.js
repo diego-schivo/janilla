@@ -41,7 +41,7 @@ export default class Account extends WebComponent {
     async updateDisplay() {
         const s = this.customState;
         const a = this.closest("app-element");
-        s.orders ??= await (await fetch(`${a.dataset.apiUrl}/orders`)).json();
+        s.orders ??= await (await fetch(`${a.customEnv.apiUrl}/orders`)).json();
         a.updateSeo({ title: "Account" });
         this.appendChild(this.interpolateDom({
             $template: "",

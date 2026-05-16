@@ -24,12 +24,17 @@
  */
 package com.janilla.blanktemplate;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
 import com.janilla.cms.Document;
 import com.janilla.persistence.Store;
 import com.janilla.web.WebApp;
 
 @Store
 public interface Media extends Document<Long> {
+
+	Logger LOGGER = System.getLogger(Media.class.getName());
 
 	File file();
 
@@ -39,6 +44,16 @@ public interface Media extends Document<Long> {
 
 	default String uri() {
 		var f = file();
-		return f != null ? WebApp.INSTANCE.get().config().api().url() + "/media/" + f.name() : null;
+
+		String u;
+		if (f != null) {
+			var wa = WebApp.INSTANCE.get();
+			LOGGER.log(Level.DEBUG, "wa={0}", wa);
+			u = wa.config().api().url() + "/media/" + f.name();
+		} else
+			u = null;
+		LOGGER.log(Level.DEBUG, "u={0}", u);
+
+		return u;
 	}
 }

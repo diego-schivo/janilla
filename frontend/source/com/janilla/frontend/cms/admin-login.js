@@ -71,7 +71,10 @@ export default class AdminLogin extends WebComponent {
 
     async updateDisplay() {
         document.title = "Login - Janilla";
-        this.appendChild(this.interpolateDom({ $template: "" }));
+        this.appendChild(this.interpolateDom({
+			$template: "",
+			header: { $template: "header" }
+		}));
     }
 
     handleSubmit = async event => {
@@ -80,7 +83,7 @@ export default class AdminLogin extends WebComponent {
 
         const a = this.closest("app-element");
         const a2 = this.closest("admin-element");
-        const r = await fetch(`${a.dataset.apiUrl}/users/login`, {
+        const r = await fetch(`${a.customEnv.apiUrl}/users/login`, {
             method: "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },
@@ -89,7 +92,7 @@ export default class AdminLogin extends WebComponent {
         const j = await r.json();
         if (r.ok) {
             a.currentUser = j;
-            a.navigate(new URL("/admin", location.href));
+            a.navigateTo(new URL(`${a.customEnv.basePath}/admin`, location.href));
         } else
             a2.error(j);
     }

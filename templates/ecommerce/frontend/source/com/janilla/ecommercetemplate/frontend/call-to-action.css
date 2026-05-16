@@ -22,8 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "/website/call-to-action.css";
-
 :where(call-to-action) {
   article {
     background: light-dark(rgb(244, 244, 245), rgb(20, 20, 20));

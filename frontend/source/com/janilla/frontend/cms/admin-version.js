@@ -100,7 +100,7 @@ export default class AdminVersion extends WebComponent {
 				})).json();
                 a2.currentDocument = j;
                 a2.success("Restored successfully.");
-                a.navigate(`/admin/${a2.customState.pathSegments.slice(0, 3).join("/")}`);
+                a.navigateTo(`${a.customEnv.basePath}/admin/${a2.customState.pathSegments.slice(0, 3).join("/")}`);
                 break;
             }
             case "restore":

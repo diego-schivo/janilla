@@ -49,7 +49,7 @@ export default class Product extends WebComponent {
             }, "");
 
         if (this.dataset.slug != hs.product?.slug) {
-            const u = new URL(`${a.dataset.apiUrl}/products`, location.href);
+            const u = new URL(`${a.customEnv.apiUrl}/products`, location.href);
             u.searchParams.append("slug", this.dataset.slug);
             u.searchParams.append("depth", 3);
             const p = (await (await fetch(u)).json()).elements[0];

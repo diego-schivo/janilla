@@ -23,9 +23,6 @@
  * SOFTWARE.
  */
 not-found {
-  --border: light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.3));
-  --font: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-
   main {
     align-items: center;
     display: flex;
@@ -41,11 +38,11 @@ not-found {
 
   h1,
   h2 {
-    font-family: var(--font);
+    font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   }
 
   h1 {
-    border-right: 1px solid var(--border);
+    border-right: 1px solid light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.3));
     font-size: 1.5rem;
     font-weight: 500;
     line-height: 2.0417;

@@ -23,6 +23,8 @@
  */
 package com.janilla.janillacom.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -42,7 +44,9 @@ import com.janilla.web.WebApp;
 import com.janilla.web.WebAppHandlerFactory;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
 
-public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
+public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig, JanillaDomain> {
+
+	private static final Logger LOGGER = System.getLogger(JanillaBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(WebsiteBackend.diTypes(), Java.getPackageTypes("com.janilla.janillacom"),
@@ -50,17 +54,17 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { JanillaBackend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
-	protected final Map<String, Backend<?>> backends;
+	protected final Map<String, Backend<?, ?>> backends;
 
 	public JanillaBackend(JanillaBackendConfig config, DiFactory diFactory, Consumer<Object> context) {
 		super(config, diFactory, context);
@@ -75,8 +79,8 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 						var f = Ioc.diFactory(tt, () -> a2[0]);
 						var cfg = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.backends().get(a.id()))
 								.filter(x -> x != null).toArray(Map<?, ?>[]::new), f);
-						Consumer<Object> ctx = x -> a2[0] = (WebApp<?>) x;
-						return (Backend<?>) f.newInstance(c,
+						Consumer<Object> ctx = x -> a2[0] = (WebApp<?, ?>) x;
+						return (Backend<?, ?>) f.newInstance(c,
 								Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
@@ -84,7 +88,7 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 				}));
 	}
 
-	public Backend<?> backend(HttpRequest request) {
+	public Backend<?, ?> backend(HttpRequest request) {
 		var x = backends.get(config.appResolution().id(request));
 		return x != null ? x : this;
 	}
@@ -98,7 +102,7 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 	protected HttpHandler newHttpHandler() {
 		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
-			var ba = (Backend<?>) JanillaDomain.WEB_APP.get();
+			var ba = (Backend<?, ?>) JanillaDomain.WEB_APP.get();
 //			IO.println("JanillaBackend.newHttpHandler, ba=" + ba);
 			var h = ba == this ? f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()))
 					: ba.httpHandler();

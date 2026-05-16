@@ -65,7 +65,7 @@ export default class Settings extends WebComponent {
 	handleSubmit = async event => {
 		event.preventDefault();
 
-		const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+		const { customEnv: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
 		const r = await fetch(`${apiUrl}/user`, {
 			method: "PUT",
 			headers: {

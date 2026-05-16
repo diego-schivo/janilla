@@ -25,6 +25,8 @@ package com.janilla.janillacom.fullstack;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
@@ -56,6 +58,8 @@ import com.janilla.janillacom.frontend.JanillaFrontend;
 
 @Scope("fullstack")
 class HttpServerImpl extends DefaultHttpServer {
+
+	private static final Logger LOGGER = System.getLogger(HttpServerImpl.class.getName());
 
 	protected static final Pattern BOT_REGEX = Pattern.compile("aws|config|docker|env|info|node|php|sql|wp|yml");
 
@@ -132,11 +136,9 @@ class HttpServerImpl extends DefaultHttpServer {
 
 	@Override
 	public void exchange(HttpRequest request, HttpResponse response) {
-		var a = request.getHeaderValue(":authority");
-		if (a == null)
-			a = request.getHeaderValue("Host");
 		var wa = request.getPath().contains("/api/") ? backend.backend(request) : frontend.frontend(request);
-//		IO.println("HttpServerImpl.exchange, a=" + a + ", wa=" + wa);
+		LOGGER.log(Level.DEBUG, "wa={0}", wa);
+
 		ScopedValue.where(JanillaDomain.WEB_APP, wa).run(() -> super.exchange(request, response));
 	}
 

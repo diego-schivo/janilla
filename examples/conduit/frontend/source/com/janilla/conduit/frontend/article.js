@@ -92,8 +92,8 @@ static get moduleUrl() {
 		} else {
 			const a = this.closest("app-element");
 			const [{ article }, { comments }] = await Promise.all([
-				`${a.dataset.apiUrl}/articles/${this.dataset.slug}`,
-				`${a.dataset.apiUrl}/articles/${this.dataset.slug}/comments`,
+				`${a.customEnv.apiUrl}/articles/${this.dataset.slug}`,
+				`${a.customEnv.apiUrl}/articles/${this.dataset.slug}/comments`,
 			].map(x => fetch(x, { headers: a.customState.apiHeaders }).then(y => y.json())));
 			Object.assign(hs, { article, comments });
 			history.replaceState(hs, "");
@@ -115,7 +115,7 @@ static get moduleUrl() {
 			if (el.matches("a"))
 				location.hash = `#/editor/${this.dataset.slug}`;
 			else {
-				const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+				const { customEnv: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
 				const r = await fetch(`${apiUrl}/articles/${this.dataset.slug}`, {
 					method: "DELETE",
 					headers: apiHeaders

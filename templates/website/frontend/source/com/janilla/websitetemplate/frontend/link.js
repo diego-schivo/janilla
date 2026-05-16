@@ -34,22 +34,24 @@ export default class Link extends WebComponent {
         return ["link"];
     }
 
-	static get observedAttributes() {
-		return ["data-document", "data-href", "data-target", "data-class", "data-text"];
-	}
+    static get observedAttributes() {
+        return ["data-document", "data-href", "data-target", "data-class", "data-text"];
+    }
 
     async updateDisplay() {
+        const a = this.closest("app-element");
+
         const o = { ...this.dataset };
-        const h = this.href();
-		if (h)
-			o.href = h;
+        const u = this.uri();
+        if (u)
+            o.href = `${a.customEnv.basePath}${u}`;
         this.appendChild(this.interpolateDom({
             $template: "",
             ...o
         }));
     }
 
-    href() {
+    uri() {
         const [t, s] = this.dataset.document ? this.dataset.document.split(":") : [];
         switch (t) {
             case "Page":

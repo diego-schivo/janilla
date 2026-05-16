@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.petclinic.Pet;
 import com.janilla.petclinic.PetApi;
 import com.janilla.petclinic.Visit;
@@ -39,13 +40,16 @@ import com.janilla.web.Handle;
 @Handle(path = "/owners/(\\d+)/pets/(\\d+)/visits")
 class VisitsHandling {
 
-	protected final VisitApi visitApi;
+	protected final FrontendConfig config;
 
 	protected final PetApi petApi;
 
-	public VisitsHandling(VisitApi visitApi, PetApi petApi) {
+	protected final VisitApi visitApi;
+
+	public VisitsHandling(VisitApi visitApi, PetApi petApi, FrontendConfig config) {
 		this.visitApi = visitApi;
 		this.petApi = petApi;
+		this.config = config;
 	}
 
 	@Handle(method = "GET", path = "new")
@@ -64,7 +68,7 @@ class VisitsHandling {
 			return new VisitForm(v, petApi.read(petId, 1).visits(), ee);
 
 		visitApi.create(v);
-		return URI.create("/owners/" + ownerId);
+		return URI.create(config.basePath() + "/owners/" + ownerId);
 	}
 
 	protected Map<String, List<String>> validate(Visit visit) {

@@ -21,128 +21,135 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import WebComponent from "base/web-component";
+import BaseApp from "base/app";
 
-export default class App extends WebComponent {
+export default class App extends BaseApp {
 
-	static get moduleUrl() {
-	    return import.meta.url;
-	}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get templateNames() {
-		return ["app"];
-	}
+    static get templateNames() {
+        return ["app"];
+    }
 
-	connectedCallback() {
-		super.connectedCallback();
-		addEventListener("popstate", this.handlePopState);
-		this.addEventListener("click", this.handleClick);
-		this.addEventListener("set-current-user", this.handleSetCurrentUser);
-		if (!location.hash)
-			location.hash = "#/";
-	}
+    connectedCallback() {
+        super.connectedCallback();
 
-	disconnectedCallback() {
-		super.disconnectedCallback();
-		removeEventListener("popstate", this.handlePopState);
-		this.removeEventListener("click", this.handleClick);
-		this.removeEventListener("set-current-user", this.handleSetCurrentUser);
-	}
+        addEventListener("popstate", this.handlePopState);
+        this.addEventListener("set-current-user", this.handleSetCurrentUser);
 
-	async updateDisplay() {
-		const s = this.customState;
-		if (!Object.hasOwn(s, "user")) {
-			const t = localStorage.getItem("jwtToken");
-			if (t) {
-				const { user } = await (await fetch(`${this.dataset.apiUrl}/user`, {
-					headers: { Authorization: `Token ${t}` }
-				})).json();
-				s.user = user;
-			} else
-				s.user = null;
-			s.apiHeaders = s.user?.token ? { Authorization: `Token ${s.user.token}` } : {};
-		}
-		const p = location.hash.substring(1);
-		const nn = p.split("/");
-		const hs = history.state ?? {};
-		this.appendChild(this.interpolateDom({
-			$template: "",
-			header: ({
-				$template: "header",
-				navItems: (() => {
-					const ii = [{
-						href: "#/",
-						text: "Home"
-					}];
-					const u = s.user;
-					if (u)
-						ii.push({
-							href: "#/editor",
-							icon: "ion-compose",
-							text: "New Article"
-						}, {
-							href: "#/settings",
-							icon: "ion-gear-a",
-							text: "Settings"
-						}, {
-							href: `#/@${u.username}`,
-							image: u.image,
-							text: u.username
-						});
-					else
-						ii.push({
-							href: "#/login",
-							text: "Sign in"
-						}, {
-							href: "#/register",
-							text: "Sign up"
-						});
-					return ii.map(x => ({
-						$template: "nav-item",
-						...x,
-						active: x.href === location.hash ? "active" : null,
-					}));
-				})()
-			}),
-			path: p,
-			loading: (() => {
-				switch (nn[1]) {
-					case "article":
-					case "editor":
-						return !hs.article;
-					default:
-						if (nn[1]?.startsWith("@"))
-							return !hs.profile;
-						return false;
-				}
-			})(),
-			footer: { $template: "footer" }
-		}));
-	}
+        if (!location.hash)
+            location.hash = "#/";
+    }
 
-	handleClick = event => {
-		const a = event.composedPath().find(x => x instanceof Element && x.matches("a"));
-		if (!a?.href)
-			return;
-		event.preventDefault();
-		location.hash = new URL(a.href).hash;
-	}
+    disconnectedCallback() {
+        removeEventListener("popstate", this.handlePopState);
+        this.removeEventListener("set-current-user", this.handleSetCurrentUser);
 
-	handlePopState = _ => {
-		this.requestDisplay();
-	}
+        super.disconnectedCallback();
+    }
 
-	handleSetCurrentUser = event => {
-		const { user } = event.detail;
-		const s = this.customState;
-		s.user = user;
-		if (user?.token) {
-			localStorage.setItem("jwtToken", user.token);
-			s.apiHeaders = { Authorization: `Token ${user.token}` };
-		} else {
-			localStorage.removeItem("jwtToken");
-			s.apiHeaders = {};
-		}
-		location.hash = "#/";
-	}
+    async updateDisplaySite() {
+        const s = this.customState;
+
+        if (!Object.hasOwn(s, "user")) {
+            const t = localStorage.getItem("jwtToken");
+            if (t) {
+                const { user } = await (await fetch(`${this.customEnv.apiUrl}/user`, {
+                    headers: { Authorization: `Token ${t}` }
+                })).json();
+                s.user = user;
+            } else
+                s.user = null;
+            s.apiHeaders = s.user?.token
+                ? { Authorization: `Token ${s.user.token}` }
+                : {};
+        }
+
+        const p = location.hash.substring(1);
+        const nn = p.split("/");
+        const hs = history.state ?? {};
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            header: ({
+                $template: "header",
+                navItems: (() => {
+                    const ii = [{
+                        href: "#/",
+                        text: "Home"
+                    }];
+                    const u = s.user;
+                    if (u)
+                        ii.push({
+                            href: "#/editor",
+                            icon: "ion-compose",
+                            text: "New Article"
+                        }, {
+                            href: "#/settings",
+                            icon: "ion-gear-a",
+                            text: "Settings"
+                        }, {
+                            href: `#/@${u.username}`,
+                            image: u.image,
+                            text: u.username
+                        });
+                    else
+                        ii.push({
+                            href: "#/login",
+                            text: "Sign in"
+                        }, {
+                            href: "#/register",
+                            text: "Sign up"
+                        });
+                    return ii.map(x => ({
+                        $template: "nav-item",
+                        ...x,
+                        active: x.href === location.hash ? "active" : null,
+                    }));
+                })()
+            }),
+            path: p,
+            loading: (() => {
+                switch (nn[1]) {
+                    case "article":
+                    case "editor":
+                        return !hs.article;
+                    default:
+                        if (nn[1]?.startsWith("@"))
+                            return !hs.profile;
+                        return false;
+                }
+            })(),
+            footer: { $template: "footer" }
+        }));
+    }
+
+    handleClick(event) {
+        const a = event.composedPath().find(x => x instanceof Element && x.matches("a"));
+        if (a?.href) {
+            event.preventDefault();
+            location.hash = new URL(a.href).hash;
+        }
+    }
+
+    handlePopState = _ => {
+        this.requestDisplay(0);
+    }
+
+    handleSetCurrentUser = event => {
+        const { user } = event.detail;
+        const s = this.customState;
+        s.user = user;
+
+        if (user?.token) {
+            localStorage.setItem("jwtToken", user.token);
+            s.apiHeaders = { Authorization: `Token ${user.token}` };
+        } else {
+            localStorage.removeItem("jwtToken");
+            s.apiHeaders = {};
+        }
+
+        location.hash = "#/";
+    }
 }

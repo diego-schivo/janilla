@@ -22,8 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "/website/footer.css";
-
 :where(footer-element) {
   footer {
     background: light-dark(rgb(255, 255, 255), rgb(10, 10, 10));

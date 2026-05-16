@@ -47,7 +47,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin admin-checkbox {
+.admin-ui :where(admin-checkbox) {
   label {
     align-items: center;
     display: flex;

@@ -22,16 +22,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@font-face {
-  font-family: Geist;
-  src: url(/geist-font-1.8.0/fonts/Geist/webfonts/Geist%5Bwght%5D.woff2) format('woff2');
-  font-display: swap;
-  font-weight: 100 900;
-}
+import WebComponent from "base/web-component";
 
-@font-face {
-  font-family: GeistMono;
-  src: url(/geist-font-1.8.0/fonts/GeistMono/webfonts/GeistMono%5Bwght%5D.woff2) format('woff2');
-  font-display: swap;
-  font-weight: 100 900;
+const documents = {};
+const parser = new DOMParser();
+
+export default class LucideIcon extends WebComponent {
+
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
+    static get observedAttributes() {
+        return ["data-name"];
+    }
+
+    async updateDisplay() {
+        const s = this.customState ?? this.state;
+        if (this.dataset.name === s.name)
+            return;
+        s.name = this.dataset.name;
+        while (this.firstChild)
+            this.removeChild(this.lastChild);
+        if (!s.name)
+            return;
+        const u = new URL(`icons/${s.name}.svg`, this.constructor.moduleUrl);
+        documents[s.name] ??= fetch(u).then(x => x.text()).then(x => {
+            return parser.parseFromString(x, "image/svg+xml");
+        });
+        const d = await documents[s.name];
+        this.appendChild(d.firstChild.cloneNode(true));
+    }
 }

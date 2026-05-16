@@ -98,7 +98,7 @@ export default class AdminCreateFirstUser extends WebComponent {
                 x[y[0]] = y[1];
             return x;
         }, {});
-        const r = await fetch(`${a.dataset.apiUrl}/users/first-register`, {
+        const r = await fetch(`${a.customEnv.apiUrl}/users/first-register`, {
             method: "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },
@@ -107,7 +107,7 @@ export default class AdminCreateFirstUser extends WebComponent {
         const j = await r.json();
         if (r.ok) {
             a.currentUser = j;
-            a.navigate(new URL("/admin", location.href));
+            a.navigateTo(new URL(`${a.customEnv.basePath}/admin`, location.href));
         } else
             a2.error(j);
     }

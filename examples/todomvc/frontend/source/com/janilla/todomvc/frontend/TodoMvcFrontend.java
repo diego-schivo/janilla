@@ -33,9 +33,11 @@ import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.web.Domain;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 
-public class TodoMvcFrontend extends AbstractFrontend<FrontendConfig> {
+public class TodoMvcFrontend extends AbstractFrontend<FrontendConfig, Domain> {
 
 	private static final Logger LOGGER = System.getLogger(TodoMvcFrontend.class.getName());
 
@@ -46,12 +48,12 @@ public class TodoMvcFrontend extends AbstractFrontend<FrontendConfig> {
 	};
 
 	public static void main(String[] args) {
-		LOGGER.log(Level.INFO, ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var cfg = newConfig(new Class<?>[] { TodoMvcFrontend.class }, args.length != 0 ? args[0] : null, f);
-		Consumer<Object> ctx = x -> a[0] = (WebApp<?>) x;
+		Consumer<Object> ctx = x -> a[0] = (WebApp<?, ?>) x;
 		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		serve(a[0]);
 	}
@@ -63,6 +65,6 @@ public class TodoMvcFrontend extends AbstractFrontend<FrontendConfig> {
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.todomvc.frontend", "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.todomvc.frontend"), "");
 	}
 }

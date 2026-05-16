@@ -58,7 +58,7 @@ export default class Editor extends WebComponent {
 			}));
 		} else {
 			if (this.dataset.slug) {
-				const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+				const { customEnv: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
 				const { article } = await (await fetch(`${apiUrl}/articles/${this.dataset.slug}`, { headers: apiHeaders })).json();
 				hs.article = article;
 			} else
@@ -83,7 +83,7 @@ export default class Editor extends WebComponent {
 			}
 			return x;
 		}, {});
-		const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+		const { customEnv: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
 		const r = await fetch(new URL([apiUrl, "articles", this.dataset.slug].filter(x => x).join("/"), location.href), {
 			method: this.dataset.slug ? "PUT" : "POST",
 			headers: {

@@ -48,7 +48,7 @@ export default class FormBlock extends WebComponent {
         const s = this.customState;
         s.data = this.closest("[data-slug]").data(this.dataset.path);
         if (s.submission && s.data.form?.confirmationType?.name === "REDIRECT")
-            this.closest("app-element").navigate(new URL(s.data.form.redirect, location.href));
+            this.closest("app-element").navigateTo(new URL(s.data.form.redirect, location.href));
         else
             this.appendChild(this.interpolateDom({
                 $template: "",
@@ -85,7 +85,7 @@ export default class FormBlock extends WebComponent {
         const a = this.closest("app-element");
         const s = this.customState;
         const ee = [...new FormData(el).entries()];
-        this.customState.submission = await (await fetch(`${a.dataset.apiUrl}/form-submissions`, {
+        this.customState.submission = await (await fetch(`${a.customEnv.apiUrl}/form-submissions`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({

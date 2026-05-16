@@ -27,8 +27,13 @@ package com.janilla.java;
 import java.lang.System.Logger;
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SimpleLogger implements Logger {
+
+	public static volatile Supplier<String> prefix;
 
 	protected final String name;
 
@@ -52,21 +57,27 @@ public class SimpleLogger implements Logger {
 	@Override
 	public void log(Level level, ResourceBundle bundle, String msg, Throwable thrown) {
 		if (isLoggable(level))
-			IO.println(foo() + " " + msg);
+			IO.println(Stream.of(prefix != null ? prefix.get() : null, msg).filter(x -> x != null)
+					.collect(Collectors.joining(" ")));
 	}
 
 	@Override
 	public void log(Level level, ResourceBundle bundle, String format, Object... params) {
 		if (isLoggable(level))
-			IO.println(foo() + " " + MessageFormat.format(format, params));
+			IO.println(Stream.of(prefix != null ? prefix.get() : null, MessageFormat.format(format, params))
+					.filter(x -> x != null).collect(Collectors.joining(" ")));
 	}
 
-	protected String foo() {
-		class A {
-			static final StackWalker WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
-		}
-		var f = A.WALKER.walk(x -> x.filter(y -> !y.getDeclaringClass().equals(SimpleLogger.class)
-				&& !y.getDeclaringClass().equals(System.Logger.class)).findFirst().get());
-		return f.getClassName().substring(f.getClassName().lastIndexOf('.') + 1) + "." + f.getMethodName();
-	}
+//	protected String prefix() {
+//		class A {
+//			static final StackWalker WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+//		}
+//		var f = A.WALKER.walk(x -> x.filter(y -> !y.getDeclaringClass().equals(SimpleLogger.class)
+//				&& !y.getDeclaringClass().equals(System.Logger.class)).findFirst().get());
+//		return f.getClassName().substring(f.getClassName().lastIndexOf('.') + 1) + "." + f.getMethodName();
+//
+//		return LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).toString();
+//
+//		return prefix != null ? prefix.get() : null;
+//	}
 }

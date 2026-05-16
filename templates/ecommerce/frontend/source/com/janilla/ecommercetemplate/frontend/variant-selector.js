@@ -86,6 +86,6 @@ export default class VariantSelector extends WebComponent {
             u.searchParams.set("variant", v.id);
         else
             u.searchParams.delete("variant");
-        this.closest("app-element").navigate(u)
+        this.closest("app-element").navigateTo(u)
     }
 }

@@ -23,25 +23,32 @@
  */
 package com.janilla.janillacom.frontend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.janilla.blanktemplate.frontend.DownloadResourcesProvider;
 import com.janilla.frontend.web.Frontend;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
+import com.janilla.janillacom.Application;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.java.Java;
 import com.janilla.web.NotFoundException;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 import com.janilla.web.WebAppHandlerFactory;
 import com.janilla.websitetemplate.frontend.WebsiteFrontend;
 
-public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
+public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig, JanillaDomain> {
+
+	private static final Logger LOGGER = System.getLogger(JanillaFrontend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(WebsiteFrontend.diTypes(), Java.getPackageTypes("com.janilla.janillacom"),
@@ -49,41 +56,43 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { JanillaFrontend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
-	protected final Map<String, Frontend<?>> frontends;
+	protected final Map<String, Frontend<?, ?>> frontends;
 
 	public JanillaFrontend(JanillaFrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
 		super(config, diFactory, context, null);
 
-		frontends = config.frontends().entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> {
-			var a = ((JanillaDataFetching) dataFetching).applications(x.getKey(), null, null, null, null, null)
-					.elements().getFirst();
-			try {
-				var c = Class.forName(a.frontend());
-				@SuppressWarnings("unchecked")
-				var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
-				var a2 = new WebApp[1];
-				var f = Ioc.diFactory(tt, () -> a2[0]);
-				var c2 = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) x.getValue()).filter(y -> y != null)
-						.toArray(Map<?, ?>[]::new), f);
-				return (Frontend<?>) f.newInstance(c,
-						Java.hashMap("config", c2, "diFactory", f, "httpClient", httpClient));
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
-			}
-		}));
+		frontends = config
+				.frontends().keySet().stream().map(x -> ((JanillaDataFetching) dataFetching)
+						.applications(x, null, null, null, null, null).elements().getFirst())
+				.collect(Collectors.toMap(Application::id, a -> {
+					try {
+						var c = Class.forName(a.frontend());
+						@SuppressWarnings("unchecked")
+						var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
+						var a2 = new WebApp[1];
+						var f = Ioc.diFactory(tt, () -> a2[0]);
+						var cfg = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.frontends().get(a.id()))
+								.filter(x -> x != null).toArray(Map<?, ?>[]::new), f);
+						Consumer<Object> ctx = x -> a2[0] = (WebApp<?, ?>) x;
+						return (Frontend<?, ?>) f.newInstance(c,
+								Java.hashMap("config", cfg, "diFactory", f, "context", ctx, "httpClient", httpClient));
+					} catch (ReflectiveOperationException e) {
+						throw new RuntimeException(e);
+					}
+				}));
 	}
 
-	public Frontend<?> frontend(HttpRequest request) {
+	public Frontend<?, ?> frontend(HttpRequest request) {
 		var x = frontends.get(config.appResolution().id(request));
 		return x != null ? x : this;
 	}
@@ -92,7 +101,7 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
 	protected HttpHandler newHttpHandler() {
 		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
-			var fa = (Frontend<?>) JanillaDomain.WEB_APP.get();
+			var fa = (Frontend<?, ?>) JanillaDomain.WEB_APP.get();
 //			IO.println("JanillaFrontend.newHttpHandler, fa=" + fa);
 			var h = fa == this ? f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()))
 					: fa.httpHandler();
@@ -106,7 +115,9 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.websitetemplate.frontend", "/website");
-		resourcePrefixes.put("com.janilla.janillacom.frontend", "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.websitetemplate.frontend"), "/website");
+		resourcesProviders.put(diFactory.newInstance(DownloadResourcesProvider.class, Map.of("url", GEIST_FONT_DOWNLOAD)),
+				"/website");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.janillacom.frontend"), "");
 	}
 }

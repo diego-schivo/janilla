@@ -40,10 +40,6 @@ export default class AboutPage extends WebComponent {
         return ["about"];
     }
 
-    constructor() {
-        super();
-    }
-
     async updateDisplay() {
         if (this.slot)
             await super.updateDisplay();

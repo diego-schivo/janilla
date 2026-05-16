@@ -69,9 +69,9 @@ public class WebsiteIndexFactory<C extends WebsiteFrontendConfig> extends BlankI
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
-		Stream.of("admin", "admin-bar", "admin-create-first-user", "admin-dashboard", "app", "archive", "banner",
-				"call-to-action", "card", "content", "footer", "form-block", "header", "hero", "intl-format", "link",
-				"media-block", "not-found", "page", "post", "posts", "rich-text", "search", "theme-selector")
+		Stream.of("admin", "admin-bar", "admin-create-first-user", "admin-dashboard", "admin-login", "app", "archive",
+				"banner", "call-to-action", "card", "content", "footer", "form-block", "header", "hero", "intl-format",
+				"link", "media-block", "not-found", "page", "post", "posts", "rich-text", "search", "theme-selector")
 				.map(this::websiteImportKey).forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 

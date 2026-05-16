@@ -40,8 +40,10 @@ export default class Page extends WebComponent {
 
     async updateDisplay() {
         const a = this.closest("app-element");
+
         if (this.dataset.slug === "home")
             this.appendChild(this.interpolateDom({
+                ...a.baseInput,
                 $template: "",
                 text: a.currentUser
                     ? `Welcome back, ${a.currentUser.email}`

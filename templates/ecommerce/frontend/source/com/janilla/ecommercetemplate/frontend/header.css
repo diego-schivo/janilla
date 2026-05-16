@@ -22,8 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "/website/header.css";
-
 :where(header-element) {
   border-bottom: 1px solid light-dark(rgb(228, 228, 231), oklch(0.269 0 0));
   display: block;

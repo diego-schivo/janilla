@@ -102,27 +102,27 @@ export default class Admin extends WebComponent {
 
         if (a.currentUser) {
             if (["/create-first-user", "/forgot", "/login"].includes(p) || p.startsWith("/reset/")) {
-                a.navigate(new URL("/admin", location.href));
+                a.navigateTo(new URL(`${a.customEnv.basePath}/admin`, location.href));
                 return;
             }
 
             if (p === "/logout") {
-                await fetch(`${a.dataset.apiUrl}/users/logout`, {
+                await fetch(`${a.customEnv.apiUrl}/users/logout`, {
 					method: "POST",
 					credentials: "include"
 				});
                 a.currentUser = null;
-                a.navigate(new URL("/admin", location.href));
+                a.navigateTo(new URL(`${a.customEnv.basePath}/admin`, location.href));
                 return;
             }
 
             if (p !== "/unauthorized" && !ua) {
-                a.navigate(new URL("/admin/unauthorized", location.href));
+                a.navigateTo(new URL(`${a.customEnv.basePath}/admin/unauthorized`, location.href));
                 return;
             }
 
             if (ua)
-                s.schema ??= await (await fetch(`${a.dataset.apiUrl}/schema`, { credentials: "include" })).json();
+                s.schema ??= await (await fetch(`${a.customEnv.apiUrl}/schema`, { credentials: "include" })).json();
 
             switch (s.pathSegments[0]) {
                 case "collections":
@@ -132,12 +132,12 @@ export default class Admin extends WebComponent {
                         await this.createDocument(s.collectionSlug);
                         return;
                     }
-                    s.documentUrl = s.pathSegments.length >= 3 ? `${a.dataset.apiUrl}/${s.collectionSlug}/${s.pathSegments[2]}` : null;
+                    s.documentUrl = s.pathSegments.length >= 3 ? `${a.customEnv.apiUrl}/${s.collectionSlug}/${s.pathSegments[2]}` : null;
                     break;
                 case "globals":
                     s.globalSlug = s.pathSegments[1];
                     s.documentType = s.schema["Globals"][s.pathSegments[1].split("-").map((y, i) => i ? y.charAt(0).toUpperCase() + y.substring(1) : y).join("")].type;
-                    s.documentUrl = s.pathSegments.length >= 2 ? `${a.dataset.apiUrl}/${s.globalSlug}` : null;
+                    s.documentUrl = s.pathSegments.length >= 2 ? `${a.customEnv.apiUrl}/${s.globalSlug}` : null;
                     break;
             }
 
@@ -156,13 +156,13 @@ export default class Admin extends WebComponent {
             ]);
             if (s.documentUrl && !s.document) {
                 const nn = s.pathSegments.slice(0, s.collectionSlug ? 2 : 1);
-                a.navigate(new URL(`/admin/${nn.join("/")}`, location.href));
+                a.navigateTo(new URL(`${a.customEnv.basePath}/admin/${nn.join("/")}`, location.href));
             }
         } else if (!["/create-first-user", "/forgot", "/login", "/reset"].includes(p) && !p.startsWith("/reset/")) {
-            const u = new URL(`${a.dataset.apiUrl}/users`, location.href);
+            const u = new URL(`${a.customEnv.apiUrl}/users`, location.href);
             u.searchParams.append("limit", 0);
             const j = await (await fetch(u, { credentials: "include" })).json();
-            a.navigate(new URL(`/admin${j.totalSize ? "/login" : "/create-first-user"}`, location.href));
+            a.navigateTo(new URL(`${a.customEnv.basePath}/admin${j.totalSize ? "/login" : "/create-first-user"}`, location.href));
             return;
         }
 
@@ -171,8 +171,9 @@ export default class Admin extends WebComponent {
             label: g.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
             checked: true,
             links: Object.keys(s.schema[s.schema["Data"][g].type]).map(x => ({
+				...a.baseInput,
                 $template: "link",
-                href: `/admin/${g}/${x}`,
+                uri: `/admin/${g}/${x}`,
                 text: x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" ")
             }))
         }));
@@ -192,19 +193,19 @@ export default class Admin extends WebComponent {
                 items: (() => {
                     const xx = [];
                     xx.push({
-                        href: "/admin",
+                        uri: "/admin",
                         logo: true
                     });
                     switch (s.pathSegments[0]) {
                         case undefined:
                             xx.push({
-                                href: "/admin",
+                                uri: "/admin",
                                 text: "Dashboard"
                             });
                             break;
                         case "collections":
                             xx.push({
-                                href: `/admin/collections/${s.pathSegments[1]}`,
+                                uri: `/admin/collections/${s.pathSegments[1]}`,
                                 text: s.pathSegments[1].split("-").map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ")
                             });
                             if (s.pathSegments[2]) {
@@ -213,32 +214,33 @@ export default class Admin extends WebComponent {
                                 if (!t?.length)
                                     t = s.pathSegments[2];
                                 xx.push({
-                                    href: h,
+                                    uri: h,
                                     text: t
                                 });
                                 if (s.documentSubview && s.documentSubview !== "default")
                                     xx.push({
-                                        href: `${h}/${s.documentSubview === "version" ? "versions" : s.documentSubview}`,
+                                        uri: `${h}/${s.documentSubview === "version" ? "versions" : s.documentSubview}`,
                                         text: s.documentSubview === "version" ? "Versions" : s.documentSubview.split("-").map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ")
                                     });
                                 if (s.versionId)
                                     xx.push({
-                                        href: `${h}/versions/${s.versionId}`,
+                                        uri: `${h}/versions/${s.versionId}`,
                                         text: s.version?.updatedAt ? this.dateTimeFormat.format(new Date(s.version.updatedAt)) : s.versionId
                                     });
                             }
                             break;
                         case "globals":
                             xx.push({
-                                href: `/admin/globals/${s.pathSegments[1]}`,
+                                uri: `/admin/globals/${s.pathSegments[1]}`,
                                 text: s.pathSegments[1]
                             });
                             break;
                     }
-                    delete xx[xx.length - 1].href;
+                    delete xx[xx.length - 1].uri;
                     return xx;
                 })().map(x => ({
-                    $template: x.href ? "link-item" : "item",
+					...a.baseInput,
+                    $template: x.uri ? "link-item" : "item",
                     ...x,
                     content: x.logo ? { $template: "logo" } : x.text
                 }))
@@ -305,14 +307,14 @@ export default class Admin extends WebComponent {
                     break;
                 case "logout": {
                     const a = this.closest("app-element");
-                    await fetch(`${a.dataset.apiUrl}/users/logout`, {
+                    await fetch(`${a.customEnv.apiUrl}/users/logout`, {
 						method: "POST",
 						credentials: "include"
 					});
                     a.currentUser = null;
                     this.querySelector("dialog").close();
                     this.success("You have been logged out successfully.");
-                    a.navigate(new URL("/admin/login", location.href));
+                    a.navigateTo(new URL(`${a.customEnv.basePath}/admin/login`, location.href));
                     break;
                 }
             }
@@ -327,7 +329,8 @@ export default class Admin extends WebComponent {
             const nn = s.pathSegments.slice(0, s.collectionSlug ? 3 : 2);
             if (v !== "edit")
                 nn.push(v);
-            this.closest("app-element").navigate(new URL(`/admin/${nn.join("/")}`, location.href));
+            const a = this.closest("app-element");
+			a.navigateTo(new URL(`${a.customEnv.basePath}/admin/${nn.join("/")}`, location.href));
         }
     }
 
@@ -415,7 +418,7 @@ export default class Admin extends WebComponent {
 
     async createDocument(n) {
         const a = this.closest("app-element");
-        const r = await fetch(`${a.dataset.apiUrl}/${n}`, {
+        const r = await fetch(`${a.customEnv.apiUrl}/${n}`, {
             method: "POST",
             credentials: "include",
             headers: { "content-type": "application/json" },
@@ -423,7 +426,7 @@ export default class Admin extends WebComponent {
         });
         const j = await r.json();
         if (r.ok)
-            a.navigate(new URL(`/admin/collections/${n}/${j.id}`, location.href));
+            a.navigateTo(new URL(`${a.customEnv.basePath}/admin/collections/${n}/${j.id}`, location.href));
         else
             this.error(j);
     }

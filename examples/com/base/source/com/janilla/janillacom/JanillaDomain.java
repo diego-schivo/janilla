@@ -29,7 +29,7 @@ import com.janilla.websitetemplate.WebsiteDomain;
 
 public class JanillaDomain extends WebsiteDomain {
 
-	public static final ScopedValue<WebApp<?>> WEB_APP = ScopedValue.newInstance();
+	public static final ScopedValue<WebApp<?, ?>> WEB_APP = ScopedValue.newInstance();
 
 	public JanillaDomain(Converter converter) {
 		super(converter);

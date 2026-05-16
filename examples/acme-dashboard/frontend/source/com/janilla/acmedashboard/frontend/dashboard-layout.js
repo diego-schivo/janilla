@@ -44,9 +44,11 @@ export default class DashboardLayout extends WebComponent {
     }
 
     async updateDisplay() {
-        const p = location.pathname;
+        const a = this.shadowClosest("app-element");
+        const p = a.currentPath;
         const pp = new URLSearchParams(location.search);
         const f = this.interpolateDom({
+			...a.baseInput,
             $template: "",
             dashboard: {
                 $template: "dashboard",

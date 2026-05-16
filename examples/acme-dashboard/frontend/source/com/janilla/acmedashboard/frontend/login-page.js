@@ -56,9 +56,9 @@ export default class LoginPage extends WebComponent {
             return;
         event.submitter.setAttribute("aria-disabled", "true");
         try {
-            const a = this.closest("app-element");
+            const a = this.shadowClosest("app-element");
             const d = new FormData(event.target);
-            const u = await (await fetch(`${a.dataset.apiUrl}/authentication`, {
+            const u = await (await fetch(`${a.customEnv.apiUrl}/authentication`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "content-type": "application/json" },
@@ -66,7 +66,7 @@ export default class LoginPage extends WebComponent {
             })).json();
             this.querySelector(".error").innerHTML = u ? "" : "Invalid credentials.";
             if (u) {
-                location.href = "${a.dataset.basePath}/dashboard";
+                location.href = `${a.customEnv.basePath}/dashboard`;
                 dispatchEvent(new CustomEvent("popstate"));
             }
         } finally {

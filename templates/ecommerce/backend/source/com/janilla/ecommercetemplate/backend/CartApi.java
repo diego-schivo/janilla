@@ -59,7 +59,7 @@ public class CartApi extends AbstractCollectionApi<Long, Cart> {
 
 	@Handle(method = "GET", path = "(\\d+)")
 	public Cart read(Long id, String secret, Integer depth) {
-		LOGGER.log(Level.INFO, "id={0}, secret={1} depth={2}", id, secret, depth);
+		LOGGER.log(Level.DEBUG, "id={0}, secret={1} depth={2}", id, secret, depth);
 
 		@SuppressWarnings("unchecked")
 		var e = (UserHttpExchange<User<?>>) HttpExchange.SCOPED.get();

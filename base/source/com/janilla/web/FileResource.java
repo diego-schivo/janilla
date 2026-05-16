@@ -24,29 +24,26 @@
  */
 package com.janilla.web;
 
-import com.janilla.http.HttpHandlerFactory;
-import com.janilla.http.HttpRequest;
-import com.janilla.ioc.DiFactory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-public abstract class AbstractHandlerFactory implements HttpHandlerFactory {
+public record FileResource(String path, long size) implements Resource {
 
-	protected final WebAppConfig config;
-
-	protected final DiFactory diFactory;
-
-	protected final HttpHandlerFactory rootFactory;
-
-	protected AbstractHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory) {
-		this.config = config;
-		this.rootFactory = rootFactory;
-		this.diFactory = diFactory;
+	@Override
+	public URI uri() {
+		return URI.create("file://" + path);
 	}
 
-	protected String path(HttpRequest request) {
-		return config.basePath().isEmpty() ? request.getPath()
-				: request.getPath().equals(config.basePath()) ? "/"
-						: request.getPath().startsWith(config.basePath() + "/")
-								? request.getPath().substring(config.basePath().length())
-								: null;
+	@Override
+	public InputStream newInputStream() {
+		try {
+			return Files.newInputStream(Path.of(path));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

@@ -23,6 +23,8 @@
  */
 package com.janilla.conduit.fullstack;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -33,27 +35,30 @@ import com.janilla.fullstack.web.FullstackConfig;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.web.Domain;
 import com.janilla.web.WebApp;
 
-public class ConduitFullstack extends AbstractFullstack<FullstackConfig> {
+public class ConduitFullstack extends AbstractFullstack<FullstackConfig, Domain> {
+
+	private static final Logger LOGGER = System.getLogger(ConduitFullstack.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.backend", x -> !x.endsWith(".cms")),
 				Java.getPackageTypes("com.janilla.frontend", _ -> true),
 				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
 				Java.getPackageTypes("com.janilla.conduit.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
 		var c = newConfig(new Class<?>[] { ConduitBackend.class, ConduitFrontend.class, ConduitFullstack.class },
 				args.length != 0 ? args[0] : null, f);
 		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?>) x)));
+				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 

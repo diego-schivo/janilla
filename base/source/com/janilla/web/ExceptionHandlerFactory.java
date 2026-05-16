@@ -27,8 +27,13 @@ package com.janilla.web;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
+import com.janilla.ioc.DiFactory;
 
-public class ExceptionHandlerFactory implements HttpHandlerFactory {
+public class ExceptionHandlerFactory extends AbstractHttpHandlerFactory {
+
+	public ExceptionHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory) {
+		super(config, rootFactory, diFactory);
+	}
 
 	@Override
 	public HttpHandler createHandler(Object object) {

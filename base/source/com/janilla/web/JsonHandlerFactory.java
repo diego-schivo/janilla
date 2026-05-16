@@ -41,18 +41,12 @@ import com.janilla.json.Json;
 import com.janilla.json.JsonToken;
 import com.janilla.json.ReflectionJsonIterator;
 
-public class JsonHandlerFactory implements HttpHandlerFactory {
+public class JsonHandlerFactory extends AbstractHttpHandlerFactory {
 
 	private static final Logger LOGGER = System.getLogger(JsonHandlerFactory.class.getName());
 
-	protected final DiFactory diFactory;
-
-	public JsonHandlerFactory() {
-		this(null);
-	}
-
-	public JsonHandlerFactory(DiFactory diFactory) {
-		this.diFactory = diFactory;
+	public JsonHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory) {
+		super(config, rootFactory, diFactory);
 	}
 
 	@Override

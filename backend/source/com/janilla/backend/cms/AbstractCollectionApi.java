@@ -123,7 +123,7 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	@Override
 	@Handle(method = "PUT", path = "(\\d+)")
 	public D update(ID id, @Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
-		LOGGER.log(Level.INFO, "id={0}, document={1}, draft={2}, autosave={3}", id, document, draft, autosave);
+		LOGGER.log(Level.DEBUG, "id={0}, document={1}, draft={2}, autosave={3}", id, document, draft, autosave);
 
 		var s = draft != null && draft.booleanValue() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != document.documentStatus())
@@ -131,7 +131,7 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 
 		var nv = !(autosave != null && autosave.booleanValue());
 		var d = crud().update(id, document, updateInclude(document), nv);
-		LOGGER.log(Level.INFO, "d={0}", d);
+		LOGGER.log(Level.DEBUG, "d={0}", d);
 
 		return d;
 	}

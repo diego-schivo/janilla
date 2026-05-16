@@ -31,11 +31,13 @@ import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.DefaultCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
 class ArticleCrud extends DefaultCrud<Long, Article> {
 
-	public ArticleCrud(Persistence persistence) {
-		super(Article.class, persistence.idHelper(Article.class), null, null, persistence);
+	public ArticleCrud(Converter converter, Copier copier, Persistence persistence) {
+		super(Article.class, persistence.idHelper(Article.class), converter, copier, persistence);
 	}
 
 	public boolean favorite(Long id, Instant createdAt, Long user) {
