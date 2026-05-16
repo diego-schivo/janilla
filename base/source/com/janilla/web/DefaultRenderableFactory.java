@@ -69,7 +69,7 @@ public class DefaultRenderableFactory implements RenderableFactory {
 	@Override
 	public String template(String key1, String key2) {
 //		IO.println("RenderableFactory.template, key1=" + key1 + ", key2=" + key2);
-		LOGGER.log(Level.INFO, "key1={0}, key2={1}", key1, key2);
+		LOGGER.log(Level.DEBUG, "key1={0}, key2={1}", key1, key2);
 
 		return Optional.ofNullable(templates.get(key1)).map(x -> x.get(key2)).orElse(null);
 	}

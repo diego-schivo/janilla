@@ -56,15 +56,6 @@ public class SimpleLoggerFinder extends LoggerFinder {
 		var ll = levels;
 		return loggers.computeIfAbsent(name, _ -> ll == null || ll == TEMP_LEVELS ? new DelegatingLogger()
 				: new SimpleLogger(name, Optional.ofNullable(ll.get(name)).orElse(Level.INFO)));
-//		return loggers.compute(name, (n, l) -> {
-//			if (l == null)
-//				l = ll != null && ll != TEMP_LEVELS
-//						? new SimpleLogger(n, Optional.ofNullable(ll.get(n)).orElse(Level.INFO))
-//						: new DelegatingLogger();
-//			else if (l instanceof DelegatingLogger dl && ll != null && ll != TEMP_LEVELS)
-//				l = dl.delegate = new SimpleLogger(n, Optional.ofNullable(ll.get(n)).orElse(Level.INFO));
-//			return l;
-//		});
 	}
 
 	private synchronized void initLevels() {
