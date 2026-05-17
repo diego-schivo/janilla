@@ -217,7 +217,15 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 
 	protected void handleConnection2(Transfer transfer) {
 //		IO.println("DefaultHttpServer.handleConnection2");
-		var st = (SecureTransfer) transfer;
+
+		SecureTransfer st;
+		{
+			var t = transfer;
+			while (!(t instanceof SecureTransfer))
+				t = ((FilterTransfer) t).transfer();
+			st = (SecureTransfer) t;
+		}
+
 		while (st.in().position() < 24)
 			try {
 				if (st.read() == -1)

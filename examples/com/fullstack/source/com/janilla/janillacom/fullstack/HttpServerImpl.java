@@ -135,6 +135,14 @@ class HttpServerImpl extends DefaultHttpServer {
 	}
 
 	@Override
+	protected void handleEndStream(List<Frame> frames, FrameTransfer transfer) {
+		var c = SOCKET_CHANNEL.get();
+		var l = REQUEST_SIZE_LIMITER.get();
+		Thread.startVirtualThread(() -> ScopedValue.where(SOCKET_CHANNEL, c)
+				.run(() -> ScopedValue.where(REQUEST_SIZE_LIMITER, l).run(() -> handleStream(frames, transfer))));
+	}
+
+	@Override
 	public void exchange(HttpRequest request, HttpResponse response) {
 		REQUEST_SIZE_LIMITER.get().reset();
 
