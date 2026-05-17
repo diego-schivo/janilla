@@ -86,6 +86,7 @@
 			"liveDemo": true
 		}
 	},
+	"basePath": "",
 	"frontends": {
 		"acmedashboard": {
 			"api": {

@@ -104,7 +104,7 @@ export default class App extends WebComponent {
     }
 
     handlePopState = () => {
-        console.log("handlePopState", location.href, JSON.stringify(history.state));
+        // console.log("handlePopState", location.href, JSON.stringify(history.state));
         this.navigateTo();
     }
 

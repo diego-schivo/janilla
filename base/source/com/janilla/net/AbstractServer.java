@@ -44,8 +44,6 @@ public abstract class AbstractServer implements Server {
 
 	private static final Logger LOGGER = System.getLogger(AbstractServer.class.getName());
 
-	public static final ScopedValue<SocketChannel> SOCKET_CHANNEL = ScopedValue.newInstance();
-
 	protected static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
 
 	protected final SocketAddress endpoint;
@@ -64,16 +62,16 @@ public abstract class AbstractServer implements Server {
 //		IO.println("SecureServer.serve");
 		Thread.startVirtualThread(this::shutdownConnections);
 
-		try (var s = ServerSocketChannel.open()) {
-			s.socket().bind(endpoint);
+		try (var c1 = ServerSocketChannel.open()) {
+			c1.socket().bind(endpoint);
 			for (;;)
 				try {
-					var c = s.accept();
-					LOGGER.log(Level.DEBUG, "c={0}", c);
+					var c2 = c1.accept();
+					LOGGER.log(Level.DEBUG, "channel={0}", c2);
 
-					var t = startThread(c);
+					var t = startThread(c2);
 
-					lastUsed.put(c, new ThreadAndInstant(t, Instant.now()));
+					lastUsed.put(c2, new ThreadAndInstant(t, Instant.now()));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -88,29 +86,33 @@ public abstract class AbstractServer implements Server {
 	}
 
 	protected void handleConnection(SocketChannel channel) {
-		try (var ch = channel) {
-			var t = sslContext != null ? new SecureTransfer(ch, createSslEngine()) : new SimpleTransfer(ch);
-			handleConnection(new FilterTransfer(t) {
+		try (var c = channel) {
+			var t1 = sslContext != null ? new SecureTransfer(c, createSslEngine()) : new SimpleTransfer(c);
+
+			var t2 = new FilterTransfer(t1) {
 
 				@Override
 				public int read() throws IOException {
-					updateLastUsed(ch);
+					updateLastUsed(c);
 					try {
 						return super.read();
 					} finally {
-						updateLastUsed(ch);
+						updateLastUsed(c);
 					}
 				}
 
 				@Override
 				public void write() throws IOException {
+					updateLastUsed(c);
 					try {
 						super.write();
 					} finally {
-						updateLastUsed(ch);
+						updateLastUsed(c);
 					}
 				}
-			});
+			};
+
+			handleConnection(t2);
 		} catch (IOException e) {
 			LOGGER.log(Level.ERROR, "{0}: {1}", e.getClass().getSimpleName(), e.getMessage());
 		} catch (Exception e) {
@@ -134,7 +136,7 @@ public abstract class AbstractServer implements Server {
 		return null;
 	}
 
-	protected abstract void handleConnection(Transfer transfer) throws IOException;
+	protected abstract void handleConnection(Transfer transfer);
 
 	protected ThreadAndInstant updateLastUsed(SocketChannel channel) {
 		return lastUsed.computeIfPresent(channel, (_, x) -> new ThreadAndInstant(x.thread(), Instant.now()));

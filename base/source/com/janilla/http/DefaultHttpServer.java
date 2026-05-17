@@ -76,30 +76,39 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 	}
 
 	@Override
-	protected void handleConnection(Transfer transfer) throws IOException {
+	protected void handleConnection(Transfer transfer) {
 //		IO.println("DefaultHttpServer.handleConnection");
 
-		var t = transfer instanceof FilterTransfer x ? x.transfer() : transfer;
-		if (t instanceof SecureTransfer st) {
-			do
-				if (st.read() == -1)
-					return;
-			while (st.in().position() < 16);
+		String p;
+		{
+			var t = transfer;
+			while (t instanceof FilterTransfer x)
+				t = x.transfer();
+
+			if (t instanceof SecureTransfer st) {
+				do
+					try {
+						if (st.read() == -1)
+							return;
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				while (st.in().position() < 16);
 //			IO.println("DefaultHttpServer.handleConnection, bb=" + new String(st.in().array(), 0, 16));
 
-			var p = st.engine().getApplicationProtocol();
+				p = st.engine().getApplicationProtocol();
 //			IO.println("DefaultHttpServer.handleConnection, p=" + p);
-
-			if (p.equals("h2")) {
-				handleConnection2(t);
-				return;
-			}
+			} else
+				p = null;
 		}
 
-		handleConnection1(t);
+		if (p != null && p.equals("h2"))
+			handleConnection2(transfer);
+		else
+			handleConnection1(transfer);
 	}
 
-	protected void handleConnection1(Transfer transfer) throws IOException {
+	protected void handleConnection1(Transfer transfer) {
 //		IO.println("DefaultHttpServer.handleConnection1");
 		for (;;) {
 //			IO.println("st.in().position()=" + st.in().position());
@@ -107,12 +116,15 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 			for (;;) {
 				int i = 0, b1 = -1, b2;
 				for (;; i++, b1 = b2) {
-					if (i == transfer.in().position()) {
-						var n = transfer.read();
+					if (i == transfer.in().position())
+						try {
+							var n = transfer.read();
 //						IO.println("n=" + n);
-						if (n == -1)
-							return;
-					}
+							if (n == -1)
+								return;
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						}
 					b2 = transfer.in().get(i);
 					if (b1 == '\r' && b2 == '\n')
 						break;
@@ -194,6 +206,8 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 						i += n;
 					}
 				}
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
 		}
 	}
@@ -201,12 +215,16 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 	protected void handleEndHeaders1(List<String> lines) {
 	}
 
-	protected void handleConnection2(Transfer transfer) throws IOException {
+	protected void handleConnection2(Transfer transfer) {
 //		IO.println("DefaultHttpServer.handleConnection2");
 		var st = (SecureTransfer) transfer;
 		while (st.in().position() < 24)
-			if (st.read() == -1)
-				return;
+			try {
+				if (st.read() == -1)
+					return;
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		st.in().flip();
 		var cp = new byte[24];
 		st.in().get(cp);
@@ -223,59 +241,67 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 			throw new RuntimeException();
 
 		var ft = new FrameTransfer(st);
-		ft.writeFrame(new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100),
-				new SettingParameter(SettingName.ENABLE_PUSH, 0))));
+		try {
+			ft.writeFrame(
+					new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100),
+							new SettingParameter(SettingName.ENABLE_PUSH, 0))));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 
 		var streams = new HashMap<Integer, List<Frame>>();
-		for (;;) {
-			var f = ft.readFrame();
-			if (f == null)
-				break;
+		for (;;)
+			try {
+				var f = ft.readFrame();
+				if (f == null)
+					break;
 
 //			IO.println("DefaultHttpServer.handleConnection2, f=" + f);
-			switch (f) {
-			case DataFrame _:
-			case HeadersFrame _:
-				var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
-				ff.add(f);
+				switch (f) {
+				case DataFrame _:
+				case HeadersFrame _:
+					var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
+					ff.add(f);
 
-				var df = f instanceof DataFrame x ? x : null;
-				var hf = f instanceof HeadersFrame x ? x : null;
+					var df = f instanceof DataFrame x ? x : null;
+					var hf = f instanceof HeadersFrame x ? x : null;
 
-				if (df != null && df.data().length != 0)
-					for (var id : new int[] { f.streamIdentifier(), 0 })
-						ft.writeFrame(new WindowUpdateFrame(id, 9 + df.data().length));
+					if (df != null && df.data().length != 0)
+						for (var id : new int[] { f.streamIdentifier(), 0 })
+							ft.writeFrame(new WindowUpdateFrame(id, 9 + df.data().length));
 
-				if (hf != null && hf.endHeaders())
-					handleEndHeaders2(ff, ft);
+					if (hf != null && hf.endHeaders())
+						handleEndHeaders2(ff, ft);
 
-				if (df != null ? df.endStream() : hf.endStream()) {
+					if (df != null ? df.endStream() : hf.endStream()) {
+						streams.remove(f.streamIdentifier());
+						handleEndStream(ff, ft);
+					}
+					break;
+
+				case SettingsFrame x:
+					if (!x.ack())
+						ft.writeFrame(new SettingsFrame(true, List.of()));
+					break;
+
+				case PingFrame _:
+				case PriorityFrame _:
+				case WindowUpdateFrame _:
+					break;
+
+				case GoawayFrame _:
+					return;
+
+				case RstStreamFrame _:
 					streams.remove(f.streamIdentifier());
-					handleEndStream(ff, ft);
+					break;
+
+				default:
+					throw new RuntimeException(f.toString());
 				}
-				break;
-
-			case SettingsFrame x:
-				if (!x.ack())
-					ft.writeFrame(new SettingsFrame(true, List.of()));
-				break;
-
-			case PingFrame _:
-			case PriorityFrame _:
-			case WindowUpdateFrame _:
-				break;
-
-			case GoawayFrame _:
-				return;
-
-			case RstStreamFrame _:
-				streams.remove(f.streamIdentifier());
-				break;
-
-			default:
-				throw new RuntimeException(f.toString());
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
-		}
 	}
 
 	protected void handleEndHeaders2(List<Frame> frames, FrameTransfer transfer) {
@@ -394,7 +420,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 //		IO.println("DefaultHttpServer.handleExchange, e=" + e);
 		if (e != null)
 			try {
-				if (e instanceof NotFoundException)
+				if (e instanceof NotFoundException || e instanceof IllegalStateException)
 					LOGGER.log(Level.ERROR, "{0}: {1}", e.getClass().getSimpleName(), e.getMessage());
 				else
 					e.printStackTrace();

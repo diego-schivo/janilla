@@ -39,6 +39,7 @@ export default class Card extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.closest("app-element");
         const el = this.closest("post-element, posts-element, search-element");
         const hs = history.state;
         const pp = el.matches("post-element")
@@ -48,6 +49,7 @@ export default class Card extends WebComponent {
                 : hs.results;
         const p = pp.find(x => x.slug === this.dataset.slug);
         this.appendChild(this.interpolateDom({
+            ...a.baseInput,
             $template: "",
             ...p
         }));

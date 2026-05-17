@@ -129,15 +129,11 @@ public abstract class AbstractWebApp<C extends WebAppConfig, D extends Domain> i
 	}
 
 	protected static void serve(WebApp<?, ?> app) {
+		var e = new InetSocketAddress(app.config().httpServer().port());
 		var c = sslContext(app.config());
-
-		HttpServer s;
-		{
-			var e = new InetSocketAddress(app.config().httpServer().port());
-			var h = app.httpHandler();
-			s = app.diFactory().newInstance(app.diFactory().classFor(HttpServer.class),
-					Java.hashMap("endpoint", e, "sslContext", c, "handler", h));
-		}
+		var h = app.httpHandler();
+		var s = app.diFactory().newInstance(app.diFactory().classFor(HttpServer.class),
+				Java.hashMap("endpoint", e, "sslContext", c, "handler", h));
 		s.serve();
 	}
 

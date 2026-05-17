@@ -52,7 +52,6 @@ export default class DashboardNav extends WebComponent {
         const a = this.shadowClosest("app-element");
 		const p = a.currentPath;
         this.appendChild(this.interpolateDom({
-			...a.baseInput,
             $template: "",
             items: [{
                 uri: "/dashboard",
@@ -67,6 +66,7 @@ export default class DashboardNav extends WebComponent {
                 icon: "user-group",
                 text: "Customers"
             }].map(x => ({
+                ...a.baseInput,
                 $template: "item",
                 ...x,
                 active: x.uri === p ? "active" : ""
@@ -84,7 +84,7 @@ export default class DashboardNav extends WebComponent {
             return;
         event.submitter.setAttribute("aria-disabled", "true");
         try {
-            const a = this.customState.app;
+            const a = this.shadowClosest("app-element");
             await fetch(`${a.customEnv.apiUrl}/authentication`, {
                 method: "DELETE",
                 credentials: "include"

@@ -24,11 +24,41 @@
  */
 package com.janilla.net;
 
-import java.nio.channels.SocketChannel;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-public interface Server {
+public class AmountLimiter {
 
-	ScopedValue<SocketChannel> SOCKET_CHANNEL = ScopedValue.newInstance();
+	private static final Logger LOGGER = System.getLogger(AmountLimiter.class.getName());
 
-	void serve();
+	protected final long limit;
+
+	protected volatile long total;
+
+	public AmountLimiter(long limit) {
+		if (limit <= 0)
+			throw new IllegalArgumentException("limit=" + limit);
+
+		this.limit = limit;
+	}
+
+	public synchronized boolean test(int number) {
+		LOGGER.log(Level.DEBUG, "number={0}", number);
+
+		if (number < 0)
+			throw new IllegalArgumentException("number=" + number);
+
+		var g = total > limit;
+
+		if (!g) {
+			total += number;
+			g = total > limit;
+		}
+
+		return !g;
+	}
+
+	public synchronized void reset() {
+		total = 0;
+	}
 }

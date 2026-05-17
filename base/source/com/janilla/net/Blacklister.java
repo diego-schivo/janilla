@@ -24,11 +24,42 @@
  */
 package com.janilla.net;
 
-import java.nio.channels.SocketChannel;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.net.InetAddress;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
 
-public interface Server {
+public class Blacklister {
 
-	ScopedValue<SocketChannel> SOCKET_CHANNEL = ScopedValue.newInstance();
+	private static final Logger LOGGER = System.getLogger(Blacklister.class.getName());
 
-	void serve();
+	protected final Pattern pattern;
+
+	protected final Set<InetAddress> addresses = new HashSet<>();
+
+	public Blacklister(Pattern pattern) {
+		Objects.requireNonNull(pattern, "pattern");
+
+		this.pattern = pattern;
+	}
+
+	public synchronized boolean test(InetAddress address) {
+		return test(address, null);
+	}
+
+	public synchronized boolean test(InetAddress address, String line) {
+		LOGGER.log(Level.DEBUG, "address={0}, line={1}", address, line);
+
+		Objects.requireNonNull(address, "address");
+
+		var c = addresses.contains(address);
+
+		if (!c && line != null && pattern.matcher(line).find())
+			c = addresses.add(address);
+
+		return c;
+	}
 }

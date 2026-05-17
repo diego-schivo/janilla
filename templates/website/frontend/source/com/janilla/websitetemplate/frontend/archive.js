@@ -52,7 +52,7 @@ export default class Archive extends WebComponent {
             $template: "",
             ...d,
             posts: hs.posts?.map(x => ({
-				...a.baseInput,
+                ...a.baseInput,
                 $template: "post",
                 ...x
             }))
