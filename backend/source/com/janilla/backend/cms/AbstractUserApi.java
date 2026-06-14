@@ -61,6 +61,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.cms.CmsDomain;
 import com.janilla.cms.User;
 import com.janilla.http.HttpExchange;
@@ -84,12 +85,13 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 
 	protected final CmsDomain domain;
 
-	protected final String jwtKey;
+	protected final BackendConfig config;
 
 	protected AbstractUserApi(Class<U> type, Predicate<HttpExchange> drafts, Persistence persistence,
-			String searchIndex, Copier copier, String jwtKey, CmsDomain domain) {
-		super(type, drafts, persistence, searchIndex, copier);
-		this.jwtKey = jwtKey;
+			String searchIndex, Copier copier, Direction defaultDirection, Integer defaultDepth, BackendConfig config,
+			CmsDomain domain) {
+		super(type, drafts, persistence, searchIndex, copier, defaultDirection, defaultDepth);
+		this.config = config;
 		this.domain = domain;
 	}
 
@@ -106,7 +108,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		if (!isAdmin(exchange().sessionUser()))
 			throw new UnauthorizedException();
 
-		var u = (U) data.user().withPassword(data.password());
+		var u = (U) domain.withPassword(data.user(), data.password());
 		return super.create(u);
 	}
 
@@ -133,7 +135,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		if (!isAdmin(exchange().sessionUser()))
 			throw new UnauthorizedException();
 
-		var u = (U) data.user().withPassword(data.password());
+		var u = (U) domain.withPassword(data.user(), data.password());
 		return super.update(id, u, draft, autosave);
 	}
 
@@ -148,7 +150,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 
 		var u = (U) data.user();
 		if (data.password() != null && !data.password().isBlank()) {
-			u = (U) u.withPassword(data.password());
+			u = (U) domain.withPassword(u, data.password());
 			InvocationHandlerFactory.JSON_KEYS.get().addAll(List.of("salt", "hash"));
 		}
 		return super.patch(id, u);
@@ -166,14 +168,14 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 
 		var u = persistence.database().perform(
 				() -> crud().read(crud().find("email", new Object[] { data.email() }), domain.userDepth()), false);
-		if (u != null && !u.passwordEquals(data.password()))
+		if (u != null && !domain.passwordEquals(u, data.password()))
 			u = null;
 		if (u == null)
 			throw new UnauthorizedException("The email or password provided is incorrect.");
 
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
-		var t = Jwt.generateToken(h, p, jwtKey);
+		var t = Jwt.generateToken(h, p, config.jwt().key());
 		exchange().setSessionCookie(t);
 
 		return u;
@@ -208,13 +210,13 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 			if (crud().count() != 0)
 				throw new ForbiddenException("You are not allowed to perform this action.");
 			@SuppressWarnings("unchecked")
-			var e = (U) data.user().withPassword(data.password());
+			var e = (U) domain.withPassword(data.user(), data.password());
 			return crud().create(e);
 		}, true);
 
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
-		var t = Jwt.generateToken(h, p, jwtKey);
+		var t = Jwt.generateToken(h, p, config.jwt().key());
 		exchange().setSessionCookie(t);
 
 		return u;
@@ -231,7 +233,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 			var t = UUID.randomUUID().toString().replace("-", "");
 			return crud().update(x.id(), y -> {
 				@SuppressWarnings("unchecked")
-				var e = (U) y.withResetPassword(t, Instant.now().plus(1, ChronoUnit.HOURS));
+				var e = (U) domain.withResetPassword(y, t, Instant.now().plus(1, ChronoUnit.HOURS));
 				return e;
 			});
 		}, true);
@@ -268,13 +270,13 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 				throw new ForbiddenException("Token is either invalid or has expired.");
 			return crud().update(x.id(), y -> {
 				@SuppressWarnings("unchecked")
-				var e = (U) y.withResetPassword(null, null).withPassword(password);
+				var e = (U) domain.withPassword(domain.withResetPassword(y, null, null), password);
 				return e;
 			});
 		}, true);
 		var h = Map.of("alg", "HS256", "typ", "JWT");
 		var p = Map.of("loggedInAs", u.email());
-		var t = Jwt.generateToken(h, p, jwtKey);
+		var t = Jwt.generateToken(h, p, config.jwt().key());
 		exchange().setSessionCookie(t);
 		return u;
 	}

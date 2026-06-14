@@ -77,6 +77,10 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 
 	protected final Copier copier;
 
+	protected final int defaultDepth;
+
+	protected final Direction defaultDirection;
+
 	protected final Predicate<HttpExchange> drafts;
 
 	protected final Persistence persistence;
@@ -86,12 +90,14 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	protected final Class<D> type;
 
 	protected AbstractCollectionApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence,
-			String searchIndex, Copier copier) {
+			String searchIndex, Copier copier, Direction defaultDirection, Integer defaultDepth) {
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;
 		this.searchIndex = searchIndex;
 		this.copier = copier;
+		this.defaultDirection = defaultDirection != null ? defaultDirection : Direction.FORWARD;
+		this.defaultDepth = defaultDepth != null ? defaultDepth : 0;
 	}
 
 	@Override
@@ -101,27 +107,30 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	}
 
 	@Override
-	@Handle(method = "GET", path = "(\\d+)")
+	@Handle(method = "GET", path = "([^/]+)")
 	public D read(ID id, Integer depth) {
-		return crud().read(id, drafts.test(HttpExchange.SCOPED.get()), depth != null ? depth : 0);
+		return crud().read(id, drafts.test(HttpExchange.SCOPED.get()), depth != null ? depth : defaultDepth);
 	}
 
 	@Override
 	@Handle(method = "GET")
 	public ListPortion<D> read(String search, Direction direction, Long skip, Long limit, Integer depth) {
-//		IO.println("AbstractCollectionApi.read, search=" + search + ", reverse=" + reverse + ", skip=" + skip
-//				+ ", limit=" + limit + ", depth=" + depth);
-		var s1 = search != null && !search.isBlank() ? search.strip().toLowerCase() : null;
-//		var r = reverse != null && reverse.booleanValue();
-		var s2 = skip != null ? skip.longValue() : 0;
+		LOGGER.log(Level.DEBUG, "search={0}, direction={1}, skip={2}, limit={3}, depth={4}", search, direction, skip,
+				limit, depth);
+
+		var d = direction != null ? direction : defaultDirection;
+		var k = skip != null ? skip.longValue() : 0;
 		var l = limit != null ? limit.longValue() : -1;
-		return (s1 != null
-				? crud().filterAndCount(searchIndex, x -> ((String) x).toLowerCase().contains(s1), direction, s2, l)
-				: crud().listAndCount(direction, s2, l)).map(x -> crud().read(x, depth != null ? depth : 0));
+		var p = depth != null ? depth.intValue() : defaultDepth;
+
+		var s = search != null && !search.isBlank() ? search.strip().toLowerCase() : null;
+		var ii = s != null ? crud().filterAndCount(searchIndex, x -> ((String) x).toLowerCase().contains(s), d, k, l)
+				: crud().listAndCount(d, k, l);
+		return ii.map(x -> crud().read(x, p));
 	}
 
 	@Override
-	@Handle(method = "PUT", path = "(\\d+)")
+	@Handle(method = "PUT", path = "([^/]+)")
 	public D update(ID id, @Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
 		LOGGER.log(Level.DEBUG, "id={0}, document={1}, draft={2}, autosave={3}", id, document, draft, autosave);
 
@@ -137,7 +146,7 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	}
 
 	@Override
-	@Handle(method = "DELETE", path = "(\\d+)")
+	@Handle(method = "DELETE", path = "([^/]+)")
 	public D delete(ID id) {
 		return crud().delete(id);
 	}
@@ -149,7 +158,7 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	}
 
 	@Override
-	@Handle(method = "PATCH", path = "(\\d+)")
+	@Handle(method = "PATCH", path = "([^/]+)")
 	public D patch(ID id, @Bind(resolver = DollarTypeResolver.class) D document) {
 		return patch(document, List.of(id)).getFirst();
 	}
@@ -161,19 +170,19 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	}
 
 	@Override
-	@Handle(method = "GET", path = "(\\d+)/versions")
+	@Handle(method = "GET", path = "([^/]+)/versions")
 	public List<Version<ID, D>> readVersions(ID id) {
 		return crud().readVersions(id);
 	}
 
 	@Override
-	@Handle(method = "GET", path = "versions/(\\d+)")
+	@Handle(method = "GET", path = "versions/([^/]+)")
 	public Version<ID, D> readVersion(ID versionId) {
 		return crud().readVersion(versionId);
 	}
 
 	@Override
-	@Handle(method = "POST", path = "versions/(\\d+)")
+	@Handle(method = "POST", path = "versions/([^/]+)")
 	public D restoreVersion(ID versionId, Boolean draft) {
 		return crud().restoreVersion(versionId,
 				Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);

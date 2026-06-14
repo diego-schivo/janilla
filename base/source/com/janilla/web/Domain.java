@@ -25,6 +25,4 @@
 package com.janilla.web;
 
 public interface Domain {
-
-//	String removeBasePath(String path);
 }

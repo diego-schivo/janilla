@@ -73,6 +73,12 @@ public final class Java {
 		throw new Error("no instances");
 	}
 
+	public static <E> ArrayList<E> arrayList(E e) {
+		var x = new ArrayList<E>(1);
+		x.add(e);
+		return x;
+	}
+
 	public static <T> T[] concat(T[] array1, T[] array2) {
 		var tt = Arrays.copyOf(array1, array1.length + array2.length);
 		System.arraycopy(array2, 0, tt, array1.length, array2.length);
@@ -81,22 +87,6 @@ public final class Java {
 
 	public static <T> boolean contains(T[] array, T element) {
 		return indexOf(array, element) != -1;
-	}
-
-	public static <T> int indexOf(T[] array, T element) {
-		var i = 0;
-		for (var x : array)
-			if (x.equals(element))
-				return i;
-			else
-				i++;
-		return -1;
-	}
-
-	public static <E> ArrayList<E> arrayList(E e) {
-		var x = new ArrayList<E>(1);
-		x.add(e);
-		return x;
 	}
 
 	public static void generateKeyPair(String commonName, Path keyStore, String password,
@@ -226,6 +216,16 @@ public final class Java {
 		return r.values().stream().flatMap(List::stream);
 	}
 
+	public static <T> int indexOf(T[] array, T element) {
+		var i = 0;
+		for (var x : array)
+			if (x.equals(element))
+				return i;
+			else
+				i++;
+		return -1;
+	}
+
 	protected static boolean isDirectory(Path path) {
 		class A {
 			private static final Map<Path, Boolean> RESULTS = new ConcurrentHashMap<>();
@@ -305,6 +305,11 @@ public final class Java {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	public static boolean startsWithIgnoreCase(String string, String prefix) {
+		return string == prefix || (prefix != null && prefix.length() <= string.length()
+				&& string.regionMatches(true, 0, prefix, 0, prefix.length()));
 	}
 
 	public static Class<?> toClass(Type type) {

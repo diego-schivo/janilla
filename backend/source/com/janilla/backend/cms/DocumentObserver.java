@@ -52,6 +52,7 @@ package com.janilla.backend.cms;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.time.Instant;
+import java.util.HashMap;
 
 import com.janilla.backend.persistence.CrudObserver;
 import com.janilla.cms.Document;
@@ -74,12 +75,19 @@ public class DocumentObserver<D extends Document<?>> implements CrudObserver<D> 
 	public D beforeCreate(D document) {
 		LOGGER.log(Level.DEBUG, "document={0}", document);
 
-		var i = Instant.now();
-		var m = Java.<String, Object>hashMap("createdAt", i, "updatedAt", i);
+		var m = new HashMap<String, Object>(3);
 
-		var v = document.getClass().getAnnotation(Versions.class);
-		if (document.documentStatus() == null)
+		var i = Instant.now();
+		if (document.createdAt() == null)
+			m.put("createdAt", i);
+
+		if (document.updatedAt() == null)
+			m.put("updatedAt", i);
+
+		if (document.documentStatus() == null) {
+			var v = document.getClass().getAnnotation(Versions.class);
 			m.put("documentStatus", v != null && v.drafts() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
+		}
 
 		var d = copier.copy(m, document);
 		LOGGER.log(Level.DEBUG, "d={0}", d);

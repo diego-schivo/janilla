@@ -102,7 +102,7 @@ public class DefaultInvocationHandlerFactory extends AbstractHttpHandlerFactory 
 	}
 
 	protected boolean handle(Invocation invocation, HttpExchange exchange) {
-//		IO.println("DefaultInvocationHandlerFactory.handle, invocation=" + invocation);
+		LOGGER.log(Level.DEBUG, "invocation={0}", invocation);
 
 		var o = ScopedValue.where(JSON_KEYS, new HashSet<>()).call(() -> {
 			var h = JavaInvoke.methodHandle(invocation.method());

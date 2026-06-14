@@ -38,8 +38,16 @@ public class DefaultIndexKeyGetter implements IndexKeyGetter {
 
 	protected final Property[] properties;
 
-	public DefaultIndexKeyGetter(Property... properties) {
+	protected final Class<?> type;
+
+	public DefaultIndexKeyGetter(Property[] properties, Class<?> type) {
 		this.properties = properties;
+		this.type = type;
+	}
+
+	@Override
+	public Class<?> type() {
+		return type;
 	}
 
 	@Override
@@ -51,6 +59,7 @@ public class DefaultIndexKeyGetter implements IndexKeyGetter {
 //			IO.println("DefaultIndexKeyGetter.keys, o=" + o);
 			return o instanceof Collection c ? c.toArray() : new Object[] { o };
 		}).toList();
+
 		var ss = l.stream().mapToInt(x -> x.length).toArray();
 		var s = Arrays.stream(ss).reduce((x, y) -> x * y).getAsInt();
 		var ii = new int[ss.length];

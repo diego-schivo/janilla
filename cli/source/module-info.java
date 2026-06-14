@@ -22,22 +22,8 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-package com.janilla.net;
+module com.janilla.cli {
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.locks.Lock;
+	exports com.janilla.cli;
 
-public interface Transfer {
-
-	ByteBuffer in();
-
-	Lock inLock();
-
-	ByteBuffer out();
-
-	Lock outLock();
-
-	int read();
-
-	void write();
 }

@@ -25,6 +25,7 @@
 package com.janilla.net;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 
@@ -52,7 +53,7 @@ public class SecureTransfer extends SimpleTransfer {
 	}
 
 	@Override
-	public int read() throws IOException {
+	public int read() {
 		inLock.lock();
 		try {
 			var p = in.position();
@@ -74,7 +75,7 @@ public class SecureTransfer extends SimpleTransfer {
 	}
 
 	@Override
-	public void write() throws IOException {
+	public void write() {
 		outLock.lock();
 		try {
 			var p = out.position();
@@ -94,7 +95,7 @@ public class SecureTransfer extends SimpleTransfer {
 		return engine.getSession().getApplicationBufferSize() + 50;
 	}
 
-	protected void handshake() throws IOException {
+	protected void handshake() {
 //		IO.println("engine.getApplicationProtocol()=" + engine.getApplicationProtocol());
 //		var t = engine.getUseClientMode() ? "C" : "S";
 		while (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
@@ -111,13 +112,13 @@ public class SecureTransfer extends SimpleTransfer {
 				write0();
 				break;
 			default:
-				throw new IOException(engine.getHandshakeStatus().toString());
+				throw new UncheckedIOException(new IOException(engine.getHandshakeStatus().toString()));
 			}
 		}
 //		IO.println("engine.getApplicationProtocol()=" + engine.getApplicationProtocol());
 	}
 
-	protected int read0() throws IOException {
+	protected int read0() {
 		inLock.lock();
 		try {
 //			var t = engine.getUseClientMode() ? "C" : "S";
@@ -139,12 +140,14 @@ public class SecureTransfer extends SimpleTransfer {
 				if (!r)
 					return ser.bytesConsumed();
 			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		} finally {
 			inLock.unlock();
 		}
 	}
 
-	protected void write0() throws IOException {
+	protected void write0() {
 		outLock.lock();
 		try {
 //			var t = engine.getUseClientMode() ? "C" : "S";
@@ -160,6 +163,8 @@ public class SecureTransfer extends SimpleTransfer {
 				var n = channel.write(out0);
 //				IO.println(t + ": write " + n);
 			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		} finally {
 			outLock.unlock();
 		}

@@ -118,9 +118,10 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 			a.e = entity;
 			if (idHelper != null) {
 				a.i = (ID) JavaReflect.property(type, "id").get(a.e);
-				if (a.i == null)
+				if (a.i == null) {
 					a.i = idHelper.random(a.e);
-				a.e = JavaReflect.copy(Map.of("id", a.i), a.e);
+					a.e = JavaReflect.copy(Map.of("id", a.i), a.e);
+				}
 				for (var o : observers)
 					a.e = o.beforeCreate(a.e);
 				bTree().insert(new Object[] { toDatabaseId(a.i) }, new Object[] { format(a.e) });
@@ -284,9 +285,9 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 				cc = cc.limit(limit);
 			return new ListPortion<>(cc.map(c -> {
 				var o = switch (c) {
-				case TableLeafCell c2 -> c2.key();
-				case PayloadCell c2 ->
-					Record.fromBytes(t.payloadBuffers(c2)).findFirst().map(RecordColumn::toObject).get();
+				case TableLeafCell x -> x.key();
+				case PayloadCell x ->
+					Record.fromBytes(t.payloadBuffers(x)).findFirst().map(RecordColumn::toObject).get();
 				default -> throw new RuntimeException();
 				};
 				var id = fromDatabaseId(o);
@@ -360,8 +361,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		return persistence.database().perform(() -> {
 			var t = getIndex(index);
 			var rr = direction == Direction.BACKWARD ? t.rows(TraverseOption.REVERSE_ORDER) : t.rows();
-			@SuppressWarnings("unchecked")
-			var ii = rr.map(Stream::toArray).filter(x -> operation.test(x[0])).map(x -> (ID) x[x.length - 1]).toList();
+			var ii = rr.map(Stream::toArray).filter(x -> operation.test(x[0])).map(x -> fromDatabaseId(x[x.length - 1]))
+					.toList();
 			return ii;
 		}, false);
 	}
@@ -372,8 +373,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		return persistence.database().perform(() -> {
 			var t = getIndex(index);
 			var rr = direction == Direction.BACKWARD ? t.rows(TraverseOption.REVERSE_ORDER) : t.rows();
-			@SuppressWarnings("unchecked")
-			var ii = rr.map(Stream::toArray).filter(x -> operation.test(x[0])).map(x -> (ID) x[x.length - 1]).toList();
+			var ii = rr.map(Stream::toArray).filter(x -> operation.test(x[0])).map(x -> fromDatabaseId(x[x.length - 1]))
+					.toList();
 			var s = ii.stream();
 			if (skip > 0)
 				s = s.skip(skip);
@@ -495,7 +496,8 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		LOGGER.log(Level.DEBUG, "string={0}, target={1}", string, target);
 
 		var t = (T) converter.convert(Json.parse(string), target);
-//		IO.println("DefaultCrud.parse, t=" + t);
+		LOGGER.log(Level.DEBUG, "t={0}", t);
+
 		return t;
 	}
 

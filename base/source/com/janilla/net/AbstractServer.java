@@ -25,6 +25,7 @@
 package com.janilla.net;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.net.SocketAddress;
@@ -64,6 +65,7 @@ public abstract class AbstractServer implements Server {
 
 		try (var c1 = ServerSocketChannel.open()) {
 			c1.socket().bind(endpoint);
+
 			for (;;)
 				try {
 					var c2 = c1.accept();
@@ -92,7 +94,7 @@ public abstract class AbstractServer implements Server {
 			var t2 = new FilterTransfer(t1) {
 
 				@Override
-				public int read() throws IOException {
+				public int read() {
 					updateLastUsed(c);
 					try {
 						return super.read();
@@ -102,7 +104,7 @@ public abstract class AbstractServer implements Server {
 				}
 
 				@Override
-				public void write() throws IOException {
+				public void write() {
 					updateLastUsed(c);
 					try {
 						super.write();
@@ -115,6 +117,8 @@ public abstract class AbstractServer implements Server {
 			handleConnection(t2);
 		} catch (IOException e) {
 			LOGGER.log(Level.ERROR, "{0}: {1}", e.getClass().getSimpleName(), e.getMessage());
+		} catch (UncheckedIOException e) {
+			LOGGER.log(Level.ERROR, "{0}: {1}", e.getCause().getClass().getSimpleName(), e.getCause().getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

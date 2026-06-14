@@ -25,6 +25,7 @@
 package com.janilla.net;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.util.concurrent.locks.Lock;
@@ -69,20 +70,24 @@ public class SimpleTransfer implements Transfer {
 	}
 
 	@Override
-	public int read() throws IOException {
+	public int read() {
 		inLock.lock();
 		try {
 			return channel.read(in);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		} finally {
 			inLock.unlock();
 		}
 	}
 
 	@Override
-	public void write() throws IOException {
+	public void write() {
 		outLock.lock();
 		try {
 			channel.write(out);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		} finally {
 			outLock.unlock();
 		}

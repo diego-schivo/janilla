@@ -24,6 +24,8 @@
  */
 package com.janilla.ioc;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -45,6 +47,8 @@ import com.janilla.java.JavaInvoke;
 import com.janilla.java.JavaReflect;
 
 public class DefaultDiFactory implements DiFactory {
+
+	private static final Logger LOGGER = System.getLogger(DefaultDiFactory.class.getName());
 
 	protected final Map<Type, Optional<Class<?>>> classes = new ConcurrentHashMap<>();
 
@@ -77,7 +81,8 @@ public class DefaultDiFactory implements DiFactory {
 	public Class<?> classFor(Type type) {
 //		IO.println("DefaultDiFactory.classFor, type=" + type);
 		var c = classes.computeIfAbsent(type, k -> {
-			var cc = k instanceof Class x ? Stream.concat(Stream.<Class<?>>of(x), types.stream()) : types.stream();
+			var cc = Java.toClass(k).getPackageName().startsWith("java.") ? Stream.<Class<?>>empty()
+					: k instanceof Class x ? Stream.concat(Stream.<Class<?>>of(x), types.stream()) : types.stream();
 			return cc.filter(predicate(k)).reduce((_, x) -> x);
 		}).orElse(null);
 //		IO.println("DefaultDiFactory.classFor, c=" + c);
@@ -93,17 +98,24 @@ public class DefaultDiFactory implements DiFactory {
 		if (type instanceof ParameterizedType pt1) {
 			var cc1 = Stream.concat(Stream.of(pt1.getRawType()), Arrays.stream(pt1.getActualTypeArguments()))
 					.map(Java::toClass).toList();
-//			IO.println("cc1=" + cc1);
-			p = p.and(t -> JavaReflect.getAllActualInterfaces(t).filter(x -> x instanceof ParameterizedType)
-					.anyMatch(x -> {
-//						IO.println("x=" + x);
-						var cc2 = x instanceof ParameterizedType pt2 ? Stream
-								.concat(Stream.of(pt2.getRawType()), Arrays.stream(pt2.getActualTypeArguments()))
-								.map(Java::toClass).toList() : null;
-//						IO.println("cc2=" + cc2);
-						return cc2 != null && IntStream.range(0, cc1.size())
-								.allMatch(i -> cc2.get(i).isAssignableFrom(cc1.get(i)));
-					}));
+			LOGGER.log(Level.DEBUG, "cc1={0}", cc1);
+
+			p = p.and(t -> {
+				LOGGER.log(Level.DEBUG, "t={0}", t);
+				return JavaReflect.getAllActualInterfaces(t).filter(x -> x instanceof ParameterizedType).anyMatch(x -> {
+					LOGGER.log(Level.DEBUG, "x={0}", x);
+					var cc2 = x instanceof ParameterizedType pt2
+							? Stream.concat(Stream.of(pt2.getRawType()), Arrays.stream(pt2.getActualTypeArguments()))
+									.map(Java::toClass).toList()
+							: null;
+					LOGGER.log(Level.DEBUG, "cc2={0}", cc2);
+					return cc2 != null
+							&& IntStream.range(0, cc1.size()).allMatch(i -> cc2.get(i).isAssignableFrom(cc1.get(i)));
+//							&& IntStream.range(0, cc1.size())
+//									.allMatch(i -> i == 0 ? cc2.get(i).isAssignableFrom(cc1.get(i))
+//											: cc1.get(i).isAssignableFrom(cc2.get(i)));
+				});
+			});
 		}
 
 		if (scope != null)

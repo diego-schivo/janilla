@@ -40,7 +40,9 @@ public abstract class AbstractCopier implements Copier {
 		LOGGER.log(Level.DEBUG, "source={0}, destination={1}", source, destination);
 
 		if (source instanceof Map<?, ?> m)
-			return copy(x -> m.containsKey(x) ? Optional.ofNullable(m.get(x)) : null, destination, filter);
+			return !m.isEmpty()
+					? copy(x -> m.containsKey(x) ? Optional.ofNullable(m.get(x)) : null, destination, filter)
+					: destination;
 
 		var c = source.getClass();
 		return copy(x -> {

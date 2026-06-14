@@ -49,18 +49,64 @@
  */
 package com.janilla.cms;
 
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
+import java.time.Instant;
+import java.util.HexFormat;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+
 import com.janilla.java.Converter;
+import com.janilla.java.Copier;
+import com.janilla.java.Java;
 import com.janilla.web.Domain;
 
 public class CmsDomain implements Domain {
 
 	protected final Converter converter;
 
-	public CmsDomain(Converter converter) {
+	protected final Copier copier;
+
+	protected final Random random = new SecureRandom();
+
+	protected final SecretKeyFactory secret;
+
+	private final Map<String, UserRole> userRoles = new ConcurrentHashMap<>();
+
+	public CmsDomain(Converter converter, Copier copier) {
 		this.converter = converter;
+		this.copier = copier;
+
+		try {
+			secret = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public byte[] hash(char[] password, byte[] salt) {
+		var ks = new PBEKeySpec(password, salt, 10000, 512);
+		Key k;
+		try {
+			k = secret.generateSecret(ks);
+		} catch (InvalidKeySpecException e) {
+			throw new RuntimeException(e);
+		}
+		return k.getEncoded();
+	}
+
+	public boolean passwordEquals(User<?> user, String password) {
+		var f = HexFormat.of();
+		var s = f.parseHex(user.salt());
+		var h = hash(password.toCharArray(), s);
+		return f.formatHex(h).equals(user.hash());
 	}
 
 	public int userDepth() {
@@ -68,9 +114,26 @@ public class CmsDomain implements Domain {
 	}
 
 	public UserRole userRole(String name) {
-		interface A {
-			static Map<String, UserRole> MAP = new ConcurrentHashMap<>();
-		}
-		return A.MAP.computeIfAbsent(name, k -> converter.convert(k, UserRole.class));
+		return userRoles.computeIfAbsent(name, k -> converter.convert(k, UserRole.class));
+	}
+
+	public <ID extends Comparable<ID>> User<ID> withPassword(User<ID> user, String password) {
+		if (password == null || password.isEmpty())
+			return copier.copy(Java.hashMap("salt", null, "hash", null), user);
+		var s = new byte[16];
+		random.nextBytes(s);
+		var h = hash(password.toCharArray(), s);
+		var f = HexFormat.of();
+		return copier.copy(Java.hashMap("salt", f.formatHex(s), "hash", f.formatHex(h)), user);
+	}
+
+	public <ID extends Comparable<ID>> User<ID> withResetPassword(User<ID> user, String resetPasswordToken,
+			Instant resetPasswordExpiration) {
+		return copier.copy(Java.hashMap("resetPasswordToken", resetPasswordToken, "resetPasswordExpiration",
+				resetPasswordExpiration), user);
+	}
+
+	public <ID extends Comparable<ID>> User<ID> withRoles(User<ID> user, Set<UserRole> roles) {
+		return copier.copy(Java.hashMap("roles", roles), user);
 	}
 }

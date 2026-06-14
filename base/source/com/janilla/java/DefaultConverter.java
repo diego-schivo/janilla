@@ -188,7 +188,11 @@ public class DefaultConverter implements Converter {
 					t = (T) oo.collect(Collectors.toCollection(LinkedHashSet::new));
 				else
 					t = (T) object;
-			} else if (object instanceof Map<?, ?> m) {
+//			} else if (object instanceof Map<?, ?> m) {
+			} else {
+				var m = object instanceof Map<?, ?> x ? x
+						: JavaReflect.properties(object.getClass()).collect(
+								Collectors.toMap(x -> x.name(), x -> x.get(object), (x, _) -> x, LinkedHashMap::new));
 				if (c == Map.class) {
 					var aa = ((ParameterizedType) target).getActualTypeArguments();
 					t = (T) m.entrySet().stream().map(x -> {
@@ -204,8 +208,9 @@ public class DefaultConverter implements Converter {
 					t = (T) Java.mapEntry(k, v);
 				} else
 					t = (T) convertMap(m, target, typeResolver);
-			} else
-				t = (T) object;
+			}
+//			} else
+//				t = (T) object;
 		}
 		LOGGER.log(Level.DEBUG, "t={0} ({1})", t, t != null ? t.getClass() : null);
 

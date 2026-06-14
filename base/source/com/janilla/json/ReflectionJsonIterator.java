@@ -30,17 +30,12 @@ import com.janilla.java.TypeResolver;
 
 public class ReflectionJsonIterator extends JsonIterator {
 
-//	protected final boolean includeType;
 	protected final TypeResolver typeResolver;
 
 	public ReflectionJsonIterator(Object object) {
 		this(object, null);
 	}
 
-//	public ReflectionJsonIterator(Object object, boolean includeType) {
-//		super(object);
-//		this.includeType = includeType;
-//	}
 	public ReflectionJsonIterator(Object object, TypeResolver typeResolver) {
 		super(object);
 		this.typeResolver = typeResolver;

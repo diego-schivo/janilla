@@ -31,3 +31,9 @@ target/
 node/
 node_modules/
 .flattened-pom.xml
+
+examples/acme-dashboard_
+examples/address-book_
+examples/conduit_
+examples/petclinic_
+examples/todomvc_

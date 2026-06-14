@@ -29,5 +29,7 @@ import java.util.Set;
 
 public interface IndexKeyGetter {
 
+	Class<?> type();
+
 	Set<List<Object>> keys(Object object);
 }

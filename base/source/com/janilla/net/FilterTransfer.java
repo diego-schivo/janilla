@@ -24,7 +24,6 @@
  */
 package com.janilla.net;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.Lock;
 
@@ -61,12 +60,12 @@ public class FilterTransfer implements Transfer {
 	}
 
 	@Override
-	public int read() throws IOException {
+	public int read() {
 		return transfer.read();
 	}
 
 	@Override
-	public void write() throws IOException {
+	public void write() {
 		transfer.write();
 	}
 }

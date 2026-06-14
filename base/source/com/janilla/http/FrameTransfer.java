@@ -25,6 +25,7 @@
 package com.janilla.http;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import com.janilla.net.Transfer;
 
@@ -40,19 +41,19 @@ public class FrameTransfer {
 		this.transfer = transfer;
 	}
 
-	public Frame readFrame() throws IOException {
+	public Frame readFrame() {
 		var bb = readBytes();
 		var f = bb != null ? decoder.decodeFrame(bb) : null;
 //		IO.println("FrameTransfer.readFrame, f=" + f);
 		return f;
 	}
 
-	public void writeFrame(Frame frame) throws IOException {
+	public void writeFrame(Frame frame) {
 //		IO.println("FrameTransfer.writeFrame, frame=" + frame);
 		writeBytes(encoder.encodeFrame(frame));
 	}
 
-	protected byte[] readBytes() throws IOException {
+	protected byte[] readBytes() {
 		transfer.inLock().lock();
 		try {
 			byte[] bb;
@@ -69,7 +70,7 @@ public class FrameTransfer {
 						| Byte.toUnsignedInt(transfer.in().get(transfer.in().position() + Short.BYTES));
 //				IO.println("FrameTransfer.readBytes, l=" + l);
 				if (l > 16384)
-					throw new IOException("l=" + l);
+					throw new UncheckedIOException(new IOException("l=" + l));
 				bb = new byte[9 + l];
 			}
 
@@ -92,7 +93,7 @@ public class FrameTransfer {
 		}
 	}
 
-	protected void writeBytes(byte[] bytes) throws IOException {
+	protected void writeBytes(byte[] bytes) {
 //		IO.println("FrameTransfer.writeBytes, bytes=" + bytes.length);
 		transfer.outLock().lock();
 //		IO.println("FrameTransfer.writeBytes, lock");

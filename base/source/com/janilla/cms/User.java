@@ -73,12 +73,4 @@ public interface User<ID extends Comparable<ID>> extends Document<ID> {
 	Instant resetPasswordExpiration();
 
 	Set<UserRole> roles();
-
-	boolean passwordEquals(String password);
-
-	User<ID> withPassword(String password);
-
-	User<ID> withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration);
-
-	User<ID> withRoles(Set<UserRole> roles);
 }

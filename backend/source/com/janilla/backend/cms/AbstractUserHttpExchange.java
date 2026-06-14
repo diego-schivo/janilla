@@ -90,11 +90,14 @@ public abstract class AbstractUserHttpExchange<U extends User<?>> extends Simple
 
 	public String sessionEmail() {
 		if (!session.containsKey("sessionEmail")) {
-			var t = request().getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; ")))
-					.map(HttpCookie::parse).filter(x -> x.name().equals(jwtCookie)).findFirst().orElse(null);
+			var a = request().getHeaderValue("authorization");
+			var t = a != null && a.startsWith("Token ") ? a.substring("Token ".length())
+					: request().getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; ")))
+							.map(HttpCookie::parse).filter(x -> x.name().equals(jwtCookie)).findFirst()
+							.map(HttpCookie::value).orElse(null);
 			Map<String, ?> p;
 			try {
-				p = t != null ? Jwt.verifyToken(t.value(), jwtKey) : null;
+				p = t != null ? Jwt.verifyToken(t, jwtKey) : null;
 			} catch (IllegalArgumentException e) {
 				p = null;
 			}

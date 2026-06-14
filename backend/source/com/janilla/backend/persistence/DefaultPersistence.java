@@ -30,7 +30,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -62,8 +61,8 @@ public class DefaultPersistence implements Persistence {
 
 	public DefaultPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
 			DiFactory diFactory) {
-//		IO.println(
-//				"DefaultPersistence, database=" + database + ", storables=" + storables + ", converter=" + converter);
+		LOGGER.log(Level.DEBUG, "database={0}, storables={1}", database, storables);
+
 		this.database = database;
 		this.storables = storables;
 		this.diFactory = diFactory;
@@ -80,7 +79,8 @@ public class DefaultPersistence implements Persistence {
 
 	@Override
 	public <ID extends Comparable<ID>, E extends Entity<ID>> Crud<ID, E> crud(Class<E> type) {
-//		IO.println("DefaultPersistence.crud, type=" + type);
+		LOGGER.log(Level.DEBUG, "type={0}", type);
+
 		var o = cruds.computeIfAbsent(type, _ -> {
 			var ae = JavaReflect.inheritedAnnotation(type, Store.class);
 			var c = ae != null ? configuration.cruds.get(ae.annotated()) : null;
@@ -94,11 +94,14 @@ public class DefaultPersistence implements Persistence {
 	}
 
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
-//		IO.println("DefaultPersistence.configure, type=" + type);
+		LOGGER.log(Level.DEBUG, "type={0}", type);
+
 		Crud<?, E> c = newCrud(type);
 		if (c == null)
 			return;
-		configuration.cruds.put(type, c);
+
+		var t = (Class<?>) JavaReflect.inheritedAnnotation(type, Store.class).annotated();
+		configuration.cruds.put(t, c);
 
 		for (var pp = JavaReflect.properties(type).iterator(); pp.hasNext();) {
 			var p = pp.next();
@@ -111,11 +114,11 @@ public class DefaultPersistence implements Persistence {
 					i.properties().length != 0 ? i.properties()[0] : null, p != null ? p.name() : null)
 					.filter(x -> x != null).findFirst().get();
 //			IO.println("n=" + n);
-			var k = Stream.of(type.getSimpleName(), n).filter(x -> x != null).collect(Collectors.joining("."));
+			var k = Stream.of(t.getSimpleName(), n).filter(x -> x != null).collect(Collectors.joining("."));
 //			IO.println("k=" + k);
 			configuration.indexes.add(k);
 
-			var g = new DefaultIndexKeyGetterFactory().keyGetter(type,
+			var g = diFactory.newInstance(diFactory.classFor(IndexKeyGetterFactory.class)).keyGetter(type,
 					i.properties().length != 0 ? i.properties() : new String[] { p.name() });
 			((DefaultCrud<?, E>) c).indexKeyGetters.put(n, g);
 		}
@@ -149,25 +152,26 @@ public class DefaultPersistence implements Persistence {
 			for (var tc : configuration.cruds.entrySet()) {
 				var t = tc.getKey();
 				var c = (DefaultCrud<?, ?>) tc.getValue();
+
 				database.createTable(t.getSimpleName(),
 						Stream.concat(
 								Stream.of(new TableColumn("id",
 										Number.class.isAssignableFrom(JavaReflect.property(t, "id").type()) ? "INTEGER"
 												: "TEXT",
 										true), new TableColumn("content", "TEXT", false)),
-								c.indexKeyGetters.keySet().stream().filter(Objects::nonNull)
-										.map(x -> new TableColumn(x,
-												Number.class.isAssignableFrom(JavaReflect.property(t, x).type())
-														? "INTEGER"
-														: "TEXT",
+								c.indexKeyGetters.entrySet().stream()
+										.map(x -> new TableColumn(x.getKey(),
+												Number.class.isAssignableFrom(x.getValue().type()) ? "INTEGER" : "TEXT",
 												false)))
 								.toArray(TableColumn[]::new),
 						c.idHelper != null);
 			}
+
 			for (var k : configuration.indexes) {
 				var ss = k.split("\\.");
 				database.createIndex(k, ss[0], ss.length == 2 ? ss[1] : "id");
 			}
+
 			return null;
 		}, true);
 	}

@@ -26,6 +26,8 @@ package com.janilla.backend.sqlite;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +44,8 @@ import java.util.stream.Stream;
 import com.janilla.java.Java;
 
 public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
+
+	private static final Logger LOGGER = System.getLogger(TableBTree.class.getName());
 
 	public TableBTree(SqliteDatabase database, long rootNumber) {
 		super(database, rootNumber);
@@ -81,8 +85,8 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 		for (;;) {
 			var p = BTreePage.read(n, database);
 			pp.add(new BTreePosition(p, p.getCellCount()));
-			if (p instanceof TableInteriorPage p2)
-				n = p2.getRightMostPointer();
+			if (p instanceof TableInteriorPage x)
+				n = x.getRightMostPointer();
 			else
 				break;
 		}
@@ -90,9 +94,12 @@ public class TableBTree extends BTree<TableLeafPage, TableLeafCell> {
 		var pi = pp.removeLast();
 		var p = (TableLeafPage) pi.page();
 		var i = pi.index();
+
 		var k = (p.getCellCount() != 0 ? p.getCells().getLast().key() : 0) + 1;
 		var oo = row.apply(k);
-//		IO.println("TableBTree.insert, k=" + k + ", oo=" + Arrays.toString(oo));
+		if (LOGGER.isLoggable(Level.DEBUG))
+			LOGGER.log(Level.DEBUG, "k={0}, oo={1}", k, Arrays.toString(oo));
+
 		var l = (long) oo[0];
 		if (l < k) {
 			var s = search(l);

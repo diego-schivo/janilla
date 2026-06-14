@@ -87,12 +87,8 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 
 			if (t instanceof SecureTransfer st) {
 				do
-					try {
-						if (st.read() == -1)
-							return;
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
+					if (st.read() == -1)
+						return;
 				while (st.in().position() < 16);
 //			IO.println("DefaultHttpServer.handleConnection, bb=" + new String(st.in().array(), 0, 16));
 
@@ -112,19 +108,17 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 //		IO.println("DefaultHttpServer.handleConnection1");
 		for (;;) {
 //			IO.println("st.in().position()=" + st.in().position());
+
 			var ll = new ArrayList<String>();
 			for (;;) {
 				int i = 0, b1 = -1, b2;
 				for (;; i++, b1 = b2) {
-					if (i == transfer.in().position())
-						try {
-							var n = transfer.read();
+					if (i == transfer.in().position()) {
+						var n = transfer.read();
 //						IO.println("n=" + n);
-							if (n == -1)
-								return;
-						} catch (IOException e) {
-							throw new UncheckedIOException(e);
-						}
+						if (n == -1)
+							return;
+					}
 					b2 = transfer.in().get(i);
 					if (b1 == '\r' && b2 == '\n')
 						break;
@@ -145,16 +139,22 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 			handleEndHeaders1(ll);
 
 			try (var rq = new HttpRequest()) {
+				rq.setHeaderValue(":scheme", sslContext != null ? "https" : "http");
+
 				{
 					var i = 0;
 					for (var l : ll) {
-//						IO.println("l=" + l);
+						LOGGER.log(Level.DEBUG, "l={0}", l);
 						if (i == 0) {
 							var ss = l.split(" ", 3);
 							rq.setHeaderValue(":method", ss[0].trim());
 							rq.setHeaderValue(":path", ss[1].trim());
-						} else
-							rq.setHeader(HeaderField.fromLine(l));
+						} else {
+							var f = HeaderField.fromLine(l);
+							rq.setHeader(f);
+							if (f.name().equalsIgnoreCase("Host"))
+								rq.setHeaderValue(":authority", f.value());
+						}
 						i++;
 					}
 				}
@@ -179,7 +179,9 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 //					rs.setStatus(0);
 					var baos = new ByteArrayOutputStream();
 					rs.setBody(Channels.newChannel(baos));
+
 					exchange(rq, rs);
+
 					ll.clear();
 					ll.add("HTTP/1.1 " + rs.getHeaderValue(":status") + " OK");
 					for (var h : rs.getHeaders())
@@ -227,12 +229,8 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 		}
 
 		while (st.in().position() < 24)
-			try {
-				if (st.read() == -1)
-					return;
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
+			if (st.read() == -1)
+				return;
 		st.in().flip();
 		var cp = new byte[24];
 		st.in().get(cp);
@@ -249,67 +247,59 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 			throw new RuntimeException();
 
 		var ft = new FrameTransfer(st);
-		try {
-			ft.writeFrame(
-					new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100),
-							new SettingParameter(SettingName.ENABLE_PUSH, 0))));
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		ft.writeFrame(new SettingsFrame(false, List.of(new SettingParameter(SettingName.MAX_CONCURRENT_STREAMS, 100),
+				new SettingParameter(SettingName.ENABLE_PUSH, 0))));
 
 		var streams = new HashMap<Integer, List<Frame>>();
-		for (;;)
-			try {
-				var f = ft.readFrame();
-				if (f == null)
-					break;
+		for (;;) {
+			var f = ft.readFrame();
+			if (f == null)
+				break;
 
 //			IO.println("DefaultHttpServer.handleConnection2, f=" + f);
-				switch (f) {
-				case DataFrame _:
-				case HeadersFrame _:
-					var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
-					ff.add(f);
+			switch (f) {
+			case DataFrame _:
+			case HeadersFrame _:
+				var ff = streams.computeIfAbsent(f.streamIdentifier(), _ -> new ArrayList<>());
+				ff.add(f);
 
-					var df = f instanceof DataFrame x ? x : null;
-					var hf = f instanceof HeadersFrame x ? x : null;
+				var df = f instanceof DataFrame x ? x : null;
+				var hf = f instanceof HeadersFrame x ? x : null;
 
-					if (df != null && df.data().length != 0)
-						for (var id : new int[] { f.streamIdentifier(), 0 })
-							ft.writeFrame(new WindowUpdateFrame(id, 9 + df.data().length));
+				if (df != null && df.data().length != 0)
+					for (var id : new int[] { f.streamIdentifier(), 0 })
+						ft.writeFrame(new WindowUpdateFrame(id, 9 + df.data().length));
 
-					if (hf != null && hf.endHeaders())
-						handleEndHeaders2(ff, ft);
+				if (hf != null && hf.endHeaders())
+					handleEndHeaders2(ff, ft);
 
-					if (df != null ? df.endStream() : hf.endStream()) {
-						streams.remove(f.streamIdentifier());
-						handleEndStream(ff, ft);
-					}
-					break;
-
-				case SettingsFrame x:
-					if (!x.ack())
-						ft.writeFrame(new SettingsFrame(true, List.of()));
-					break;
-
-				case PingFrame _:
-				case PriorityFrame _:
-				case WindowUpdateFrame _:
-					break;
-
-				case GoawayFrame _:
-					return;
-
-				case RstStreamFrame _:
+				if (df != null ? df.endStream() : hf.endStream()) {
 					streams.remove(f.streamIdentifier());
-					break;
-
-				default:
-					throw new RuntimeException(f.toString());
+					handleEndStream(ff, ft);
 				}
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+				break;
+
+			case SettingsFrame x:
+				if (!x.ack())
+					ft.writeFrame(new SettingsFrame(true, List.of()));
+				break;
+
+			case PingFrame _:
+			case PriorityFrame _:
+			case WindowUpdateFrame _:
+				break;
+
+			case GoawayFrame _:
+				return;
+
+			case RstStreamFrame _:
+				streams.remove(f.streamIdentifier());
+				break;
+
+			default:
+				throw new RuntimeException(f.toString());
 			}
+		}
 	}
 
 	protected void handleEndHeaders2(List<Frame> frames, FrameTransfer transfer) {
@@ -395,7 +385,12 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 
 	@Override
 	public void exchange(HttpRequest request, HttpResponse response) {
-		LOGGER.log(Level.DEBUG, request.getUri());
+		if (LOGGER.isLoggable(Level.INFO) && SOCKET_CHANNEL.isBound())
+			try {
+				LOGGER.log(Level.INFO, "{0} ({1})", request.getUri(), SOCKET_CHANNEL.get().getRemoteAddress());
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 
 		var ex = createExchange(request, response);
 		ScopedValue.where(HttpExchange.SCOPED, ex).call(() -> handleExchange(ex));
