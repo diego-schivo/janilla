@@ -1,0 +1,14 @@
+{
+	"api": {
+		"url": "http://localhost:8081/api"
+	},
+	"basePath": "",
+	"download": {
+		"directory": "~/janilla/download"
+	},
+	"httpServer": {
+		"port": 8080
+	},
+	"key": "new-blank",
+	"title": "New Blank"
+}

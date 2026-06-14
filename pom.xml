@@ -7,10 +7,12 @@
 	<modules>
 		<module>backend</module>
 		<module>base</module>
+		<module>cli</module>
 		<module>examples/acme-dashboard</module>
 		<module>examples/address-book</module>
 		<module>examples/com</module>
 		<module>examples/conduit</module>
+		<module>examples/new-blank</module>
 		<module>examples/petclinic</module>
 		<module>examples/todomvc</module>
 		<module>frontend</module>
