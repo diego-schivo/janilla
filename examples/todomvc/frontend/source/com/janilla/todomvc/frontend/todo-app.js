@@ -37,10 +37,10 @@ export default class TodoApp extends WebComponent {
         super.connectedCallback();
 
         const s = this.customState;
-        s.data = [];
-        s.totalItems = 0;
-        s.activeItems = 0;
-        s.completedItems = 0;
+        s.data = this.closest("app-element").serverState.todoItems.elements;
+        s.totalItems = s.data.length;
+        s.activeItems = s.data.reduce((x, y) => y.completed ? x : x + 1, 0);
+        s.completedItems = s.totalItems - s.activeItems;
         s.filter = "all";
 
         this.addEventListener("datachanged", this.handleDataChanged);
@@ -62,18 +62,33 @@ export default class TodoApp extends WebComponent {
         }));
     }
 
-    addItem(item) {
-        this.customState.data.push(item);
-        this.dispatchEvent(new Event("datachanged"));
+    async addItem(item) {
+        const a = this.closest("app-element");
+        const r = await fetch(`${a.customEnv.apiUrl}/todo-items`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(item)
+        });
+        const j = await r.json();
+        if (r.ok) {
+            this.customState.data.push(j);
+            this.dispatchEvent(new Event("datachanged"));
+        }
     }
 
-    clearCompleted() {
-        const d = this.customState.data;
-        for (let i = d.length - 1;i >= 0;i--)
-            if (d[i].completed)
-                d.splice(i, 1);
-
-        this.dispatchEvent(new Event("datachanged"));
+    async clearCompleted() {
+        const a = this.closest("app-element");
+        const u = new URL(`${a.customEnv.apiUrl}/todo-items`);
+        this.customState.data.filter(x => x.completed)
+            .forEach(x => u.searchParams.append("id", x.id));
+        const r = await fetch(u, { method: "DELETE" });
+        if (r.ok) {
+            const d = this.customState.data;
+            for (let i = d.length - 1;i >= 0;i--)
+                if (d[i].completed)
+                    d.splice(i, 1);
+            this.dispatchEvent(new Event("datachanged"));
+        }
     }
 
     handleDataChanged = () => {
@@ -92,30 +107,63 @@ export default class TodoApp extends WebComponent {
         this.dispatchEvent(new Event("filterchanged"));
     }
 
-    removeItem(item) {
-        const d = this.customState.data;
-        for (let i = d.length - 1;i >= 0;i--)
-            if (d[i].id === item.id)
-                d.splice(i, 1);
-
-        this.dispatchEvent(new Event("datachanged"));
+    async removeItem(item) {
+        const a = this.closest("app-element");
+        const r = await fetch(`${a.customEnv.apiUrl}/todo-items/${item.id}`, { method: "DELETE" });
+        if (r.ok) {
+            const d = this.customState.data;
+            for (let i = d.length - 1;i >= 0;i--)
+                if (d[i].id == item.id)
+                    d.splice(i, 1);
+            this.dispatchEvent(new Event("datachanged"));
+        }
     }
 
-    toggleAll(item) {
-        this.customState.data.forEach(x => x.completed = item.completed);
-
-        this.dispatchEvent(new Event("datachanged"));
+    async toggleAll(item) {
+        const a = this.closest("app-element");
+        const u = new URL(`${a.customEnv.apiUrl}/todo-items`);
+        this.customState.data.filter(x => x.completed != item.completed)
+            .forEach(x => u.searchParams.append("id", x.id));
+        const r = await fetch(u, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ completed: item.completed })
+        });
+        if (r.ok) {
+            this.customState.data.forEach(x => x.completed = item.completed);
+            this.dispatchEvent(new Event("datachanged"));
+        }
     }
 
-    toggleItem(item) {
-        this.customState.data.find(x => x.id === item.id).completed = item.completed;
-
-        this.dispatchEvent(new Event("datachanged"));
+    async toggleItem(item) {
+        const a = this.closest("app-element");
+        const r = await fetch(`${a.customEnv.apiUrl}/todo-items/${item.id}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ completed: item.completed })
+        });
+        const j = await r.json();
+        if (r.ok) {
+            const s = this.customState;
+            const i = s.data.findIndex(x => x.id == item.id);
+            s.data[i] = j;
+            this.dispatchEvent(new Event("datachanged"));
+        }
     }
 
-    updateItem(item) {
-        this.customState.data.find(x => x.id === item.id).title = item.title;
-
-        this.dispatchEvent(new Event("datachanged"));
+    async updateItem(item) {
+        const a = this.closest("app-element");
+        const r = await fetch(`${a.customEnv.apiUrl}/todo-items/${item.id}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ title: item.title })
+        });
+        const j = await r.json();
+        if (r.ok) {
+            const s = this.customState;
+            const i = s.data.findIndex(x => x.id == item.id);
+            s.data[i] = j;
+            this.dispatchEvent(new Event("datachanged"));
+        }
     }
 }

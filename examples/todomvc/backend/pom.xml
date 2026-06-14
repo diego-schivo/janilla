@@ -1,15 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>janilla-todomvc-test</artifactId>
+	<artifactId>janilla-todomvc-backend</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>com.janilla</groupId>
-			<artifactId>janilla-blank-template-test</artifactId>
+			<artifactId>janilla-blank-template-backend</artifactId>
 			<version>${revision}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.janilla</groupId>
-			<artifactId>janilla-todomvc-fullstack</artifactId>
+			<artifactId>janilla-todomvc-base</artifactId>
 			<version>${revision}</version>
 		</dependency>
 	</dependencies>
@@ -20,10 +20,10 @@
 		<relativePath>..</relativePath>
 	</parent>
 	<properties>
-		<exec.mainClass>com.janilla.todomvc.test.TodoMvcTest</exec.mainClass>
+		<exec.mainClass>com.janilla.todomvc.backend.TodoMvcBackend</exec.mainClass>
 	</properties>
-	<name>janilla-todomvc-test</name>
-	<description>Janilla TodoMVC Test</description>
+	<name>janilla-todomvc-backend</name>
+	<description>Janilla TodoMVC Backend</description>
 	<profiles>
 		<profile>
 			<id>execute</id>
@@ -38,7 +38,7 @@
 								<argument>--module-path</argument>
 								<modulepath />
 								<argument>--module</argument>
-								<argument>com.janilla.todomvc.test/com.janilla.todomvc.test.TodoMvcTest</argument>
+								<argument>com.janilla.todomvc.backend/com.janilla.todomvc.backend.TodoMvcBackend</argument>
 							</arguments>
 						</configuration>
 					</plugin>

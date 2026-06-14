@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import WebComponent from "base/web-component";
-import { nanoid } from "./utils/nanoid.js";
+//import { nanoid } from "./utils/nanoid.js";
 
 export default class TodoTopbar extends WebComponent {
 
@@ -90,9 +90,9 @@ export default class TodoTopbar extends WebComponent {
         }));
     }
 
-    handleChange = event => {
+    handleChange = async event => {
         if (event.target.matches(".toggle-all-input"))
-            this.customState.app.toggleAll({ completed: event.target.checked });
+            await this.customState.app.toggleAll({ completed: event.target.checked });
     }
 
     handleDataChanged = () => {
@@ -103,10 +103,10 @@ export default class TodoTopbar extends WebComponent {
         this.requestDisplay();
     }
 
-    handleKeyUp = event => {
+    handleKeyUp = async event => {
         if (event.key === "Enter" && event.target.value)
-            this.customState.app.addItem({
-                id: nanoid(),
+            await this.customState.app.addItem({
+                //id: nanoid(),
                 title: event.target.value,
                 completed: false
             });

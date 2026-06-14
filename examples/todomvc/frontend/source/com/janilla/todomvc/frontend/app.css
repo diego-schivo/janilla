@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,23 +22,5 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.todomvc.frontend;
-
-import com.janilla.frontend.Index;
-import com.janilla.frontend.IndexFactory;
-import com.janilla.http.HttpExchange;
-import com.janilla.web.Handle;
-
-class WebHandling {
-
-	protected final IndexFactory indexFactory;
-
-	public WebHandling(IndexFactory indexFactory) {
-		this.indexFactory = indexFactory;
-	}
-
-	@Handle(method = "GET", path = "/")
-	public Index home(HttpExchange exchange) {
-		return indexFactory.newIndex(exchange);
-	}
-}
+@import "cms/admin.css";
+@import "site.css";

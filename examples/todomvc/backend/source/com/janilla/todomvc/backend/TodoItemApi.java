@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +22,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-module com.janilla.todomvc.test {
+package com.janilla.todomvc.backend;
 
-	exports com.janilla.todomvc.test;
+import java.util.function.Predicate;
 
-	opens com.janilla.todomvc.test;
+import com.janilla.backend.cms.AbstractCollectionApi;
+import com.janilla.backend.persistence.Persistence;
+import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
+import com.janilla.todomvc.TodoItem;
+import com.janilla.web.Handle;
 
-	requires transitive com.janilla.blanktemplate.test;
-	requires transitive com.janilla.todomvc.fullstack;
+@Handle(path = "/api/todo-items")
+public class TodoItemApi extends AbstractCollectionApi<Long, TodoItem> {
+
+	public TodoItemApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(TodoItem.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
+	}
 }

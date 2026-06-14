@@ -1,8 +1,14 @@
 {
-	"api": {},
+	"api": {
+		"url": "http://localhost:8081/api"
+	},
+	"basePath": "",
+	"download": {
+		"directory": "~/janilla/download"
+	},
 	"httpServer": {
 		"port": 8080
 	},
-	"basePath": "",
+	"key": "todomvc",
 	"title": "TodoMVC: Janilla"
 }

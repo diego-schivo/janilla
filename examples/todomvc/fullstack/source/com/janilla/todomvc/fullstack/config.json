@@ -1,10 +1,12 @@
 {
 	"api": {
+		"cors": {
+			"headers": "",
+			"origin": ""
+		},
 		"url": "http://localhost:8080/api"
 	},
-	"database": {
-		"file": "~/janilla/sample-data/todomvc-test.db"
-	},
+	"basePath": "",
 	"httpServer": {
 		"port": 8080
 	}

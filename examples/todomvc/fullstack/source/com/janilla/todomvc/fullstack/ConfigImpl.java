@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +22,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-module com.janilla.todomvc.test {
+package com.janilla.todomvc.fullstack;
 
-	exports com.janilla.todomvc.test;
+import com.janilla.blanktemplate.fullstack.BlankFullstackConfig;
+import com.janilla.todomvc.backend.TodoMvcBackendConfig;
+import com.janilla.todomvc.frontend.TodoMvcFrontendConfig;
 
-	opens com.janilla.todomvc.test;
-
-	requires transitive com.janilla.blanktemplate.test;
-	requires transitive com.janilla.todomvc.fullstack;
+record ConfigImpl(Api api, Database database, Download download, HttpServer httpServer, Jwt jwt, String key,
+		Boolean liveDemo, String basePath, String title, Upload upload)
+		implements BlankFullstackConfig, TodoMvcBackendConfig, TodoMvcFrontendConfig {
 }

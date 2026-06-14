@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,42 +22,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.todomvc.test;
+package com.janilla.todomvc;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import com.janilla.blanktemplate.BlankConfig;
 
-import com.janilla.frontend.Index;
-import com.janilla.frontend.IndexFactory;
-import com.janilla.http.HttpExchange;
-import com.janilla.web.Handle;
-
-class WebHandling {
-
-	protected static final AtomicBoolean TEST_ONGOING = new AtomicBoolean();
-
-	protected final IndexFactory indexFactory;
-
-	public WebHandling(IndexFactory indexFactory) {
-		this.indexFactory = indexFactory;
-	}
-
-	@Handle(method = "GET", path = "/")
-	public Index home(HttpExchange exchange) {
-		return indexFactory.newIndex(exchange);
-	}
-
-	@Handle(method = "POST", path = "/test/start")
-	public void start() throws IOException {
-//		IO.println("Test.start, this=" + this);
-		if (TEST_ONGOING.getAndSet(true))
-			throw new IllegalStateException();
-	}
-
-	@Handle(method = "POST", path = "/test/stop")
-	public void stop() {
-//		IO.println("Test.stop, this=" + this);
-		if (!TEST_ONGOING.getAndSet(false))
-			throw new IllegalStateException();
-	}
+public interface TodoMvcConfig extends BlankConfig {
 }

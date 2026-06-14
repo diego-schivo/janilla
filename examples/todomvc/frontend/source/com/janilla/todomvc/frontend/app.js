@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +22,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-module com.janilla.todomvc.test {
+import BlankApp from "blank/app";
 
-	exports com.janilla.todomvc.test;
+export default class App extends BlankApp {
 
-	opens com.janilla.todomvc.test;
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	requires transitive com.janilla.blanktemplate.test;
-	requires transitive com.janilla.todomvc.fullstack;
+    static get templateNames() {
+        return ["/base/app", "/blank/app", "app"];
+    }
 }

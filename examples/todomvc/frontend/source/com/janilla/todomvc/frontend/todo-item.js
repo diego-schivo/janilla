@@ -80,15 +80,15 @@ export default class TodoItem extends WebComponent {
         delete this.dataset.edit;
     }
 
-    handleChange = event => {
+    handleChange = async event => {
         if (event.target.matches(".toggle-todo-input"))
-            this.closest("todo-app").toggleItem({
+            await this.closest("todo-app").toggleItem({
                 id: this.dataset.id,
                 completed: event.target.checked
             });
     }
 
-    handleClick = event => {
+    handleClick = async event => {
         if (event.target.matches(".todo-item-text")) {
             if (this.dataset.edit == undefined) {
                 const t = new Date().getTime();
@@ -98,18 +98,18 @@ export default class TodoItem extends WebComponent {
                     this.dataset.edit = "";
             }
         } else if (event.target.matches(".remove-todo-button"))
-            this.closest("todo-app").removeItem({ id: this.dataset.id });
+            await this.closest("todo-app").removeItem({ id: this.dataset.id });
     }
 
-    handleKeyUp = event => {
+    handleKeyUp = async event => {
         switch (event.key) {
             case "Enter":
                 if (event.target.value !== this.dataset.title) {
                     const a = this.closest("todo-app");
                     if (!event.target.value)
-                        a.removeItem({ id: this.dataset.id });
+                        await a.removeItem({ id: this.dataset.id });
                     else
-                        a.updateItem({
+                        await a.updateItem({
                             id: this.dataset.id,
                             title: event.target.value
                         });

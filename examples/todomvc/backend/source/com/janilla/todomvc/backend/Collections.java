@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,5 +22,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "base.css";
-@import "/base/test-bench.css";
+package com.janilla.todomvc.backend;
+
+import java.util.List;
+
+import com.janilla.cms.User;
+import com.janilla.todomvc.TodoItem;
+
+public record Collections(List<TodoItem> todoItems, List<User<?>> users) {
+}

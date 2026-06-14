@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +22,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-module com.janilla.todomvc.test {
+package com.janilla.todomvc;
 
-	exports com.janilla.todomvc.test;
+import com.janilla.blanktemplate.BlankDomain;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
-	opens com.janilla.todomvc.test;
+public class TodoMvcDomain extends BlankDomain {
 
-	requires transitive com.janilla.blanktemplate.test;
-	requires transitive com.janilla.todomvc.fullstack;
+	public TodoMvcDomain(Converter converter, Copier copier) {
+		super(converter, copier);
+	}
 }

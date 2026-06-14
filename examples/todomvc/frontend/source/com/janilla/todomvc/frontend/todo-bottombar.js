@@ -72,9 +72,9 @@ export default class TodoBottombar extends WebComponent {
         }));
     }
 
-    handleClick = event => {
+    handleClick = async event => {
         if (event.target.matches(".clear-completed-button"))
-            this.closest("todo-app").clearCompleted();
+            await this.closest("todo-app").clearCompleted();
     }
 
     handleDataChanged = () => {

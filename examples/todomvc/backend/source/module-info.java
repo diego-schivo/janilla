@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-module com.janilla.todomvc.test {
+module com.janilla.todomvc.backend {
 
-	exports com.janilla.todomvc.test;
+	exports com.janilla.todomvc.backend;
 
-	opens com.janilla.todomvc.test;
+	opens com.janilla.todomvc.backend;
 
-	requires transitive com.janilla.blanktemplate.test;
-	requires transitive com.janilla.todomvc.fullstack;
+	requires transitive com.janilla.blanktemplate.backend;
+	requires transitive com.janilla.todomvc.base;
 }

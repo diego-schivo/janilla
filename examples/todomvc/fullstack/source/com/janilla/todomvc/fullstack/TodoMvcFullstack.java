@@ -22,58 +22,59 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.todomvc.test;
+package com.janilla.todomvc.fullstack;
 
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.janilla.blanktemplate.test.BlankTest;
-import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.todomvc.TodoMvcDomain;
 import com.janilla.todomvc.backend.TodoMvcBackend;
 import com.janilla.todomvc.frontend.TodoMvcFrontend;
-import com.janilla.todomvc.fullstack.TodoMvcFullstack;
-import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 
-public class TodoMvcTest extends BlankTest {
+public class TodoMvcFullstack extends BlankFullstack<ConfigImpl, TodoMvcDomain> {
 
-	private static final Logger LOGGER = System.getLogger(TodoMvcTest.class.getName());
+	private static final Logger LOGGER = System.getLogger(TodoMvcFullstack.class.getName());
+
+	public static final Class<?>[] CONFIG_CLASSES = { TodoMvcBackend.class, TodoMvcFrontend.class,
+			TodoMvcFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.concat(BlankTest.diTypes(), Java.getPackageTypes("com.janilla.todomvc.test"));
+		return Stream.of(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.todomvc.backend"),
+				Java.getPackageTypes("com.janilla.todomvc.frontend"),
+				Java.getPackageTypes("com.janilla.todomvc.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
 		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
-		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
-		var c = newConfig(new Class<?>[] { TodoMvcBackend.class, TodoMvcFrontend.class, TodoMvcFullstack.class,
-				TodoMvcTest.class }, args.length != 0 ? args[0] : null, f);
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
 		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
 				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
-	public TodoMvcTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context);
+	TodoMvcFullstack(ConfigImpl config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, TodoMvcBackend.class, TodoMvcFrontend.class);
 	}
 
 	@Override
-	protected Stream<Class<?>> diFullstackTypes() {
-		return TodoMvcFullstack.diTypes();
+	protected Stream<Class<?>> diBackendTypes() {
+		return Stream.of(diTypes(backendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.todomvc.fullstack")).flatMap(x -> x);
 	}
 
 	@Override
-	protected void putResourcePrefixes() {
-		super.putResourcePrefixes();
-
-		resourcesProviders.put(new PackageResourcesProvider("com.janilla.todomvc.test"), "");
+	protected Stream<Class<?>> diFrontendTypes() {
+		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.todomvc.fullstack")).flatMap(x -> x);
 	}
-
 }

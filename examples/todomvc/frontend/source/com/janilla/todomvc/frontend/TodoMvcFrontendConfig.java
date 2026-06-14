@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,20 +22,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-html {
-	font-size: 16px;
-}
+package com.janilla.todomvc.frontend;
 
-html * {
-	font-size: 1rem;
-}
+import com.janilla.blanktemplate.frontend.BlankFrontendConfig;
+import com.janilla.todomvc.TodoMvcConfig;
 
-body,
-ul {
-	margin: 0;
-	padding: 0;
-}
-
-ul {
-	list-style: none;
+public interface TodoMvcFrontendConfig extends BlankFrontendConfig, TodoMvcConfig {
 }
