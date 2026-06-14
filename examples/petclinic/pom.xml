@@ -13,6 +13,7 @@
 		<module>base</module>
 		<module>frontend</module>
 		<module>fullstack</module>
+		<module>test</module>
 	</modules>
 	<properties>
 		<maven.compiler.parameters>true</maven.compiler.parameters>
@@ -29,15 +30,6 @@
 				</excludes>
 			</resource>
 		</resources>
-		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<configuration>
-					<mainClass>com.janilla.petclinic.fullstack.PetclinicFullstack</mainClass>
-				</configuration>
-			</plugin>
-		</plugins>
 		<pluginManagement>
 			<plugins>
 				<plugin>
@@ -56,8 +48,7 @@
 		</pluginManagement>
 	</build>
 	<name>janilla-petclinic</name>
-	<description>Janilla PetClinic</description>
-	<url>https://github.com/diego-schivo/janilla-petclinic</url>
+	<description>Janilla Petclinic</description>
 	<licenses>
 		<license>
 			<name>Apache-2.0</name>
@@ -72,10 +63,4 @@
 			<organizationUrl>https://janilla.com</organizationUrl>
 		</developer>
 	</developers>
-	<scm>
-		<connection>scm:git:git://github.com/diego-schivo/janilla-petclinic.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla-petclinic.git</developerConnection>
-		<url>https://github.com/diego-schivo/janilla-petclinic</url>
-		<tag>HEAD</tag>
-	</scm>
 </project>

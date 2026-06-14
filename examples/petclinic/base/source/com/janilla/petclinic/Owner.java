@@ -15,9 +15,11 @@
  */
 package com.janilla.petclinic;
 
+import java.time.Instant;
 import java.util.List;
 
-import com.janilla.persistence.Entity;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
@@ -31,11 +33,12 @@ import com.janilla.persistence.Store;
  */
 @Store
 public record Owner(Long id, String firstName, @Index String lastName, String address, String city, String telephone,
-		List<Pet> pets) implements Entity<Long> {
+		List<Pet> pets, Instant createdAt, Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt)
+		implements Document<Long> {
 
-	public static final Owner EMPTY = new Owner(null, null, null, null, null, null, null);
-
-	public Owner withId(Long id) {
-		return new Owner(id, firstName, lastName, address, city, telephone, pets);
-	}
+//	public static final Owner EMPTY = new Owner(null, null, null, null, null, null, null);
+//
+//	public Owner withId(Long id) {
+//		return new Owner(id, firstName, lastName, address, city, telephone, pets);
+//	}
 }

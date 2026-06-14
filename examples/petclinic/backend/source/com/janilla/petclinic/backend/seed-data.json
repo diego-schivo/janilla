@@ -1,0 +1,453 @@
+{
+	"owners": [
+		{
+			"$type": "Owner",
+			"id": 1,
+			"firstName": "George",
+			"lastName": "Franklin",
+			"address": "110 W. Liberty St.",
+			"city": "Madison",
+			"telephone": "6085551023"
+		},
+		{
+			"$type": "Owner",
+			"id": 2,
+			"firstName": "Betty",
+			"lastName": "Davis",
+			"address": "638 Cardinal Ave.",
+			"city": "Sun Prairie",
+			"telephone": "6085551749"
+		},
+		{
+			"$type": "Owner",
+			"id": 3,
+			"firstName": "Eduardo",
+			"lastName": "Rodriquez",
+			"address": "2693 Commerce St.",
+			"city": "McFarland",
+			"telephone": "6085558763"
+		},
+		{
+			"$type": "Owner",
+			"id": 4,
+			"firstName": "Harold",
+			"lastName": "Davis",
+			"address": "563 Friendly St.",
+			"city": "Windsor",
+			"telephone": "6085553198"
+		},
+		{
+			"$type": "Owner",
+			"id": 5,
+			"firstName": "Peter",
+			"lastName": "McTavish",
+			"address": "2387 S. Fair Way",
+			"city": "Madison",
+			"telephone": "6085552765"
+		},
+		{
+			"$type": "Owner",
+			"id": 6,
+			"firstName": "Jean",
+			"lastName": "Coleman",
+			"address": "105 N. Lake St.",
+			"city": "Monona",
+			"telephone": "6085552654"
+		},
+		{
+			"$type": "Owner",
+			"id": 7,
+			"firstName": "Jeff",
+			"lastName": "Black",
+			"address": "1450 Oak Blvd.",
+			"city": "Monona",
+			"telephone": "6085555387"
+		},
+		{
+			"$type": "Owner",
+			"id": 8,
+			"firstName": "Maria",
+			"lastName": "Escobito",
+			"address": "345 Maple St.",
+			"city": "Madison",
+			"telephone": "6085557683"
+		},
+		{
+			"$type": "Owner",
+			"id": 9,
+			"firstName": "David",
+			"lastName": "Schroeder",
+			"address": "2749 Blackhawk Trail",
+			"city": "Madison",
+			"telephone": "6085559435"
+		},
+		{
+			"$type": "Owner",
+			"id": 10,
+			"firstName": "Carlos",
+			"lastName": "Estaban",
+			"address": "2335 Independence La.",
+			"city": "Waunakee",
+			"telephone": "6085555487"
+		}
+	],
+	"petTypes": [
+		{
+			"$type": "PetType",
+			"id": 1,
+			"name": "cat"
+		},
+		{
+			"$type": "PetType",
+			"id": 2,
+			"name": "dog"
+		},
+		{
+			"$type": "PetType",
+			"id": 3,
+			"name": "lizard"
+		},
+		{
+			"$type": "PetType",
+			"id": 4,
+			"name": "snake"
+		},
+		{
+			"$type": "PetType",
+			"id": 5,
+			"name": "bird"
+		},
+		{
+			"$type": "PetType",
+			"id": 6,
+			"name": "hamster"
+		}
+	],
+	"pets": [
+		{
+			"$type": "Pet",
+			"id": 1,
+			"name": "Leo",
+			"birthDate": "2010-09-07",
+			"type": {
+				"$type": "PetType",
+				"id": 1
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 1
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 2,
+			"name": "Basil",
+			"birthDate": "2012-08-06",
+			"type": {
+				"$type": "PetType",
+				"id": 6
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 2
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 3,
+			"name": "Rosy",
+			"birthDate": "2011-04-17",
+			"type": {
+				"$type": "PetType",
+				"id": 2
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 3
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 4,
+			"name": "Jewel",
+			"birthDate": "2010-03-07",
+			"type": {
+				"$type": "PetType",
+				"id": 2
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 3
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 5,
+			"name": "Iggy",
+			"birthDate": "2010-11-30",
+			"type": {
+				"$type": "PetType",
+				"id": 3
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 4
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 6,
+			"name": "George",
+			"birthDate": "2010-01-20",
+			"type": {
+				"$type": "PetType",
+				"id": 4
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 5
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 7,
+			"name": "Samantha",
+			"birthDate": "2012-09-04",
+			"type": {
+				"$type": "PetType",
+				"id": 1
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 6
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 8,
+			"name": "Max",
+			"birthDate": "2012-09-04",
+			"type": {
+				"$type": "PetType",
+				"id": 1
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 6
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 9,
+			"name": "Lucky",
+			"birthDate": "2011-08-06",
+			"type": {
+				"$type": "PetType",
+				"id": 5
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 7
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 10,
+			"name": "Mulligan",
+			"birthDate": "2007-02-24",
+			"type": {
+				"$type": "PetType",
+				"id": 2
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 8
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 11,
+			"name": "Freddy",
+			"birthDate": "2010-03-09",
+			"type": {
+				"$type": "PetType",
+				"id": 5
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 9
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 12,
+			"name": "Lucky",
+			"birthDate": "2010-06-24",
+			"type": {
+				"$type": "PetType",
+				"id": 2
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 10
+			}
+		},
+		{
+			"$type": "Pet",
+			"id": 13,
+			"name": "Sly",
+			"birthDate": "2012-06-08",
+			"type": {
+				"$type": "PetType",
+				"id": 1
+			},
+			"owner": {
+				"$type": "Owner",
+				"id": 10
+			}
+		}
+	],
+	"visits": [
+		{
+			"$type": "Visit",
+			"id": 1,
+			"pet": {
+				"$type": "Pet",
+				"id": 7
+			},
+			"date": "2013-01-01",
+			"description": "rabies shot"
+		},
+		{
+			"$type": "Visit",
+			"id": 2,
+			"pet": {
+				"$type": "Pet",
+				"id": 8
+			},
+			"date": "2013-01-02",
+			"description": "rabies shot"
+		},
+		{
+			"$type": "Visit",
+			"id": 3,
+			"pet": {
+				"$type": "Pet",
+				"id": 8
+			},
+			"date": "2013-01-03",
+			"description": "neutered"
+		},
+		{
+			"$type": "Visit",
+			"id": 4,
+			"pet": {
+				"$type": "Pet",
+				"id": 7
+			},
+			"date": "2013-01-04",
+			"description": "spayed"
+		}
+	],
+	"specialties": [
+		{
+			"$type": "Specialty",
+			"id": 1,
+			"name": "radiology"
+		},
+		{
+			"$type": "Specialty",
+			"id": 2,
+			"name": "surgery"
+		},
+		{
+			"$type": "Specialty",
+			"id": 3,
+			"name": "dentistry"
+		}
+	],
+	"vets": [
+		{
+			"$type": "Vet",
+			"id": 1,
+			"firstName": "James",
+			"lastName": "Carter",
+			"specialties": []
+		},
+		{
+			"$type": "Vet",
+			"id": 2,
+			"firstName": "Helen",
+			"lastName": "Leary",
+			"specialties": [
+				{
+					"$type": "Specialty",
+					"id": 1
+				}
+			]
+		},
+		{
+			"$type": "Vet",
+			"id": 3,
+			"firstName": "Linda",
+			"lastName": "Douglas",
+			"specialties": [
+				{
+					"$type": "Specialty",
+					"id": 2
+				},
+				{
+					"$type": "Specialty",
+					"id": 3
+				}
+			]
+		},
+		{
+			"$type": "Vet",
+			"id": 4,
+			"firstName": "Rafael",
+			"lastName": "Ortega",
+			"specialties": [
+				{
+					"$type": "Specialty",
+					"id": 2
+				}
+			]
+		},
+		{
+			"$type": "Vet",
+			"id": 5,
+			"firstName": "Henry",
+			"lastName": "Stevens",
+			"specialties": [
+				{
+					"$type": "Specialty",
+					"id": 1
+				}
+			]
+		},
+		{
+			"$type": "Vet",
+			"id": 6,
+			"firstName": "Sharon",
+			"lastName": "Jenkins",
+			"specialties": []
+		}
+	],
+	"users": [
+		{
+			"$type": "User",
+			"id": 1,
+			"name": "Demo Author",
+			"email": "demo-author@janilla.com",
+			"salt": "b99966fba75e6ed4a3206da3dd888e5b",
+			"hash": "c73c5f4d61cf1f9ef10ec1a0eb7b4d49ddd8ad2bf6815b2b3bf0a07dfb795d1e32eb7a89565bb8f844f85d5cb08b400fe8ea925a1b05f6720453d766a1a6941d",
+			"roles": [
+				{
+					"$type": "UserRole",
+					"name": "ADMIN"
+				}
+			]
+		}
+	]
+}

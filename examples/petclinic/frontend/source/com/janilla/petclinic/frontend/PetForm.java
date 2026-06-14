@@ -22,13 +22,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.janilla.java.Flat;
 import com.janilla.java.JavaReflect;
 import com.janilla.petclinic.Pet;
 import com.janilla.petclinic.PetType;
 import com.janilla.web.Render;
 
 @Render(template = "createOrUpdatePetForm", resource = "/createOrUpdatePetForm.html")
-record PetForm(Pet pet, List<PetType> types, Map<String, List<String>> errors) {
+record PetForm(@Flat Pet pet, List<PetType> types, Map<String, List<String>> errors) {
 
 	private static final Map<String, String> LABELS = Map.of("name", "Name", "birthDate", "Birth Date", "type", "Type");
 
@@ -45,7 +46,7 @@ record PetForm(Pet pet, List<PetType> types, Map<String, List<String>> errors) {
 			case "type" -> {
 				var ii = types.stream()
 						.collect(Collectors.toMap(PetType::id, PetType::name, (y, _) -> y, LinkedHashMap::new));
-				yield new SelectField<>(l, x + ".id", ((PetType) v).id(), ee, ii);
+				yield new SelectField<>(l, x + ".id", v instanceof PetType t ? t.id() : null, ee, ii);
 			}
 			case "birthDate" -> new InputField<>(l, x, (LocalDate) v, ee, "date");
 			default -> new InputField<>(l, x, (String) v, ee, "text");

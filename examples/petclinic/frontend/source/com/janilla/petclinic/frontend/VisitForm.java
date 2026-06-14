@@ -20,12 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.janilla.java.Flat;
 import com.janilla.java.JavaReflect;
 import com.janilla.petclinic.Visit;
 import com.janilla.web.Render;
 
 @Render(template = "createOrUpdateVisitForm", resource = "/createOrUpdateVisitForm.html")
-record VisitForm(Visit visit, List<@Render(template = "visit") Visit> previousVisits,
+record VisitForm(@Flat Visit visit, List<@Render(template = "visit") Visit> previousVisits,
 		Map<String, List<String>> errors) {
 
 	private static final Map<String, String> LABELS = Map.of("date", "Date", "description", "Description");

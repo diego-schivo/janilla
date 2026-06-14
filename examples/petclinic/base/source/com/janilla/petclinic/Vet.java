@@ -15,9 +15,11 @@
  */
 package com.janilla.petclinic;
 
+import java.time.Instant;
 import java.util.List;
 
-import com.janilla.persistence.Entity;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
 import com.janilla.persistence.Store;
 
 /**
@@ -28,5 +30,6 @@ import com.janilla.persistence.Store;
  * @author Arjen Poutsma
  */
 @Store
-public record Vet(Long id, String firstName, String lastName, List<Specialty> specialties) implements Entity<Long> {
+public record Vet(Long id, String firstName, String lastName, List<Specialty> specialties, Instant createdAt,
+		Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt) implements Document<Long> {
 }

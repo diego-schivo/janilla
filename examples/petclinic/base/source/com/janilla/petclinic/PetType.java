@@ -15,7 +15,10 @@
  */
 package com.janilla.petclinic;
 
-import com.janilla.persistence.Entity;
+import java.time.Instant;
+
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
 import com.janilla.persistence.Store;
 
 /**
@@ -23,5 +26,6 @@ import com.janilla.persistence.Store;
  * @author Juergen Hoeller
  */
 @Store
-public record PetType(Long id, String name) implements Entity<Long> {
+public record PetType(Long id, String name, Instant createdAt, Instant updatedAt, DocumentStatus documentStatus,
+		Instant publishedAt) implements Document<Long> {
 }

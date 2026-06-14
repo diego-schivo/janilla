@@ -1,18 +1,3 @@
-/*
- * Copyright 2012-2026 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.janilla.petclinic.backend;
 
 import java.lang.System.Logger;
@@ -20,28 +5,20 @@ import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.janilla.backend.web.AbstractBackend;
-import com.janilla.backend.web.BackendConfig;
+import com.janilla.blanktemplate.backend.BlankBackend;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
-import com.janilla.web.Domain;
+import com.janilla.petclinic.PetclinicDomain;
 import com.janilla.web.WebApp;
 
-/**
- * @author Diego Schivo
- * @author Dave Syer
- */
-public class PetclinicBackend extends AbstractBackend<BackendConfig, Domain> {
+public class PetclinicBackend extends BlankBackend<PetclinicBackendConfig, PetclinicDomain> {
 
 	private static final Logger LOGGER = System.getLogger(PetclinicBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
-				Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", x -> !x.endsWith(".cms")),
-				Java.getPackageTypes("com.janilla.petclinic"), Java.getPackageTypes("com.janilla.petclinic.backend"))
-				.flatMap(x -> x);
+		return Stream.of(BlankBackend.diTypes(), Java.getPackageTypes("com.janilla.petclinic"),
+				Java.getPackageTypes("com.janilla.petclinic.backend")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
@@ -49,13 +26,13 @@ public class PetclinicBackend extends AbstractBackend<BackendConfig, Domain> {
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
-		var c = newConfig(new Class<?>[] { PetclinicBackend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		var cfg = newConfig(new Class<?>[] { PetclinicBackend.class }, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		serve(a[0]);
 	}
 
-	public PetclinicBackend(BackendConfig config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context);
+	public PetclinicBackend(PetclinicBackendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, Data.class, SeedData.class);
 	}
 }

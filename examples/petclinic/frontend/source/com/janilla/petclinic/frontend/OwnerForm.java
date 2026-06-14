@@ -19,12 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.janilla.java.Flat;
 import com.janilla.java.JavaReflect;
 import com.janilla.petclinic.Owner;
 import com.janilla.web.Render;
 
 @Render(template = "createOrUpdateOwnerForm", resource = "/createOrUpdateOwnerForm.html")
-record OwnerForm(Owner owner, Map<String, List<String>> errors) {
+record OwnerForm(@Flat Owner owner, Map<String, List<String>> errors) {
 
 	private static final Map<String, String> LABELS = Map.of("firstName", "First Name", "lastName", "Last Name",
 			"address", "Address", "city", "City", "telephone", "Telephone");

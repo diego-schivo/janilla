@@ -1,17 +1,26 @@
 /*
- * Copyright 2012-2026 the original author or authors.
+ * MIT License
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.janilla.petclinic.fullstack;
 
@@ -20,45 +29,52 @@ import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.janilla.fullstack.web.AbstractFullstack;
-import com.janilla.fullstack.web.FullstackConfig;
+import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.petclinic.PetclinicDomain;
 import com.janilla.petclinic.backend.PetclinicBackend;
 import com.janilla.petclinic.frontend.PetclinicFrontend;
-import com.janilla.web.Domain;
 import com.janilla.web.WebApp;
 
-/**
- * @author Diego Schivo
- * @author Dave Syer
- */
-public class PetclinicFullstack extends AbstractFullstack<FullstackConfig, Domain> {
+public class PetclinicFullstack extends BlankFullstack<ConfigImpl, PetclinicDomain> {
 
 	private static final Logger LOGGER = System.getLogger(PetclinicFullstack.class.getName());
 
+	public static final Class<?>[] CONFIG_CLASSES = { PetclinicBackend.class, PetclinicFrontend.class,
+			PetclinicFullstack.class };
+
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", x -> !x.endsWith(".cms")),
-				Java.getPackageTypes("com.janilla.frontend", _ -> true),
-				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
+		return Stream.of(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.petclinic.backend"),
+				Java.getPackageTypes("com.janilla.petclinic.frontend"),
 				Java.getPackageTypes("com.janilla.petclinic.fullstack")).flatMap(x -> x);
-	}
+	};
 
 	public static void main(String[] args) {
 		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
-		var c = newConfig(new Class<?>[] { PetclinicBackend.class, PetclinicFrontend.class, PetclinicFullstack.class },
-				args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
-	public PetclinicFullstack(FullstackConfig config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context, PetclinicFrontend.class, PetclinicBackend.class);
+	PetclinicFullstack(ConfigImpl config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, PetclinicBackend.class, PetclinicFrontend.class);
+	}
+
+	@Override
+	protected Stream<Class<?>> diBackendTypes() {
+		return Stream.of(diTypes(backendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.petclinic.fullstack")).flatMap(x -> x);
+	}
+
+	@Override
+	protected Stream<Class<?>> diFrontendTypes() {
+		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.petclinic.fullstack")).flatMap(x -> x);
 	}
 }
