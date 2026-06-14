@@ -3,14 +3,19 @@
 		"cors": {
 			"headers": "Content-Type",
 			"origin": "http://localhost:8080"
-		}
+		},
+		"url": "http://localhost:8081/api"
 	},
 	"basePath": "",
 	"database": {
 		"file": "~/janilla/sample-data/address-book.db"
 	},
-	"liveDemo": false,
 	"httpServer": {
 		"port": 8081
-	}
+	},
+	"jwt": {
+		"cookie": "address-book-token",
+		"key": "secretkey"
+	},
+	"liveDemo": false
 }

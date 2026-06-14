@@ -42,6 +42,7 @@ export default class SidebarLayout extends WebComponent {
 
     constructor() {
         super();
+
         this.attachShadow({ mode: "open" });
     }
 
@@ -70,11 +71,17 @@ export default class SidebarLayout extends WebComponent {
                     contacts: a.serverState.contacts
                 }, "");
 
-			const p = a.currentPath;
+            if (!Object.hasOwn(hs, "contact"))
+                history.replaceState(hs = {
+                    ...hs,
+                    contact: a.serverState.contact
+                }, "");
+
+            const p = a.currentPath;
             const c = p.match(/\/contacts\/([^/]+)(\/edit)?/);
             const q = new URLSearchParams(location.search).get("q");
             const o = {
-				...a.baseInput,
+                ...a.baseInput,
                 $template: "",
                 search: (() => {
                     const l = q && this.dataset.loading != null;
@@ -143,7 +150,7 @@ export default class SidebarLayout extends WebComponent {
                 const u = new URL(`${a.customEnv.apiUrl}/contacts`, location.href);
                 if (q)
                     u.searchParams.append("query", q);
-                const cc = await (await fetch(u)).json();
+                const cc = (await (await fetch(u)).json()).elements;
 
                 history.replaceState({
                     ...history.state,

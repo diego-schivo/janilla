@@ -1,10 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,31 +27,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.DefaultIndexFactory;
+import com.janilla.blanktemplate.frontend.BlankFrontendConfig;
+import com.janilla.blanktemplate.frontend.BlankIndexFactory;
+import com.janilla.frontend.ApiClient;
 import com.janilla.frontend.Template;
-import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 
-class IndexFactoryImpl extends DefaultIndexFactory<FrontendConfig> {
+class IndexFactoryImpl extends BlankIndexFactory<BlankFrontendConfig> {
 
-	protected final DiFactory diFactory;
+	public IndexFactoryImpl(BlankFrontendConfig config, ResourceMap resourceMap, DiFactory diFactory,
+			ApiClient apiClient) {
+		super(config, resourceMap, diFactory, apiClient);
+	}
 
-	public IndexFactoryImpl(FrontendConfig config, ResourceMap resourceMap, DiFactory diFactory) {
-		super(config, resourceMap);
-		this.diFactory = diFactory;
+	@Override
+	public Template blankTemplate(String name) {
+		return template("blank/" + name);
 	}
 
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
-		Stream.of("about", "app", "contact", "edit-contact", "home", "sidebar-layout", "toggle-favorite")
-				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+
+		Stream.of("about", "address-book", "app", "contact", "edit-contact", "home", "sidebar-layout",
+				"toggle-favorite").forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+	}
+
+	@Override
+	protected String blankImportKey(String name) {
+		return "blank/" + name;
 	}
 
 	@Override
 	protected void addTemplates(List<Template> list) {
-		Stream.of("about", "app", "contact", "edit-contact", "home", "sidebar-layout", "toggle-favorite")
-				.map(this::template).forEach(list::add);
+		super.addTemplates(list);
+
+		Stream.of("about", "address-book", "app", "contact", "edit-contact", "home", "sidebar-layout",
+				"toggle-favorite").map(this::template).forEach(list::add);
 	}
 }

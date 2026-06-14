@@ -1,10 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +22,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import TestBench from "/base/test-bench.js";
+package com.janilla.addressbook.backend;
 
-customElements.define("test-bench", TestBench);
+record ConfigImpl(Api api, Database database, HttpServer httpServer, Jwt jwt, Boolean liveDemo, String basePath,
+		Upload upload) implements AddressBookBackendConfig {
+}

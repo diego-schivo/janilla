@@ -1,10 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,33 +24,8 @@
  */
 package com.janilla.addressbook.backend;
 
-import java.time.Instant;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.janilla.blanktemplate.backend.BlankBackendConfig;
+import com.janilla.addressbook.AddressBookConfig;
 
-import com.janilla.persistence.Entity;
-import com.janilla.persistence.Index;
-import com.janilla.persistence.Store;
-
-@Store
-public record Contact(String id, Instant createdAt, String avatar, String first, String last, String twitter,
-		Boolean favorite) implements Entity<String> {
-
-	@Index
-	public String full() {
-		var s = Stream.of(first, last).filter(x -> x != null && !x.isBlank()).collect(Collectors.joining(" "));
-		return !s.isEmpty() ? s : null;
-	}
-
-	public Contact withId(String id) {
-		return new Contact(id, createdAt, avatar, first, last, twitter, favorite);
-	}
-
-	public Contact withCreatedAt(Instant createdAt) {
-		return new Contact(id, createdAt, avatar, first, last, twitter, favorite);
-	}
-
-	public Contact withFavorite(Boolean favorite) {
-		return new Contact(id, createdAt, avatar, first, last, twitter, favorite);
-	}
+public interface AddressBookBackendConfig extends BlankBackendConfig, AddressBookConfig {
 }

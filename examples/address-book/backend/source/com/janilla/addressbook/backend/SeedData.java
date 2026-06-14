@@ -1,10 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,20 +24,10 @@
  */
 package com.janilla.addressbook.backend;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.List;
 
-import com.janilla.java.DefaultConverter;
-import com.janilla.json.Json;
+import com.janilla.addressbook.Contact;
+import com.janilla.cms.User;
 
-record SeedData(List<Contact> contacts) {
-
-	public static SeedData read() {
-		try (var x = SeedData.class.getResourceAsStream("seed-data.json")) {
-			return (SeedData) new DefaultConverter().convert(Json.parse(new String(x.readAllBytes())), SeedData.class);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
+public record SeedData(List<Contact> contacts, List<User<?>> users) {
 }

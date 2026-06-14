@@ -1,10 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,29 +24,5 @@
  */
 package com.janilla.addressbook.backend;
 
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandlerFactory;
-import com.janilla.ioc.DiFactory;
-import com.janilla.web.Error;
-import com.janilla.web.ExceptionHandlerFactory;
-import com.janilla.web.RenderableFactory;
-import com.janilla.web.WebAppConfig;
-
-class CustomExceptionHandlerFactory extends ExceptionHandlerFactory {
-
-	protected final RenderableFactory renderableFactory;
-
-	public CustomExceptionHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
-			RenderableFactory renderableFactory) {
-		super(config, rootFactory, diFactory);
-		this.renderableFactory = renderableFactory;
-	}
-
-	@Override
-	protected boolean handle(Error error, HttpExchange exchange) {
-		super.handle(error, exchange);
-		var r = renderableFactory.createRenderable(null, exchange.exception().getMessage());
-		var h = rootFactory.createHandler(r);
-		return h.handle(exchange);
-	}
+public record Data(Collections collections) {
 }

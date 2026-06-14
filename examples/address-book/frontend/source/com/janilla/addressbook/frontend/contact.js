@@ -127,17 +127,22 @@ export default class ContactPage extends WebComponent {
         const hs = history.state;
         const a = this.closest("app-element");
 
+        const f = hs.contact.favorite;
         hs.contact.favorite = favorite;
-        this.requestDisplay();
+        this.requestDisplay(0);
 
-        const r = await fetch(`${a.customEnv.apiUrl}/contacts/${hs.contact.id}/favorite`, {
-            method: "PUT",
+        const r = await fetch(`${a.customEnv.apiUrl}/contacts/${hs.contact.id}`, {
+            method: "PATCH",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify(hs.contact.favorite)
+            body: JSON.stringify({ favorite })
         });
+
         if (r.ok)
             a.navigateTo(new URL("/", location.href));
-        else
+        else {
             alert(await r.text());
+            hs.contact.favorite = f;
+            this.requestDisplay(0);
+        }
     }
 }

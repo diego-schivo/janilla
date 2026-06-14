@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +22,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-module com.janilla.addressbook.backend {
+package com.janilla.addressbook;
 
-	exports com.janilla.addressbook.backend;
+import com.janilla.blanktemplate.BlankDomain;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
-	opens com.janilla.addressbook.backend;
+public class AddressBookDomain extends BlankDomain {
 
-	requires transitive com.janilla.blanktemplate.backend;
-	requires transitive com.janilla.addressbook.base;
+	public AddressBookDomain(Converter converter, Copier copier) {
+		super(converter, copier);
+	}
 }

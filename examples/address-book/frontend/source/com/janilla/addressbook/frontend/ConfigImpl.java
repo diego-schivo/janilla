@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +22,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-module com.janilla.addressbook.backend {
+package com.janilla.addressbook.frontend;
 
-	exports com.janilla.addressbook.backend;
-
-	opens com.janilla.addressbook.backend;
-
-	requires transitive com.janilla.blanktemplate.backend;
-	requires transitive com.janilla.addressbook.base;
+record ConfigImpl(Api api, Download download, HttpServer httpServer, Jwt jwt, String key, Boolean liveDemo,
+		String basePath, String title) implements AddressBookFrontendConfig {
 }

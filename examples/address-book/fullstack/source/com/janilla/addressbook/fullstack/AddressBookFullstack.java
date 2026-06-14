@@ -1,10 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,25 +29,25 @@ import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.janilla.addressbook.AddressBookDomain;
 import com.janilla.addressbook.backend.AddressBookBackend;
 import com.janilla.addressbook.frontend.AddressBookFrontend;
-import com.janilla.fullstack.web.AbstractFullstack;
-import com.janilla.fullstack.web.FullstackConfig;
+import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
-import com.janilla.web.Domain;
 import com.janilla.web.WebApp;
 
-public class AddressBookFullstack extends AbstractFullstack<FullstackConfig, Domain> {
+public class AddressBookFullstack extends BlankFullstack<ConfigImpl, AddressBookDomain> {
 
 	private static final Logger LOGGER = System.getLogger(AddressBookFullstack.class.getName());
 
+	public static final Class<?>[] CONFIG_CLASSES = { AddressBookBackend.class, AddressBookFrontend.class,
+			AddressBookFullstack.class };
+
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", x -> !x.endsWith(".cms")),
-				Java.getPackageTypes("com.janilla.frontend", _ -> true),
-				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
+		return Stream.of(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.addressbook.backend"),
+				Java.getPackageTypes("com.janilla.addressbook.frontend"),
 				Java.getPackageTypes("com.janilla.addressbook.fullstack")).flatMap(x -> x);
 	};
 
@@ -58,15 +56,25 @@ public class AddressBookFullstack extends AbstractFullstack<FullstackConfig, Dom
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
-		var c = newConfig(
-				new Class<?>[] { AddressBookBackend.class, AddressBookFrontend.class, AddressBookFullstack.class },
-				args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class),
-				Java.hashMap("config", c, "diFactory", f, "context", (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
-	public AddressBookFullstack(FullstackConfig config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context, AddressBookFrontend.class, AddressBookBackend.class);
+	AddressBookFullstack(ConfigImpl config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, AddressBookBackend.class, AddressBookFrontend.class);
+	}
+
+	@Override
+	protected Stream<Class<?>> diBackendTypes() {
+		return Stream.of(diTypes(backendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.addressbook.fullstack")).flatMap(x -> x);
+	}
+
+	@Override
+	protected Stream<Class<?>> diFrontendTypes() {
+		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.addressbook.fullstack")).flatMap(x -> x);
 	}
 }

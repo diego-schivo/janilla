@@ -1,10 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,36 +24,8 @@
  */
 package com.janilla.addressbook.frontend;
 
-import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
+import com.janilla.blanktemplate.frontend.BlankFrontendConfig;
+import com.janilla.addressbook.AddressBookConfig;
 
-import com.janilla.frontend.web.FrontendConfig;
-import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
-import com.janilla.java.UriQueryBuilder;
-
-public class DataFetching {
-
-	protected final FrontendConfig config;
-
-	protected final HttpClient httpClient;
-
-	public DataFetching(FrontendConfig config, HttpClient httpClient) {
-		this.config = config;
-		this.httpClient = httpClient;
-	}
-
-	public Object contact(String id) {
-		var r = new HttpRequest("GET",
-				URI.create(config.api().url() + "/contacts/" + URLEncoder.encode(id, StandardCharsets.UTF_8)));
-		return httpClient.send(r, HttpClient.JSON);
-	}
-
-	public List<?> contacts(String query) {
-		var r = new HttpRequest("GET",
-				URI.create(config.api().url() + "/contacts?" + new UriQueryBuilder().append("query", query)));
-		return (List<?>) httpClient.send(r, HttpClient.JSON);
-	}
+public interface AddressBookFrontendConfig extends BlankFrontendConfig, AddressBookConfig {
 }

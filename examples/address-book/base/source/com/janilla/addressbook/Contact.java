@@ -24,40 +24,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.addressbook.fullstack;
+package com.janilla.addressbook;
 
-import java.net.SocketAddress;
-import java.util.Map;
+import java.time.Instant;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import javax.net.ssl.SSLContext;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
+import com.janilla.persistence.Index;
+import com.janilla.persistence.Store;
 
-import com.janilla.addressbook.backend.AddressBookBackend;
-import com.janilla.addressbook.frontend.AddressBookFrontend;
-import com.janilla.http.DefaultHttpServer;
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse;
-import com.janilla.ioc.Scope;
+@Store
+public record Contact(String id, String avatar, String first, String last, String twitter, Boolean favorite,
+		Instant createdAt, Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt)
+		implements Document<String> {
 
-@Scope("fullstack")
-class HttpServerImpl extends DefaultHttpServer {
-
-	protected final AddressBookBackend backend;
-
-	protected final AddressBookFrontend frontend;
-
-	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
-			AddressBookBackend backend, AddressBookFrontend frontend) {
-		super(endpoint, sslContext, handler);
-		this.backend = backend;
-		this.frontend = frontend;
-	}
-
-	@Override
-	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		var x = request.getPath().startsWith(backend.config().basePath() + "/api/") ? backend.diFactory()
-				: frontend.diFactory();
-		return x.newInstance(x.classFor(HttpExchange.class), Map.of("request", request, "response", response));
+	@Index
+	public String full() {
+		var s = Stream.of(first, last).filter(x -> x != null && !x.isBlank()).collect(Collectors.joining(" "));
+		return !s.isEmpty() ? s : null;
 	}
 }

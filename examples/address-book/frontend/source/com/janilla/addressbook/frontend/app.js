@@ -1,10 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) React Training LLC 2015-2019
- * Copyright (c) Remix Software Inc. 2020-2021
- * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,67 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import BaseApp from "base/app";
+import BlankApp from "blank/app";
 
-export default class App extends BaseApp {
+export default class App extends BlankApp {
 
     static get moduleUrl() {
         return import.meta.url;
     }
 
     static get templateNames() {
-        return ["app"];
+        return ["/base/app", "/blank/app", "app"];
     }
 
-    constructor() {
-        super();
-
-        this.attachShadow({ mode: "open" });
-    }
-
-    connectedCallback() {
-        super.connectedCallback();
-
-        this.addEventListener("click", this.handleClick);
-    }
-
-    disconnectedCallback() {
-        this.removeEventListener("click", this.handleClick);
-
-        super.disconnectedCallback();
-    }
-
-    async updateDisplaySite() {
-        const hs = history.state;
-        const ss = this.serverState;
-
-		const p = this.currentPath;
-        const o = {
-			...this.baseInput,
-            $template: "",
-            sidebar: (() => {
-                const h = p === "/";
-                const c = p.match(/\/contacts\/([^/]+)(\/edit)?/);
-                return {
-                    $template: "sidebar",
-                    slot: (h || c) ? (hs.contacts || ss.contacts ? "content" : "new-content") : null,
-                    href: p + location.search,
-                    loading: (h || c) && !(hs.contacts || ss.contacts),
-                    pending: c && c[1] != (hs.contact ?? ss.contact)?.id
-                };
-            })(),
-            about: {
-                $template: "about",
-                slot: p === "/about" ? "content" : null
-            }
-        };
-        o.loading = {
-            $template: "loading",
-            slot: ["sidebar", "about"].every(x => o[x].slot !== "content") ? "content" : null
-        };
-
-        const df = this.interpolateDom(o);
-        this.shadowRoot.append(...df.querySelectorAll("link, slot"));
-        this.appendChild(df);
+    async updateDisplay() {
+		const ab = this.querySelector("address-book");
+		await super.updateDisplay();
+		ab?.requestDisplay(0);
     }
 }

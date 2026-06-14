@@ -3,8 +3,12 @@
 		"url": "http://localhost:8081/api"
 	},
 	"basePath": "",
+	"download": {
+		"directory": "~/janilla/download"
+	},
 	"httpServer": {
 		"port": 8080
 	},
-	"title": "Address Book"
+	"key": "address-book",
+	"title": "New Blank"
 }
