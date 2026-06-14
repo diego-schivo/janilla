@@ -1,27 +1,3 @@
-/*
- * MIT License
- *
- * Copyright (c) 2024 Vercel, Inc.
- * Copyright (c) 2024-2026 Diego Schivo
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
 package com.janilla.acmedashboard.backend;
 
 import java.lang.System.Logger;
@@ -29,22 +5,19 @@ import java.lang.System.Logger.Level;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.janilla.backend.web.AbstractBackend;
-import com.janilla.backend.web.BackendConfig;
+import com.janilla.blanktemplate.backend.BlankBackend;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
-import com.janilla.web.Domain;
+import com.janilla.acmedashboard.AcmeDashboardDomain;
 import com.janilla.web.WebApp;
 
-public class AcmeDashboardBackend extends AbstractBackend<BackendConfig, Domain> {
+public class AcmeDashboardBackend extends BlankBackend<AcmeDashboardBackendConfig, AcmeDashboardDomain> {
 
 	private static final Logger LOGGER = System.getLogger(AcmeDashboardBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
-				Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", x -> !x.endsWith(".cms")),
+		return Stream.of(BlankBackend.diTypes(), Java.getPackageTypes("com.janilla.acmedashboard"),
 				Java.getPackageTypes("com.janilla.acmedashboard.backend")).flatMap(x -> x);
 	};
 
@@ -53,13 +26,13 @@ public class AcmeDashboardBackend extends AbstractBackend<BackendConfig, Domain>
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
-		var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
-				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		var cfg = newConfig(new Class<?>[] { AcmeDashboardBackend.class }, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		serve(a[0]);
 	}
 
-	public AcmeDashboardBackend(BackendConfig config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context);
+	public AcmeDashboardBackend(AcmeDashboardBackendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, Data.class, SeedData.class);
 	}
 }

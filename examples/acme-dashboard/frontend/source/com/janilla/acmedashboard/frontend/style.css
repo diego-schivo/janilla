@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024 Vercel, Inc.
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "base.css";
-@import "acme-logo.css";
-@import "card-wrapper.css";
-@import "customers-page.css";
-@import "dashboard-page.css";
-@import "hero-icon.css";
-@import "invoice-page.css";
-@import "invoice-status.css";
-@import "invoices-page.css";
-@import "latest-invoices.css";
-@import "login-page.css";
-@import "pagination-nav.css";
-@import "revenue-chart.css";
-@import "welcome-page.css";
+@import "app.css";
+@import "base/janilla-logo.css";
+@import "base/lucide-icon.css";
+@import "base/toaster.css";

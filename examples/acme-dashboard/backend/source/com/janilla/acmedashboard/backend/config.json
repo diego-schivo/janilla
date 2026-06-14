@@ -3,7 +3,8 @@
 		"cors": {
 			"headers": "Content-Type",
 			"origin": "http://localhost:8080"
-		}
+		},
+		"url": "http://localhost:8081/api"
 	},
 	"basePath": "",
 	"database": {
@@ -13,7 +14,8 @@
 		"port": 8081
 	},
 	"jwt": {
+		"cookie": "acme-dashboard-token",
 		"key": "secretkey"
 	},
-	"liveDemo": false
+	"liveDemo": true
 }

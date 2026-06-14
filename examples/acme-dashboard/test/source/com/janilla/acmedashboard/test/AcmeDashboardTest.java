@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024 Vercel, Inc.
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,36 +26,26 @@ package com.janilla.acmedashboard.test;
 
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.janilla.acmedashboard.backend.AcmeDashboardBackend;
-import com.janilla.acmedashboard.frontend.AcmeDashboardFrontend;
-import com.janilla.acmedashboard.fullstack.AcmeDashboardFullstack;
-import com.janilla.frontend.Index;
-import com.janilla.frontend.web.AbstractFrontend;
+import com.janilla.blanktemplate.test.BlankTest;
 import com.janilla.frontend.web.FrontendConfig;
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
-import com.janilla.web.Domain;
-import com.janilla.web.Handle;
-import com.janilla.web.NotFoundException;
+import com.janilla.acmedashboard.backend.AcmeDashboardBackend;
+import com.janilla.acmedashboard.frontend.AcmeDashboardFrontend;
+import com.janilla.acmedashboard.fullstack.AcmeDashboardFullstack;
 import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
-import com.janilla.web.WebAppHandlerFactory;
 
-public class AcmeDashboardTest extends AbstractFrontend<FrontendConfig, Domain> {
+public class AcmeDashboardTest extends BlankTest {
 
 	private static final Logger LOGGER = System.getLogger(AcmeDashboardTest.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
-				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
-				Java.getPackageTypes("com.janilla.acmedashboard.test")).flatMap(x -> x);
+		return Stream.concat(BlankTest.diTypes(), Java.getPackageTypes("com.janilla.acmedashboard.test"));
 	};
 
 	public static void main(String[] args) {
@@ -63,56 +53,27 @@ public class AcmeDashboardTest extends AbstractFrontend<FrontendConfig, Domain> 
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
-		var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class, AcmeDashboardFrontend.class,
-				AcmeDashboardFullstack.class, AcmeDashboardTest.class }, args.length != 0 ? args[0] : null, f);
+		var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class, AcmeDashboardFrontend.class, AcmeDashboardFullstack.class,
+				AcmeDashboardTest.class }, args.length != 0 ? args[0] : null, f);
 		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
 				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 
-	protected final AcmeDashboardFullstack fullstack;
-
 	public AcmeDashboardTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
 		super(config, diFactory, context);
-
-		{
-			var a = new WebApp[1];
-			var f = Ioc.diFactory(AcmeDashboardFullstack.diTypes().toList(), () -> a[0], "fullstack");
-			var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class, AcmeDashboardFrontend.class,
-					AcmeDashboardFullstack.class, AcmeDashboardTest.class }, null, f);
-			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
-					(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
-		}
-	}
-
-	public AcmeDashboardFullstack fullstack() {
-		return fullstack;
-	}
-
-	@Handle(method = "GET", path = "/")
-	public Index home(HttpExchange exchange) {
-		return indexFactory.newIndex(exchange);
 	}
 
 	@Override
-	protected HttpHandler newHttpHandler() {
-		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
-		return x -> {
-			var h = Test.ONGOING.get() && !x.request().getPath().startsWith("/test/") ? fullstack.httpHandler()
-					: (HttpHandler) x2 -> {
-						var h2 = f.createHandler(Objects.requireNonNullElse(x2.exception(), x2.request()));
-						if (h2 == null)
-							throw new NotFoundException(x2.request().getHeaderValue(":method") + " "
-									+ x2.request().getHeaderValue(":path"));
-						return h2.handle(x2);
-					};
-			return h.handle(x);
-		};
+	protected Stream<Class<?>> diFullstackTypes() {
+		return AcmeDashboardFullstack.diTypes();
 	}
 
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
+
 		resourcesProviders.put(new PackageResourcesProvider("com.janilla.acmedashboard.test"), "");
 	}
+
 }

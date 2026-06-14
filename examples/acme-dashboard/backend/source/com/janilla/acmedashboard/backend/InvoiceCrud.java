@@ -32,12 +32,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.backend.persistence.DefaultCrud;
+import com.janilla.acmedashboard.Invoice;
+import com.janilla.acmedashboard.InvoiceStatus;
+import com.janilla.backend.cms.DefaultDocumentCrud;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.java.Converter;
 import com.janilla.java.Copier;
 
-class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
+class InvoiceCrud extends DefaultDocumentCrud<UUID, Invoice> {
 
 	public InvoiceCrud(Converter converter, Copier copier, Persistence persistence) {
 		super(Invoice.class, persistence.idHelper(Invoice.class), converter, copier, persistence);

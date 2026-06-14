@@ -10,6 +10,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>backend</module>
+		<module>base</module>
 		<module>frontend</module>
 		<module>fullstack</module>
 		<module>test</module>
@@ -57,7 +58,7 @@
 	</build>
 	<name>janilla-acme-dashboard</name>
 	<description>Janilla Acme Dashboard</description>
-	<url>https://github.com/diego-schivo/janilla-acme-dashboard</url>
+	<url>https://github.com/diego-schivo/janilla/tree/main/examples/acme-dashboard</url>
 	<licenses>
 		<license>
 			<name>MIT</name>
@@ -72,10 +73,4 @@
 			<organizationUrl>https://janilla.com</organizationUrl>
 		</developer>
 	</developers>
-	<scm>
-		<connection>scm:git:git://github.com/diego-schivo/janilla-acme-dashboard.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla-acme-dashboard.git</developerConnection>
-		<url>https://github.com/diego-schivo/janilla-acme-dashboard</url>
-		<tag>HEAD</tag>
-	</scm>
 </project>

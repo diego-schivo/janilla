@@ -52,32 +52,38 @@ export default class CustomersPage extends WebComponent {
 
     async updateDisplay() {
         const a = this.shadowClosest("app-element");
-        const s = history.state;
+        let hs = history.state;
+
+		if (!Object.hasOwn(hs, "customers"))
+		    history.replaceState(hs = {
+		        ...hs,
+		        customers: a.serverState.customers
+		    }, "");
 
         this.appendChild(this.interpolateDom({
             $template: "",
             ...this.dataset,
-            articles: this.slot && s.customers ? s.customers.map(x => ({
+            articles: this.slot && hs.customers ? hs.customers.elements.map(x => ({
                 ...a.baseInput,
                 $template: "article",
                 ...x
             })) : Array.from({ length: 6 }).map(() => ({ $template: "article-skeleton" })),
-            rows: this.slot && s.customers ? s.customers.map(x => ({
+            rows: this.slot && hs.customers ? hs.customers.elements.map(x => ({
                 ...a.baseInput,
                 $template: "row",
                 ...x
             })) : Array.from({ length: 6 }).map(() => ({ $template: "row-skeleton" }))
         }));
 
-        if (this.slot && !s.customers) {
+        if (this.slot && !hs.customers) {
             const u = new URL(`${a.customEnv.apiUrl}/customers`, a.customEnv.apiUrl.startsWith("/") ? location.href : undefined);
             if (this.dataset.query)
-                u.searchParams.append("query", this.dataset.query);
+                u.searchParams.append("search", this.dataset.query);
 
-            const x = await (await fetch(u, { credentials: "include" })).json();
+            const j = await (await fetch(u, { credentials: "include" })).json();
             history.replaceState({
                 ...history.state,
-                customers: x ?? []
+                customers: j ?? {}
             }, "");
 
             this.requestDisplay(0);

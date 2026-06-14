@@ -26,23 +26,19 @@ package com.janilla.acmedashboard.backend;
 
 import java.util.List;
 
-import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
+import com.janilla.blanktemplate.backend.BlankPersistence;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Copier;
 import com.janilla.persistence.Entity;
 
-class CustomPersistence extends DefaultPersistence {
+class CustomPersistence extends BlankPersistence<AcmeDashboardBackendConfig> {
 
-	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory) {
-		super(database, storables, diFactory);
+	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory,
+			AcmeDashboardBackendConfig config, Class<?> seedDataClass, Copier copier) {
+		super(database, storables, diFactory, config, seedDataClass, copier);
 	}
-
-//	@Override
-//	@SuppressWarnings("unchecked")
-//	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-//		return type == Invoice.class ? (Crud<?, E>) new InvoiceCrud(this) : super.newCrud(type);
-//	}
 
 	@Override
 	protected void createStoresAndIndexes() {

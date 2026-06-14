@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024 Vercel, Inc.
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,63 +22,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import BaseApp from "base/app";
+import BlankApp from "blank/app";
 
-export default class App extends BaseApp {
+export default class App extends BlankApp {
 
     static get moduleUrl() {
         return import.meta.url;
     }
 
     static get templateNames() {
-        return ["app"];
-    }
-
-    constructor() {
-        super();
-        this.attachShadow({ mode: "open" });
-    }
-
-    get currentUser() {
-        return this.customState.user;
-    }
-
-    set currentUser(currentUser) {
-        this.customState.user = currentUser;
-        this.dispatchEvent(new CustomEvent("userchanged", { detail: currentUser }));
+        return ["/base/app", "/blank/app", "app"];
     }
 
     async updateDisplay() {
-        const s = this.customState;
-        const ss = this.serverState;
-
-        if (!Object.hasOwn(s, "user"))
-            s.user = ss && Object.hasOwn(ss, "user")
-                ? ss.user
-                : await (await fetch(`${this.customEnv.apiUrl}/authentication`,
-                    { credentials: "include" })).json();
-
-        const p = this.currentPath;
-        const f = this.interpolateDom({
-            $template: "",
-            welcome: {
-                $template: "welcome",
-                slot: p === "/" ? "content" : null
-            },
-            login: {
-                $template: "login",
-                slot: p === "/login" ? "content" : null
-            },
-            dashboard: (() => {
-                const a = p.split("/")[1] === "dashboard";
-                return {
-                    $template: "dashboard",
-                    slot: a ? "content" : null,
-                    uri: a ? p + location.search : null
-                };
-            })()
-        });
-        this.shadowRoot.append(...f.querySelectorAll("slot"));
-        this.appendChild(f);
+        const ad = this.querySelector("acme-dashboard");
+        await super.updateDisplay();
+        ad?.requestDisplay(0);
     }
 }
