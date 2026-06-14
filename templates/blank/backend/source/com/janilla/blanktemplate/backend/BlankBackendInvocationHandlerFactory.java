@@ -56,6 +56,7 @@ public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandl
 	public BlankBackendInvocationHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory,
 			DiFactory diFactory, InvocationResolver invocationResolver, RenderableFactory renderableFactory) {
 		super(config, rootFactory, diFactory, invocationResolver, renderableFactory);
+
 		guestPost = Stream.of("/api/users/first-register", "/api/users/forgot-password", "/api/users/login",
 				"/api/users/reset-password").collect(Collectors.toCollection(HashSet::new));
 		userLoginLogout = Stream.of("/api/users/login", "/api/users/logout")
@@ -95,8 +96,10 @@ public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandl
 
 	protected boolean requireSessionEmail(HttpRequest request) {
 		var p = webAppPath(request);
+
 		if (!p.startsWith("/api/"))
 			return false;
+
 		switch (request.getHeaderValue(":method")) {
 		case "GET", "OPTIONS":
 			if (p.equals("/api/users"))

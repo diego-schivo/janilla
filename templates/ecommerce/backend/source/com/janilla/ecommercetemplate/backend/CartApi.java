@@ -35,6 +35,7 @@ import com.janilla.cms.User;
 import com.janilla.ecommercetemplate.Cart;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.ForbiddenException;
 import com.janilla.web.Handle;
 import com.janilla.web.UnauthorizedException;
@@ -45,7 +46,7 @@ public class CartApi extends AbstractCollectionApi<Long, Cart> {
 	private static final Logger LOGGER = System.getLogger(CartApi.class.getName());
 
 	public CartApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Cart.class, drafts, persistence, "title", copier);
+		super(Cart.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 	@Handle(method = "POST")

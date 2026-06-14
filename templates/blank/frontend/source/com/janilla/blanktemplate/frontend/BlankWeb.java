@@ -22,23 +22,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.websitetemplate.backend;
+package com.janilla.blanktemplate.frontend;
 
-import com.janilla.blanktemplate.backend.BlankBackendConfig;
-import com.janilla.websitetemplate.WebsiteConfig;
+import com.janilla.blanktemplate.BlankDomain;
+import com.janilla.frontend.Index;
+import com.janilla.frontend.IndexFactory;
+import com.janilla.web.Handle;
 
-public interface WebsiteBackendConfig extends BlankBackendConfig, WebsiteConfig {
+public class BlankWeb<D extends BlankDomain, C extends BlankApiClient> {
 
-	Mail mail();
+	protected final D domain;
 
-	interface Mail {
+	protected final C apiClient;
 
-		String host();
+	protected final IndexFactory indexFactory;
 
-		String password();
+	public BlankWeb(IndexFactory indexFactory, D domain, C apiClient) {
+		this.indexFactory = indexFactory;
+		this.domain = domain;
+		this.apiClient = apiClient;
+	}
 
-		Integer port();
+	@Handle(method = "GET", path = "/admin(/[\\w\\d/-]*)?")
+	public Index admin(String path) {
+		return indexFactory.newIndex();
+	}
 
-		String username();
+	@Handle(method = "GET", path = "/")
+	public Index home() {
+		return indexFactory.newIndex();
 	}
 }

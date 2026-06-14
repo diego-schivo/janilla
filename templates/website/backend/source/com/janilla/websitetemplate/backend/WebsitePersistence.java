@@ -24,24 +24,8 @@
  */
 package com.janilla.websitetemplate.backend;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
-import java.lang.reflect.ParameterizedType;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.CrudObserver;
@@ -49,26 +33,20 @@ import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.blanktemplate.backend.BlankPersistence;
 import com.janilla.cms.Types;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Converter;
-import com.janilla.java.Java;
+import com.janilla.java.Copier;
 import com.janilla.java.JavaReflect;
-import com.janilla.java.Property;
-import com.janilla.json.Json;
 import com.janilla.persistence.Entity;
 import com.janilla.websitetemplate.SearchResult;
 
-public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPersistence {
+public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPersistence<C> {
 
-	private static final Logger LOGGER = System.getLogger(WebsitePersistence.class.getName());
+//	private static final Logger LOGGER = System.getLogger(WebsitePersistence.class.getName());
 
 	private SearchObserver<?> searchObserver;
 
-	protected final C config;
-
 	public WebsitePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory,
-			C config) {
-		this.config = config;
-		super(database, storables, diFactory);
+			C config, Class<?> seedDataClass, Copier copier) {
+		super(database, storables, diFactory, config, seedDataClass, copier);
 	}
 
 	protected SearchObserver<?> searchObserver() {
@@ -87,71 +65,5 @@ public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPer
 			c.observers().add(o);
 		}
 		return c;
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void seed() {
-		var pp = properties();
-		pp.forEach(x -> database.perform(() -> {
-//			IO.println("WebsitePersistence.seed, x=" + x);
-			var t = x.genericType() instanceof ParameterizedType pt ? pt.getActualTypeArguments()[0] : x.type();
-			var c = crud((Class) Java.toClass(t));
-			c.delete(c.list());
-			return null;
-		}, true));
-
-		Object sd;
-		try (var is = getClass().getResourceAsStream("seed-data.json")) {
-			var s = new String(is.readAllBytes());
-			sd = diFactory.newInstance(diFactory.classFor(Converter.class)).convert(Json.parse(s), seedDataClass());
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		LOGGER.log(Level.DEBUG, "sd={0}", sd);
-
-//		IO.println("pp=" + pp);
-		pp.stream().forEach(x -> database.perform(() -> {
-			var t = x.genericType() instanceof ParameterizedType pt ? pt.getActualTypeArguments()[0] : x.type();
-			var c = crud((Class) Java.toClass(t));
-			var o = x.get(sd);
-			(o instanceof List<?> oo ? oo.stream() : Stream.of(o)).forEach(y -> c.create((Entity) y));
-			return null;
-		}, true));
-
-		var r = getClass().getResource("seed-data.zip");
-		URI u;
-		try {
-			u = r.toURI();
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
-		if (!u.toString().startsWith("jar:"))
-			u = URI.create("jar:" + u);
-		var s = Java.zipFileSystem(u).getPath("/");
-		var ud = config.upload().directory();
-		if (ud.startsWith("~"))
-			ud = System.getProperty("user.home") + ud.substring(1);
-		try {
-			var d = Files.createDirectories(Path.of(ud));
-			Files.walkFileTree(s, new SimpleFileVisitor<>() {
-
-				@Override
-				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					var t = d.resolve(s.relativize(file).toString());
-					Files.copy(file, t, StandardCopyOption.REPLACE_EXISTING);
-					return FileVisitResult.CONTINUE;
-				}
-			});
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
-
-	protected Class<?> seedDataClass() {
-		return SeedData.class;
-	}
-
-	protected List<Property> properties() {
-		return JavaReflect.properties(seedDataClass()).collect(Collectors.toCollection(ArrayList::new));
 	}
 }

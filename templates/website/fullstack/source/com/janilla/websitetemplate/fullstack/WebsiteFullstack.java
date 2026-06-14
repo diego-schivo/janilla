@@ -63,13 +63,13 @@ public class WebsiteFullstack<C extends WebsiteFullstackConfig, D extends Websit
 	}
 
 	public WebsiteFullstack(C config, DiFactory diFactory, Consumer<Object> context) {
-		this(config, diFactory, context, WebsiteFrontend.class, WebsiteBackend.class);
+		this(config, diFactory, context, WebsiteBackend.class, WebsiteFrontend.class);
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected WebsiteFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
-			Class backendClass) {
-		super(config, diFactory, context, frontendClass, backendClass);
+	protected WebsiteFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class backendClass,
+			Class frontendClass) {
+		super(config, diFactory, context, backendClass, frontendClass);
 	}
 
 	@Override

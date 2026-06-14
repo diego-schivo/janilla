@@ -31,12 +31,13 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.ecommercetemplate.VariantOption;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/variant-options")
 public class VariantOptionApi extends AbstractCollectionApi<Long, VariantOption> {
 
 	public VariantOptionApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(VariantOption.class, drafts, persistence, "title", copier);
+		super(VariantOption.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 }

@@ -24,9 +24,10 @@
  */
 package com.janilla.blanktemplate.frontend;
 
+import com.janilla.blanktemplate.BlankConfig;
 import com.janilla.frontend.web.FrontendConfig;
 
-public interface BlankFrontendConfig extends FrontendConfig {
+public interface BlankFrontendConfig extends FrontendConfig, BlankConfig {
 
 	Download download();
 

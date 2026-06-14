@@ -29,16 +29,16 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankIndexFactory;
+import com.janilla.frontend.ApiClient;
 import com.janilla.frontend.Template;
-import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 
 public class WebsiteIndexFactory<C extends WebsiteFrontendConfig> extends BlankIndexFactory<C> {
 
-	public WebsiteIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
-		super(config, resourceMap, diFactory, dataFetching);
+	public WebsiteIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, ApiClient apiClient) {
+		super(config, resourceMap, diFactory, apiClient);
 	}
 
 	@Override
@@ -55,29 +55,26 @@ public class WebsiteIndexFactory<C extends WebsiteFrontendConfig> extends BlankI
 	}
 
 	@Override
-	protected Map<String, Object> state(HttpExchange exchange) {
-		var x = super.state(exchange);
+	protected Map<String, Object> state() {
+		var m = super.state();
 
-		if (!exchange.request().getPath().startsWith("/admin/")) {
-			x.put("header", ((WebsiteDataFetching) dataFetching).header(1));
-			x.put("footer", ((WebsiteDataFetching) dataFetching).footer());
+		if (!HttpExchange.SCOPED.get().request().getPath().contains("/admin/")) {
+			var f = ((WebsiteApiClient) apiClient);
+			m.put("header", f.header().read(1));
+			m.put("footer", f.footer().res());
 		}
 
-		return x;
+		return m;
 	}
 
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
+
 		Stream.of("admin", "admin-bar", "admin-create-first-user", "admin-dashboard", "admin-login", "app", "archive",
 				"banner", "call-to-action", "card", "content", "footer", "form-block", "header", "hero", "intl-format",
 				"link", "media-block", "not-found", "page", "post", "posts", "rich-text", "search", "theme-selector")
 				.map(this::websiteImportKey).forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
-	}
-
-	@Override
-	protected String cmsImportKey(String name) {
-		return "cms/" + name;
 	}
 
 	@Override
@@ -92,6 +89,7 @@ public class WebsiteIndexFactory<C extends WebsiteFrontendConfig> extends BlankI
 	@Override
 	protected void addTemplates(List<Template> list) {
 		super.addTemplates(list);
+
 		Stream.of("janilla-logo").map(this::frontendTemplate).forEach(list::add);
 		Stream.of("app", "footer", "header", "link", "not-found", "page", "theme-selector").map(this::websiteTemplate)
 				.forEach(list::add);

@@ -49,7 +49,6 @@
 	</build>
 	<name>janilla-website-template</name>
 	<description>Janilla Website Template</description>
-	<url>https://github.com/diego-schivo/janilla-website-template</url>
 	<licenses>
 		<license>
 			<name>MIT</name>
@@ -64,10 +63,4 @@
 			<organizationUrl>https://janilla.com</organizationUrl>
 		</developer>
 	</developers>
-	<scm>
-		<connection>scm:git:git://github.com/diego-schivo/janilla-website-template.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla-website-template.git</developerConnection>
-		<url>https://github.com/diego-schivo/janilla-website-template</url>
-		<tag>HEAD</tag>
-	</scm>
 </project>

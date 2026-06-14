@@ -25,8 +25,9 @@
 package com.janilla.blanktemplate.backend;
 
 import com.janilla.backend.web.BackendConfig;
+import com.janilla.blanktemplate.BlankConfig;
 
-public interface BlankBackendConfig extends BackendConfig {
+public interface BlankBackendConfig extends BackendConfig, BlankConfig {
 
 	Upload upload();
 

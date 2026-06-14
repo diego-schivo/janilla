@@ -85,7 +85,7 @@ public class BlankTest extends AbstractFrontend<FrontendConfig, Domain> {
 			}
 			var cfg = newConfig(Stream.concat(Arrays.stream(cc), Stream.of(getClass())).toArray(Class<?>[]::new), null,
 					f);
-			Consumer<Object> ctx = x -> a[0] = (WebApp<?, ?>) x;
+			var ctx = (Consumer<Object>) x -> a[0] = (WebApp<?, ?>) x;
 			fullstack = f.newInstance(f.classFor(WebApp.class),
 					Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		}

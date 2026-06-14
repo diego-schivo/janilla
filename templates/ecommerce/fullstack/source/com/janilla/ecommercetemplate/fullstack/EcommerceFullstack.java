@@ -65,13 +65,13 @@ public class EcommerceFullstack<C extends EcommerceFullstackConfig, D extends Ec
 	}
 
 	public EcommerceFullstack(C config, DiFactory diFactory, Consumer<Object> context) {
-		this(config, diFactory, context, EcommerceFrontend.class, EcommerceBackend.class);
+		this(config, diFactory, context, EcommerceBackend.class, EcommerceFrontend.class);
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected EcommerceFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
-			Class backendClass) {
-		super(config, diFactory, context, frontendClass, backendClass);
+	protected EcommerceFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class backendClass,
+			Class frontendClass) {
+		super(config, diFactory, context, backendClass, frontendClass);
 	}
 
 	@Override

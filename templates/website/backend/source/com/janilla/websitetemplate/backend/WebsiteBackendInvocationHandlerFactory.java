@@ -36,6 +36,7 @@ public class WebsiteBackendInvocationHandlerFactory extends BlankBackendInvocati
 	public WebsiteBackendInvocationHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory,
 			DiFactory diFactory, InvocationResolver invocationResolver, RenderableFactory renderableFactory) {
 		super(config, rootFactory, diFactory, invocationResolver, renderableFactory);
+
 		guestPost.add("/api/form-submissions");
 	}
 }

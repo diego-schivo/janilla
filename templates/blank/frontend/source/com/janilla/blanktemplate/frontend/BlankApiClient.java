@@ -24,26 +24,22 @@
  */
 package com.janilla.blanktemplate.frontend;
 
-import com.janilla.frontend.Index;
-import com.janilla.frontend.IndexFactory;
-import com.janilla.http.HttpExchange;
-import com.janilla.web.Handle;
+import com.janilla.frontend.ApiClient;
+import com.janilla.frontend.cms.UserApiClient;
+import com.janilla.ioc.DiFactory;
 
-public class BlankWebHandling {
+public class BlankApiClient implements ApiClient {
 
-	protected final IndexFactory indexFactory;
+	protected final DiFactory diFactory;
 
-	public BlankWebHandling(IndexFactory indexFactory) {
-		this.indexFactory = indexFactory;
+	protected final UserApiClient users;
+
+	public BlankApiClient(DiFactory diFactory) {
+		this.diFactory = diFactory;
+		users = diFactory.newInstance(diFactory.classFor(UserApiClient.class));
 	}
 
-	@Handle(method = "GET", path = "/admin(/[\\w\\d/-]*)?")
-	public Index admin(String path, HttpExchange exchange) {
-		return indexFactory.newIndex(exchange);
-	}
-
-	@Handle(method = "GET", path = "/")
-	public Index home(HttpExchange exchange) {
-		return indexFactory.newIndex(exchange);
+	public UserApiClient users() {
+		return users;
 	}
 }

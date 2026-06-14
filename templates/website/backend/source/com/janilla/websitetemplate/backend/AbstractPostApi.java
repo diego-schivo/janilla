@@ -39,7 +39,7 @@ import com.janilla.websitetemplate.Post;
 public abstract class AbstractPostApi<P extends Post> extends AbstractCollectionApi<Long, P> {
 
 	public AbstractPostApi(Class<P> type, Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(type, drafts, persistence, "title", copier);
+		super(type, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 	@Handle(method = "GET")

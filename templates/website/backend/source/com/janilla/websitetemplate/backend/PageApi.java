@@ -40,7 +40,7 @@ import com.janilla.websitetemplate.Page;
 public class PageApi extends AbstractCollectionApi<Long, Page> {
 
 	public PageApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Page.class, drafts, persistence, "title", copier);
+		super(Page.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 	@Handle(method = "GET")

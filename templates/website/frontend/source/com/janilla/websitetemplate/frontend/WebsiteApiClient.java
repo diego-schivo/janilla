@@ -22,10 +22,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.websitetemplate.backend;
+package com.janilla.websitetemplate.frontend;
 
-import com.janilla.websitetemplate.Footer;
-import com.janilla.websitetemplate.Header;
+import com.janilla.blanktemplate.frontend.BlankApiClient;
+import com.janilla.ioc.DiFactory;
 
-public record GlobalsImpl(Header header, Footer footer) implements Globals {
+public class WebsiteApiClient extends BlankApiClient {
+
+	protected final FooterApiClient footer;
+
+	protected final HeaderApiClient header;
+
+	protected final PageApiClient pages;
+
+	protected final PostApiClient posts;
+
+	protected final SearchResultApiClient searchResults;
+
+	public WebsiteApiClient(DiFactory diFactory) {
+		super(diFactory);
+
+		footer = diFactory.newInstance(diFactory.classFor(FooterApiClient.class));
+		header = diFactory.newInstance(diFactory.classFor(HeaderApiClient.class));
+		pages = diFactory.newInstance(diFactory.classFor(PageApiClient.class));
+		posts = diFactory.newInstance(diFactory.classFor(PostApiClient.class));
+		searchResults = diFactory.newInstance(diFactory.classFor(SearchResultApiClient.class));
+	}
+
+	public FooterApiClient footer() {
+		return footer;
+	}
+
+	public HeaderApiClient header() {
+		return header;
+	}
+
+	public PageApiClient pages() {
+		return pages;
+	}
+
+	public PostApiClient posts() {
+		return posts;
+	}
+
+	public SearchResultApiClient searchResults() {
+		return searchResults;
+	}
+
 }

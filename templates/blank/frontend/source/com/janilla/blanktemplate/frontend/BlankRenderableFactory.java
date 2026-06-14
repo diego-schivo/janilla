@@ -40,7 +40,7 @@ public class BlankRenderableFactory extends DefaultRenderableFactory {
 
 	protected final Map<ResourcesProvider, String> resourcesProviders;
 
-	protected final Map<String, String> foo = new ConcurrentHashMap<>();
+	protected final Map<String, String> basePaths = new ConcurrentHashMap<>();
 
 	public BlankRenderableFactory(ResourceMap resourceMap, DiFactory diFactory,
 			Map<ResourcesProvider, String> resourcesProviders) {
@@ -55,7 +55,7 @@ public class BlankRenderableFactory extends DefaultRenderableFactory {
 			if (x.startsWith("/"))
 				k = x;
 			else {
-				var bp = foo.computeIfAbsent(((Class<?>) render.annotated()).getPackageName(),
+				var bp = basePaths.computeIfAbsent(((Class<?>) render.annotated()).getPackageName(),
 						y -> resourcesProviders.get(new PackageResourcesProvider(y)));
 				k = bp + "/" + x;
 			}

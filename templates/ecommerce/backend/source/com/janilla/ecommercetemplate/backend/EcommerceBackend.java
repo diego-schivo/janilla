@@ -63,12 +63,12 @@ public class EcommerceBackend<C extends EcommerceBackendConfig, D extends Ecomme
 	}
 
 	public EcommerceBackend(C config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context);
+		this(config, diFactory, context, Data.class, SeedData.class);
 	}
 
-	@Override
-	protected Class<?> dataType() {
-		return Data.class;
+	protected EcommerceBackend(C config, DiFactory diFactory, Consumer<Object> context, Class<?> dataType,
+			Class<?> seedDataClass) {
+		super(config, diFactory, context, dataType, seedDataClass);
 	}
 
 	@Handle(method = "GET", path = "/api/enums")

@@ -46,7 +46,7 @@ public class EcommerceUserApi extends WebsiteUserApi {
 	@Handle(method = "POST")
 	public User<Long> create(UserData<User<Long>> data) {
 		if (exchange().sessionUser() == null) {
-			var u = data.user().withRoles(Set.of(domain.userRole("CUSTOMER")));
+			var u = domain.withRoles(data.user(), Set.of(domain.userRole("CUSTOMER")));
 			data = data.withUser(u);
 		}
 

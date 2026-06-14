@@ -28,16 +28,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.ApiClient;
 import com.janilla.frontend.Template;
-import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 
 public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends WebsiteIndexFactory<C> {
 
-	public EcommerceIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
-		super(config, resourceMap, diFactory, dataFetching);
+	public EcommerceIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, ApiClient apiClient) {
+		super(config, resourceMap, diFactory, apiClient);
 	}
 
 	@Override
@@ -54,12 +54,14 @@ public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends We
 		var m = super.env();
 		m.put("stripePublishableKey", config.stripe().publishableKey());
 		m.put("stripeUrl", config.stripe().url());
+
 		return m;
 	}
 
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
+
 		Stream.of("account", "account-form", "account-nav", "address-edit", "address-item", "addresses", "admin",
 				"admin-create-first-user", "admin-fields", "admin-login", "admin-variant-options", "app", "card",
 				"cart-modal", "checkout", "checkout-addresses", "confirm-order", "create-account",
@@ -81,6 +83,7 @@ public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends We
 	@Override
 	protected void addTemplates(List<Template> list) {
 		super.addTemplates(list);
+
 		Stream.of("toaster").map(this::frontendTemplate).forEach(list::add);
 		Stream.of("app", "cart-modal", "mobile-menu").map(this::ecommerceTemplate).forEach(list::add);
 	}

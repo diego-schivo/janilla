@@ -1,8 +1,30 @@
 /*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Note that authoring this file involved dealing in other programs that are
+ * provided under the following license:
+ *
  * MIT License
  *
  * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +43,15 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
  */
 package com.janilla.websitetemplate.frontend;
 
 import java.lang.reflect.Type;
 import java.net.URI;
 
-import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
@@ -36,53 +60,29 @@ import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.persistence.ListPortion;
-import com.janilla.websitetemplate.Footer;
-import com.janilla.websitetemplate.Header;
 import com.janilla.websitetemplate.Page;
-import com.janilla.websitetemplate.Post;
-import com.janilla.websitetemplate.SearchResult;
 
-public class WebsiteDataFetching extends CmsDataFetching {
+public class DefaultPageApiClient implements PageApiClient {
 
-	public WebsiteDataFetching(FrontendConfig config, HttpClient httpClient, Converter converter) {
-		super(config, httpClient, converter);
+	protected final FrontendConfig config;
+
+	protected final HttpClient httpClient;
+
+	protected final Converter converter;
+
+	public DefaultPageApiClient(FrontendConfig config, HttpClient httpClient, Converter converter) {
+		this.config = config;
+		this.httpClient = httpClient;
+		this.converter = converter;
 	}
 
-	public Footer footer() {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/footer"));
-		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, Footer.class);
-	}
-
-	public Header header(Integer depth) {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/header?"
-				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null)));
-		var o = httpClient.send(r, HttpClient.JSON);
-//		IO.println("o=" + o);
-		return converter.convert(o, Header.class);
-	}
-
-	public ListPortion<Page> pages(String slug, Integer depth, HttpCookie token) {
+	@Override
+	public ListPortion<Page> read(String slug, Integer depth, HttpCookie token) {
 		var r = new HttpRequest("GET", URI.create(config.api().url() + "/pages?"
 				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
 //		IO.println("WebsiteDataFetching.pages, o=" + o);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Page.class }));
-	}
-
-	public ListPortion<Post> posts(String slug, Integer depth, HttpCookie token) {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/posts?"
-				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
-				token != null ? token.format() : null);
-		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Post.class }));
-	}
-
-	public ListPortion<SearchResult> searchResults(String query) {
-		var r = new HttpRequest("GET",
-				URI.create(config.api().url() + "/search-results?" + new UriQueryBuilder().append("query", query)));
-		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { SearchResult.class }));
 	}
 }

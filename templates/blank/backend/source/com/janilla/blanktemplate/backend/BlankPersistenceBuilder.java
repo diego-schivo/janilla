@@ -22,11 +22,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.blanktemplate;
+package com.janilla.blanktemplate.backend;
 
-import java.util.function.UnaryOperator;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-public interface Configuration {
+import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.persistence.PersistenceBuilder;
+import com.janilla.backend.web.BackendConfig;
+import com.janilla.ioc.DiFactory;
 
-	public static final ScopedValue<UnaryOperator<String>> PROPERTY_GETTER = ScopedValue.newInstance();
+public class BlankPersistenceBuilder extends PersistenceBuilder {
+
+	protected final BackendConfig config;
+
+	public BlankPersistenceBuilder(Path databaseFile, BackendConfig config) {
+		super(databaseFile);
+		this.config = config;
+	}
+
+	@Override
+	public Persistence build(DiFactory diFactory) {
+		var e = Files.exists(databaseFile);
+		var p = super.build(diFactory);
+		if (!e && config.liveDemo())
+			((BlankPersistence<?>) p).seed();
+		return p;
+	}
 }

@@ -31,12 +31,13 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.ecommercetemplate.Address;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/addresses")
 public class AddressApi extends AbstractCollectionApi<Long, Address> {
 
 	public AddressApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Address.class, drafts, persistence, "title", copier);
+		super(Address.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 }

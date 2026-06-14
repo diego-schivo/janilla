@@ -44,7 +44,7 @@ import com.janilla.web.Handle;
 public class ProductApi extends AbstractCollectionApi<Long, Product> {
 
 	public ProductApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Product.class, drafts, persistence, "title", copier);
+		super(Product.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 	@Handle(method = "GET")

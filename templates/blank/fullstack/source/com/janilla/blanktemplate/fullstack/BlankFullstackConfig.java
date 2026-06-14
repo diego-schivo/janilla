@@ -28,7 +28,7 @@ import com.janilla.blanktemplate.backend.BlankBackendConfig;
 import com.janilla.blanktemplate.frontend.BlankFrontendConfig;
 import com.janilla.fullstack.web.FullstackConfig;
 
-public interface BlankFullstackConfig extends FullstackConfig, BlankFrontendConfig, BlankBackendConfig {
+public interface BlankFullstackConfig extends FullstackConfig, BlankBackendConfig, BlankFrontendConfig {
 
 	Download download();
 }

@@ -34,20 +34,21 @@ import com.janilla.blanktemplate.BlankDomain;
 import com.janilla.cms.User;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/users")
 public class BlankUserApi extends AbstractUserApi<Long, User<Long>> {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public BlankUserApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier, BackendConfig config,
-			BlankDomain domain) {
-		super((Class) User.class, drafts, persistence, "title", copier, config.jwt().key(), domain);
+	public BlankUserApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier,
+			Direction defaultDirection, Integer defaultDepth, BackendConfig config, BlankDomain domain) {
+		super((Class) User.class, drafts, persistence, "title", copier, defaultDirection, defaultDepth, config, domain);
 	}
 
 	@Override
 	public User<Long> firstRegister(UserData<User<Long>> data) {
-		var u = data.user().withRoles(Set.of(domain.userRole("ADMIN")));
+		var u = domain.withRoles(data.user(), Set.of(domain.userRole("ADMIN")));
 		return super.firstRegister(data.withUser(u));
 	}
 }

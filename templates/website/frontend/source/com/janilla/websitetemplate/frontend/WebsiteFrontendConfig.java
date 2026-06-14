@@ -25,6 +25,7 @@
 package com.janilla.websitetemplate.frontend;
 
 import com.janilla.blanktemplate.frontend.BlankFrontendConfig;
+import com.janilla.websitetemplate.WebsiteConfig;
 
-public interface WebsiteFrontendConfig extends BlankFrontendConfig {
+public interface WebsiteFrontendConfig extends BlankFrontendConfig, WebsiteConfig {
 }

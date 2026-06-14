@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.frontend.Index;
 import com.janilla.frontend.IndexFactory;
-import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.Handle;
 
@@ -53,8 +52,8 @@ public class WebHandling {
 	}
 
 	@Handle(method = "GET", path = "/")
-	public Index home(HttpExchange exchange) {
-		return indexFactory.newIndex(exchange);
+	public Index home() {
+		return indexFactory.newIndex();
 	}
 
 	@Handle(method = "POST", path = "/test/start")

@@ -37,6 +37,7 @@ public class EcommerceInvocationHandlerFactory extends WebsiteBackendInvocationH
 	public EcommerceInvocationHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
 			InvocationResolver invocationResolver, RenderableFactory renderableFactory) {
 		super(config, rootFactory, diFactory, invocationResolver, renderableFactory);
+
 		guestPost.add("/api/carts");
 		guestPost.add("/api/users");
 //		guestPost.add("/api/payments/stripe/initiate");
@@ -45,13 +46,13 @@ public class EcommerceInvocationHandlerFactory extends WebsiteBackendInvocationH
 	}
 
 	@Override
-	protected boolean requireSessionEmail(HttpRequest rq) {
-		if (!super.requireSessionEmail(rq))
+	protected boolean requireSessionEmail(HttpRequest request) {
+		if (!super.requireSessionEmail(request))
 			return false;
 
-		switch (rq.getHeaderValue(":method")) {
+		switch (request.getHeaderValue(":method")) {
 		case "DELETE", "PATCH":
-			return !rq.getPath().startsWith("/api/carts/");
+			return !webAppPath(request).startsWith("/api/carts/");
 		default:
 			return true;
 		}

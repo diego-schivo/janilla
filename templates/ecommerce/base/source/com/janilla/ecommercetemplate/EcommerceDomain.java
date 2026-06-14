@@ -31,12 +31,14 @@ import java.util.stream.Stream;
 
 import com.janilla.cms.User;
 import com.janilla.java.Converter;
+import com.janilla.java.Copier;
+import com.janilla.java.Java;
 import com.janilla.websitetemplate.WebsiteDomain;
 
 public class EcommerceDomain extends WebsiteDomain {
 
-	public EcommerceDomain(Converter converter) {
-		super(converter);
+	public EcommerceDomain(Converter converter, Copier copier) {
+		super(converter, copier);
 	}
 
 	public Stream<Country> countries() {
@@ -87,5 +89,14 @@ public class EcommerceDomain extends WebsiteDomain {
 	@Override
 	public int userDepth() {
 		return 1;
+	}
+
+	public <ID extends Comparable<ID>> EcommerceUser<ID> withCarts(EcommerceUser<ID> user, List<Cart> carts) {
+		return copier.copy(Java.hashMap("carts", carts), user);
+	}
+
+	public <ID extends Comparable<ID>> EcommerceUser<ID> withAddresses(EcommerceUser<ID> user,
+			List<Address> addresses) {
+		return copier.copy(Java.hashMap("addresses", addresses), user);
 	}
 }

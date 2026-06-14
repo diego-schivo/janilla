@@ -22,7 +22,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.websitetemplate.backend;
+package com.janilla.ecommercetemplate.backend;
 
-record DataImpl(Collections collections, Globals globals) implements Data {
+import com.janilla.websitetemplate.Footer;
+import com.janilla.websitetemplate.Header;
+
+public record Globals(Header header, Footer footer) {
 }

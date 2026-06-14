@@ -1,8 +1,30 @@
 /*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Note that authoring this file involved dealing in other programs that are
+ * provided under the following license:
+ *
  * MIT License
  *
  * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +43,9 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
  */
 package com.janilla.ecommercetemplate.frontend;
 
@@ -28,6 +53,7 @@ import java.lang.reflect.Type;
 import java.net.URI;
 
 import com.janilla.ecommercetemplate.Product;
+import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
@@ -35,22 +61,23 @@ import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.persistence.ListPortion;
-import com.janilla.websitetemplate.Category;
-import com.janilla.websitetemplate.frontend.WebsiteDataFetching;
 
-public class EcommerceDataFetching extends WebsiteDataFetching {
+public class DefaultProductApiClient implements ProductApiClient {
 
-	public EcommerceDataFetching(EcommerceFrontendConfig config, HttpClient httpClient, Converter converter) {
-		super(config, httpClient, converter);
+	protected final FrontendConfig config;
+
+	protected final HttpClient httpClient;
+
+	protected final Converter converter;
+
+	public DefaultProductApiClient(FrontendConfig config, HttpClient httpClient, Converter converter) {
+		this.config = config;
+		this.httpClient = httpClient;
+		this.converter = converter;
 	}
 
-	public ListPortion<Category> categories() {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/categories"));
-		var o = httpClient.send(r, HttpClient.JSON);
-		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Category.class }));
-	}
-
-	public ListPortion<Product> products(String slug, String query, Long category, String sort, Integer depth,
+	@Override
+	public ListPortion<Product> read(String slug, String query, Long category, String sort, Integer depth,
 			HttpCookie token) {
 		var r = new HttpRequest("GET",
 				URI.create(config.api().url() + "/products?"
@@ -61,4 +88,5 @@ public class EcommerceDataFetching extends WebsiteDataFetching {
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Product.class }));
 	}
+
 }

@@ -29,5 +29,5 @@ import com.janilla.ecommercetemplate.frontend.EcommerceFrontendConfig;
 import com.janilla.websitetemplate.fullstack.WebsiteFullstackConfig;
 
 public interface EcommerceFullstackConfig
-		extends WebsiteFullstackConfig, EcommerceFrontendConfig, EcommerceBackendConfig {
+		extends WebsiteFullstackConfig, EcommerceBackendConfig, EcommerceFrontendConfig {
 }

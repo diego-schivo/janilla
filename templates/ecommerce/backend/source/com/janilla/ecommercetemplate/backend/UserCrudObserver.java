@@ -48,9 +48,9 @@ public class UserCrudObserver implements CrudObserver<User<?>> {
 	public User<?> beforePopulate(User<?> entity) {
 		var e = (EcommerceUser<?>) entity;
 		var cc = persistence.crud(Cart.class).filter("customer", new Object[] { e.id() }, Direction.BACKWARD);
-		e = e.withCarts(cc.stream().map(x -> domain.emptyCart().withId(x)).toList());
+		e = domain.withCarts(e, cc.stream().map(x -> domain.emptyCart().withId(x)).toList());
 		var aa = persistence.crud(Address.class).filter("customer", new Object[] { e.id() }, Direction.BACKWARD);
-		e = e.withAddresses(aa.stream().map(x -> domain.emptyAddress().withId(x)).toList());
+		e = domain.withAddresses(e, aa.stream().map(x -> domain.emptyAddress().withId(x)).toList());
 		return e;
 	}
 
@@ -58,9 +58,9 @@ public class UserCrudObserver implements CrudObserver<User<?>> {
 	public User<?> beforeCreate(User<?> entity) {
 		var e = (EcommerceUser<?>) entity;
 		if (e.carts() != null)
-			e = e.withCarts(null);
+			e = domain.withCarts(e, null);
 		if (e.addresses() != null)
-			e = e.withAddresses(null);
+			e = domain.withAddresses(e, null);
 		return e;
 	}
 

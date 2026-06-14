@@ -31,12 +31,13 @@ import com.janilla.backend.web.BackendConfig;
 import com.janilla.blanktemplate.backend.BlankUserApi;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.websitetemplate.WebsiteDomain;
 
 public class WebsiteUserApi extends BlankUserApi {
 
 	public WebsiteUserApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier, BackendConfig config,
 			WebsiteDomain domain) {
-		super(drafts, persistence, copier, config, domain);
+		super(drafts, persistence, copier, Direction.FORWARD, 0, config, domain);
 	}
 }

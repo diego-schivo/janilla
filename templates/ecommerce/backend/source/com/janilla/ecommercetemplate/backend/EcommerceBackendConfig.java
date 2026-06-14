@@ -27,5 +27,5 @@ package com.janilla.ecommercetemplate.backend;
 import com.janilla.ecommercetemplate.EcommerceConfig;
 import com.janilla.websitetemplate.backend.WebsiteBackendConfig;
 
-public interface EcommerceBackendConfig extends WebsiteBackendConfig, EcommerceConfig {
+public interface EcommerceBackendConfig extends EcommerceConfig, WebsiteBackendConfig {
 }

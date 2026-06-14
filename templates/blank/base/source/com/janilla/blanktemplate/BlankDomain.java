@@ -26,10 +26,11 @@ package com.janilla.blanktemplate;
 
 import com.janilla.cms.CmsDomain;
 import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
 public class BlankDomain extends CmsDomain {
 
-	public BlankDomain(Converter converter) {
-		super(converter);
+	public BlankDomain(Converter converter, Copier copier) {
+		super(converter, copier);
 	}
 }

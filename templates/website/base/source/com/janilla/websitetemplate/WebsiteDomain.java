@@ -26,11 +26,12 @@ package com.janilla.websitetemplate;
 
 import com.janilla.blanktemplate.BlankDomain;
 import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
 public class WebsiteDomain extends BlankDomain {
 
-	public WebsiteDomain(Converter converter) {
-		super(converter);
+	public WebsiteDomain(Converter converter, Copier copier) {
+		super(converter, copier);
 	}
 
 	public Page emptyPage() {

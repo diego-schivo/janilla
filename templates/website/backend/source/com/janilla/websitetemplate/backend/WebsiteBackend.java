@@ -65,7 +65,12 @@ public class WebsiteBackend<C extends WebsiteBackendConfig, D extends WebsiteDom
 	protected final SmtpClient smtpClient;
 
 	public WebsiteBackend(C config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context);
+		this(config, diFactory, context, Data.class, SeedData.class);
+	}
+
+	protected WebsiteBackend(C config, DiFactory diFactory, Consumer<Object> context, Class<?> dataType,
+			Class<?> seedDataClass) {
+		super(config, diFactory, context, dataType, seedDataClass);
 
 		var h = config.mail().host();
 		smtpClient = h != null && !h.isEmpty() ? diFactory.newInstance(diFactory.classFor(SmtpClient.class),
@@ -81,11 +86,6 @@ public class WebsiteBackend<C extends WebsiteBackendConfig, D extends WebsiteDom
 	@Handle(method = "POST", path = "/api/seed")
 	public void seed() throws IOException {
 		((WebsitePersistence<?>) persistence).seed();
-	}
-
-	@Override
-	protected Class<?> dataType() {
-		return Data.class;
 	}
 
 	@Override

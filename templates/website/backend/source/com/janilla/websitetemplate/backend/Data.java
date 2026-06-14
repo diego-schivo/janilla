@@ -24,9 +24,5 @@
  */
 package com.janilla.websitetemplate.backend;
 
-public interface Data {
-
-	Collections collections();
-
-	Globals globals();
+public record Data(Collections collections, Globals globals) {
 }

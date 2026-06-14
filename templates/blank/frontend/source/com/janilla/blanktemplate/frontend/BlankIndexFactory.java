@@ -28,16 +28,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.ApiClient;
 import com.janilla.frontend.Template;
-import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.frontend.cms.CmsIndexFactory;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 
 public class BlankIndexFactory<C extends BlankFrontendConfig> extends CmsIndexFactory<C> {
 
-	public BlankIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
-		super(config, resourceMap, diFactory, dataFetching);
+	public BlankIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, ApiClient apiClient) {
+		super(config, resourceMap, diFactory, apiClient);
 	}
 
 	public Template blankTemplate(String name) {
@@ -48,14 +48,21 @@ public class BlankIndexFactory<C extends BlankFrontendConfig> extends CmsIndexFa
 	protected Map<String, String> env() {
 		var m = super.env();
 		m.put("key", config.key());
+
 		return m;
 	}
 
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
+
 		Stream.of("app", "not-found", "page").map(this::blankImportKey)
 				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+	}
+
+	@Override
+	protected String cmsImportKey(String name) {
+		return "cms/" + name;
 	}
 
 	protected String blankImportKey(String name) {

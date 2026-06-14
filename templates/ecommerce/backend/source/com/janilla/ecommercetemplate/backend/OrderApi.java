@@ -37,6 +37,7 @@ import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.Order;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.ForbiddenException;
 import com.janilla.web.Handle;
 import com.janilla.web.UnauthorizedException;
@@ -47,7 +48,7 @@ public class OrderApi extends AbstractCollectionApi<Long, Order> {
 	protected final EcommerceDomain domain;
 
 	public OrderApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier, EcommerceDomain domain) {
-		super(Order.class, drafts, persistence, "title", copier);
+		super(Order.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 		this.domain = domain;
 	}
 

@@ -33,6 +33,7 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.SearchResult;
@@ -41,7 +42,7 @@ import com.janilla.websitetemplate.SearchResult;
 public class SearchResultApi extends AbstractCollectionApi<Long, SearchResult> {
 
 	public SearchResultApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(SearchResult.class, drafts, persistence, "title", copier);
+		super(SearchResult.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 	@Handle(method = "GET")

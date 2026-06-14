@@ -69,7 +69,6 @@ public class WebsiteFrontend<C extends WebsiteFrontendConfig, D extends WebsiteD
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcesProviders.put(new PackageResourcesProvider("com.janilla.frontend.cms"), "/cms");
 		resourcesProviders.put(new PackageResourcesProvider("com.janilla.blanktemplate.frontend"), "/blank");
 		resourcesProviders.put(new PackageResourcesProvider("com.janilla.websitetemplate.frontend"), "");
 		resourcesProviders.put(diFactory.newInstance(DownloadResourcesProvider.class, Map.of("url", GEIST_FONT_DOWNLOAD)),

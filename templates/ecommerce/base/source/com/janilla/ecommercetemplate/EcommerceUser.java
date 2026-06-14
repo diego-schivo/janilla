@@ -34,7 +34,7 @@ public interface EcommerceUser<ID extends Comparable<ID>> extends User<ID> {
 
 	List<Address> addresses();
 
-	EcommerceUser<ID> withCarts(List<Cart> carts);
-
-	EcommerceUser<ID> withAddresses(List<Address> addresses);
+//	EcommerceUser<ID> withCarts(List<Cart> carts);
+//
+//	EcommerceUser<ID> withAddresses(List<Address> addresses);
 }

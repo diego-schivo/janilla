@@ -30,6 +30,7 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Category;
 
@@ -37,6 +38,6 @@ import com.janilla.websitetemplate.Category;
 public class CategoryApi extends AbstractCollectionApi<Long, Category> {
 
 	public CategoryApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Category.class, drafts, persistence, "title", copier);
+		super(Category.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 }

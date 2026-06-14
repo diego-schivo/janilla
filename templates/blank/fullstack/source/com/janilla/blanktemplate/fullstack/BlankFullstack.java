@@ -61,19 +61,19 @@ public class BlankFullstack<C extends BlankFullstackConfig, D extends BlankDomai
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
-		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
-				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		var cfg = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		serve(a[0]);
 	}
 
 	public BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context) {
-		this(config, diFactory, context, BlankFrontend.class, BlankBackend.class);
+		this(config, diFactory, context, BlankBackend.class, BlankFrontend.class);
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
-			Class backendClass) {
-		super(config, diFactory, context, frontendClass, backendClass);
+	protected BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class backendClass,
+			Class frontendClass) {
+		super(config, diFactory, context, backendClass, frontendClass);
 	}
 }

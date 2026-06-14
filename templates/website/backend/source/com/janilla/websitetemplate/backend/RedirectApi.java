@@ -30,12 +30,13 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/redirects")
 public class RedirectApi extends AbstractCollectionApi<Long, Redirect> {
 
 	public RedirectApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Redirect.class, drafts, persistence, "title", copier);
+		super(Redirect.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 }

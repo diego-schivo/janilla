@@ -35,23 +35,7 @@ import com.janilla.websitetemplate.Page;
 import com.janilla.websitetemplate.Post;
 import com.janilla.websitetemplate.SearchResult;
 
-public interface Collections {
-
-	List<Page> pages();
-
-	List<Post> posts();
-
-	List<Media> media();
-
-	List<Category> categories();
-
-	List<User<Long>> users();
-
-	List<Redirect> redirects();
-
-	List<Form> forms();
-
-	List<FormSubmission> formSubmissions();
-
-	List<SearchResult> searchResults();
+public record Collections(List<Page> pages, List<Post> posts, List<Media> media, List<Category> categories,
+		List<User<Long>> users, List<Redirect> redirects, List<Form> forms, List<FormSubmission> formSubmissions,
+		List<SearchResult> searchResults) {
 }
