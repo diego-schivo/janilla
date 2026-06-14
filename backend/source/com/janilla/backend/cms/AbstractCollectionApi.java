@@ -91,6 +91,8 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 
 	protected AbstractCollectionApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence,
 			String searchIndex, Copier copier, Direction defaultDirection, Integer defaultDepth) {
+		LOGGER.log(Level.DEBUG, "this={0}, type={1}", this, type);
+
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;

@@ -522,7 +522,7 @@ export default class Admin extends WebComponent {
 
     options(field) {
         //return field.options ?? [];
-        return this.customState.schema[field.type];
+        return this.customState.schema[field.type] ?? [];
     }
 
     preview(document) {

@@ -96,11 +96,11 @@ public class DefaultPersistence implements Persistence {
 	protected <E extends Entity<?>, K, V> void configure(Class<E> type) {
 		LOGGER.log(Level.DEBUG, "type={0}", type);
 
-		Crud<?, E> c = newCrud(type);
+		var t = (Class<?>) JavaReflect.inheritedAnnotation(type, Store.class).annotated();
+		Crud<?, E> c = newCrud(t.getSimpleName(), type);
 		if (c == null)
 			return;
 
-		var t = (Class<?>) JavaReflect.inheritedAnnotation(type, Store.class).annotated();
 		configuration.cruds.put(t, c);
 
 		for (var pp = JavaReflect.properties(type).iterator(); pp.hasNext();) {
@@ -124,7 +124,7 @@ public class DefaultPersistence implements Persistence {
 		}
 	}
 
-	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
+	protected <E extends Entity<?>> Crud<?, E> newCrud(String name, Class<E> type) {
 		LOGGER.log(Level.DEBUG, "type={0}", type);
 
 		var t = JavaReflect.getAllActualInterfaces(type).filter(x -> Java.toClass(x) == Entity.class).findFirst()
@@ -134,7 +134,8 @@ public class DefaultPersistence implements Persistence {
 		var c = (Class<Crud<?, E>>) diFactory.classFor(new SimpleParameterizedType(Crud.class, t, type));
 		LOGGER.log(Level.DEBUG, "c={0}", c);
 
-		return diFactory.newInstance(c, Java.hashMap("type", type, "idHelper", idHelper(type), "persistence", this));
+		return diFactory.newInstance(c,
+				Java.hashMap("name", name, "type", type, "idHelper", idHelper(type), "persistence", this));
 	}
 
 	@Override

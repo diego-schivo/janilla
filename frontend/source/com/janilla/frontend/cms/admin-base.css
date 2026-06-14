@@ -49,10 +49,6 @@
  */
 /*:where(:root:has(.admin-ui)) {*/
 :host {
-  background: var(--background-1);
-  color-scheme: light dark;
-  line-height: 1.25;
-  -webkit-font-smoothing: antialiased;
   --background-1: light-dark(rgba(0, 0, 0, 0), rgb(20, 20, 20));
   --background-2: light-dark(rgb(245, 245, 245), rgb(34, 34, 34));
   --background-3: #0d74b6;
@@ -78,15 +74,19 @@
   --color-7: rgb(255, 255, 255);
   --color-8: rgb(218, 75, 72);
   --color-9: rgb(125, 204, 248);
+
+  -webkit-font-smoothing: antialiased;
 }
 
 /*:where(body:has(.admin-ui)) {*/
-:host {
+:host(admin-element) {
+  background: var(--background-1);
   color: var(--color-1);
+  display: block;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 0.75rem;
   font-weight: 400;
-  margin: 0;
+  line-height: 1.25;
 
   @media (min-width: 1441px) {
     font-size: 0.8125rem;
@@ -98,7 +98,6 @@
 }
 
 /*:where(.admin-ui) {*/
-:host {
   a,
   button,
   input,
@@ -268,7 +267,7 @@
     text-align: left;
   }
 
-  > p {
+  #p0 {
     height: 0;
     position: sticky;
     top: 0;
@@ -286,7 +285,7 @@
     }
   }
 
-  > div {
+  #div0 {
     &:not(:has(aside)) {
       box-sizing: border-box;
       display: flex;
@@ -389,8 +388,8 @@
     }
   }
 
-  > div > aside,
-  > dialog[open] {
+  #div0 > aside,
+  :host > dialog[open] {
     &,
     li:has(ul),
     ul {
@@ -425,13 +424,15 @@
     }
   }
 
-  &:not(:has(> p :checked)) > div {
+  /*
+  :host:not(:has(#p0 :checked)) #div0 {
     grid-template-columns: 0 1fr;
 
     > aside {
       visibility: hidden;
     }
   }
+  */
 
   .button {
     background: var(--background-4);
@@ -523,4 +524,4 @@
       color: rgb(156, 216, 253);
     }
   }
-}
+/*}*/

@@ -24,3 +24,10 @@
  */
 @import "cms/admin.css";
 @import "site.css";
+
+/*
+:root,
+:host {
+  color-scheme: light dark;
+}
+*/

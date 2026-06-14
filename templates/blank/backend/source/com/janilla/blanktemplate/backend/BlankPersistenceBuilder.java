@@ -43,10 +43,14 @@ public class BlankPersistenceBuilder extends PersistenceBuilder {
 
 	@Override
 	public Persistence build(DiFactory diFactory) {
-		var e = Files.exists(databaseFile);
+		var s = seed();
 		var p = super.build(diFactory);
-		if (!e && config.liveDemo())
+		if (s)
 			((BlankPersistence<?>) p).seed();
 		return p;
+	}
+
+	protected boolean seed() {
+		return !Files.exists(databaseFile) && config.liveDemo();
 	}
 }

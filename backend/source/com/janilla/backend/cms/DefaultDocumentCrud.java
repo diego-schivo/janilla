@@ -76,9 +76,9 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 
 	protected final String versionTable;
 
-	public DefaultDocumentCrud(Class<D> type, IdHelper<ID> idHelper, Converter converter, Copier copier,
+	public DefaultDocumentCrud(String name, Class<D> type, IdHelper<ID> idHelper, Converter converter, Copier copier,
 			Persistence persistence) {
-		super(type, idHelper, converter, copier, persistence);
+		super(name, type, idHelper, converter, copier, persistence);
 		versionTable = type.isAnnotationPresent(Versions.class)
 				? Version.class.getSimpleName() + "<" + type.getSimpleName() + ">"
 				: null;

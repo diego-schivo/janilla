@@ -76,8 +76,8 @@ public class BlankPersistence<C extends BlankBackendConfig> extends CmsPersisten
 	}
 
 	@Override
-	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		var c = super.newCrud(type);
+	protected <E extends Entity<?>> Crud<?, E> newCrud(String name, Class<E> type) {
+		var c = super.newCrud(name, type);
 		if (c != null) {
 			Class<? extends CrudObserver<?>> t;
 			if (type == Media.class)

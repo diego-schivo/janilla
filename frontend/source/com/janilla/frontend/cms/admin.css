@@ -80,3 +80,5 @@
 @import "admin-upload.css";
 @import "admin-version.css";
 @import "admin-versions.css";
+
+@import "../base/lucide-icon.css";

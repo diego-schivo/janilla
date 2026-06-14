@@ -79,14 +79,19 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	protected final Map<String, IndexKeyGetter> indexKeyGetters = new LinkedHashMap<>();
 
+	protected final String name;
+
 	protected final List<CrudObserver<E>> observers = new ArrayList<>();
 
 	protected final Persistence persistence;
 
 	protected final Class<E> type;
 
-	public DefaultCrud(Class<E> type, IdHelper<ID> idHelper, Converter converter, Copier copier,
+	public DefaultCrud(String name, Class<E> type, IdHelper<ID> idHelper, Converter converter, Copier copier,
 			Persistence persistence) {
+		LOGGER.log(Level.DEBUG, "this={0}, name={1}, type={2}", this, name, type);
+
+		this.name = name;
 		this.type = type;
 		this.idHelper = idHelper;
 		this.converter = converter;
@@ -159,7 +164,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected E read(BTree<?, ?> bTree, ID id, int depth) {
-		LOGGER.log(Level.DEBUG, "type={0}, id={1}, depth={2}", type.getSimpleName(), id, depth);
+		LOGGER.log(Level.DEBUG, "name={0}, id={1}, depth={2}", name, id, depth);
 
 		class A {
 			E e;
@@ -299,7 +304,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@Override
 	public List<ID> filter(String index, Object[] keys, Direction direction, long skip, long limit) {
-//		IO.println("DefaultCrud.filter, type=" + type.getSimpleName() + ", index=" + index + ", keys="
+//		IO.println("DefaultCrud.filter, name=" + name + ", index=" + index + ", keys="
 //				+ Arrays.toString(keys));
 		return persistence.database().perform(() -> {
 			var t = getIndex(index);
@@ -474,8 +479,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected BTree<?, ?> bTree() {
-		return idHelper != null ? persistence.database().index(type.getSimpleName(), "table")
-				: persistence.database().table(type.getSimpleName());
+		return idHelper != null ? persistence.database().index(name, "table") : persistence.database().table(name);
 	}
 
 	protected String format(Object object) {
@@ -525,8 +529,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected IndexBTree getIndex(String key) {
-		var n = Stream.of(type.getSimpleName(), key).filter(x -> x != null && !x.isEmpty())
-				.collect(Collectors.joining("."));
+		var n = Stream.of(name, key).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("."));
 		return persistence.database().index(n);
 	}
 

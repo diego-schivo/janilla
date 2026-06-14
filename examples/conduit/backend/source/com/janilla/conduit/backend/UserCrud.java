@@ -33,7 +33,7 @@ class UserCrud extends DefaultDocumentCrud<Long, User<Long>> {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	UserCrud(Converter converter, Copier copier, Persistence persistence) {
-		super((Class) User.class, persistence.idHelper(User.class), converter, copier, persistence);
+		super("User", (Class) User.class, persistence.idHelper(User.class), converter, copier, persistence);
 	}
 
 	public boolean follow(Long profile, Long user) {

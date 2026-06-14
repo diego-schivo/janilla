@@ -33,9 +33,9 @@ import com.janilla.ioc.DiFactory;
 import com.janilla.java.Copier;
 import com.janilla.persistence.Entity;
 
-class CustomPersistence extends BlankPersistence<AcmeDashboardBackendConfig> {
+class PersistenceImpl extends BlankPersistence<AcmeDashboardBackendConfig> {
 
-	public CustomPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory,
+	public PersistenceImpl(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory,
 			AcmeDashboardBackendConfig config, Class<?> seedDataClass, Copier copier) {
 		super(database, storables, diFactory, config, seedDataClass, copier);
 	}

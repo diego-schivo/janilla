@@ -51,8 +51,8 @@ public class EcommercePersistence<C extends EcommerceBackendConfig> extends Webs
 	}
 
 	@Override
-	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		var c = super.newCrud(type);
+	protected <E extends Entity<?>> Crud<?, E> newCrud(String name, Class<E> type) {
+		var c = super.newCrud(name, type);
 		if (c != null) {
 			Class<? extends CrudObserver<?>> t;
 			if (type.equals(Cart.class))

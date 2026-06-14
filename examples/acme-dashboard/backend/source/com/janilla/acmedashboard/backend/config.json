@@ -17,5 +17,5 @@
 		"cookie": "acme-dashboard-token",
 		"key": "secretkey"
 	},
-	"liveDemo": true
+	"liveDemo": false
 }

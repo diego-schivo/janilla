@@ -22,11 +22,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-:where(:root:has(.site-ui)) {
+/*:where(:root:has(.site-ui)) {*/
+:root {
   color-scheme: light dark;
 }
 
-:where(body:has(.site-ui)) {
+/*:where(body:has(.site-ui)) {*/
+body {
   background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
   color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
   font-family: system-ui;
@@ -35,7 +37,7 @@
   margin: 0;
 }
 
-:where(.site-ui) {
+/*:where(.site-ui) {*/
   a {
     color: inherit;
   }
@@ -67,4 +69,4 @@
       color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));
     }
   }
-}
+/*}*/

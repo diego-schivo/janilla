@@ -42,7 +42,7 @@ import com.janilla.java.Copier;
 class InvoiceCrud extends DefaultDocumentCrud<UUID, Invoice> {
 
 	public InvoiceCrud(Converter converter, Copier copier, Persistence persistence) {
-		super(Invoice.class, persistence.idHelper(Invoice.class), converter, copier, persistence);
+		super("Invoice", Invoice.class, persistence.idHelper(Invoice.class), converter, copier, persistence);
 	}
 
 	public BigDecimal getAmount(InvoiceStatus status) {

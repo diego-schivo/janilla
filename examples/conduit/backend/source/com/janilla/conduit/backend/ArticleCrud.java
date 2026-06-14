@@ -38,7 +38,7 @@ import com.janilla.java.Copier;
 class ArticleCrud extends DefaultDocumentCrud<Long, Article> {
 
 	ArticleCrud(Converter converter, Copier copier, Persistence persistence) {
-		super(Article.class, persistence.idHelper(Article.class), converter, copier, persistence);
+		super("Article", Article.class, persistence.idHelper(Article.class), converter, copier, persistence);
 	}
 
 	public boolean favorite(Long id, Instant createdAt, Long user) {

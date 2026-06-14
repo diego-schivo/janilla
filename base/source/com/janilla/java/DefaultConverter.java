@@ -221,20 +221,23 @@ public class DefaultConverter implements Converter {
 		LOGGER.log(Level.DEBUG, "map={0}, target={1}, typeResolver={2}", map, target, typeResolver);
 
 		// IO.println(Json.format(map));
-		var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
 		var c1 = target != null ? Java.toClass(target) : null;
 
-		if (td != null) {
-			if (c1 != null) {
-				if (td.type() == null)
-					throw new NullPointerException("c1=" + c1 + ", td.type()=" + td.type());
-				if (!c1.isAssignableFrom(Java.toClass(td.type())))
-					throw new IllegalArgumentException("c1=" + c1 + ", td.type()=" + td.type());
-			}
+		{
+			var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
+			if (td != null) {
+				if (c1 != null) {
+					if (td.type() == null)
+						throw new NullPointerException("c1=" + c1 + ", td.type()=" + td.type());
+					if (!c1.isAssignableFrom(Java.toClass(td.type())))
+//						throw new IllegalArgumentException("c1=" + c1 + ", td.type()=" + td.type());
+						td = td.withType(c1);
+				}
 
-			map = (Map<?, ?>) td.data();
-			target = td.type();
-			c1 = Java.toClass(target);
+				map = (Map<?, ?>) td.data();
+				target = td.type();
+				c1 = Java.toClass(target);
+			}
 		}
 
 		var c2 = diFactory != null ? diFactory.classFor(c1) : null;

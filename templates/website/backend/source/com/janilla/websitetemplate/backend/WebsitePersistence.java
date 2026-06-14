@@ -57,8 +57,8 @@ public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPer
 	}
 
 	@Override
-	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		var c = super.newCrud(type);
+	protected <E extends Entity<?>> Crud<?, E> newCrud(String name, Class<E> type) {
+		var c = super.newCrud(name, type);
 		if (c != null) {
 			@SuppressWarnings("unchecked")
 			var o = (CrudObserver<E>) searchObserver();

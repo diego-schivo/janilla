@@ -69,13 +69,11 @@ public class CmsPersistence extends DefaultPersistence {
 	}
 
 	@Override
-	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
+	protected <E extends Entity<?>> Crud<?, E> newCrud(String name, Class<E> type) {
 		@SuppressWarnings("unchecked")
 		var t = (Class<? extends Document<?>>) type;
-//		@SuppressWarnings({ "rawtypes", "unchecked" })
-//		var c = (Crud<?, E>) new DefaultDocumentCrud(t, idHelper(t), this);
 		@SuppressWarnings({ "unchecked" })
-		var c = (Crud<?, E>) super.newCrud(t);
+		var c = (Crud<?, E>) super.newCrud(name, t);
 		@SuppressWarnings("unchecked")
 		var o = (CrudObserver<E>) diFactory.newInstance(DocumentObserver.class);
 		c.observers().add(o);
