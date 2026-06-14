@@ -48,7 +48,6 @@
 	</build>
 	<name>janilla-com</name>
 	<description>Janilla.com</description>
-	<url>https://github.com/diego-schivo/janilla-com</url>
 	<licenses>
 		<license>
 			<name>MIT</name>
@@ -63,10 +62,4 @@
 			<organizationUrl>https://janilla.com</organizationUrl>
 		</developer>
 	</developers>
-	<scm>
-		<connection>scm:git:git://github.com/diego-schivo/janilla-com.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla-com.git</developerConnection>
-		<url>https://github.com/diego-schivo/janilla-com</url>
-		<tag>HEAD</tag>
-	</scm>
 </project>

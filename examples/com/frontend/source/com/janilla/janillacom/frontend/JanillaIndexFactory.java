@@ -26,8 +26,8 @@ package com.janilla.janillacom.frontend;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.ApiClient;
 import com.janilla.frontend.Template;
-import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
@@ -35,8 +35,8 @@ import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 public class JanillaIndexFactory extends WebsiteIndexFactory<JanillaFrontendConfig> {
 
 	public JanillaIndexFactory(JanillaFrontendConfig config, ResourceMap resourceMap, DiFactory diFactory,
-			CmsDataFetching dataFetching) {
-		super(config, resourceMap, diFactory, dataFetching);
+			ApiClient apiClient) {
+		super(config, resourceMap, diFactory, apiClient);
 	}
 
 	public Template janillaTemplate(String name) {

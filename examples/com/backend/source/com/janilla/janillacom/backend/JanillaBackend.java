@@ -58,16 +58,16 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig, Janilla
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
-		var c = newConfig(new Class<?>[] { JanillaBackend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
-				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		var cfg = newConfig(new Class<?>[] { JanillaBackend.class }, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		serve(a[0]);
 	}
 
 	protected final Map<String, Backend<?, ?>> backends;
 
 	public JanillaBackend(JanillaBackendConfig config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context);
+		super(config, diFactory, context, Data.class, SeedData.class);
 
 		backends = config.backends().keySet().stream().map(persistence.crud(Application.class)::read)
 				.filter(x -> x.backend() != null).collect(Collectors.toMap(Application::id, a -> {
@@ -79,7 +79,7 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig, Janilla
 						var f = Ioc.diFactory(tt, () -> a2[0]);
 						var cfg = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.backends().get(a.id()))
 								.filter(x -> x != null).toArray(Map<?, ?>[]::new), f);
-						Consumer<Object> ctx = x -> a2[0] = (WebApp<?, ?>) x;
+						var ctx = (Consumer<Object>) x -> a2[0] = (WebApp<?, ?>) x;
 						return (Backend<?, ?>) f.newInstance(c,
 								Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 					} catch (ReflectiveOperationException e) {
@@ -91,11 +91,6 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig, Janilla
 	public Backend<?, ?> backend(HttpRequest request) {
 		var x = backends.get(config.appResolution().id(request));
 		return x != null ? x : this;
-	}
-
-	@Override
-	protected Class<?> dataType() {
-		return Data.class;
 	}
 
 	@Override

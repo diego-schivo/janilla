@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.janillacom.fullstack;
-
-import com.janilla.janillacom.backend.JanillaBackendConfig;
-import com.janilla.janillacom.frontend.JanillaFrontendConfig;
-import com.janilla.websitetemplate.fullstack.WebsiteFullstackConfig;
-
-public interface JanillaFullstackConfig extends WebsiteFullstackConfig, JanillaFrontendConfig, JanillaBackendConfig {
-}
+//package com.janilla.janillacom.fullstack;
+//
+//import com.janilla.janillacom.backend.JanillaBackendConfig;
+//import com.janilla.janillacom.frontend.JanillaFrontendConfig;
+//import com.janilla.websitetemplate.fullstack.WebsiteFullstackConfig;
+//
+//public interface JanillaFullstackConfig extends WebsiteFullstackConfig, JanillaFrontendConfig, JanillaBackendConfig {
+//}

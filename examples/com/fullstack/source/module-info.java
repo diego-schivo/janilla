@@ -21,7 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 module com.janilla.janillacom.fullstack {
 
 	exports com.janilla.janillacom.fullstack;

@@ -21,18 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.janillacom;
+package com.janilla.janillacom.frontend;
 
-import com.janilla.java.Converter;
-import com.janilla.java.Copier;
-import com.janilla.web.WebApp;
-import com.janilla.websitetemplate.WebsiteDomain;
+import com.janilla.ioc.DiFactory;
+import com.janilla.websitetemplate.frontend.WebsiteApiClient;
 
-public class JanillaDomain extends WebsiteDomain {
+class ApiClientImpl extends WebsiteApiClient {
 
-	public static final ScopedValue<WebApp<?, ?>> WEB_APP = ScopedValue.newInstance();
+	protected final ApplicationApiClient applications;
 
-	public JanillaDomain(Converter converter, Copier copier) {
-		super(converter, copier);
+	public ApiClientImpl(DiFactory diFactory) {
+		super(diFactory);
+
+		applications = diFactory.newInstance(diFactory.classFor(ApplicationApiClient.class));
 	}
+
+	public ApplicationApiClient applications() {
+		return applications;
+	}
+
 }

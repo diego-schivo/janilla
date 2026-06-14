@@ -26,8 +26,12 @@ package com.janilla.janillacom.fullstack;
 import java.util.Map;
 
 import com.janilla.janillacom.AppResolution;
+import com.janilla.janillacom.backend.JanillaBackendConfig;
+import com.janilla.janillacom.frontend.JanillaFrontendConfig;
+import com.janilla.websitetemplate.fullstack.WebsiteFullstackConfig;
 
 record ConfigImpl(Api api, AppResolution appResolution, Map<String, ?> backends, Database database, Download download,
 		Map<String, ?> frontends, HttpServer httpServer, Jwt jwt, String key, Boolean liveDemo, Mail mail,
-		String basePath, String title, Upload upload) implements JanillaFullstackConfig {
+		String basePath, String title, Upload upload)
+		implements WebsiteFullstackConfig, JanillaBackendConfig, JanillaFrontendConfig {
 }

@@ -39,7 +39,7 @@ import com.janilla.web.Handle;
 public class BackendApplicationApi extends AbstractCollectionApi<String, Application> {
 
 	public BackendApplicationApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Application.class, drafts, persistence, "title", copier);
+		super(Application.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 //	@Override

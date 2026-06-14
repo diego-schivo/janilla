@@ -60,9 +60,9 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig, Jani
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
-		var c = newConfig(new Class<?>[] { JanillaFrontend.class }, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
-				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		var cfg = newConfig(new Class<?>[] { JanillaFrontend.class }, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		serve(a[0]);
 	}
 
@@ -72,8 +72,8 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig, Jani
 		super(config, diFactory, context, null);
 
 		frontends = config
-				.frontends().keySet().stream().map(x -> ((JanillaDataFetching) dataFetching)
-						.applications(x, null, null, null, null, null).elements().getFirst())
+				.frontends().keySet().stream().map(x -> ((ApiClientImpl) apiClient)
+						.applications().read(x, null, null, null, null, null).elements().getFirst())
 				.collect(Collectors.toMap(Application::id, a -> {
 					try {
 						var c = Class.forName(a.frontend());
@@ -83,7 +83,7 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig, Jani
 						var f = Ioc.diFactory(tt, () -> a2[0]);
 						var cfg = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.frontends().get(a.id()))
 								.filter(x -> x != null).toArray(Map<?, ?>[]::new), f);
-						Consumer<Object> ctx = x -> a2[0] = (WebApp<?, ?>) x;
+						var ctx = (Consumer<Object>) x -> a2[0] = (WebApp<?, ?>) x;
 						return (Frontend<?, ?>) f.newInstance(c,
 								Java.hashMap("config", cfg, "diFactory", f, "context", ctx, "httpClient", httpClient));
 					} catch (ReflectiveOperationException e) {
@@ -116,8 +116,8 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig, Jani
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
 		resourcesProviders.put(new PackageResourcesProvider("com.janilla.websitetemplate.frontend"), "/website");
-		resourcesProviders.put(diFactory.newInstance(DownloadResourcesProvider.class, Map.of("url", GEIST_FONT_DOWNLOAD)),
-				"/website");
+		resourcesProviders.put(
+				diFactory.newInstance(DownloadResourcesProvider.class, Map.of("url", GEIST_FONT_DOWNLOAD)), "/website");
 		resourcesProviders.put(new PackageResourcesProvider("com.janilla.janillacom.frontend"), "");
 	}
 }

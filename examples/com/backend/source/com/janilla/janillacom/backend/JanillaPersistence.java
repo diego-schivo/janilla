@@ -21,24 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.janillacom.backend;
-
-import java.util.List;
-
-import com.janilla.backend.sqlite.SqliteDatabase;
-import com.janilla.ioc.DiFactory;
-import com.janilla.persistence.Entity;
-import com.janilla.websitetemplate.backend.WebsitePersistence;
-
-public class JanillaPersistence extends WebsitePersistence<JanillaBackendConfig> {
-
-	public JanillaPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory,
-			JanillaBackendConfig config) {
-		super(database, storables, diFactory, config);
-	}
-
-	@Override
-	protected Class<?> seedDataClass() {
-		return SeedData.class;
-	}
-}
+//package com.janilla.janillacom.backend;
+//
+//import java.util.List;
+//
+//import com.janilla.backend.sqlite.SqliteDatabase;
+//import com.janilla.ioc.DiFactory;
+//import com.janilla.persistence.Entity;
+//import com.janilla.websitetemplate.backend.WebsitePersistence;
+//
+//public class JanillaPersistence extends WebsitePersistence<JanillaBackendConfig> {
+//
+//	public JanillaPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory,
+//			JanillaBackendConfig config, Class<?> seedDataClass) {
+//		super(database, storables, diFactory, config, seedDataClass);
+//	}
+//}

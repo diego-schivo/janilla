@@ -98,7 +98,7 @@ class HttpServerImpl extends DefaultHttpServer {
 			var t = new FilterTransfer(transfer) {
 
 				@Override
-				public int read() throws IOException {
+				public int read() {
 					var n = super.read();
 
 					if (n > 0 && !l.test(n))

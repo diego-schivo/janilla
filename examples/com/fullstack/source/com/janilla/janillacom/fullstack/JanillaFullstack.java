@@ -44,7 +44,7 @@ import com.janilla.java.SimpleLogger;
 import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.fullstack.WebsiteFullstack;
 
-public class JanillaFullstack extends WebsiteFullstack<JanillaFullstackConfig, JanillaDomain> {
+public class JanillaFullstack extends WebsiteFullstack<ConfigImpl, JanillaDomain> {
 
 	public static final Class<?>[] CONFIG_CLASSES = { JanillaBackend.class, JanillaFrontend.class,
 			JanillaFullstack.class };
@@ -93,14 +93,14 @@ public class JanillaFullstack extends WebsiteFullstack<JanillaFullstackConfig, J
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
-		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
-				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		var cfg = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		serve(a[0]);
 	}
 
-	public JanillaFullstack(JanillaFullstackConfig config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context, JanillaFrontend.class, JanillaBackend.class);
+	JanillaFullstack(ConfigImpl config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, JanillaBackend.class, JanillaFrontend.class);
 	}
 
 	@Override
