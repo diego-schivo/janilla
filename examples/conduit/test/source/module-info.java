@@ -27,5 +27,6 @@ module com.janilla.conduit.test {
 
 	opens com.janilla.conduit.test;
 
+	requires transitive com.janilla.blanktemplate.test;
 	requires transitive com.janilla.conduit.fullstack;
 }

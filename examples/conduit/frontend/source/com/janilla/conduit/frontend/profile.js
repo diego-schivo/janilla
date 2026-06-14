@@ -83,7 +83,7 @@ export default class Profile extends WebComponent {
 			const { profile } = await (await fetch(`${apiUrl}/profiles/${this.dataset.username}`, { headers: apiHeaders })).json();
 			history.replaceState({
 				...history.state,
-				profile,
+				profile: profile ?? {},
 				profileTab: "author"
 			}, "");
 			dispatchEvent(new CustomEvent("popstate"));
@@ -109,7 +109,7 @@ export default class Profile extends WebComponent {
 		const { profile } = event.detail;
 		history.replaceState({
 			...history.state,
-			profile
+			profile: profile ?? {}
 		}, "");
 		this.requestDisplay();
 	}

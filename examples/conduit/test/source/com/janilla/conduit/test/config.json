@@ -1,5 +1,11 @@
 {
+	"api": {
+		"url": "http://localhost:8080/api"
+	},
 	"database": {
 		"file": "~/janilla/sample-data/conduit-test.db"
+	},
+	"httpServer": {
+		"port": 8080
 	}
 }

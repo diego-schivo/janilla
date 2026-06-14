@@ -76,7 +76,7 @@ export default class PopularTags extends WebComponent {
 			const { tags } = await (await fetch(`${apiUrl}/tags`, { headers: apiHeaders })).json();
 			history.replaceState({
 				...history.state,
-				tags
+				tags: tags ?? []
 			}, "");
 			this.requestDisplay(0);
 		}

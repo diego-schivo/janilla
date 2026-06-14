@@ -98,7 +98,7 @@ static get moduleUrl() {
 			const { articles, articlesCount } = await (await fetch(u, { headers: apiHeaders })).json();
 			history.replaceState({
 				...history.state,
-				articles,
+				articles: articles ?? [],
 				articlesCount
 			}, "");
 			this.requestDisplay(0);

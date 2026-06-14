@@ -22,4 +22,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "site.css";
+package com.janilla.conduit.frontend;
+
+record ConfigImpl(Api api, Download download, HttpServer httpServer, Jwt jwt, String key, Boolean liveDemo,
+		String basePath, String title) implements ConduitFrontendConfig {
+}

@@ -22,4 +22,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "site.css";
+package com.janilla.conduit.backend;
+
+import java.util.List;
+
+import com.janilla.blanktemplate.Media;
+import com.janilla.cms.User;
+
+public record Collections(List<User<?>> users, List<Media> media) {
+}

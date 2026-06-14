@@ -22,4 +22,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "site.css";
+package com.janilla.conduit.fullstack;
+
+import com.janilla.blanktemplate.fullstack.BlankFullstackConfig;
+import com.janilla.conduit.backend.ConduitBackendConfig;
+import com.janilla.conduit.frontend.ConduitFrontendConfig;
+
+record ConfigImpl(Api api, Database database, Download download, HttpServer httpServer, Jwt jwt, String key,
+		Boolean liveDemo, String basePath, String title, Upload upload)
+		implements BlankFullstackConfig, ConduitBackendConfig, ConduitFrontendConfig {
+}

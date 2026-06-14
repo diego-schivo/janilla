@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +22,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.conduit.backend;
+package com.janilla.conduit.frontend;
 
-import java.util.List;
+import com.janilla.blanktemplate.frontend.BlankFrontendConfig;
+import com.janilla.conduit.ConduitConfig;
 
-public record Tags(List<String> tags) {
+public interface ConduitFrontendConfig extends BlankFrontendConfig, ConduitConfig {
 }

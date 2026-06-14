@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "base.css";
 @import "app.css";
-@import "article.css";
-@import "article-preview.css";
-@import "editor.css";
-@import "errors.css";
-@import "favorite-button.css";
-@import "home.css";
-@import "profile.css";
+@import "base/janilla-logo.css";
+@import "base/lucide-icon.css";
+@import "base/toaster.css";

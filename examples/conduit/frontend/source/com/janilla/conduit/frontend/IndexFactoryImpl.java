@@ -23,29 +23,50 @@
  */
 package com.janilla.conduit.frontend;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.DefaultIndexFactory;
-import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.blanktemplate.frontend.BlankFrontendConfig;
+import com.janilla.blanktemplate.frontend.BlankIndexFactory;
+import com.janilla.frontend.ApiClient;
+import com.janilla.frontend.Template;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 
-class IndexFactoryImpl extends DefaultIndexFactory<FrontendConfig> {
+class IndexFactoryImpl extends BlankIndexFactory<BlankFrontendConfig> {
 
-	protected final DiFactory diFactory;
+	public IndexFactoryImpl(BlankFrontendConfig config, ResourceMap resourceMap, DiFactory diFactory,
+			ApiClient apiClient) {
+		super(config, resourceMap, diFactory, apiClient);
+	}
 
-	public IndexFactoryImpl(FrontendConfig config, ResourceMap resourceMap, DiFactory diFactory) {
-		super(config, resourceMap);
-		this.diFactory = diFactory;
+	@Override
+	public Template blankTemplate(String name) {
+		return template("blank/" + name);
 	}
 
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
+
 		Stream.of("app", "article", "article-preview", "articles", "comments", "editor", "errors", "favorite-button",
 				"follow-button", "home", "login", "nav-link", "page-display", "pagination-nav", "popular-tags",
 				"profile", "register", "settings", "tags-input")
 				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+	}
+
+	@Override
+	protected String blankImportKey(String name) {
+		return "blank/" + name;
+	}
+
+	@Override
+	protected void addTemplates(List<Template> list) {
+		super.addTemplates(list);
+
+		Stream.of("app", "article", "article-preview", "articles", "comments", "editor", "errors", "favorite-button",
+				"follow-button", "home", "login", "nav-link", "page-display", "pagination-nav", "popular-tags",
+				"profile", "register", "settings", "tags-input").map(this::template).forEach(list::add);
 	}
 }

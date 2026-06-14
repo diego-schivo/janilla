@@ -29,14 +29,15 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.backend.persistence.DefaultCrud;
+import com.janilla.backend.cms.DefaultDocumentCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.conduit.Article;
 import com.janilla.java.Converter;
 import com.janilla.java.Copier;
 
-class ArticleCrud extends DefaultCrud<Long, Article> {
+class ArticleCrud extends DefaultDocumentCrud<Long, Article> {
 
-	public ArticleCrud(Converter converter, Copier copier, Persistence persistence) {
+	ArticleCrud(Converter converter, Copier copier, Persistence persistence) {
 		super(Article.class, persistence.idHelper(Article.class), converter, copier, persistence);
 	}
 

@@ -23,10 +23,11 @@
  */
 package com.janilla.conduit.backend;
 
-import java.util.Collections;
 import java.util.Map;
 
+import com.janilla.backend.cms.UserHttpExchange;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Java;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/profiles")
@@ -40,24 +41,24 @@ public class ProfileApi {
 
 	@Handle(method = "GET", path = "([^/]+)")
 	public Object read(String username) {
-		var c = persistence.crud(User.class);
+		var c = ((PersistenceImpl) persistence).userCrud();
 		var u = c.read(c.find("username", new Object[] { username }));
-		return Collections.singletonMap("profile", u);
+		return Java.hashMap("profile", u);
 	}
 
 	@Handle(method = "POST", path = "([^/]+)/follow")
-	public Object follow(String username, User user) {
-		var c = (UserCrud) persistence.crud(User.class);
+	public Object follow(String username, UserHttpExchange<?> exchange) {
+		var c = ((PersistenceImpl) persistence).userCrud();
 		var u = c.read(c.find("username", new Object[] { username }));
-		c.follow(u.id(), user.id());
+		c.follow(u.id(), (Long) exchange.sessionUser().id());
 		return Map.of("profile", u);
 	}
 
 	@Handle(method = "DELETE", path = "([^/]+)/follow")
-	public Object unfollow(String username, User user) {
-		var c = (UserCrud) persistence.crud(User.class);
+	public Object unfollow(String username, UserHttpExchange<?> exchange) {
+		var c = ((PersistenceImpl) persistence).userCrud();
 		var u = c.read(c.find("username", new Object[] { username }));
-		c.unfollow(u.id(), user.id());
+		c.unfollow(u.id(), (Long) exchange.sessionUser().id());
 		return Map.of("profile", u);
 	}
 }

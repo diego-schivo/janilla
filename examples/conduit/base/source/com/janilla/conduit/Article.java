@@ -21,23 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.conduit.backend;
+package com.janilla.conduit;
 
 import java.time.Instant;
 import java.util.List;
 
-import com.janilla.persistence.Entity;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
+import com.janilla.cms.User;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
 @Store
 public record Article(Long id, @Index String slug, String title, String description, String body, @Index(properties = {
-		"tagList", "createdAt" }) List<String> tagList, @Index Instant createdAt, Instant updatedAt,
-		@Index(properties = { "author", "createdAt" }) User author) implements Entity<Long>{
-
-	public static final Article EMPTY = new Article(null, null, null, null, null, null, null, null, null);
-
-	public Article withId(Long id) {
-		return new Article(id, null, null, null, null, null, null, null, null);
-	}
+		"tagList", "createdAt" }) List<String> tagList, @Index(properties = { "author", "createdAt" }) User<?> author,
+		@Index Instant createdAt, Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt)
+		implements Document<Long> {
 }

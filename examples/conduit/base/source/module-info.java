@@ -22,4 +22,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "site.css";
+module com.janilla.conduit.base {
+
+	exports com.janilla.conduit;
+
+	opens com.janilla.conduit;
+
+	requires transitive com.janilla.blanktemplate.base;
+}

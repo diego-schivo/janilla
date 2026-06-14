@@ -60,7 +60,7 @@ export default class Editor extends WebComponent {
 			if (this.dataset.slug) {
 				const { customEnv: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
 				const { article } = await (await fetch(`${apiUrl}/articles/${this.dataset.slug}`, { headers: apiHeaders })).json();
-				hs.article = article;
+				hs.article = article ?? {};
 			} else
 				hs.article = {};
 			history.replaceState(hs, "");

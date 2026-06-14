@@ -21,39 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.conduit.test;
+package com.janilla.conduit;
 
-import java.net.SocketAddress;
-import java.util.Map;
+import java.time.Instant;
 
-import javax.net.ssl.SSLContext;
+import com.janilla.cms.Document;
+import com.janilla.cms.DocumentStatus;
+import com.janilla.cms.User;
+import com.janilla.persistence.Index;
+import com.janilla.persistence.Store;
 
-import com.janilla.conduit.fullstack.ConduitFullstack;
-import com.janilla.http.DefaultHttpServer;
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
-import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse;
-
-class HttpServerImpl extends DefaultHttpServer {
-
-	protected final ConduitFullstack fullstack;
-
-	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler,
-			ConduitFullstack fullstack) {
-		super(endpoint, sslContext, handler);
-		this.fullstack = fullstack;
-	}
-
-	@Override
-	public HttpExchange createExchange(HttpRequest request, HttpResponse response) {
-		if (WebHandling.TEST_ONGOING.get()) {
-			var f = request.getPath().startsWith("/api/") ? fullstack.backend().diFactory()
-					: fullstack.frontend().diFactory();
-			var c = f.classFor(HttpExchange.class);
-			if (c != null)
-				return f.newInstance(c, Map.of("request", request, "response", response));
-		}
-		return super.createExchange(request, response);
-	}
+@Store
+public record Comment(Long id, String body, User<?> author, @Index Article article, Instant createdAt,
+		Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt) implements Document<Long> {
 }

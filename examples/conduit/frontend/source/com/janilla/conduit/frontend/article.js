@@ -95,7 +95,10 @@ static get moduleUrl() {
 				`${a.customEnv.apiUrl}/articles/${this.dataset.slug}`,
 				`${a.customEnv.apiUrl}/articles/${this.dataset.slug}/comments`,
 			].map(x => fetch(x, { headers: a.customState.apiHeaders }).then(y => y.json())));
-			Object.assign(hs, { article, comments });
+			Object.assign(hs, {
+				article: article ?? {},
+				comments: comments ?? []
+			});
 			history.replaceState(hs, "");
 			dispatchEvent(new CustomEvent("popstate"));
 		}

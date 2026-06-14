@@ -27,5 +27,6 @@ module com.janilla.conduit.backend {
 
 	opens com.janilla.conduit.backend;
 
-	requires transitive com.janilla.backend;
+	requires transitive com.janilla.blanktemplate.backend;
+	requires transitive com.janilla.conduit.base;
 }

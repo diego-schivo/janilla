@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,16 +22,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import BaseApp from "base/app";
+import BlankApp from "blank/app";
 
-export default class App extends BaseApp {
+export default class App extends BlankApp {
 
     static get moduleUrl() {
         return import.meta.url;
     }
 
     static get templateNames() {
-        return ["app"];
+        return ["/base/app", "/blank/app", "app"];
     }
 
     connectedCallback() {
@@ -50,28 +51,12 @@ export default class App extends BaseApp {
         super.disconnectedCallback();
     }
 
-    async updateDisplaySite() {
-        const s = this.customState;
-
-        if (!Object.hasOwn(s, "user")) {
-            const t = localStorage.getItem("jwtToken");
-            if (t) {
-                const { user } = await (await fetch(`${this.customEnv.apiUrl}/user`, {
-                    headers: { Authorization: `Token ${t}` }
-                })).json();
-                s.user = user;
-            } else
-                s.user = null;
-            s.apiHeaders = s.user?.token
-                ? { Authorization: `Token ${s.user.token}` }
-                : {};
-        }
-
+    siteData() {
         const p = location.hash.substring(1);
         const nn = p.split("/");
         const hs = history.state ?? {};
-        this.appendChild(this.interpolateDom({
-            $template: "",
+        return {
+            $template: "site",
             header: ({
                 $template: "header",
                 navItems: (() => {
@@ -79,7 +64,7 @@ export default class App extends BaseApp {
                         href: "#/",
                         text: "Home"
                     }];
-                    const u = s.user;
+                    const u = this.currentUser;
                     if (u)
                         ii.push({
                             href: "#/editor",
@@ -122,7 +107,7 @@ export default class App extends BaseApp {
                 }
             })(),
             footer: { $template: "footer" }
-        }));
+        };
     }
 
     handleClick(event) {

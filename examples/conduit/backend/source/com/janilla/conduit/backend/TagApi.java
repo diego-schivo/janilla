@@ -25,14 +25,15 @@ package com.janilla.conduit.backend;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.backend.sqlite.TraverseOption;
+import com.janilla.conduit.Tags;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/tags")
-public class TagApi {
+class TagApi {
 
 	protected final Persistence persistence;
 
-	public TagApi(Persistence persistence) {
+	TagApi(Persistence persistence) {
 		this.persistence = persistence;
 	}
 

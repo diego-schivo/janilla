@@ -27,5 +27,6 @@ module com.janilla.conduit.frontend {
 
 	opens com.janilla.conduit.frontend;
 
-	requires transitive com.janilla.frontend;
+	requires transitive com.janilla.blanktemplate.frontend;
+	requires transitive com.janilla.conduit.base;
 }

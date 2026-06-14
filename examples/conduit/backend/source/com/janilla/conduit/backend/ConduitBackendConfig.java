@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +24,8 @@
  */
 package com.janilla.conduit.backend;
 
-import com.janilla.persistence.Entity;
-import com.janilla.persistence.Index;
-import com.janilla.persistence.Store;
+import com.janilla.blanktemplate.backend.BlankBackendConfig;
+import com.janilla.conduit.ConduitConfig;
 
-@Store
-public record User(Long id, @Index String email, String hash, String salt, @Index String username, String bio,
-		String image) implements Entity<Long> {
+public interface ConduitBackendConfig extends BlankBackendConfig, ConduitConfig {
 }

@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,34 +22,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.conduit.backend;
+package com.janilla.conduit;
 
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandlerFactory;
-import com.janilla.ioc.DiFactory;
-import com.janilla.web.Error;
-import com.janilla.web.ExceptionHandlerFactory;
-import com.janilla.web.RenderableFactory;
-import com.janilla.web.WebAppConfig;
+import com.janilla.blanktemplate.BlankConfig;
 
-class CustomExceptionHandlerFactory extends ExceptionHandlerFactory {
-
-	protected final RenderableFactory renderableFactory;
-
-	public CustomExceptionHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
-			RenderableFactory renderableFactory) {
-		super(config, rootFactory, diFactory);
-		this.renderableFactory = renderableFactory;
-	}
-
-	@Override
-	protected boolean handle(Error error, HttpExchange exchange) {
-		super.handle(error, exchange);
-		if (exchange.exception() instanceof ValidationException e) {
-			var r = renderableFactory.createRenderable(null, e.errors);
-			var h = rootFactory.createHandler(r);
-			h.handle(exchange);
-		}
-		return true;
-	}
+public interface ConduitConfig extends BlankConfig {
 }

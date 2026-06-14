@@ -21,46 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.conduit.backend;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.janilla.backend.persistence.Persistence;
-import com.janilla.backend.web.BackendConfig;
-import com.janilla.http.HttpRequest;
-import com.janilla.http.HttpResponse;
-import com.janilla.http.SimpleHttpExchange;
-import com.janilla.json.Jwt;
-
-class HttpExchangeImpl extends SimpleHttpExchange {
-
-	protected final BackendConfig config;
-
-	protected final Persistence persistence;
-
-	protected final Map<String, Object> session = new HashMap<>();
-
-	public HttpExchangeImpl(HttpRequest request, HttpResponse response, BackendConfig config, Persistence persistence) {
-		super(request, response);
-		this.config = config;
-		this.persistence = persistence;
-	}
-
-	public User getUser() {
-		if (!session.containsKey("user")) {
-			var a = request().getHeaderValue("authorization");
-			var t = a != null && a.startsWith("Token ") ? a.substring("Token ".length()) : null;
-			var p = t != null ? Jwt.verifyToken(t, config.jwt().key()) : null;
-			var e = p != null ? (String) p.get("loggedInAs") : null;
-			User u;
-			if (e != null) {
-				var c = persistence.crud(User.class);
-				u = c.read(c.find("email", new Object[] { e }));
-			} else
-				u = null;
-			session.put("user", u);
-		}
-		return (User) session.get("user");
-	}
-}
+//package com.janilla.conduit.backend;
+//
+//import java.util.HashMap;
+//import java.util.Map;
+//
+//import com.janilla.backend.persistence.Persistence;
+//import com.janilla.backend.web.BackendConfig;
+//import com.janilla.cms.User;
+//import com.janilla.http.HttpRequest;
+//import com.janilla.http.HttpResponse;
+//import com.janilla.http.SimpleHttpExchange;
+//import com.janilla.json.Jwt;
+//
+//class HttpExchangeImpl extends SimpleHttpExchange {
+//
+//	protected final BackendConfig config;
+//
+//	protected final Persistence persistence;
+//
+//	protected final Map<String, Object> session = new HashMap<>();
+//
+//	public HttpExchangeImpl(HttpRequest request, HttpResponse response, BackendConfig config, Persistence persistence) {
+//		super(request, response);
+//		this.config = config;
+//		this.persistence = persistence;
+//	}
+//
+//	public User getUser() {
+//		if (!session.containsKey("user")) {
+//			var a = request().getHeaderValue("authorization");
+//			var t = a != null && a.startsWith("Token ") ? a.substring("Token ".length()) : null;
+//			var p = t != null ? Jwt.verifyToken(t, config.jwt().key()) : null;
+//			var e = p != null ? (String) p.get("loggedInAs") : null;
+//			User u;
+//			if (e != null) {
+//				var c = persistence.crud(User.class);
+//				u = (User) c.read(c.find("email", new Object[] { e }));
+//			} else
+//				u = null;
+//			session.put("user", u);
+//		}
+//		return (User) session.get("user");
+//	}
+//}

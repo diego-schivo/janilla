@@ -1,7 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2024-2026 Diego Schivo
+ * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,13 +24,6 @@
  */
 package com.janilla.conduit.backend;
 
-import java.time.Instant;
-
-import com.janilla.persistence.Entity;
-import com.janilla.persistence.Index;
-import com.janilla.persistence.Store;
-
-@Store
-public record Comment(Long id, Instant createdAt, Instant updatedAt, String body, User author, @Index Article article)
-		implements Entity<Long> {
+record ConfigImpl(Api api, Database database, HttpServer httpServer, Jwt jwt, Boolean liveDemo, String basePath,
+		Upload upload) implements ConduitBackendConfig {
 }
