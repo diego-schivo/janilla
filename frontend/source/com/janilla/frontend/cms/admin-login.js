@@ -81,8 +81,8 @@ export default class AdminLogin extends WebComponent {
         const f = event.target;
         event.preventDefault();
 
-        const a = this.closest("app-element");
-        const a2 = this.closest("admin-element");
+        const a = this.shadowClosest("app-element");
+        const a2 = this.shadowClosest("admin-element");
         const r = await fetch(`${a.customEnv.apiUrl}/users/login`, {
             method: "POST",
             credentials: "include",

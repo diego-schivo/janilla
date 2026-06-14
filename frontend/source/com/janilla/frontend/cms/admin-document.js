@@ -66,7 +66,7 @@ export default class AdminDocument extends WebComponent {
     connectedCallback() {
         super.connectedCallback();
         const s = this.customState;
-        s.admin = this.closest("admin-element");
+        s.admin = this.shadowClosest("admin-element");
         s.admin.addEventListener("documentchanged", this.handleDocumentChanged);
     }
 
@@ -77,7 +77,7 @@ export default class AdminDocument extends WebComponent {
     }
 
     async updateDisplay() {
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
         {
             const x = ({
                 edit: "Editing",

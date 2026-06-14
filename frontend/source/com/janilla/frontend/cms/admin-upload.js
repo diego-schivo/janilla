@@ -123,7 +123,7 @@ export default class AdminUpload extends WebComponent {
                 this.requestDisplay();
                 break;
             case "remove":
-                this.closest("admin-element").setFieldData(s.field, null);
+                this.shadowClosest("admin-element").setFieldData(s.field, null);
                 this.requestDisplay();
                 break;
         }
@@ -132,14 +132,14 @@ export default class AdminUpload extends WebComponent {
 	handleDocumentSaved = event => {
 	    event.preventDefault();
 	    const s = this.customState;
-	    this.closest("admin-element").setFieldData(s.field, event.detail);
+	    this.shadowClosest("admin-element").setFieldData(s.field, event.detail);
 	    delete s.drawer;
 	    this.requestDisplay();
 	}
 
     handleDocumentSelected = event => {
         const s = this.customState;
-        this.closest("admin-element").setFieldData(s.field, event.detail);
+        this.shadowClosest("admin-element").setFieldData(s.field, event.detail);
         delete s.drawer;
         this.requestDisplay();
     }

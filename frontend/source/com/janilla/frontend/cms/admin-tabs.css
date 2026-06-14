@@ -126,7 +126,7 @@
   }
 }
 
-.admin-ui :where(admin-tabs) {
+/*.admin-ui*/ :where(admin-tabs) {
   > [slot^="panel-"] > ul {
     display: flex;
     flex-direction: column;

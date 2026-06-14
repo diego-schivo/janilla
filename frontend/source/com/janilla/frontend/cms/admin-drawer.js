@@ -79,7 +79,9 @@ export default class AdminDrawer extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.shadowClosest("app-element");
         this.shadowRoot.appendChild(this.interpolateDom({
+            ...a.baseInput,
             $template: "",
             title: this.dataset.title ?? "[Untitled]",
             idLabel: this.dataset.id ? {

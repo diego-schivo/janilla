@@ -33,6 +33,7 @@ import com.janilla.web.JsonRenderer;
 import com.janilla.web.Render;
 import com.janilla.web.Renderer;
 
+@Render(template = "app")
 public interface App {
 
 	@Render(renderer = JsonRenderer.class)

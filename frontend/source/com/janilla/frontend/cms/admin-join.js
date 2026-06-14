@@ -79,7 +79,7 @@ export default class AdminJoin extends WebComponent {
         const p = this.dataset.path;
         const s = this.customState;
         s.field = this.closest("admin-edit").field(p);
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
 
         s.slug = Object.entries(a.customState.schema["Collections"])
             .find(([_, v]) => v.elementTypes[0] === s.field.referenceType)[0]

@@ -70,7 +70,7 @@ export default class AdminVersion extends WebComponent {
     }
 
     async updateDisplay() {
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
         const t = a.dateTimeFormat.format(new Date(a.customState.version.updatedAt));
         this.appendChild(this.interpolateDom({
             $template: "",
@@ -90,8 +90,8 @@ export default class AdminVersion extends WebComponent {
                 this.querySelector("dialog").close();
                 break;
             case "confirm": {
-                const a = this.closest("app-element");
-                const a2 = this.closest("admin-element");
+                const a = this.shadowClosest("app-element");
+                const a2 = this.shadowClosest("admin-element");
                 const j = await (await fetch(`${a2.customState.collectionSlug
                     ? a2.customState.documentUrl.substring(0, a2.customState.documentUrl.lastIndexOf("/"))
                     : a2.customState.documentUrl}/versions/${a2.customState.version.id}`, {

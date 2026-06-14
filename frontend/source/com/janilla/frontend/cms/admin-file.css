@@ -53,7 +53,7 @@ div:has(> admin-file) {
   gap: 0.25rem;
 }
 
-.admin-ui :where(admin-file) {
+/*.admin-ui*/ :where(admin-file) {
   background: var(--background-2);
   border: 1px solid var(--border-1);
   border-radius: 0.1875rem;

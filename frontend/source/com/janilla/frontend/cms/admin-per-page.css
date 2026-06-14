@@ -47,7 +47,7 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-.admin-ui :where(admin-per-page) {
+/*.admin-ui*/ :where(admin-per-page) {
   select,
   ::picker(select) {
     appearance: base-select;

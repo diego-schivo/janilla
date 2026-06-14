@@ -47,7 +47,8 @@
  * Please contact Diego Schivo, diego.schivo@janilla.com or visit
  * www.janilla.com if you need additional information or have any questions.
  */
-:where(:root:has(.admin-ui)) {
+/*:where(:root:has(.admin-ui)) {*/
+:host {
   background: var(--background-1);
   color-scheme: light dark;
   line-height: 1.25;
@@ -79,7 +80,8 @@
   --color-9: rgb(125, 204, 248);
 }
 
-:where(body:has(.admin-ui)) {
+/*:where(body:has(.admin-ui)) {*/
+:host {
   color: var(--color-1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 0.75rem;
@@ -95,7 +97,8 @@
   }
 }
 
-:where(.admin-ui) {
+/*:where(.admin-ui) {*/
+:host {
   a,
   button,
   input,

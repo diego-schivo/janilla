@@ -81,7 +81,7 @@ export default class AdminSelect extends WebComponent {
 
         s.field ??= this.closest("admin-edit").field(p);
         s.data ??= s.field.data;
-        s.options ??= this.closest("admin-element").options(s.field);
+        s.options ??= this.shadowClosest("admin-element").options(s.field);
 
         this.appendChild(this.interpolateDom({
             $template: "",

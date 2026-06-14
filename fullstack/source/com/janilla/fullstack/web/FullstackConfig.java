@@ -27,5 +27,5 @@ package com.janilla.fullstack.web;
 import com.janilla.backend.web.BackendConfig;
 import com.janilla.frontend.web.FrontendConfig;
 
-public interface FullstackConfig extends FrontendConfig, BackendConfig {
+public interface FullstackConfig extends BackendConfig, FrontendConfig {
 }

@@ -85,7 +85,7 @@ export default class AdminTabs extends WebComponent {
     }
 
     async updateDisplay() {
-        const a = this.closest("app-element");
+        const a = this.shadowClosest("app-element");
         const s = this.customState;
         s.tabs = this.dataset.tabs.split(",");
         s.tab ??= this.dataset.tab ?? s.tabs[0];

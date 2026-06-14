@@ -87,7 +87,7 @@ export default class AdminList extends WebComponent {
         const t = this.dataset.slug.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" ");
         document.title = `${t} - Janilla`;
         const s = this.customState;
-        const a = this.closest("app-element");
+        const a = this.shadowClosest("app-element");
         const u = new URL(`${a.customEnv.apiUrl}/${this.dataset.slug}`, location.href);
 
         const l = parseInt(this.dataset.limit);
@@ -104,7 +104,7 @@ export default class AdminList extends WebComponent {
 
         s.data ??= (await (await fetch(u, { credentials: "include" })).json());
         s.selectionIds ??= [];
-        const a2 = this.closest("admin-element");
+        const a2 = this.shadowClosest("admin-element");
         const hh = a2.headers(this.dataset.slug);
         this.appendChild(this.interpolateDom({
             $template: "",
@@ -213,8 +213,8 @@ export default class AdminList extends WebComponent {
 
     handleClick = async event => {
         const el = event.target.closest("button");
-        const a = this.closest("app-element");
-        const a2 = this.closest("admin-element");
+        const a = this.shadowClosest("app-element");
+        const a2 = this.shadowClosest("admin-element");
         const n = this.dataset.slug;
         const s = this.customState;
         switch (el?.name) {
@@ -333,7 +333,8 @@ export default class AdminList extends WebComponent {
         this.navigateTo(event.detail, 1, parseInt(this.dataset.limit));
     }
 
-    navigate(search, page, limit) {
+    navigateTo(search, page, limit) {
+		const a = this.shadowClosest("app-element");
         const u = new URL(`${a.customEnv.basePath}/admin/collections/${this.dataset.slug}`, location.href);
         if (typeof search === "string" && search.length)
             u.searchParams.append("search", search);
@@ -341,6 +342,6 @@ export default class AdminList extends WebComponent {
             u.searchParams.append("page", page);
         if (typeof limit === "number" && limit >= 0)
             u.searchParams.append("limit", limit);
-        this.closest("app-element").navigateTo(u);
+        a.navigateTo(u);
     }
 }

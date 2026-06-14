@@ -83,8 +83,8 @@ export default class AdminForgotPassword extends WebComponent {
         const f = event.target;
         event.preventDefault();
 
-        const a = this.closest("app-element");
-        const a2 = this.closest("admin-element");
+        const a = this.shadowClosest("app-element");
+        const a2 = this.shadowClosest("admin-element");
         const o = Array.from(new FormData(f).entries()).reduce((x, y) => {
             if (y[0] === "roles")
                 (x[y[0]] ??= []).push(y[1]);

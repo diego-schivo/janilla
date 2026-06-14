@@ -74,7 +74,7 @@ export default class AdminSearchFilter extends WebComponent {
     }
 
     async updateDisplay() {
-        const a2 = this.closest("admin-element");
+        const a2 = this.shadowClosest("admin-element");
         const l = this.closest("admin-list");
         this.appendChild(this.interpolateDom({
             $template: "",

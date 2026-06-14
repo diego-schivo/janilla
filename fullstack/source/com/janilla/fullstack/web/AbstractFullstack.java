@@ -61,10 +61,10 @@ public abstract class AbstractFullstack<C extends FullstackConfig, D extends Dom
 	protected AbstractFrontend<?, ?> frontend;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected AbstractFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class frontendClass,
-			Class backendClass) {
-		this.frontendClass = frontendClass;
+	protected AbstractFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class backendClass,
+			Class frontendClass) {
 		this.backendClass = backendClass;
+		this.frontendClass = frontendClass;
 		super(config, diFactory, context);
 	}
 

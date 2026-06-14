@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.janilla.frontend.web.FrontendConfig;
-import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.JavaResource;
 import com.janilla.web.ResourceMap;
@@ -53,10 +52,6 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 
 	protected List<Template> templates;
 
-	public DefaultIndexFactory(C config, ResourceMap resourceMap) {
-		this(config, resourceMap, null);
-	}
-
 	public DefaultIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory) {
 		this.config = config;
 		this.resourceMap = resourceMap;
@@ -64,21 +59,17 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 	}
 
 	@Override
-	public Index newIndex(HttpExchange exchange) {
-		var a = newApp(exchange);
-		Index i;
-		if (diFactory != null) {
-			var aa = new HashMap<String, Object>();
-			putIndexInitArgs(aa, exchange);
-			i = diFactory.newInstance(diFactory.classFor(Index.class), aa);
-		} else
-			i = new DefaultIndex(a, imports(), scripts(), templates(), config.title());
+	public Index newIndex() {
+		var aa = new HashMap<String, Object>();
+		putIndexInitArgs(aa);
+		var i = diFactory.newInstance(diFactory.classFor(Index.class), aa);
 //		IO.println("DefaultIndexFactory.newIndex, i=" + i);
+
 		return i;
 	}
 
-	protected void putIndexInitArgs(Map<String, Object> args, HttpExchange exchange) {
-		args.put("app", newApp(exchange));
+	protected void putIndexInitArgs(Map<String, Object> args) {
+		args.put("app", newApp());
 		args.put("imports", imports());
 		args.put("basePath", config.basePath());
 		args.put("scripts", scripts());
@@ -86,31 +77,29 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 		args.put("title", config.title());
 	}
 
-	protected App newApp(HttpExchange exchange) {
-		App a;
-		if (diFactory != null) {
-			var aa = new HashMap<String, Object>();
-			putAppInitArgs(aa, exchange);
-			a = diFactory.newInstance(diFactory.classFor(App.class), aa);
-		} else
-			a = new DefaultApp(env(), state(exchange));
+	protected App newApp() {
+		var aa = new HashMap<String, Object>();
+		putAppInitArgs(aa);
+		var a = diFactory.newInstance(diFactory.classFor(App.class), aa);
 //		IO.println("DefaultIndexFactory.newApp, a=" + a);
+
 		return a;
 	}
 
-	protected void putAppInitArgs(Map<String, Object> args, HttpExchange exchange) {
+	protected void putAppInitArgs(Map<String, Object> args) {
 		args.put("env", env());
-		args.put("state", state(exchange));
+		args.put("state", state());
 	}
 
 	protected Map<String, String> env() {
 		var m = new LinkedHashMap<String, String>();
 		m.put("apiUrl", config.api().url());
 		m.put("basePath", config.basePath());
+
 		return m;
 	}
 
-	protected Map<String, Object> state(HttpExchange exchange) {
+	protected Map<String, Object> state() {
 		return new LinkedHashMap<String, Object>();
 	}
 
@@ -122,6 +111,7 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 					putImports(imports);
 				}
 			}
+
 		return imports;
 	}
 
@@ -146,6 +136,7 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 					addTemplates(templates);
 				}
 			}
+
 		return templates;
 	}
 
@@ -154,8 +145,8 @@ public class DefaultIndexFactory<C extends FrontendConfig> implements IndexFacto
 
 	protected Template template(String name) {
 		var f = (JavaResource) resourceMap.get("/" + name + ".html");
-		try (var in = f != null ? f.newInputStream() : null) {
-			return in != null ? new Template(name, new String(in.readAllBytes())) : null;
+		try (var s = f != null ? f.newInputStream() : null) {
+			return s != null ? new Template(name, new String(s.readAllBytes())) : null;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

@@ -60,7 +60,7 @@ export default class AdminVersions extends WebComponent {
     }
 
     async updateDisplay() {
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
         const hh = ["updatedAt", "id", "documentStatus"];
         this.appendChild(this.interpolateDom({
             $template: "",

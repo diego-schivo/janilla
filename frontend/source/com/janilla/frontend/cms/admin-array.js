@@ -162,7 +162,7 @@ export default class AdminArray extends WebComponent {
         } else if (s.dialog && el.matches('[type="radio"]')) {
             event.stopPropagation();
             delete s.dialog;
-            const a = this.closest("admin-element");
+            const a = this.shadowClosest("admin-element");
             a.initField(s.field);
             s.field.data.push({ $type: el.value });
             //console.log("x", s.field.data);
@@ -188,7 +188,7 @@ export default class AdminArray extends WebComponent {
             switch (el.name) {
                 case "add":
                     if (s.field.elementTypes.length === 1) {
-                        const a = this.closest("admin-element");
+                        const a = this.shadowClosest("admin-element");
                         a.initField(s.field);
                         s.field.data.push({ $type: s.field.elementTypes[0] });
                         s.items.push({

@@ -83,7 +83,7 @@ export default class AdminFile extends WebComponent {
             $template: "",
             content: s.field.data ? {
                 $template: "update",
-				src: `${this.closest("app-element").customEnv.apiUrl}/media/file/${s.field.data.name}`,
+				src: `${this.shadowClosest("app-element").customEnv.apiUrl}/media/file/${s.field.data.name}`,
                 data: s.field.data
             } : {
                 $template: "create",
@@ -113,7 +113,7 @@ export default class AdminFile extends WebComponent {
         const s = this.customState;
         switch (el?.name) {
             case "remove":
-                this.closest("admin-element").setFieldData(s.field, null);
+                this.shadowClosest("admin-element").setFieldData(s.field, null);
                 this.requestDisplay();
                 break;
         }

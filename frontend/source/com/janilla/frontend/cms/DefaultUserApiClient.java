@@ -62,7 +62,7 @@ import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.persistence.ListPortion;
 
-public abstract class CmsDataFetching {
+public class DefaultUserApiClient implements UserApiClient {
 
 	protected final FrontendConfig config;
 
@@ -70,12 +70,13 @@ public abstract class CmsDataFetching {
 
 	protected final Converter converter;
 
-	protected CmsDataFetching(FrontendConfig config, HttpClient httpClient, Converter converter) {
+	public DefaultUserApiClient(FrontendConfig config, HttpClient httpClient, Converter converter) {
 		this.config = config;
 		this.httpClient = httpClient;
 		this.converter = converter;
 	}
 
+	@Override
 	public User<?> sessionUser(HttpCookie token) {
 		var r = new HttpRequest("GET", URI.create(config.api().url() + "/users/me"),
 				token != null ? token.format() : null);
@@ -83,6 +84,7 @@ public abstract class CmsDataFetching {
 		return converter.convert(o, User.class);
 	}
 
+	@Override
 	public ListPortion<User<?>> users(Long skip, Long limit) {
 		var r = new HttpRequest("GET",
 				URI.create(config.api().url() + "/users?"

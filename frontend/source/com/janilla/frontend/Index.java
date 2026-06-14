@@ -33,10 +33,8 @@ import com.janilla.web.Render;
 @Render(template = "index", resource = { "/base/index.html", "/index.html" })
 public interface Index {
 
-	@Render(template = "app")
+//	@Render(template = "app")
 	App app();
-
-//	String basePath();
 
 	@Render(renderer = JsonRenderer.class)
 	Map<String, String> imports();

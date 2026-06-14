@@ -68,6 +68,12 @@ export default class Admin extends WebComponent {
         timeStyle: "medium"
     });
 
+    constructor() {
+        super();
+
+        this.attachShadow({ mode: "open" });
+    }
+
     get currentDocument() {
         return this.customState.document;
     }
@@ -90,7 +96,7 @@ export default class Admin extends WebComponent {
     }
 
     async updateDisplay() {
-        const a = this.closest("app-element");
+        const a = this.shadowClosest("app-element");
         const ua = a.currentUser?.roles?.some(x => x.name === "ADMIN");
 
         let p = this.dataset.uri.split("?")[0];
@@ -108,9 +114,9 @@ export default class Admin extends WebComponent {
 
             if (p === "/logout") {
                 await fetch(`${a.customEnv.apiUrl}/users/logout`, {
-					method: "POST",
-					credentials: "include"
-				});
+                    method: "POST",
+                    credentials: "include"
+                });
                 a.currentUser = null;
                 a.navigateTo(new URL(`${a.customEnv.basePath}/admin`, location.href));
                 return;
@@ -171,14 +177,14 @@ export default class Admin extends WebComponent {
             label: g.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
             checked: true,
             links: Object.keys(s.schema[s.schema["Data"][g].type]).map(x => ({
-				...a.baseInput,
+                ...a.baseInput,
                 $template: "link",
-                uri: `/admin/${g}/${x}`,
+                uri: `/admin/${g}/${x.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`,
                 text: x.split(/(?=[A-Z])/).map(y => y.charAt(0).toUpperCase() + y.substring(1)).join(" ")
             }))
         }));
         const pp = new URLSearchParams(location.search);
-        this.appendChild(this.interpolateDom({
+        this.shadowRoot.appendChild(this.interpolateDom({
             $template: "",
             p: ua ? {
                 $template: "p",
@@ -239,7 +245,7 @@ export default class Admin extends WebComponent {
                     delete xx[xx.length - 1].uri;
                     return xx;
                 })().map(x => ({
-					...a.baseInput,
+                    ...a.baseInput,
                     $template: x.uri ? "link-item" : "item",
                     ...x,
                     content: x.logo ? { $template: "logo" } : x.text
@@ -306,11 +312,11 @@ export default class Admin extends WebComponent {
                     this.querySelector("dialog").close();
                     break;
                 case "logout": {
-                    const a = this.closest("app-element");
+                    const a = this.shadowClosest("app-element");
                     await fetch(`${a.customEnv.apiUrl}/users/logout`, {
-						method: "POST",
-						credentials: "include"
-					});
+                        method: "POST",
+                        credentials: "include"
+                    });
                     a.currentUser = null;
                     this.querySelector("dialog").close();
                     this.success("You have been logged out successfully.");
@@ -329,8 +335,8 @@ export default class Admin extends WebComponent {
             const nn = s.pathSegments.slice(0, s.collectionSlug ? 3 : 2);
             if (v !== "edit")
                 nn.push(v);
-            const a = this.closest("app-element");
-			a.navigateTo(new URL(`${a.customEnv.basePath}/admin/${nn.join("/")}`, location.href));
+            const a = this.shadowClosest("app-element");
+            a.navigateTo(new URL(`${a.customEnv.basePath}/admin/${nn.join("/")}`, location.href));
         }
     }
 
@@ -417,7 +423,7 @@ export default class Admin extends WebComponent {
     }
 
     async createDocument(n) {
-        const a = this.closest("app-element");
+        const a = this.shadowClosest("app-element");
         const r = await fetch(`${a.customEnv.apiUrl}/${n}`, {
             method: "POST",
             credentials: "include",
@@ -598,7 +604,7 @@ export default class Admin extends WebComponent {
     }
 
     documentType(slug) {
-        return this.customState.schema["Collections"][slug].elementTypes[0];
+        return this.customState.schema["Collections"][slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")].elementTypes[0];
     }
 
     fieldLabel(ct) {

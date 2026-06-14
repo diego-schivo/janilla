@@ -81,7 +81,7 @@ export default class AdminEdit extends WebComponent {
 
     async updateDisplay() {
         const s = this.customState;
-        const a = this.closest("app-element");
+        const a = this.shadowClosest("app-element");
         s.document ??= await (await fetch((() => {
             const u = new URL([a.customEnv.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), location.href);
 			u.searchParams.append("depth", 1);
@@ -89,7 +89,7 @@ export default class AdminEdit extends WebComponent {
         })(), { credentials: "include" })).json();
         s.versions = Object.hasOwn(s.document, "versionCount");
         s.drafts = Object.hasOwn(s.document, "documentStatus");
-        const a2 = this.closest("admin-element");
+        const a2 = this.shadowClosest("admin-element");
         this.appendChild(this.interpolateDom({
             $template: "",
             entries: (() => {
@@ -153,8 +153,8 @@ export default class AdminEdit extends WebComponent {
 
     handleChange = async event => {
         const el = event.target;
-        const a = this.closest("app-element");
-        const a2 = this.closest("admin-element");
+        const a = this.shadowClosest("app-element");
+        const a2 = this.shadowClosest("admin-element");
         switch (el.closest("select:not([name])")?.value) {
             case "create": {
                 const r = await fetch(`${a.customEnv.apiUrl}/${a2.customState.collectionSlug}`, {
@@ -253,7 +253,7 @@ export default class AdminEdit extends WebComponent {
     }
 
     field(path, document) {
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
         const t = a.customState.schema["Globals"]?.[this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")]?.type
             ?? a.customState.schema["Collections"][this.dataset.slug.split("-").map((x, i) => i ? x.charAt(0).toUpperCase() + x.substring(1) : x).join("")].elementTypes[0];
         return a.field(path, {
@@ -264,8 +264,8 @@ export default class AdminEdit extends WebComponent {
     }
 
     async reloadFieldData(path) {
-        const a = this.closest("app-element");
-        const a2 = this.closest("admin-element");
+        const a = this.shadowClosest("app-element");
+        const a2 = this.shadowClosest("admin-element");
         const d = await (await fetch([a.customEnv.apiUrl, this.dataset.slug, this.dataset.id].filter(x => x).join("/"), { credentials: "include" })).json();
         a2.setFieldData(this.field(path), this.field(path, d).data);
     }
@@ -283,7 +283,7 @@ export default class AdminEdit extends WebComponent {
     }
 
     async saveDocument(auto) {
-        //console.log('this.closest("admin-element").customState.document', this.closest("admin-element").customState.document);
+        //console.log('this.shadowClosest("admin-element").customState.document', this.shadowClosest("admin-element").customState.document);
         const m = new Map(Array.from(new FormData(this.querySelector("form")))
             .map(([k, v]) => [k.split("."), v]).sort(([k1, _], [k2, __]) => {
                 if (k1.length !== k2.length)
@@ -296,8 +296,8 @@ export default class AdminEdit extends WebComponent {
                 return 0;
             }));
         const fee = Array.from(m.entries()).filter(([_, x]) => x instanceof File);
-        const a = this.closest("app-element");
-        const a2 = this.closest("admin-element");
+        const a = this.shadowClosest("app-element");
+        const a2 = this.shadowClosest("admin-element");
         if (fee.length) {
             const fd = new FormData();
             for (const [k, v] of fee)

@@ -75,7 +75,7 @@ export default class AdminBar extends WebComponent {
             text: "Dashboard"
         }, {
             href: "/admin/account",
-            text: this.closest("app-element").currentUser.email
+            text: this.shadowClosest("app-element").currentUser.email
         }, {
             href: "/admin/logout",
             text: "Logout"

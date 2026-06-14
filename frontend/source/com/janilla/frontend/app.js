@@ -95,7 +95,7 @@ export default class App extends WebComponent {
             const a = event.target.shadowRoot
                 ? event.composedPath().find(x => x instanceof Element && x.matches("a"))
                 : event.target.closest("a");
-            const u = a?.href && !a.target ? new URL(a.href) : null;
+            const u = a?.href && !a.getAttribute("href").startsWith("#") && !a.target ? new URL(a.href) : null;
             if (u?.origin === location.origin) {
                 event.preventDefault();
                 this.navigateTo(u);
@@ -109,11 +109,13 @@ export default class App extends WebComponent {
     }
 
     navigateTo(url) {
-        if (!url || url.pathname !== location.pathname)
+        const u = typeof url === "string" ? new URL(url, url.startsWith("/") ? location.href : undefined) : url;
+
+        if (!u || u.pathname !== location.pathname)
             window.scrollTo(0, 0);
 
-        if (url) {
-            history.pushState({}, "", `${url.pathname}${url.search}`);
+        if (u) {
+            history.pushState({}, "", `${u.pathname}${u.search}`);
             dispatchEvent(new Event("statepushed"));
         }
 

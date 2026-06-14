@@ -83,7 +83,7 @@ export default class AdminRelationshipField extends WebComponent {
         s.field ??= this.closest("admin-edit").field(p);
         //s.complex ??= s.field.type === "Document";
         //const m = s.field.type === "List";
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
         s.data ??= Array.isArray(s.field.data) ? s.field.data
             : s.field.data ? [s.field.data] : [];
         this.appendChild(this.interpolateDom({
@@ -157,7 +157,7 @@ export default class AdminRelationshipField extends WebComponent {
 
     handleClick = async event => {
         let el = event.target.closest("button");
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
         const s = this.customState;
 
         switch (el?.name) {
@@ -196,8 +196,8 @@ export default class AdminRelationshipField extends WebComponent {
 
         el = event.target.closest("select");
         if (el) {
-            const a1 = this.closest("app-element");
-            const a2 = this.closest("admin-element");
+            const a1 = this.shadowClosest("app-element");
+            const a2 = this.shadowClosest("admin-element");
             s.options ??= Object.fromEntries(await Promise.all((s.field.referenceTypes ?? [s.field.referenceType]).map(t => {
                 const n = Object.entries(a2.customState.schema["Collections"]).find(([_, v]) => v.elementTypes[0] === t)[0];
                 return fetch(`${a1.customEnv.apiUrl}/${n.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`, { credentials: "include" }).then(x => x.json()).then(x => [t, x.elements]);

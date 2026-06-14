@@ -71,7 +71,7 @@ export default class AdminDashboard extends WebComponent {
 
     async updateDisplay() {
         document.title = "Dashboard - Janilla";
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
         this.appendChild(this.interpolateDom({
             $template: "",
             groups: a.dashboardGroups().map(g => ({
@@ -95,8 +95,8 @@ export default class AdminDashboard extends WebComponent {
 
     handleClick = async event => {
         const el = event.target.closest("button");
-        const a = this.closest("app-element");
-        const a2 = this.closest("admin-element");
+        const a = this.shadowClosest("app-element");
+        const a2 = this.shadowClosest("admin-element");
         switch (el?.name) {
             case "create": {
                 /*

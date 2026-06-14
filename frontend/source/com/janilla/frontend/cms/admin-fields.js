@@ -64,7 +64,7 @@ export default class AdminFields extends WebComponent {
     }
 
     async updateDisplay() {
-        const a = this.closest("admin-element");
+        const a = this.shadowClosest("admin-element");
         const p = this.dataset.path;
         const f = this.closest("admin-edit").field(p);
         this.appendChild(this.interpolateDom({
