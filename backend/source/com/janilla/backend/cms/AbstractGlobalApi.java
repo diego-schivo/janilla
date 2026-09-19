@@ -59,25 +59,29 @@ import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.GlobalApi;
 import com.janilla.cms.Version;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.java.DollarTypeResolver;
-import com.janilla.java.JavaReflect;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 
 public abstract class AbstractGlobalApi<ID extends Comparable<ID>, D extends Document<ID>> implements GlobalApi<ID, D> {
 
-	protected final Class<D> type;
+	protected final Copier copier;
 
 	protected final Predicate<HttpExchange> drafts;
 
-	protected final Persistence persistence;
-
 	protected final ID id;
 
-	protected AbstractGlobalApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence, ID id) {
+	protected final Persistence persistence;
+
+	protected final Class<D> type;
+
+	protected AbstractGlobalApi(Class<D> type, Predicate<HttpExchange> drafts, Persistence persistence, Copier copier,
+			ID id) {
 		this.type = type;
 		this.drafts = drafts;
 		this.persistence = persistence;
+		this.copier = copier;
 		this.id = id;
 	}
 
@@ -98,7 +102,7 @@ public abstract class AbstractGlobalApi<ID extends Comparable<ID>, D extends Doc
 	public D update(@Bind(resolver = DollarTypeResolver.class) D document, Boolean draft, Boolean autosave) {
 		var s = Boolean.TRUE.equals(draft) ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED;
 		if (s != document.documentStatus())
-			document = JavaReflect.copy(Map.of("documentStatus", s), document);
+			document = copier.copy(Map.of("documentStatus", s), document);
 		return crud().update(id, document, null, !Boolean.TRUE.equals(autosave));
 	}
 

@@ -24,6 +24,8 @@
  */
 package com.janilla.json;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -36,9 +38,11 @@ import java.util.stream.Stream;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-public interface Jwt {
+public final class Jwt {
 
-	static String generateToken(Map<String, ?> header, Map<String, ?> payload, String key) {
+	private static final Logger LOGGER = System.getLogger(Jwt.class.getName());
+
+	public static String generateToken(Map<String, ?> header, Map<String, ?> payload, String key) {
 		if (!header.equals(Map.of("alg", "HS256", "typ", "JWT")))
 			throw new IllegalArgumentException("header=" + header);
 
@@ -69,7 +73,9 @@ public interface Jwt {
 		return Arrays.stream(ss).collect(Collectors.joining("."));
 	}
 
-	static Map<String, ?> verifyToken(String token, String key) {
+	public static Map<String, ?> verifyToken(String token, String key) {
+		LOGGER.log(Level.DEBUG, "token={0}, key={1}", token, key);
+
 		var i1 = token.indexOf('.');
 		var i2 = token.lastIndexOf('.');
 		if (i1 == -1 || i2 <= i1)
@@ -78,6 +84,7 @@ public interface Jwt {
 		var ud = Base64.getUrlDecoder();
 		var hs = new String(ud.decode(token.substring(0, i1)));
 		var h = Json.parse(hs);
+		LOGGER.log(Level.DEBUG, "h={0}", h);
 
 		if (!h.equals(Map.of("alg", "HS256", "typ", "JWT")))
 			throw new IllegalArgumentException("h=" + h);
@@ -104,7 +111,13 @@ public interface Jwt {
 		var ps = new String(ud.decode(token.substring(i1 + 1, i2)));
 		@SuppressWarnings("unchecked")
 		var p = (Map<String, ?>) Json.parse(ps);
+		LOGGER.log(Level.DEBUG, "p={0}", p);
+
 		return p;
+	}
+
+	private Jwt() {
+		throw new Error("no instances");
 	}
 
 	public static void main(String[] args) {

@@ -27,7 +27,7 @@ package com.janilla.websitetemplate;
 import java.util.List;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
+import com.janilla.java.Type;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
@@ -35,7 +35,7 @@ import com.janilla.persistence.Store;
 public interface SearchResult extends Document<Long> {
 
 	@Index
-	@Types({ Post.class })
+	@Type({ Post.class })
 	Document<?> document();
 
 	String title();

@@ -24,8 +24,10 @@
  */
 package com.janilla.web;
 
-import java.lang.reflect.Method;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -33,120 +35,148 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import com.janilla.java.Scope;
 import com.janilla.java.JavaReflect;
 
 public class DefaultInvocationResolver implements InvocationResolver {
 
-	public static final ScopedValue<DefaultInvocationResolver> INSTANCE = ScopedValue.newInstance();
+	private static final Logger LOGGER = System.getLogger(DefaultInvocationResolver.class.getName());
 
 	protected final Function<Class<?>, Object> instanceResolver;
 
 	protected final Comparator<Invocation> invocationComparator;
 
-	protected final Map<String, B> bb;
+	protected final Predicate<MethodChoice> methodPredicate;
+
+	protected final Map<String, Entry1> map;
 
 	protected Map<String, InvocationGroup> groups;
 
 	protected Map<Pattern, InvocationGroup> regexGroups;
 
 	public DefaultInvocationResolver(List<Invocable> invocables, Function<Class<?>, Object> instanceResolver,
-			Comparator<Invocation> invocationComparator) {
-		this.instanceResolver = instanceResolver;
-		this.invocationComparator = invocationComparator;
+			Comparator<Invocation> invocationComparator, Predicate<MethodChoice> methodPredicate) {
+		LOGGER.log(Level.DEBUG, "invocables={0}", invocables);
 
-		bb = invocables.stream().map(tm -> {
+		this.instanceResolver = instanceResolver;
+		this.invocationComparator = invocationComparator != null ? invocationComparator : (_, _) -> 0;
+		this.methodPredicate = methodPredicate != null ? methodPredicate : _ -> true;
+
+		map = invocables.stream().map(tm -> {
 //			IO.println("InvocationHandlerFactory, tm=" + tm);
 			var t = tm.type();
 			var m = tm.method();
+
 			var h1 = t.getAnnotation(Handle.class);
 			var p1 = h1 != null ? h1.path() : null;
-			var h2 = JavaReflect.inheritedAnnotation(m, Handle.class);
-			var p2 = h2 != null ? h2.path() : null;
+
+			var aa = JavaReflect.inheritedAnnotation(m, Handle.class);
+			var p2 = aa != null ? aa.annotation().path() : null;
+			var s2 = aa != null ? aa.annotated().getAnnotation(Scope.class) : null;
 //			IO.println("InvocationHandlerFactory, h1=" + h1 + ", h2=" + h2);
+
 			if (p2 != null) {
 				if (p2.startsWith("/"))
 					p1 = null;
 				var p = Stream.of(p1, p2).filter(x -> x != null && !x.isEmpty()).collect(Collectors.joining("/"));
 //				IO.println("InvocationHandlerFactory, p=" + p + ", m=" + m + ", h2=" + h2);
-				return new B(p, tm.type(), new ArrayList<>(List.of(new A(h2.method(), tm.method()))));
+				return new Entry1(p, tm.type(), List.of(new Entry2(aa.annotation().method(),
+						List.of(new MethodChoice(tm.method(), s2 != null ? Set.of(s2.value()) : Set.of())))));
 			} else
 				return null;
-		}).filter(Objects::nonNull).collect(Collectors.toMap(B::p, x -> x, (x, y) -> {
-			if (x.t == y.t) {
-				x.aa.addAll(y.aa);
-				return x;
+		}).filter(Objects::nonNull).collect(Collectors.toMap(Entry1::path, x -> x, (a, b) -> {
+			if (a.type == b.type) {
+				var m = Stream.of(a, b).flatMap(x -> x.entries.stream())
+						.collect(Collectors.toMap(Entry2::method, x -> x.entries, (a2, b2) -> {
+							var mm = a2 instanceof ArrayList<MethodChoice> x ? x : new ArrayList<>(a2);
+							mm.addAll(b2);
+							return mm;
+						}, LinkedHashMap::new));
+				return new Entry1(a.path, a.type,
+						m.entrySet().stream().map(x -> new Entry2(x.getKey(), x.getValue())).toList());
 			}
-			return y;
+			return b;
 		}, LinkedHashMap::new));
 	}
 
 	@Override
 	public Stream<Invocation> lookup(String method, String path) {
-		var s = groups(path).map(i -> {
-			var m = i.methods().get(method);
-			if (m == null)
-				m = i.methods().get("");
-			return m != null ? new Invocation(i.object(), m, i.regexGroups()) : null;
-		}).filter(Objects::nonNull);
-		return invocationComparator != null ? s.sorted(invocationComparator) : s;
+		LOGGER.log(Level.DEBUG, "method={0}, path={1}", method, path);
+
+		var ii = groups(path).map(g -> {
+			var cc = g.choices().get(method);
+			if (cc == null)
+				cc = g.choices().get("");
+			LOGGER.log(Level.DEBUG, "cc={0}", cc);
+
+			cc = new ArrayList<>(cc != null ? cc : List.of());
+			Collections.reverse(cc);
+			return cc.stream().filter(methodPredicate)
+					.map(m -> new Invocation(g.instance(), m.method(), g.regexGroups())).findFirst().orElse(null);
+		}).filter(Objects::nonNull).sorted(invocationComparator);
+		return ii;
 	}
 
 	@Override
 	public Stream<InvocationGroup> groups(String path) {
 		if (path == null)
 			return Stream.empty();
+
 		if (groups == null)
 			initGroups();
-		var a = Optional.ofNullable(groups.get(path)).stream();
-		var b = regexGroups.entrySet().stream().map(x -> {
+
+		var gg1 = Optional.ofNullable(groups.get(path)).stream();
+		var gg2 = regexGroups.entrySet().stream().map(x -> {
 			var m = x.getKey().matcher(path);
 			if (m.matches()) {
-				var ig = x.getValue();
+				var g = x.getValue();
 				var ss = IntStream.range(1, 1 + m.groupCount()).mapToObj(m::group).toArray(String[]::new);
-				return ss.length != 0 ? ig.withRegexGroups(ss) : ig;
+				return ss.length != 0 ? g.withRegexGroups(ss) : g;
 			}
 			return null;
 		}).filter(Objects::nonNull);
-		return Stream.concat(a, b);
-	}
-
-	record A(String m1, Method m2) {
-	}
-
-	record B(String p, Class<?> t, List<A> aa) {
+		return Stream.concat(gg1, gg2);
 	}
 
 	synchronized void initGroups() {
 		if (groups != null)
 			return;
-		var oo = new HashMap<Class<?>, Object>();
-		groups = ScopedValue.where(INSTANCE, this)
-				.call(() -> bb.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> {
-					var b = x.getValue();
-					var o = oo.computeIfAbsent(b.t, y -> {
-						if (instanceResolver != null)
-							return instanceResolver.apply(y);
-						try {
-							return y.getConstructor().newInstance();
-						} catch (ReflectiveOperationException e) {
-							throw new RuntimeException(e);
-						}
-					});
-					return new InvocationGroup(o, b.aa.stream().collect(Collectors.toMap(y -> y.m1, y -> y.m2,
-							(y1, y2) -> y1.getDeclaringClass().isAssignableFrom(y2.getDeclaringClass()) ? y2 : y1,
-							LinkedHashMap::new)));
-				})));
 
-		var kk = groups.keySet().stream().filter(k -> k.contains("(") && k.contains(")")).toList();
+		var ii = new HashMap<Class<?>, Object>();
+		groups = map.values().stream().collect(Collectors.toMap(Entry1::path, e1 -> {
+			var i = ii.computeIfAbsent(e1.type,
+//					y -> {
+//				if (instanceResolver != null)
+//					return instanceResolver.apply(y);
+//				try {
+//					return y.getConstructor().newInstance();
+//				} catch (ReflectiveOperationException e) {
+//					throw new RuntimeException(e);
+//				}
+//			}
+					instanceResolver);
+			return new InvocationGroup(i, e1.entries.stream()
+					.collect(Collectors.toMap(e2 -> e2.method, e2 -> e2.entries, (_, x) -> x, LinkedHashMap::new)));
+		}));
+
+		var kk = groups.keySet().stream().filter(p -> p.contains("(") && p.contains(")")).toList();
 		regexGroups = kk.stream().sorted(Comparator.comparingInt((String x) -> x.indexOf('(')).reversed())
 				.collect(Collectors.toMap(k -> Pattern.compile(k), groups::get, (_, x) -> x, LinkedHashMap::new));
 		groups.keySet().removeAll(kk);
 //		IO.println("DefaultInvocationResolver.initGroups, groups=" + groups);
+	}
+
+	record Entry1(String path, Class<?> type, List<Entry2> entries) {
+	}
+
+	record Entry2(String method, List<MethodChoice> entries) {
 	}
 }

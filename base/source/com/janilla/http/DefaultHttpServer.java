@@ -138,7 +138,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 
 			handleEndHeaders1(ll);
 
-			try (var rq = new HttpRequest()) {
+			try (var rq = new DefaultHttpRequest()) {
 				rq.setHeaderValue(":scheme", sslContext != null ? "https" : "http");
 
 				{
@@ -175,7 +175,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 					}
 					rq.setBody(Channels.newChannel(new ByteArrayInputStream(bb)));
 				}
-				try (var rs = new HttpResponse()) {
+				try (var rs = new DefaultHttpResponse()) {
 //					rs.setStatus(0);
 					var baos = new ByteArrayOutputStream();
 					rs.setBody(Channels.newChannel(baos));
@@ -310,7 +310,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 	}
 
 	protected void handleStream(List<Frame> frames, FrameTransfer transfer) {
-		try (var rq = new HttpRequest()) {
+		try (var rq = new DefaultHttpRequest()) {
 			var id = frames.getFirst().streamIdentifier();
 			var hff = new ArrayList<HeaderField>();
 			var dbb = ByteBuffer.allocate(frames.stream().filter(x -> x instanceof DataFrame)
@@ -324,7 +324,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 //			IO.println("DefaultHttpServer.handleStream, " + rq.getMethod() + " " + rq.getScheme() + "://" + rq.getAuthority()
 //					+ rq.getTarget());
 			rq.setBody(Channels.newChannel(new ByteArrayInputStream(dbb.array())));
-			try (var rs = new HttpResponse()) {
+			try (var rs = new DefaultHttpResponse()) {
 //				rs.setStatus(0);
 				rs.setBody(new WritableByteChannel() {
 
@@ -399,7 +399,7 @@ public class DefaultHttpServer extends AbstractServer implements HttpServer {
 	protected HttpExchange createExchange(HttpRequest request, HttpResponse response) {
 		var c = diFactory != null ? diFactory.classFor(HttpExchange.class) : null;
 		return c != null ? diFactory.newInstance(c, Map.of("request", request, "response", response))
-				: new SimpleHttpExchange(request, response);
+				: new DefaultHttpExchange(request, response);
 	}
 
 	protected boolean handleExchange(HttpExchange exchange) {

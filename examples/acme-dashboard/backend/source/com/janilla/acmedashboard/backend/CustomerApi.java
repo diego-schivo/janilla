@@ -26,8 +26,13 @@
  */
 package com.janilla.acmedashboard.backend;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.janilla.acmedashboard.Customer;
 import com.janilla.acmedashboard.Customer2;
@@ -54,5 +59,14 @@ class CustomerApi extends AbstractCollectionApi<UUID, Customer> {
 		return read(search, direction, skip, limit, depth)
 				.map(x -> new Customer2(x, c.count("customer", new Object[] { x.id() }),
 						c.getAmount(x.id(), InvoiceStatus.PENDING), c.getAmount(x.id(), InvoiceStatus.PAID)));
+	}
+
+	@Handle(method = "GET", path = "names")
+	public List<Map.Entry<String, String>> names() {
+		var c = persistence.crud(Customer.class);
+		var ee = c.read(c.list()).stream()
+				.collect(Collectors.toMap(x -> x.id().toString(), Customer::name, (v, _) -> v, LinkedHashMap::new))
+				.entrySet();
+		return new ArrayList<>(ee);
 	}
 }

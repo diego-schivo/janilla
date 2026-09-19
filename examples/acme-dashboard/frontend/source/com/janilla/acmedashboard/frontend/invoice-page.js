@@ -59,7 +59,7 @@ export default class InvoicePage extends WebComponent {
             customerOptions: this.slot && hs.invoice ? hs.invoice.customers?.map(x => ({
                 $template: "customer-option",
                 ...x,
-                selected: x.key == hs.invoice.customer.id
+                selected: x.key == hs.invoice.customer?.id
             })) : null,
             statusItems: this.slot && hs.invoice ? ["PENDING", "PAID"].map(x => ({
                 $template: "status-item",

@@ -111,7 +111,14 @@ public abstract class AbstractCollectionApi<ID extends Comparable<ID>, D extends
 	@Override
 	@Handle(method = "GET", path = "([^/]+)")
 	public D read(ID id, Integer depth) {
-		return crud().read(id, drafts.test(HttpExchange.SCOPED.get()), depth != null ? depth : defaultDepth);
+		LOGGER.log(Level.DEBUG, "id={0}, depth={1}", id, depth);
+
+		var r = drafts.test(HttpExchange.SCOPED.get());
+		var p = depth != null ? depth : defaultDepth;
+		var d = crud().read(id, r, p);
+		LOGGER.log(Level.DEBUG, "d={0}", d);
+
+		return d;
 	}
 
 	@Override

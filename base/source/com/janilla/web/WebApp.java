@@ -29,7 +29,7 @@ import com.janilla.ioc.DiFactory;
 
 public interface WebApp<C extends WebAppConfig, D extends Domain> {
 
-	static ScopedValue<WebApp<?, ?>> INSTANCE = ScopedValue.newInstance();
+	static ScopedValue<WebApp<?, ?>> SCOPED = ScopedValue.newInstance();
 
 	C config();
 

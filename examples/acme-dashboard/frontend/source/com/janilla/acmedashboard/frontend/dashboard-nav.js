@@ -50,7 +50,7 @@ export default class DashboardNav extends WebComponent {
 
     async updateDisplay() {
         const a = this.shadowClosest("app-element");
-		const p = a.currentPath;
+        const p = a.currentPath;
         this.appendChild(this.interpolateDom({
             $template: "",
             items: [{
@@ -85,8 +85,8 @@ export default class DashboardNav extends WebComponent {
         event.submitter.setAttribute("aria-disabled", "true");
         try {
             const a = this.shadowClosest("app-element");
-            await fetch(`${a.customEnv.apiUrl}/authentication`, {
-                method: "DELETE",
+            await fetch(`${a.customEnv.apiUrl}/users/logout`, {
+                method: "POST",
                 credentials: "include"
             });
             a.navigateTo(new URL(`${a.customEnv.basePath}/login`, location.href));

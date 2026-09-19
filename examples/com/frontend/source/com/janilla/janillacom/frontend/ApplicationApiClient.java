@@ -53,8 +53,8 @@ import java.lang.reflect.Type;
 import java.net.URI;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
 import com.janilla.janillacom.Application;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
@@ -83,7 +83,7 @@ public class ApplicationApiClient {
 						.append("skip", skip != null ? skip.toString() : null)
 						.append("limit", limit != null ? limit.toString() : null)
 						.append("depth", depth != null ? depth.toString() : null));
-		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
+		var o = httpClient.send(new DefaultHttpRequest("GET", u), HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Application.class }));
 	}
 

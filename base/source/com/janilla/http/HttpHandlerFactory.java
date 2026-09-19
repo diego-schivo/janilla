@@ -26,5 +26,5 @@ package com.janilla.http;
 
 public interface HttpHandlerFactory {
 
-	HttpHandler createHandler(Object object);
+	HttpHandler newHandler(Object input);
 }

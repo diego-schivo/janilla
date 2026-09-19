@@ -26,7 +26,6 @@ package com.janilla.acmedashboard;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.UUID;
 
 import com.janilla.cms.Document;
@@ -36,6 +35,10 @@ import com.janilla.persistence.Store;
 
 @Store
 public record Invoice(UUID id, @Index Customer customer, BigDecimal amount, @Index InvoiceStatus status,
-		@Index LocalDate date, Instant createdAt, Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt)
+		@Index Instant createdAt, Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt)
 		implements Document<UUID> {
+
+	public Instant date() {
+		return createdAt;
+	}
 }

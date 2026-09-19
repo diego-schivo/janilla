@@ -58,14 +58,6 @@ public class DefaultHttpClient implements HttpClient {
 
 	protected final SSLContext sslContext;
 
-//	public DefaultHttpClient() {
-//		this("TLSv1.3");
-//	}
-//
-//	public DefaultHttpClient(String protocol) {
-//		this(sslContext(protocol));
-//	}
-
 	public DefaultHttpClient() {
 		this(null);
 	}
@@ -83,9 +75,10 @@ public class DefaultHttpClient implements HttpClient {
 				var a = request.getHeaderValue(":authority");
 				if (a == null)
 					a = request.getHeaderValue("Host");
+
 				var i = a.indexOf(':');
 				var h = i != -1 ? a.substring(0, i) : a;
-				var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : 443;
+				var p = i != -1 ? Integer.parseInt(a.substring(i + 1)) : (a.startsWith("https:") ? 443 : 80);
 //				IO.println("DefaultHttpClient.send, h=" + h + ", p=" + p);
 				ch.connect(new InetSocketAddress(h, p));
 			}
@@ -102,7 +95,7 @@ public class DefaultHttpClient implements HttpClient {
 				t = new SimpleTransfer(ch);
 
 			FrameTransfer t2;
-			var rs = new HttpResponse();
+			var rs = new DefaultHttpResponse();
 			if (t instanceof SecureTransfer) {
 				class A {
 					private static final byte[] CONNECTION_PREFACE_PREFIX = """

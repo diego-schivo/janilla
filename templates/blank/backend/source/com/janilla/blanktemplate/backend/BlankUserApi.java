@@ -49,6 +49,8 @@ public class BlankUserApi extends AbstractUserApi<Long, User<Long>> {
 	@Override
 	public User<Long> firstRegister(UserData<User<Long>> data) {
 		var u = domain.withRoles(data.user(), Set.of(domain.userRole("ADMIN")));
-		return super.firstRegister(data.withUser(u));
+		var d = data.withUser(u);
+
+		return super.firstRegister(d);
 	}
 }

@@ -29,13 +29,6 @@ import com.janilla.web.Handle;
 class PetTypeApi extends AbstractCollectionApi<Long, PetType> {
 
 	public PetTypeApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(PetType.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
+		super(PetType.class, drafts, persistence, "name", copier, Direction.FORWARD, 0);
 	}
-
-//	@Override
-//	@Handle(method = "GET")
-//	public List<PetType> read() {
-//		var c = persistence.crud(PetType.class);
-//		return c.read(c.list());
-//	}
 }

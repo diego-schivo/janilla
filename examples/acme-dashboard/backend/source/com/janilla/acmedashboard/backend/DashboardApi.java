@@ -60,6 +60,6 @@ class DashboardApi {
 	@Handle(method = "GET", path = "invoices")
 	public List<Invoice> getInvoices() {
 		var c = persistence.crud(Invoice.class);
-		return c.filter("date", new Object[0], Direction.BACKWARD, 0, 5).stream().map(x -> c.read(x, 1)).toList();
+		return c.filter("createdAt", new Object[0], Direction.BACKWARD, 0, 5).stream().map(x -> c.read(x, 1)).toList();
 	}
 }

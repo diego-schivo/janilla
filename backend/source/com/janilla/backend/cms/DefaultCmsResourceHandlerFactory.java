@@ -65,14 +65,16 @@ public class DefaultCmsResourceHandlerFactory extends AbstractHttpHandlerFactory
 	public DefaultCmsResourceHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
 			CmsResourceHandling cmsResourceHandling) {
 		super(config, rootFactory, diFactory);
+
 		this.handling = cmsResourceHandling;
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
-		var p = object instanceof HttpRequest x ? webAppPath(x) : null;
+	public HttpHandler newHandler(Object input) {
+		var p = input instanceof HttpRequest x ? webAppPath(x) : null;
 		var n = p != null && p.startsWith("/api/media/") ? p.substring("/api/media/".length()) : null;
 		var f = n != null && n.indexOf('/') == -1 ? Path.of(n) : null;
+
 		return f != null && handling.canHandle(f) ? x -> handling.handle(f, x.response()) : null;
 	}
 }

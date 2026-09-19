@@ -34,7 +34,7 @@ import com.janilla.persistence.Index;
 
 record UserImpl(Long id, @Index String username, String email, String salt, String hash, String resetPasswordToken,
 		Instant resetPasswordExpiration, Set<UserRole> roles, String bio, String image, Instant createdAt,
-		Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt) implements User<Long> {
+		Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt) implements User<Long>, ConduitUser {
 
 	@Override
 	public String name() {

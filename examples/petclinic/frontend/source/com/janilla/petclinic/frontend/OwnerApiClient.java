@@ -21,8 +21,8 @@ import java.net.URI;
 import java.nio.channels.Channels;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -42,7 +42,7 @@ class OwnerApiClient {
 	}
 
 	public Owner create(Owner owner) {
-		var rq = new HttpRequest("POST", URI.create(config.api().url() + "/owners"));
+		var rq = new DefaultHttpRequest("POST", URI.create(config.api().url() + "/owners"));
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(owner, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);
@@ -55,7 +55,7 @@ class OwnerApiClient {
 						.append("depth", depth != null ? depth.toString() : null)
 						.append("skip", skip != null ? skip.toString() : null)
 						.append("limit", limit != null ? limit.toString() : null));
-		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
+		var o = httpClient.send(new DefaultHttpRequest("GET", u), HttpClient.JSON);
 		return new DefaultConverter().convert(o,
 				new SimpleParameterizedType(ListPortion.class, new Type[] { Owner.class }));
 	}
@@ -63,13 +63,13 @@ class OwnerApiClient {
 	public Owner read(Long id, Integer depth) {
 		var u = URI.create(config.api().url() + "/owners/" + id + "?"
 				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null));
-		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
+		var o = httpClient.send(new DefaultHttpRequest("GET", u), HttpClient.JSON);
 		return new DefaultConverter().convert(o, Owner.class);
 	}
 
 	public Owner update(Long id, Owner owner) {
 		IO.println("FrontendOwnerApi.update, id=" + id + ", owner=" + owner);
-		var rq = new HttpRequest("PUT", URI.create(config.api().url() + "/owners/" + id));
+		var rq = new DefaultHttpRequest("PUT", URI.create(config.api().url() + "/owners/" + id));
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(owner, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);

@@ -54,9 +54,9 @@ import java.net.URI;
 
 import com.janilla.ecommercetemplate.Product;
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -79,7 +79,7 @@ public class DefaultProductApiClient implements ProductApiClient {
 	@Override
 	public ListPortion<Product> read(String slug, String query, Long category, String sort, Integer depth,
 			HttpCookie token) {
-		var r = new HttpRequest("GET",
+		var r = new DefaultHttpRequest("GET",
 				URI.create(config.api().url() + "/products?"
 						+ new UriQueryBuilder().append("slug", slug).append("q", query)
 								.append("category", category != null ? category.toString() : null).append("sort", sort)

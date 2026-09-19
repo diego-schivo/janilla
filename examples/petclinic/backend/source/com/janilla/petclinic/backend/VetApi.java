@@ -31,12 +31,4 @@ class VetApi extends AbstractCollectionApi<Long, Vet> {
 	public VetApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
 		super(Vet.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
-
-//	@Override
-//	@Handle(method = "GET")
-//	public ListPortion<Vet> read(Integer depth, Integer skip, Integer limit) {
-//		var c = persistence.crud(Vet.class);
-//		var lp = c.listAndCount(Direction.FORWARD, skip != null ? skip : 0, limit != null ? limit : 0);
-//		return new ListPortion<>(c.read(lp.elements(), depth != null ? depth : 0), lp.totalSize());
-//	}
 }

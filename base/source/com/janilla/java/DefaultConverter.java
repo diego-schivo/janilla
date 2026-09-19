@@ -123,9 +123,12 @@ public class DefaultConverter implements Converter {
 				};
 			else if (c == Class.class)
 				t = (T) typeResolver.parse((String) object);
-			else if (c == Instant.class)
-				t = (T) Instant.parse((String) object);
-			else if (c == Integer.class || c == Integer.TYPE)
+			else if (c == Instant.class) {
+				var s = (String) object;
+				if (s.length() == 10)
+					s += "T00:00:00.00Z";
+				t = (T) Instant.parse(s);
+			} else if (c == Integer.class || c == Integer.TYPE)
 				t = (T) switch (object) {
 				case Integer _ -> object;
 				case Long x -> x.intValue();
@@ -276,8 +279,8 @@ public class DefaultConverter implements Converter {
 
 						var f = t.getDeclaredField(n2);
 						var m2 = rc.getAccessor();
-						if (f.isAnnotationPresent(Flat.class)
-								|| JavaReflect.inheritedAnnotation(m2, Flat.class) != null)
+						if (f.isAnnotationPresent(Flatten.class)
+								|| JavaReflect.inheritedAnnotation(m2, Flatten.class) != null)
 							return convertMap(m, t2, null);
 
 						return null;
@@ -285,7 +288,9 @@ public class DefaultConverter implements Converter {
 						throw new RuntimeException(e);
 					}
 				}).toArray();
-//				IO.println("DefaultConverter.convertMap, c0=" + c0 + ", oo=" + Arrays.toString(oo));
+
+				if (LOGGER.isLoggable(Level.DEBUG))
+					LOGGER.log(Level.DEBUG, "c0={0}, oo={1}", c0, Arrays.toString(oo));
 				try {
 					o = c0.invokeWithArguments(oo);
 				} catch (Throwable e) {

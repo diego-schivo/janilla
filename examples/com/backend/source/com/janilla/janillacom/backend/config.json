@@ -50,13 +50,13 @@
 	},
 	"basePath": "",
 	"database": {
-		"file": "~/janilla/sample-data/janilla-com.db"
+		"file": "~/janilla/sample-data/com.db"
 	},
 	"httpServer": {
 		"port": 8081
 	},
 	"jwt": {
-		"cookie": "janilla-token",
+		"cookie": "com-token",
 		"key": "secretkey"
 	},
 	"liveDemo": true,
@@ -67,6 +67,6 @@
 		"username": "foo.bar@example.com"
 	},
 	"upload": {
-		"directory": "~/janilla/sample-data/janilla-com-upload"
+		"directory": "~/janilla/sample-data/com-upload"
 	}
 }

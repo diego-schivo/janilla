@@ -93,7 +93,6 @@ export default class InvoicesPage extends WebComponent {
         if (this.slot && !hs.invoices) {
             const u = new URL(`${a.customEnv.apiUrl}/invoices`, a.customEnv.apiUrl.startsWith("/") ? location.href : undefined);
             u.searchParams.append("search", q ?? "");
-            u.searchParams.append("direction", "BACKWARD");
             u.searchParams.append("skip", p ? (p - 1) * 6 : 0);
             u.searchParams.append("limit", 6);
             u.searchParams.append("depth", 1);

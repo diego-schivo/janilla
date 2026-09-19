@@ -32,7 +32,11 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class JavaInvoke {
+public final class JavaInvoke {
+
+	private JavaInvoke() {
+		throw new Error("no instances");
+	}
 
 	public static MethodHandle methodHandle(Method method) {
 //		IO.println("Reflection.methodHandle, method=" + method);

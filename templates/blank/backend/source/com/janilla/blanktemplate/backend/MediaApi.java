@@ -32,7 +32,6 @@ import com.janilla.backend.cms.CmsResourceHandling;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.blanktemplate.Media;
 import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpResponse;
 import com.janilla.java.Copier;
 import com.janilla.java.Direction;
 import com.janilla.web.Handle;
@@ -49,7 +48,7 @@ public class MediaApi extends AbstractCollectionApi<Long, Media> {
 	}
 
 	@Handle(method = "GET", path = "file/(.+)")
-	public void file(Path path, HttpResponse response) {
-		handling.handle(path, response);
+	public void file(Path path) {
+		handling.handle(path, HttpExchange.SCOPED.get().response());
 	}
 }

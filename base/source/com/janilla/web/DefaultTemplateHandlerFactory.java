@@ -45,8 +45,8 @@ public class DefaultTemplateHandlerFactory extends AbstractHttpHandlerFactory im
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
-		return object instanceof Renderable r && r.renderer() != null && r.renderer().annotation != null ? x -> {
+	public HttpHandler newHandler(Object input) {
+		return input instanceof Renderable r && r.renderer() != null && r.renderer().annotation != null ? x -> {
 			render(r, x);
 			return true;
 		} : null;

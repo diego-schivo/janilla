@@ -74,6 +74,17 @@
 			"basePath": "",
 			"liveDemo": true
 		},
+		"todomvc": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				},
+				"url": "https://todomvc.janilla.local:8443/api"
+			},
+			"basePath": "",
+			"liveDemo": true
+		},
 		"websitetemplate": {
 			"api": {
 				"cors": {
@@ -98,7 +109,13 @@
 			"api": {
 				"url": "https://addressbook.janilla.local:8443/api"
 			},
-			"basePath": ""
+			"basePath": "",
+			"httpServer": {
+				"keyStore": {
+					"password": "password",
+					"path": "~/janilla/janilla.local"
+				}
+			}
 		},
 		"blanktemplate": {
 			"api": {
@@ -122,10 +139,25 @@
 			"api": {
 				"url": "https://petclinic.janilla.local:8443/api"
 			},
-			"basePath": ""
+			"basePath": "",
+			"httpServer": {
+				"keyStore": {
+					"password": "password",
+					"path": "~/janilla/janilla.local"
+				}
+			}
 		},
 		"todomvc": {
-			"basePath": ""
+			"api": {
+				"url": "https://todomvc.janilla.local:8443/api"
+			},
+			"basePath": "",
+			"httpServer": {
+				"keyStore": {
+					"password": "password",
+					"path": "~/janilla/janilla.local"
+				}
+			}
 		},
 		"websitetemplate": {
 			"api": {

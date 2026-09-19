@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 
 import com.janilla.http.DefaultHttpClient;
-import com.janilla.http.HttpRequest;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.java.Java;
 import com.janilla.web.FileResource;
 import com.janilla.web.Resource;
@@ -87,7 +87,7 @@ public class DownloadResourcesProvider implements ResourcesProvider {
 				} catch (NoSuchAlgorithmException e) {
 					throw new RuntimeException(e);
 				}
-				l = new DefaultHttpClient(c).send(new HttpRequest("GET", URI.create(l)), rs -> {
+				l = new DefaultHttpClient(c).send(new DefaultHttpRequest("GET", URI.create(l)), rs -> {
 					if (rs.getHeaderValue(":status").equals("302"))
 						return rs.getHeaderValue("location");
 					try {

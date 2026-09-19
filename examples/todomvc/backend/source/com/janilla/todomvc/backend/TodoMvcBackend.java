@@ -33,6 +33,6 @@ public class TodoMvcBackend extends BlankBackend<TodoMvcBackendConfig, TodoMvcDo
 	}
 
 	public TodoMvcBackend(TodoMvcBackendConfig config, DiFactory diFactory, Consumer<Object> context) {
-		super(config, diFactory, context, Data.class, null);
+		super(config, diFactory, context, Data.class, SeedData.class);
 	}
 }

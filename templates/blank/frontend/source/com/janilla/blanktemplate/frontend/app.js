@@ -45,14 +45,18 @@ export default class App extends BaseApp {
         this.dispatchEvent(new CustomEvent("userchanged", { detail: currentUser }));
     }
 
+    async getCurrentUser() {
+        const ss = this.serverState;
+        return ss && Object.hasOwn(ss, "user")
+            ? ss.user
+            : await (await fetch(`${this.customEnv.apiUrl}/users/me`, { credentials: "include" })).json();
+    }
+
     async updateDisplay() {
         const s = this.customState;
-        const ss = this.serverState;
 
         if (!Object.hasOwn(s, "user"))
-            s.user = ss && Object.hasOwn(ss, "user")
-                ? ss.user
-                : await (await fetch(`${this.customEnv.apiUrl}/users/me`, { credentials: "include" })).json();
+            s.user = await this.getCurrentUser();
 
         const m = this.currentPath.match(adminRegex);
         if (m)

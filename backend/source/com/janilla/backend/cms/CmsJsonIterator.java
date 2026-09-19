@@ -61,10 +61,9 @@ import java.util.stream.Stream;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
 import com.janilla.cms.User;
-import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
+import com.janilla.java.Type;
 import com.janilla.java.JavaReflect;
 import com.janilla.java.Property;
 import com.janilla.java.TypeResolver;
@@ -95,7 +94,7 @@ public class CmsJsonIterator extends ReflectionJsonIterator {
 			if (object instanceof Long l) {
 				o = stack().pop();
 				var p = JavaReflect.property(stack().peek().getClass(), n);
-				var ta = p != null ? p.annotatedType().getAnnotation(Types.class) : null;
+				var ta = p != null ? p.annotatedType().getAnnotation(Type.class) : null;
 				var t = ta != null ? ta.value()[0] : null;
 				if (t != null
 						&& !stack().stream().anyMatch(x -> x.getClass() == t && ((Document<?>) x).id().equals(l))) {
@@ -108,7 +107,7 @@ public class CmsJsonIterator extends ReflectionJsonIterator {
 				o = stack().pop();
 				var p = JavaReflect.property(stack().peek().getClass(), n);
 				var apt = p != null && p.annotatedType() instanceof AnnotatedParameterizedType x ? x : null;
-				var ta = apt != null ? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class) : null;
+				var ta = apt != null ? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Type.class) : null;
 				var t = ta != null ? ta.value()[0] : null;
 				if (t != null) {
 					@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -142,8 +141,8 @@ public class CmsJsonIterator extends ReflectionJsonIterator {
 				ee = ee.filter(x -> x.getKey() != "documentStatus");
 			if (v != null) {
 				@SuppressWarnings({ "rawtypes", "unchecked" })
-				var t = persistence.crud((Class) type).type();
-				var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">.documentId";
+				var c0 = persistence.crud((Class) type);
+				var n = "Version<" + c0.name() + ">.documentId";
 				var c = persistence.database().perform(() -> {
 					var i = persistence.database().index(n);
 					var d = (Document<?>) value;

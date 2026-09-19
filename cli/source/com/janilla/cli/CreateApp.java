@@ -12,12 +12,16 @@ public class CreateApp {
 
 	public static void main(String[] args) throws IOException {
 		var d0 = Path.of("/Users/diego.schivo/git/janilla/examples");
-		var r1 = new R("new-blank", "newblank", "NewBlank", "janilla-new-blank");
-//		var r2 = new R("todomvc", "todomvc", "TodoMvc", "janilla-todomvc");
+
+//		var r1 = new R("new-blank", "newblank", "NewBlank", "janilla-new-blank");
+		var r1 = new R("new-website", "newwebsite", "NewWebsite", "janilla-new-website", "Janilla New Website");
+
+		// var r2 = new R("todomvc", "todomvc", "TodoMvc", "janilla-todomvc");
 //		var r2 = new R("petclinic", "petclinic", "Petclinic", "janilla-petclinic");
 //		var r2 = new R("address-book", "addressbook", "AddressBook", "janilla-address-book");
 //		var r2 = new R("acme-dashboard", "acmedashboard", "AcmeDashboard", "janilla-acme-dashboard");
-		var r2 = new R("conduit", "conduit", "Conduit", "janilla-conduit");
+//		var r2 = new R("conduit", "conduit", "Conduit", "janilla-conduit");
+		var r2 = new R("com", "janillacom", "Janilla", "janilla-com", "Janilla.com");
 
 		var d1 = d0.resolve(r1.n1);
 		var d2 = d0.resolve(r2.n1);
@@ -74,11 +78,14 @@ public class CreateApp {
 					var f = d2.resolve(p2);
 					IO.println(f);
 
-					if (n1s.equals("pom.xml") || n1s.endsWith(".java") || n1s.equals("config.json")
-							|| n1s.equals("log.json")) {
+					if (
+//							n1s.equals("pom.xml")
+					n1s.endsWith(".xml") || n1s.endsWith(".java")
+//							|| n1s.equals("config.json") || n1s.equals("log.json")
+							|| n1s.endsWith(".json") || n1s.endsWith(".md")) {
 						var s1 = Files.readString(file);
-						var s2 = s1.replace(r1.n4, r2.n4).replace(r1.n3, r2.n3).replace(r1.n2, r2.n2).replace(r1.n1,
-								r2.n1);
+						var s2 = s1.replace(r1.n5, r2.n5).replace(r1.n4, r2.n4).replace(r1.n3, r2.n3)
+								.replace(r1.n2, r2.n2).replace(r1.n1, r2.n1);
 						Files.writeString(f, s2);
 					} else
 						Files.copy(file, f);
@@ -90,6 +97,6 @@ public class CreateApp {
 		});
 	}
 
-	record R(String n1, String n2, String n3, String n4) {
+	record R(String n1, String n2, String n3, String n4, String n5) {
 	}
 }

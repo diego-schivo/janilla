@@ -65,22 +65,26 @@ export default class AdminTabs extends WebComponent {
 
     constructor() {
         super();
+
         this.attachShadow({ mode: "open" });
     }
 
     connectedCallback() {
         super.connectedCallback();
+
         this.addEventListener("click", this.handleClick);
     }
 
     disconnectedCallback() {
-        super.disconnectedCallback();
         this.removeEventListener("click", this.handleClick);
+
+        super.disconnectedCallback();
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
         if (newValue !== oldValue && this.customState)
             delete this.customState.tab;
+
         super.attributeChangedCallback(name, oldValue, newValue);
     }
 

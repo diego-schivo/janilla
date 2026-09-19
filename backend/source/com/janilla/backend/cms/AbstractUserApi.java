@@ -67,7 +67,7 @@ import com.janilla.cms.User;
 import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
 import com.janilla.java.Direction;
-import com.janilla.java.Flat;
+import com.janilla.java.Flatten;
 import com.janilla.java.JavaReflect;
 import com.janilla.json.Jwt;
 import com.janilla.persistence.ListPortion;
@@ -83,9 +83,9 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 
 	private static final Logger LOGGER = System.getLogger(AbstractUserApi.class.getName());
 
-	protected final CmsDomain domain;
-
 	protected final BackendConfig config;
+
+	protected final CmsDomain domain;
 
 	protected AbstractUserApi(Class<U> type, Predicate<HttpExchange> drafts, Persistence persistence,
 			String searchIndex, Copier copier, Direction defaultDirection, Integer defaultDepth, BackendConfig config,
@@ -93,13 +93,6 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		super(type, drafts, persistence, searchIndex, copier, defaultDirection, defaultDepth);
 		this.config = config;
 		this.domain = domain;
-	}
-
-	protected record UserData<U>(@Flat U user, String password) {
-
-		public UserData<U> withUser(U user) {
-			return new UserData<>(user, password);
-		}
 	}
 
 	@Handle(method = "POST")
@@ -129,9 +122,11 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		return super.read(search, direction, skip, limit, depth);
 	}
 
-	@Handle(method = "PUT", path = "(\\d+)")
+	@Handle(method = "PUT", path = "([^/]+)")
 	@SuppressWarnings("unchecked")
 	public U update(ID id, UserData<U> data, Boolean draft, Boolean autosave) {
+		LOGGER.log(Level.DEBUG, "id={0}, data={1}, draft={2}, autosave={3}", id, data, draft, autosave);
+
 		if (!isAdmin(exchange().sessionUser()))
 			throw new UnauthorizedException();
 
@@ -139,7 +134,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		return super.update(id, u, draft, autosave);
 	}
 
-	@Handle(method = "PATCH", path = "(\\d+)")
+	@Handle(method = "PATCH", path = "([^/]+)")
 	@SuppressWarnings("unchecked")
 	public U patch(ID id, UserData<U> data) {
 		{
@@ -154,9 +149,6 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 			InvocationHandlerFactory.JSON_KEYS.get().addAll(List.of("salt", "hash"));
 		}
 		return super.patch(id, u);
-	}
-
-	public record LoginData(String email, String password) {
 	}
 
 	@Handle(method = "POST", path = "login")
@@ -281,7 +273,7 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		return u;
 	}
 
-	@Handle(method = "DELETE", path = "(\\d+)")
+	@Handle(method = "DELETE", path = "([^/]+)")
 	@Override
 	public U delete(ID id) {
 		var u = exchange().sessionUser();
@@ -325,6 +317,16 @@ public abstract class AbstractUserApi<ID extends Comparable<ID>, U extends User<
 		var nn = Set.of(// "hash", "salt",
 				"resetPasswordExpiration", "resetPasswordToken", "roles");
 		return JavaReflect.propertyNames(type).filter(x -> !nn.contains(x)).collect(Collectors.toSet());
+	}
+
+	public record LoginData(String email, String password) {
+	}
+
+	protected record UserData<U>(@Flatten U user, String password) {
+
+		public UserData<U> withUser(U user) {
+			return new UserData<>(user, password);
+		}
 	}
 
 //	private static void mail(Data d) {

@@ -36,6 +36,4 @@ public @interface Index {
 	String name() default "";
 
 	String[] properties() default {};
-
-//	Class<? extends IndexKeyGetterFactory> keyGetterFactory() default DefaultIndexKeyGetterFactory.class;
 }

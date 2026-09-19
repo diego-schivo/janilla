@@ -30,7 +30,7 @@ export default class App extends WebsiteApp {
     }
 
     static get templateNames() {
-        return ["/base/app", "/blank/app", "/website/app"];
+        return ["/base/app", "/blank/app", "/website/app", "app"];
     }
 
     handleClick(event) {

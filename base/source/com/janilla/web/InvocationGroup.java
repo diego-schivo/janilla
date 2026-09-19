@@ -24,12 +24,12 @@
  */
 package com.janilla.web;
 
-import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 
-public record InvocationGroup(Object object, Map<String, Method> methods, String... regexGroups) {
+public record InvocationGroup(Object instance, Map<String, List<MethodChoice>> choices, String... regexGroups) {
 
 	public InvocationGroup withRegexGroups(String... regexGroups) {
-		return new InvocationGroup(object, methods, regexGroups);
+		return new InvocationGroup(instance, choices, regexGroups);
 	}
 }

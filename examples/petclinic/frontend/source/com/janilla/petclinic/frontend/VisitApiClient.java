@@ -20,8 +20,8 @@ import java.net.URI;
 import java.nio.channels.Channels;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.DefaultConverter;
 import com.janilla.json.Json;
 import com.janilla.petclinic.Visit;
@@ -38,7 +38,7 @@ class VisitApiClient {
 	}
 
 	public Visit create(Visit visit) {
-		var rq = new HttpRequest("POST", URI.create(config.api().url() + "/visits"));
+		var rq = new DefaultHttpRequest("POST", URI.create(config.api().url() + "/visits"));
 		rq.setHeaderValue("content-type", "application/json");
 		rq.setBody(Channels.newChannel(new ByteArrayInputStream(Json.format(visit, true).getBytes())));
 		var o = httpClient.send(rq, HttpClient.JSON);

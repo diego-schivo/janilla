@@ -29,12 +29,13 @@ import com.janilla.backend.web.BackendConfig;
 import com.janilla.cms.CmsDomain;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.java.Copier;
 import com.janilla.websitetemplate.backend.WebsiteBackendExchange;
 
 public class EcommerceBackendExchange extends WebsiteBackendExchange {
 
 	public EcommerceBackendExchange(HttpRequest request, HttpResponse response, BackendConfig config,
-			Persistence persistence, CmsDomain domain) {
-		super(request, response, config, persistence, domain);
+			Persistence persistence, CmsDomain domain, Copier copier) {
+		super(request, response, config, persistence, domain, copier);
 	}
 }

@@ -52,8 +52,8 @@ package com.janilla.websitetemplate.frontend;
 import java.net.URI;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.Converter;
 import com.janilla.websitetemplate.Footer;
 
@@ -73,7 +73,7 @@ public class DefaultFooterApiClient implements FooterApiClient {
 
 	@Override
 	public Footer res() {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/footer"));
+		var r = new DefaultHttpRequest("GET", URI.create(config.api().url() + "/footer"));
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, Footer.class);
 	}

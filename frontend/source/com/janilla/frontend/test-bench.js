@@ -72,7 +72,10 @@ export default class TestBench extends WebComponent {
             s.class = "failed";
             s.title = error;
         }).finally(async () => {
-            await fetch("/test/stop", { method: "POST" });
+            await fetch("/test/stop", {
+                method: "POST",
+                credentials: "include"
+            });
             this.interpolateTestFrame = null;
             this.requestDisplay();
             if (!this.keys.length)
@@ -93,7 +96,10 @@ export default class TestBench extends WebComponent {
         // console.log("TestBench.updateDisplay");
         this.querySelector("iframe")?.removeEventListener("load", this.handleLoad);
         if (this.keys?.length) {
-            await fetch("/test/start", { method: "POST" });
+            await fetch("/test/start", {
+                method: "POST",
+                credentials: "include"
+            });
             localStorage.removeItem("jwtToken");
             this.customState.tests[this.keys[0]].class = "ongoing";
         }
@@ -110,41 +116,41 @@ export default class TestBench extends WebComponent {
 }
 
 export const matchNode = (xpath, context, not) => {
-	const q = resolve => {
-		const n = context.ownerDocument.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-		// console.log("matchNode", xpath);
-		if (not ? !n : n) {
-			// console.log("matchNode", xpath, n);
-			resolve(n);
-		}
-		return n;
-	};
-	let o, t;
-	const r = resolve => {
-		return element => {
-			if (o) {
-				clearTimeout(t);
-				o.disconnect();
-				o = null;
-			}
-			setTimeout(() => resolve(element), 50);
-		};
-	};
-	return new Promise((resolve, reject) => {
-		const n = q(r(resolve));
-		if (not ? n : !n) {
-			o = new MutationObserver(() => {
-				// console.log("mutation");
-				q(r(resolve));
-			});
-			o.observe(context, { childList: true, subtree: true });
-			t = setTimeout(() => {
-				if (o) {
-					o.disconnect();
-					o = null;
-				}
-				reject(new Error(`Timeout (xpath=${xpath})`));
-			}, 500);
-		}
-	});
+    const q = resolve => {
+        const n = context.ownerDocument.evaluate(xpath, context, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        // console.log("matchNode", xpath);
+        if (not ? !n : n) {
+            // console.log("matchNode", xpath, n);
+            resolve(n);
+        }
+        return n;
+    };
+    let o, t;
+    const r = resolve => {
+        return element => {
+            if (o) {
+                clearTimeout(t);
+                o.disconnect();
+                o = null;
+            }
+            setTimeout(() => resolve(element), 50);
+        };
+    };
+    return new Promise((resolve, reject) => {
+        const n = q(r(resolve));
+        if (not ? n : !n) {
+            o = new MutationObserver(() => {
+                // console.log("mutation");
+                q(r(resolve));
+            });
+            o.observe(context, { childList: true, subtree: true });
+            t = setTimeout(() => {
+                if (o) {
+                    o.disconnect();
+                    o = null;
+                }
+                reject(new Error(`Timeout (xpath=${xpath})`));
+            }, 500);
+        }
+    });
 };

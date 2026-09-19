@@ -34,13 +34,18 @@ export default class App extends BlankApp {
         return ["/base/app", "/blank/app", "app"];
     }
 
+    get apiHeaders() {
+        const u = this.currentUser;
+        return u?.token ? { Authorization: `Token ${u.token}` } : {};
+    }
+
     connectedCallback() {
         super.connectedCallback();
 
         addEventListener("popstate", this.handlePopState);
         this.addEventListener("set-current-user", this.handleSetCurrentUser);
 
-        if (!location.hash)
+        if (!location.hash && !this.currentPath.startsWith("/admin"))
             location.hash = "#/";
     }
 
@@ -49,6 +54,20 @@ export default class App extends BlankApp {
         this.removeEventListener("set-current-user", this.handleSetCurrentUser);
 
         super.disconnectedCallback();
+    }
+
+    async getCurrentUser() {
+        if (this.currentPath.startsWith("/admin"))
+            return await super.getCurrentUser();
+
+        const t = localStorage.getItem("jwtToken");
+        if (t) {
+            const { user } = await (await fetch(`${this.customEnv.apiUrl}/user`, {
+                headers: { Authorization: `Token ${t}` }
+            })).json();
+            return user;
+        } else
+            return null;
     }
 
     siteData() {
@@ -111,10 +130,14 @@ export default class App extends BlankApp {
     }
 
     handleClick(event) {
-        const a = event.composedPath().find(x => x instanceof Element && x.matches("a"));
-        if (a?.href) {
-            event.preventDefault();
-            location.hash = new URL(a.href).hash;
+        if (document.querySelector("admin-element"))
+            super.handleClick(event);
+        else {
+            const a = event.composedPath().find(x => x instanceof Element && x.matches("a"));
+            if (a?.href) {
+                event.preventDefault();
+                location.hash = new URL(a.href).hash;
+            }
         }
     }
 
@@ -127,13 +150,10 @@ export default class App extends BlankApp {
         const s = this.customState;
         s.user = user;
 
-        if (user?.token) {
+        if (user?.token)
             localStorage.setItem("jwtToken", user.token);
-            s.apiHeaders = { Authorization: `Token ${user.token}` };
-        } else {
+        else
             localStorage.removeItem("jwtToken");
-            s.apiHeaders = {};
-        }
 
         location.hash = "#/";
     }

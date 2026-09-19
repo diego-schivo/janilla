@@ -57,9 +57,9 @@ import com.janilla.backend.persistence.DefaultPersistence;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.backend.sqlite.TableColumn;
 import com.janilla.cms.Document;
-import com.janilla.cms.Version;
 import com.janilla.cms.Versions;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.JavaReflect;
 import com.janilla.persistence.Entity;
 
 public class CmsPersistence extends DefaultPersistence {
@@ -86,9 +86,11 @@ public class CmsPersistence extends DefaultPersistence {
 			super.createStoresAndIndexes();
 
 			for (var t : configuration.cruds().keySet()) {
-				var v = t.getAnnotation(Versions.class);
+				var aa = JavaReflect.inheritedAnnotation(t, Versions.class);
+				var v = aa != null ? aa.annotation() : null;
+
 				if (v != null) {
-					var n = Version.class.getSimpleName() + "<" + t.getSimpleName() + ">";
+					var n = "Version<" + t.getSimpleName() + ">";
 					database.createTable(n,
 							new TableColumn[] { new TableColumn("id", "INTEGER", true),
 									new TableColumn("document", "TEXT", false),

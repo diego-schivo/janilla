@@ -26,8 +26,9 @@ package com.janilla.conduit.backend;
 
 import java.util.List;
 
-import com.janilla.blanktemplate.Media;
 import com.janilla.cms.User;
+import com.janilla.conduit.Article;
+import com.janilla.conduit.Comment;
 
-public record Collections(List<User<?>> users, List<Media> media) {
+public record Collections(List<Article> articles, List<Comment> comments, List<User<?>> users) {
 }

@@ -106,7 +106,8 @@ public class DefaultPersistence implements Persistence {
 		for (var pp = JavaReflect.properties(type).iterator(); pp.hasNext();) {
 			var p = pp.next();
 //			IO.println("DefaultPersistence.configure, p=" + p);
-			var i = JavaReflect.inheritedAnnotation((Method) p.member(), Index.class);
+			var aa = JavaReflect.inheritedAnnotation((Method) p.member(), Index.class);
+			var i = aa != null ? aa.annotation() : null;
 			if (i == null)
 				continue;
 

@@ -24,6 +24,8 @@
  */
 package com.janilla.websitetemplate.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -39,6 +41,8 @@ import com.janilla.websitetemplate.Page;
 @Handle(path = "/api/pages")
 public class PageApi extends AbstractCollectionApi<Long, Page> {
 
+	private static final Logger LOGGER = System.getLogger(PageApi.class.getName());
+
 	public PageApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
 		super(Page.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
@@ -46,11 +50,17 @@ public class PageApi extends AbstractCollectionApi<Long, Page> {
 	@Handle(method = "GET")
 	public ListPortion<Page> read(String search, Direction direction, Long skip, Long limit, Integer depth, String slug,
 			HttpExchange exchange) {
-		if (slug != null && !slug.isEmpty()) {
-			var p = crud().read(crud().find(drafts.test(exchange) ? "slugDraft" : "slug", new Object[] { slug }),
-					depth != null ? depth : 0);
+		LOGGER.log(Level.DEBUG, "search={0}, direction={1}, skip={2}, limit={3}, depth={4}, slug={5}", search, direction,
+				skip, limit, depth, slug);
+
+		if (slug != null && !slug.isBlank()) {
+			var i = drafts.test(exchange) ? "slugDraft" : "slug";
+			var d = depth != null ? depth.intValue() : defaultDepth;
+			var p = crud().read(crud().find(i, new Object[] { slug }), d);
+
 			return p != null ? ListPortion.of(List.of(p)) : ListPortion.empty();
 		}
+
 		return super.read(search, direction, skip, limit, depth);
 	}
 }

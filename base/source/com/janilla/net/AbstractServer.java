@@ -43,15 +43,15 @@ import javax.net.ssl.SSLEngine;
 
 public abstract class AbstractServer implements Server {
 
-	private static final Logger LOGGER = System.getLogger(AbstractServer.class.getName());
-
 	protected static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
+
+	private static final Logger LOGGER = System.getLogger(AbstractServer.class.getName());
 
 	protected final SocketAddress endpoint;
 
 	protected final SSLContext sslContext;
 
-	protected final Map<SocketChannel, ThreadAndInstant> lastUsed = new ConcurrentHashMap<>();
+	protected final Map<SocketChannel, ThreadInstantItem> lastUsed = new ConcurrentHashMap<>();
 
 	protected AbstractServer(SocketAddress endpoint, SSLContext sslContext) {
 		this.endpoint = endpoint;
@@ -73,7 +73,7 @@ public abstract class AbstractServer implements Server {
 
 					var t = startThread(c2);
 
-					lastUsed.put(c2, new ThreadAndInstant(t, Instant.now()));
+					lastUsed.put(c2, new ThreadInstantItem(t, Instant.now()));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -142,8 +142,8 @@ public abstract class AbstractServer implements Server {
 
 	protected abstract void handleConnection(Transfer transfer);
 
-	protected ThreadAndInstant updateLastUsed(SocketChannel channel) {
-		return lastUsed.computeIfPresent(channel, (_, x) -> new ThreadAndInstant(x.thread(), Instant.now()));
+	protected ThreadInstantItem updateLastUsed(SocketChannel channel) {
+		return lastUsed.computeIfPresent(channel, (_, x) -> new ThreadInstantItem(x.thread(), Instant.now()));
 	}
 
 	protected void shutdownConnections() {
@@ -154,7 +154,7 @@ public abstract class AbstractServer implements Server {
 				break;
 			}
 
-			Map<SocketChannel, ThreadAndInstant> m = new HashMap<>();
+			Map<SocketChannel, ThreadInstantItem> m = new HashMap<>();
 //			IO.println("SecureServer.shutdownConnections, lastUsed=" + lastUsed.size());
 			var i0 = Instant.now().minus(CONNECTION_TIMEOUT);
 			for (var it = lastUsed.entrySet().iterator(); it.hasNext();) {

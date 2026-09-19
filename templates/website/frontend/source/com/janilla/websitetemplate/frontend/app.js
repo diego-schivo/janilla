@@ -57,14 +57,17 @@ export default class App extends BlankApp {
     async updateDisplaySite() {
         const s = this.customState;
         const ss = this.serverState;
+
         if (!Object.hasOwn(s, "header"))
             s.header = ss && Object.hasOwn(ss, "header")
                 ? ss.header
                 : await (await fetch(`${this.customEnv.apiUrl}/header`)).json();
+
         if (!Object.hasOwn(s, "footer"))
             s.footer = ss && Object.hasOwn(ss, "footer")
                 ? ss.footer
                 : await (await fetch(`${this.customEnv.apiUrl}/footer`)).json();
+
         s.colorScheme = localStorage.getItem(`${this.dataset.key}.color-scheme`);
 
         this.appendChild(this.interpolateDom({
@@ -75,7 +78,7 @@ export default class App extends BlankApp {
 
     siteData() {
         return {
-			...super.siteData(),
+            ...super.siteData(),
             colorScheme: this.colorScheme ?? "light dark",
             before: this.currentUser?.roles?.some(x => x.name === "ADMIN") ? { $template: "admin-bar" } : null,
             header: { $template: "header" },
@@ -87,6 +90,7 @@ export default class App extends BlankApp {
         const s = this.customState;
         if (s.notFound)
             return { $template: "not-found" };
+
         const p = this.currentPath;
         const m = p.match(postsRegex);
         if (m)
@@ -94,6 +98,7 @@ export default class App extends BlankApp {
                 $template: "post",
                 slug: m[1].substring(1)
             } : { $template: "posts" };
+
         return p === "/search" ? {
             $template: "search",
             query: new URLSearchParams(location.search).get("q")

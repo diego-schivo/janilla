@@ -35,10 +35,4 @@ import com.janilla.persistence.Store;
 public record Owner(Long id, String firstName, @Index String lastName, String address, String city, String telephone,
 		List<Pet> pets, Instant createdAt, Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt)
 		implements Document<Long> {
-
-//	public static final Owner EMPTY = new Owner(null, null, null, null, null, null, null);
-//
-//	public Owner withId(Long id) {
-//		return new Owner(id, firstName, lastName, address, city, telephone, pets);
-//	}
 }

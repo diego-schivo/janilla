@@ -50,8 +50,8 @@ public class JsonHandlerFactory extends AbstractHttpHandlerFactory {
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
-		if (object instanceof Renderable r)
+	public HttpHandler newHandler(Object input) {
+		if (input instanceof Renderable r)
 			return x -> {
 				render(r.value(), x);
 				return true;

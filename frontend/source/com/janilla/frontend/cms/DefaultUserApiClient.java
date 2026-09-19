@@ -54,9 +54,9 @@ import java.net.URI;
 
 import com.janilla.cms.User;
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -78,7 +78,7 @@ public class DefaultUserApiClient implements UserApiClient {
 
 	@Override
 	public User<?> sessionUser(HttpCookie token) {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/users/me"),
+		var r = new DefaultHttpRequest("GET", URI.create(config.api().url() + "/users/me"),
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, User.class);
@@ -86,7 +86,7 @@ public class DefaultUserApiClient implements UserApiClient {
 
 	@Override
 	public ListPortion<User<?>> users(Long skip, Long limit) {
-		var r = new HttpRequest("GET",
+		var r = new DefaultHttpRequest("GET",
 				URI.create(config.api().url() + "/users?"
 						+ new UriQueryBuilder().append("skip", skip != null ? skip.toString() : null).append("limit",
 								limit != null ? limit.toString() : null)));

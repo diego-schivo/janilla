@@ -93,16 +93,19 @@ public class BlankFrontend<C extends BlankFrontendConfig, D extends BlankDomain>
 		if (httpClient == null)
 			httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class),
 					Collections.singletonMap("sslContext", sslContext(config)));
+
 		{
 			var c = diFactory.classFor(ApiClient.class);
 			apiClient = c != null ? diFactory.newInstance(c) : null;
 		}
+
 		return super.newInvocationResolver();
 	}
 
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
+
 		resourcesProviders.put(
 				diFactory.newInstance(DownloadResourcesProvider.class, Map.of("url", LUCIDE_ICONS_DOWNLOAD)), "/base");
 		resourcesProviders.put(new PackageResourcesProvider("com.janilla.frontend.cms"), "/cms");

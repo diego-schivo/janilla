@@ -30,9 +30,9 @@ import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.SimpleHttpExchange;
+import com.janilla.http.DefaultHttpExchange;
 
-public class BlankFrontendHttpExchange extends SimpleHttpExchange {
+public class BlankFrontendHttpExchange extends DefaultHttpExchange {
 
 	protected final FrontendConfig config;
 

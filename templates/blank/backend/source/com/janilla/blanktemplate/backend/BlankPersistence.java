@@ -110,7 +110,7 @@ public class BlankPersistence<C extends BlankBackendConfig> extends CmsPersisten
 			d = seed(d, pp);
 		}
 
-		var r = seedDataClass.getResource("seed-data.zip");
+		var r = seedDataClass != null ? seedDataClass.getResource("seed-data.zip") : null;
 		if (r != null) {
 			URI u;
 			try {

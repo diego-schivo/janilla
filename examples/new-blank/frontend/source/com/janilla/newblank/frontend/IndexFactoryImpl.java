@@ -27,16 +27,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.janilla.blanktemplate.frontend.BlankFrontendConfig;
 import com.janilla.blanktemplate.frontend.BlankIndexFactory;
 import com.janilla.frontend.ApiClient;
 import com.janilla.frontend.Template;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 
-class IndexFactoryImpl extends BlankIndexFactory<BlankFrontendConfig> {
+class IndexFactoryImpl extends BlankIndexFactory<NewBlankFrontendConfig> {
 
-	public IndexFactoryImpl(BlankFrontendConfig config, ResourceMap resourceMap, DiFactory diFactory,
+	public IndexFactoryImpl(NewBlankFrontendConfig config, ResourceMap resourceMap, DiFactory diFactory,
 			ApiClient apiClient) {
 		super(config, resourceMap, diFactory, apiClient);
 	}

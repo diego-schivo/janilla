@@ -40,7 +40,7 @@ export default class Hero extends WebComponent {
 
         this.appendChild(this.interpolateDom({
             $template: "",
-            backgroundImage: d.media ? `background-image: url("${d.media.uri}")` : null,
+            background: d.media ? `background-image: url("${d.media.uri}")` : null,
 			richText: d.richText, //.replace(/\${href\('(.*?)'\)}/g, `${a.customEnv.basePath}$1`),
             links: d.links?.length ? {
                 $template: "links",

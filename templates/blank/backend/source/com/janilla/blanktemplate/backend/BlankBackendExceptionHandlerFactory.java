@@ -27,12 +27,12 @@ package com.janilla.blanktemplate.backend;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.web.DefaultExceptionHandlerFactory;
 import com.janilla.web.Error;
-import com.janilla.web.ExceptionHandlerFactory;
 import com.janilla.web.RenderableFactory;
 import com.janilla.web.WebAppConfig;
 
-public class BlankBackendExceptionHandlerFactory extends ExceptionHandlerFactory {
+public class BlankBackendExceptionHandlerFactory extends DefaultExceptionHandlerFactory {
 
 	protected final RenderableFactory renderableFactory;
 
@@ -46,7 +46,7 @@ public class BlankBackendExceptionHandlerFactory extends ExceptionHandlerFactory
 	protected boolean handle(Error error, HttpExchange exchange) {
 		super.handle(error, exchange);
 		var r = renderableFactory.createRenderable(null, exchange.exception().getMessage());
-		var h = rootFactory.createHandler(r);
+		var h = rootFactory.newHandler(r);
 		return h.handle(exchange);
 	}
 }

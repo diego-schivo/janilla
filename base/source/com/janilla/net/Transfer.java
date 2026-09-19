@@ -31,9 +31,9 @@ public interface Transfer {
 
 	ByteBuffer in();
 
-	Lock inLock();
-
 	ByteBuffer out();
+
+	Lock inLock();
 
 	Lock outLock();
 

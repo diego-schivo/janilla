@@ -22,14 +22,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.janilla.java.Flat;
+import com.janilla.java.Flatten;
 import com.janilla.java.JavaReflect;
 import com.janilla.petclinic.Pet;
 import com.janilla.petclinic.PetType;
 import com.janilla.web.Render;
 
 @Render(template = "createOrUpdatePetForm", resource = "/createOrUpdatePetForm.html")
-record PetForm(@Flat Pet pet, List<PetType> types, Map<String, List<String>> errors) {
+record PetForm(@Flatten Pet pet, List<PetType> types, Map<String, List<String>> errors) {
 
 	private static final Map<String, String> LABELS = Map.of("name", "Name", "birthDate", "Birth Date", "type", "Type");
 

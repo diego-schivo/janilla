@@ -47,9 +47,9 @@ public interface Media extends Document<Long> {
 
 		String u;
 		if (f != null) {
-			var wa = WebApp.INSTANCE.get();
-			LOGGER.log(Level.DEBUG, "wa={0}", wa);
-			u = wa.config().api().url() + "/media/" + f.name();
+			var a = WebApp.SCOPED.get();
+			LOGGER.log(Level.DEBUG, "wa={0}", a);
+			u = a.config().api().url() + "/media/file/" + f.name();
 		} else
 			u = null;
 		LOGGER.log(Level.DEBUG, "u={0}", u);

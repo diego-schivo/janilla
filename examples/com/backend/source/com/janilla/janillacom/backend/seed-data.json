@@ -4,7 +4,8 @@
 			"$type": "Application",
 			"id": "todomvc",
 			"title": "TodoMVC",
-			"frontend": "com.janilla.todomvc.frontend.TodoMvcFrontend"
+			"frontend": "com.janilla.todomvc.frontend.TodoMvcFrontend",
+			"backend": "com.janilla.todomvc.backend.TodoMvcBackend"
 		},
 		{
 			"$type": "Application",

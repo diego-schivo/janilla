@@ -27,8 +27,8 @@ package com.janilla.websitetemplate;
 import java.util.List;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
 import com.janilla.cms.Versions;
+import com.janilla.java.Type;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
@@ -40,7 +40,7 @@ public interface Page extends Document<Long> {
 
 	Hero hero();
 
-	List<@Types({ Archive.class, CallToAction.class, Content.class, FormBlock.class,
+	List<@Type({ Archive.class, CallToAction.class, Content.class, FormBlock.class,
 			MediaBlock.class }) Object> layout();
 
 	Meta meta();

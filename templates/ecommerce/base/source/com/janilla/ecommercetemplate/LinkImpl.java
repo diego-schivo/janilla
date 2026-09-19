@@ -25,13 +25,13 @@
 package com.janilla.ecommercetemplate;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
+import com.janilla.java.Type;
 import com.janilla.websitetemplate.Link;
 import com.janilla.websitetemplate.LinkAppearance;
 import com.janilla.websitetemplate.LinkType;
 import com.janilla.websitetemplate.Page;
 
-record LinkImpl(LinkType type, Boolean newTab, @Types( {
+record LinkImpl(LinkType type, Boolean newTab, @Type( {
 		Page.class, Product.class }) Document<?> document, String uri, String text, LinkAppearance appearance)
 		implements Link{
 }

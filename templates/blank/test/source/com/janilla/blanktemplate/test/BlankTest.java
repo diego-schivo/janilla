@@ -106,7 +106,7 @@ public class BlankTest extends AbstractFrontend<FrontendConfig, Domain> {
 			var h = WebHandling.TEST_ONGOING.get() && !x.request().getPath().startsWith("/test/")
 					? fullstack.httpHandler()
 					: (HttpHandler) x2 -> {
-						var h2 = f.createHandler(Objects.requireNonNullElse(x2.exception(), x2.request()));
+						var h2 = f.newHandler(Objects.requireNonNullElse(x2.exception(), x2.request()));
 						if (h2 == null)
 							throw new NotFoundException(x2.request().getHeaderValue(":method") + " "
 									+ x2.request().getHeaderValue(":path"));

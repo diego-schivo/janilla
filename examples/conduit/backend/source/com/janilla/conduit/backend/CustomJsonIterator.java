@@ -21,95 +21,102 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.janilla.conduit.backend;
-
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-
-import com.janilla.backend.cms.UserHttpExchange;
-import com.janilla.backend.persistence.Persistence;
-import com.janilla.cms.User;
-import com.janilla.conduit.Article;
-import com.janilla.http.HttpExchange;
-import com.janilla.java.Java;
-import com.janilla.java.JavaReflect;
-import com.janilla.json.JsonToken;
-import com.janilla.json.ReflectionJsonIterator;
-import com.janilla.persistence.ListPortion;
-
-class CustomJsonIterator extends ReflectionJsonIterator {
-
-	private static final Logger LOGGER = System.getLogger(CustomJsonIterator.class.getName());
-
-	protected final Persistence persistence;
-
-	public CustomJsonIterator(Object object, Persistence persistence) {
-		super(object);
-		this.persistence = persistence;
-	}
-
-	@Override
-	public Iterator<JsonToken<?>> newValueIterator(Object object) {
-		LOGGER.log(Level.DEBUG, "object={0}", object);
-
-//		var o = stack().peek();
-//		if (o instanceof Map.Entry x) {
-//			var n = (String) x.getKey();
-//			switch (n) {
-//			case "article":
-//				var a = (Article) object;
-//				if (a.slug() == null)
-//					object = persistence.crud(Article.class).read(a.id());
-//				break;
-//			case "author", "profile":
-//				var u = (User) object;
-//				if (u.email() == null)
-//					object = persistence.crud(User.class).read(u.id());
-//				break;
-//			}
+//package com.janilla.conduit.backend;
+//
+//import java.lang.System.Logger;
+//import java.lang.System.Logger.Level;
+//import java.util.Iterator;
+//import java.util.LinkedHashMap;
+//import java.util.Map;
+//import java.util.Set;
+//
+//import com.janilla.backend.cms.UserHttpExchange;
+//import com.janilla.backend.persistence.Persistence;
+//import com.janilla.cms.User;
+//import com.janilla.conduit.Article;
+//import com.janilla.http.HttpExchange;
+//import com.janilla.java.Java;
+//import com.janilla.java.JavaReflect;
+//import com.janilla.json.JsonToken;
+//import com.janilla.json.ReflectionJsonIterator;
+//import com.janilla.persistence.ListPortion;
+//
+//class CustomJsonIterator extends ReflectionJsonIterator {
+//
+//	private static final Logger LOGGER = System.getLogger(CustomJsonIterator.class.getName());
+//
+//	protected final Persistence persistence;
+//
+//	public CustomJsonIterator(Object object, Persistence persistence) {
+//		super(object);
+//		this.persistence = persistence;
+//	}
+//
+//	@Override
+//	public Iterator<JsonToken<?>> newValueIterator(Object object) {
+//		LOGGER.log(Level.DEBUG, "object={0}", object);
+//
+////		var o = stack().peek();
+////		if (o instanceof Map.Entry x) {
+////			var n = (String) x.getKey();
+////			switch (n) {
+////			case "article":
+////				var a = (Article) object;
+////				if (a.slug() == null)
+////					object = persistence.crud(Article.class).read(a.id());
+////				break;
+////			case "author", "profile":
+////				var u = (User) object;
+////				if (u.email() == null)
+////					object = persistence.crud(User.class).read(u.id());
+////				break;
+////			}
+////		}
+//
+//		if (object != null && stack.size() == 1) {
+//			var e = HttpExchange.SCOPED.get();
+//			var r = e.request().getHeaderValue("referer");
+//			if (r != null && (r.endsWith("/admin") || r.contains("/admin/")))
+//				;
+//			else
+//				switch (object) {
+//				case ListPortion<?> p:
+//					object = Map.of("articles", p.elements(), "articlesCount", p.totalSize());
+//					break;
+//				case Article a: {
+//					var m = JavaReflect.properties(a.getClass()).filter(x -> !x.name().equals("id")).map(x -> {
+////						IO.println("k=" + k);
+//						var v = x.get(a);
+//						return Java.mapEntry(x.name(), v);
+//					}).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
+//					var u = ((UserHttpExchange<?>) HttpExchange.SCOPED.get()).sessionUser();
+//					m.put("favorited", u != null && a.id() != null && persistence.crud(Article.class)
+//							.filter("favoriteList", new Object[] { u.id() }).stream().anyMatch(x -> x.equals(a.id())));
+//					m.put("favoritesCount",
+//							a.id() != null
+//									? ((PersistenceImpl) persistence).userCrud().count("favoriteList",
+//											new Object[] { a.id() })
+//									: 0);
+//					object = Map.of("article", m);
+//				}
+//					break;
+//				case User<?> u: {
+//					var m = JavaReflect.properties(u.getClass())
+//							.filter(x -> !Set.of("hash", "id", "salt").contains(x.name())).map(x -> {
+//								var v = x.get(u);
+//								return Java.mapEntry(x.name(), v);
+//							}).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
+//					var v = ((UserHttpExchange<?>) HttpExchange.SCOPED.get()).sessionUser();
+//					m.put("following", v != null && ((PersistenceImpl) persistence).userCrud()
+//							.filter("followList", new Object[] { v.id() }).stream().anyMatch(x -> x.equals(u.id())));
+//					object = m;
+//				}
+//					break;
+//				default:
+//					break;
+//				}
 //		}
-
-		if (object != null)
-			switch (object) {
-			case ListPortion<?> p:
-				object = Map.of("articles", p.elements(), "articlesCount", p.totalSize());
-				break;
-			case Article a: {
-				var m = JavaReflect.properties(a.getClass()).filter(x -> !x.name().equals("id")).map(x -> {
-//						IO.println("k=" + k);
-					var v = x.get(a);
-					return Java.mapEntry(x.name(), v);
-				}).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
-				var u = ((UserHttpExchange<?>) HttpExchange.SCOPED.get()).sessionUser();
-				m.put("favorited", u != null && a.id() != null && persistence.crud(Article.class)
-						.filter("favoriteList", new Object[] { u.id() }).stream().anyMatch(x -> x.equals(a.id())));
-				m.put("favoritesCount",
-						a.id() != null
-								? ((PersistenceImpl) persistence).userCrud().count("favoriteList",
-										new Object[] { a.id() })
-								: 0);
-				object = stack.size() == 1 ? Map.of("article", m) : m;
-			}
-				break;
-			case User<?> u: {
-				var m = JavaReflect.properties(u.getClass())
-						.filter(x -> !Set.of("hash", "id", "salt").contains(x.name())).map(x -> {
-							var v = x.get(u);
-							return Java.mapEntry(x.name(), v);
-						}).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
-				var v = ((UserHttpExchange<?>) HttpExchange.SCOPED.get()).sessionUser();
-				m.put("following", v != null && ((PersistenceImpl) persistence).userCrud()
-						.filter("followList", new Object[] { v.id() }).stream().anyMatch(x -> x.equals(u.id())));
-				object = m;
-			}
-				break;
-			default:
-				break;
-			}
-		return super.newValueIterator(object);
-	}
-}
+//
+//		return super.newValueIterator(object);
+//	}
+//}

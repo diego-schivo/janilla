@@ -31,4 +31,8 @@ public interface Converter {
 	TypeResolver typeResolver();
 
 	<T> T convert(Object object, Type target);
+
+	default <T> T convert(Object object, Class<T> target) {
+		return convert(object, (Type) target);
+	}
 }

@@ -57,35 +57,38 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.janilla.backend.persistence.Crud;
+import com.janilla.backend.web.BackendConfig;
 import com.janilla.cms.CmsDomain;
 import com.janilla.cms.User;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.SimpleHttpExchange;
+import com.janilla.http.DefaultHttpExchange;
+import com.janilla.java.Copier;
+import com.janilla.java.Java;
 import com.janilla.json.Jwt;
 import com.janilla.web.UnauthorizedException;
 
-public abstract class AbstractUserHttpExchange<U extends User<?>> extends SimpleHttpExchange
+public abstract class AbstractUserHttpExchange<U extends User<?>> extends DefaultHttpExchange
 		implements UserHttpExchange<U> {
 
-	protected final CmsDomain domain;
+	protected final BackendConfig config;
 
-	protected final String jwtCookie;
-
-	protected final String jwtKey;
+	protected final Copier copier;
 
 	protected final Crud<?, U> crud;
 
+	protected final CmsDomain domain;
+
 	protected final Map<String, Object> session = new HashMap<>();
 
-	protected AbstractUserHttpExchange(HttpRequest request, HttpResponse response, String jwtCookie, String jwtKey,
-			Crud<?, U> crud, CmsDomain domain) {
+	protected AbstractUserHttpExchange(HttpRequest request, HttpResponse response, BackendConfig config,
+			Crud<?, U> crud, CmsDomain domain, Copier copier) {
 		super(request, response);
-		this.jwtCookie = jwtCookie;
-		this.jwtKey = jwtKey;
+		this.config = config;
 		this.crud = crud;
 		this.domain = domain;
+		this.copier = copier;
 	}
 
 	public String sessionEmail() {
@@ -93,11 +96,11 @@ public abstract class AbstractUserHttpExchange<U extends User<?>> extends Simple
 			var a = request().getHeaderValue("authorization");
 			var t = a != null && a.startsWith("Token ") ? a.substring("Token ".length())
 					: request().getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; ")))
-							.map(HttpCookie::parse).filter(x -> x.name().equals(jwtCookie)).findFirst()
+							.map(HttpCookie::parse).filter(x -> x.name().equals(config.jwt().cookie())).findFirst()
 							.map(HttpCookie::value).orElse(null);
 			Map<String, ?> p;
 			try {
-				p = t != null ? Jwt.verifyToken(t, jwtKey) : null;
+				p = t != null ? Jwt.verifyToken(t, config.jwt().key()) : null;
 			} catch (IllegalArgumentException e) {
 				p = null;
 			}
@@ -120,11 +123,13 @@ public abstract class AbstractUserHttpExchange<U extends User<?>> extends Simple
 
 	@Override
 	public void setSessionCookie(String value) {
-		response().setHeaderValue("set-cookie",
-				HttpCookie.of(jwtCookie, value).withPath("/").withHttpOnly(true).withSameSite("Lax")
-						.withExpires(value != null && !value.isEmpty() ? ZonedDateTime.now(ZoneOffset.UTC).plusHours(2)
-								: ZonedDateTime.ofInstant(Instant.EPOCH, ZoneOffset.UTC))
-						.format());
+		var e = value != null && !value.isBlank() ? ZonedDateTime.now(ZoneOffset.UTC).plusHours(2)
+				: ZonedDateTime.ofInstant(Instant.EPOCH, ZoneOffset.UTC);
+		var m = Java.hashMap("path", "/", "httpOnly", true, "sameSite", "Lax", "expires", e);
+		var c = HttpCookie.of(config.jwt().cookie(), value);
+		c = copier.copy(m, c);
+
+		response().setHeaderValue("set-cookie", c.format());
 	}
 
 	@Override

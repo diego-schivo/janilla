@@ -86,14 +86,14 @@ public abstract class AbstractFullstack<C extends FullstackConfig, D extends Dom
 
 	@Override
 	protected HttpHandler newHttpHandler() {
-		backend = ScopedValue.where(INSTANCE, this).call(() -> {
+		backend = ScopedValue.where(SCOPED, this).call(() -> {
 			var a = new WebApp[1];
 			var f = Ioc.diFactory(diBackendTypes().toList(), () -> a[0], "backend");
 			return f.newInstance(backendClass, Java.hashMap("config", config, "diFactory", f, "context",
 					(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		});
 
-		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
+		frontend = ScopedValue.where(SCOPED, this).call(() -> {
 			var a = new WebApp[1];
 			var f = Ioc.diFactory(diFrontendTypes().toList(), () -> a[0], "frontend");
 			return f.newInstance(frontendClass, Java.hashMap("config", config, "diFactory", f, "context",
@@ -102,7 +102,7 @@ public abstract class AbstractFullstack<C extends FullstackConfig, D extends Dom
 
 		return x -> {
 			var a = webApp(x);
-			return ScopedValue.where(INSTANCE, a).call(() -> a.httpHandler().handle(x));
+			return ScopedValue.where(SCOPED, a).call(() -> a.httpHandler().handle(x));
 		};
 	}
 

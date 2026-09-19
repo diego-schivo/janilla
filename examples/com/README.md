@@ -1,1 +1,1 @@
-# janilla-com
+# Janilla.com

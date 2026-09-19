@@ -25,7 +25,7 @@
 package com.janilla.websitetemplate;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
+import com.janilla.java.Type;
 
 public interface Link {
 
@@ -33,7 +33,7 @@ public interface Link {
 
 	Boolean newTab();
 
-	@Types({ Page.class, Post.class })
+	@Type({ Page.class, Post.class })
 	Document<?> document();
 
 	String uri();

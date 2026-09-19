@@ -53,9 +53,9 @@ import java.lang.reflect.Type;
 import java.net.URI;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -78,7 +78,7 @@ public class DefaultPostApiClient implements PostApiClient {
 
 	@Override
 	public ListPortion<Post> read(String slug, Integer depth, HttpCookie token) {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/posts?"
+		var r = new DefaultHttpRequest("GET", URI.create(config.api().url() + "/posts?"
 				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);

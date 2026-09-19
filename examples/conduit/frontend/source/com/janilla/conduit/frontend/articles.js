@@ -94,7 +94,7 @@ static get moduleUrl() {
 			const u = new URL(this.dataset.apiUrl, location.href);
 			u.searchParams.append("skip", ((hs.articlesPage ?? 1) - 1) * 10);
 			u.searchParams.append("limit", 10);
-			const { customState: { apiHeaders } } = this.closest("app-element");
+			const { apiHeaders } = this.closest("app-element");
 			const { articles, articlesCount } = await (await fetch(u, { headers: apiHeaders })).json();
 			history.replaceState({
 				...history.state,

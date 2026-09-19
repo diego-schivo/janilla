@@ -98,38 +98,6 @@ public record HttpCookie(String name, String value, String domain, ZonedDateTime
 		return c;
 	}
 
-	public HttpCookie withDomain(String domain) {
-		return new HttpCookie(name, value, domain, expires, httpOnly, maxAge, partitioned, path, sameSite, secure);
-	}
-
-	public HttpCookie withExpires(ZonedDateTime expires) {
-		return new HttpCookie(name, value, domain, expires, httpOnly, maxAge, partitioned, path, sameSite, secure);
-	}
-
-	public HttpCookie withHttpOnly(boolean httpOnly) {
-		return new HttpCookie(name, value, domain, expires, httpOnly, maxAge, partitioned, path, sameSite, secure);
-	}
-
-	public HttpCookie withMaxAge(Integer maxAge) {
-		return new HttpCookie(name, value, domain, expires, httpOnly, maxAge, partitioned, path, sameSite, secure);
-	}
-
-	public HttpCookie withPartitioned(boolean partitioned) {
-		return new HttpCookie(name, value, domain, expires, httpOnly, maxAge, partitioned, path, sameSite, secure);
-	}
-
-	public HttpCookie withPath(String path) {
-		return new HttpCookie(name, value, domain, expires, httpOnly, maxAge, partitioned, path, sameSite, secure);
-	}
-
-	public HttpCookie withSameSite(String sameSite) {
-		return new HttpCookie(name, value, domain, expires, httpOnly, maxAge, partitioned, path, sameSite, secure);
-	}
-
-	public HttpCookie withSecure(boolean secure) {
-		return new HttpCookie(name, value, domain, expires, httpOnly, maxAge, partitioned, path, sameSite, secure);
-	}
-
 	public String format() {
 		var b = new StringBuilder();
 		b.append(name + "=" + Objects.toString(value, ""));

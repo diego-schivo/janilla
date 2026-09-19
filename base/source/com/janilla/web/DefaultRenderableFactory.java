@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.AnnotationAndElement;
+import com.janilla.java.AnnotationResult;
 import com.janilla.java.Java;
 import com.janilla.java.JavaReflect;
 
@@ -80,7 +80,7 @@ public class DefaultRenderableFactory implements RenderableFactory {
 		var ae = Stream.of(value != null ? value.getClass() : null, annotated).filter(x -> x != null).map(x -> {
 			var r = x.getAnnotation(Render.class);
 			if (r != null)
-				return new AnnotationAndElement<>(r, x);
+				return new AnnotationResult<>(r, x);
 			var c = x instanceof AnnotatedType at ? Java.toClass(at.getType()) : (Class<?>) x;
 			return JavaReflect.inheritedAnnotation(c, Render.class);
 		}).filter(x -> x != null).findFirst().orElse(null);
@@ -132,7 +132,7 @@ public class DefaultRenderableFactory implements RenderableFactory {
 		}
 	}
 
-	protected Stream<String> resourceKeys(AnnotationAndElement<Render> render) {
+	protected Stream<String> resourceKeys(AnnotationResult<Render> render) {
 		return Arrays.stream(render.annotation().resource());
 	}
 }

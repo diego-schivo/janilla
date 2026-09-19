@@ -16,7 +16,6 @@
 package com.janilla.petclinic;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 
 import com.janilla.cms.Document;
@@ -31,17 +30,7 @@ import com.janilla.persistence.Store;
  * @author Sam Brannen
  */
 @Store
-public record Pet(Long id, String name, LocalDate birthDate, PetType type, @Index Owner owner, List<Visit> visits,
+public record Pet(Long id, String name, Instant birthDate, PetType type, @Index Owner owner, List<Visit> visits,
 		Instant createdAt, Instant updatedAt, DocumentStatus documentStatus, Instant publishedAt)
 		implements Document<Long> {
-
-//	public static final Pet EMPTY = new Pet(null, null, null, null, null, null);
-//
-//	public Pet withId(Long id) {
-//		return new Pet(id, name, birthDate, type, owner, visits);
-//	}
-//
-//	public Pet withOwner(Owner owner) {
-//		return new Pet(id, name, birthDate, type, owner, visits);
-//	}
 }

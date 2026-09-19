@@ -58,12 +58,13 @@ export default class LoginPage extends WebComponent {
         try {
             const a = this.shadowClosest("app-element");
             const d = new FormData(event.target);
-            const u = await (await fetch(`${a.customEnv.apiUrl}/users/login`, {
+            const j = await (await fetch(`${a.customEnv.apiUrl}/users/login`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify(Object.fromEntries(d))
             })).json();
+			const u = typeof j === "object" && j.$type === "User" ? j : null;
             this.querySelector(".error").innerHTML = u ? "" : "Invalid credentials.";
             if (u)
                 a.navigateTo(`${a.customEnv.basePath}/dashboard`);

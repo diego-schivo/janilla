@@ -48,6 +48,7 @@ import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.InvocationResolver;
+import com.janilla.web.MethodChoice;
 import com.janilla.web.WebApp;
 
 public class BlankBackend<C extends BlankBackendConfig, D extends BlankDomain> extends AbstractBackend<C, D> {
@@ -83,7 +84,7 @@ public class BlankBackend<C extends BlankBackendConfig, D extends BlankDomain> e
 	protected final Class<?> seedDataClass;
 
 	public BlankBackend(C config, DiFactory diFactory, Consumer<Object> context) {
-		this(config, diFactory, context, Data.class, null);
+		this(config, diFactory, context, Data.class, SeedData.class);
 	}
 
 	protected BlankBackend(C config, DiFactory diFactory, Consumer<Object> context, Class<?> dataType,
@@ -103,6 +104,18 @@ public class BlankBackend<C extends BlankBackendConfig, D extends BlankDomain> e
 
 	public Predicate<HttpExchange> drafts() {
 		return drafts;
+	}
+
+	public Predicate<MethodChoice> methodPredicate() {
+		return x -> {
+			if (!x.scope().isEmpty()) {
+				var e = HttpExchange.SCOPED.get();
+				var r = e.request().getHeaderValue("referer");
+				var a = r != null && (r.endsWith("/admin") || r.contains("/admin/"));
+				return x.scope().contains(a ? "admin" : "site");
+			}
+			return true;
+		};
 	}
 
 	public Class<?> seedDataClass() {

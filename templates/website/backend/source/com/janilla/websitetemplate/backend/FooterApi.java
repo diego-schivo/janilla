@@ -29,13 +29,14 @@ import java.util.function.Predicate;
 import com.janilla.backend.cms.AbstractGlobalApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Footer;
 
 @Handle(path = "/api/footer")
 public class FooterApi extends AbstractGlobalApi<Long, Footer> {
 
-	public FooterApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Footer.class, drafts, persistence, 1L);
+	public FooterApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Footer.class, drafts, persistence, copier, 1L);
 	}
 }

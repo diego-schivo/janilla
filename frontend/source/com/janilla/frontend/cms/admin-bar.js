@@ -59,8 +59,14 @@ export default class AdminBar extends WebComponent {
         return ["admin-bar"];
     }
 
+    constructor() {
+        super();
+
+        this.attachShadow({ mode: "open" });
+    }
+
     async updateDisplay() {
-        this.appendChild(this.interpolateDom({
+        this.shadowRoot.appendChild(this.interpolateDom({
             $template: "",
             links: this.links().map(x => ({
                 $template: "link",

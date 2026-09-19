@@ -93,9 +93,9 @@ public class JanillaFullstack extends WebsiteFullstack<ConfigImpl, JanillaDomain
 
 		var a = new WebApp[1];
 		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
-		var cfg = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
-		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
 		serve(a[0]);
 	}
 

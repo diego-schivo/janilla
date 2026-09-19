@@ -4,8 +4,8 @@ import java.lang.reflect.Type;
 import java.net.URI;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.persistence.ListPortion;
@@ -26,7 +26,7 @@ class TodoItemApiClient {
 	}
 
 	public ListPortion<TodoItem> read() {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/todo-items"));
+		var r = new DefaultHttpRequest("GET", URI.create(config.api().url() + "/todo-items"));
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { TodoItem.class }));
 	}

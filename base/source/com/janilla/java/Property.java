@@ -39,7 +39,7 @@ import java.util.Arrays;
 
 public interface Property {
 
-	Member member();
+	String name();
 
 	Class<?> type();
 
@@ -47,17 +47,17 @@ public interface Property {
 
 	AnnotatedType annotatedType();
 
-	String name();
+	boolean derived();
 
-	Object get(Object object);
-
-	void set(Object object, Object value);
+	Member member();
 
 	boolean canGet();
 
 	boolean canSet();
 
-	boolean derived();
+	Object get(Object object);
+
+	void set(Object object, Object value);
 
 	static Property of(Field field) {
 		var n = name(field);
@@ -70,8 +70,8 @@ public interface Property {
 		return new Property() {
 
 			@Override
-			public Member member() {
-				return field;
+			public String name() {
+				return n;
 			}
 
 			@Override
@@ -90,20 +90,13 @@ public interface Property {
 			}
 
 			@Override
-			public String name() {
-				return n;
+			public boolean derived() {
+				return false;
 			}
 
 			@Override
-			public Object get(Object object) {
-				if (object == null)
-					return null;
-				return h.get(object);
-			}
-
-			@Override
-			public void set(Object object, Object value) {
-				h.set(object, value);
+			public Member member() {
+				return field;
 			}
 
 			@Override
@@ -117,8 +110,15 @@ public interface Property {
 			}
 
 			@Override
-			public boolean derived() {
-				return false;
+			public Object get(Object object) {
+				if (object == null)
+					return null;
+				return h.get(object);
+			}
+
+			@Override
+			public void set(Object object, Object value) {
+				h.set(object, value);
 			}
 
 			@Override
@@ -167,8 +167,8 @@ public interface Property {
 		return new Property() {
 
 			@Override
-			public Member member() {
-				return m;
+			public String name() {
+				return n;
 			}
 
 			@Override
@@ -187,8 +187,23 @@ public interface Property {
 			}
 
 			@Override
-			public String name() {
-				return n;
+			public boolean derived() {
+				return d;
+			}
+
+			@Override
+			public Member member() {
+				return m;
+			}
+
+			@Override
+			public boolean canGet() {
+				return g != null;
+			}
+
+			@Override
+			public boolean canSet() {
+				return s != null;
 			}
 
 			@Override
@@ -212,21 +227,6 @@ public interface Property {
 			}
 
 			@Override
-			public boolean canGet() {
-				return g != null;
-			}
-
-			@Override
-			public boolean canSet() {
-				return s != null;
-			}
-
-			@Override
-			public boolean derived() {
-				return d;
-			}
-
-			@Override
 			public String toString() {
 				return n;
 			}
@@ -237,8 +237,8 @@ public interface Property {
 		return new Property() {
 
 			@Override
-			public Member member() {
-				return property2.member();
+			public String name() {
+				return property2.name();
 			}
 
 			@Override
@@ -257,18 +257,13 @@ public interface Property {
 			}
 
 			@Override
-			public String name() {
-				return property2.name();
+			public boolean derived() {
+				return property2.derived();
 			}
 
 			@Override
-			public Object get(Object object) {
-				return property2.get(property1.get(object));
-			}
-
-			@Override
-			public void set(Object object, Object value) {
-				property2.set(property1.get(object), value);
+			public Member member() {
+				return property2.member();
 			}
 
 			@Override
@@ -282,8 +277,13 @@ public interface Property {
 			}
 
 			@Override
-			public boolean derived() {
-				return property2.derived();
+			public Object get(Object object) {
+				return property2.get(property1.get(object));
+			}
+
+			@Override
+			public void set(Object object, Object value) {
+				property2.set(property1.get(object), value);
 			}
 
 			@Override

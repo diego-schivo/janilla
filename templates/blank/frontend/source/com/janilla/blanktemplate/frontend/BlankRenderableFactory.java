@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.AnnotationAndElement;
+import com.janilla.java.AnnotationResult;
 import com.janilla.web.DefaultRenderableFactory;
 import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.Render;
@@ -49,7 +49,7 @@ public class BlankRenderableFactory extends DefaultRenderableFactory {
 	}
 
 	@Override
-	protected Stream<String> resourceKeys(AnnotationAndElement<Render> render) {
+	protected Stream<String> resourceKeys(AnnotationResult<Render> render) {
 		return super.resourceKeys(render).map(x -> {
 			String k;
 			if (x.startsWith("/"))

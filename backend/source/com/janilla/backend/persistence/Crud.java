@@ -35,6 +35,8 @@ import com.janilla.persistence.ListPortion;
 
 public interface Crud<ID extends Comparable<ID>, E extends Entity<ID>> {
 
+	String name();
+
 	Class<E> type();
 
 	List<CrudObserver<E>> observers();

@@ -45,6 +45,7 @@ import java.util.stream.Stream;
 import com.janilla.java.Java;
 import com.janilla.java.JavaInvoke;
 import com.janilla.java.JavaReflect;
+import com.janilla.java.Scope;
 
 public class DefaultDiFactory implements DiFactory {
 

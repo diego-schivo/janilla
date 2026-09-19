@@ -1,21 +1,17 @@
 <link rel="stylesheet" href="${basePath}/cms/admin.css" />
-<!--${p}-->
-<div id="div0">
+<!--${navToggler}-->
+<div>
   <!--${aside}-->
   <!--${header}-->
-  <!--${content}-->
+  <main>
+    <!--${content}-->
+  </main>
 </div>
 <!--${dialog}-->
 <toaster-element></toaster-element>
 
-<template id="p">
-  <p id="p0">
-    <label class="button toggler">
-      <input type="checkbox" checked="${checked}" class="visually-hidden" />
-      <lucide-icon data-name="menu"></lucide-icon>
-      <lucide-icon data-name="chevron-left"></lucide-icon>
-    </label>
-  </p>
+<template id="nav-toggler">
+  <admin-nav-toggler></admin-nav-toggler>
 </template>
 
 <template id="aside">

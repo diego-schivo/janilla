@@ -28,8 +28,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
 import com.janilla.cms.Versions;
+import com.janilla.java.Type;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 import com.janilla.websitetemplate.CallToAction;
@@ -49,7 +49,7 @@ public interface Product extends Document<Long> {
 
 	List<GalleryItem> gallery();
 
-	List<@Types({ CallToAction.class, Content.class, MediaBlock.class }) ?> layout();
+	List<@Type({ CallToAction.class, Content.class, MediaBlock.class }) ?> layout();
 
 	Boolean enableVariants();
 

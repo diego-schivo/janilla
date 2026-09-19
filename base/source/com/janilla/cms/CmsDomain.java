@@ -49,6 +49,8 @@
  */
 package com.janilla.cms;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -69,6 +71,8 @@ import com.janilla.java.Java;
 import com.janilla.web.Domain;
 
 public class CmsDomain implements Domain {
+
+	private static final Logger LOGGER = System.getLogger(CmsDomain.class.getName());
 
 	protected final Converter converter;
 
@@ -93,20 +97,27 @@ public class CmsDomain implements Domain {
 
 	public byte[] hash(char[] password, byte[] salt) {
 		var ks = new PBEKeySpec(password, salt, 10000, 512);
+
 		Key k;
 		try {
 			k = secret.generateSecret(ks);
 		} catch (InvalidKeySpecException e) {
 			throw new RuntimeException(e);
 		}
-		return k.getEncoded();
+
+		var h = k.getEncoded();
+		return h;
 	}
 
 	public boolean passwordEquals(User<?> user, String password) {
 		var f = HexFormat.of();
+
+		var p = password.toCharArray();
 		var s = f.parseHex(user.salt());
-		var h = hash(password.toCharArray(), s);
-		return f.formatHex(h).equals(user.hash());
+		var h = hash(p, s);
+
+		var e = f.formatHex(h).equals(user.hash());
+		return e;
 	}
 
 	public int userDepth() {
@@ -114,26 +125,40 @@ public class CmsDomain implements Domain {
 	}
 
 	public UserRole userRole(String name) {
-		return userRoles.computeIfAbsent(name, k -> converter.convert(k, UserRole.class));
+		return userRoles.computeIfAbsent(name, _ -> converter.convert(name, UserRole.class));
 	}
 
 	public <ID extends Comparable<ID>> User<ID> withPassword(User<ID> user, String password) {
-		if (password == null || password.isEmpty())
-			return copier.copy(Java.hashMap("salt", null, "hash", null), user);
-		var s = new byte[16];
-		random.nextBytes(s);
-		var h = hash(password.toCharArray(), s);
+		LOGGER.log(Level.DEBUG, "user={0}, password={1}", user, password);
+
+		byte[] s, h;
+		if (password != null && !password.isBlank()) {
+			s = new byte[16];
+			random.nextBytes(s);
+			h = hash(password.toCharArray(), s);
+		} else
+			s = h = null;
+		LOGGER.log(Level.DEBUG, "s={0}, h={1}", s, h);
+
 		var f = HexFormat.of();
-		return copier.copy(Java.hashMap("salt", f.formatHex(s), "hash", f.formatHex(h)), user);
+		var m = Java.hashMap("salt", s != null ? f.formatHex(s) : null, "hash", h != null ? f.formatHex(h) : null);
+		var u = copier.copy(m, user);
+
+		LOGGER.log(Level.DEBUG, "u={0}", u);
+		return u;
 	}
 
 	public <ID extends Comparable<ID>> User<ID> withResetPassword(User<ID> user, String resetPasswordToken,
 			Instant resetPasswordExpiration) {
-		return copier.copy(Java.hashMap("resetPasswordToken", resetPasswordToken, "resetPasswordExpiration",
-				resetPasswordExpiration), user);
+		var m = Java.hashMap("resetPasswordToken", resetPasswordToken, "resetPasswordExpiration",
+				resetPasswordExpiration);
+		var u = copier.copy(m, user);
+		return u;
 	}
 
 	public <ID extends Comparable<ID>> User<ID> withRoles(User<ID> user, Set<UserRole> roles) {
-		return copier.copy(Java.hashMap("roles", roles), user);
+		var m = Java.hashMap("roles", roles);
+		var u = copier.copy(m, user);
+		return u;
 	}
 }

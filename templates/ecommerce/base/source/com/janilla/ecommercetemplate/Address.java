@@ -26,7 +26,7 @@ package com.janilla.ecommercetemplate;
 
 import com.janilla.cms.Document;
 import com.janilla.cms.User;
-import com.janilla.java.Flat;
+import com.janilla.java.Flatten;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
@@ -36,7 +36,7 @@ public interface Address extends Document<Long> {
 	@Index
 	User<?> customer();
 
-	@Flat
+	@Flatten
 	AddressData data();
 
 	Address withId(Long id);

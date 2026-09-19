@@ -33,9 +33,13 @@ import java.util.Spliterators;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
-public class Ioc {
+public final class Ioc {
 
 	private static final Logger LOGGER = System.getLogger(Ioc.class.getName());
+
+	private Ioc() {
+		throw new Error("no instances");
+	}
 
 	public static DiFactory diFactory(List<Class<?>> types, Supplier<Object> context) {
 		return diFactory(types, context, null);

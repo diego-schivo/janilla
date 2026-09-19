@@ -51,13 +51,13 @@ package com.janilla.cms;
 
 import java.time.Instant;
 
-public record Version<ID extends Comparable<ID>, E extends Document<ID>>(ID id, E document) {
-
-	public Instant updatedAt() {
-		return document.updatedAt();
-	}
+public record Version<ID extends Comparable<ID>, D extends Document<ID>>(ID id, D document) {
 
 	public DocumentStatus documentStatus() {
 		return document.documentStatus();
+	}
+
+	public Instant updatedAt() {
+		return document.updatedAt();
 	}
 }

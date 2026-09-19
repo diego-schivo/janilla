@@ -29,27 +29,6 @@ import com.janilla.web.Handle;
 class PetApi extends AbstractCollectionApi<Long, Pet> {
 
 	public PetApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Pet.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
+		super(Pet.class, drafts, persistence, "name", copier, Direction.FORWARD, 0);
 	}
-
-//	@Override
-//	@Handle(method = "POST")
-//	public Pet create(Pet pet) {
-	//// IO.println("PetApi.create, pet=" + pet);
-//		return persistence.crud(Pet.class).create(pet);
-//	}
-//
-//	@Override
-//	@Handle(method = "GET", path = "(\\d+)")
-//	public Pet read(Long id, Integer depth) {
-//		return persistence.crud(Pet.class).read(id, depth != null ? depth : 0);
-//	}
-//
-//	@Override
-//	@Handle(method = "PUT", path = "(\\d+)")
-//	public Pet update(Long id, Pet pet) {
-	//// IO.println("PetApi.update, id=" + id + ", owner=" + owner);
-//		return persistence.crud(Pet.class).update(id,
-//				x -> JavaReflect.copy(pet, x, y -> !Set.of("id", "owner").contains(y)));
-//	}
 }

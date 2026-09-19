@@ -56,7 +56,7 @@ public class BlankIndexFactory<C extends BlankFrontendConfig> extends CmsIndexFa
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
 
-		Stream.of("app", "not-found", "page").map(this::blankImportKey)
+		Stream.of("admin", "app", "not-found", "page").map(this::blankImportKey)
 				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 

@@ -58,12 +58,6 @@ public interface CollectionApi<ID extends Comparable<ID>, D extends Document<ID>
 
 	D create(D document);
 
-	D read(ID id, Integer depth);
-
-	ListPortion<D> read(String search, Direction direction, Long skip, Long limit, Integer depth);
-
-	D update(ID id, D document, Boolean draft, Boolean autosave);
-
 	D delete(ID id);
 
 	List<D> delete(List<ID> ids);
@@ -72,9 +66,15 @@ public interface CollectionApi<ID extends Comparable<ID>, D extends Document<ID>
 
 	List<D> patch(D document, List<ID> ids);
 
-	List<Version<ID, D>> readVersions(ID id);
+	D read(ID id, Integer depth);
+
+	ListPortion<D> read(String search, Direction direction, Long skip, Long limit, Integer depth);
 
 	Version<ID, D> readVersion(ID versionId);
 
+	List<Version<ID, D>> readVersions(ID id);
+
 	D restoreVersion(ID versionId, Boolean draft);
+
+	D update(ID id, D document, Boolean draft, Boolean autosave);
 }

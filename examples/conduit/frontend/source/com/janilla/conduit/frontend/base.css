@@ -33,12 +33,19 @@
 	--brand-primary: #5CB85C;
 	--brand-danger: #B85C5C;
 	--navbar-padding-x: 0rem !important;
+
+	&:has(admin-element) {
+		color-scheme: light dark;
+	}
 }
 
 html {
 	position: relative;
 	min-height: 100vh;
-	padding-bottom: 100px;
+
+	&:not(:has(admin-element)) {
+		padding-bottom: 100px;
+	}
 }
 
 body {

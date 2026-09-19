@@ -1,0 +1,12 @@
+{
+	"todoItems": [
+		{
+			"title": "redesign website",
+			"completed": false
+		},
+		{
+			"title": "do some nerdy stuff",
+			"completed": true
+		}
+	]
+}

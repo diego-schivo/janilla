@@ -59,7 +59,7 @@ export default class FollowButton extends WebComponent {
 
 	handleClick = async event => {
 		event.stopPropagation();
-		const { customEnv: { apiUrl }, customState: { apiHeaders, user } } = this.closest("app-element");
+		const { apiHeaders, customEnv: { apiUrl }, customState: { user } } = this.closest("app-element");
 		if (user) {
 			const r = await fetch(`${apiUrl}/profiles/${this.dataset.username}/follow`, {
 				method: this.dataset.active != null ? "DELETE" : "POST",

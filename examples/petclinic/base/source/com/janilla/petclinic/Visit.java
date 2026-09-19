@@ -16,7 +16,6 @@
 package com.janilla.petclinic;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
 import com.janilla.cms.Document;
 import com.janilla.cms.DocumentStatus;
@@ -29,16 +28,6 @@ import com.janilla.persistence.Store;
  * @author Dave Syer
  */
 @Store
-public record Visit(Long id, @Index Pet pet, LocalDate date, String description, Instant createdAt, Instant updatedAt,
+public record Visit(Long id, @Index Pet pet, Instant date, String description, Instant createdAt, Instant updatedAt,
 		DocumentStatus documentStatus, Instant publishedAt) implements Document<Long> {
-
-//	public static final Visit EMPTY = new Visit(null, null, null, null);
-//
-//	public Visit withDate(LocalDate date) {
-//		return new Visit(id, pet, date, description);
-//	}
-//
-//	public Visit withPet(Pet pet) {
-//		return new Visit(id, pet, date, description);
-//	}
 }

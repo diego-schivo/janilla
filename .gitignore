@@ -34,6 +34,7 @@ node_modules/
 
 examples/acme-dashboard_
 examples/address-book_
+examples/com_
 examples/conduit_
 examples/petclinic_
 examples/todomvc_

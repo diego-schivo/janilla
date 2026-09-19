@@ -28,14 +28,14 @@ import java.util.Map;
 
 import com.janilla.http.DirectHttpClient;
 import com.janilla.http.HttpServer;
-import com.janilla.ioc.Scope;
+import com.janilla.java.Scope;
 import com.janilla.web.WebApp;
 
 @Scope("frontend")
 public class BlankHttpClient extends DirectHttpClient {
 
 	public BlankHttpClient() {
-		var b = ((BlankFullstack<?, ?>) WebApp.INSTANCE.get()).backend();
+		var b = ((BlankFullstack<?, ?>) WebApp.SCOPED.get()).backend();
 		super(b.diFactory().newInstance(b.diFactory().classFor(HttpServer.class), Map.of("handler", b.httpHandler())));
 	}
 }

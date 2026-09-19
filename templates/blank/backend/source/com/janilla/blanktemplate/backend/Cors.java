@@ -46,7 +46,7 @@ public class Cors {
 	@Handle(method = "OPTIONS", path = "/api/(.*)")
 	public void allow(HttpRequest request, HttpResponse response) {
 		var o = config.api().cors().origin();
-		var m = invocationResolver.groups(request.getPath()).flatMap(x -> x.methods().keySet().stream()).toList();
+		var m = invocationResolver.groups(request.getPath()).flatMap(x -> x.choices().keySet().stream()).toList();
 		var h = config.api().cors().headers();
 
 		response.setHeaderValue(":status", "204");

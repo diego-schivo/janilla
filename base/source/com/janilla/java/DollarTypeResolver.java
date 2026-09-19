@@ -47,6 +47,10 @@ public class DollarTypeResolver implements TypeResolver {
 		var o = typedData.data() instanceof Map<?, ?> x ? x.get("$type") : null;
 		var t = o instanceof String x ? parse(x) : null;
 //		IO.println("o=" + o + ", t=" + t);
+
+		if (t != null && t == Java.toClass(typedData.type()))
+			t = null;
+
 		return t != null ? typedData.withType(t) : null;
 	}
 

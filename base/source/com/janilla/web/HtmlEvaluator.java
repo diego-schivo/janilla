@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.janilla.java.JavaReflect;
-import com.janilla.web.DefaultInvocationResolver.A;
 
 public class HtmlEvaluator {
 

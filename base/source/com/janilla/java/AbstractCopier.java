@@ -39,16 +39,20 @@ public abstract class AbstractCopier implements Copier {
 	public <T> T copy(Object source, T destination, Predicate<String> filter) {
 		LOGGER.log(Level.DEBUG, "source={0}, destination={1}", source, destination);
 
+		T t;
 		if (source instanceof Map<?, ?> m)
-			return !m.isEmpty()
-					? copy(x -> m.containsKey(x) ? Optional.ofNullable(m.get(x)) : null, destination, filter)
+			t = !m.isEmpty() ? copy(x -> m.containsKey(x) ? Optional.ofNullable(m.get(x)) : null, destination, filter)
 					: destination;
+		else {
+			var c = source.getClass();
+			t = copy(x -> {
+				var p = JavaReflect.property(c, x);
+				return p != null ? Optional.ofNullable(p.get(source)) : null;
+			}, destination, filter);
+		}
+		LOGGER.log(Level.DEBUG, "t={0}", t);
 
-		var c = source.getClass();
-		return copy(x -> {
-			var p = JavaReflect.property(c, x);
-			return p != null ? Optional.ofNullable(p.get(source)) : null;
-		}, destination, filter);
+		return t;
 	}
 
 	protected abstract <T> T copy(Function<String, Optional<Object>> source, T destination, Predicate<String> filter);

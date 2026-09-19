@@ -76,7 +76,7 @@ class IndexFactoryImpl extends BlankIndexFactory<BlankFrontendConfig> {
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
 
-		Stream.of("app").forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+		Stream.of("admin", "app").forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	@Override

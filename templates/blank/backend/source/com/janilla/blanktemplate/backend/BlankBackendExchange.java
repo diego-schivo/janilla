@@ -32,13 +32,13 @@ import com.janilla.cms.CmsDomain;
 import com.janilla.cms.User;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.java.Copier;
 
 public class BlankBackendExchange extends AbstractUserHttpExchange<User<?>> {
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public BlankBackendExchange(HttpRequest request, HttpResponse response, BackendConfig config,
-			Persistence persistence, CmsDomain domain) {
-		super(request, response, config.jwt().cookie(), config.jwt().key(), (Crud) persistence.crud(User.class),
-				domain);
+			Persistence persistence, CmsDomain domain, Copier copier) {
+		super(request, response, config, (Crud) persistence.crud(User.class), domain, copier);
 	}
 }

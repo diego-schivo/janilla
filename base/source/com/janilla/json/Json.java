@@ -36,7 +36,7 @@ import java.util.stream.Collector;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
-public interface Json {
+public final class Json {
 
 	public static void main(String[] args) {
 		var s = """
@@ -59,23 +59,27 @@ public interface Json {
 		assert p.equals(o) : p;
 	}
 
-	static String format(Object object) {
+	private Json() {
+		throw new Error("no instances");
+	}
+
+	public static String format(Object object) {
 		return format(object, false);
 	}
 
-	static String format(Object object, boolean reflection) {
+	public static String format(Object object, boolean reflection) {
 		return format(reflection ? new ReflectionJsonIterator(object) : new JsonIterator(object));
 	}
 
-	static String format(Iterator<JsonToken<?>> tokens) {
+	public static String format(Iterator<JsonToken<?>> tokens) {
 		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(tokens, 0), false).collect(formatCollector());
 	}
 
-	static Object parse(String string) {
+	public static Object parse(String string) {
 		return parse(string, parseCollector());
 	}
 
-	static <T> T parse(String string, Collector<JsonToken<?>, ?, T> collector) {
+	public static <T> T parse(String string, Collector<JsonToken<?>, ?, T> collector) {
 //		IO.println("Json.parse, string=" + string);
 		var s = new JsonScanner();
 		var tt = new ArrayList<JsonToken<?>>();
@@ -89,7 +93,7 @@ public interface Json {
 		}).collect(collector);
 	}
 
-	static Collector<JsonToken<?>, StringBuilder, String> formatCollector() {
+	public static Collector<JsonToken<?>, StringBuilder, String> formatCollector() {
 		return Collector.of(() -> new StringBuilder(), new BiConsumer<>() {
 
 			private JsonToken<?> previous;
@@ -145,7 +149,7 @@ public interface Json {
 		}, (_, x) -> x, StringBuilder::toString);
 	}
 
-	static Collector<JsonToken<?>, ?, Object> parseCollector() {
+	public static Collector<JsonToken<?>, ?, Object> parseCollector() {
 		return Collector.of(() -> new ArrayList<>(), (oo, t) -> {
 //			IO.println("t=" + t);
 			switch (t.type()) {

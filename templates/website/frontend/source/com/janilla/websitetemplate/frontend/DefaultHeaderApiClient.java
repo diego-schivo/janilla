@@ -52,8 +52,8 @@ package com.janilla.websitetemplate.frontend;
 import java.net.URI;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.Converter;
 import com.janilla.java.UriQueryBuilder;
 import com.janilla.websitetemplate.Header;
@@ -74,7 +74,7 @@ public class DefaultHeaderApiClient implements HeaderApiClient {
 
 	@Override
 	public Header read(Integer depth) {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/header?"
+		var r = new DefaultHttpRequest("GET", URI.create(config.api().url() + "/header?"
 				+ new UriQueryBuilder().append("depth", depth != null ? depth.toString() : null)));
 		var o = httpClient.send(r, HttpClient.JSON);
 //		IO.println("o=" + o);

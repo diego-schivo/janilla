@@ -6,10 +6,10 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.backend.BlankBackend;
+import com.janilla.conduit.ConduitDomain;
 import com.janilla.ioc.DiFactory;
 import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
-import com.janilla.conduit.ConduitDomain;
 import com.janilla.web.WebApp;
 
 public class ConduitBackend extends BlankBackend<ConduitBackendConfig, ConduitDomain> {

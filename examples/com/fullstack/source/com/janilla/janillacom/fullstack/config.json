@@ -74,6 +74,17 @@
 			"basePath": "/petclinic",
 			"liveDemo": true
 		},
+		"todomvc": {
+			"api": {
+				"cors": {
+					"headers": "",
+					"origin": ""
+				},
+				"url": "http://localhost:8080/todomvc/api"
+			},
+			"basePath": "/todomvc",
+			"liveDemo": true
+		},
 		"websitetemplate": {
 			"api": {
 				"cors": {
@@ -125,6 +136,9 @@
 			"basePath": "/petclinic"
 		},
 		"todomvc": {
+			"api": {
+				"url": "http://localhost:8080/todomvc/api"
+			},
 			"basePath": "/todomvc"
 		},
 		"websitetemplate": {

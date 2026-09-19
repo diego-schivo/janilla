@@ -186,10 +186,7 @@ export default class Admin extends WebComponent {
         const pp = new URLSearchParams(location.search);
         this.shadowRoot.appendChild(this.interpolateDom({
             $template: "",
-            p: ua ? {
-                $template: "p",
-                checked: true
-            } : null,
+            navToggler: ua ? { $template: "nav-toggler" } : null,
             aside: gg.length ? {
                 $template: "aside",
                 groups: gg
@@ -297,19 +294,21 @@ export default class Admin extends WebComponent {
                 groups: gg
             } : null
         }));
-        this.querySelector("dialog")?.close();
+        this.shadowRoot.querySelector("dialog")?.close();
     }
 
     handleClick = async event => {
-        const el = event.target.closest("button");
+        const el = event.target.shadowRoot
+            ? event.composedPath().find(x => x instanceof Element && x.matches("button"))
+            : event.target.closest("button");
         if (el?.name) {
             event.stopPropagation();
             switch (el.name) {
                 case "open-menu":
-                    this.querySelector("dialog").showModal();
+                    this.shadowRoot.querySelector("dialog").showModal();
                     break;
                 case "close-menu":
-                    this.querySelector("dialog").close();
+                    this.shadowRoot.querySelector("dialog").close();
                     break;
                 case "logout": {
                     const a = this.shadowClosest("app-element");
@@ -318,7 +317,7 @@ export default class Admin extends WebComponent {
                         credentials: "include"
                     });
                     a.currentUser = null;
-                    this.querySelector("dialog").close();
+                    this.shadowRoot.querySelector("dialog").close();
                     this.success("You have been logged out successfully.");
                     a.navigateTo(new URL(`${a.customEnv.basePath}/admin/login`, location.href));
                     break;
@@ -530,12 +529,12 @@ export default class Admin extends WebComponent {
     }
 
     success() {
-        const el = this.querySelector("toaster-element");
+        const el = this.shadowRoot.querySelector("toaster-element");
         el.success.apply(el, arguments);
     }
 
     error() {
-        const el = this.querySelector("toaster-element");
+        const el = this.shadowRoot.querySelector("toaster-element");
         el.error.apply(el, arguments);
     }
 

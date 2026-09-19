@@ -39,29 +39,30 @@ export default class AcmeDashboard extends WebComponent {
         this.attachShadow({ mode: "open" });
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+
+        const a = this.closest("app-element");
+        const p = a.currentPath;
+        if (p === "/" && a.customState.user) {
+            a.navigateTo(`${a.customEnv.basePath}/dashboard`);
+            return;
+        }
+    }
+
     async updateDisplay() {
         const a = this.closest("app-element");
         const p = a.currentPath;
-		const f = this.interpolateDom({
-		    $template: "",
-		    welcome: {
-		        $template: "welcome",
-		        slot: p === "/" ? "content" : null
-		    },
-		    login: {
-		        $template: "login",
-		        slot: p === "/login" ? "content" : null
-		    },
-		    dashboard: (() => {
-		        const d = p.split("/")[1] === "dashboard";
-		        return {
-		            $template: "dashboard",
-		            slot: d ? "content" : null,
-		            uri: d ? p + location.search : null
-		        };
-		    })()
-		});
-		this.shadowRoot.append(...f.querySelectorAll("slot"));
-		this.appendChild(f);
+        const f = this.interpolateDom({
+            $template: "",
+            welcome: p === "/" ? { $template: "welcome" } : null,
+            login: p === "/login" ? { $template: "login" } : null,
+            dashboard: p.split("/")[1] === "dashboard" ? {
+                $template: "dashboard",
+                uri: p + location.search
+            } : null
+        });
+        this.shadowRoot.append(...f.querySelectorAll("slot"));
+        this.appendChild(f);
     }
 }

@@ -37,7 +37,7 @@ import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
 import com.janilla.ioc.DiFactory;
-import com.janilla.ioc.Scope;
+import com.janilla.java.Scope;
 
 @Scope("fullstack")
 public class BlankHttpServer extends DefaultHttpServer {

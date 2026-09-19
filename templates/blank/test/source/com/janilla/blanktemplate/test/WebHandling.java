@@ -27,28 +27,39 @@ package com.janilla.blanktemplate.test;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.frontend.Index;
 import com.janilla.frontend.IndexFactory;
+import com.janilla.http.HttpCookie;
+import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Copier;
+import com.janilla.java.Java;
 import com.janilla.web.Handle;
 
 public class WebHandling {
 
 	protected static final AtomicBoolean TEST_ONGOING = new AtomicBoolean();
 
-	protected final IndexFactory indexFactory;
+	protected final Copier copier;
 
 	protected final DiFactory diFactory;
 
 	protected final BlankFullstack<?, ?> fullstack;
 
-	public WebHandling(IndexFactory indexFactory, BlankFullstack<?, ?> fullstack, DiFactory diFactory) {
+	protected final IndexFactory indexFactory;
+
+	public WebHandling(IndexFactory indexFactory, BlankFullstack<?, ?> fullstack, DiFactory diFactory, Copier copier) {
 		this.indexFactory = indexFactory;
 		this.fullstack = fullstack;
 		this.diFactory = diFactory;
+		this.copier = copier;
 	}
 
 	@Handle(method = "GET", path = "/")
@@ -57,7 +68,7 @@ public class WebHandling {
 	}
 
 	@Handle(method = "POST", path = "/test/start")
-	public void start() throws IOException {
+	public void start(HttpExchange exchange) throws IOException {
 //		IO.println("Test.start, this=" + this);
 		if (TEST_ONGOING.getAndSet(true))
 			throw new IllegalStateException();
@@ -71,6 +82,11 @@ public class WebHandling {
 			ch1.truncate(s);
 		}
 		d.pageCache().clear();
+
+		var m = Java.hashMap("value", null, "path", "/", "httpOnly", true, "sameSite", "Lax", "expires",
+				ZonedDateTime.ofInstant(Instant.EPOCH, ZoneOffset.UTC));
+		exchange.request().getHeaderValues("cookie").flatMap(x -> Arrays.stream(x.split("; "))).map(HttpCookie::parse)
+				.forEach(x -> exchange.response().addHeaderValue("set-cookie", (copier.copy(m, x)).format()));
 	}
 
 	@Handle(method = "POST", path = "/test/stop")

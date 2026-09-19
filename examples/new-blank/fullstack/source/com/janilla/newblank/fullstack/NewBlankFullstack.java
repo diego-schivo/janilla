@@ -40,10 +40,10 @@ import com.janilla.web.WebApp;
 
 public class NewBlankFullstack extends BlankFullstack<ConfigImpl, NewBlankDomain> {
 
-	private static final Logger LOGGER = System.getLogger(NewBlankFullstack.class.getName());
-
 	public static final Class<?>[] CONFIG_CLASSES = { NewBlankBackend.class, NewBlankFrontend.class,
 			NewBlankFullstack.class };
+
+	private static final Logger LOGGER = System.getLogger(NewBlankFullstack.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.newblank.backend"),

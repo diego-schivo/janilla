@@ -51,7 +51,7 @@ export default class Profile extends WebComponent {
 
 	async updateDisplay() {
 		const hs = history.state ?? {};
-		const { customEnv: { apiUrl }, customState: { apiHeaders, user } } = this.closest("app-element");
+		const { apiHeaders, customEnv: { apiUrl }, customState: { user } } = this.closest("app-element");
 		if (hs.profile) {
 			this.appendChild(this.interpolateDom({
 				$template: "",

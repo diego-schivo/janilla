@@ -13,6 +13,7 @@
 		<module>examples/com</module>
 		<module>examples/conduit</module>
 		<module>examples/new-blank</module>
+		<module>examples/new-website</module>
 		<module>examples/petclinic</module>
 		<module>examples/todomvc</module>
 		<module>frontend</module>

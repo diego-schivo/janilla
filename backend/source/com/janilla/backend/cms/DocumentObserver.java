@@ -60,6 +60,7 @@ import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.Versions;
 import com.janilla.java.Copier;
 import com.janilla.java.Java;
+import com.janilla.java.JavaReflect;
 
 public class DocumentObserver<D extends Document<?>> implements CrudObserver<D> {
 
@@ -85,7 +86,8 @@ public class DocumentObserver<D extends Document<?>> implements CrudObserver<D> 
 			m.put("updatedAt", i);
 
 		if (document.documentStatus() == null) {
-			var v = document.getClass().getAnnotation(Versions.class);
+			var aa = JavaReflect.inheritedAnnotation(document.getClass(), Versions.class);
+			var v = aa != null ? aa.annotation() : null;
 			m.put("documentStatus", v != null && v.drafts() ? DocumentStatus.DRAFT : DocumentStatus.PUBLISHED);
 		}
 

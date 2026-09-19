@@ -49,13 +49,15 @@
  */
 package com.janilla.websitetemplate.frontend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.Type;
 import java.net.URI;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpCookie;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.java.UriQueryBuilder;
@@ -63,6 +65,8 @@ import com.janilla.persistence.ListPortion;
 import com.janilla.websitetemplate.Page;
 
 public class DefaultPageApiClient implements PageApiClient {
+
+	private static final Logger LOGGER = System.getLogger(DefaultPageApiClient.class.getName());
 
 	protected final FrontendConfig config;
 
@@ -78,11 +82,14 @@ public class DefaultPageApiClient implements PageApiClient {
 
 	@Override
 	public ListPortion<Page> read(String slug, Integer depth, HttpCookie token) {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/pages?"
+		LOGGER.log(Level.DEBUG, "slug={0}", slug);
+		
+		var r = new DefaultHttpRequest("GET", URI.create(config.api().url() + "/pages?"
 				+ new UriQueryBuilder().append("slug", slug).append("depth", depth != null ? depth.toString() : null)),
 				token != null ? token.format() : null);
 		var o = httpClient.send(r, HttpClient.JSON);
-//		IO.println("WebsiteDataFetching.pages, o=" + o);
+		LOGGER.log(Level.DEBUG, "o={0}", o);
+
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Page.class }));
 	}
 }

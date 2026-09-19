@@ -42,23 +42,24 @@ import com.janilla.web.Handle;
 class InvoiceApi extends AbstractCollectionApi<UUID, Invoice> {
 
 	public InvoiceApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Invoice.class, drafts, persistence, null, copier, Direction.FORWARD, 0);
+		super(Invoice.class, drafts, persistence, null, copier, Direction.BACKWARD, 0);
 	}
 
 	@Override
 	public ListPortion<Invoice> read(String search, Direction direction, Long skip, Long limit, Integer depth) {
+		var d = direction != null ? direction : defaultDirection;
 		var k = skip != null ? skip.longValue() : 0;
 		var l = limit != null ? limit.longValue() : -1;
-		var d = depth != null ? depth : 0;
+		var p = depth != null ? depth.intValue() : defaultDepth;
 
 		var s = search != null && !search.isBlank() ? search.strip().toLowerCase() : null;
 		if (s != null) {
-			var ii = crud().filter("date", new Object[0], direction).stream().map(x -> crud().read(x, 1))
+			var ii = crud().filter("createdAt", new Object[0], d).stream().map(x -> crud().read(x, 1))
 					.filter(x -> x.customer().name().toLowerCase().contains(s)).toList();
 			return new ListPortion<>(ii.subList((int) k, Math.min((int) (k + l), ii.size())), ii.size());
 		}
 
-		var ii = crud().filterAndCount("date", new Object[0], direction, k, l);
-		return ii.map(x -> crud().read(x, d));
+		var ii = crud().filterAndCount("createdAt", new Object[0], d, k, l);
+		return ii.map(x -> crud().read(x, p));
 	}
 }

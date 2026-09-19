@@ -87,8 +87,8 @@ public class DefaultCopier extends AbstractCopier {
 
 					var m = rc.getAccessor();
 					Object o;
-					if (JavaReflect.inheritedAnnotation(m, Flat.class) != null
-							|| c.getDeclaredField(n).isAnnotationPresent(Flat.class)) {
+					if (JavaReflect.inheritedAnnotation(m, Flatten.class) != null
+							|| c.getDeclaredField(n).isAnnotationPresent(Flatten.class)) {
 						Class<?> c2;
 						{
 							var c2a = m.getReturnType();

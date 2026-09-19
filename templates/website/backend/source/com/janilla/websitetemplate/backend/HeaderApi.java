@@ -29,13 +29,14 @@ import java.util.function.Predicate;
 import com.janilla.backend.cms.AbstractGlobalApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Header;
 
 @Handle(path = "/api/header")
 public class HeaderApi extends AbstractGlobalApi<Long, Header> {
 
-	public HeaderApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Header.class, drafts, persistence, 1L);
+	public HeaderApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Header.class, drafts, persistence, copier, 1L);
 	}
 }

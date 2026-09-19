@@ -31,11 +31,4 @@ class VisitApi extends AbstractCollectionApi<Long, Visit> {
 	public VisitApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
 		super(Visit.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
-
-//	@Override
-//	@Handle(method = "POST")
-//	public Visit create(Visit visit) {
-	//// IO.println("BackendVisitApi.create, visit=" + visit);
-//		return persistence.crud(Visit.class).create(visit);
-//	}
 }

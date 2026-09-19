@@ -3,7 +3,7 @@
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
+ * under the terms of the GNU General License version 2 only, as
  * published by the Free Software Foundation.  Diego Schivo designates
  * this particular file as subject to the "Classpath" exception as
  * provided by Diego Schivo in the LICENSE file that accompanied this
@@ -11,11 +11,11 @@
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General License
  * version 2 for more details (a copy is included in the LICENSE file that
  * accompanied this code).
  *
- * You should have received a copy of the GNU General Public License version
+ * You should have received a copy of the GNU General License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
@@ -25,77 +25,33 @@
 package com.janilla.http;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.channels.Channel;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public abstract class HttpMessage implements Closeable {
+interface HttpMessage extends Closeable {
 
-	private List<HeaderField> headers;
+	List<HeaderField> getHeaders();
 
-	private Channel body;
+	void setHeaders(List<HeaderField> headers);
 
-	public List<HeaderField> getHeaders() {
-		return headers;
-	}
+	Channel getBody();
 
-	public void setHeaders(List<HeaderField> headers) {
-		this.headers = headers;
-	}
+	void setBody(Channel body);
 
-	public Channel getBody() {
-		return body;
-	}
+	Stream<HeaderField> getHeaders(String name);
 
-	public void setBody(Channel body) {
-		this.body = body;
-	}
+	HeaderField getHeader(String name);
 
-	public Stream<HeaderField> getHeaders(String name) {
-		return headers != null ? headers.stream().filter(x -> x.name().equalsIgnoreCase(name)) : Stream.empty();
-	}
+	void addHeader(HeaderField header);
 
-	public HeaderField getHeader(String name) {
-		return getHeaders(name).findFirst().orElse(null);
-	}
+	void setHeader(HeaderField header);
 
-	public void setHeader(HeaderField header) {
-		if (header.value() != null) {
-			if (headers == null)
-				headers = new ArrayList<>();
-			else {
-				var i = 0;
-				for (var x : headers) {
-					if (x.name().equalsIgnoreCase(header.name())) {
-						headers.set(i, header);
-						return;
-					}
-					i++;
-				}
-			}
-			headers.add(header);
-		} else if (headers != null)
-			headers.removeIf(x -> x.name().equalsIgnoreCase(header.name()));
-	}
+	Stream<String> getHeaderValues(String name);
 
-	public Stream<String> getHeaderValues(String name) {
-		return getHeaders(name).map(HeaderField::value);
-	}
+	String getHeaderValue(String name);
 
-	public String getHeaderValue(String name) {
-		var x = getHeader(name);
-		return x != null ? x.value() : null;
-	}
+	void setHeaderValue(String name, String value);
 
-	public void setHeaderValue(String name, String value) {
-		setHeader(new HeaderField(name, value));
-	}
-
-	@Override
-	public void close() throws IOException {
-		if (body != null)
-			body.close();
-	}
+	void addHeaderValue(String name, String value);
 }

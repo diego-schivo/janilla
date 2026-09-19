@@ -66,7 +66,7 @@ export default class FavoriteButton extends WebComponent {
 
 	handleClick = async event => {
 		event.stopPropagation();
-		const { customEnv: { apiUrl }, customState: { apiHeaders, user } } = this.closest("app-element");
+		const { apiHeaders, customEnv: { apiUrl }, customState: { user } } = this.closest("app-element");
 		if (user) {
 			const r = await fetch(`${apiUrl}/articles/${this.dataset.slug}/favorite`, {
 				method: this.dataset.active != null ? "DELETE" : "POST",

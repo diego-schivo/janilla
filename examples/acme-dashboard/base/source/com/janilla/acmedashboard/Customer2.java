@@ -2,7 +2,7 @@ package com.janilla.acmedashboard;
 
 import java.math.BigDecimal;
 
-import com.janilla.java.Flat;
+import com.janilla.java.Flatten;
 
-public record Customer2(@Flat Customer customer, Long invoiceCount, BigDecimal pendingAmount, BigDecimal paidAmount) {
+public record Customer2(@Flatten Customer customer, Long invoiceCount, BigDecimal pendingAmount, BigDecimal paidAmount) {
 }

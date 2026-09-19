@@ -50,7 +50,7 @@ class IndexFactoryImpl extends BlankIndexFactory<BlankFrontendConfig> {
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
 
-		Stream.of("about", "address-book", "app", "contact", "edit-contact", "home", "sidebar-layout",
+		Stream.of("about", "address-book", "admin", "app", "contact", "edit-contact", "home", "sidebar-layout",
 				"toggle-favorite").forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 

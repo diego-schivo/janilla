@@ -22,9 +22,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import CmsAdmin from "cms/admin";
+import BlankAdmin from "blank/admin";
 
-export default class Admin extends CmsAdmin {
+export default class Admin extends BlankAdmin {
 
     static get moduleUrl() {
         return import.meta.url;
@@ -38,24 +38,6 @@ export default class Admin extends CmsAdmin {
         return ["data-user", "data-uri"];
     }
 
-    cell(object, key) {
-        const x = super.cell(object, key);
-        switch (key) {
-            case "documentStatus":
-                return x?.name;
-            case "roles":
-                return x.map(y => y.name).join();
-        }
-        return x;
-    }
-
-    field(path, parent) {
-        const f = super.field(path, parent);
-        if (f.parent?.type === "User" && f.name === "password")
-            f.type = "String";
-        return f;
-    }
-
     headers(entitySlug) {
         switch (entitySlug) {
             case "categories":
@@ -65,8 +47,6 @@ export default class Admin extends CmsAdmin {
                 return ["title", "slug", "updatedAt"];
             case "redirects":
                 return ["from"];
-            case "users":
-                return ["name", "email"];//, "roles"];
         }
         return super.headers(entitySlug);
     }
@@ -88,8 +68,6 @@ export default class Admin extends CmsAdmin {
                         return "rich-text";
                     case "confirmationType":
                         return field.options.length <= 2 ? "radio-group" : "select";
-                    case "password":
-                        return "password";
                     case "type":
                         return field.parent.type === "Link" ? "radio-group" : "select";
                 }
@@ -140,14 +118,5 @@ export default class Admin extends CmsAdmin {
 
     isReadOnly(type) {
         return type === "SearchResult";
-    }
-
-    formProperties(field) {
-        //console.log("f", f);
-        const x = super.formProperties(field);
-        if (field.type === "User")
-            x.splice(x.findIndex(([k, _]) => k === "salt"), 5, ["password", null]);
-        //console.log("x", x);
-        return x;
     }
 }

@@ -19,8 +19,8 @@ import java.lang.reflect.Type;
 import java.net.URI;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.DefaultConverter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.persistence.ListPortion;
@@ -39,7 +39,7 @@ class PetTypeApiClient {
 
 	public ListPortion<PetType> read() {
 		var u = URI.create(config.api().url() + "/pet-types");
-		var o = httpClient.send(new HttpRequest("GET", u), HttpClient.JSON);
+		var o = httpClient.send(new DefaultHttpRequest("GET", u), HttpClient.JSON);
 		return new DefaultConverter().convert(o,
 				new SimpleParameterizedType(ListPortion.class, new Type[] { PetType.class }));
 	}

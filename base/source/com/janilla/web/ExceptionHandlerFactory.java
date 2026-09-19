@@ -24,64 +24,7 @@
  */
 package com.janilla.web;
 
-import com.janilla.http.HttpExchange;
-import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpHandlerFactory;
-import com.janilla.ioc.DiFactory;
 
-public class ExceptionHandlerFactory extends AbstractHttpHandlerFactory {
-
-	public ExceptionHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory) {
-		super(config, rootFactory, diFactory);
-	}
-
-	@Override
-	public HttpHandler createHandler(Object object) {
-		if (object instanceof Exception e) {
-			var er = e.getClass().getAnnotation(Error.class);
-//			IO.println("ExceptionHandlerFactory.createHandler, er=" + er);
-			return x -> handle(er, x);
-		}
-		return null;
-	}
-
-	protected boolean handle(Error error, HttpExchange exchange) {
-		var rs = exchange.response();
-		var s = error != null ? error.code() : 500;
-//		IO.println("ExceptionHandlerFactory.handle, s=" + s);
-		rs.setHeaderValue(":status", String.valueOf(s));
-		rs.setHeaderValue("cache-control", "no-cache");
-		return true;
-	}
-
-//	public static void main(String[] args) throws Exception {
-//		var f = new ExceptionHandlerFactory();
-//
-//		var i = new ByteArrayInputStream("""
-//				GET /test.html HTTP/1.1\r
-//				Content-Length: 0\r
-//				\r
-//				""".getBytes());
-//		var o = new ByteArrayOutputStream();
-//		try (var r = new HttpMessageReadableByteChannel(Channels.newChannel(i));
-//				var q = r.readRequest();
-//				var w = new HttpMessageWritableByteChannel(Channels.newChannel(o));
-//				var s = w.writeResponse()) {
-//			var e = new NotFoundException();
-//			var c = new HttpExchange();
-//			c.setRequest(q);
-//			c.setResponse(s);
-//			var h = f.createHandler(e, c);
-//			h.handle(c);
-//		}
-//
-//		var t = o.toString();
-//		IO.println(t);
-//		assert t.equals("""
-//				HTTP/1.1 404 Not Found\r
-//				Cache-Control: no-cache\r
-//				Content-Length: 0\r
-//				\r
-//				""") : t;
-//	}
+public interface ExceptionHandlerFactory extends HttpHandlerFactory {
 }

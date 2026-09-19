@@ -17,7 +17,7 @@
 		"cookie": "website-token",
 		"key": "secretkey"
 	},
-	"liveDemo": false,
+	"liveDemo": true,
 	"mail": {
 		"host": "smtp.example.com",
 		"password": "password",

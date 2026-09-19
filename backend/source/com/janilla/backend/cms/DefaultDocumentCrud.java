@@ -67,6 +67,7 @@ import com.janilla.cms.Versions;
 import com.janilla.java.Converter;
 import com.janilla.java.Copier;
 import com.janilla.java.JavaReflect;
+import com.janilla.java.SimpleParameterizedType;
 import com.janilla.json.ReflectionValueIterator;
 
 public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<ID>> extends DefaultCrud<ID, D>
@@ -79,30 +80,39 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 	public DefaultDocumentCrud(String name, Class<D> type, IdHelper<ID> idHelper, Converter converter, Copier copier,
 			Persistence persistence) {
 		super(name, type, idHelper, converter, copier, persistence);
-		versionTable = type.isAnnotationPresent(Versions.class)
-				? Version.class.getSimpleName() + "<" + type.getSimpleName() + ">"
-				: null;
+
+		versionTable = JavaReflect.inheritedAnnotation(type, Versions.class) != null ? "Version<" + name + ">" : null;
+		LOGGER.log(Level.DEBUG, "versionTable={0}", versionTable);
 	}
 
 	@Override
 	public D create(D document) {
-//		IO.println("DocumentCrud.create, document=" + document);
-		return versionTable != null ? persistence.database().perform(() -> {
-			var d = super.create(document);
+		LOGGER.log(Level.DEBUG, "document={0}", document);
+
+		var d = versionTable != null ? persistence.database().perform(() -> {
+			var d1 = super.create(document);
+
 			class A {
 				Version<ID, D> v;
 			}
 			var a = new A();
+
 			persistence.database().table(versionTable).insert(x -> {
 				@SuppressWarnings("unchecked")
-				var id = (ID) Long.valueOf(x);
-				a.v = new Version<>(id, d);
+				var i = (ID) Long.valueOf(x);
+				a.v = new Version<>(i, d1);
+
 				return new Object[] { x, format(a.v) };
 			});
-//			IO.println("DocumentCrud.create, a.v=" + a.v);
-			updateVersionIndexes(null, List.of(a.v), d.id());
-			return d;
+			LOGGER.log(Level.DEBUG, "a.v={0}", a.v);
+
+			updateVersionIndexes(null, List.of(a.v), d1.id());
+
+			return d1;
 		}, true) : super.create(document);
+		LOGGER.log(Level.DEBUG, "d={0}", d);
+
+		return d;
 	}
 
 	@Override
@@ -170,15 +180,15 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 			var a = new A();
 			switch (document.documentStatus()) {
 			case DRAFT:
-				a.d2 = JavaReflect.copy(document, a.d1,
+				a.d2 = copier.copy(document, a.d1,
 						x -> (include == null || include.contains(x)) && !exclude.contains(x));
-				a.d2 = JavaReflect.copy(Map.of("updatedAt", Instant.now()), a.d2);
+				a.d2 = copier.copy(Map.of("updatedAt", Instant.now()), a.d2);
 				if (a.d2.documentStatus() != a.d1.documentStatus())
 					a.nv = true;
 				break;
 			case PUBLISHED:
 				a.d2 = update(id, x -> {
-					var d2 = JavaReflect.copy(document, a.d1,
+					var d2 = copier.copy(document, a.d1,
 							y -> (include == null || include.contains(y)) && !exclude.contains(y));
 					if (d2.documentStatus() != x.documentStatus())
 						a.nv = true;
@@ -283,20 +293,30 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 
 	@Override
 	public Version<ID, D> readVersion(ID versionId) {
-		return persistence.database().perform(() -> {
+		LOGGER.log(Level.DEBUG, "versionId={0}", versionId);
+
+		var v = persistence.database().perform(() -> {
 			class A {
 				Version<ID, D> v;
 			}
 			var a = new A();
+
 			persistence.database().table(versionTable).select(new Object[] { versionId }, x -> {
 				var oo = x.findFirst().get();
-//				IO.println("oo=" + Arrays.toString(oo));
+				var s = (String) oo.toArray()[1];
+				var t = new SimpleParameterizedType(Version.class, JavaReflect.property(type, "id").type(), type);
+
 				@SuppressWarnings("unchecked")
-				var v = (Version<ID, D>) parse((String) oo.toArray()[1], Version.class);
-				a.v = v;
+				var v1 = (Version<ID, D>) parse(s, t);
+
+				a.v = v1;
 			});
+
 			return a.v;
 		}, false);
+		LOGGER.log(Level.DEBUG, "v={0}", v);
+
+		return v;
 	}
 
 	@Override
@@ -306,7 +326,7 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 			var d = update(v1.document().id(), _ -> {
 				var x = v1.document();
 				if (status != x.documentStatus())
-					x = JavaReflect.copy(Map.of("documentStatus", status), x);
+					x = copier.copy(Map.of("documentStatus", status), x);
 				return x;
 			});
 			persistence.database().index(versionTable + ".documentId")
@@ -326,18 +346,22 @@ public class DefaultDocumentCrud<ID extends Comparable<ID>, D extends Document<I
 			D d2;
 		}
 		var a = new A();
+
 		var i = persistence.database().index(versionTable + ".documentId");
+
 		if (vv1 != null)
 			for (var v : vv1) {
 				i.delete(new Object[] { id, v.id() }, null);
 				a.d1 = v.document();
 			}
+
 		if (vv2 != null)
 			for (var v : vv2) {
 				i.insert(new Object[] { id, v.id() }, null);
 				a.d2 = v.document();
 			}
-		updateIndexes(a.d1, a.d2, x -> persistence.database().index(type.getSimpleName() + "." + x + "Draft", "table"));
+
+		updateIndexes(a.d1, a.d2, x -> persistence.database().index(name + "." + x + "Draft", "table"));
 	}
 
 	@Override

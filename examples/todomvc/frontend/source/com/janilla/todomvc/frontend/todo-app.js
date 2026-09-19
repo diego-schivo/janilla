@@ -69,10 +69,13 @@ export default class TodoApp extends WebComponent {
             headers: { "content-type": "application/json" },
             body: JSON.stringify(item)
         });
-        const j = await r.json();
         if (r.ok) {
+            const j = await r.json();
             this.customState.data.push(j);
             this.dispatchEvent(new Event("datachanged"));
+        } else {
+            const t = await r.text();
+            alert(t);
         }
     }
 
@@ -88,6 +91,9 @@ export default class TodoApp extends WebComponent {
                 if (d[i].completed)
                     d.splice(i, 1);
             this.dispatchEvent(new Event("datachanged"));
+        } else {
+            const t = await r.text();
+            alert(t);
         }
     }
 
@@ -116,6 +122,9 @@ export default class TodoApp extends WebComponent {
                 if (d[i].id == item.id)
                     d.splice(i, 1);
             this.dispatchEvent(new Event("datachanged"));
+        } else {
+            const t = await r.text();
+            alert(t);
         }
     }
 
@@ -132,6 +141,9 @@ export default class TodoApp extends WebComponent {
         if (r.ok) {
             this.customState.data.forEach(x => x.completed = item.completed);
             this.dispatchEvent(new Event("datachanged"));
+        } else {
+            const t = await r.text();
+            alert(t);
         }
     }
 
@@ -142,12 +154,15 @@ export default class TodoApp extends WebComponent {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ completed: item.completed })
         });
-        const j = await r.json();
         if (r.ok) {
             const s = this.customState;
             const i = s.data.findIndex(x => x.id == item.id);
+            const j = await r.json();
             s.data[i] = j;
             this.dispatchEvent(new Event("datachanged"));
+        } else {
+            const t = await r.text();
+            alert(t);
         }
     }
 
@@ -158,12 +173,15 @@ export default class TodoApp extends WebComponent {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ title: item.title })
         });
-        const j = await r.json();
         if (r.ok) {
             const s = this.customState;
             const i = s.data.findIndex(x => x.id == item.id);
+            const j = await r.json();
             s.data[i] = j;
             this.dispatchEvent(new Event("datachanged"));
+        } else {
+            const t = await r.text();
+            alert(t);
         }
     }
 }

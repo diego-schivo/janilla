@@ -53,8 +53,8 @@ import java.lang.reflect.Type;
 import java.net.URI;
 
 import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
-import com.janilla.http.HttpRequest;
 import com.janilla.java.Converter;
 import com.janilla.java.SimpleParameterizedType;
 import com.janilla.persistence.ListPortion;
@@ -76,7 +76,7 @@ public class DefaultCategoryApiClient implements CategoryApiClient {
 
 	@Override
 	public ListPortion<Category> read() {
-		var r = new HttpRequest("GET", URI.create(config.api().url() + "/categories"));
+		var r = new DefaultHttpRequest("GET", URI.create(config.api().url() + "/categories"));
 		var o = httpClient.send(r, HttpClient.JSON);
 		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { Category.class }));
 	}

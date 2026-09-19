@@ -31,7 +31,7 @@ import com.janilla.web.Handle;
 class OwnerApi extends AbstractCollectionApi<Long, Owner> {
 
 	public OwnerApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Owner.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
+		super(Owner.class, drafts, persistence, "lastName", copier, Direction.FORWARD, 0);
 	}
 
 	@Handle(method = "GET")

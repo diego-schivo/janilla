@@ -51,6 +51,7 @@ import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.Order;
 import com.janilla.ecommercetemplate.Transaction;
 import com.janilla.http.DefaultHttpClient;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.java.DefaultConverter;
@@ -82,7 +83,7 @@ public class StripeApi extends PaymentApi {
 		}
 		C c;
 		{
-			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/customers?"
+			var rq = new DefaultHttpRequest("GET", URI.create("https://api.stripe.com/v1/customers?"
 					+ new UriQueryBuilder().append("email", user != null ? user.email() : guestEmail)));
 			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var r = new DefaultHttpClient().send(rq,
@@ -92,7 +93,7 @@ public class StripeApi extends PaymentApi {
 		}
 
 		if (c == null) {
-			var rq = new HttpRequest("POST", URI.create("https://api.stripe.com/v1/customers"));
+			var rq = new DefaultHttpRequest("POST", URI.create("https://api.stripe.com/v1/customers"));
 			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var bb = new UriQueryBuilder().append("email", user != null ? user.email() : guestEmail).toString()
 					.getBytes();
@@ -108,7 +109,7 @@ public class StripeApi extends PaymentApi {
 		}
 		PI pi;
 		{
-			var rq = new HttpRequest("POST", URI.create("https://api.stripe.com/v1/payment_intents"));
+			var rq = new DefaultHttpRequest("POST", URI.create("https://api.stripe.com/v1/payment_intents"));
 			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var q = new UriQueryBuilder()
 					.append("amount", String.valueOf(cart.subtotal().multiply(BigDecimal.valueOf(100)).longValue()))
@@ -147,7 +148,7 @@ public class StripeApi extends PaymentApi {
 		}
 		PI pi;
 		{
-			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/payment_intents/" + paymentIntent));
+			var rq = new DefaultHttpRequest("GET", URI.create("https://api.stripe.com/v1/payment_intents/" + paymentIntent));
 			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			pi = new DefaultHttpClient().send(rq,
 					HttpClient.JSON.andThen(x -> new DefaultConverter().convert(x, PI.class)));

@@ -33,10 +33,10 @@ import com.janilla.frontend.Script;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 import com.janilla.web.NotFoundException;
-import com.janilla.websitetemplate.frontend.WebsiteWebHandling;
+import com.janilla.websitetemplate.frontend.WebsiteWeb;
 
 public class EcommerceWebHandling<D extends EcommerceDomain, C extends EcommerceApiClient>
-		extends WebsiteWebHandling<D, C> {
+		extends WebsiteWeb<D, C> {
 
 	protected final EcommerceFrontendConfig config;
 

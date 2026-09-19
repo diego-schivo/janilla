@@ -81,8 +81,8 @@ public class DefaultInvocationHandlerFactory extends AbstractHttpHandlerFactory 
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
-		if (object instanceof HttpRequest r) {
+	public HttpHandler newHandler(Object input) {
+		if (input instanceof HttpRequest r) {
 			var p = webAppPath(r);
 //			IO.println("DefaultInvocationHandlerFactory.createHandler, p=" + p);
 			var ii = invocationResolver.lookup(r.getHeaderValue(":method"), p).toList();
@@ -347,7 +347,7 @@ public class DefaultInvocationHandlerFactory extends AbstractHttpHandlerFactory 
 
 	protected void render(Renderable<?> renderable, HttpExchange exchange) {
 //		IO.println("DefaultInvocationHandlerFactory.render, renderable=" + renderable);
-		var h = rootFactory.createHandler(renderable);
+		var h = rootFactory.newHandler(renderable);
 		if (h != null)
 			h.handle(exchange);
 	}

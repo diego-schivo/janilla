@@ -13,6 +13,7 @@
 		<module>base</module>
 		<module>frontend</module>
 		<module>fullstack</module>
+		<module>test</module>
 	</modules>
 	<properties>
 		<maven.compiler.parameters>true</maven.compiler.parameters>

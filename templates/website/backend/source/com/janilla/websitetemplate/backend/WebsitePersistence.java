@@ -31,9 +31,9 @@ import com.janilla.backend.persistence.Crud;
 import com.janilla.backend.persistence.CrudObserver;
 import com.janilla.backend.sqlite.SqliteDatabase;
 import com.janilla.blanktemplate.backend.BlankPersistence;
-import com.janilla.cms.Types;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Copier;
+import com.janilla.java.Type;
 import com.janilla.java.JavaReflect;
 import com.janilla.persistence.Entity;
 import com.janilla.websitetemplate.SearchResult;
@@ -52,7 +52,7 @@ public class WebsitePersistence<C extends WebsiteBackendConfig> extends BlankPer
 	protected SearchObserver<?> searchObserver() {
 		if (searchObserver == null)
 			searchObserver = new SearchObserver<>(Arrays.stream(JavaReflect.property(SearchResult.class, "document")
-					.annotatedType().getAnnotation(Types.class).value()).toList(), this);
+					.annotatedType().getAnnotation(Type.class).value()).toList(), this);
 		return searchObserver;
 	}
 

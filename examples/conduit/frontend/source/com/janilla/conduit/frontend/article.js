@@ -94,7 +94,7 @@ static get moduleUrl() {
 			const [{ article }, { comments }] = await Promise.all([
 				`${a.customEnv.apiUrl}/articles/${this.dataset.slug}`,
 				`${a.customEnv.apiUrl}/articles/${this.dataset.slug}/comments`,
-			].map(x => fetch(x, { headers: a.customState.apiHeaders }).then(y => y.json())));
+			].map(x => fetch(x, { headers: a.apiHeaders }).then(y => y.json())));
 			Object.assign(hs, {
 				article: article ?? {},
 				comments: comments ?? []
@@ -118,7 +118,7 @@ static get moduleUrl() {
 			if (el.matches("a"))
 				location.hash = `#/editor/${this.dataset.slug}`;
 			else {
-				const { customEnv: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+				const { customEnv: { apiUrl }, apiHeaders } = this.closest("app-element");
 				const r = await fetch(`${apiUrl}/articles/${this.dataset.slug}`, {
 					method: "DELETE",
 					headers: apiHeaders

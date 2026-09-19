@@ -24,9 +24,6 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Predicate;
 
 import com.janilla.backend.cms.AbstractCollectionApi;
@@ -52,28 +49,28 @@ public class OrderApi extends AbstractCollectionApi<Long, Order> {
 		this.domain = domain;
 	}
 
-	@Handle(method = "GET")
-	public List<Order> read(Long customer) {
-		@SuppressWarnings("unchecked")
-		var e = (UserHttpExchange<User<?>>) HttpExchange.SCOPED.get();
-		var u = e.sessionUser();
-		var rr = u != null ? u.roles() : null;
-		if (rr == null || !(rr.contains(domain.userRole("ADMIN")) || rr.contains(domain.userRole("CUSTOMER"))))
-			throw new UnauthorizedException();
-
-		if (rr != null && rr.contains(domain.userRole("CUSTOMER"))) {
-			if (customer == null)
-				customer = (Long) u.id();
-			else if (!customer.equals(u.id()))
-				throw new ForbiddenException();
-		}
-
-		var oo = new ArrayList<>(
-				crud().read(customer != null ? crud().filter("customer", new Object[] { customer }) : crud().list(),
-						drafts.test(e), 0));
-		Collections.reverse(oo);
-		return oo;
-	}
+//	@Handle(method = "GET")
+//	public List<Order> read(Long customer) {
+//		@SuppressWarnings("unchecked")
+//		var e = (UserHttpExchange<User<?>>) HttpExchange.SCOPED.get();
+//		var u = e.sessionUser();
+//		var rr = u != null ? u.roles() : null;
+//		if (rr == null || !(rr.contains(domain.userRole("ADMIN")) || rr.contains(domain.userRole("CUSTOMER"))))
+//			throw new UnauthorizedException();
+//
+//		if (rr != null && rr.contains(domain.userRole("CUSTOMER"))) {
+//			if (customer == null)
+//				customer = (Long) u.id();
+//			else if (!customer.equals(u.id()))
+//				throw new ForbiddenException();
+//		}
+//
+//		var oo = new ArrayList<>(
+//				crud().read(customer != null ? crud().filter("customer", new Object[] { customer }) : crud().list(),
+//						drafts.test(e), 0));
+//		Collections.reverse(oo);
+//		return oo;
+//	}
 
 	@Override
 	public Order read(Long id, Integer depth) {

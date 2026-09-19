@@ -64,6 +64,7 @@
 @import "admin-join.css";
 @import "admin-list.css";
 @import "admin-login.css";
+@import "admin-nav-toggler.css";
 @import "admin-page-controls.css";
 @import "admin-pagination.css";
 @import "admin-per-page.css";
@@ -81,4 +82,6 @@
 @import "admin-version.css";
 @import "admin-versions.css";
 
+@import "../base/janilla-logo.css";
 @import "../base/lucide-icon.css";
+@import "../base/toaster.css";

@@ -261,27 +261,31 @@ public abstract class AbstractWebApp<C extends WebAppConfig, D extends Domain> i
 	protected HttpHandler newHttpHandler() {
 		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
-			var h = f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()));
+			var h = f.newHandler(Objects.requireNonNullElse(x.exception(), x.request()));
 			if (h == null)
 				throw new NotFoundException(
 						x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
-			return ScopedValue.where(INSTANCE, this).call(() -> h.handle(x));
+			return ScopedValue.where(SCOPED, this).call(() -> h.handle(x));
 		};
 	}
 
 	protected InvocationResolver newInvocationResolver() {
+		var ii = diFactory.types().filter(t -> !(t.isInterface() || Modifier.isAbstract(t.getModifiers())))
+				.flatMap(t -> Arrays.stream(t.getMethods())
+						.filter(m -> !Modifier.isStatic(m.getModifiers()) && !m.isBridge()).sorted((m1, m2) -> {
+							var c1 = m1.getDeclaringClass();
+							var c2 = m2.getDeclaringClass();
+							if (c1 == c2)
+								return m1.getName().compareTo(m2.getName());
+							return c1.isAssignableFrom(c2) ? -1 : 1;
+						}).map(m -> new Invocable(t, m)))
+				.toList();
+		var r = (Function<Class<?>, Object>) x -> {
+			var c = diFactory.context();
+			return x.isAssignableFrom(c.getClass()) ? c : diFactory.newInstance(diFactory.classFor(x));
+		};
 		return diFactory.newInstance(diFactory.classFor(InvocationResolver.class),
-				Map.of("invocables",
-						diFactory.types().filter(x -> !(x.isInterface() || Modifier.isAbstract(x.getModifiers())))
-								.flatMap(x -> Arrays.stream(x.getMethods())
-										.filter(y -> !Modifier.isStatic(y.getModifiers()) && !y.isBridge())
-										.map(y -> new Invocable(x, y)))
-								.toList(),
-						"instanceResolver", (Function<Class<?>, Object>) x -> {
-							var y = diFactory.context();
-//							IO.println("x=" + x + ", y=" + y);
-							return x.isAssignableFrom(y.getClass()) ? y : diFactory.newInstance(diFactory.classFor(x));
-						}));
+				Map.of("invocables", ii, "instanceResolver", r));
 	}
 
 	protected RenderableFactory newRenderableFactory() {

@@ -30,11 +30,12 @@ import com.janilla.blanktemplate.backend.BlankBackendExchange;
 import com.janilla.cms.CmsDomain;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
+import com.janilla.java.Copier;
 
 public class WebsiteBackendExchange extends BlankBackendExchange {
 
 	public WebsiteBackendExchange(HttpRequest request, HttpResponse response, BackendConfig config,
-			Persistence persistence, CmsDomain domain) {
-		super(request, response, config, persistence, domain);
+			Persistence persistence, CmsDomain domain, Copier copier) {
+		super(request, response, config, persistence, domain, copier);
 	}
 }

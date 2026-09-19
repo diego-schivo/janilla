@@ -67,17 +67,4 @@ public class SimpleLogger implements Logger {
 			IO.println(Stream.of(prefix != null ? prefix.get() : null, MessageFormat.format(format, params))
 					.filter(x -> x != null).collect(Collectors.joining(" ")));
 	}
-
-//	protected String prefix() {
-//		class A {
-//			static final StackWalker WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
-//		}
-//		var f = A.WALKER.walk(x -> x.filter(y -> !y.getDeclaringClass().equals(SimpleLogger.class)
-//				&& !y.getDeclaringClass().equals(System.Logger.class)).findFirst().get());
-//		return f.getClassName().substring(f.getClassName().lastIndexOf('.') + 1) + "." + f.getMethodName();
-//
-//		return LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).toString();
-//
-//		return prefix != null ? prefix.get() : null;
-//	}
 }

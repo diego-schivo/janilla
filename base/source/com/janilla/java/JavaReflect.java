@@ -50,24 +50,24 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class JavaReflect {
+public final class JavaReflect {
 
 	private static final Logger LOGGER = System.getLogger(JavaReflect.class.getName());
 
+	private JavaReflect() {
+		throw new Error("no instances");
+	}
+
 	public static Stream<String> propertyNames(Type type) {
-//		IO.println("JavaReflect.properties, type=" + type);
 		return propertyMap(type).keySet().stream();
 	}
 
 	public static Stream<Property> properties(Type type) {
-//		IO.println("JavaReflect.properties, type=" + type);
 		return propertyMap(type).values().stream();
 	}
 
@@ -76,96 +76,9 @@ public class JavaReflect {
 		return propertyMap(type).get(name);
 	}
 
-	public static <T> T copy(Object source, T destination) {
-		return copy(source, destination, null);
-	}
-
-	protected static final Object SKIP_COPY = new Object();
-
-	public static <T> T copy(Object source, T destination, Predicate<String> filter) {
-		if (source instanceof Map<?, ?> m)
-			return copy(x -> m.containsKey(x) ? m.get(x) : SKIP_COPY, destination, filter);
-		var c = source.getClass();
-		return copy(x -> {
-			var p = property(c, x);
-			return p != null ? p.get(source) : SKIP_COPY;
-		}, destination, filter);
-	}
-
-	protected static <T> T copy(Function<String, Object> source, T destination, Predicate<String> filter) {
-//		IO.println("JavaReflect.copy, source=" + source + ", destination=" + destination);
-		var c = destination.getClass();
-
-		var s = propertyNames(c);
-		if (filter != null)
-			s = s.filter(filter);
-		var kk = s.toList();
-		if (kk == null || kk.isEmpty())
-			return destination;
-
-		var vv = kk.stream().map(k -> {
-			var v = source.apply(k);
-			return v != SKIP_COPY ? Java.mapEntry(k, v) : null;
-		}).filter(Objects::nonNull).collect(HashMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
-		if (vv.isEmpty())
-			return destination;
-
-		if (c.isRecord()) {
-			var aa = Arrays.stream(c.getRecordComponents()).map(rc -> {
-				try {
-//				IO.println("JavaReflect.copy, rc=" + rc);
-					var n = rc.getName();
-					if (vv.containsKey(n))
-						return vv.get(n);
-
-					var p = property(c, n);
-					if (p != null)
-						return p.get(destination);
-
-					var f = c.getDeclaredField(n);
-					var m = rc.getAccessor();
-					if (f.isAnnotationPresent(Flat.class) || JavaReflect.inheritedAnnotation(m, Flat.class) != null) {
-						var aa2 = properties(f.getType()).map(x -> {
-							if (vv.containsKey(x.name()))
-								return vv.get(x.name());
-
-							var p2 = property(c, x.name());
-							if (p2 != null)
-								return p2.get(destination);
-
-							return null;
-						}).toArray();
-						return f.getType().getConstructors()[0].newInstance(aa2);
-					}
-
-					return m.invoke(destination);
-				} catch (ReflectiveOperationException e) {
-					throw new RuntimeException(e);
-				}
-			}).toArray();
-
-			try {
-				@SuppressWarnings("unchecked")
-				var t = (T) JavaInvoke.methodHandle(constructor(c)).invokeWithArguments(aa);
-				return t;
-			} catch (Throwable e) {
-				switch (e) {
-				case RuntimeException x:
-					throw x;
-				default:
-					throw new RuntimeException(e);
-				}
-			}
-		}
-		properties(c).filter(x -> vv.containsKey(x.name()) && x.canSet()).forEach(x -> {
-//			IO.println("JavaReflect.copy, x=" + x);
-			x.set(destination, vv.get(x.name()));
-		});
-		return destination;
-	}
-
 	protected static Map<String, Property> propertyMap(Type type) {
-//		IO.println("JavaReflect.propertyMap, type=" + type);
+		LOGGER.log(Level.DEBUG, "type={0}", type);
+		Objects.requireNonNull(type, "type");
 
 		class A {
 			private static final Map<Type, Map<String, Property>> RESULTS = new ConcurrentHashMap<>();
@@ -261,7 +174,7 @@ public class JavaReflect {
 //								f = null;
 //							}
 //							if (f != null && f.isAnnotationPresent(Flat.class)) {
-							if (inheritedAnnotation((Method) x.member(), Flat.class) != null) {
+							if (inheritedAnnotation((Method) x.member(), Flatten.class) != null) {
 //								var ft = actualType(f, t);
 								var ft = x.genericType();
 								var m = A.RESULTS.get(ft);
@@ -277,33 +190,6 @@ public class JavaReflect {
 		}
 		return A.RESULTS.computeIfAbsent(type, A::compute);
 	}
-
-//	public static Type resolveTypeVariable(TypeVariable<?> variable, Class<?> class1, Class<?> superclassOrInterface) {
-//		IO.println("JavaReflect.resolveTypeVariable, variable=" + variable + ", class1=" + class1
-//				+ ", superclassOrInterface=" + superclassOrInterface);
-//		var i = 0;
-//		for (var x : superclassOrInterface.getTypeParameters()) {
-//			if (x == variable)
-//				break;
-//			i++;
-//		}
-//		var d = new ArrayDeque<Class<?>>();
-//		d.offer(class1);
-//		do {
-//			var c = d.poll();
-//			var t = c.getGenericSuperclass();
-//			var ii = c.getGenericInterfaces();
-//			var pt = (ParameterizedType) Stream
-//					.concat(t != null ? Stream.of(t) : Stream.<Type>empty(), Arrays.stream(ii)).filter(x -> {
-//						var c2 = Java.toClass(x);
-//						d.offer(c2);
-//						return c2 == superclassOrInterface;
-//					}).findFirst().orElse(null);
-//			if (pt != null)
-//				return pt.getActualTypeArguments()[i];
-//		} while (!d.isEmpty());
-//		return null;
-//	}
 
 	public static Type[] actualParameterTypes(Method method, Class<?> target) {
 //		IO.println("JavaReflect.actualParameterTypes, method=" + method + ", target=" + target);
@@ -423,51 +309,6 @@ public class JavaReflect {
 		}).orElse(null);
 	}
 
-//	public static <T extends Annotation> T inheritedAnnotation(AnnotatedElement annotated, Class<T> annotation) {
-//		switch (annotated) {
-//		case Class<?> t:
-//			return Stream
-//					.concat(Stream.of(t),
-//							Stream.concat(inheritedClasses(t).stream(),
-//									inheritedInterfaces(t).stream().flatMap(x -> x.stream()).distinct()))
-//					.map(x -> x.getAnnotation(annotation)).filter(x -> x != null).findFirst().orElse(null);
-//
-//		case AnnotatedType at:
-//			var a = at.getAnnotation(annotation);
-//			if (a != null)
-//				return a;
-//			var t = Java.toClass(at.getType());
-//			return Stream
-//					.concat(Stream.of(t),
-//							Stream.concat(inheritedClasses(t).stream(),
-//									inheritedInterfaces(t).stream().flatMap(x -> x.stream()).distinct()))
-//					.map(x -> x.getAnnotation(annotation)).filter(x -> x != null).findFirst().orElse(null);
-//
-//		case Method m:
-//			var c = m.getDeclaringClass();
-//			return Stream.concat(Stream.of(inheritedClasses(c)), inheritedInterfaces(c).stream()).flatMap(tt -> {
-//				class B {
-//					private Method m;
-//				}
-//				var b = new B();
-//				return Stream.concat(Stream.of((Class<?>) null), tt.stream()).map(x -> {
-//					if (x == null)
-//						return m;
-//					var bm = b.m.isBridge() ? b.m : bridgeMethod(b.m);
-//					try {
-//						return x.getMethod(m.getName(), (bm != null ? bm : b.m).getParameterTypes());
-//					} catch (NoSuchMethodException e) {
-//						return null;
-//					}
-//				}).filter(x -> x != null).peek(x -> b.m = x).map(x -> x.getAnnotation(annotation))
-//						.filter(x -> x != null);
-//			}).findFirst().orElse(null);
-//
-//		default:
-//			throw new IllegalArgumentException("annotated=" + annotated + " (" + annotated.getClass() + ")");
-//		}
-//	}
-
 	public static Stream<Class<?>> inheritedClasses(Class<?> class1) {
 		class A {
 			private static final Map<Class<?>, List<Class<?>>> RESULTS = new ConcurrentHashMap<>();
@@ -549,33 +390,52 @@ public class JavaReflect {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends Annotation> AnnotationAndElement<T> inheritedAnnotation(Class<?> type,
+	public static <T extends Annotation> AnnotationResult<T> inheritedAnnotation(Class<?> type,
 			Class<T> annotationClass) {
-		class A {
-			private static final Map<Class<?>, Map<Class<?>, AnnotationAndElement<?>>> RESULTS = new ConcurrentHashMap<>();
+		interface A {
+			Map<Class<?>, Map<Class<?>, AnnotationResult<?>>> RESULTS = new ConcurrentHashMap<>();
 		}
-		return (AnnotationAndElement<T>) A.RESULTS.computeIfAbsent(type, _ -> new ConcurrentHashMap<>())
+		return (AnnotationResult<T>) A.RESULTS.computeIfAbsent(type, _ -> new ConcurrentHashMap<>())
 				.computeIfAbsent(annotationClass, _ -> {
 					return Stream
 							.<Supplier<Stream<Class<?>>>>of(() -> Stream.of(type), () -> inheritedClasses(type),
 									() -> inheritedInterfaces(type).flatMap(x -> x).distinct())
 							.flatMap(x -> x.get()).map(x -> {
 								var a = x.getAnnotation(annotationClass);
-								return a != null ? new AnnotationAndElement<>(a, x) : null;
+								return a != null ? new AnnotationResult<>(a, x) : null;
 							}).filter(x -> x != null).findFirst().orElse(null);
 				});
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T extends Annotation> T inheritedAnnotation(Method method, Class<T> annotationClass) {
-		class A {
-			private static final Map<Method, Map<Class<?>, Annotation>> RESULTS = new ConcurrentHashMap<>();
+	public static <T extends Annotation> AnnotationResult<T> inheritedAnnotation(Method method,
+			Class<T> annotationClass) {
+		interface A {
+			Map<Method, Map<Class<?>, AnnotationResult<?>>> RESULTS = new ConcurrentHashMap<>();
 		}
-		return (T) A.RESULTS.computeIfAbsent(method, _ -> new ConcurrentHashMap<>()).computeIfAbsent(annotationClass,
-				_ -> {
+		return (AnnotationResult<T>) A.RESULTS.computeIfAbsent(method, _ -> new ConcurrentHashMap<>())
+				.computeIfAbsent(annotationClass, _ -> {
 					return Stream.<Supplier<Stream<Method>>>of(() -> Stream.of(method), () -> inheritedMethods(method))
-							.flatMap(x -> x.get()).map(x -> x.getAnnotation(annotationClass)).filter(x -> x != null)
-							.findFirst().orElse(null);
+							.flatMap(x -> x.get()).map(x -> {
+								var a = x.getAnnotation(annotationClass);
+								return a != null ? new AnnotationResult<>(a, x) : null;
+							}).filter(x -> x != null).findFirst().orElse(null);
+				});
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends Annotation> AnnotationResult<T> inheritedReturnTypeAnnotation(Method method,
+			Class<T> annotationClass) {
+		interface A {
+			Map<Method, Map<Class<?>, AnnotationResult<?>>> RESULTS = new ConcurrentHashMap<>();
+		}
+		return (AnnotationResult<T>) A.RESULTS.computeIfAbsent(method, _ -> new ConcurrentHashMap<>())
+				.computeIfAbsent(annotationClass, _ -> {
+					return Stream.<Supplier<Stream<Method>>>of(() -> Stream.of(method), () -> inheritedMethods(method))
+							.flatMap(x -> x.get()).map(x -> {
+								var a = x.getAnnotatedReturnType().getAnnotation(annotationClass);
+								return a != null ? new AnnotationResult<>(a, x) : null;
+							}).filter(x -> x != null).findFirst().orElse(null);
 				});
 	}
 

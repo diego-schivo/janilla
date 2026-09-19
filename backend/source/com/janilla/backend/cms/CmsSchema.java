@@ -49,6 +49,8 @@
  */
 package com.janilla.backend.cms;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -67,7 +69,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
 import com.janilla.ioc.DiFactory;
 import com.janilla.java.Java;
 import com.janilla.java.JavaReflect;
@@ -77,13 +78,15 @@ public class CmsSchema extends LinkedHashMap<String, Object> {
 
 	private static final long serialVersionUID = -8003987634573939042L;
 
+	private static final Logger LOGGER = System.getLogger(CmsSchema.class.getName());
+
 	public CmsSchema(Class<?> dataType, TypeResolver typeResolver, DiFactory diFactory) {
 		var q = new ArrayDeque<Type>(List.of(dataType));
 
 		var m1 = new HashMap<String, Object>();
 
-		class A {
-			private static final Set<String> skip = Set.of("id", "createdAt", "updatedAt", "documentStatus");
+		interface A {
+			Set<String> SKIP = Set.of("id", "createdAt", "updatedAt", "documentStatus");
 		}
 
 		Function<Type, String> n = x -> {
@@ -103,9 +106,9 @@ public class CmsSchema extends LinkedHashMap<String, Object> {
 				continue;
 
 			var t3 = diFactory.classFor(t2);
-//			IO.println("CmsSchema, t1=" + t1 + ", t2=" + t2 + ", t3=" + t3);
+			LOGGER.log(Level.DEBUG, "t1={0}, t2={1}, t3={2}", t1, t2, t3);
 
-			var i = new int[] { 0 };
+			var i = new int[1];
 			var ii = JavaReflect.properties(t3).collect(Collectors.toMap(x -> x.name(), _ -> i[0]++));
 
 			Object o2;
@@ -114,7 +117,7 @@ public class CmsSchema extends LinkedHashMap<String, Object> {
 			else {
 				var m2 = new LinkedHashMap<String, Map<String, Object>>();
 				JavaReflect.properties(t1).sorted(Comparator.comparingInt(x -> ii.get(x.name())))
-						.filter(x -> !A.skip.contains(x.name())).forEach(p -> {
+						.filter(x -> !A.SKIP.contains(x.name())).forEach(p -> {
 //							var pt1 = p.genericType();
 							var pt2 = p.type();
 							var pt3 = !pt2.getPackageName().startsWith("java.") ? diFactory.classFor(pt2) : null;
@@ -137,10 +140,13 @@ public class CmsSchema extends LinkedHashMap<String, Object> {
 //												: null)
 //										.filter(x -> x != null).findFirst().orElse(null);
 								var ta = p.annotatedType() instanceof AnnotatedParameterizedType apt
-										? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(Types.class)
+										? apt.getAnnotatedActualTypeArguments()[0].getAnnotation(
+												com.janilla.java.Type.class)
 										: null;
 
-								tt = ta != null ? Arrays.asList(ta.value()) : List.of(et1);
+								tt = !et2.getPackageName().startsWith("java.")
+										? (ta != null ? Arrays.asList(ta.value()) : List.of(et1))
+										: List.of();
 								m3.put("elementTypes", tt.stream().map(n).toList());
 								if (Document.class.isAssignableFrom(et2))
 									m3.put("referenceType", n.apply(ta != null ? ta.value()[0] : et2));
@@ -154,7 +160,9 @@ public class CmsSchema extends LinkedHashMap<String, Object> {
 							} else if (pt2.getPackageName().startsWith("java."))
 								tt = List.of();
 							else if (pt2 == Document.class) {
-								var ta = JavaReflect.inheritedAnnotation((Method) p.member(), Types.class);
+								var aa = JavaReflect.inheritedReturnTypeAnnotation((Method) p.member(),
+										com.janilla.java.Type.class);
+								var ta = aa != null ? aa.annotation() : null;
 								if (ta != null)
 									m3.put("referenceTypes",
 											Arrays.stream(ta.value()).map(diFactory::classFor).map(n).toList());

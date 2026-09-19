@@ -47,10 +47,10 @@ public class WebAppHandlerFactory implements HttpHandlerFactory {
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
+	public HttpHandler newHandler(Object input) {
 		for (var f : handlerFactories)
 			if (f != null) {
-				var h = f.createHandler(object);
+				var h = f.newHandler(input);
 				if (h != null) {
 //					IO.println("ApplicationHandlerBuilder.createHandler, f=" + f + ", h=" + h);
 					return h;

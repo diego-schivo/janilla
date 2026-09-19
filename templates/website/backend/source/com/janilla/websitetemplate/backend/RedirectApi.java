@@ -32,6 +32,7 @@ import com.janilla.http.HttpExchange;
 import com.janilla.java.Copier;
 import com.janilla.java.Direction;
 import com.janilla.web.Handle;
+import com.janilla.websitetemplate.Redirect;
 
 @Handle(path = "/api/redirects")
 public class RedirectApi extends AbstractCollectionApi<Long, Redirect> {

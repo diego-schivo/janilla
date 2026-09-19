@@ -27,6 +27,7 @@ package com.janilla.backend.persistence;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -100,6 +101,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	@Override
+	public String name() {
+		return name;
+	}
+
+	@Override
 	public Class<E> type() {
 		return type;
 	}
@@ -125,7 +131,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 				a.i = (ID) JavaReflect.property(type, "id").get(a.e);
 				if (a.i == null) {
 					a.i = idHelper.random(a.e);
-					a.e = JavaReflect.copy(Map.of("id", a.i), a.e);
+					a.e = copier.copy(Map.of("id", a.i), a.e);
 				}
 				for (var o : observers)
 					a.e = o.beforeCreate(a.e);
@@ -304,8 +310,10 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 
 	@Override
 	public List<ID> filter(String index, Object[] keys, Direction direction, long skip, long limit) {
-//		IO.println("DefaultCrud.filter, name=" + name + ", index=" + index + ", keys="
-//				+ Arrays.toString(keys));
+		if (LOGGER.isLoggable(Level.DEBUG))
+			LOGGER.log(Level.DEBUG, "index={0}, keys={1}, direction={2}, skip={3}, limit={4}", index,
+					Arrays.toString(keys), direction, skip, limit);
+
 		return persistence.database().perform(() -> {
 			var t = getIndex(index);
 
@@ -331,7 +339,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 					return c1 != null ? (c2 != null ? c1.compareTo(c2) : 1) : (c2 != null ? -1 : 0);
 				};
 				var s = aa.stream();
-				var a = (direction == Direction.BACKWARD ? s.max(c) : s.min(c)).orElse(null);
+				var a = (A) (direction == Direction.BACKWARD ? s.max((Comparator) c) : s.min((Comparator) c)).orElse(null);
 				if (a == null || a.v == null)
 					return null;
 				var v = a.v;
@@ -495,11 +503,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		return parse(string, type);
 	}
 
-	@SuppressWarnings("unchecked")
-	protected <T> T parse(String string, Class<T> target) {
+	protected <T> T parse(String string, Type target) {
 		LOGGER.log(Level.DEBUG, "string={0}, target={1}", string, target);
 
-		var t = (T) converter.convert(Json.parse(string), target);
+		var o = Json.parse(string);
+		T t = converter.convert(o, target);
 		LOGGER.log(Level.DEBUG, "t={0}", t);
 
 		return t;
@@ -513,9 +521,11 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	protected void updateIndexes(E entity1, E entity2, Function<String, IndexBTree> index) {
 		var im1 = entity1 != null ? getIndexMap(entity1) : null;
 		var im2 = entity2 != null ? getIndexMap(entity2) : null;
+
 		for (var k : (im1 != null ? im1 : im2).keySet()) {
 			var s1 = im1 != null ? im1.get(k) : null;
 			var s2 = im2 != null ? im2.get(k) : null;
+
 			if (!Objects.equals(s1, s2)) {
 //				IO.println("k=" + k);
 				if (s1 != null && !s1.isEmpty() && s2 != null && !s2.isEmpty()) {
@@ -523,7 +533,9 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 					s1.removeAll(s2);
 					s2.removeAll(s);
 				}
-				updateIndex(index.apply(k), s1, s2, (entity1 != null ? entity1 : entity2).id());
+
+				var e = entity1 != null ? entity1 : entity2;
+				updateIndex(index.apply(k), s1, s2, e.id());
 			}
 		}
 	}
@@ -539,17 +551,19 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 	}
 
 	protected void updateIndex(IndexBTree index, Set<List<Object>> remove, Set<List<Object>> add, ID id) {
-//		IO.println("DefaultCrud.updateIndex, remove=" + remove + ", add=" + add);
+		LOGGER.log(Level.DEBUG, "index={0}, remove={1}, add={2}, id={3}", index, remove, add, id);
+
 		if (remove != null)
-			for (var oo : remove)
-				index.delete(
-						Stream.concat(oo.stream().map(this::toDatabaseValue), Stream.of(toDatabaseId(id))).toArray(),
-						null);
+			for (var x : remove) {
+				var oo = Stream.concat(x.stream().map(this::toDatabaseValue), Stream.of(toDatabaseId(id))).toArray();
+				index.delete(oo, null);
+			}
+
 		if (add != null)
-			for (var oo : add)
-				index.insert(
-						Stream.concat(oo.stream().map(this::toDatabaseValue), Stream.of(toDatabaseId(id))).toArray(),
-						null);
+			for (var x : add) {
+				var oo = Stream.concat(x.stream().map(this::toDatabaseValue), Stream.of(toDatabaseId(id))).toArray();
+				index.insert(oo, null);
+			}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -630,7 +644,7 @@ public class DefaultCrud<ID extends Comparable<ID>, E extends Entity<ID>> implem
 		}).filter(Objects::nonNull).collect(LinkedHashMap::new, (x, y) -> x.put(y.getKey(), y.getValue()), Map::putAll);
 //		IO.println("DefaultCrud.populate, m=" + m);
 
-		var t = !m.isEmpty() ? JavaReflect.copy(m, input) : input;
+		var t = !m.isEmpty() ? copier.copy(m, input) : input;
 		LOGGER.log(Level.DEBUG, "t={0}", t);
 
 		return t;

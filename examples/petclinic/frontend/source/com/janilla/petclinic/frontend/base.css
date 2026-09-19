@@ -47,6 +47,8 @@
 	--pagination-active-bg: var(--spring-brown);
 	--pagination-active-border: var(--spring-green);
 	--table-border-color: var(--spring-brown);
+
+	color-scheme: light dark;
 }
 
 .table > thead > tr > th {

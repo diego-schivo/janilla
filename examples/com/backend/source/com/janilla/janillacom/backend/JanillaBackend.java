@@ -99,12 +99,12 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig, Janilla
 		return x -> {
 			var ba = (Backend<?, ?>) JanillaDomain.WEB_APP.get();
 //			IO.println("JanillaBackend.newHttpHandler, ba=" + ba);
-			var h = ba == this ? f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()))
+			var h = ba == this ? f.newHandler(Objects.requireNonNullElse(x.exception(), x.request()))
 					: ba.httpHandler();
 			if (h == null)
 				throw new NotFoundException(
 						x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
-			return ScopedValue.where(INSTANCE, ba).call(() -> h.handle(x));
+			return ScopedValue.where(SCOPED, ba).call(() -> h.handle(x));
 		};
 	}
 }

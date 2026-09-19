@@ -48,7 +48,7 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.ioc.Scope;
+import com.janilla.java.Scope;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.janillacom.backend.JanillaBackend;
 import com.janilla.janillacom.frontend.JanillaFrontend;

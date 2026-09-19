@@ -65,24 +65,28 @@ export default class AdminRelationshipField extends WebComponent {
 
     connectedCallback() {
         super.connectedCallback();
+
         this.addEventListener("change", this.handleChange);
         this.addEventListener("click", this.handleClick);
         this.addEventListener("close-drawer", this.handleCloseDrawer);
     }
 
     disconnectedCallback() {
-        super.disconnectedCallback();
         this.removeEventListener("change", this.handleChange);
         this.removeEventListener("click", this.handleClick);
         this.removeEventListener("close-drawer", this.handleCloseDrawer);
+
+        super.disconnectedCallback();
     }
 
     async updateDisplay() {
-        const p = this.dataset.path;
         const s = this.customState;
+        const p = this.dataset.path;
         s.field ??= this.closest("admin-edit").field(p);
+
         //s.complex ??= s.field.type === "Document";
         //const m = s.field.type === "List";
+
         const a = this.shadowClosest("admin-element");
         s.data ??= Array.isArray(s.field.data) ? s.field.data
             : s.field.data ? [s.field.data] : [];
@@ -148,10 +152,11 @@ export default class AdminRelationshipField extends WebComponent {
         if (el) {
             const s = this.customState;
             s.data = Object.values(s.options).flatMap(x => x)
-                .filter(x => `${x.$type}:${x.id}` === el.value || s.data.some(y => y.$type === x.$type && y.id === x.id));
+                .filter(x => `${x.$type}:${x.id}` === el.value
+                    || (s.field.type === "List" && s.data.some(y => y.$type === x.$type && y.id === x.id)));
             el.selectedIndex = 0;
             this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
-            this.requestDisplay();
+            this.requestDisplay(0);
         }
     }
 
@@ -173,7 +178,7 @@ export default class AdminRelationshipField extends WebComponent {
             }
             case "clear":
                 s.data = [];
-				this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
+                this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
                 this.requestDisplay();
                 break;
             case "edit": {
@@ -189,7 +194,7 @@ export default class AdminRelationshipField extends WebComponent {
             }
             case "remove":
                 s.data = s.data.filter(x => `${x.$type}:${x.id}` !== el.value);
-				this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
+                this.dispatchEvent(new CustomEvent("documentchanged", { bubbles: true }));
                 this.requestDisplay();
                 break;
         }

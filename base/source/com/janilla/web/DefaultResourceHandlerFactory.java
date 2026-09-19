@@ -55,8 +55,8 @@ public class DefaultResourceHandlerFactory extends AbstractHttpHandlerFactory im
 	}
 
 	@Override
-	public HttpHandler createHandler(Object object) {
-		var p = object instanceof HttpRequest r ? webAppPath(r) : null;
+	public HttpHandler newHandler(Object input) {
+		var p = input instanceof HttpRequest r ? webAppPath(r) : null;
 		var r = resourceMap != null && p != null ? resourceMap.get(p) : null;
 //		IO.println("p=" + p + ", r=" + r);
 		return r != null ? x -> {

@@ -23,7 +23,7 @@
  */
 import About from "about";
 import AddressBook from "address-book";
-import Admin from "cms/admin";
+import Admin from "admin";
 import AdminArray from "cms/admin-array";
 import AdminBar from "cms/admin-bar";
 import AdminCheckbox from "cms/admin-checkbox";
@@ -41,6 +41,7 @@ import AdminHidden from "cms/admin-hidden";
 import AdminJoin from "cms/admin-join";
 import AdminList from "cms/admin-list";
 import AdminLogin from "cms/admin-login";
+import AdminNavToggler from "cms/admin-nav-toggler";
 import AdminPageControls from "cms/admin-page-controls";
 import AdminPagination from "cms/admin-pagination";
 import AdminPassword from "cms/admin-password";
@@ -90,6 +91,7 @@ customElements.define("admin-hidden", AdminHidden);
 customElements.define("admin-join", AdminJoin);
 customElements.define("admin-list", AdminList);
 customElements.define("admin-login", AdminLogin);
+customElements.define("admin-nav-toggler", AdminNavToggler);
 customElements.define("admin-page-controls", AdminPageControls);
 customElements.define("admin-pagination", AdminPagination);
 customElements.define("admin-password", AdminPassword);

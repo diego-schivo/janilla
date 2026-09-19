@@ -1,0 +1,30 @@
+{
+	"api": {
+		"cors": {
+			"headers": "Content-Type",
+			"origin": "http://localhost:8080"
+		},
+		"url": "http://localhost:8081/api"
+	},
+	"basePath": "",
+	"database": {
+		"file": "~/janilla/sample-data/new-website.db"
+	},
+	"httpServer": {
+		"port": 8081
+	},
+	"jwt": {
+		"cookie": "new-website-token",
+		"key": "secretkey"
+	},
+	"liveDemo": true,
+	"mail": {
+		"host": "smtp.example.com",
+		"password": "password",
+		"port": 465,
+		"username": "foo.bar@example.com"
+	},
+	"upload": {
+		"directory": "~/janilla/sample-data/new-website-upload"
+	}
+}

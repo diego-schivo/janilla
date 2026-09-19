@@ -27,12 +27,12 @@ package com.janilla.blanktemplate.frontend;
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.web.DefaultExceptionHandlerFactory;
 import com.janilla.web.Error;
-import com.janilla.web.ExceptionHandlerFactory;
 import com.janilla.web.RenderableFactory;
 import com.janilla.web.WebAppConfig;
 
-public class BlankFrontendExceptionHandlerFactory extends ExceptionHandlerFactory {
+public class BlankFrontendExceptionHandlerFactory extends DefaultExceptionHandlerFactory {
 
 	protected final BlankIndexFactory<?> indexFactory;
 
@@ -53,7 +53,7 @@ public class BlankFrontendExceptionHandlerFactory extends ExceptionHandlerFactor
 		var i = indexFactory.newIndex();
 		i.app().state().put("error", error);
 		var r = renderableFactory.createRenderable(null, i);
-		var h = rootFactory.createHandler(r);
+		var h = rootFactory.newHandler(r);
 		return h.handle(exchange);
 	}
 }
