@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,27 +34,25 @@ export default class AccountNav extends WebComponent {
         return ["account-nav"];
     }
 
-    static get observedAttributes() {
-        return ["data-path"];
-    }
-
     async updateDisplay() {
+        const a = this.closest("app-element");
+        const ll = [{
+            href: "/account",
+            text: "Account settings"
+        }, {
+            href: "/account/addresses",
+            text: "Addresses"
+        }, {
+            href: "/orders",
+            text: "Orders"
+        }].map(x => ({
+            $template: "link",
+            ...x
+        }));
+		(ll.find(x => a.currentPath === x.href) ?? ll.find(x => a.currentPath.startsWith(x.href))).class = "active";
         this.appendChild(this.interpolateDom({
             $template: "",
-            links: [{
-                href: "/account",
-                text: "Account settings"
-            }, {
-                href: "/account/addresses",
-                text: "Addresses"
-            }, {
-                href: "/orders",
-                text: "Orders"
-            }].map(x => ({
-                $template: "link",
-                ...x,
-                class: (this.dataset.path + "/").startsWith(x.href + "/") ? "active" : null
-            }))
+            links: ll
         }));
     }
 }

@@ -1,0 +1,65 @@
+/*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
+import WebComponent from "base/web-component";
+
+export default class AdminPageControls extends WebComponent {
+
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
+    static get templateNames() {
+        return ["admin-page-controls"];
+    }
+
+    static get observedAttributes() {
+        return ["data-page", "data-total-pages", "data-limit", "data-total-docs"];
+    }
+
+    async updateDisplay() {
+        const p = parseInt(this.dataset.page);
+        const tp = parseInt(this.dataset.totalPages);
+        const l = parseInt(this.dataset.limit);
+        const td = parseInt(this.dataset.totalDocs);
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            pagination: tp !== 1 ? {
+                $template: "pagination",
+                page: p,
+                totalPages: this.dataset.totalPages
+            } : null,
+            info: {
+                $template: "info",
+                docStart: (p - 1) * l + 1,
+                docEnd: Math.min(p * l, td),
+                totalDocs: td
+            },
+            perPage: {
+                $template: "per-page",
+				limit: l
+            }
+        }));
+    }
+}

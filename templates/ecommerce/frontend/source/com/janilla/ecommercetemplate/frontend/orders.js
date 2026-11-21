@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,14 +37,11 @@ export default class Orders extends WebComponent {
     async updateDisplay() {
         const s = this.customState;
         const a = this.closest("app-element");
-        s.orders ??= await (await fetch(`${a.customEnv.apiUrl}/orders`)).json();
+        s.orders ??= (await (await fetch(`${a.customEnv.apiUrl}/orders`)).json()).elements;
 		a.updateSeo({ title: "Orders" });
         this.appendChild(this.interpolateDom({
             $template: "",
-			nav: {
-			    $template: "nav",
-			    path: a.currentPath
-			},
+			nav: { $template: "nav" },
             results: s.orders?.length ? {
                 $template: "results",
                 items: s.orders.map(x => ({

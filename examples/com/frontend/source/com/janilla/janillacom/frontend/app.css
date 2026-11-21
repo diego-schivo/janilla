@@ -21,4 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "site.css";
+@import "blank/app-base.css";
+@import "website/app-base.css";
+
+@import "website/archive.css";
+@import "website/banner.css";
+@import "website/call-to-action.css";
+@import "website/card.css";
+@import "website/content.css";
+@import "website/footer.css";
+@import "website/form-block.css";
+@import "website/header.css";
+@import "website/hero.css";
+@import "base/janilla-logo.css";
+@import "website/link.css";
+@import "base/lucide-icon.css";
+@import "website/media-block.css";
+@import "website/not-found.css";
+@import "website/page.css";
+@import "website/post.css";
+@import "website/posts.css";
+@import "website/search.css";
+@import "website/theme-selector.css";

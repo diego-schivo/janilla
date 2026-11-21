@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -46,16 +46,18 @@ public class CartApi extends AbstractCollectionApi<Long, Cart> {
 	private static final Logger LOGGER = System.getLogger(CartApi.class.getName());
 
 	public CartApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
-		super(Cart.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
+		super(Cart.class, drafts, persistence, "title", copier, Direction.FORWARD, 2);
 	}
 
 	@Handle(method = "POST")
-	public Cart create(Cart entity, UserHttpExchange<User<?>> exchange) {
-		var e = entity;
+	public Cart create(Cart cart, UserHttpExchange<User<?>> exchange) {
+		var c = cart;
+
 		var u = exchange.sessionUser();
 		if (u != null)
-			e = entity.withCustomer(u);
-		return super.create(e);
+			c = cart.withCustomer(u);
+
+		return super.create(c);
 	}
 
 	@Handle(method = "GET", path = "(\\d+)")

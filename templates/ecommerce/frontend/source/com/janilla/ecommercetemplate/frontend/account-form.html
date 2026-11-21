@@ -7,15 +7,17 @@
       <a href="#change-password">click here</a>
       to change your password.
     </p>
-    <label>
-      Email Address
-      <input type="email" name="email" value="${user.email}" />
-    </label>
-    <label>
-      Name
-      <input type="text" name="name" value="${user.name}" />
-    </label>
-    <button class="button primary" disabled>Update Account</button>
+    <p>
+      <label for="email">Email Address</label>
+      <input type="email" id="email" name="email" value="${user.email}" />
+    </p>
+    <p>
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" value="${user.name}" />
+    </p>
+    <p>
+      <button class="button primary" disabled>Update Account</button>
+    </p>
   </form>
 </template>
 

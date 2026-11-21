@@ -1,0 +1,34 @@
+{
+	"api": {
+		"cors": {
+			"headers": "Content-Type",
+			"origin": "http://localhost:8080"
+		},
+		"url": "http://localhost:8081/api"
+	},
+	"basePath": "",
+	"database": {
+		"file": "~/janilla/sample-data/new-ecommerce.db"
+	},
+	"httpServer": {
+		"port": 8081
+	},
+	"jwt": {
+		"cookie": "new-ecommerce-token",
+		"key": "secretkey"
+	},
+	"liveDemo": false,
+	"mail": {
+		"host": "smtp.example.com",
+		"password": "password",
+		"port": 465,
+		"username": "foo.bar@example.com"
+	},
+	"stripe": {
+		"secretKey": "sk_test_",
+		"webhooksSigningSecret": "whsec_"
+	},
+	"upload": {
+		"directory": "~/janilla/sample-data/new-ecommerce-upload"
+	}
+}

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,10 @@ export default class Header extends WebComponent {
         return ["header"];
     }
 
+    static get observedAttributes() {
+        return ["data-path"];
+    }
+
     async updateDisplay() {
         this.appendChild(this.interpolateDom({
             $template: "",
@@ -44,29 +48,34 @@ export default class Header extends WebComponent {
     contentData() {
         const a = this.closest("app-element");
 
+        const ii = [
+            {
+                ...a.baseInput,
+                $template: "logo"
+            },
+            ...(a.customState.header?.navItems ?? []).map(x => ({
+                ...a.baseInput,
+                $template: "link",
+                ...x,
+                document: x.type.name === "REFERENCE" && x.document
+                    ? `${x.document.$type}:${x.document.slug}`
+                    : null,
+                uri: x.type.name === "CUSTOM" ? x.uri : null,
+                target: x.newTab ? "_blank" : null
+            })),
+            {
+                ...a.baseInput,
+                $template: "search"
+            }
+        ];
+        const i = ii.find(x => a.currentPath === x.uri)
+            ?? ii.find(x => x.uri && a.currentPath.startsWith(x.uri + "/"));
+        if (i)
+            i.class = "active";
+
         return {
             $template: "navigation",
-            navItems: [
-                {
-                    ...a.baseInput,
-                    $template: "logo"
-                },
-                ...(a.customState.header?.navItems ?? []).map(x => ({
-                    ...a.baseInput,
-                    $template: "link",
-                    ...x,
-                    document: x.type.name === "REFERENCE" && x.document
-                        ? `${x.document.$type}:${x.document.slug}`
-                        : null,
-                    uri: x.type.name === "CUSTOM" ? x.uri : null,
-                    target: x.newTab ? "_blank" : null
-                    //class: this.dataset.path === x.uri || this.dataset.path.startsWith(x.uri + "/") ? "active" : null
-                })),
-                {
-                    ...a.baseInput,
-                    $template: "search"
-                }
-            ]
+            navItems: ii
         };
     }
 }

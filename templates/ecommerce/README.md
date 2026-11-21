@@ -1,6 +1,6 @@
 # Janilla Ecommerce Template
 
-This is a porting of [Payload Ecommerce Template](https://github.com/payloadcms/payload/tree/main/templates/ecommerce).
+This is a rewrite of [Payload Ecommerce Template](https://github.com/payloadcms/payload/tree/main/templates/ecommerce).
 
 ### View a live demo
 

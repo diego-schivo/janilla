@@ -1,6 +1,6 @@
 # Janilla Acme Dashboard
 
-This is a porting of [Next.js App Router Course](https://github.com/vercel/next-learn/tree/main/dashboard).
+This is a rewrite of [Next.js App Router Course](https://github.com/vercel/next-learn/tree/main/dashboard).
 
 ### View a live demo
 

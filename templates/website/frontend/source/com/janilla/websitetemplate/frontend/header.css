@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,37 +44,37 @@
     }
 
     > nav {
-      > ul {
+      ul {
         align-items: center;
         display: flex;
         gap: 0.75rem;
+      }
 
-        > li {
-          &.logo {
-            margin-right: auto;
+      li {
+        &.logo {
+          margin-right: auto;
+        }
 
-            janilla-logo {
-              color: oklch(0.985 0 0);
-              height: 2.125rem;
-            }
-          }
-
-          &.link {
-            a {
-              color: light-dark(rgb(2, 8, 23), rgb(248, 250, 252));
-              font-size: 0.875rem;
-              font-weight: 500;
-              line-height: 1.25rem;
-              text-decoration: none;
-            }
-          }
-
-          &.search {
-            lucide-icon {
-              width: 1.25rem;
-            }
+        &.link {
+          a {
+            color: light-dark(rgb(2, 8, 23), rgb(248, 250, 252));
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.25rem;
+            text-decoration: none;
           }
         }
+
+        &.search {
+          lucide-icon {
+            width: 1.25rem;
+          }
+        }
+      }
+
+      janilla-logo {
+        color: oklch(0.985 0 0);
+        height: 2.125rem;
       }
     }
   }

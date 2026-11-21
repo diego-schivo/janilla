@@ -1,6 +1,6 @@
 # Janilla Blank Template
 
-This is a porting of [Payload Blank Template](https://github.com/payloadcms/payload/tree/main/templates/blank).
+This is a rewrite of [Payload Blank Template](https://github.com/payloadcms/payload/tree/main/templates/blank).
 
 ### View a live demo
 

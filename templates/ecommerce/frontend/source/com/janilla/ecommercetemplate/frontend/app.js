@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 import WebsiteApp from "website/app";
 
 const ordersRegex = /^\/orders(\/.*)?$/;
-const productRegex = /^\/products(\/.*)$/;
+const productRegex = /^\/products\/.*$/;
 
 export default class App extends WebsiteApp {
 
@@ -41,7 +41,7 @@ export default class App extends WebsiteApp {
         const s = this.customState;
 
         s.user0 = this.currentUser;
-        const p = location.pathname;
+        const p = this.currentPath;
 
         if (s.user0)
             switch (p) {
@@ -77,7 +77,7 @@ export default class App extends WebsiteApp {
     contentData() {
         const s = this.customState;
         if (!s.notFound) {
-            const p = location.pathname;
+            const p = this.currentPath;
             const spp = new URLSearchParams(location.search);
             switch (p) {
                 case "/account":
@@ -129,15 +129,15 @@ export default class App extends WebsiteApp {
                         noOp: !s.user0
                     };
             }
-            {
-                const m = p.match(productRegex);
-                if (m)
-                    return {
-                        $template: "product",
-                        slug: m[1].substring(1),
-                        search: location.search
-                    };
-            }
+
+            if (p.match(productRegex))
+                return {
+                    $template: "product",
+                    //slug: m[1].substring(1),
+                    //search: location.search
+					time: new Date().getTime()
+                };
+
             {
                 const m = p.match(ordersRegex);
                 if (m)

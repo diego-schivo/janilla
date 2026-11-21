@@ -5,28 +5,30 @@
 	<version>${revision}</version>
 	<packaging>pom</packaging>
 	<modules>
-		<module>backend</module>
-		<module>base</module>
-		<module>cli</module>
 		<module>examples/acme-dashboard</module>
 		<module>examples/address-book</module>
 		<module>examples/com</module>
 		<module>examples/conduit</module>
 		<module>examples/new-blank</module>
+		<module>examples/new-ecommerce</module>
 		<module>examples/new-website</module>
 		<module>examples/petclinic</module>
 		<module>examples/todomvc</module>
-		<module>frontend</module>
-		<module>fullstack</module>
+		<module>libraries/backend</module>
+		<module>libraries/base</module>
+		<module>libraries/frontend</module>
+		<module>libraries/fullstack</module>
 		<module>templates/blank</module>
 		<module>templates/ecommerce</module>
 		<module>templates/website</module>
+		<module>tools/add-license-header</module>
+		<module>tools/create-example</module>
 	</modules>
 	<properties>
 		<maven.compiler.parameters>true</maven.compiler.parameters>
 		<maven.compiler.release>25</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<revision>13.0.1-SNAPSHOT</revision>
+		<revision>14.0.0-SNAPSHOT</revision>
 	</properties>
 	<build>
 		<sourceDirectory>./source</sourceDirectory>

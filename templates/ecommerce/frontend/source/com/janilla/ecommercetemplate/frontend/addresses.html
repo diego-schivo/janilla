@@ -3,7 +3,7 @@
     <!--${nav}-->
     <article>
       <h1>Addresses</h1>
-      <!--${results}-->
+      <!--${list}-->
       <button name="add" class="button secondary">Add a new address</button>
     </article>
   </div>
@@ -11,20 +11,20 @@
 <!--${dialog}-->
 
 <template id="nav">
-  <account-nav data-path="${path}"></account-nav>
+  <account-nav></account-nav>
 </template>
 
-<template id="no-results">
+<template id="empty-list">
   <p>No addresses found.</p>
 </template>
 
-<template id="results">
+<template id="list">
   <ul>
     <!--${items}-->
   </ul>
 </template>
 
-<template id="result">
+<template id="item">
   <li>
     <p>
       ${title.name} ${firstName} ${lastName}<br />

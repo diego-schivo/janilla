@@ -1,6 +1,6 @@
 <template id="site">
   <!--${before}-->
-  <div class="site-ui" data-color-scheme="${colorScheme}">
+  <div data-color-scheme="${colorScheme}">
     <!--${header}-->
     <!--${content}-->
     <!--${footer}-->
@@ -13,11 +13,11 @@
 </template>
 
 <template id="header">
-  <header-element></header-element>
+  <header-element data-path="${path}"></header-element>
 </template>
 
 <template id="post">
-  <post-element data-slug="${slug}"></post-element>
+  <post-element class="page" data-slug="${slug}"></post-element>
 </template>
 
 <template id="posts">

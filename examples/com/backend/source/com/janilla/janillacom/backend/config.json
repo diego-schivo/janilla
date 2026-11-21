@@ -59,7 +59,7 @@
 		"cookie": "com-token",
 		"key": "secretkey"
 	},
-	"liveDemo": true,
+	"liveDemo": false,
 	"mail": {
 		"host": "smtp.example.com",
 		"password": "password",

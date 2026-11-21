@@ -5,7 +5,7 @@
 <p>${description}</p>
 <form>
   <!--${variantSelector}-->
-  <button class="button secondary" disabled="${disabled}">Add To Cart</button>
+  <!--${addToCart}-->
 </form>
 
 <template id="price">
@@ -14,5 +14,9 @@
 </template>
 
 <template id="variant-selector">
-  <variant-selector data-options="${options}"></variant-selector>
+  <variant-selector data-time="${time}"></variant-selector>
+</template>
+
+<template id="button">
+  <button class="${class}" disabled="${disabled}">${text}</button>
 </template>

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,40 @@ export default class Product extends WebComponent {
     }
 
     static get observedAttributes() {
-        return ["data-slug", "data-search"];
+        return ["data-time"];
+    }
+
+    get activeOptions() {
+        const p = history.state.product;
+        if (!p.enableVariants)
+            return [];
+        const pp = new URLSearchParams(location.search);
+        return p.variantTypes.map(t => {
+            if (!pp.has(t.name))
+                return undefined;
+            const i = parseInt(pp.get(t.name));
+            return t.options.find(x => x.id === i);
+        }).filter(x => x);
+    }
+
+    get activeVariant() {
+        const p = history.state.product;
+        const pp = new URLSearchParams(location.search);
+        if (!p.enableVariants || !pp.has("variant"))
+            return undefined;
+
+        const i = parseInt(pp.get("variant"));
+        return p.variants.find(x => x.id === i);
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        addEventListener("optionselected", this.handleOptionSelected);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        removeEventListener("optionselected", this.handleOptionSelected);
     }
 
     async updateDisplay() {
@@ -48,9 +81,10 @@ export default class Product extends WebComponent {
                 product: a.serverState?.product
             }, "");
 
-        if (this.dataset.slug != hs.product?.slug) {
+        const s = a.currentPath.split("/")[2];
+        if (s !== hs.product?.slug) {
             const u = new URL(`${a.customEnv.apiUrl}/products`, location.href);
-            u.searchParams.append("slug", this.dataset.slug);
+            u.searchParams.append("slug", s);
             u.searchParams.append("depth", 3);
             const p = (await (await fetch(u)).json()).elements[0];
             history.replaceState(hs = {
@@ -60,13 +94,10 @@ export default class Product extends WebComponent {
         }
 
         a.updateSeo(hs.product.meta);
-        const pp = new URLSearchParams(this.dataset.search);
         this.appendChild(this.interpolateDom({
+            ...a.baseInput,
             $template: "",
-            ...(hs.product.enableVariants ? {
-                variantOptions: hs.product.variantTypes.map(x => pp.get(x.name)).filter(x => x),
-                variant: pp.get("variant")
-            } : {}),
+            time: new Date().getTime(),
             layout: hs.product.layout?.map((x, i) => ({
                 $template: x.$type.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-"),
                 path: `layout.${i}`
@@ -74,11 +105,38 @@ export default class Product extends WebComponent {
         }));
     }
 
-    data(path) {
+    findData(path) {
         return path.split(".").reduce((x, n) => Array.isArray(x)
             ? x[parseInt(n)]
             : typeof x === "object" && x !== null
                 ? x[n]
                 : null, history.state.product);
     }
+
+    findVariant(options) {
+        const p = history.state.product;
+        const ii = options.map(x => typeof x === "number" ? x : x.id);
+        return p.variants.find(v => v.options.every(o => ii.includes(o.id)));
+    }
+
+	handleOptionSelected = event => {
+	    const o = event.detail;
+
+	    const oo = this.activeOptions;
+	    const i = oo.findIndex(x => x.type.id === o.type.id);
+	    if (i !== -1)
+	        oo[i] = o;
+	    else
+	        oo.push(o);
+	    const v = this.findVariant(oo);
+
+	    const u = new URL(location.href);
+	    u.searchParams.set(o.type.name, o.id);
+	    if (v)
+	        u.searchParams.set("variant", v.id);
+	    else
+	        u.searchParams.delete("variant");
+
+	    this.closest("app-element").navigateTo(u)
+	}
 }

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,18 +34,22 @@ import AdminBar from "cms/admin-bar";
 import AdminCheckbox from "cms/admin-checkbox";
 import AdminCreateFirstUser from "admin-create-first-user";
 import AdminDashboard from "website/admin-dashboard";
+import AdminDateTime from "cms/admin-date-time";
 import AdminDocument from "cms/admin-document";
 import AdminDrawer from "cms/admin-drawer";
 import AdminDrawerLink from "cms/admin-drawer-link";
 import AdminEdit from "cms/admin-edit";
 import AdminFields from "admin-fields";
 import AdminFile from "cms/admin-file";
+import AdminForgotPassword from "cms/admin-forgot-password";
 import AdminHidden from "cms/admin-hidden";
 import AdminJoin from "cms/admin-join";
 import AdminList from "cms/admin-list";
 import AdminLogin from "admin-login";
+import AdminNavToggler from "cms/admin-nav-toggler";
 import AdminPageControls from "cms/admin-page-controls";
 import AdminPagination from "cms/admin-pagination";
+import AdminPassword from "cms/admin-password";
 import AdminPerPage from "cms/admin-per-page";
 import AdminRadioGroup from "cms/admin-radio-group";
 import AdminRelationship from "cms/admin-relationship";
@@ -113,6 +117,7 @@ customElements.define("admin-bar", AdminBar);
 customElements.define("admin-checkbox", AdminCheckbox);
 customElements.define("admin-create-first-user", AdminCreateFirstUser);
 customElements.define("admin-dashboard", AdminDashboard);
+customElements.define("admin-date-time", AdminDateTime);
 customElements.define("admin-document", AdminDocument);
 customElements.define("admin-drawer", AdminDrawer);
 customElements.define("admin-drawer-link", AdminDrawerLink);
@@ -120,12 +125,15 @@ customElements.define("admin-edit", AdminEdit);
 customElements.define("admin-element", Admin);
 customElements.define("admin-fields", AdminFields);
 customElements.define("admin-file", AdminFile);
+customElements.define("admin-forgot-password", AdminForgotPassword);
 customElements.define("admin-hidden", AdminHidden);
 customElements.define("admin-join", AdminJoin);
 customElements.define("admin-list", AdminList);
 customElements.define("admin-login", AdminLogin);
+customElements.define("admin-nav-toggler", AdminNavToggler);
 customElements.define("admin-page-controls", AdminPageControls);
 customElements.define("admin-pagination", AdminPagination);
+customElements.define("admin-password", AdminPassword);
 customElements.define("admin-per-page", AdminPerPage);
 customElements.define("admin-radio-group", AdminRadioGroup);
 customElements.define("admin-relationship", AdminRelationship);

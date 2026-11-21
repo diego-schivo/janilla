@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ export default class Hero extends WebComponent {
 
     async updateDisplay() {
         const a = this.closest("app-element");
-        const d = this.closest("[data-slug]").data(this.dataset.path);
+        const d = this.closest(".page").findData(this.dataset.path);
 
         this.appendChild(this.interpolateDom({
             $template: "",

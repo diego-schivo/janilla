@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -54,17 +54,14 @@ export default class Addresses extends WebComponent {
 
         this.appendChild(this.interpolateDom({
             $template: "",
-            nav: {
-                $template: "nav",
-                path: a.currentPath
-            },
-            results: a.currentUser.addresses.length ? {
-                $template: "results",
+            nav: { $template: "nav" },
+            list: a.currentUser.addresses.length ? {
+                $template: "list",
                 items: a.currentUser.addresses.map(x => ({
-                    $template: "result",
+                    $template: "item",
                     ...x
-                }))
-            } : { $template: "no-results" },
+                })).reverse()
+            } : { $template: "empty-list" },
             dialog: s.dialog ? {
                 $template: "dialog",
                 ...s.dialog

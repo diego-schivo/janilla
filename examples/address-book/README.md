@@ -1,6 +1,6 @@
 # Janilla Address Book
 
-This is a porting of [React Router Address Book Tutorial](https://github.com/remix-run/react-router/tree/main/tutorials/address-book).
+This is a rewrite of [React Router Address Book Tutorial](https://github.com/remix-run/react-router/tree/main/tutorials/address-book).
 
 ### View a live demo
 

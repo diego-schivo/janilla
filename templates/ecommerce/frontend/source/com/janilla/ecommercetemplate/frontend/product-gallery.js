@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ export default class ProductGallery extends WebComponent {
     }
 
     static get observedAttributes() {
-        return ["data-variant-options"];
+        return ["data-time"];
     }
 
     connectedCallback() {
@@ -52,8 +52,9 @@ export default class ProductGallery extends WebComponent {
         const s = this.customState;
         const p = history.state.product;
         s.index ??= p.enableVariants ? (() => {
-            const oo = this.dataset.variantOptions.split(",");
-            const i = p.gallery.findIndex(x => oo.includes(x.variantOption.id.toString()));
+			const pe = this.closest("product-element");
+			const oo = pe.activeOptions.map(x => x.id);
+            const i = p.gallery.findIndex(x => oo.includes(x.variantOption.id));
             return i !== -1 ? i : 0;
         })() : 0;
         this.appendChild(this.interpolateDom({

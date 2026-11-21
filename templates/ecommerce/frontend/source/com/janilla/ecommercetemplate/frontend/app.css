@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,5 +22,58 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "admin.css";
-@import "site.css";
+@import "blank/app-base.css";
+@import "website/app-base.css";
+@import "app-base.css";
+
+@import "account.css";
+@import "account-form.css";
+@import "account-nav.css";
+@import "address-edit.css";
+@import "address-item.css";
+@import "addresses.css";
+@import "website/call-to-action.css";
+@import "call-to-action.css";
+@import "card.css";
+@import "cart-modal.css";
+@import "checkout.css";
+@import "checkout-addresses.css";
+@import "confirm-order.css";
+@import "website/content.css";
+@import "content.css";
+@import "create-account.css";
+@import "create-address-modal.css";
+@import "find-order.css";
+@import "website/footer.css";
+@import "footer.css";
+@import "website/header.css";
+@import "header.css";
+@import "website/hero.css";
+@import "hero.css";
+@import "base/janilla-logo.css";
+@import "loading-spinner.css";
+@import "login.css";
+@import "logout.css";
+@import "base/lucide-icon.css";
+@import "website/media-block.css";
+@import "media-block.css";
+@import "message.css";
+@import "mobile-menu.css";
+@import "website/not-found.css";
+@import "not-found.css";
+@import "order.css";
+@import "order-item.css";
+@import "orders.css";
+@import "website/page.css";
+@import "page.css";
+@import "payment.css";
+@import "price.css";
+@import "product.css";
+@import "product-description.css";
+@import "product-gallery.css";
+@import "product-item.css";
+@import "select.css";
+@import "shop.css";
+@import "variant-selector.css";
+@import "website/theme-selector.css";
+@import "base/toaster.css";

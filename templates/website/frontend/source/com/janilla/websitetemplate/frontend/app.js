@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -81,7 +81,10 @@ export default class App extends BlankApp {
             ...super.siteData(),
             colorScheme: this.colorScheme ?? "light dark",
             before: this.currentUser?.roles?.some(x => x.name === "ADMIN") ? { $template: "admin-bar" } : null,
-            header: { $template: "header" },
+            header: {
+				$template: "header",
+				path: this.currentPath
+			},
             footer: { $template: "footer" }
         };
     }

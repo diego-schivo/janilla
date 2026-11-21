@@ -1,6 +1,6 @@
 # Janilla Website Template
 
-This is a porting of [Payload Website Template](https://github.com/payloadcms/payload/tree/main/templates/website).
+This is a rewrite of [Payload Website Template](https://github.com/payloadcms/payload/tree/main/templates/website).
 
 ### View a live demo
 

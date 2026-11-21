@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,6 @@ product-item {
   display: flex;
 
   header {
-    /*all: unset;*/
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -40,11 +39,10 @@ product-item {
   }
 
   section {
-    /*all: unset;*/
     display: flex;
 
     &:has(img) {
-      /*flex-basis: 40%;*/
+      flex: 0 0 5rem;
       height: 5rem;
       margin-right: 1rem;
       order: -1;
@@ -77,19 +75,16 @@ product-item {
   }
 
   dl {
-    /*all: unset;*/
     display: block;
     text-align: right;
   }
 
   dt {
-    /*all: unset;*/
     font-size: 1.125rem;
     font-weight: 500;
   }
 
   dd {
-    /*all: unset;*/
     color: light-dark(rgb(2, 8, 23), rgb(248, 250, 252));
     font-family: GeistMono;
     font-size: 0.875rem;

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -46,7 +46,7 @@ export default class FormBlock extends WebComponent {
 
     async updateDisplay() {
         const s = this.customState;
-        s.data = this.closest("[data-slug]").data(this.dataset.path);
+        s.data = this.closest(".page").findData(this.dataset.path);
         if (s.submission && s.data.form?.confirmationType?.name === "REDIRECT")
             this.closest("app-element").navigateTo(new URL(s.data.form.redirect, location.href));
         else

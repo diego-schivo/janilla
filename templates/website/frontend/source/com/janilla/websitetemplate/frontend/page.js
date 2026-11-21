@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,26 @@ export default class Page extends WebComponent {
         return ["data-slug"];
     }
 
+    get emptyHomeLayout() {
+        const a = this.closest("app-element");
+        return [
+            {
+                $type: "Content",
+                columns: [
+                    {
+                        $type: "Column",
+                        size: { name: "FULL" },
+                        richText: `<h1>${a.customState.title}</h1>
+<p>
+  <a href="${a.customEnv.basePath}/admin">Visit the admin dashboard</a>
+  to make your account and seed content for your website.
+</p>`
+                    }
+                ]
+            }
+        ];
+    }
+
     async updateDisplay() {
         let hs = history.state;
         const a = this.closest("app-element");
@@ -65,22 +85,7 @@ export default class Page extends WebComponent {
                     ...hs,
                     page: {
                         ...hs.page,
-                        layout: [
-                            {
-                                $type: "Content",
-                                columns: [
-                                    {
-                                        $type: "Column",
-                                        size: { name: "FULL" },
-                                        richText: `<h1>${a.customState.title}</h1>
-													<p>
-													  <a href="${a.customEnv.basePath}/admin">Visit the admin dashboard</a>
-													  to make your account and seed content for your website.
-													</p>`
-                                    }
-                                ]
-                            }
-                        ]
+                        layout: this.emptyHomeLayout
                     }
                 }, "");
             a.updateSeo(hs.page.meta);
@@ -100,7 +105,7 @@ export default class Page extends WebComponent {
             a.notFound();
     }
 
-    data(path) {
+    findData(path) {
         return path.split(".").reduce((x, n) => Array.isArray(x)
             ? x[parseInt(n)]
             : typeof x === "object" && x !== null

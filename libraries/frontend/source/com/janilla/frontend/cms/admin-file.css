@@ -1,0 +1,70 @@
+/*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
+div:has(> admin-file) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+:where(admin-file) {
+  background: var(--background-2);
+  border: 1px solid var(--border-1);
+  border-radius: 0.1875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  outline: none;
+  padding: 1rem;
+  position: relative;
+
+  /*
+  .dropzone {
+  }
+  */
+
+  label {
+    align-self: start;
+    background: var(--background-4);
+    border: 1px solid var(--border-1);
+    border-radius: 0.25rem;
+    padding: 0.25rem;
+  }
+
+  .thumbnail {
+    height: auto;
+    max-height: 8.75rem;
+    width: 50%;
+  }
+
+  button[name="remove"] {
+    background: var(--background-2);
+    border: 1px solid var(--border-1);
+    border-radius: 100%;
+    padding: 0.15rem;
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+  }
+}

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ export default class ProductDescription extends WebComponent {
     }
 
     static get observedAttributes() {
-        return ["data-variant"];
+        return ["data-time"];
     }
 
     connectedCallback() {
@@ -53,7 +53,7 @@ export default class ProductDescription extends WebComponent {
         const aa = p.enableVariants ? p.variants.map(x => x.priceInUsd) : [p.priceInUsd];
         const la = aa ? Math.min(...aa) : null;
         const ha = aa ? Math.max(...aa) : null;
-        const pp = new URLSearchParams(this.closest("product-element").dataset.search);
+        const pe = this.closest("product-element");
         this.appendChild(this.interpolateDom({
             $template: "",
             ...p,
@@ -66,9 +66,14 @@ export default class ProductDescription extends WebComponent {
             },
             variantSelector: p.enableVariants ? {
                 $template: "variant-selector",
-                options: p.variantTypes.map(x => pp.get(x.name)).filter(x => x)
+                time: new Date().getTime()
             } : null,
-            disabled: !this.dataset.variant
+            addToCart: {
+                $template: "button",
+                class: "button secondary",
+                disabled: !pe.activeVariant,
+                text: "Add To Cart"
+            }
         }));
     }
 
@@ -104,9 +109,9 @@ export default class ProductDescription extends WebComponent {
                 $type: "Cart",
                 items: ii,
                 currency: {
-					$type: "Currency",
-					name: "USD"
-				}
+                    $type: "Currency",
+                    name: "USD"
+                }
             })
         });
         const j = await r.json();
