@@ -11,41 +11,55 @@
 		"acmedashboard": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/acmedashboard",
+			"liveDemo": true
 		},
 		"addressbook": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/addressbook",
+			"liveDemo": true
 		},
 		"blanktemplate": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/blanktemplate",
+			"liveDemo": true
 		},
 		"conduit": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/conduit",
+			"liveDemo": true
 		},
 		"ecommercetemplate": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/ecommercetemplate",
+			"liveDemo": true
 		},
 		"petclinic": {
 			"api": {
 				"url": "http://localhost:8081/petclinic/api"
 			},
-			"basePath": "/petclinic"
+			"basePath": "/petclinic",
+			"liveDemo": true
 		},
 		"todomvc": {
-			"basePath": "/todomvc"
+			"basePath": "/todomvc",
+			"liveDemo": true
 		},
 		"websitetemplate": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/websitetemplate",
+			"liveDemo": true
 		}
 	},
 	"basePath": "",
@@ -59,7 +73,7 @@
 		"cookie": "com-token",
 		"key": "secretkey"
 	},
-	"liveDemo": false,
+	"liveDemo": true,
 	"mail": {
 		"host": "smtp.example.com",
 		"password": "password",
