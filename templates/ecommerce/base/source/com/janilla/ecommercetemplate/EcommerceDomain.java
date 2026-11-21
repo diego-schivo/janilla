@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,16 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.janilla.cms.User;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
+import com.janilla.java.Java;
 import com.janilla.websitetemplate.WebsiteDomain;
 
 public class EcommerceDomain extends WebsiteDomain {
+
+	public EcommerceDomain(Converter converter, Copier copier) {
+		super(converter, copier);
+	}
 
 	public Stream<Country> countries() {
 		return Arrays.stream(CountryImpl.class.getEnumConstants());
@@ -63,10 +70,6 @@ public class EcommerceDomain extends WebsiteDomain {
 				cart, amount, currency, stripeCustomer, stripePaymentIntent, null, null, null, null);
 	}
 
-	public TransactionStatus transactionStatus(String name) {
-		return TransactionStatusImpl.valueOf(name);
-	}
-
 	public OrderStatus orderStatus(String name) {
 		return OrderStatusImpl.valueOf(name);
 	}
@@ -77,5 +80,23 @@ public class EcommerceDomain extends WebsiteDomain {
 
 	public Stream<Title> titles() {
 		return Arrays.stream(TitleImpl.class.getEnumConstants());
+	}
+
+	public TransactionStatus transactionStatus(String name) {
+		return TransactionStatusImpl.valueOf(name);
+	}
+
+	@Override
+	public int userDepth() {
+		return 1;
+	}
+
+	public <ID extends Comparable<ID>> EcommerceUser<ID> withCarts(EcommerceUser<ID> user, List<Cart> carts) {
+		return copier.copy(Java.hashMap("carts", carts), user);
+	}
+
+	public <ID extends Comparable<ID>> EcommerceUser<ID> withAddresses(EcommerceUser<ID> user,
+			List<Address> addresses) {
+		return copier.copy(Java.hashMap("addresses", addresses), user);
 	}
 }

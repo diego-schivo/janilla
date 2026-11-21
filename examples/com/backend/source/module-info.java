@@ -27,11 +27,13 @@ module com.janilla.janillacom.backend {
 
 	opens com.janilla.janillacom.backend;
 
-	requires transitive com.janilla.ecommercetemplate.backend;
+	requires transitive com.janilla.websitetemplate.backend;
 	requires transitive com.janilla.janillacom.base;
 
 	requires com.janilla.acmedashboard.backend;
 	requires com.janilla.addressbook.backend;
 	requires com.janilla.conduit.backend;
+	requires com.janilla.ecommercetemplate.backend;
 	requires com.janilla.petclinic.backend;
+	requires com.janilla.todomvc.backend;
 }

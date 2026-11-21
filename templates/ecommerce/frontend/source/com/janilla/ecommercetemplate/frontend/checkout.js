@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -65,7 +65,7 @@ export default class Checkout extends WebComponent {
         }
         s.billingAddressSameAsShipping ??= true;
         const c = localStorage.getItem("cart");
-        const u = new URL(`${a.dataset.apiUrl}/carts/${c}`, location.href);
+        const u = new URL(`${a.customEnv.apiUrl}/carts/${c}`, location.href);
         if (!a.currentUser)
             u.searchParams.append("secret", localStorage.getItem("cart_secret"));
         s.cart ??= await (await fetch(u)).json();
@@ -167,7 +167,7 @@ export default class Checkout extends WebComponent {
                 const a = this.closest("app-element");
                 const [ba, sa] = [s.billingAddress, s.billingAddressSameAsShipping ? s.billingAddress : s.shippingAddress]
                     .map(x => typeof x === "object" ? x : a.currentUser.addresses.find(y => y.id === x));
-                const r = await fetch(`${a.dataset.apiUrl}/payments/stripe/initiate`, {
+                const r = await fetch(`${a.customEnv.apiUrl}/payments/stripe/initiate`, {
                     method: "POST",
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -58,6 +58,11 @@ export default class Login extends WebComponent {
                 class: "warning",
                 text: this.dataset.warning
             } : null,
+			error: this.customState.error ? {
+			    $template: "message",
+			    class: "error",
+			    text: this.customState.error
+			} : null,
         }));
     }
 
@@ -66,15 +71,18 @@ export default class Login extends WebComponent {
         event.preventDefault();
 
         const a = this.closest("app-element");
-        const r = await fetch(`${a.dataset.apiUrl}/users/login`, {
+        const r = await fetch(`${a.customEnv.apiUrl}/users/login`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(Object.fromEntries(new FormData(f)))
         });
+        const j = await r.json();
         if (r.ok) {
-            const j = await r.json();
             a.currentUser = j;
-            a.navigate(new URL("/account", location.href));
-        }
+            a.navigateTo(new URL("/account", location.href));
+        } else {
+			this.customState.error = j;
+			this.requestDisplay();
+		}
     }
 }

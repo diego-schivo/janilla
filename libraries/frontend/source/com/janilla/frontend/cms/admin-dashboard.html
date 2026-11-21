@@ -1,0 +1,27 @@
+<ul class="groups">
+  <!--${groups}-->
+</ul>
+
+<template id="group">
+  <li>
+    <h2>${title}</h2>
+    <ul class="cards">
+      <!--${cards}-->
+    </ul>
+  </li>
+</template>
+
+<template id="card">
+  <li>
+    <a href="${basePath}${uri}">
+      ${text}
+      <!--${button}-->
+    </a>
+  </li>
+</template>
+
+<template id="button">
+  <button type="button" name="create" class="button" data-type="${type}">
+    <lucide-icon data-name="plus"></lucide-icon>
+  </button>
+</template>

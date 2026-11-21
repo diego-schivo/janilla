@@ -1,6 +1,6 @@
 {
 	"api": {
-		"url": "/api"
+		"url": "http://localhost:8080/api"
 	},
 	"database": {
 		"file": "~/janilla/sample-data/ecommerce-template-test.db"

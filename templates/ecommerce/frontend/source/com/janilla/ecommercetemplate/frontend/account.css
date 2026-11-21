@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,11 +28,19 @@
   main {
     gap: 3rem;
 
+    /*
     @media (max-width: 1440px) {
       padding: 0 2rem;
     }
+    */
 
     > div {
+      @media (max-width: 1440px) {
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+      }
+
       @media (min-width: 1441px) {
         display: grid;
         gap: 2rem;
@@ -49,10 +57,12 @@
     }
   }
 
-  .article {
-    background: light-dark(rgb(248, 250, 252), rgb(15, 15, 15));
+  article {
+    background: light-dark(rgb(248, 250, 252), lab(7.78201 -0.0000149012 0));
     border: 1px solid light-dark(rgb(228, 228, 231), rgba(255, 255, 255, 0.1));
     border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
     /*margin: 0 2rem;*/
     padding: 2rem;
@@ -106,6 +116,7 @@
 account-element {
   h2 {
     font-size: 1.875rem;
+    font-weight: 500;
     line-height: 1.2;
   }
 }

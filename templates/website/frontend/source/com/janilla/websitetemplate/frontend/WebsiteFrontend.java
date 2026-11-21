@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,16 +24,27 @@
  */
 package com.janilla.websitetemplate.frontend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.frontend.BlankFrontend;
+import com.janilla.blanktemplate.frontend.DownloadResourcesProvider;
 import com.janilla.http.HttpClient;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
+import com.janilla.websitetemplate.WebsiteDomain;
 
-public class WebsiteFrontend<C extends WebsiteFrontendConfig> extends BlankFrontend<C> {
+public class WebsiteFrontend<C extends WebsiteFrontendConfig, D extends WebsiteDomain> extends BlankFrontend<C, D> {
+
+	protected static final String GEIST_FONT_DOWNLOAD = "https://github.com/vercel/geist-font/releases/download/1.8.0/geist-font-1.8.0.zip";
+
+	private static final Logger LOGGER = System.getLogger(WebsiteFrontend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(BlankFrontend.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate"),
@@ -41,23 +52,26 @@ public class WebsiteFrontend<C extends WebsiteFrontendConfig> extends BlankFront
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { WebsiteFrontend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		serve(a[0]);
 	}
 
-	public WebsiteFrontend(C config, DiFactory diFactory, HttpClient httpClient) {
-		super(config, diFactory, httpClient);
+	public WebsiteFrontend(C config, DiFactory diFactory, Consumer<Object> context, HttpClient httpClient) {
+		super(config, diFactory, context, httpClient);
 	}
 
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.frontend.cms", "/cms");
-		resourcePrefixes.put("com.janilla.blanktemplate.frontend", "/blank");
-		resourcePrefixes.put("com.janilla.websitetemplate.frontend", "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.blanktemplate.frontend"), "/blank");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.websitetemplate.frontend"), "");
+		resourcesProviders.put(diFactory.newInstance(DownloadResourcesProvider.class, Map.of("url", GEIST_FONT_DOWNLOAD)),
+				"");
 	}
 }

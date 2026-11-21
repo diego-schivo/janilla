@@ -8,11 +8,35 @@
 		"directory": "~/janilla/download"
 	},
 	"frontends": {
+		"acmedashboard": {
+			"api": {
+				"url": "http://localhost:8081/acmedashboard/api"
+			},
+			"basePath": "/acmedashboard"
+		},
 		"addressbook": {
 			"api": {
 				"url": "http://localhost:8081/addressbook/api"
 			},
 			"basePath": "/addressbook"
+		},
+		"blanktemplate": {
+			"api": {
+				"url": "http://localhost:8081/blanktemplate/api"
+			},
+			"basePath": "/blanktemplate"
+		},
+		"conduit": {
+			"api": {
+				"url": "http://localhost:8081/conduit/api"
+			},
+			"basePath": "/conduit"
+		},
+		"ecommercetemplate": {
+			"api": {
+				"url": "http://localhost:8081/ecommercetemplate/api"
+			},
+			"basePath": "/ecommercetemplate"
 		},
 		"petclinic": {
 			"api": {
@@ -21,16 +45,21 @@
 			"basePath": "/petclinic"
 		},
 		"todomvc": {
+			"api": {
+				"url": "http://localhost:8081/todomvc/api"
+			},
 			"basePath": "/todomvc"
+		},
+		"websitetemplate": {
+			"api": {
+				"url": "http://localhost:8081/websitetemplate/api"
+			},
+			"basePath": "/websitetemplate"
 		}
 	},
 	"httpServer": {
 		"port": 8080
 	},
-	"jwt": {
-		"cookie": "janilla-token",
-		"key": "secretkey"
-	},
-	"key": "janilla",
-	"title": "Janilla"
+	"key": "com",
+	"title": "Janilla.com"
 }

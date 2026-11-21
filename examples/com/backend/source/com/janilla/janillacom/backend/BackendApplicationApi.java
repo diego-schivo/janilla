@@ -30,19 +30,21 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
 import com.janilla.janillacom.Application;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/applications")
-public class BackendApplicationApi extends AbstractCollectionApi<String, Application> {// implements ApplicationApi {
+public class BackendApplicationApi extends AbstractCollectionApi<String, Application> {
 
-	public BackendApplicationApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Application.class, drafts, persistence, "title");
+	public BackendApplicationApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Application.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 //	@Override
 	@Handle(method = "GET")
-	public ListPortion<Application> read(String id, String search, Boolean reverse, Long skip, Long limit,
+	public ListPortion<Application> read(String id, String search, Direction direction, Long skip, Long limit,
 			Integer depth) {
 		if (id != null) {
 //			var ll = crud().filter("slug", new Object[] { slug });
@@ -50,6 +52,6 @@ public class BackendApplicationApi extends AbstractCollectionApi<String, Applica
 			var a = crud().read(id, depth != null ? depth : 0);
 			return a != null ? new ListPortion<>(List.of(a), 1) : ListPortion.empty();
 		}
-		return read(search, reverse, skip, limit, depth);
+		return read(search, direction, skip, limit, depth);
 	}
 }

@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -66,7 +68,7 @@ export default class FavoriteButton extends WebComponent {
 
 	handleClick = async event => {
 		event.stopPropagation();
-		const { dataset: { apiUrl }, customState: { apiHeaders, user } } = this.closest("app-element");
+		const { apiHeaders, customEnv: { apiUrl }, customState: { user } } = this.closest("app-element");
 		if (user) {
 			const r = await fetch(`${apiUrl}/articles/${this.dataset.slug}/favorite`, {
 				method: this.dataset.active != null ? "DELETE" : "POST",

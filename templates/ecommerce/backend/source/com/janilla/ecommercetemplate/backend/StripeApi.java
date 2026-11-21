@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ package com.janilla.ecommercetemplate.backend;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.channels.Channels;
@@ -50,6 +51,7 @@ import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.Order;
 import com.janilla.ecommercetemplate.Transaction;
 import com.janilla.http.DefaultHttpClient;
+import com.janilla.http.DefaultHttpRequest;
 import com.janilla.http.HttpClient;
 import com.janilla.http.HttpRequest;
 import com.janilla.java.DefaultConverter;
@@ -81,7 +83,7 @@ public class StripeApi extends PaymentApi {
 		}
 		C c;
 		{
-			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/customers?"
+			var rq = new DefaultHttpRequest("GET", URI.create("https://api.stripe.com/v1/customers?"
 					+ new UriQueryBuilder().append("email", user != null ? user.email() : guestEmail)));
 			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var r = new DefaultHttpClient().send(rq,
@@ -91,7 +93,7 @@ public class StripeApi extends PaymentApi {
 		}
 
 		if (c == null) {
-			var rq = new HttpRequest("POST", URI.create("https://api.stripe.com/v1/customers"));
+			var rq = new DefaultHttpRequest("POST", URI.create("https://api.stripe.com/v1/customers"));
 			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var bb = new UriQueryBuilder().append("email", user != null ? user.email() : guestEmail).toString()
 					.getBytes();
@@ -107,7 +109,7 @@ public class StripeApi extends PaymentApi {
 		}
 		PI pi;
 		{
-			var rq = new HttpRequest("POST", URI.create("https://api.stripe.com/v1/payment_intents"));
+			var rq = new DefaultHttpRequest("POST", URI.create("https://api.stripe.com/v1/payment_intents"));
 			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			var q = new UriQueryBuilder()
 					.append("amount", String.valueOf(cart.subtotal().multiply(BigDecimal.valueOf(100)).longValue()))
@@ -146,7 +148,7 @@ public class StripeApi extends PaymentApi {
 		}
 		PI pi;
 		{
-			var rq = new HttpRequest("GET", URI.create("https://api.stripe.com/v1/payment_intents/" + paymentIntent));
+			var rq = new DefaultHttpRequest("GET", URI.create("https://api.stripe.com/v1/payment_intents/" + paymentIntent));
 			rq.setBasicAuthorization(config.stripe().secretKey() + ":");
 			pi = new DefaultHttpClient().send(rq,
 					HttpClient.JSON.andThen(x -> new DefaultConverter().convert(x, PI.class)));
@@ -155,7 +157,7 @@ public class StripeApi extends PaymentApi {
 
 		@SuppressWarnings("unchecked")
 		var cii = (List<CartItem>) new DefaultConverter().convert(Json.parse(pi.metadata().get("cartItems")),
-				new SimpleParameterizedType(List.class, List.of(CartItem.class)));
+				new SimpleParameterizedType(List.class, new Type[] { CartItem.class }));
 		var sa = (AddressData) new DefaultConverter().convert(Json.parse(pi.metadata().get("shippingAddress")),
 				AddressData.class);
 		var o = persistence.crud(Order.class)

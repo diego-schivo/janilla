@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ import com.janilla.ecommercetemplate.Cart;
 import com.janilla.ecommercetemplate.Product;
 import com.janilla.ecommercetemplate.VariantType;
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 import com.janilla.java.Property;
 import com.janilla.persistence.Entity;
 import com.janilla.websitetemplate.backend.WebsitePersistence;
@@ -46,13 +46,13 @@ import com.janilla.websitetemplate.backend.WebsitePersistence;
 public class EcommercePersistence<C extends EcommerceBackendConfig> extends WebsitePersistence<C> {
 
 	public EcommercePersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables,
-			Converter converter, DiFactory diFactory, C config) {
-		super(database, storables, converter, diFactory, config);
+			DiFactory diFactory, C config, Class<?> seedDataClass, Copier copier) {
+		super(database, storables, diFactory, config, seedDataClass, copier);
 	}
 
 	@Override
-	protected <E extends Entity<?>> Crud<?, E> newCrud(Class<E> type) {
-		var c = super.newCrud(type);
+	protected <E extends Entity<?>> Crud<?, E> newCrud(String name, Class<E> type) {
+		var c = super.newCrud(name, type);
 		if (c != null) {
 			Class<? extends CrudObserver<?>> t;
 			if (type.equals(Cart.class))
@@ -75,20 +75,18 @@ public class EcommercePersistence<C extends EcommerceBackendConfig> extends Webs
 	}
 
 	@Override
-	protected Class<?> seedDataClass() {
-		return SeedData.class;
-	}
+	protected List<Property> seedProperties() {
+		var pp = super.seedProperties();
 
-	@Override
-	protected List<Property> properties() {
-		var pp = super.properties();
 		var ii = Stream.of("products", "variants", "carts").mapToInt(
-				x -> IntStream.range(0, pp.size()).filter(y -> pp.get(y).name().equals(x)).findFirst().orElseThrow())
+				n -> IntStream.range(0, pp.size()).filter(i -> pp.get(i).name().equals(n)).findFirst().orElseThrow())
 				.toArray();
+		var c = Arrays.stream(ii).mapToObj(pp::get).toList();
+		pp.removeAll(c);
+
 		var i = Arrays.stream(ii).min().getAsInt();
-		var pp2 = Arrays.stream(ii).mapToObj(pp::get).toList();
-		pp.removeAll(pp2);
-		pp.addAll(i, pp2);
+		pp.addAll(i, c);
+
 		return pp;
 	}
 }

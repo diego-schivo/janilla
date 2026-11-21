@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -58,9 +60,9 @@ export default class Editor extends WebComponent {
 			}));
 		} else {
 			if (this.dataset.slug) {
-				const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+				const { customEnv: { apiUrl }, apiHeaders } = this.closest("app-element");
 				const { article } = await (await fetch(`${apiUrl}/articles/${this.dataset.slug}`, { headers: apiHeaders })).json();
-				hs.article = article;
+				hs.article = article ?? {};
 			} else
 				hs.article = {};
 			history.replaceState(hs, "");
@@ -83,7 +85,7 @@ export default class Editor extends WebComponent {
 			}
 			return x;
 		}, {});
-		const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+		const { customEnv: { apiUrl }, apiHeaders } = this.closest("app-element");
 		const r = await fetch(new URL([apiUrl, "articles", this.dataset.slug].filter(x => x).join("/"), location.href), {
 			method: this.dataset.slug ? "PUT" : "POST",
 			headers: {

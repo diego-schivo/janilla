@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,18 +35,23 @@ export default class Hero extends WebComponent {
     }
 
     async updateDisplay() {
-        const d = this.closest("[data-slug]").data(this.dataset.path);
+        const a = this.closest("app-element");
+        const d = this.closest(".page").findData(this.dataset.path);
+
         this.appendChild(this.interpolateDom({
             $template: "",
-            backgroundImage: d.media ? `url("${d.media.uri}")` : "none",
-            ...d,
+            background: d.media ? `background-image: url("${d.media.uri}")` : null,
+			richText: d.richText, //.replace(/\${href\('(.*?)'\)}/g, `${a.customEnv.basePath}$1`),
             links: d.links?.length ? {
                 $template: "links",
                 items: d.links.map(x => ({
+                    ...a.baseInput,
                     $template: "link",
                     ...x,
                     document: x.type.name === "REFERENCE" ? `${x.document.$type}:${x.document.slug}` : null,
-                    href: x.type.name === "CUSTOM" ? x.uri : null,
+                    href: x.type.name === "CUSTOM"
+                        ? (x.uri?.startsWith("/") ? `${a.customEnv.basePath}${x.uri}` : x.uri)
+                        : null,
                     target: x.newTab ? "_blank" : null,
                     class: `button ${x.appearance?.name === "OUTLINE" ? "secondary" : "primary"}`
                 }))

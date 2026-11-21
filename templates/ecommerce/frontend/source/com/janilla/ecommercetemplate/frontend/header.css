@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "/website/header.css";
-
 :where(header-element) {
   border-bottom: 1px solid light-dark(rgb(228, 228, 231), oklch(0.269 0 0));
   display: block;
@@ -35,28 +33,49 @@
     padding: 0.75rem 1rem;
 
     @media (min-width: 1441px) {
-      padding: 1rem 2rem;
+      padding: 1rem 2rem 0;
     }
 
     > nav {
-      > ul {
-        > li {
-          &.logo {
-            janilla-logo {
-              aspect-ratio: 1;
-              overflow: hidden;
-            }
-          }
-
-          &.link {
-            @media (max-width: 1440px) {
-              display: none;
-            }
-          }
-
-          &.search {
+      li {
+        &.link {
+          @media (max-width: 1440px) {
             display: none;
           }
+
+          a {
+            color: light-dark(oklab(0.207918 -0.00296434 -0.0397924 / 0.5), oklab(0.984998 -0.00000956655 0.0000230074 / 0.5));
+            font-family: GeistMono, ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, Monaco, "Liberation Mono", "DejaVu Sans Mono", "Courier New", monospace, sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-decoration: none;
+            text-transform: uppercase;
+          }
+        }
+
+        &.search {
+          display: none;
+        }
+      }
+
+      janilla-logo {
+        aspect-ratio: 1;
+        overflow: hidden;
+      }
+    }
+
+    > nav li.link a,
+    cart-modal > button {
+      @media (min-width: 1441px) {
+        cursor: pointer;
+        padding: 1.5rem 0;
+
+        &.active,
+        &:hover {
+          border-bottom: 2px solid light-dark(rgb(15, 23, 42), rgb(248, 250, 252));
+          color: light-dark(oklab(0.207918 -0.00296434 -0.0397924), lab(98.26 0 0));
+          padding-bottom: calc(1.5rem - 2px);
         }
       }
     }
@@ -166,7 +185,7 @@
     background: light-dark(rgb(255, 255, 255), rgb(10, 10, 10));
     border: none;
     box-sizing: border-box;
-    display: block;
+    /*display: block;*/
     height: 100vh;
     max-height: none;
     max-width: 24rem;

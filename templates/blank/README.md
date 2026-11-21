@@ -1,6 +1,6 @@
 # Janilla Blank Template
 
-This is a porting of [Payload Blank Template](https://github.com/payloadcms/payload/tree/main/templates/blank).
+This is a rewrite of [Payload Blank Template](https://github.com/payloadcms/payload/tree/main/templates/blank).
 
 ### View a live demo
 
@@ -45,4 +45,4 @@ Then open a browser and navigate to <https://localhost:8443/>.
 
 Please visit [www.janilla.com](https://janilla.com/) for more information.
 
-You can use [GitHub Issues](https://github.com/diego-schivo/janilla-blank-template/issues) to give or receive feedback.
+You can use [GitHub Issues](https://github.com/diego-schivo/janilla/issues) to give or receive feedback.

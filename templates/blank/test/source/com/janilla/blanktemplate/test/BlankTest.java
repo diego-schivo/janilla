@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,11 @@
  */
 package com.janilla.blanktemplate.test;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.blanktemplate.backend.BlankBackend;
@@ -34,14 +37,18 @@ import com.janilla.blanktemplate.fullstack.BlankFullstack;
 import com.janilla.frontend.web.AbstractFrontend;
 import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpHandler;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.web.Domain;
 import com.janilla.web.NotFoundException;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 import com.janilla.web.WebAppHandlerFactory;
 
-public class BlankTest extends AbstractFrontend<FrontendConfig> {
+public class BlankTest extends AbstractFrontend<FrontendConfig, Domain> {
+
+	private static final Logger LOGGER = System.getLogger(BlankTest.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
@@ -50,36 +57,41 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(
 				new Class<?>[] { BlankBackend.class, BlankFrontend.class, BlankFullstack.class, BlankTest.class },
 				args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		serve(a[0]);
 	}
 
-	protected final BlankFullstack<?> fullstack;
+	protected final BlankFullstack<?, ?> fullstack;
 
-	public BlankTest(FrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public BlankTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 
 		{
-			var f = new DefaultDiFactory(diFullstackTypes().toList(), "fullstack");
+			var a = new WebApp[1];
+			var f = Ioc.diFactory(diFullstackTypes().toList(), () -> a[0], "fullstack");
 			Class<?>[] cc;
 			try {
 				cc = (Class<?>[]) f.classFor(WebApp.class).getDeclaredField("CONFIG_CLASSES").get(null);
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
 			}
-			var c = newConfig(Stream.concat(Arrays.stream(cc), Stream.of(getClass())).toArray(Class<?>[]::new), null,
+			var cfg = newConfig(Stream.concat(Arrays.stream(cc), Stream.of(getClass())).toArray(Class<?>[]::new), null,
 					f);
-			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
+			var ctx = (Consumer<Object>) x -> a[0] = (WebApp<?, ?>) x;
+			fullstack = f.newInstance(f.classFor(WebApp.class),
+					Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 		}
 	}
 
-	public BlankFullstack<?> fullstack() {
+	public BlankFullstack<?, ?> fullstack() {
 		return fullstack;
 	}
 
@@ -94,7 +106,7 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 			var h = WebHandling.TEST_ONGOING.get() && !x.request().getPath().startsWith("/test/")
 					? fullstack.httpHandler()
 					: (HttpHandler) x2 -> {
-						var h2 = f.createHandler(Objects.requireNonNullElse(x2.exception(), x2.request()));
+						var h2 = f.newHandler(Objects.requireNonNullElse(x2.exception(), x2.request()));
 						if (h2 == null)
 							throw new NotFoundException(x2.request().getHeaderValue(":method") + " "
 									+ x2.request().getHeaderValue(":path"));
@@ -107,6 +119,6 @@ public class BlankTest extends AbstractFrontend<FrontendConfig> {
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.blanktemplate.test", "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.blanktemplate.test"), "");
 	}
 }

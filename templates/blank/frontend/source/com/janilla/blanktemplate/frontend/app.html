@@ -1,13 +1,17 @@
 <!--${admin}-->
 
+<template id="site">
+  <!--${content}-->
+</template>
+
 <template id="not-found">
   <not-found></not-found>
 </template>
 
 <template id="page">
-  <page-element data-slug="${slug}"></page-element>
+  <page-element class="page" data-slug="${slug}"></page-element>
 </template>
 
 <template id="admin">
-  <admin-element class="admin" data-user="${user}" data-uri="${uri}"></admin-element>
+  <admin-element data-user="${user}" data-uri="${uri}"></admin-element>
 </template>

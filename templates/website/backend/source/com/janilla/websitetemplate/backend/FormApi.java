@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,15 +27,17 @@ package com.janilla.websitetemplate.backend;
 import java.util.function.Predicate;
 
 import com.janilla.backend.cms.AbstractCollectionApi;
-import com.janilla.http.HttpExchange;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Form;
 
 @Handle(path = "/api/forms")
 public class FormApi extends AbstractCollectionApi<Long, Form> {
 
-	public FormApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Form.class, drafts, persistence, "title");
+	public FormApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Form.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 }

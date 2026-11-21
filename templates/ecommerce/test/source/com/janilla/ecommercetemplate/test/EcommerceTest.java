@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,36 +24,44 @@
  */
 package com.janilla.ecommercetemplate.test;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.ecommercetemplate.backend.EcommerceBackend;
 import com.janilla.ecommercetemplate.frontend.EcommerceFrontend;
 import com.janilla.ecommercetemplate.fullstack.EcommerceFullstack;
 import com.janilla.frontend.web.FrontendConfig;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 import com.janilla.websitetemplate.test.WebsiteTest;
 
 public class EcommerceTest extends WebsiteTest {
+
+	private static final Logger LOGGER = System.getLogger(EcommerceTest.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.concat(WebsiteTest.diTypes(), Java.getPackageTypes("com.janilla.ecommercetemplate.test"));
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { EcommerceBackend.class, EcommerceFrontend.class, EcommerceFullstack.class,
 				EcommerceTest.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		serve(a[0]);
 	}
 
-	public EcommerceTest(FrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public EcommerceTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 	}
 
 	@Override
@@ -64,6 +72,6 @@ public class EcommerceTest extends WebsiteTest {
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.ecommercetemplate.test", "");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.ecommercetemplate.test"), "");
 	}
 }

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 import WebsiteApp from "website/app";
 
 const ordersRegex = /^\/orders(\/.*)?$/;
-const productRegex = /^\/products(\/.*)$/;
+const productRegex = /^\/products\/.*$/;
 
 export default class App extends WebsiteApp {
 
@@ -34,32 +34,33 @@ export default class App extends WebsiteApp {
     }
 
     static get templateNames() {
-		return ["/base/app", "/blank/app", "/website/app", "app"];
+        return ["/base/app", "/blank/app", "/website/app", "app"];
     }
 
     async updateDisplaySite() {
         const s = this.customState;
 
-        const u0 = this.currentUser;
-        const p = location.pathname;
+        s.user0 = this.currentUser;
+        const p = this.currentPath;
 
-        if (u0)
+        if (s.user0)
             switch (p) {
                 case "/create-account":
                 case "/login":
                     const u = new URL("/account", location.href);
                     u.searchParams.append("warning", "You are already logged in.");
-                    this.navigate(u);
+                    this.navigateTo(u);
                     return;
+
                 case "/logout":
-                    await fetch(`${this.dataset.apiUrl}/users/logout`, { method: "POST" });
+                    await fetch(`${this.customEnv.apiUrl}/users/logout`, { method: "POST" });
                     s.user = null;
                     break;
             }
         else if (p === "/account" || p.startsWith("/account/")) {
             const u = new URL("/login", location.href);
             u.searchParams.append("warning", "Please login to access your account settings.");
-            this.navigate(u);
+            this.navigateTo(u);
             return;
         } else if (p === "/orders" || p.startsWith("/orders/"))
             s.notFound = true;
@@ -76,7 +77,7 @@ export default class App extends WebsiteApp {
     contentData() {
         const s = this.customState;
         if (!s.notFound) {
-            const p = location.pathname;
+            const p = this.currentPath;
             const spp = new URLSearchParams(location.search);
             switch (p) {
                 case "/account":
@@ -85,51 +86,58 @@ export default class App extends WebsiteApp {
                         success: spp.get("success"),
                         warning: spp.get("warning")
                     };
+
                 case "/account/addresses":
                     return { $template: "addresses" };
+
                 case "/checkout":
                     if (!Array.from(document.head.querySelectorAll("script"))
-                        .some(x => x.src === this.dataset.stripeUrl)) {
+                        .some(x => x.src === this.customEnv.stripeUrl)) {
                         const el = document.createElement("script");
                         el.onload = () => {
                             if (!s.stripe && typeof Stripe !== "undefined")
-                                s.stripe = Stripe(this.dataset.stripePublishableKey);
+                                s.stripe = Stripe(this.customEnv.stripePublishableKey);
                         }
                         document.head.append(el);
-                        el.src = this.dataset.stripeUrl;
+                        el.src = this.customEnv.stripeUrl;
                     } else if (!s.stripe && typeof Stripe !== "undefined")
-                        s.stripe = Stripe(this.dataset.stripePublishableKey);
+                        s.stripe = Stripe(this.customEnv.stripePublishableKey);
                     return { $template: "checkout" };
+
                 case "/checkout/confirm-order":
                     return {
                         $template: "confirm-order",
                         guestEmail: spp.get("guest_email"),
                         paymentIntent: spp.get("payment_intent")
                     };
+
                 case "/create-account":
                     return { $template: "create-account" };
+
                 case "/find-order":
                     return { $template: "find-order" };
+
                 case "/login":
                     return {
                         $template: "login",
                         warning: spp.get("warning")
                     };
+
                 case "/logout":
                     return {
                         $template: "logout",
-                        noOp: !u0
+                        noOp: !s.user0
                     };
             }
-            {
-                const m = p.match(productRegex);
-                if (m)
-                    return {
-                        $template: "product",
-                        slug: m[1].substring(1),
-                        search: location.search
-                    };
-            }
+
+            if (p.match(productRegex))
+                return {
+                    $template: "product",
+                    //slug: m[1].substring(1),
+                    //search: location.search
+					time: new Date().getTime()
+                };
+
             {
                 const m = p.match(ordersRegex);
                 if (m)
@@ -162,7 +170,7 @@ export default class App extends WebsiteApp {
     async enumValues(name) {
         const s = this.customState;
         if (!Object.hasOwn(s, "enums"))
-            s.enums = await (await fetch(`${this.dataset.apiUrl}/enums`)).json();
+            s.enums = await (await fetch(`${this.customEnv.apiUrl}/enums`)).json();
         return s.enums[name];
     }
 }

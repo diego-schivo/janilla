@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -73,7 +75,7 @@ public class Validation {
 			.map(String::toLowerCase).sorted().collect(Collectors.toCollection(LinkedHashSet::new));
 
 	public boolean isSafe(String name, String value) {
-		if (!(config.liveDemo() != null && config.liveDemo()))
+		if (!config.liveDemo())
 			return true;
 		if (value == null || value.isEmpty()
 				|| NON_WORD.splitAsStream(value).allMatch(w -> w.isEmpty() || SAFE_WORDS.contains(w.toLowerCase())))
@@ -111,7 +113,7 @@ public class Validation {
 	protected static final Pattern OTHER_SYMBOL = Pattern.compile("\\p{So}", Pattern.UNICODE_CHARACTER_CLASS);
 
 	public boolean isEmoji(String name, String value) {
-		if (!(config.liveDemo() != null && config.liveDemo()))
+		if (!config.liveDemo())
 			return true;
 		if (value == null || value.isEmpty()
 				|| (value.startsWith(EMOJI_PREFIX) && value.endsWith(EMOJI_SUFFIX)

@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,13 +31,16 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.backend.persistence.DefaultCrud;
+import com.janilla.backend.cms.DefaultDocumentCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.conduit.Article;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
-class ArticleCrud extends DefaultCrud<Long, Article> {
+class ArticleCrud extends DefaultDocumentCrud<Long, Article> {
 
-	public ArticleCrud(Persistence persistence) {
-		super(Article.class, persistence.idConverter(Article.class), persistence);
+	ArticleCrud(Converter converter, Copier copier, Persistence persistence) {
+		super("Article", Article.class, persistence.idHelper(Article.class), converter, copier, persistence);
 	}
 
 	public boolean favorite(Long id, Instant createdAt, Long user) {

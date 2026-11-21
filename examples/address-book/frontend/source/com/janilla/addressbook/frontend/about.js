@@ -4,7 +4,7 @@
  * Copyright (c) React Training LLC 2015-2019
  * Copyright (c) Remix Software Inc. 2020-2021
  * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,10 +38,6 @@ export default class AboutPage extends WebComponent {
 
     static get templateNames() {
         return ["about"];
-    }
-
-    constructor() {
-        super();
     }
 
     async updateDisplay() {

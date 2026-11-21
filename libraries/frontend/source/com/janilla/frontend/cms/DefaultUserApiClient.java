@@ -1,0 +1,71 @@
+/*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
+package com.janilla.frontend.cms;
+
+import java.lang.reflect.Type;
+import java.net.URI;
+
+import com.janilla.cms.User;
+import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.http.DefaultHttpRequest;
+import com.janilla.http.HttpClient;
+import com.janilla.http.HttpCookie;
+import com.janilla.java.Converter;
+import com.janilla.java.SimpleParameterizedType;
+import com.janilla.java.UriQueryBuilder;
+import com.janilla.persistence.ListPortion;
+
+public class DefaultUserApiClient implements UserApiClient {
+
+	protected final FrontendConfig config;
+
+	protected final HttpClient httpClient;
+
+	protected final Converter converter;
+
+	public DefaultUserApiClient(FrontendConfig config, HttpClient httpClient, Converter converter) {
+		this.config = config;
+		this.httpClient = httpClient;
+		this.converter = converter;
+	}
+
+	@Override
+	public User<?> sessionUser(HttpCookie token) {
+		var r = new DefaultHttpRequest("GET", URI.create(config.api().url() + "/users/me"),
+				token != null ? token.format() : null);
+		var o = httpClient.send(r, HttpClient.JSON);
+		return converter.convert(o, User.class);
+	}
+
+	@Override
+	public ListPortion<User<?>> users(Long skip, Long limit) {
+		var r = new DefaultHttpRequest("GET",
+				URI.create(config.api().url() + "/users?"
+						+ new UriQueryBuilder().append("skip", skip != null ? skip.toString() : null).append("limit",
+								limit != null ? limit.toString() : null)));
+		var o = httpClient.send(r, HttpClient.JSON);
+		return converter.convert(o, new SimpleParameterizedType(ListPortion.class, new Type[] { User.class }));
+	}
+}

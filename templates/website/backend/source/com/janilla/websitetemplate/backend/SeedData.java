@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,7 @@ import com.janilla.websitetemplate.FormSubmission;
 import com.janilla.websitetemplate.Header;
 import com.janilla.websitetemplate.Page;
 import com.janilla.websitetemplate.Post;
+import com.janilla.websitetemplate.Redirect;
 import com.janilla.websitetemplate.SearchResult;
 
 public record SeedData(List<Category> categories, Footer footer, List<FormSubmission> formSubmissions, List<Form> forms,

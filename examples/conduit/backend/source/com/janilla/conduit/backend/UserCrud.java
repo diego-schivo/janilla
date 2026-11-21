@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,13 +25,17 @@
  */
 package com.janilla.conduit.backend;
 
-import com.janilla.backend.persistence.DefaultCrud;
+import com.janilla.backend.cms.DefaultDocumentCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.User;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
-public class UserCrud extends DefaultCrud<Long, User> {
+class UserCrud extends DefaultDocumentCrud<Long, User<Long>> {
 
-	public UserCrud(Persistence persistence) {
-		super(User.class, persistence.idConverter(User.class), persistence);
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	UserCrud(Converter converter, Copier copier, Persistence persistence) {
+		super("User", (Class) User.class, persistence.idHelper(User.class), converter, copier, persistence);
 	}
 
 	public boolean follow(Long profile, Long user) {

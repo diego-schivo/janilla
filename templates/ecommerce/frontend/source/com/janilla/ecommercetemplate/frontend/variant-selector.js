@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ export default class VariantSelector extends WebComponent {
     }
 
     static get observedAttributes() {
-        return ["data-options"];
+        return ["data-time"];
     }
 
     connectedCallback() {
@@ -50,42 +50,44 @@ export default class VariantSelector extends WebComponent {
 
     async updateDisplay() {
         const p = history.state.product;
-        const oo = this.dataset.options.split(",");
-        const fd = new FormData(this.closest("form"));
+        const tt = p.variantTypes
+            .sort((a, b) => a.label < b.label ? -1 : a.label > b.label ? 1 : 0);
+
+        const pe = this.closest("product-element");
+        const ii = pe.activeOptions.map(x => x.id);
+        const oo = Object.fromEntries(tt
+            .map(t => [t.name, t.options.find(o => ii.includes(o.id))])
+            .filter(x => x[1]));
         this.appendChild(this.interpolateDom({
             $template: "",
-            types: p.variantTypes
-                .sort((a, b) => a.label < b.label ? -1 : a.label > b.label ? 1 : 0)
-                .map(x => ({
-                    $template: "type",
-                    ...x,
-                    options: x.options.map(y => ({
-                        $template: "option",
-                        name: x.name,
-                        ...y,
-                        checked: oo.includes(y.id.toString()),
-                        disabled: !p.variants
-                            .filter(v => v.options.every(o => o.type.id === x.id
-                                ? o.id === y.id
-                                : !fd.has(o.type.name) || fd.get(o.type.name) == o.id))
-                            .some(v => v.inventory)
-                    }))
+            types: tt.map(t => ({
+                $template: "type",
+                ...t,
+                options: t.options.map(o => ({
+                    $template: "option",
+                    name: t.name,
+                    ...o,
+                    checked: ii.includes(o.id),
+                    disabled: p.variants
+                        .filter(x =>
+                            x.options.every(y => {
+                                if (y.type.id === t.id)
+                                    return y.id === o.id;
+                                if (!Object.hasOwn(oo, y.type.name))
+                                    return true;
+                                return y.id === oo[y.type.name].id;
+                            }))
+                        .every(x => !x.inventory)
                 }))
+            }))
         }));
     }
 
     handleChange = event => {
         const el = event.target;
-        const u = new URL(location.href);
-        u.searchParams.set(el.name, el.value);
-
         const p = history.state.product;
-        const fd = new FormData(el.form);
-        const v = p.variants.find(x => x.options.every(y => y.id == fd.get(y.type.name)));
-        if (v)
-            u.searchParams.set("variant", v.id);
-        else
-            u.searchParams.delete("variant");
-        this.closest("app-element").navigate(u)
+        const t = p.variantTypes.find(x => x.name === el.name);
+        const o = t.options.find(x => x.id == el.value);
+        dispatchEvent(new CustomEvent("optionselected", { detail: o }));
     }
 }

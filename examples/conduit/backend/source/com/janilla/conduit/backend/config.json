@@ -3,17 +3,19 @@
 		"cors": {
 			"headers": "Content-Type",
 			"origin": "http://localhost:8080"
-		}
+		},
+		"url": "http://localhost:8081/api"
 	},
 	"basePath": "",
 	"database": {
-		"file": "~/janilla/sample-data/conduit.db",
-		"seed": true
+		"file": "~/janilla/sample-data/conduit.db"
 	},
 	"httpServer": {
 		"port": 8081
 	},
 	"jwt": {
+		"cookie": "conduit-token",
 		"key": "secretkey"
-	}
+	},
+	"liveDemo": false
 }

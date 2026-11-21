@@ -35,8 +35,8 @@ import com.janilla.websitetemplate.FormSubmission;
 import com.janilla.websitetemplate.Header;
 import com.janilla.websitetemplate.Page;
 import com.janilla.websitetemplate.Post;
+import com.janilla.websitetemplate.Redirect;
 import com.janilla.websitetemplate.SearchResult;
-import com.janilla.websitetemplate.backend.Redirect;
 
 public record SeedData(List<Application> applications, List<Category> categories, Footer footer,
 		List<FormSubmission> formSubmissions, List<Form> forms, Header header, List<Media> media, List<Page> pages,

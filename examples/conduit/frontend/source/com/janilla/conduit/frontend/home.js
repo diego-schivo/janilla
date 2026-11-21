@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -47,7 +49,7 @@ export default class Home extends WebComponent {
 
 	async updateDisplay() {
 		const hs = history.state ?? {};
-		const { dataset: { apiUrl }, customState: { user } } = this.closest("app-element");
+		const { customEnv: { apiUrl }, customState: { user } } = this.closest("app-element");
 		if (!hs.tab) {
 			hs.tab = user ? "feed" : "all";
 			history.replaceState(hs, "");

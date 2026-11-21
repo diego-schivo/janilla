@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,9 @@ import com.janilla.frontend.web.FrontendConfig;
 import com.janilla.http.HttpCookie;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.http.SimpleHttpExchange;
+import com.janilla.http.DefaultHttpExchange;
 
-public class BlankFrontendHttpExchange extends SimpleHttpExchange {
+public class BlankFrontendHttpExchange extends DefaultHttpExchange {
 
 	protected final FrontendConfig config;
 

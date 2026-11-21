@@ -4,7 +4,12 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.janilla</groupId>
-			<artifactId>janilla-frontend</artifactId>
+			<artifactId>janilla-blank-template-frontend</artifactId>
+			<version>${revision}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.janilla</groupId>
+			<artifactId>janilla-todomvc-base</artifactId>
 			<version>${revision}</version>
 		</dependency>
 	</dependencies>

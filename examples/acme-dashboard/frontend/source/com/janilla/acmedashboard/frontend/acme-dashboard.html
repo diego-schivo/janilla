@@ -1,0 +1,17 @@
+<slot name="content"></slot>
+
+<!--${welcome}-->
+<!--${login}-->
+<!--${dashboard}-->
+
+<template id="welcome">
+  <welcome-page slot="content"></welcome-page>
+</template>
+
+<template id="login">
+  <login-page slot="content"></login-page>
+</template>
+
+<template id="dashboard">
+  <dashboard-layout slot="content" data-uri="${uri}"></dashboard-layout>
+</template>

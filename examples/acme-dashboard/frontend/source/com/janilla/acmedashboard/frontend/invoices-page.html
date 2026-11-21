@@ -34,7 +34,7 @@
 <template id="article">
   <article>
     <div>
-      <img src="${customer.imageUrl}" loading="lazy" />
+      <img src="${basePath}${customer.imageUri}" loading="lazy" />
       <span>${customer.name}</span>
       <span>${customer.email}</span>
       <invoice-status data-value="${status.name}"></invoice-status>
@@ -77,7 +77,7 @@
 <template id="row">
   <tr>
     <td>
-      <img src="${customer.imageUrl}" loading="lazy" />
+      <img src="${basePath}${customer.imageUri}" loading="lazy" />
       <span>${customer.name}</span>
     </td>
     <td>${customer.email}</td>

@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -94,11 +96,11 @@ static get moduleUrl() {
 			const u = new URL(this.dataset.apiUrl, location.href);
 			u.searchParams.append("skip", ((hs.articlesPage ?? 1) - 1) * 10);
 			u.searchParams.append("limit", 10);
-			const { customState: { apiHeaders } } = this.closest("app-element");
+			const { apiHeaders } = this.closest("app-element");
 			const { articles, articlesCount } = await (await fetch(u, { headers: apiHeaders })).json();
 			history.replaceState({
 				...history.state,
-				articles,
+				articles: articles ?? [],
 				articlesCount
 			}, "");
 			this.requestDisplay(0);

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,8 +28,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
 import com.janilla.cms.Versions;
+import com.janilla.java.Type;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 import com.janilla.websitetemplate.CallToAction;
@@ -49,7 +49,7 @@ public interface Product extends Document<Long> {
 
 	List<GalleryItem> gallery();
 
-	List<@Types({ CallToAction.class, Content.class, MediaBlock.class }) ?> layout();
+	List<@Type({ CallToAction.class, Content.class, MediaBlock.class }) ?> layout();
 
 	Boolean enableVariants();
 
@@ -70,4 +70,5 @@ public interface Product extends Document<Long> {
 	String slug();
 
 	Product withVariants(List<Variant> variants);
+
 }

@@ -33,8 +33,8 @@ import com.janilla.websitetemplate.Form;
 import com.janilla.websitetemplate.FormSubmission;
 import com.janilla.websitetemplate.Page;
 import com.janilla.websitetemplate.Post;
+import com.janilla.websitetemplate.Redirect;
 import com.janilla.websitetemplate.SearchResult;
-import com.janilla.websitetemplate.backend.Redirect;
 
 public record Collections(List<Application> applications, List<Page> pages, List<Post> posts, List<Media> media,
 		List<Category> categories, List<User<?>> users, List<Redirect> redirects, List<Form> forms,

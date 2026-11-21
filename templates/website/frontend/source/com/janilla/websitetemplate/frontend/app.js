@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -57,14 +57,17 @@ export default class App extends BlankApp {
     async updateDisplaySite() {
         const s = this.customState;
         const ss = this.serverState;
+
         if (!Object.hasOwn(s, "header"))
             s.header = ss && Object.hasOwn(ss, "header")
                 ? ss.header
-                : await (await fetch(`${this.dataset.apiUrl}/header`)).json();
+                : await (await fetch(`${this.customEnv.apiUrl}/header`)).json();
+
         if (!Object.hasOwn(s, "footer"))
             s.footer = ss && Object.hasOwn(ss, "footer")
                 ? ss.footer
-                : await (await fetch(`${this.dataset.apiUrl}/footer`)).json();
+                : await (await fetch(`${this.customEnv.apiUrl}/footer`)).json();
+
         s.colorScheme = localStorage.getItem(`${this.dataset.key}.color-scheme`);
 
         this.appendChild(this.interpolateDom({
@@ -75,11 +78,13 @@ export default class App extends BlankApp {
 
     siteData() {
         return {
-            $template: "site",
+            ...super.siteData(),
             colorScheme: this.colorScheme ?? "light dark",
             before: this.currentUser?.roles?.some(x => x.name === "ADMIN") ? { $template: "admin-bar" } : null,
-            header: { $template: "header" },
-            content: this.contentData(),
+            header: {
+				$template: "header",
+				path: this.currentPath
+			},
             footer: { $template: "footer" }
         };
     }
@@ -88,13 +93,15 @@ export default class App extends BlankApp {
         const s = this.customState;
         if (s.notFound)
             return { $template: "not-found" };
-        const p = location.pathname;
+
+        const p = this.currentPath;
         const m = p.match(postsRegex);
         if (m)
             return m[1] ? {
                 $template: "post",
                 slug: m[1].substring(1)
             } : { $template: "posts" };
+
         return p === "/search" ? {
             $template: "search",
             query: new URLSearchParams(location.search).get("q")
@@ -102,5 +109,15 @@ export default class App extends BlankApp {
             $template: "page",
             slug: p.split("/").map(x => x === "" ? "home" : x)[1]
         };
+    }
+
+    handleClick(event) {
+        const a = event.target.closest("a");
+        const h = a?.getAttribute("href");
+        if (h?.startsWith("#/")) {
+            event.preventDefault();
+            this.navigateTo(new URL(`${this.customEnv.basePath}${h.substring(1)}`, location.href));
+        } else
+            super.handleClick(event);
     }
 }

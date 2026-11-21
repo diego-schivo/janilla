@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -57,9 +57,9 @@ export default class Shop extends WebComponent {
         let pp = a.serverState?.products ?? hs.products;
         if (!pp)
             [cc, pp] = await Promise.all([
-                fetch(`${a.dataset.apiUrl}/categories`).then(async x => (await x.json()).elements),
+                fetch(`${a.customEnv.apiUrl}/categories`).then(async x => (await x.json()).elements),
                 (() => {
-                    const u = new URL(`${a.dataset.apiUrl}/products`, location.href);
+                    const u = new URL(`${a.customEnv.apiUrl}/products`, location.href);
                     if (this.dataset.query)
                         u.searchParams.append("q", this.dataset.query);
                     if (this.dataset.category)
@@ -127,6 +127,6 @@ export default class Shop extends WebComponent {
         event.preventDefault();
         const u = new URL("/shop", location.href);
         Array.from(new FormData(el).entries()).filter(([_, v]) => v).forEach(([k, v]) => u.searchParams.append(k, v));
-        a.navigate(u);
+        a.navigateTo(u);
     }
 }

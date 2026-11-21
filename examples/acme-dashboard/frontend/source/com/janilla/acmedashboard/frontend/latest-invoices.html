@@ -13,7 +13,7 @@
 
 <template id="article">
   <article>
-    <img src="${customer.imageUrl}" loading="lazy" />
+    <img src="${basePath}${customer.imageUri}" loading="lazy" />
     <p>${customer.name}</p>
     <p>${customer.email}</p>
     <intl-format data-type="amount" data-value="${amount}"></intl-format>

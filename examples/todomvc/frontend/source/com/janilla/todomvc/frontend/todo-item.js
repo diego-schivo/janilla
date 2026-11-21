@@ -1,25 +1,25 @@
 /*
  * MIT License
  *
+ * Copyright (c) Addy Osmani, Sindre Sorhus, Pascal Hartig, Stephen Sawchuk.
  * Copyright (c) 2024-2026 Diego Schivo
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 import WebComponent from "base/web-component";
 
@@ -80,15 +80,15 @@ export default class TodoItem extends WebComponent {
         delete this.dataset.edit;
     }
 
-    handleChange = event => {
+    handleChange = async event => {
         if (event.target.matches(".toggle-todo-input"))
-            this.closest("todo-app").toggleItem({
+            await this.closest("todo-app").toggleItem({
                 id: this.dataset.id,
                 completed: event.target.checked
             });
     }
 
-    handleClick = event => {
+    handleClick = async event => {
         if (event.target.matches(".todo-item-text")) {
             if (this.dataset.edit == undefined) {
                 const t = new Date().getTime();
@@ -98,18 +98,18 @@ export default class TodoItem extends WebComponent {
                     this.dataset.edit = "";
             }
         } else if (event.target.matches(".remove-todo-button"))
-            this.closest("todo-app").removeItem({ id: this.dataset.id });
+            await this.closest("todo-app").removeItem({ id: this.dataset.id });
     }
 
-    handleKeyUp = event => {
+    handleKeyUp = async event => {
         switch (event.key) {
             case "Enter":
                 if (event.target.value !== this.dataset.title) {
                     const a = this.closest("todo-app");
                     if (!event.target.value)
-                        a.removeItem({ id: this.dataset.id });
+                        await a.removeItem({ id: this.dataset.id });
                     else
-                        a.updateItem({
+                        await a.updateItem({
                             id: this.dataset.id,
                             title: event.target.value
                         });

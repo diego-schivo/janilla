@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -56,14 +56,14 @@ export default class CreateAccount extends WebComponent {
 
         const a = this.closest("app-element");
         const o = Object.fromEntries(new FormData(f));
-        let r = await fetch(`${a.dataset.apiUrl}/users`, {
+        let r = await fetch(`${a.customEnv.apiUrl}/users`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(o)
         });
         let j = await r.json();
         if (r.ok) {
-            r = await fetch(`${a.dataset.apiUrl}/users/login`, {
+            r = await fetch(`${a.customEnv.apiUrl}/users/login`, {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify(o)
@@ -73,7 +73,7 @@ export default class CreateAccount extends WebComponent {
                 a.currentUser = j;
 				const u = new URL("/account", location.href);
 				u.searchParams.append("success", "Account created successfully");
-                a.navigate(u);
+                a.navigateTo(u);
             } else
                 a.error(j);
         } else

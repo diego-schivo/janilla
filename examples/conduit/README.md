@@ -17,8 +17,8 @@ For more information on how to this works with other frontends/backends, head ov
 
 The codebase is organized as this:
 
-1. `backend` is the web application implementing the [Backend Specs](https://realworld-docs.netlify.app/docs/specs/backend-specs/introduction)
-2. `frontend` is the web application implementing the [Frontend Specs](https://realworld-docs.netlify.app/docs/specs/frontend-specs/templates)
+1. `backend` is the web application implementing the [Backend Specs](https://docs.realworld.show/specifications/backend/introduction/)
+2. `frontend` is the web application implementing the [Frontend Specs](https://docs.realworld.show/specifications/frontend/templates/)
 3. `fullstack` is a single web app running both backend and frontend
 4. `testing` is a web app running end-to-end tests
 

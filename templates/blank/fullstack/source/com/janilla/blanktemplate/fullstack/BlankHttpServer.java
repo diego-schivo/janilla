@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,18 +36,18 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.ioc.Context;
 import com.janilla.ioc.DiFactory;
+import com.janilla.java.Scope;
 
-@Context("fullstack")
+@Scope("fullstack")
 public class BlankHttpServer extends DefaultHttpServer {
 
-	protected final BlankBackend<?> backend;
+	protected final BlankBackend<?, ?> backend;
 
-	protected final BlankFrontend<?> frontend;
+	protected final BlankFrontend<?, ?> frontend;
 
 	public BlankHttpServer(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, DiFactory diFactory,
-			BlankFrontend<?> frontend, BlankBackend<?> backend) {
+			BlankFrontend<?, ?> frontend, BlankBackend<?, ?> backend) {
 		super(endpoint, sslContext, handler, diFactory);
 		this.backend = backend;
 		this.frontend = frontend;

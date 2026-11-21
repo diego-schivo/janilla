@@ -8,9 +8,33 @@
 		"directory": "~/janilla/download"
 	},
 	"frontends": {
+		"acmedashboard": {
+			"api": {
+				"url": "https://acmedashboard.janilla.local:8444/api"
+			},
+			"basePath": ""
+		},
 		"addressbook": {
 			"api": {
 				"url": "https://addressbook.janilla.local:8444/api"
+			},
+			"basePath": ""
+		},
+		"blanktemplate": {
+			"api": {
+				"url": "https://blanktemplate.janilla.local:8444/api"
+			},
+			"basePath": ""
+		},
+		"conduit": {
+			"api": {
+				"url": "https://conduit.janilla.local:8444/api"
+			},
+			"basePath": ""
+		},
+		"ecommercetemplate": {
+			"api": {
+				"url": "https://ecommercetemplate.janilla.local:8444/api"
 			},
 			"basePath": ""
 		},
@@ -21,6 +45,9 @@
 			"basePath": ""
 		},
 		"todomvc": {
+			"api": {
+				"url": "https://todomvc.janilla.local:8444/api"
+			},
 			"basePath": ""
 		}
 	},
@@ -37,6 +64,6 @@
 		"cookie": "janilla-token",
 		"key": "secretkey"
 	},
-	"key": "janilla",
-	"title": "Janilla"
+	"key": "com",
+	"title": "Janilla.com"
 }

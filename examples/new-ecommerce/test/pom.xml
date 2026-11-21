@@ -1,0 +1,49 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>janilla-new-ecommerce-test</artifactId>
+	<dependencies>
+		<dependency>
+			<groupId>com.janilla</groupId>
+			<artifactId>janilla-ecommerce-template-test</artifactId>
+			<version>${revision}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.janilla</groupId>
+			<artifactId>janilla-new-ecommerce-fullstack</artifactId>
+			<version>${revision}</version>
+		</dependency>
+	</dependencies>
+	<parent>
+		<groupId>com.janilla</groupId>
+		<artifactId>janilla-new-ecommerce</artifactId>
+		<version>${revision}</version>
+		<relativePath>..</relativePath>
+	</parent>
+	<properties>
+		<exec.mainClass>com.janilla.newecommerce.test.NewEcommerceTest</exec.mainClass>
+	</properties>
+	<name>janilla-new-ecommerce-test</name>
+	<description>Janilla New Ecommerce Test</description>
+	<profiles>
+		<profile>
+			<id>execute</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<configuration>
+							<executable>java</executable>
+							<arguments>
+								<argument>--module-path</argument>
+								<modulepath />
+								<argument>--module</argument>
+								<argument>com.janilla.newecommerce.test/com.janilla.newecommerce.test.NewEcommerceTest</argument>
+							</arguments>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>

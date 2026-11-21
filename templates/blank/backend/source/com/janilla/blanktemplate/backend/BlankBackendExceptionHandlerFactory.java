@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,26 +26,27 @@ package com.janilla.blanktemplate.backend;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
+import com.janilla.ioc.DiFactory;
+import com.janilla.web.DefaultExceptionHandlerFactory;
 import com.janilla.web.Error;
-import com.janilla.web.ExceptionHandlerFactory;
 import com.janilla.web.RenderableFactory;
+import com.janilla.web.WebAppConfig;
 
-public class BlankBackendExceptionHandlerFactory extends ExceptionHandlerFactory {
+public class BlankBackendExceptionHandlerFactory extends DefaultExceptionHandlerFactory {
 
 	protected final RenderableFactory renderableFactory;
 
-	protected final HttpHandlerFactory rootFactory;
-
-	public BlankBackendExceptionHandlerFactory(RenderableFactory renderableFactory, HttpHandlerFactory rootFactory) {
+	public BlankBackendExceptionHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory, DiFactory diFactory,
+			RenderableFactory renderableFactory) {
+		super(config, rootFactory, diFactory);
 		this.renderableFactory = renderableFactory;
-		this.rootFactory = rootFactory;
 	}
 
 	@Override
 	protected boolean handle(Error error, HttpExchange exchange) {
 		super.handle(error, exchange);
 		var r = renderableFactory.createRenderable(null, exchange.exception().getMessage());
-		var h = rootFactory.createHandler(r);
+		var h = rootFactory.newHandler(r);
 		return h.handle(exchange);
 	}
 }

@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,10 +25,12 @@
  */
 package com.janilla.conduit.backend;
 
-import java.util.Collections;
-import java.util.Map;
-
+import com.janilla.backend.cms.UserHttpExchange;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.cms.User;
+import com.janilla.conduit.ConduitUser;
+import com.janilla.http.HttpExchange;
+import com.janilla.java.Flatten;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/profiles")
@@ -39,25 +43,54 @@ public class ProfileApi {
 	}
 
 	@Handle(method = "GET", path = "([^/]+)")
-	public Object read(String username) {
-		var c = persistence.crud(User.class);
-		var u = c.read(c.find("username", new Object[] { username }));
-		return Collections.singletonMap("profile", u);
+	public Single read(String username) {
+		var u = userCrud().read(userCrud().find("username", new Object[] { username }));
+		return new Single(item(u));
 	}
 
 	@Handle(method = "POST", path = "([^/]+)/follow")
-	public Object follow(String username, User user) {
-		var c = (UserCrud) persistence.crud(User.class);
-		var u = c.read(c.find("username", new Object[] { username }));
-		c.follow(u.id(), user.id());
-		return Map.of("profile", u);
+	public Single follow(String username) {
+		var u = userCrud().read(userCrud().find("username", new Object[] { username }));
+
+		if (u != null)
+			userCrud().follow(u.id(), (Long) user().id());
+
+		return new Single(item(u));
 	}
 
 	@Handle(method = "DELETE", path = "([^/]+)/follow")
-	public Object unfollow(String username, User user) {
-		var c = (UserCrud) persistence.crud(User.class);
-		var u = c.read(c.find("username", new Object[] { username }));
-		c.unfollow(u.id(), user.id());
-		return Map.of("profile", u);
+	public Single unfollow(String username) {
+		var u = userCrud().read(userCrud().find("username", new Object[] { username }));
+
+		if (u != null)
+			userCrud().unfollow(u.id(), (Long) user().id());
+
+		return new Single(item(u));
+
+	}
+
+	protected Item item(User<?> user) {
+		if (user == null)
+			return null;
+
+		var u = user();
+		var f = u != null && !u.id().equals(user.id())
+				&& userCrud().filter("followList", new Object[] { u.id() }).stream().anyMatch(x -> x.equals(user.id()));
+		return new Item((ConduitUser) user, f);
+	}
+
+	protected User<?> user() {
+		return ((UserHttpExchange<?>) HttpExchange.SCOPED.get()).sessionUser();
+	}
+
+	@SuppressWarnings("unchecked")
+	protected UserCrud userCrud() {
+		return (UserCrud) persistence.crud(User.class);
+	}
+
+	public record Item(@Flatten ConduitUser user, boolean following) {
+	}
+
+	public record Single(Item profile) {
 	}
 }

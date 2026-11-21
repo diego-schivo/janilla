@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,12 +24,16 @@
  */
 package com.janilla.websitetemplate.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.function.Predicate;
 
 import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Page;
@@ -37,18 +41,26 @@ import com.janilla.websitetemplate.Page;
 @Handle(path = "/api/pages")
 public class PageApi extends AbstractCollectionApi<Long, Page> {
 
-	public PageApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Page.class, drafts, persistence, "title");
+	private static final Logger LOGGER = System.getLogger(PageApi.class.getName());
+
+	public PageApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Page.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 	@Handle(method = "GET")
-	public ListPortion<Page> read(String search, Boolean reverse, Long skip, Long limit, Integer depth, String slug,
+	public ListPortion<Page> read(String search, Direction direction, Long skip, Long limit, Integer depth, String slug,
 			HttpExchange exchange) {
-		if (slug != null && !slug.isEmpty()) {
-			var p = crud().read(crud().find(drafts.test(exchange) ? "slugDraft" : "slug", new Object[] { slug }),
-					depth != null ? depth : 0);
+		LOGGER.log(Level.DEBUG, "search={0}, direction={1}, skip={2}, limit={3}, depth={4}, slug={5}", search, direction,
+				skip, limit, depth, slug);
+
+		if (slug != null && !slug.isBlank()) {
+			var i = drafts.test(exchange) ? "slugDraft" : "slug";
+			var d = depth != null ? depth.intValue() : defaultDepth;
+			var p = crud().read(crud().find(i, new Object[] { slug }), d);
+
 			return p != null ? ListPortion.of(List.of(p)) : ListPortion.empty();
 		}
-		return super.read(search, reverse, skip, limit, depth);
+
+		return super.read(search, direction, skip, limit, depth);
 	}
 }

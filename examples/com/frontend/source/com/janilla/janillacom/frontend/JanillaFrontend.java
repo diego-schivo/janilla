@@ -23,24 +23,34 @@
  */
 package com.janilla.janillacom.frontend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.janilla.blanktemplate.frontend.DownloadResourcesProvider;
 import com.janilla.frontend.web.Frontend;
+import com.janilla.http.HttpClient;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
+import com.janilla.janillacom.Application;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.java.Java;
+import com.janilla.java.SimpleLogger;
 import com.janilla.web.NotFoundException;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 import com.janilla.web.WebAppHandlerFactory;
 import com.janilla.websitetemplate.frontend.WebsiteFrontend;
 
-public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
+public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig, JanillaDomain> {
+
+	private static final Logger LOGGER = System.getLogger(JanillaFrontend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(WebsiteFrontend.diTypes(), Java.getPackageTypes("com.janilla.janillacom"),
@@ -48,38 +58,53 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
-
-		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { JanillaFrontend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
-	}
-
-	protected final Map<String, Frontend<?>> frontends;
-
-	public JanillaFrontend(JanillaFrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory, null);
-
-		frontends = config.frontends().entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> {
-			var a = ((JanillaDataFetching) dataFetching).applications(x.getKey(), null, null, null, null, null)
-					.elements().getFirst();
-			try {
-				var c = Class.forName(a.frontend());
-				@SuppressWarnings("unchecked")
-				var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
-				var f = new DefaultDiFactory(tt);
-				var c2 = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) x.getValue()).filter(y -> y != null)
-						.toArray(Map<?, ?>[]::new), f);
-				return (Frontend<?>) f.newInstance(c,
-						Java.hashMap("config", c2, "diFactory", f, "httpClient", httpClient));
-			} catch (ReflectiveOperationException e) {
-				throw new RuntimeException(e);
+		SimpleLogger.prefix = () -> {
+			interface A {
+				StackWalker WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
 			}
-		}));
+			var f = A.WALKER.walk(ff -> ff.dropWhile(x -> !x.getDeclaringClass().equals(System.Logger.class))
+					.dropWhile(x -> x.getDeclaringClass().equals(System.Logger.class)).findFirst().get());
+			return f.getClassName().substring(f.getClassName().lastIndexOf('.') + 1) + "." + f.getMethodName();
+		};
+
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
+
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
+		var cfg = newConfig(new Class<?>[] { JanillaFrontend.class }, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) x -> a[0] = (WebApp<?, ?>) x;
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
+		serve(a[0]);
 	}
 
-	public Frontend<?> frontend(HttpRequest request) {
+	protected final Map<String, Frontend<?, ?>> frontends;
+
+	public JanillaFrontend(JanillaFrontendConfig config, DiFactory diFactory, Consumer<Object> context,
+			HttpClient httpClient) {
+		super(config, diFactory, context, httpClient);
+
+		frontends = config
+				.frontends().keySet().stream().map(x -> ((ApiClientImpl) apiClient).applications()
+						.read(x, null, null, null, null, null).elements().getFirst())
+				.collect(Collectors.toMap(Application::id, a -> {
+					try {
+						var c = Class.forName(a.frontend());
+						@SuppressWarnings("unchecked")
+						var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
+						var a2 = new WebApp[1];
+						var f = Ioc.diFactory(tt, () -> a2[0]);
+						var cfg = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.frontends().get(a.id()))
+								.filter(x -> x != null).toArray(Map<?, ?>[]::new), f);
+						var ctx = (Consumer<Object>) x -> a2[0] = (WebApp<?, ?>) x;
+						return (Frontend<?, ?>) f.newInstance(c,
+								Java.hashMap("config", cfg, "diFactory", f, "context", ctx, "httpClient", httpClient));
+					} catch (ReflectiveOperationException e) {
+						throw new RuntimeException(e);
+					}
+				}));
+	}
+
+	public Frontend<?, ?> frontend(HttpRequest request) {
 		var x = frontends.get(config.appResolution().id(request));
 		return x != null ? x : this;
 	}
@@ -88,21 +113,24 @@ public class JanillaFrontend extends WebsiteFrontend<JanillaFrontendConfig> {
 	protected HttpHandler newHttpHandler() {
 		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
-			var fa = (Frontend<?>) JanillaDomain.WEB_APP.get();
+			var fa = (Frontend<?, ?>) JanillaDomain.WEB_APP.get();
 //			IO.println("JanillaFrontend.newHttpHandler, fa=" + fa);
-			var h = fa == this ? f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()))
+			var h = fa == this ? f.newHandler(Objects.requireNonNullElse(x.exception(), x.request()))
 					: fa.httpHandler();
 			if (h == null)
 				throw new NotFoundException(
 						x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
-			return ScopedValue.where(INSTANCE, fa).call(() -> h.handle(x));
+			return ScopedValue.where(SCOPED, fa).call(() -> h.handle(x));
 		};
 	}
 
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.websitetemplate.frontend", "/website");
-		resourcePrefixes.put("com.janilla.janillacom.frontend", "");
+
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.websitetemplate.frontend"), "/website");
+		resourcesProviders.put(
+				diFactory.newInstance(DownloadResourcesProvider.class, Map.of("url", GEIST_FONT_DOWNLOAD)), "/website");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.janillacom.frontend"), "");
 	}
 }

@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,21 +26,24 @@
 package com.janilla.conduit.backend;
 
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.backend.sqlite.TraverseOption;
+import com.janilla.conduit.Tags;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/tags")
-public class TagApi {
+class TagApi {
 
 	protected final Persistence persistence;
 
-	public TagApi(Persistence persistence) {
+	TagApi(Persistence persistence) {
 		this.persistence = persistence;
 	}
 
 	@Handle(method = "GET")
 	public Tags tags() {
-		var tt = persistence.database().perform(() -> persistence.database().index("CountTag", "table").rows(true)
-				.limit(10).map(x -> (String) x.skip(1).findFirst().get()).toList(), false);
+		var tt = persistence.database().perform(() -> persistence.database().index("CountTag", "table")
+				.rows(TraverseOption.REVERSE_ORDER).limit(10).map(x -> (String) x.skip(1).findFirst().get()).toList(),
+				false);
 		return new Tags(tt);
 	}
 }

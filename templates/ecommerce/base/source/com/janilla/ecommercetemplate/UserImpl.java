@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,18 +24,9 @@
  */
 package com.janilla.ecommercetemplate;
 
-import java.security.Key;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
-
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 
 import com.janilla.cms.DocumentStatus;
 import com.janilla.cms.UserRole;
@@ -46,81 +37,77 @@ record UserImpl(Long id, @Index String name, String email, String salt, String h
 		List<Address> addresses, Instant createdAt, Instant updatedAt, DocumentStatus documentStatus,
 		Instant publishedAt) implements EcommerceUser<Long> {
 
-	private static final SecretKeyFactory SECRET;
-
-	private static final Random RANDOM = new SecureRandom();
-
-	static {
-		try {
-			SECRET = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static byte[] hash(char[] password, byte[] salt) {
-		var ks = new PBEKeySpec(password, salt, 10000, 512);
-		Key k;
-		try {
-			k = SECRET.generateSecret(ks);
-		} catch (InvalidKeySpecException e) {
-			throw new RuntimeException(e);
-		}
-		return k.getEncoded();
-	}
-
-//	public boolean hasRole(UserRole role) {
-//		return roles != null && roles.contains(role);
+//	private static final SecretKeyFactory SECRET;
+//
+//	private static final Random RANDOM = new SecureRandom();
+//
+//	static {
+//		try {
+//			SECRET = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
+//		} catch (NoSuchAlgorithmException e) {
+//			throw new RuntimeException(e);
+//		}
 //	}
-
-	@Override
-	public boolean passwordEquals(String password) {
-		var f = HexFormat.of();
-		var s = f.parseHex(salt);
-		var h = hash(password.toCharArray(), s);
-		return f.formatHex(h).equals(hash);
-	}
-
-	@Override
-	public UserImpl withPassword(String password) {
-		if (password == null || password.isEmpty())
-			return new UserImpl(id, name, email, null, null, resetPasswordToken, resetPasswordExpiration, roles,
-					stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
-		var s = new byte[16];
-		RANDOM.nextBytes(s);
-		var h = hash(password.toCharArray(), s);
-		var f = HexFormat.of();
-		return new UserImpl(id, name, email, f.formatHex(s), f.formatHex(h), resetPasswordToken,
-				resetPasswordExpiration, roles, stripeCustomerId, carts, addresses, createdAt, updatedAt,
-				documentStatus, publishedAt);
-	}
-
-	@Override
-	public UserImpl withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration) {
-		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
-				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
-	}
-
-	@Override
-	public UserImpl withRoles(Set<UserRole> roles) {
-		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
-				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
-	}
-
-	public UserImpl withStripeCustomerId(String stripeCustomerId) {
-		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
-				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
-	}
-
-	@Override
-	public EcommerceUser<Long> withCarts(List<Cart> carts) {
-		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
-				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
-	}
-
-	@Override
-	public EcommerceUser<Long> withAddresses(List<Address> addresses) {
-		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
-				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
-	}
+//
+//	private static byte[] hash(char[] password, byte[] salt) {
+//		var ks = new PBEKeySpec(password, salt, 10000, 512);
+//		Key k;
+//		try {
+//			k = SECRET.generateSecret(ks);
+//		} catch (InvalidKeySpecException e) {
+//			throw new RuntimeException(e);
+//		}
+//		return k.getEncoded();
+//	}
+//
+//	@Override
+//	public boolean passwordEquals(String password) {
+//		var f = HexFormat.of();
+//		var s = f.parseHex(salt);
+//		var h = hash(password.toCharArray(), s);
+//		return f.formatHex(h).equals(hash);
+//	}
+//
+//	@Override
+//	public UserImpl withPassword(String password) {
+//		if (password == null || password.isEmpty())
+//			return new UserImpl(id, name, email, null, null, resetPasswordToken, resetPasswordExpiration, roles,
+//					stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
+//		var s = new byte[16];
+//		RANDOM.nextBytes(s);
+//		var h = hash(password.toCharArray(), s);
+//		var f = HexFormat.of();
+//		return new UserImpl(id, name, email, f.formatHex(s), f.formatHex(h), resetPasswordToken,
+//				resetPasswordExpiration, roles, stripeCustomerId, carts, addresses, createdAt, updatedAt,
+//				documentStatus, publishedAt);
+//	}
+//
+//	@Override
+//	public UserImpl withResetPassword(String resetPasswordToken, Instant resetPasswordExpiration) {
+//		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
+//				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
+//	}
+//
+//	@Override
+//	public UserImpl withRoles(Set<UserRole> roles) {
+//		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
+//				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
+//	}
+//
+//	public UserImpl withStripeCustomerId(String stripeCustomerId) {
+//		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
+//				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
+//	}
+//
+//	@Override
+//	public EcommerceUser<Long> withCarts(List<Cart> carts) {
+//		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
+//				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
+//	}
+//
+//	@Override
+//	public EcommerceUser<Long> withAddresses(List<Address> addresses) {
+//		return new UserImpl(id, name, email, salt, hash, resetPasswordToken, resetPasswordExpiration, roles,
+//				stripeCustomerId, carts, addresses, createdAt, updatedAt, documentStatus, publishedAt);
+//	}
 }

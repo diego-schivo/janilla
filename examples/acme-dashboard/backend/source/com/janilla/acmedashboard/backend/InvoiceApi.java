@@ -24,58 +24,40 @@
  */
 package com.janilla.acmedashboard.backend;
 
-import java.time.LocalDate;
-import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
+import com.janilla.acmedashboard.Invoice;
+import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
-import com.janilla.java.JavaReflect;
+import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.persistence.ListPortion;
-import com.janilla.web.Bind;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/invoices")
-class InvoiceApi {
+class InvoiceApi extends AbstractCollectionApi<UUID, Invoice> {
 
-	protected final Persistence persistence;
-
-	public InvoiceApi(Persistence persistence) {
-		this.persistence = persistence;
+	public InvoiceApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Invoice.class, drafts, persistence, null, copier, Direction.BACKWARD, 0);
 	}
 
-	@Handle(method = "GET")
-	public ListPortion<Invoice> list(@Bind("query") String query, @Bind("page") Integer page) {
-		var c = persistence.crud(Invoice.class);
-		var ii = c.filter("date", new Object[0], true).stream().map(x -> c.read(x, 1));
+	@Override
+	public ListPortion<Invoice> read(String search, Direction direction, Long skip, Long limit, Integer depth) {
+		var d = direction != null ? direction : defaultDirection;
+		var k = skip != null ? skip.longValue() : 0;
+		var l = limit != null ? limit.longValue() : -1;
+		var p = depth != null ? depth.intValue() : defaultDepth;
 
-		if (query != null && !query.isBlank())
-			ii = ii.filter(x -> x.customer().name().toLowerCase().contains(query.toLowerCase()));
+		var s = search != null && !search.isBlank() ? search.strip().toLowerCase() : null;
+		if (s != null) {
+			var ii = crud().filter("createdAt", new Object[0], d).stream().map(x -> crud().read(x, 1))
+					.filter(x -> x.customer().name().toLowerCase().contains(s)).toList();
+			return new ListPortion<>(ii.subList((int) k, Math.min((int) (k + l), ii.size())), ii.size());
+		}
 
-		var l = ii.toList();
-		var p = page != null ? page.intValue() : 1;
-		var i1 = (p - 1) * 6;
-		var i2 = Math.min(i1 + 6, l.size());
-		return new ListPortion<>(l.subList(i1, i2), l.size());
-	}
-
-	@Handle(method = "POST")
-	public Invoice create(Invoice invoice) {
-		return persistence.crud(Invoice.class).create(invoice.withDate(LocalDate.now()));
-	}
-
-	@Handle(method = "GET", path = "([^/]+)")
-	public Invoice read(UUID id) {
-		return persistence.crud(Invoice.class).read(id);
-	}
-
-	@Handle(method = "PUT", path = "([^/]+)")
-	public Invoice update(UUID id, Invoice invoice) {
-		return persistence.crud(Invoice.class).update(id,
-				x -> JavaReflect.copy(invoice, x, y -> !Set.of("id", "date").contains(y)));
-	}
-
-	@Handle(method = "DELETE", path = "([^/]+)")
-	public Invoice delete(UUID id) {
-		return persistence.crud(Invoice.class).delete(id);
+		var ii = crud().filterAndCount("createdAt", new Object[0], d, k, l);
+		return ii.map(x -> crud().read(x, p));
 	}
 }

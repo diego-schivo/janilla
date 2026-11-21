@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,12 +24,17 @@
  */
 package com.janilla.blanktemplate;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
 import com.janilla.cms.Document;
 import com.janilla.persistence.Store;
 import com.janilla.web.WebApp;
 
 @Store
 public interface Media extends Document<Long> {
+
+	Logger LOGGER = System.getLogger(Media.class.getName());
 
 	File file();
 
@@ -39,6 +44,16 @@ public interface Media extends Document<Long> {
 
 	default String uri() {
 		var f = file();
-		return f != null ? WebApp.INSTANCE.get().config().api().url() + "/media/" + f.name() : null;
+
+		String u;
+		if (f != null) {
+			var a = WebApp.SCOPED.get();
+			LOGGER.log(Level.DEBUG, "wa={0}", a);
+			u = a.config().api().url() + "/media/file/" + f.name();
+		} else
+			u = null;
+		LOGGER.log(Level.DEBUG, "u={0}", u);
+
+		return u;
 	}
 }

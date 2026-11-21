@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,17 +28,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.ApiClient;
 import com.janilla.frontend.Template;
-import com.janilla.frontend.cms.CmsDataFetching;
 import com.janilla.frontend.cms.CmsIndexFactory;
-import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 
 public class BlankIndexFactory<C extends BlankFrontendConfig> extends CmsIndexFactory<C> {
 
-	public BlankIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
-		super(config, resourceMap, diFactory, dataFetching);
+	public BlankIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, ApiClient apiClient) {
+		super(config, resourceMap, diFactory, apiClient);
 	}
 
 	public Template blankTemplate(String name) {
@@ -46,16 +45,24 @@ public class BlankIndexFactory<C extends BlankFrontendConfig> extends CmsIndexFa
 	}
 
 	@Override
-	protected void putAppInitArgs(Map<String, Object> args, HttpExchange exchange) {
-		super.putAppInitArgs(args, exchange);
-		args.put("key", config.key());
+	protected Map<String, String> env() {
+		var m = super.env();
+		m.put("key", config.key());
+
+		return m;
 	}
 
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
-		Stream.of("app", "lucide-icon", "not-found", "page").map(this::blankImportKey)
+
+		Stream.of("admin", "app", "not-found", "page").map(this::blankImportKey)
 				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+	}
+
+	@Override
+	protected String cmsImportKey(String name) {
+		return "cms/" + name;
 	}
 
 	protected String blankImportKey(String name) {

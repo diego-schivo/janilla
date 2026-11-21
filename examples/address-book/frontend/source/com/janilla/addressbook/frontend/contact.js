@@ -4,7 +4,7 @@
  * Copyright (c) React Training LLC 2015-2019
  * Copyright (c) Remix Software Inc. 2020-2021
  * Copyright (c) Shopify Inc. 2022-2023
- * Copyright (c) Diego Schivo 2024-2026
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -81,14 +81,14 @@ export default class ContactPage extends WebComponent {
             }));
 
             if (!hs.contact || this.dataset.id != hs.contact.id) {
-                const c = await (await fetch(`${a.dataset.apiUrl}/contacts/${this.dataset.id}`)).json();
+                const c = await (await fetch(`${a.customEnv.apiUrl}/contacts/${this.dataset.id}`)).json();
 
                 history.replaceState({
                     ...history.state,
                     contact: c
                 }, "");
 
-                a.navigate();
+                a.navigateTo();
             }
         } else
             history.replaceState(Object.fromEntries(Object.entries(history.state)
@@ -104,18 +104,18 @@ export default class ContactPage extends WebComponent {
 
         switch (event.target.method) {
             case "get":
-                const u = new URL(`${a.dataset.basePath}/contacts/${hs.contact.id}/edit`, location.href);
+                const u = new URL(`${a.customEnv.basePath}/contacts/${hs.contact.id}/edit`, location.href);
                 const q = new URLSearchParams(location.search).get("q");
                 if (q)
                     u.searchParams.append("q", q);
-                a.navigate(u);
+                a.navigateTo(u);
                 break;
 
             case "post":
                 if (confirm("Please confirm you want to delete this record.")) {
-                    const r = await fetch(`${a.dataset.apiUrl}/contacts/${hs.contact.id}`, { method: "DELETE" });
+                    const r = await fetch(`${a.customEnv.apiUrl}/contacts/${hs.contact.id}`, { method: "DELETE" });
                     if (r.ok)
-                        a.navigate(new URL("/", location.href));
+                        a.navigateTo(new URL("/", location.href));
                     else
                         alert(await r.text());
                 }
@@ -127,17 +127,22 @@ export default class ContactPage extends WebComponent {
         const hs = history.state;
         const a = this.closest("app-element");
 
+        const f = hs.contact.favorite;
         hs.contact.favorite = favorite;
-        this.requestDisplay();
+        this.requestDisplay(0);
 
-        const r = await fetch(`${a.dataset.apiUrl}/contacts/${hs.contact.id}/favorite`, {
-            method: "PUT",
+        const r = await fetch(`${a.customEnv.apiUrl}/contacts/${hs.contact.id}`, {
+            method: "PATCH",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify(hs.contact.favorite)
+            body: JSON.stringify({ favorite })
         });
+
         if (r.ok)
-            a.navigate(new URL("/", location.href));
-        else
+            a.navigateTo(new URL("/", location.href));
+        else {
             alert(await r.text());
+            hs.contact.favorite = f;
+            this.requestDisplay(0);
+        }
     }
 }

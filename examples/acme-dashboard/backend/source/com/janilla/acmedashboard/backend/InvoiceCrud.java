@@ -32,20 +32,24 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.janilla.backend.persistence.DefaultCrud;
+import com.janilla.acmedashboard.Invoice;
+import com.janilla.acmedashboard.InvoiceStatus;
+import com.janilla.backend.cms.DefaultDocumentCrud;
 import com.janilla.backend.persistence.Persistence;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
-class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
+class InvoiceCrud extends DefaultDocumentCrud<UUID, Invoice> {
 
-	public InvoiceCrud(Persistence persistence) {
-		super(Invoice.class, persistence.idConverter(Invoice.class), persistence);
+	public InvoiceCrud(Converter converter, Copier copier, Persistence persistence) {
+		super("Invoice", Invoice.class, persistence.idHelper(Invoice.class), converter, copier, persistence);
 	}
 
 	public BigDecimal getAmount(InvoiceStatus status) {
 		return persistence.database().perform(() -> {
 			var i = persistence.database().index("StatusAmount", "table");
 			var a = new BigDecimal[1];
-			i.select(new Object[] { toDatabaseValue(status) }, false,
+			i.select(new Object[] { toDatabaseValue(status) },
 					x -> x.forEach(y -> a[0] = BigDecimal.valueOf((double) y.reduce((_, z) -> z).get())));
 			return Objects.requireNonNullElse(a[0], BigDecimal.ZERO);
 		}, false);
@@ -55,7 +59,7 @@ class InvoiceCrud extends DefaultCrud<UUID, Invoice> {
 		return persistence.database().perform(() -> {
 			var i = persistence.database().index("CustomerStatusAmount", "table");
 			var a = new BigDecimal[1];
-			i.select(new Object[] { toDatabaseValue(customerId), toDatabaseValue(status) }, false,
+			i.select(new Object[] { toDatabaseValue(customerId), toDatabaseValue(status) },
 					x -> x.forEach(y -> a[0] = BigDecimal.valueOf((double) y.reduce((_, z) -> z).get())));
 			return Objects.requireNonNullElse(a[0], BigDecimal.ZERO);
 		}, false);

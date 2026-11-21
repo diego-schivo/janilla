@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,5 +29,6 @@ module com.janilla.conduit.frontend {
 
 	opens com.janilla.conduit.frontend;
 
-	requires transitive com.janilla.frontend;
+	requires transitive com.janilla.blanktemplate.frontend;
+	requires transitive com.janilla.conduit.base;
 }

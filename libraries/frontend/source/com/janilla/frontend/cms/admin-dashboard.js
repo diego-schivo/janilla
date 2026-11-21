@@ -1,0 +1,108 @@
+/*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
+import WebComponent from "base/web-component";
+
+export default class AdminDashboard extends WebComponent {
+
+    static get moduleUrl() {
+        return import.meta.url;
+    }
+
+    static get templateNames() {
+        return ["admin-dashboard"];
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.addEventListener("click", this.handleClick);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener("click", this.handleClick);
+    }
+
+    async updateDisplay() {
+        document.title = "Dashboard - Janilla";
+        const a = this.shadowClosest("admin-element");
+        this.appendChild(this.interpolateDom({
+            $template: "",
+            groups: a.dashboardGroups().map(g => ({
+                $template: "group",
+                title: g.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
+                cards: Object.entries(a.customState.schema[a.customState.schema["Data"][g].type]).map(([k, v]) => {
+                    return {
+						...a.baseInput,
+                        $template: "card",
+                        uri: `/admin/${g === "globals" ? g : "collections"}/${k.split(/(?=[A-Z])/).map(x => x.toLowerCase()).join("-")}`,
+                        text: k.split(/(?=[A-Z])/).map(x => x.charAt(0).toUpperCase() + x.substring(1)).join(" "),
+                        button: g !== "globals" && !a.isReadOnly(v.elementTypes[0]) ? {
+                            $template: "button",
+                            type: v.elementTypes[0]
+                        } : null
+                    };
+                })
+            }))
+        }));
+    }
+
+    handleClick = async event => {
+        const el = event.target.closest("button");
+        const a = this.shadowClosest("app-element");
+        const a2 = this.shadowClosest("admin-element");
+        switch (el?.name) {
+            case "create": {
+                /*
+                const t = el.closest("a").getAttribute("href").split("/").at(-1);
+                const r = await fetch(`${a.customEnv.apiUrl}/${t}`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ $type: el.dataset.type })
+                });
+                const j = await r.json();
+                if (r.ok)
+                    a.navigateTo(new URL(`/admin/collections/${t}/${j.id}`, location.href));
+                else
+                    a2.error(j);
+                */
+                const n = el.closest("a").getAttribute("href").split("/").at(-1);
+                await a2.createDocument(n);
+                break;
+            }
+            case "seed": {
+                const r = await fetch(`${a.customEnv.apiUrl}/seed`, {
+                    method: "POST",
+                    credentials: "include"
+                });
+                if (r.ok)
+                    a2.success("Database seeded!");
+                else
+                    a2.error(await r.json());
+                break;
+            }
+        }
+    }
+}

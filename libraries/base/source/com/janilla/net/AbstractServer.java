@@ -1,0 +1,198 @@
+/*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
+package com.janilla.net;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.net.SocketAddress;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+
+public abstract class AbstractServer implements Server {
+
+	protected static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
+
+	private static final Logger LOGGER = System.getLogger(AbstractServer.class.getName());
+
+	protected final SocketAddress endpoint;
+
+	protected final SSLContext sslContext;
+
+	protected final Map<SocketChannel, ThreadInstantItem> lastUsed = new ConcurrentHashMap<>();
+
+	protected AbstractServer(SocketAddress endpoint, SSLContext sslContext) {
+		this.endpoint = endpoint;
+		this.sslContext = sslContext;
+	}
+
+	@Override
+	public void serve() {
+//		IO.println("SecureServer.serve");
+		Thread.startVirtualThread(this::shutdownConnections);
+
+		try (var c1 = ServerSocketChannel.open()) {
+			c1.socket().bind(endpoint);
+
+			for (;;)
+				try {
+					var c2 = c1.accept();
+					LOGGER.log(Level.DEBUG, "channel={0}", c2);
+
+					var t = startThread(c2);
+
+					lastUsed.put(c2, new ThreadInstantItem(t, Instant.now()));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected Thread startThread(SocketChannel channel) {
+		return Thread.startVirtualThread(
+				() -> ScopedValue.where(SOCKET_CHANNEL, channel).run(() -> handleConnection(channel)));
+	}
+
+	protected void handleConnection(SocketChannel channel) {
+		try (var c = channel) {
+			var t1 = sslContext != null ? new SecureTransfer(c, createSslEngine()) : new SimpleTransfer(c);
+
+			var t2 = new FilterTransfer(t1) {
+
+				@Override
+				public int read() {
+					updateLastUsed(c);
+					try {
+						return super.read();
+					} finally {
+						updateLastUsed(c);
+					}
+				}
+
+				@Override
+				public void write() {
+					updateLastUsed(c);
+					try {
+						super.write();
+					} finally {
+						updateLastUsed(c);
+					}
+				}
+			};
+
+			handleConnection(t2);
+		} catch (IOException e) {
+			LOGGER.log(Level.ERROR, "{0}: {1}", e.getClass().getSimpleName(), e.getMessage());
+		} catch (UncheckedIOException e) {
+			LOGGER.log(Level.ERROR, "{0}: {1}", e.getCause().getClass().getSimpleName(), e.getCause().getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected SSLEngine createSslEngine() {
+		var e = sslContext.createSSLEngine();
+		e.setUseClientMode(false);
+		var pp1 = applicationProtocols();
+		if (pp1 != null) {
+			var pp2 = e.getSSLParameters();
+			pp2.setApplicationProtocols(pp1);
+			e.setSSLParameters(pp2);
+		}
+		return e;
+	}
+
+	protected String[] applicationProtocols() {
+		return null;
+	}
+
+	protected abstract void handleConnection(Transfer transfer);
+
+	protected ThreadInstantItem updateLastUsed(SocketChannel channel) {
+		return lastUsed.computeIfPresent(channel, (_, x) -> new ThreadInstantItem(x.thread(), Instant.now()));
+	}
+
+	protected void shutdownConnections() {
+		for (;;) {
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				break;
+			}
+
+			Map<SocketChannel, ThreadInstantItem> m = new HashMap<>();
+//			IO.println("SecureServer.shutdownConnections, lastUsed=" + lastUsed.size());
+			var i0 = Instant.now().minus(CONNECTION_TIMEOUT);
+			for (var it = lastUsed.entrySet().iterator(); it.hasNext();) {
+				var kv = it.next();
+				var i = kv.getValue().instant();
+				if (!i.isAfter(i0)) {
+					it.remove();
+					m.put(kv.getKey(), kv.getValue());
+				}
+			}
+			for (var kv : m.entrySet()) {
+				var ch = kv.getKey();
+				var th = kv.getValue().thread();
+//				IO.println("SecureServer.shutdownConnections, ch=" + ch);
+
+//			String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^\\d.]", "");
+//			try {
+//				Runtime.getRuntime().exec("jcmd " + pid + " Thread.dump_to_file -format=json dump.json");
+//			} catch (IOException e) {
+//				throw new UncheckedIOException(e);
+//			}
+
+				if (th.isAlive()) {
+//				IO.println("SecureServer.shutdownConnections, th=" + th);
+					th.interrupt();
+				}
+
+				if (ch.isOpen()) {
+//				IO.println("SecureServer.shutdownConnections, ch=" + ch);
+					try {
+						ch.shutdownInput();
+						ch.shutdownOutput();
+						ch.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+	}
+}

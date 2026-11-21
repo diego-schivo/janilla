@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,14 +28,14 @@ import java.util.Map;
 
 import com.janilla.http.DirectHttpClient;
 import com.janilla.http.HttpServer;
-import com.janilla.ioc.Context;
+import com.janilla.java.Scope;
 import com.janilla.web.WebApp;
 
-@Context("frontend")
+@Scope("frontend")
 public class BlankHttpClient extends DirectHttpClient {
 
 	public BlankHttpClient() {
-		var b = ((BlankFullstack<?>) WebApp.INSTANCE.get()).backend();
+		var b = ((BlankFullstack<?, ?>) WebApp.SCOPED.get()).backend();
 		super(b.diFactory().newInstance(b.diFactory().classFor(HttpServer.class), Map.of("handler", b.httpHandler())));
 	}
 }

@@ -13,6 +13,7 @@
 		<module>base</module>
 		<module>frontend</module>
 		<module>fullstack</module>
+		<module>test</module>
 	</modules>
 	<properties>
 		<maven.compiler.parameters>true</maven.compiler.parameters>
@@ -48,7 +49,6 @@
 	</build>
 	<name>janilla-com</name>
 	<description>Janilla.com</description>
-	<url>https://github.com/diego-schivo/janilla-com</url>
 	<licenses>
 		<license>
 			<name>MIT</name>
@@ -63,10 +63,20 @@
 			<organizationUrl>https://janilla.com</organizationUrl>
 		</developer>
 	</developers>
-	<scm>
-		<connection>scm:git:git://github.com/diego-schivo/janilla-com.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/diego-schivo/janilla-com.git</developerConnection>
-		<url>https://github.com/diego-schivo/janilla-com</url>
-		<tag>janilla-13.0.0</tag>
-	</scm>
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<configuration>
+							<skipPublishing>true</skipPublishing>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

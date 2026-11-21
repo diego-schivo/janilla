@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ package com.janilla.websitetemplate;
 import java.util.List;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
+import com.janilla.java.Type;
 import com.janilla.persistence.Index;
 import com.janilla.persistence.Store;
 
@@ -35,7 +35,7 @@ import com.janilla.persistence.Store;
 public interface SearchResult extends Document<Long> {
 
 	@Index
-	@Types({ Post.class })
+	@Type({ Post.class })
 	Document<?> document();
 
 	String title();

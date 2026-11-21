@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,33 +25,39 @@
  */
 package com.janilla.conduit.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.janilla.backend.web.AbstractBackend;
-import com.janilla.backend.web.BackendConfig;
-import com.janilla.ioc.DefaultDiFactory;
+import com.janilla.blanktemplate.backend.BlankBackend;
+import com.janilla.conduit.ConduitDomain;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
-public class ConduitBackend extends AbstractBackend<BackendConfig> {
+public class ConduitBackend extends BlankBackend<ConduitBackendConfig, ConduitDomain> {
+
+	private static final Logger LOGGER = System.getLogger(ConduitBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
-				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.backend", _ -> true),
+		return Stream.of(BlankBackend.diTypes(), Java.getPackageTypes("com.janilla.conduit"),
 				Java.getPackageTypes("com.janilla.conduit.backend")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { ConduitBackend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
+		var cfg = newConfig(new Class<?>[] { ConduitBackend.class }, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
+		serve(a[0]);
 	}
 
-	public ConduitBackend(BackendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public ConduitBackend(ConduitBackendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, Data.class, SeedData.class);
 	}
 }

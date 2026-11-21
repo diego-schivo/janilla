@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,7 +49,7 @@ export default class Post extends WebComponent {
             }, "");
 
         if (this.dataset.slug != hs.post?.slug) {
-            const u = new URL(`${a.dataset.apiUrl}/posts`, location.href);
+            const u = new URL(`${a.customEnv.apiUrl}/posts`, location.href);
             u.searchParams.append("slug", this.dataset.slug);
             u.searchParams.append("depth", 1);
             const p = (await (await fetch(u)).json()).elements[0];
@@ -91,7 +91,7 @@ export default class Post extends WebComponent {
         }));
     }
 
-    data(path) {
+    findData(path) {
         return path.split(".").reduce((x, n) => Array.isArray(x)
             ? x[parseInt(n)]
             : typeof x === "object" && x !== null

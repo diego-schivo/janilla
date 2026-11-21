@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,77 +25,56 @@
  */
 package com.janilla.conduit.test;
 
-import java.util.Objects;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.janilla.blanktemplate.test.BlankTest;
+import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
+import com.janilla.java.Java;
 import com.janilla.conduit.backend.ConduitBackend;
 import com.janilla.conduit.frontend.ConduitFrontend;
 import com.janilla.conduit.fullstack.ConduitFullstack;
-import com.janilla.frontend.web.AbstractFrontend;
-import com.janilla.frontend.web.FrontendConfig;
-import com.janilla.http.HttpHandler;
-import com.janilla.ioc.DefaultDiFactory;
-import com.janilla.ioc.DiFactory;
-import com.janilla.java.Java;
-import com.janilla.web.NotFoundException;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
-import com.janilla.web.WebAppHandlerFactory;
 
-public class ConduitTest extends AbstractFrontend<FrontendConfig> {
+public class ConduitTest extends BlankTest {
+
+	private static final Logger LOGGER = System.getLogger(ConduitTest.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
-				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
-				Java.getPackageTypes("com.janilla.conduit.test")).flatMap(x -> x);
+		return Stream.concat(BlankTest.diTypes(), Java.getPackageTypes("com.janilla.conduit.test"));
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { ConduitBackend.class, ConduitFrontend.class, ConduitFullstack.class,
 				ConduitTest.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		serve(a[0]);
 	}
 
-	protected final ConduitFullstack fullstack;
-
-	public ConduitTest(FrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
-
-		{
-			var f = new DefaultDiFactory(ConduitFullstack.diTypes().toList(), "fullstack");
-			var c = newConfig(new Class<?>[] { ConduitBackend.class, ConduitFrontend.class, ConduitFullstack.class,
-					ConduitTest.class }, null, f);
-			fullstack = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		}
-	}
-
-	public ConduitFullstack fullstack() {
-		return fullstack;
+	public ConduitTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 	}
 
 	@Override
-	protected HttpHandler newHttpHandler() {
-		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
-		return x -> {
-			var h = WebHandling.TEST_ONGOING.get() && !x.request().getPath().startsWith("/test/")
-					? fullstack.httpHandler()
-					: (HttpHandler) x2 -> {
-						var h2 = f.createHandler(Objects.requireNonNullElse(x2.exception(), x2.request()));
-						if (h2 == null)
-							throw new NotFoundException(x2.request().getHeaderValue(":method") + " "
-									+ x2.request().getHeaderValue(":path"));
-						return h2.handle(x2);
-					};
-			return h.handle(x);
-		};
+	protected Stream<Class<?>> diFullstackTypes() {
+		return ConduitFullstack.diTypes();
 	}
 
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.conduit.test", "");
+
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.conduit.test"), "");
 	}
+
 }

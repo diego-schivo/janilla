@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,38 +25,57 @@
  */
 package com.janilla.conduit.fullstack;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.janilla.blanktemplate.fullstack.BlankFullstack;
+import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
+import com.janilla.java.Java;
+import com.janilla.conduit.ConduitDomain;
 import com.janilla.conduit.backend.ConduitBackend;
 import com.janilla.conduit.frontend.ConduitFrontend;
-import com.janilla.fullstack.web.AbstractFullstack;
-import com.janilla.fullstack.web.FullstackConfig;
-import com.janilla.ioc.DefaultDiFactory;
-import com.janilla.ioc.DiFactory;
-import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
-public class ConduitFullstack extends AbstractFullstack<FullstackConfig> {
+public class ConduitFullstack extends BlankFullstack<ConfigImpl, ConduitDomain> {
+
+	private static final Logger LOGGER = System.getLogger(ConduitFullstack.class.getName());
+
+	public static final Class<?>[] CONFIG_CLASSES = { ConduitBackend.class, ConduitFrontend.class,
+			ConduitFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", _ -> true),
-				Java.getPackageTypes("com.janilla.frontend", _ -> true),
-				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
+		return Stream.of(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.conduit.backend"),
+				Java.getPackageTypes("com.janilla.conduit.frontend"),
 				Java.getPackageTypes("com.janilla.conduit.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		var c = newConfig(new Class<?>[] { ConduitBackend.class, ConduitFrontend.class, ConduitFullstack.class },
-				args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		serve(a[0]);
 	}
 
-	public ConduitFullstack(FullstackConfig config, DiFactory diFactory) {
-		super(config, diFactory, ConduitFrontend.class, ConduitBackend.class);
+	ConduitFullstack(ConfigImpl config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, ConduitBackend.class, ConduitFrontend.class);
+	}
+
+	@Override
+	protected Stream<Class<?>> diBackendTypes() {
+		return Stream.of(diTypes(backendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.conduit.fullstack")).flatMap(x -> x);
+	}
+
+	@Override
+	protected Stream<Class<?>> diFrontendTypes() {
+		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.conduit.fullstack")).flatMap(x -> x);
 	}
 }

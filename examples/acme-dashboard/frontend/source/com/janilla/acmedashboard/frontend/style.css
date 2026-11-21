@@ -22,17 +22,4 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-@import "base.css";
-@import "acme-logo.css";
-@import "card-wrapper.css";
-@import "customers-page.css";
-@import "dashboard-page.css";
-@import "hero-icon.css";
-@import "invoice-page.css";
-@import "invoice-status.css";
-@import "invoices-page.css";
-@import "latest-invoices.css";
-@import "login-page.css";
-@import "pagination-nav.css";
-@import "revenue-chart.css";
-@import "welcome-page.css";
+@import "app.css";

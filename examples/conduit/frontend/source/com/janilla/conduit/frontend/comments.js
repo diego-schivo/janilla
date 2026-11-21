@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -76,7 +78,7 @@ static get moduleUrl() {
 			const i = Array.prototype.findIndex.call(els, x => x === el);
 			const hs = history.state;
 			const c = hs.comments[i];
-			const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+			const { customEnv: { apiUrl }, apiHeaders } = this.closest("app-element");
 			const r = await fetch(`${apiUrl}/articles/${hs.article.slug}/comments/${c.id}`, {
 				method: "DELETE",
 				headers: apiHeaders
@@ -91,7 +93,7 @@ static get moduleUrl() {
 
 	handleSubmit = async event => {
 		event.preventDefault();
-		const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+		const { customEnv: { apiUrl }, apiHeaders } = this.closest("app-element");
 		const r = await fetch(`${apiUrl}/articles/${history.state.article.slug}/comments`, {
 			method: "POST",
 			headers: {

@@ -27,12 +27,13 @@ module com.janilla.janillacom.frontend {
 
 	opens com.janilla.janillacom.frontend;
 
-	requires transitive com.janilla.ecommercetemplate.frontend;
+	requires transitive com.janilla.websitetemplate.frontend;
 	requires transitive com.janilla.janillacom.base;
 
 	requires com.janilla.acmedashboard.frontend;
 	requires com.janilla.addressbook.frontend;
 	requires com.janilla.conduit.frontend;
+	requires com.janilla.ecommercetemplate.frontend;
 	requires com.janilla.petclinic.frontend;
 	requires com.janilla.todomvc.frontend;
 }

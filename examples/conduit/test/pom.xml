@@ -4,6 +4,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.janilla</groupId>
+			<artifactId>janilla-blank-template-test</artifactId>
+			<version>${revision}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.janilla</groupId>
 			<artifactId>janilla-conduit-fullstack</artifactId>
 			<version>${revision}</version>
 		</dependency>
@@ -14,23 +19,31 @@
 		<version>${revision}</version>
 		<relativePath>..</relativePath>
 	</parent>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<configuration>
-					<executable>java</executable>
-					<arguments>
-						<argument>--module-path</argument>
-						<modulepath />
-						<argument>--module</argument>
-						<argument>com.janilla.conduit.test/com.janilla.conduit.test.ConduitTesting</argument>
-					</arguments>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+	<properties>
+		<exec.mainClass>com.janilla.conduit.test.ConduitTest</exec.mainClass>
+	</properties>
 	<name>janilla-conduit-test</name>
 	<description>Janilla Conduit Test</description>
+	<profiles>
+		<profile>
+			<id>execute</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<configuration>
+							<executable>java</executable>
+							<arguments>
+								<argument>--module-path</argument>
+								<modulepath />
+								<argument>--module</argument>
+								<argument>com.janilla.conduit.test/com.janilla.conduit.test.ConduitTest</argument>
+							</arguments>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

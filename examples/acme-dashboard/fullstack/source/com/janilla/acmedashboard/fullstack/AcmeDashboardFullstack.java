@@ -24,38 +24,57 @@
  */
 package com.janilla.acmedashboard.fullstack;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.janilla.blanktemplate.fullstack.BlankFullstack;
+import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
+import com.janilla.java.Java;
+import com.janilla.acmedashboard.AcmeDashboardDomain;
 import com.janilla.acmedashboard.backend.AcmeDashboardBackend;
 import com.janilla.acmedashboard.frontend.AcmeDashboardFrontend;
-import com.janilla.fullstack.web.AbstractFullstack;
-import com.janilla.fullstack.web.FullstackConfig;
-import com.janilla.ioc.DefaultDiFactory;
-import com.janilla.ioc.DiFactory;
-import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
-public class AcmeDashboardFullstack extends AbstractFullstack<FullstackConfig> {
+public class AcmeDashboardFullstack extends BlankFullstack<ConfigImpl, AcmeDashboardDomain> {
+
+	private static final Logger LOGGER = System.getLogger(AcmeDashboardFullstack.class.getName());
+
+	public static final Class<?>[] CONFIG_CLASSES = { AcmeDashboardBackend.class, AcmeDashboardFrontend.class,
+			AcmeDashboardFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", _ -> true),
-				Java.getPackageTypes("com.janilla.frontend", _ -> true),
-				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
+		return Stream.of(BlankFullstack.diTypes(), Java.getPackageTypes("com.janilla.acmedashboard.backend"),
+				Java.getPackageTypes("com.janilla.acmedashboard.frontend"),
 				Java.getPackageTypes("com.janilla.acmedashboard.fullstack")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		var c = newConfig(new Class<?>[] { AcmeDashboardBackend.class, AcmeDashboardFrontend.class,
-				AcmeDashboardFullstack.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
+		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		serve(a[0]);
 	}
 
-	public AcmeDashboardFullstack(FullstackConfig config, DiFactory diFactory) {
-		super(config, diFactory, AcmeDashboardFrontend.class, AcmeDashboardBackend.class);
+	AcmeDashboardFullstack(ConfigImpl config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, AcmeDashboardBackend.class, AcmeDashboardFrontend.class);
+	}
+
+	@Override
+	protected Stream<Class<?>> diBackendTypes() {
+		return Stream.of(diTypes(backendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.acmedashboard.fullstack")).flatMap(x -> x);
+	}
+
+	@Override
+	protected Stream<Class<?>> diFrontendTypes() {
+		return Stream.of(diTypes(frontendClass), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"),
+				Java.getPackageTypes("com.janilla.acmedashboard.fullstack")).flatMap(x -> x);
 	}
 }

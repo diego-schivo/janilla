@@ -4,7 +4,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.janilla</groupId>
-			<artifactId>janilla-base</artifactId>
+			<artifactId>janilla-blank-template-base</artifactId>
 			<version>${revision}</version>
 		</dependency>
 	</dependencies>
@@ -15,5 +15,5 @@
 		<relativePath>..</relativePath>
 	</parent>
 	<name>janilla-petclinic-base</name>
-	<description>Janilla PetClinic Base</description>
+	<description>Janilla Petclinic Base</description>
 </project>

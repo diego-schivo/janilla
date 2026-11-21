@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,11 +24,13 @@
  */
 package com.janilla.blanktemplate;
 
-import com.janilla.cms.UserRole;
+import com.janilla.cms.CmsDomain;
+import com.janilla.java.Converter;
+import com.janilla.java.Copier;
 
-public class BlankDomain {
+public class BlankDomain extends CmsDomain {
 
-	public UserRole userRole(String name) {
-		return UserRoleImpl.valueOf(name);
+	public BlankDomain(Converter converter, Copier copier) {
+		super(converter, copier);
 	}
 }

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,30 +25,42 @@
 package com.janilla.blanktemplate.frontend;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import com.janilla.ioc.DiFactory;
-import com.janilla.java.AnnotationAndElement;
-import com.janilla.web.Render;
+import com.janilla.java.AnnotationResult;
 import com.janilla.web.DefaultRenderableFactory;
+import com.janilla.web.PackageResourcesProvider;
+import com.janilla.web.Render;
 import com.janilla.web.ResourceMap;
+import com.janilla.web.ResourcesProvider;
 
 public class BlankRenderableFactory extends DefaultRenderableFactory {
 
-	protected final Map<String, String> resourcePrefixes;
+	protected final Map<ResourcesProvider, String> resourcesProviders;
 
-	public BlankRenderableFactory(ResourceMap resourceMap, DiFactory diFactory, Map<String, String> resourcePrefixes) {
+	protected final Map<String, String> basePaths = new ConcurrentHashMap<>();
+
+	public BlankRenderableFactory(ResourceMap resourceMap, DiFactory diFactory,
+			Map<ResourcesProvider, String> resourcesProviders) {
 		super(resourceMap, diFactory);
-		this.resourcePrefixes = resourcePrefixes;
+		this.resourcesProviders = resourcesProviders;
 	}
 
 	@Override
-	protected Stream<String> resourceKeys(AnnotationAndElement<Render> render) {
+	protected Stream<String> resourceKeys(AnnotationResult<Render> render) {
 		return super.resourceKeys(render).map(x -> {
-			var y = x.startsWith("/") ? x
-					: resourcePrefixes.get(((Class<?>) render.annotated()).getPackageName()) + "/" + x;
+			String k;
+			if (x.startsWith("/"))
+				k = x;
+			else {
+				var bp = basePaths.computeIfAbsent(((Class<?>) render.annotated()).getPackageName(),
+						y -> resourcesProviders.get(new PackageResourcesProvider(y)));
+				k = bp + "/" + x;
+			}
 //			IO.println("BlankRenderableFactory.resourceKeys, x=" + x + ", y=" + y);
-			return y;
+			return k;
 		});
 	}
 }

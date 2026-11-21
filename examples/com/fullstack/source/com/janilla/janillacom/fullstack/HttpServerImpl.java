@@ -25,16 +25,15 @@ package com.janilla.janillacom.fullstack;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,21 +48,31 @@ import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
 import com.janilla.http.HttpResponse;
-import com.janilla.ioc.Context;
+import com.janilla.java.Scope;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.janillacom.backend.JanillaBackend;
 import com.janilla.janillacom.frontend.JanillaFrontend;
+import com.janilla.net.AmountLimiter;
+import com.janilla.net.Blacklister;
+import com.janilla.net.FilterTransfer;
+import com.janilla.net.RateLimiter;
+import com.janilla.net.Transfer;
 
-@Context("fullstack")
+@Scope("fullstack")
 class HttpServerImpl extends DefaultHttpServer {
 
-	protected static final Pattern BOT_REGEX = Pattern.compile("aws|config|docker|env|info|node|php|sql|wp|yml");
+	protected static final ScopedValue<AmountLimiter> REQUEST_SIZE_LIMITER = ScopedValue.newInstance();
+
+	private static final Logger LOGGER = System.getLogger(HttpServerImpl.class.getName());
 
 	protected final JanillaBackend backend;
 
+	protected final Blacklister blacklister = new Blacklister(
+			Pattern.compile("aws|config|docker|env|info|node|php|sql|wp|yml"));
+
 	protected final JanillaFrontend frontend;
 
-	protected final Set<String> blacklist = new HashSet<>();
+	protected final RateLimiter<InetAddress> requestRateLimiter = new RateLimiter<>(1000, 60);
 
 	public HttpServerImpl(SocketAddress endpoint, SSLContext sslContext, HttpHandler handler, JanillaFrontend frontend,
 			JanillaBackend backend) {
@@ -74,69 +83,76 @@ class HttpServerImpl extends DefaultHttpServer {
 
 	@Override
 	protected Thread startThread(SocketChannel channel) {
-		String a;
-		try {
-			a = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		if (blacklist.contains(a))
-			throw new RuntimeException("Blacklisted " + a);
+		var a = address(channel);
+
+		if (blacklister.test(a))
+			throw new IllegalStateException("Blacklisted " + a);
 
 		return super.startThread(channel);
 	}
 
 	@Override
+	protected void handleConnection(Transfer transfer) {
+		var l = new AmountLimiter(8192);
+		ScopedValue.where(REQUEST_SIZE_LIMITER, l).run(() -> {
+			var t = new FilterTransfer(transfer) {
+
+				@Override
+				public int read() {
+					var n = super.read();
+
+					if (n > 0 && !l.test(n))
+						throw new IllegalStateException("Request size limit exceeded");
+
+					return n;
+				}
+			};
+
+			HttpServerImpl.super.handleConnection(t);
+		});
+	}
+
+	@Override
 	protected void handleEndHeaders1(List<String> lines) {
-		var dt = LocalDateTime.now();
-
-		SocketAddress a;
-		try {
-			a = SOCKET_CHANNEL.get().getRemoteAddress();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
+		var a = address(SOCKET_CHANNEL.get());
 		var l = lines.getFirst();
+		LOGGER.log(Level.DEBUG, a + " " + l);
 
-		IO.println(dt.truncatedTo(ChronoUnit.SECONDS) + " " + a + " " + l);
-
-		if (BOT_REGEX.matcher(l).find()) {
-			blacklist.add(((InetSocketAddress) a).getAddress().getHostAddress());
-			throw new RuntimeException("Blacklisted " + ((InetSocketAddress) a).getAddress().getHostAddress());
-		}
+		if (blacklister.test(a, l))
+			throw new IllegalStateException("Blacklisted " + a);
 	}
 
 	@Override
 	protected void handleEndHeaders2(List<Frame> frames, FrameTransfer transfer) {
-		var dt = LocalDateTime.now();
-
-		SocketAddress a;
-		try {
-			a = SOCKET_CHANNEL.get().getRemoteAddress();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
+		var a = address(SOCKET_CHANNEL.get());
 		var s = frames.stream().flatMap(x -> x instanceof HeadersFrame y ? y.fields().stream() : Stream.empty())
 				.filter(x -> x.name().equals(":method") || x.name().equals(":path"))
 				.sorted(Comparator.comparing(x -> x.name())).map(x -> x.value()).collect(Collectors.joining(" "));
+		LOGGER.log(Level.DEBUG, a + " " + s);
 
-		IO.println(dt.truncatedTo(ChronoUnit.SECONDS) + " " + a + " " + s);
+		if (blacklister.test(a, s))
+			throw new IllegalStateException("Blacklisted " + a);
+	}
 
-		if (BOT_REGEX.matcher(s).find()) {
-			blacklist.add(((InetSocketAddress) a).getAddress().getHostAddress());
-			throw new RuntimeException("Blacklisted " + ((InetSocketAddress) a).getAddress().getHostAddress());
-		}
+	@Override
+	protected void handleEndStream(List<Frame> frames, FrameTransfer transfer) {
+		var c = SOCKET_CHANNEL.get();
+		var l = REQUEST_SIZE_LIMITER.get();
+		Thread.startVirtualThread(() -> ScopedValue.where(SOCKET_CHANNEL, c)
+				.run(() -> ScopedValue.where(REQUEST_SIZE_LIMITER, l).run(() -> handleStream(frames, transfer))));
 	}
 
 	@Override
 	public void exchange(HttpRequest request, HttpResponse response) {
-		var a = request.getHeaderValue(":authority");
-		if (a == null)
-			a = request.getHeaderValue("Host");
+		REQUEST_SIZE_LIMITER.get().reset();
+
+		var a = address(SOCKET_CHANNEL.get());
+		if (!requestRateLimiter.test(a))
+			throw new IllegalStateException("Request rate limit exceeded (address=" + a + ")");
+
 		var wa = request.getPath().contains("/api/") ? backend.backend(request) : frontend.frontend(request);
-//		IO.println("HttpServerImpl.exchange, a=" + a + ", wa=" + wa);
+		LOGGER.log(Level.DEBUG, "app={0}", wa);
+
 		ScopedValue.where(JanillaDomain.WEB_APP, wa).run(() -> super.exchange(request, response));
 	}
 
@@ -146,5 +162,15 @@ class HttpServerImpl extends DefaultHttpServer {
 		var c = a.diFactory().classFor(HttpExchange.class);
 		return c != null ? a.diFactory().newInstance(c, Map.of("request", request, "response", response))
 				: super.createExchange(request, response);
+	}
+
+	protected InetAddress address(SocketChannel channel) {
+		InetAddress a;
+		try {
+			a = ((InetSocketAddress) channel.getRemoteAddress()).getAddress();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		return a;
 	}
 }

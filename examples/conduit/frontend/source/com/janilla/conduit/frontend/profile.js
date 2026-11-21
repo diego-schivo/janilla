@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -51,7 +53,7 @@ export default class Profile extends WebComponent {
 
 	async updateDisplay() {
 		const hs = history.state ?? {};
-		const { dataset: { apiUrl }, customState: { apiHeaders, user } } = this.closest("app-element");
+		const { apiHeaders, customEnv: { apiUrl }, customState: { user } } = this.closest("app-element");
 		if (hs.profile) {
 			this.appendChild(this.interpolateDom({
 				$template: "",
@@ -83,7 +85,7 @@ export default class Profile extends WebComponent {
 			const { profile } = await (await fetch(`${apiUrl}/profiles/${this.dataset.username}`, { headers: apiHeaders })).json();
 			history.replaceState({
 				...history.state,
-				profile,
+				profile: profile ?? {},
 				profileTab: "author"
 			}, "");
 			dispatchEvent(new CustomEvent("popstate"));
@@ -109,7 +111,7 @@ export default class Profile extends WebComponent {
 		const { profile } = event.detail;
 		history.replaceState({
 			...history.state,
-			profile
+			profile: profile ?? {}
 		}, "");
 		this.requestDisplay();
 	}

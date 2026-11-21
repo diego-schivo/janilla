@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -72,11 +74,11 @@ export default class PopularTags extends WebComponent {
 		this.appendChild(f);
 
 		if (!hs.tags) {
-			const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+			const { customEnv: { apiUrl }, apiHeaders } = this.closest("app-element");
 			const { tags } = await (await fetch(`${apiUrl}/tags`, { headers: apiHeaders })).json();
 			history.replaceState({
 				...history.state,
-				tags
+				tags: tags ?? []
 			}, "");
 			this.requestDisplay(0);
 		}

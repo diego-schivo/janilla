@@ -13,23 +13,25 @@
 <template id="form">
   <form>
     <!--${fields}-->
-    <button class="button primary">Submit</button>
+    <p>
+      <button class="button primary">Submit</button>
+    </p>
   </form>
 </template>
 
 <template id="field">
-  <label>
-    <span>${label}</span>
+  <p>
+    <label for="${name}">${label}</label>
     <!--${control}-->
-  </label>
+  </p>
 </template>
 
 <template id="input">
-  <input type="${type}" name="${name}" required="${required}" />
+  <input type="${type}" id="${name}" name="${name}" required="${required}" />
 </template>
 
 <template id="textarea">
-  <textarea name="${name}" rows="3" required="${required}"></textarea>
+  <textarea id="${name}" name="${name}" rows="3" required="${required}"></textarea>
 </template>
 
 <template id="confirmation">

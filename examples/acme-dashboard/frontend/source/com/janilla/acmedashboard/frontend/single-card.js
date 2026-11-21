@@ -40,6 +40,7 @@ export default class SingleCard extends WebComponent {
     }
 
     async updateDisplay() {
+        const a = this.shadowClosest("app-element");
         const x = ({
             collected: "banknotes",
             pending: "clock",
@@ -47,6 +48,7 @@ export default class SingleCard extends WebComponent {
             customers: "user-group"
         })[this.dataset.type];
         this.shadowRoot.appendChild(this.interpolateDom({
+            ...a.baseInput,
             $template: "",
             ...this.dataset,
             icon: x

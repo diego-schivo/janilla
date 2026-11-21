@@ -1,0 +1,20 @@
+{
+	"articles": [],
+	"comments": [],
+	"users": [
+		{
+			"$type": "User",
+			"id": 1,
+			"username": "Demo Author",
+			"email": "demo-author@janilla.com",
+			"salt": "b99966fba75e6ed4a3206da3dd888e5b",
+			"hash": "c73c5f4d61cf1f9ef10ec1a0eb7b4d49ddd8ad2bf6815b2b3bf0a07dfb795d1e32eb7a89565bb8f844f85d5cb08b400fe8ea925a1b05f6720453d766a1a6941d",
+			"roles": [
+				{
+					"$type": "UserRole",
+					"name": "ADMIN"
+				}
+			]
+		}
+	]
+}

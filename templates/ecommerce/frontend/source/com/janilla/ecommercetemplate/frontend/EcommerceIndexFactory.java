@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,17 +28,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.janilla.frontend.ApiClient;
 import com.janilla.frontend.Template;
-import com.janilla.frontend.cms.CmsDataFetching;
-import com.janilla.http.HttpExchange;
 import com.janilla.ioc.DiFactory;
 import com.janilla.web.ResourceMap;
 import com.janilla.websitetemplate.frontend.WebsiteIndexFactory;
 
 public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends WebsiteIndexFactory<C> {
 
-	public EcommerceIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, CmsDataFetching dataFetching) {
-		super(config, resourceMap, diFactory, dataFetching);
+	public EcommerceIndexFactory(C config, ResourceMap resourceMap, DiFactory diFactory, ApiClient apiClient) {
+		super(config, resourceMap, diFactory, apiClient);
 	}
 
 	@Override
@@ -51,22 +50,25 @@ public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends We
 	}
 
 	@Override
-	protected void putAppInitArgs(Map<String, Object> args, HttpExchange exchange) {
-		super.putAppInitArgs(args, exchange);
-		args.put("stripePublishableKey", config.stripe().publishableKey());
-		args.put("stripeUrl", config.stripe().url());
+	protected Map<String, String> env() {
+		var m = super.env();
+		m.put("stripePublishableKey", config.stripe().publishableKey());
+		m.put("stripeUrl", config.stripe().url());
+
+		return m;
 	}
 
 	@Override
 	protected void putImports(Map<String, String> map) {
 		super.putImports(map);
-		Stream.of("account", "account-nav", "address-edit", "address-item", "addresses", "admin",
-				"admin-create-first-user", "admin-fields", "admin-variant-options", "app", "card", "cart-modal",
-				"checkout", "checkout-addresses", "confirm-order", "create-account", "create-address-modal",
-				"find-order", "footer", "header", "intl-format", "loading-spinner", "login", "logout", "message",
-				"mobile-menu", "order", "order-item", "orders", "payment", "price", "product", "product-description",
-				"product-gallery", "product-item", "select", "shop", "variant-selector").map(this::ecommerceImportKey)
-				.forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
+
+		Stream.of("account", "account-form", "account-nav", "address-edit", "address-item", "addresses", "admin",
+				"admin-create-first-user", "admin-fields", "admin-login", "admin-variant-options", "app", "card",
+				"cart-modal", "checkout", "checkout-addresses", "confirm-order", "create-account",
+				"create-address-modal", "find-order", "footer", "header", "intl-format", "loading-spinner", "login",
+				"logout", "message", "mobile-menu", "order", "order-item", "orders", "payment", "price", "product",
+				"product-description", "product-gallery", "product-item", "select", "shop", "variant-selector")
+				.map(this::ecommerceImportKey).forEach(x -> map.put(x, config.basePath() + "/" + x + ".js"));
 	}
 
 	@Override
@@ -81,6 +83,7 @@ public class EcommerceIndexFactory<C extends EcommerceFrontendConfig> extends We
 	@Override
 	protected void addTemplates(List<Template> list) {
 		super.addTemplates(list);
+
 		Stream.of("toaster").map(this::frontendTemplate).forEach(list::add);
 		Stream.of("app", "cart-modal", "mobile-menu").map(this::ecommerceTemplate).forEach(list::add);
 	}

@@ -39,18 +39,19 @@ export default class LatestInvoices extends WebComponent {
     }
 
     async updateDisplay() {
-        const d = this.closest("dashboard-page");
+        const a = this.shadowClosest("app-element");
+        const d = this.shadowClosest("dashboard-page");
         const hs = history.state;
         this.appendChild(this.interpolateDom({
             $template: "",
             articles: d.slot && hs.invoices ? hs.invoices.map(x => ({
+                ...a.baseInput,
                 $template: "article",
                 ...x
             })) : Array.from({ length: 6 }).map(() => ({ $template: "article-skeleton" }))
         }));
         if (this.dataset.state === "loading") {
-            const a = this.closest("app-element");
-            const x = a.serverState?.invoices ?? await (await fetch(`${a.dataset.apiUrl}/dashboard/invoices`,
+            const x = a.serverState?.invoices ?? await (await fetch(`${a.customEnv.apiUrl}/dashboard/invoices`,
                 { credentials: "include" })).json();
             history.replaceState({
                 ...history.state,

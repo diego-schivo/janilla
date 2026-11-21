@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -56,7 +56,7 @@ export default class Payment extends WebComponent {
             $template: "",
             submit: {
                 $template: "submit",
-				disabled: s.submitting,
+                disabled: s.submitting,
                 text: s.submitting ? "Loading..." : "Pay now"
             }
         }));
@@ -101,9 +101,9 @@ export default class Payment extends WebComponent {
 
         const s = this.customState;
         s.submitting = true;
-		this.requestDisplay();
+        this.requestDisplay();
 
-		        const c = this.closest("checkout-element");
+        const c = this.closest("checkout-element");
         const a = this.closest("app-element");
         const [ba] = [c.customState.billingAddress].map(x => typeof x === "object" ? x : a.currentUser.addresses.find(y => y.id === x));
         let u = new URL("/checkout/confirm-order", location.href);
@@ -131,7 +131,7 @@ export default class Payment extends WebComponent {
             redirect: "if_required"
         });
         if (j.paymentIntent?.status === "succeeded") {
-            j = await (await fetch(`${a.dataset.apiUrl}/payments/stripe/confirm-order`, {
+            j = await (await fetch(`${a.customEnv.apiUrl}/payments/stripe/confirm-order`, {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
@@ -140,12 +140,12 @@ export default class Payment extends WebComponent {
                 })
             })).json();
             if (j?.order) {
-                await fetch(`${a.dataset.apiUrl}/carts/${c.customState.cart.id}`, { method: "DELETE" });
+                await fetch(`${a.customEnv.apiUrl}/carts/${c.customState.cart.id}`, { method: "DELETE" });
                 localStorage.removeItem("cart");
                 u = new URL(`/orders/${j.order}`, location.href);
                 if (this.dataset.guestEmail)
                     u.searchParams.append("guestEmail", this.dataset.guestEmail);
-                a.navigate(u);
+                a.navigateTo(u);
             }
         }
     }

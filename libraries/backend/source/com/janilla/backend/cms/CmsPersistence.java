@@ -1,0 +1,89 @@
+/*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
+package com.janilla.backend.cms;
+
+import java.util.List;
+
+import com.janilla.backend.persistence.Crud;
+import com.janilla.backend.persistence.CrudObserver;
+import com.janilla.backend.persistence.DefaultPersistence;
+import com.janilla.backend.sqlite.SqliteDatabase;
+import com.janilla.backend.sqlite.TableColumn;
+import com.janilla.cms.Document;
+import com.janilla.cms.Versions;
+import com.janilla.ioc.DiFactory;
+import com.janilla.java.JavaReflect;
+import com.janilla.persistence.Entity;
+
+public class CmsPersistence extends DefaultPersistence {
+
+	public CmsPersistence(SqliteDatabase database, List<Class<? extends Entity<?>>> storables, DiFactory diFactory) {
+		super(database, storables, diFactory);
+	}
+
+	@Override
+	protected <E extends Entity<?>> Crud<?, E> newCrud(String name, Class<E> type) {
+		@SuppressWarnings("unchecked")
+		var t = (Class<? extends Document<?>>) type;
+		@SuppressWarnings({ "unchecked" })
+		var c = (Crud<?, E>) super.newCrud(name, t);
+		@SuppressWarnings("unchecked")
+		var o = (CrudObserver<E>) diFactory.newInstance(DocumentObserver.class);
+		c.observers().add(o);
+		return c;
+	}
+
+	@Override
+	protected void createStoresAndIndexes() {
+		database.perform(() -> {
+			super.createStoresAndIndexes();
+
+			for (var t : configuration.cruds().keySet()) {
+				var aa = JavaReflect.inheritedAnnotation(t, Versions.class);
+				var v = aa != null ? aa.annotation() : null;
+
+				if (v != null) {
+					var n = "Version<" + t.getSimpleName() + ">";
+					database.createTable(n,
+							new TableColumn[] { new TableColumn("id", "INTEGER", true),
+									new TableColumn("document", "TEXT", false),
+									new TableColumn("documentId", "INTEGER", false) },
+							false);
+					database.createIndex(n + ".documentId", n, "documentId");
+					if (v.drafts())
+						for (var k : configuration.indexes()) {
+							var ss = k.split("\\.");
+							if (ss[0].equals(t.getSimpleName()))
+								database.createTable(k + "Draft", new TableColumn[] {
+										new TableColumn(ss[1], "TEXT", true), new TableColumn("id", "INTEGER", false) },
+										true);
+						}
+				}
+			}
+
+			return null;
+		}, true);
+	}
+}

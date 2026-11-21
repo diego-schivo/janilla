@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -46,38 +46,36 @@ export default class FormBlock extends WebComponent {
 
     async updateDisplay() {
         const s = this.customState;
-        s.data = this.closest("[data-slug]").data(this.dataset.path);
-        if (s.submission && s.data.form?.confirmationType?.name === "REDIRECT") {
-            this.closest("app-element").navigate(new URL(s.data.form.redirect, location.href));
-            return;
-        }
-
-        this.appendChild(this.interpolateDom({
-            $template: "",
-            intro: !s.submission && s.data.enableIntro ? {
-                $template: "intro",
-                ...s.data
-            } : null,
-            form: !s.submission && s.data.form ? {
-                $template: "form",
-                fields: s.data.form.fields.map(x => ({
-                    $template: "field",
-                    ...x,
-                    control: (() => {
-                        const t = x.$type.replace(/Field$/, "").toLowerCase();
-                        return {
-                            $template: t === "textarea" ? "textarea" : "input",
-                            ...x,
-                            type: ["text", "textarea"].includes(t) ? null : t
-                        };
-                    })()
-                }))
-            } : null,
-            confirmation: s.submission ? {
-                $template: "confirmation",
-                ...s.data.form
-            } : null
-        }));
+        s.data = this.closest(".page").findData(this.dataset.path);
+        if (s.submission && s.data.form?.confirmationType?.name === "REDIRECT")
+            this.closest("app-element").navigateTo(new URL(s.data.form.redirect, location.href));
+        else
+            this.appendChild(this.interpolateDom({
+                $template: "",
+                intro: !s.submission && s.data.enableIntro ? {
+                    $template: "intro",
+                    ...s.data
+                } : null,
+                form: !s.submission && s.data.form ? {
+                    $template: "form",
+                    fields: s.data.form.fields.map(x => ({
+                        $template: "field",
+                        ...x,
+                        control: (() => {
+                            const t = x.$type.replace(/Field$/, "").toLowerCase();
+                            return {
+                                $template: t === "textarea" ? "textarea" : "input",
+                                ...x,
+                                type: ["text", "textarea"].includes(t) ? null : t
+                            };
+                        })()
+                    }))
+                } : null,
+                confirmation: s.submission ? {
+                    $template: "confirmation",
+                    ...s.data.form
+                } : null
+            }));
     }
 
     handleSubmit = async event => {
@@ -87,7 +85,7 @@ export default class FormBlock extends WebComponent {
         const a = this.closest("app-element");
         const s = this.customState;
         const ee = [...new FormData(el).entries()];
-        this.customState.submission = await (await fetch(`${a.dataset.apiUrl}/form-submissions`, {
+        this.customState.submission = await (await fetch(`${a.customEnv.apiUrl}/form-submissions`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({

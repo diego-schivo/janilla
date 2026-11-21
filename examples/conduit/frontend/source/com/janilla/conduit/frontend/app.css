@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,31 +23,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-.navbar-brand {
-	font-family: var(--font-family-logo);
-	font-size: 1.5rem !important;
-	padding-top: 0rem !important;
-	margin-right: 2rem !important;
-	color: var(--brand-primary) !important;
-}
-
-footer {
-	background: #f3f3f3;
-	margin-top: 3rem;
-	padding: 1rem 0;
-	position: absolute;
-	bottom: 0;
-	width: 100%;
-
-	.logo-font {
-		vertical-align: middle;
-	}
-
-	.attribution {
-		vertical-align: middle;
-		margin-left: 10px;
-		font-size: 0.8rem;
-		color: #bbb;
-		font-weight: 300;
-	}
-}
+@import "base.css";
+@import "article.css";
+@import "article-preview.css";
+@import "editor.css";
+@import "errors.css";
+@import "favorite-button.css";
+@import "home.css";
+@import "profile.css";

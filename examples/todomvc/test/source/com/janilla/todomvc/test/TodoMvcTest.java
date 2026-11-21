@@ -1,98 +1,78 @@
 /*
  * MIT License
  *
+ * Copyright (c) Addy Osmani, Sindre Sorhus, Pascal Hartig, Stephen Sawchuk.
  * Copyright (c) 2024-2026 Diego Schivo
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.janilla.todomvc.test;
 
-import java.util.Objects;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.web.AbstractFrontend;
+import com.janilla.blanktemplate.test.BlankTest;
 import com.janilla.frontend.web.FrontendConfig;
-import com.janilla.http.HttpHandler;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
+import com.janilla.todomvc.backend.TodoMvcBackend;
 import com.janilla.todomvc.frontend.TodoMvcFrontend;
-import com.janilla.web.NotFoundException;
+import com.janilla.todomvc.fullstack.TodoMvcFullstack;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
-import com.janilla.web.WebAppHandlerFactory;
 
-public class TodoMvcTest extends AbstractFrontend<FrontendConfig> {
+public class TodoMvcTest extends BlankTest {
+
+	private static final Logger LOGGER = System.getLogger(TodoMvcTest.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
-				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
-				Java.getPackageTypes("com.janilla.todomvc.test")).flatMap(x -> x);
+		return Stream.concat(BlankTest.diTypes(), Java.getPackageTypes("com.janilla.todomvc.test"));
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { TodoMvcFrontend.class, TodoMvcTest.class },
-				args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
+		var c = newConfig(new Class<?>[] { TodoMvcBackend.class, TodoMvcFrontend.class, TodoMvcFullstack.class,
+				TodoMvcTest.class }, args.length != 0 ? args[0] : null, f);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		serve(a[0]);
 	}
 
-	protected final TodoMvcFrontend frontend;
-
-	public TodoMvcTest(FrontendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
-
-		{
-			var f = new DefaultDiFactory(TodoMvcFrontend.diTypes().toList());
-			var c = newConfig(new Class<?>[] { TodoMvcFrontend.class }, null, f);
-			frontend = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		}
-	}
-
-	public TodoMvcFrontend frontend() {
-		return frontend;
+	public TodoMvcTest(FrontendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context);
 	}
 
 	@Override
-	protected HttpHandler newHttpHandler() {
-		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
-		return x -> {
-//			IO.println(
-//			"TodoMvcTest, " + ex.request().getPath() + ", Test.ongoing=" + Test.ongoing.get());
-			var h = WebHandling.TEST_ONGOING.get() && !x.request().getPath().startsWith("/test/")
-					? frontend.httpHandler()
-					: (HttpHandler) x2 -> {
-						var h2 = f.createHandler(Objects.requireNonNullElse(x2.exception(), x2.request()));
-						if (h2 == null)
-							throw new NotFoundException(x2.request().getHeaderValue(":method") + " "
-									+ x2.request().getHeaderValue(":path"));
-						return h2.handle(x2);
-					};
-			return h.handle(x);
-		};
+	protected Stream<Class<?>> diFullstackTypes() {
+		return TodoMvcFullstack.diTypes();
 	}
 
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.todomvc.test", "");
+
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.todomvc.test"), "");
 	}
+
 }

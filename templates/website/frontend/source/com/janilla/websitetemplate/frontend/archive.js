@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +39,7 @@ export default class Archive extends WebComponent {
         const a = this.closest("app-element");
 
         if (!Object.hasOwn(hs, "posts")) {
-            const pp = a.serverState?.posts ?? (await (await fetch(`${a.dataset.apiUrl}/posts`)).json()).elements;
+            const pp = a.serverState?.posts ?? (await (await fetch(`${a.customEnv.apiUrl}/posts`)).json()).elements;
             //console.log("pp=", pp);
             history.replaceState(hs = {
                 ...hs,
@@ -47,11 +47,12 @@ export default class Archive extends WebComponent {
             }, "");
         }
 
-        const d = this.closest("[data-slug]").data(this.dataset.path);
+        const d = this.closest(".page").findData(this.dataset.path);
         this.appendChild(this.interpolateDom({
             $template: "",
             ...d,
             posts: hs.posts?.map(x => ({
+                ...a.baseInput,
                 $template: "post",
                 ...x
             }))

@@ -23,7 +23,5 @@
  */
 package com.janilla.janillacom.backend;
 
-import com.janilla.websitetemplate.backend.Globals;
-
 public record Data(Collections collections, Globals globals) {
 }

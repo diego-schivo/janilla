@@ -1,11 +1,12 @@
 /*
- * Copyright 2012-2026 the original author or authors.
+ * Copyright 2012-2025 the original author or authors.
+ * Copyright 2024-2026 Diego Schivo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,13 +23,17 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.janilla.java.Flatten;
 import com.janilla.java.JavaReflect;
 import com.janilla.petclinic.Pet;
 import com.janilla.petclinic.PetType;
 import com.janilla.web.Render;
 
+/**
+ * @author Diego Schivo
+ */
 @Render(template = "createOrUpdatePetForm", resource = "/createOrUpdatePetForm.html")
-record PetForm(Pet pet, List<PetType> types, Map<String, List<String>> errors) {
+record PetForm(@Flatten Pet pet, List<PetType> types, Map<String, List<String>> errors) {
 
 	private static final Map<String, String> LABELS = Map.of("name", "Name", "birthDate", "Birth Date", "type", "Type");
 
@@ -45,7 +50,7 @@ record PetForm(Pet pet, List<PetType> types, Map<String, List<String>> errors) {
 			case "type" -> {
 				var ii = types.stream()
 						.collect(Collectors.toMap(PetType::id, PetType::name, (y, _) -> y, LinkedHashMap::new));
-				yield new SelectField<>(l, x + ".id", ((PetType) v).id(), ee, ii);
+				yield new SelectField<>(l, x + ".id", v instanceof PetType t ? t.id() : null, ee, ii);
 			}
 			case "birthDate" -> new InputField<>(l, x, (LocalDate) v, ee, "date");
 			default -> new InputField<>(l, x, (String) v, ee, "text");

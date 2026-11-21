@@ -1,13 +1,13 @@
 <template id="account">
-  <account-element class="account" data-success="${success}" data-warning="${warning}"></account-element>
+  <account-element class="main-child account" data-success="${success}" data-warning="${warning}"></account-element>
 </template>
 
 <template id="addresses">
-  <addresses-element class="account"></addresses-element>
+  <addresses-element class="main-child account"></addresses-element>
 </template>
 
 <template id="checkout">
-  <checkout-element></checkout-element>
+  <checkout-element class="main-child"></checkout-element>
 </template>
 
 <template id="confirm-order">
@@ -23,23 +23,23 @@
 </template>
 
 <template id="login">
-  <login-element class="login" data-warning="${warning}"></login-element>
+  <login-element class="main-child login" data-warning="${warning}"></login-element>
 </template>
 
 <template id="logout">
-  <logout-element class="login" data-no-op="${noOp}"></logout-element>
+  <logout-element class="main-child" data-no-op="${noOp}"></logout-element>
 </template>
 
 <template id="order">
-  <order-element class="account" data-id="${id}"></order-element>
+  <order-element class="main-child account" data-id="${id}"></order-element>
 </template>
 
 <template id="orders">
-  <orders-element class="account"></orders-element>
+  <orders-element class="main-child account"></orders-element>
 </template>
 
 <template id="product">
-  <product-element data-slug="${slug}" data-search="${search}"></product-element>
+  <product-element class="main-child page" data-time="${time}"></product-element>
 </template>
 
 <template id="search">
@@ -47,7 +47,7 @@
 </template>
 
 <template id="shop">
-  <shop-element data-query="${query}" data-category="${category}" data-sort="${sort}"></shop-element>
+  <shop-element class="main-child" data-query="${query}" data-category="${category}" data-sort="${sort}"></shop-element>
 </template>
 
 <template id="toaster">

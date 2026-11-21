@@ -1,11 +1,12 @@
 /*
- * Copyright 2012-2026 the original author or authors.
+ * Copyright 2012-2025 the original author or authors.
+ * Copyright 2024-2026 Diego Schivo
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,101 +16,63 @@
  */
 package com.janilla.petclinic.frontend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.janilla.frontend.web.AbstractFrontend;
-import com.janilla.frontend.web.FrontendConfig;
+import com.janilla.blanktemplate.frontend.BlankFrontend;
 import com.janilla.http.HttpClient;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
-import com.janilla.petclinic.OwnerApi;
-import com.janilla.petclinic.PetApi;
-import com.janilla.petclinic.PetTypeApi;
-import com.janilla.petclinic.VetApi;
-import com.janilla.petclinic.VisitApi;
-import com.janilla.web.InvocationResolver;
+import com.janilla.java.SimpleLogger;
+import com.janilla.petclinic.PetclinicDomain;
+import com.janilla.web.PackageResourcesProvider;
 import com.janilla.web.WebApp;
 
 /**
  * @author Diego Schivo
- * @author Dave Syer
  */
-public class PetclinicFrontend extends AbstractFrontend<FrontendConfig> {
+public class PetclinicFrontend extends BlankFrontend<PetclinicFrontendConfig, PetclinicDomain> {
+
+	private static final Logger LOGGER = System.getLogger(PetclinicFrontend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
-		return Stream.of(Java.getPackageTypes("com.janilla.http"), Java.getPackageTypes("com.janilla.java"),
-				Java.getPackageTypes("com.janilla.web"), Java.getPackageTypes("com.janilla.frontend", _ -> true),
-				Java.getPackageTypes("com.janilla.petclinic"), Java.getPackageTypes("com.janilla.petclinic.frontend"))
-				.flatMap(x -> x);
+		return Stream.of(BlankFrontend.diTypes(), Java.getPackageTypes("com.janilla.petclinic"),
+				Java.getPackageTypes("com.janilla.petclinic.frontend")).flatMap(x -> x);
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		SimpleLogger.prefix = () -> {
+			interface A {
+				StackWalker WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+			}
+			var f = A.WALKER.walk(ff -> ff.dropWhile(x -> !x.getDeclaringClass().equals(System.Logger.class))
+					.dropWhile(x -> x.getDeclaringClass().equals(System.Logger.class)).findFirst().get());
+			return f.getClassName().substring(f.getClassName().lastIndexOf('.') + 1) + "." + f.getMethodName();
+		};
 
-		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { PetclinicFrontend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
+
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
+		var cfg = newConfig(new Class<?>[] { PetclinicFrontend.class }, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) x -> a[0] = (WebApp<?, ?>) x;
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
+		serve(a[0]);
 	}
 
-	protected HttpClient httpClient;
-
-	protected OwnerApi ownerApi;
-
-	protected PetApi petApi;
-
-	protected PetTypeApi petTypeApi;
-
-	protected VetApi vetApi;
-
-	protected VisitApi visitApi;
-
-	public PetclinicFrontend(FrontendConfig config, DiFactory diFactory, HttpClient httpClient) {
-		this.httpClient = httpClient;
-		super(config, diFactory);
-	}
-
-	public HttpClient httpClient() {
-		return httpClient;
-	}
-
-	public OwnerApi ownerApi() {
-		return ownerApi;
-	}
-
-	public PetApi petApi() {
-		return petApi;
-	}
-
-	public PetTypeApi petTypeApi() {
-		return petTypeApi;
-	}
-
-	public VetApi vetApi() {
-		return vetApi;
-	}
-
-	public VisitApi visitApi() {
-		return visitApi;
-	}
-
-	@Override
-	protected InvocationResolver newInvocationResolver() {
-		if (httpClient == null)
-			httpClient = diFactory.newInstance(diFactory.classFor(HttpClient.class));
-		ownerApi = diFactory.newInstance(diFactory.classFor(OwnerApi.class));
-		petApi = diFactory.newInstance(diFactory.classFor(PetApi.class));
-		petTypeApi = diFactory.newInstance(diFactory.classFor(PetTypeApi.class));
-		vetApi = diFactory.newInstance(diFactory.classFor(VetApi.class));
-		visitApi = diFactory.newInstance(diFactory.classFor(VisitApi.class));
-
-		return super.newInvocationResolver();
+	public PetclinicFrontend(PetclinicFrontendConfig config, DiFactory diFactory, Consumer<Object> context,
+			HttpClient httpClient) {
+		super(config, diFactory, context, httpClient);
 	}
 
 	@Override
 	protected void putResourcePrefixes() {
 		super.putResourcePrefixes();
-		resourcePrefixes.put("com.janilla.petclinic.frontend", "");
+
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.blanktemplate.frontend"), "/blank");
+		resourcesProviders.put(new PackageResourcesProvider("com.janilla.petclinic.frontend"), "");
 	}
 }

@@ -1,0 +1,321 @@
+/*
+ * Copyright (c) 2024, 2026, Diego Schivo. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Diego Schivo designates
+ * this particular file as subject to the "Classpath" exception as
+ * provided by Diego Schivo in the LICENSE file that accompanied this
+ * code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Diego Schivo, diego.schivo@janilla.com or visit
+ * www.janilla.com if you need additional information or have any questions.
+ */
+package com.janilla.java;
+
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.lang.reflect.Array;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import com.janilla.ioc.DiFactory;
+
+public class DefaultConverter implements Converter {
+
+	private static final Logger LOGGER = System.getLogger(DefaultConverter.class.getName());
+
+	protected final TypeResolver typeResolver;
+
+	protected final DiFactory diFactory;
+
+	public DefaultConverter() {
+		this(null);
+	}
+
+	public DefaultConverter(TypeResolver typeResolver) {
+		this(typeResolver, null);
+	}
+
+	public DefaultConverter(TypeResolver typeResolver, DiFactory diFactory) {
+		LOGGER.log(Level.DEBUG, "typeResolver={0}, diFactory={1}", typeResolver, diFactory);
+
+		this.typeResolver = typeResolver;
+		this.diFactory = diFactory;
+	}
+
+	@Override
+	public TypeResolver typeResolver() {
+		return typeResolver;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <T> T convert(Object object, Type target) {
+		LOGGER.log(Level.DEBUG, "object={0}, target={1}", object, target);
+
+		// IO.println(Json.format(object));
+//		var c = Java.toClass(target);
+		var c1 = Java.toClass(target);
+		var c2 = diFactory != null && !c1.getPackageName().startsWith("java.") ? diFactory.classFor(c1) : c1;
+		LOGGER.log(Level.DEBUG, "c1={0}, c2={1}", c1, c2);
+		var c = c2 != null ? c2 : c1;
+
+		T t;
+		if (object == null || (object instanceof String x && x.isEmpty())) {
+			if (c == Boolean.TYPE)
+				t = (T) Boolean.FALSE;
+			else if (c == Double.TYPE)
+				t = (T) Double.valueOf(0);
+			else if (c == Integer.TYPE)
+				t = (T) Integer.valueOf(0);
+			else if (c == Long.TYPE)
+				t = (T) Long.valueOf(0);
+			else if (c == String.class)
+				t = (T) object;
+			else
+				t = null;
+		} else {
+			if (c != null && c.isAssignableFrom(object.getClass()) && c != Object.class && !c.isArray()
+					&& !Collection.class.isAssignableFrom(c) && !Map.class.isAssignableFrom(c))
+				t = (T) object;
+			else if (c == BigDecimal.class)
+				t = (T) switch (object) {
+				case Double x -> BigDecimal.valueOf(x);
+				case Integer x -> BigDecimal.valueOf(x);
+				case Long x -> BigDecimal.valueOf(x);
+				case String x -> new BigDecimal(x);
+				default -> throw new IllegalArgumentException();
+				};
+			else if (c == Boolean.class || c == Boolean.TYPE)
+				t = (T) switch (object) {
+				case Boolean _ -> object;
+				case String x -> Boolean.parseBoolean(x);
+				default -> throw new IllegalArgumentException();
+				};
+			else if (c == Class.class)
+				t = (T) typeResolver.parse((String) object);
+			else if (c == Instant.class) {
+				var s = (String) object;
+				if (s.length() == 10)
+					s += "T00:00:00.00Z";
+				t = (T) Instant.parse(s);
+			} else if (c == Integer.class || c == Integer.TYPE)
+				t = (T) switch (object) {
+				case Integer _ -> object;
+				case Long x -> x.intValue();
+				case String x -> Integer.parseInt(x);
+				default -> throw new IllegalArgumentException();
+				};
+			else if (c == LocalDate.class)
+				t = (T) LocalDate.parse((String) object);
+			else if (c == Locale.class)
+				t = (T) Locale.forLanguageTag((String) object);
+			else if (c == Long.class || c == Long.TYPE)
+				t = (T) switch (object) {
+				case Integer x -> x.longValue();
+				case Long _ -> object;
+				case String x -> Long.parseLong(x);
+				default -> throw new IllegalArgumentException("object=" + object);
+				};
+			else if (c == OffsetDateTime.class)
+				t = (T) OffsetDateTime.parse((String) object);
+			else if (c == Path.class)
+				t = (T) Path.of((String) object);
+			else if (c == String.class)
+				t = (T) typeResolver.format((Class<?>) object);
+			else if (c == URI.class)
+				t = (T) URI.create((String) object);
+			else if (c == UUID.class)
+				t = (T) UUID.fromString((String) object);
+			else if (c == byte[].class)
+				t = (T) Base64.getDecoder().decode((String) object);
+			else if (c != null && c.isEnum()) {
+				var n = switch (object) {
+				case String x -> x;
+				case Map<?, ?> x -> (String) x.get("name");
+				default -> throw new IllegalArgumentException();
+				};
+				@SuppressWarnings("rawtypes")
+				var x = Enum.valueOf((Class) c, n);
+				t = (T) x;
+			} else if (c != null && (c.isArray() || Collection.class.isAssignableFrom(c))) {
+				var oo = switch (object) {
+				case Object[] x -> Arrays.stream(x);
+				case Collection<?> x -> x.stream();
+				default -> throw new IllegalArgumentException();
+				};
+				var t2 = c.isArray() ? c.componentType() : ((ParameterizedType) target).getActualTypeArguments()[0];
+				oo = oo.map(x -> convert(x, t2));
+
+				if (c.isArray()) {
+					if (c.componentType() == Double.TYPE)
+						t = (T) oo.mapToDouble(x -> (double) x).toArray();
+					else if (c.componentType() == Integer.TYPE)
+						t = (T) oo.mapToInt(x -> (int) x).toArray();
+					else if (c.componentType() == Long.TYPE)
+						t = (T) oo.mapToLong(x -> (long) x).toArray();
+					else
+						t = (T) oo.toArray(x -> (Object[]) Array.newInstance(Java.toClass(t2), x));
+				} else if (c == List.class)
+					t = (T) oo.toList();
+				else if (c == Set.class)
+					t = (T) oo.collect(Collectors.toCollection(LinkedHashSet::new));
+				else
+					t = (T) object;
+//			} else if (object instanceof Map<?, ?> m) {
+			} else {
+				var m = object instanceof Map<?, ?> x ? x
+						: JavaReflect.properties(object.getClass()).collect(
+								Collectors.toMap(x -> x.name(), x -> x.get(object), (x, _) -> x, LinkedHashMap::new));
+				if (c == Map.class) {
+					var aa = ((ParameterizedType) target).getActualTypeArguments();
+					t = (T) m.entrySet().stream().map(x -> {
+						var k = convert(x.getKey(), aa[0]);
+						var v = convert(x.getValue(), aa[1]);
+						return Java.mapEntry(k, v);
+					}).collect(
+							Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (_, x) -> x, LinkedHashMap::new));
+				} else if (c == Map.Entry.class) {
+					var aa = ((ParameterizedType) target).getActualTypeArguments();
+					var k = convert(m.get("key"), aa[0]);
+					var v = convert(m.get("value"), aa[1]);
+					t = (T) Java.mapEntry(k, v);
+				} else
+					t = (T) convertMap(m, target, typeResolver);
+			}
+//			} else
+//				t = (T) object;
+		}
+		LOGGER.log(Level.DEBUG, "t={0} ({1})", t, t != null ? t.getClass() : null);
+
+		return t;
+	}
+
+	protected Object convertMap(Map<?, ?> map, Type target, TypeResolver typeResolver) {
+		LOGGER.log(Level.DEBUG, "map={0}, target={1}, typeResolver={2}", map, target, typeResolver);
+
+		// IO.println(Json.format(map));
+		var c1 = target != null ? Java.toClass(target) : null;
+
+		{
+			var td = typeResolver != null ? typeResolver.apply(new TypedData(map, target)) : null;
+			if (td != null) {
+				if (c1 != null) {
+					if (td.type() == null)
+						throw new NullPointerException("c1=" + c1 + ", td.type()=" + td.type());
+					if (!c1.isAssignableFrom(Java.toClass(td.type())))
+//						throw new IllegalArgumentException("c1=" + c1 + ", td.type()=" + td.type());
+						td = td.withType(c1);
+				}
+
+				map = (Map<?, ?>) td.data();
+				target = td.type();
+				c1 = Java.toClass(target);
+			}
+		}
+
+		var c2 = diFactory != null ? diFactory.classFor(c1) : null;
+//		IO.println("DefaultConverter.convertMap, c1=" + c1 + ", c2=" + c2);
+
+		var c = c2 != null ? c2 : c1;
+
+		Object o;
+		if (c == Object.class)
+			o = map;
+		else if (c.isEnum()) {
+			var n = (String) map.get("name");
+			if (n != null && !n.isEmpty()) {
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				var x = Enum.valueOf((Class) c, n);
+				o = x;
+			} else
+				o = null;
+		} else {
+			var t0 = target;
+			var c0 = JavaInvoke.methodHandle(JavaReflect.constructor(c));
+//			IO.println("DefaultConverter.convertMap, c0=" + c0);
+			var tt = c.isRecord() ? Arrays.stream(c.getRecordComponents()).collect(
+					Collectors.toMap(x -> x, x -> JavaReflect.actualType(x, t0), (_, x) -> x, LinkedHashMap::new))
+					: null;
+			if (tt != null) {
+				var m = map;
+				var t = c;
+				var oo = tt.entrySet().stream().map(x -> {
+					try {
+						var rc = x.getKey();
+						var n2 = rc.getName();
+						var t2 = x.getValue();
+						if (m.containsKey(n2))
+							return convert(m.get(n2), t2);
+
+						var f = t.getDeclaredField(n2);
+						var m2 = rc.getAccessor();
+						if (f.isAnnotationPresent(Flatten.class)
+								|| JavaReflect.inheritedAnnotation(m2, Flatten.class) != null)
+							return convertMap(m, t2, null);
+
+						return null;
+					} catch (ReflectiveOperationException e) {
+						throw new RuntimeException(e);
+					}
+				}).toArray();
+
+				if (LOGGER.isLoggable(Level.DEBUG))
+					LOGGER.log(Level.DEBUG, "c0={0}, oo={1}", c0, Arrays.toString(oo));
+				try {
+					o = c0.invokeWithArguments(oo);
+				} catch (Throwable e) {
+					throw e instanceof RuntimeException e2 ? e2 : new RuntimeException(e);
+				}
+			} else {
+				try {
+					o = c0.invokeWithArguments();
+				} catch (Throwable e) {
+					throw e instanceof RuntimeException e2 ? e2 : new RuntimeException(e);
+				}
+				for (var x : map.entrySet()) {
+//						IO.println("DefaultConverter.convertMap, x=" + x);
+					var n = (String) x.getKey();
+					var p = !n.startsWith("$") ? JavaReflect.property(target, n) : null;
+					if (p != null) {
+						var v = convert(x.getValue(), p.genericType());
+//							IO.println("DefaultConverter.convertMap, p=" + p + ", v=" + v);
+						p.set(o, v);
+					}
+				}
+			}
+		}
+		LOGGER.log(Level.DEBUG, "o={0} ({1})", o, o != null ? o.getClass() : null);
+
+		return o;
+	}
+}

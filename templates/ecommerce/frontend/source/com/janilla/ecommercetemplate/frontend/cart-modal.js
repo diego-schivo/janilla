@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,9 +52,10 @@ export default class CartModal extends WebComponent {
         const s = this.customState;
         const a = this.closest("app-element");
         const c = localStorage.getItem("cart");
-        const u = new URL(`${a.dataset.apiUrl}/carts/${c}`, location.href);
+        const u = new URL(`${a.customEnv.apiUrl}/carts/${c}`, location.href);
         if (!a.currentUser)
             u.searchParams.append("secret", localStorage.getItem("cart_secret"));
+        u.searchParams.append("depth", 2);
         s.cart ??= (c ? await (await fetch(u)).json() : null) ?? {};
         if (c && !s.cart.id)
             localStorage.removeItem("cart");
@@ -83,9 +84,9 @@ export default class CartModal extends WebComponent {
         }));
     }
 
-    handleCartChanged = event => {
-		this.customState.cart = event.detail;
-		this.requestDisplay();
+    handleCartChanged = () => {
+		delete this.customState.cart;
+        this.requestDisplay(0);
     }
 
     handleClick = event => {
@@ -107,7 +108,7 @@ export default class CartModal extends WebComponent {
         const p = parseInt(fd.get("product"));
         const v = parseInt(fd.get("variant"));
         const q = parseInt(fd.get("quantity"));
-        const r = await fetch(`${this.closest("app-element").dataset.apiUrl}/carts/${s.cart.id}`, {
+        const r = await fetch(`${this.closest("app-element").customEnv.apiUrl}/carts/${s.cart.id}`, {
             method: "PATCH",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({

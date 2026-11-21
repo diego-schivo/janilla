@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,8 @@
  */
 package com.janilla.ecommercetemplate.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.function.Predicate;
 
 import com.janilla.backend.cms.AbstractCollectionApi;
@@ -32,6 +34,8 @@ import com.janilla.backend.persistence.Persistence;
 import com.janilla.cms.User;
 import com.janilla.ecommercetemplate.Cart;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.ForbiddenException;
 import com.janilla.web.Handle;
 import com.janilla.web.UnauthorizedException;
@@ -39,25 +43,33 @@ import com.janilla.web.UnauthorizedException;
 @Handle(path = "/api/carts")
 public class CartApi extends AbstractCollectionApi<Long, Cart> {
 
-	public CartApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Cart.class, drafts, persistence, "title");
+	private static final Logger LOGGER = System.getLogger(CartApi.class.getName());
+
+	public CartApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Cart.class, drafts, persistence, "title", copier, Direction.FORWARD, 2);
 	}
 
 	@Handle(method = "POST")
-	public Cart create(Cart entity, UserHttpExchange<User<?>> exchange) {
-		var e = entity;
+	public Cart create(Cart cart, UserHttpExchange<User<?>> exchange) {
+		var c = cart;
+
 		var u = exchange.sessionUser();
 		if (u != null)
-			e = entity.withCustomer(u);
-		return super.create(e);
+			c = cart.withCustomer(u);
+
+		return super.create(c);
 	}
 
 	@Handle(method = "GET", path = "(\\d+)")
-	public Cart read(Long id, String secret, UserHttpExchange<User<?>> exchange) {
-		var u = exchange.sessionUser();
+	public Cart read(Long id, String secret, Integer depth) {
+		LOGGER.log(Level.DEBUG, "id={0}, secret={1} depth={2}", id, secret, depth);
+
+		@SuppressWarnings("unchecked")
+		var e = (UserHttpExchange<User<?>>) HttpExchange.SCOPED.get();
+		var u = e.sessionUser();
 		if (u == null && (secret == null || secret.isBlank()))
 			throw new UnauthorizedException();
-		var c = super.read(id, 0, exchange);
+		var c = super.read(id, depth);
 		if (u == null && c != null && !c.secret().equals(secret))
 			throw new ForbiddenException();
 		return c;

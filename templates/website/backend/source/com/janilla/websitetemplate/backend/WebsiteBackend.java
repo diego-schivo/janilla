@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,20 +25,26 @@
 package com.janilla.websitetemplate.backend;
 
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.janilla.backend.cms.UserHttpExchange;
 import com.janilla.backend.smtp.SmtpClient;
 import com.janilla.blanktemplate.backend.BlankBackend;
 import com.janilla.http.HttpExchange;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.Handle;
 import com.janilla.web.WebApp;
+import com.janilla.websitetemplate.WebsiteDomain;
 
-public class WebsiteBackend<C extends WebsiteBackendConfig> extends BlankBackend<C> {
+public class WebsiteBackend<C extends WebsiteBackendConfig, D extends WebsiteDomain> extends BlankBackend<C, D> {
+
+	private static final Logger LOGGER = System.getLogger(WebsiteBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(BlankBackend.diTypes(), Java.getPackageTypes("com.janilla.websitetemplate"),
@@ -46,18 +52,25 @@ public class WebsiteBackend<C extends WebsiteBackendConfig> extends BlankBackend
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList());
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
 		var c = newConfig(new Class<?>[] { WebsiteBackend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f, "context",
+				(Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x)));
+		serve(a[0]);
 	}
 
 	protected final SmtpClient smtpClient;
 
-	public WebsiteBackend(C config, DiFactory diFactory) {
-		super(config, diFactory);
+	public WebsiteBackend(C config, DiFactory diFactory, Consumer<Object> context) {
+		this(config, diFactory, context, Data.class, SeedData.class);
+	}
+
+	protected WebsiteBackend(C config, DiFactory diFactory, Consumer<Object> context, Class<?> dataType,
+			Class<?> seedDataClass) {
+		super(config, diFactory, context, dataType, seedDataClass);
 
 		var h = config.mail().host();
 		smtpClient = h != null && !h.isEmpty() ? diFactory.newInstance(diFactory.classFor(SmtpClient.class),
@@ -76,13 +89,8 @@ public class WebsiteBackend<C extends WebsiteBackendConfig> extends BlankBackend
 	}
 
 	@Override
-	protected Class<?> dataType() {
-		return Data.class;
-	}
-
-	@Override
-	protected boolean testDrafts(HttpExchange x) {
-		var u = super.testDrafts(x) ? ((UserHttpExchange<?>) x).sessionUser() : null;
+	protected boolean testDrafts(HttpExchange exchange) {
+		var u = super.testDrafts(exchange) ? ((UserHttpExchange<?>) exchange).sessionUser() : null;
 		var rr = u != null ? u.roles() : null;
 		return rr != null && rr.contains(domain.userRole("ADMIN"));
 	}

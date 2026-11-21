@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -62,6 +62,6 @@ export default class FindOrder extends WebComponent {
         const d = new FormData(f);
         const u = new URL(`/orders/${d.get("order")}`, location.href);
         u.searchParams.append("email", d.get("email"));
-        a.navigate(u);
+        a.navigateTo(u);
     }
 }

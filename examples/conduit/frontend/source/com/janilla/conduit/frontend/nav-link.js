@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,35 +27,38 @@ import WebComponent from "base/web-component";
 
 export default class NavLink extends WebComponent {
 
-static get moduleUrl() {
-    return import.meta.url;
-}
+    static get moduleUrl() {
+        return import.meta.url;
+    }
 
-	static get observedAttributes() {
-		return ["data-href", "data-icon", "data-image"];
-	}
+    static get observedAttributes() {
+        return ["data-href", "data-icon", "data-image"];
+    }
 
-	static get templateNames() {
-		return ["nav-link"];
-	}
+    static get templateNames() {
+        return ["nav-link"];
+    }
 
-	constructor() {
-		super();
-		this.attachShadow({ mode: "open" });
-	}
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+    }
 
-	async updateDisplay() {
-		this.shadowRoot.appendChild(this.interpolateDom({
-			$template: "",
-			...this.dataset,
-			icon: this.dataset.icon ? {
-				$template: "icon",
-				class: this.dataset.icon
-			} : null,
-			image: this.dataset.image ? {
-				$template: "image",
-				src: this.dataset.image
-			} : null
-		}));
-	}
+    async updateDisplay() {
+        const a = this.shadowClosest("app-element");
+
+        this.shadowRoot.appendChild(this.interpolateDom({
+			...a.baseInput,
+            $template: "",
+            ...this.dataset,
+            icon: this.dataset.icon ? {
+                $template: "icon",
+                class: this.dataset.icon
+            } : null,
+            image: this.dataset.image ? {
+                $template: "image",
+                src: this.dataset.image
+            } : null
+        }));
+    }
 }

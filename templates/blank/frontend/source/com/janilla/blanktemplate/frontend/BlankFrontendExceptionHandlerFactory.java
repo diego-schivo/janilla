@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,23 +26,23 @@ package com.janilla.blanktemplate.frontend;
 
 import com.janilla.http.HttpExchange;
 import com.janilla.http.HttpHandlerFactory;
+import com.janilla.ioc.DiFactory;
+import com.janilla.web.DefaultExceptionHandlerFactory;
 import com.janilla.web.Error;
-import com.janilla.web.ExceptionHandlerFactory;
 import com.janilla.web.RenderableFactory;
+import com.janilla.web.WebAppConfig;
 
-public class BlankFrontendExceptionHandlerFactory extends ExceptionHandlerFactory {
+public class BlankFrontendExceptionHandlerFactory extends DefaultExceptionHandlerFactory {
 
 	protected final BlankIndexFactory<?> indexFactory;
 
 	protected final RenderableFactory renderableFactory;
 
-	protected final HttpHandlerFactory rootFactory;
-
-	public BlankFrontendExceptionHandlerFactory(BlankIndexFactory<?> indexFactory, RenderableFactory renderableFactory,
-			HttpHandlerFactory rootFactory) {
+	public BlankFrontendExceptionHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory,
+			DiFactory diFactory, BlankIndexFactory<?> indexFactory, RenderableFactory renderableFactory) {
+		super(config, rootFactory, diFactory);
 		this.indexFactory = indexFactory;
 		this.renderableFactory = renderableFactory;
-		this.rootFactory = rootFactory;
 	}
 
 	@Override
@@ -50,10 +50,10 @@ public class BlankFrontendExceptionHandlerFactory extends ExceptionHandlerFactor
 //		IO.println(
 //				"CustomExceptionHandlerFactory.handle, " + exchange.request().getPath() + ", " + exchange.exception());
 		super.handle(error, exchange);
-		var i = indexFactory.newIndex(exchange);
+		var i = indexFactory.newIndex();
 		i.app().state().put("error", error);
 		var r = renderableFactory.createRenderable(null, i);
-		var h = rootFactory.createHandler(r);
+		var h = rootFactory.newHandler(r);
 		return h.handle(exchange);
 	}
 }

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,41 +23,44 @@
  * SOFTWARE.
  */
 import Admin from "admin";
-import AdminArray from "admin-array";
-import AdminBar from "admin-bar";
-import AdminCheckbox from "admin-checkbox";
-import AdminCreateFirstUser from "admin-create-first-user";
-import AdminDashboard from "admin-dashboard";
-import AdminDocument from "admin-document";
-import AdminDrawer from "admin-drawer";
-import AdminDrawerLink from "admin-drawer-link";
-import AdminEdit from "admin-edit";
-import AdminFields from "admin-fields";
-import AdminFile from "admin-file";
-import AdminForgotPassword from "admin-forgot-password";
-import AdminHidden from "admin-hidden";
-import AdminJoin from "admin-join";
-import AdminList from "admin-list";
-import AdminLogin from "admin-login";
-import AdminPageControls from "admin-page-controls";
-import AdminPagination from "admin-pagination";
-import AdminPerPage from "admin-per-page";
-import AdminRadioGroup from "admin-radio-group";
-import AdminRelationship from "admin-relationship";
-import AdminRichText from "admin-rich-text";
-import AdminSearchBar from "admin-search-bar";
-import AdminSearchFilter from "admin-search-filter";
-import AdminSelect from "admin-select";
-import AdminSlug from "admin-slug";
-import AdminTabs from "admin-tabs";
-import AdminText from "admin-text";
-import AdminUnauthorized from "admin-unauthorized";
-import AdminUpload from "admin-upload";
-import AdminVersion from "admin-version";
-import AdminVersions from "admin-versions";
+import AdminArray from "cms/admin-array";
+import AdminBar from "cms/admin-bar";
+import AdminCheckbox from "cms/admin-checkbox";
+import AdminCreateFirstUser from "cms/admin-create-first-user";
+import AdminDashboard from "cms/admin-dashboard";
+import AdminDateTime from "cms/admin-date-time";
+import AdminDocument from "cms/admin-document";
+import AdminDrawer from "cms/admin-drawer";
+import AdminDrawerLink from "cms/admin-drawer-link";
+import AdminEdit from "cms/admin-edit";
+import AdminFields from "cms/admin-fields";
+import AdminFile from "cms/admin-file";
+import AdminForgotPassword from "cms/admin-forgot-password";
+import AdminHidden from "cms/admin-hidden";
+import AdminJoin from "cms/admin-join";
+import AdminList from "cms/admin-list";
+import AdminLogin from "cms/admin-login";
+import AdminNavToggler from "cms/admin-nav-toggler";
+import AdminPageControls from "cms/admin-page-controls";
+import AdminPagination from "cms/admin-pagination";
+import AdminPassword from "cms/admin-password";
+import AdminPerPage from "cms/admin-per-page";
+import AdminRadioGroup from "cms/admin-radio-group";
+import AdminRelationship from "cms/admin-relationship";
+import AdminRichText from "cms/admin-rich-text";
+import AdminSearchBar from "cms/admin-search-bar";
+import AdminSearchFilter from "cms/admin-search-filter";
+import AdminSelect from "cms/admin-select";
+import AdminSlug from "cms/admin-slug";
+import AdminTabs from "cms/admin-tabs";
+import AdminText from "cms/admin-text";
+import AdminUnauthorized from "cms/admin-unauthorized";
+import AdminUpload from "cms/admin-upload";
+import AdminVersion from "cms/admin-version";
+import AdminVersions from "cms/admin-versions";
 import App from "app";
 import JanillaLogo from "base/janilla-logo";
-import LucideIcon from "lucide-icon";
+import LucideIcon from "base/lucide-icon";
 import NotFound from "not-found";
 import Page from "page";
 import Toaster from "base/toaster";
@@ -67,6 +70,7 @@ customElements.define("admin-bar", AdminBar);
 customElements.define("admin-checkbox", AdminCheckbox);
 customElements.define("admin-create-first-user", AdminCreateFirstUser);
 customElements.define("admin-dashboard", AdminDashboard);
+customElements.define("admin-date-time", AdminDateTime);
 customElements.define("admin-document", AdminDocument);
 customElements.define("admin-drawer", AdminDrawer);
 customElements.define("admin-drawer-link", AdminDrawerLink);
@@ -79,8 +83,10 @@ customElements.define("admin-hidden", AdminHidden);
 customElements.define("admin-join", AdminJoin);
 customElements.define("admin-list", AdminList);
 customElements.define("admin-login", AdminLogin);
+customElements.define("admin-nav-toggler", AdminNavToggler);
 customElements.define("admin-page-controls", AdminPageControls);
 customElements.define("admin-pagination", AdminPagination);
+customElements.define("admin-password", AdminPassword);
 customElements.define("admin-per-page", AdminPerPage);
 customElements.define("admin-radio-group", AdminRadioGroup);
 customElements.define("admin-relationship", AdminRelationship);

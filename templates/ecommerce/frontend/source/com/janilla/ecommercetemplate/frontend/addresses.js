@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,10 +34,6 @@ export default class Addresses extends WebComponent {
         return ["addresses"];
     }
 
-    constructor() {
-        super();
-    }
-
     connectedCallback() {
         super.connectedCallback();
         this.addEventListener("click", this.handleClick);
@@ -51,22 +47,21 @@ export default class Addresses extends WebComponent {
     }
 
     async updateDisplay() {
-        const s = this.customState;
         const a = this.closest("app-element");
+        const s = this.customState;
+
         a.updateSeo({ title: "Addresses" });
+
         this.appendChild(this.interpolateDom({
             $template: "",
-            nav: {
-                $template: "nav",
-                path: a.currentPath
-            },
-            results: a.currentUser.addresses.length ? {
-                $template: "results",
+            nav: { $template: "nav" },
+            list: a.currentUser.addresses.length ? {
+                $template: "list",
                 items: a.currentUser.addresses.map(x => ({
-                    $template: "result",
+                    $template: "item",
                     ...x
-                }))
-            } : { $template: "no-results" },
+                })).reverse()
+            } : { $template: "empty-list" },
             dialog: s.dialog ? {
                 $template: "dialog",
                 ...s.dialog
@@ -94,26 +89,35 @@ export default class Addresses extends WebComponent {
 
     handleSubmit = async event => {
         event.preventDefault();
-        const f = event.target;
+
         const a = this.closest("app-element");
-        const o = {
-            customer: a.currentUser.id,
-            ...Object.fromEntries(new FormData(f))
-        };
+        const u = a.currentUser;
         const s = this.customState;
-        const r = await fetch(`${a.dataset.apiUrl}/addresses${s.dialog.id ? `/${s.dialog.id}` : ""}`, {
+        const f = event.target;
+        const o = {
+            ...Object.fromEntries(new FormData(f)),
+            customer: {
+                $type: u.$type,
+                id: u.id
+            }
+        };
+
+        const r = await fetch([a.customEnv.apiUrl, "addresses", s.dialog.id].filter(x => x).join("/"), {
             method: s.dialog.id ? "PUT" : "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(o)
         });
         const j = await r.json();
+
         if (r.ok) {
-            delete this.customState.dialog;
+            a.currentUser = {
+                ...u,
+                addresses: s.dialog.id
+                    ? u.addresses.map(x => x.id === j.id ? j : x)
+                    : [j, ...u.addresses]
+            };
+            delete s.dialog;
             this.requestDisplay();
-            this.dispatchEvent(new CustomEvent("user-change", {
-                bubbles: true,
-                detail: { user: j.customer }
-            }));
         }
     }
 }

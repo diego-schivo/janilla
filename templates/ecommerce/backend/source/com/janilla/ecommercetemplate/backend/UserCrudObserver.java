@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@ import com.janilla.ecommercetemplate.Address;
 import com.janilla.ecommercetemplate.Cart;
 import com.janilla.ecommercetemplate.EcommerceDomain;
 import com.janilla.ecommercetemplate.EcommerceUser;
+import com.janilla.java.Direction;
 
 public class UserCrudObserver implements CrudObserver<User<?>> {
 
@@ -44,12 +45,12 @@ public class UserCrudObserver implements CrudObserver<User<?>> {
 	}
 
 	@Override
-	public User<?> afterRead(User<?> entity) {
+	public User<?> beforePopulate(User<?> entity) {
 		var e = (EcommerceUser<?>) entity;
-		var cc = persistence.crud(Cart.class).filter("customer", new Object[] { e.id() });
-		e = e.withCarts(cc.stream().map(x -> domain.emptyCart().withId(x)).toList());
-		var aa = persistence.crud(Address.class).filter("customer", new Object[] { e.id() });
-		e = e.withAddresses(aa.stream().map(x -> domain.emptyAddress().withId(x)).toList());
+		var cc = persistence.crud(Cart.class).filter("customer", new Object[] { e.id() }, Direction.BACKWARD);
+		e = domain.withCarts(e, cc.stream().map(x -> domain.emptyCart().withId(x)).toList());
+		var aa = persistence.crud(Address.class).filter("customer", new Object[] { e.id() }, Direction.BACKWARD);
+		e = domain.withAddresses(e, aa.stream().map(x -> domain.emptyAddress().withId(x)).toList());
 		return e;
 	}
 
@@ -57,9 +58,9 @@ public class UserCrudObserver implements CrudObserver<User<?>> {
 	public User<?> beforeCreate(User<?> entity) {
 		var e = (EcommerceUser<?>) entity;
 		if (e.carts() != null)
-			e = e.withCarts(null);
+			e = domain.withCarts(e, null);
 		if (e.addresses() != null)
-			e = e.withAddresses(null);
+			e = domain.withAddresses(e, null);
 		return e;
 	}
 

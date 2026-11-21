@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ export default class ProductDescription extends WebComponent {
     }
 
     static get observedAttributes() {
-        return ["data-variant"];
+        return ["data-time"];
     }
 
     connectedCallback() {
@@ -53,7 +53,7 @@ export default class ProductDescription extends WebComponent {
         const aa = p.enableVariants ? p.variants.map(x => x.priceInUsd) : [p.priceInUsd];
         const la = aa ? Math.min(...aa) : null;
         const ha = aa ? Math.max(...aa) : null;
-        const pp = new URLSearchParams(this.closest("product-element").dataset.search);
+        const pe = this.closest("product-element");
         this.appendChild(this.interpolateDom({
             $template: "",
             ...p,
@@ -66,9 +66,14 @@ export default class ProductDescription extends WebComponent {
             },
             variantSelector: p.enableVariants ? {
                 $template: "variant-selector",
-                options: p.variantTypes.map(x => pp.get(x.name)).filter(x => x)
+                time: new Date().getTime()
             } : null,
-            disabled: !this.dataset.variant
+            addToCart: {
+                $template: "button",
+                class: "button secondary",
+                disabled: !pe.activeVariant,
+                text: "Add To Cart"
+            }
         }));
     }
 
@@ -78,23 +83,23 @@ export default class ProductDescription extends WebComponent {
         const v = p.variants.find(x => x.id == this.dataset.variant);
         const a = this.closest("app-element");
         const c = localStorage.getItem("cart");
-        const u = new URL(c ? `${a.dataset.apiUrl}/carts/${c}` : `${a.dataset.apiUrl}/carts`, location.href);
+        const u = new URL(c ? `${a.customEnv.apiUrl}/carts/${c}` : `${a.customEnv.apiUrl}/carts`, location.href);
         if (!a.currentUser)
             u.searchParams.append("secret", localStorage.getItem("cart_secret"));
         const o = c ? await (await fetch(u)).json() : null;
         const ii = o ? o.items.map(x => ({
             ...x,
-            product: x.product.id,
-            variant: x.variant.id
+            product: { id: x.product.id },
+            variant: { id: x.variant.id }
         })) : [];
-        const i = ii.findIndex(x => x.product === p.id && x.variant === v.id);
+        const i = ii.findIndex(x => x.product.id === p.id && x.variant.id === v.id);
         if (i !== -1)
             ii[i].quantity++;
         else
             ii.push({
                 $type: "CartItem",
-                product: p.id,
-                variant: v.id,
+                product: { id: p.id },
+                variant: { id: v.id },
                 quantity: 1
             });
         const r = await fetch(u, {
@@ -103,7 +108,10 @@ export default class ProductDescription extends WebComponent {
             body: JSON.stringify(o ? { items: ii } : {
                 $type: "Cart",
                 items: ii,
-                currency: "USD"
+                currency: {
+                    $type: "Currency",
+                    name: "USD"
+                }
             })
         });
         const j = await r.json();

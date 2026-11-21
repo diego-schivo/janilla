@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -56,6 +56,7 @@ public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandl
 	public BlankBackendInvocationHandlerFactory(WebAppConfig config, HttpHandlerFactory rootFactory,
 			DiFactory diFactory, InvocationResolver invocationResolver, RenderableFactory renderableFactory) {
 		super(config, rootFactory, diFactory, invocationResolver, renderableFactory);
+
 		guestPost = Stream.of("/api/users/first-register", "/api/users/forgot-password", "/api/users/login",
 				"/api/users/reset-password").collect(Collectors.toCollection(HashSet::new));
 		userLoginLogout = Stream.of("/api/users/login", "/api/users/logout")
@@ -75,14 +76,15 @@ public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandl
 		if (requireSessionEmail(rq))
 			((UserHttpExchange<?>) exchange).requireSessionEmail();
 
+		var p = webAppPath(rq);
 		if (config.liveDemo()) {
-			if (rq.getHeaderValue(":method").equals("GET") || userLoginLogout.contains(rq.getPath()))
+			if (rq.getHeaderValue(":method").equals("GET") || userLoginLogout.contains(p))
 				;
 			else
 				throw new HandleException(new MethodBlockedException());
 		}
 
-//		if (r.getPath().startsWith("/api/"))
+//		if (p.startsWith("/api/"))
 //			try {
 //				TimeUnit.SECONDS.sleep(1);
 //			} catch (InterruptedException e) {
@@ -93,15 +95,20 @@ public class BlankBackendInvocationHandlerFactory extends DefaultInvocationHandl
 	}
 
 	protected boolean requireSessionEmail(HttpRequest request) {
-		if (!request.getPath().startsWith("/api/"))
+		var p = webAppPath(request);
+
+		if (!p.startsWith("/api/"))
 			return false;
+
 		switch (request.getHeaderValue(":method")) {
 		case "GET", "OPTIONS":
-			if (request.getPath().equals("/api/users"))
+			if (p.equals("/api/users"))
 				return !"0".equals(new UriQueryBuilder(request.getQuery()).values("limit").findFirst().orElse(null));
 			return false;
+
 		case "POST":
-			return !guestPost.contains(request.getPath());
+			return !guestPost.contains(p);
+
 		default:
 			return true;
 		}

@@ -4,6 +4,17 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.janilla</groupId>
+			<artifactId>janilla-website-template-backend</artifactId>
+			<version>${revision}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.janilla</groupId>
+			<artifactId>janilla-com-base</artifactId>
+			<version>${revision}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.janilla</groupId>
 			<artifactId>janilla-acme-dashboard-backend</artifactId>
 			<version>${revision}</version>
 		</dependency>
@@ -14,12 +25,12 @@
 		</dependency>
 		<dependency>
 			<groupId>com.janilla</groupId>
-			<artifactId>janilla-com-base</artifactId>
+			<artifactId>janilla-conduit-backend</artifactId>
 			<version>${revision}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.janilla</groupId>
-			<artifactId>janilla-conduit-backend</artifactId>
+			<artifactId>janilla-ecommerce-template-backend</artifactId>
 			<version>${revision}</version>
 		</dependency>
 		<dependency>
@@ -29,7 +40,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.janilla</groupId>
-			<artifactId>janilla-ecommerce-template-backend</artifactId>
+			<artifactId>janilla-todomvc-backend</artifactId>
 			<version>${revision}</version>
 		</dependency>
 	</dependencies>

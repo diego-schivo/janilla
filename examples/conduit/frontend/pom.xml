@@ -4,7 +4,12 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.janilla</groupId>
-			<artifactId>janilla-frontend</artifactId>
+			<artifactId>janilla-blank-template-frontend</artifactId>
+			<version>${revision}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.janilla</groupId>
+			<artifactId>janilla-conduit-base</artifactId>
 			<version>${revision}</version>
 		</dependency>
 	</dependencies>
@@ -14,17 +19,31 @@
 		<version>${revision}</version>
 		<relativePath>..</relativePath>
 	</parent>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<configuration>
-					<mainClass>com.janilla.conduit.frontend.ConduitFrontend</mainClass>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+	<properties>
+		<exec.mainClass>com.janilla.conduit.frontend.ConduitFrontend</exec.mainClass>
+	</properties>
 	<name>janilla-conduit-frontend</name>
 	<description>Janilla Conduit Frontend</description>
+	<profiles>
+		<profile>
+			<id>execute</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<configuration>
+							<executable>java</executable>
+							<arguments>
+								<argument>--module-path</argument>
+								<modulepath />
+								<argument>--module</argument>
+								<argument>com.janilla.conduit.frontend/com.janilla.conduit.frontend.ConduitFrontend</argument>
+							</arguments>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

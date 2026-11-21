@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +24,10 @@
  */
 package com.janilla.blanktemplate.frontend;
 
+import com.janilla.blanktemplate.BlankConfig;
 import com.janilla.frontend.web.FrontendConfig;
 
-public interface BlankFrontendConfig extends FrontendConfig {
+public interface BlankFrontendConfig extends FrontendConfig, BlankConfig {
 
 	Download download();
 

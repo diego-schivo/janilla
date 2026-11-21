@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,17 +45,20 @@ export default class App extends BaseApp {
         this.dispatchEvent(new CustomEvent("userchanged", { detail: currentUser }));
     }
 
+    async getCurrentUser() {
+        const ss = this.serverState;
+        return ss && Object.hasOwn(ss, "user")
+            ? ss.user
+            : await (await fetch(`${this.customEnv.apiUrl}/users/me`, { credentials: "include" })).json();
+    }
+
     async updateDisplay() {
         const s = this.customState;
-        const ss = this.serverState;
 
         if (!Object.hasOwn(s, "user"))
-            s.user = ss && Object.hasOwn(ss, "user")
-                ? ss.user
-                : await (await fetch(`${this.dataset.apiUrl}/users/me`, { credentials: "include" })).json();
+            s.user = await this.getCurrentUser();
 
-        const p = location.pathname;
-        const m = p.match(adminRegex);
+        const m = this.currentPath.match(adminRegex);
         if (m)
             this.appendChild(this.interpolateDom({
                 $template: "",
@@ -72,16 +75,27 @@ export default class App extends BaseApp {
     async updateDisplaySite() {
         this.appendChild(this.interpolateDom({
             $template: "",
-            site: this.customState.notFound ? { $template: "not-found" } : {
-                $template: "page",
-                slug: location.pathname.split("/").map(x => x === "" ? "home" : x)[1]
-            }
+            site: this.siteData()
         }));
     }
 
-    navigate(url) {
+    siteData() {
+        return {
+            $template: "site",
+            content: this.contentData()
+        };
+    }
+
+    contentData() {
+        return this.customState.notFound ? { $template: "not-found" } : {
+            $template: "page",
+            slug: this.currentPath.split("/").map(x => x === "" ? "home" : x)[1]
+        };
+    }
+
+    navigateTo(url) {
         this.querySelectorAll("dialog[open]").forEach(x => x.close());
-        super.navigate(url);
+        super.navigateTo(url);
     }
 
     updateSeo(meta) {

@@ -24,7 +24,7 @@
  */
 import { matchNode } from "/base/test-bench.js";
 
-const delay = () => new Promise(x => setTimeout(x, 100));
+const delay = (millis) => new Promise(x => setTimeout(x, millis ?? 500));
 
 const untilFormControl = placeholder => async context => await matchNode(`//*[contains(@placeholder,"${placeholder}")]`, context, false);
 
@@ -46,7 +46,7 @@ const login = (email, password) => {
 }
 
 const createInvoice = async content => {
-	await login("user@nextmail.com", "123456")(content);
+	await login("user@janillamail.com", "123456")(content);
 	await delay();
 	const b = content.body;
 	await untilElement("h1", "Dashboard")(b);
@@ -79,7 +79,7 @@ const createInvoice = async content => {
 }
 
 const deleteInvoice = async content => {
-	await login("user@nextmail.com", "123456")(content);
+	await login("user@janillamail.com", "123456")(content);
 	await delay();
 	const b = content.body;
 	await untilElement("h1", "Dashboard")(b);
@@ -95,13 +95,13 @@ const deleteInvoice = async content => {
 }
 
 const loginUser = async content => {
-	await login("user@nextmail.com", "123456")(content);
+	await login("user@janillamail.com", "123456")(content);
 	await delay();
 	await untilElement("h1", "Dashboard")(content.body);
 }
 
 const logoutUser = async content => {
-	await login("user@nextmail.com", "123456")(content);
+	await login("user@janillamail.com", "123456")(content);
 	await delay();
 	const b = content.body;
 	(await untilElement("h1", "Dashboard")(b)).closest("dashboard-layout").shadowRoot.querySelector("button").click();
@@ -110,7 +110,7 @@ const logoutUser = async content => {
 }
 
 const updateInvoice = async content => {
-	await login("user@nextmail.com", "123456")(content);
+	await login("user@janillamail.com", "123456")(content);
 	await delay();
 	const b = content.body;
 	await untilElement("h1", "Dashboard")(b);

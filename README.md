@@ -19,24 +19,15 @@ You can add Janilla libraries as dependencies to your project by copy/pasting th
 
 We provide several example applications showing how to use the stack: 
 
-- [TodoMVC implementation](https://github.com/diego-schivo/janilla-todomvc)
-- [Spring Petclinic porting](https://github.com/diego-schivo/janilla-petclinic)
-- [React Router Address Book Tutorial porting](https://github.com/diego-schivo/janilla-address-book)
-- [Next.js App Router Course porting](https://github.com/diego-schivo/janilla-acme-dashboard)
-- [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla-conduit)
-- [Payload Blank Template porting](https://github.com/diego-schivo/janilla-blank-template)
-- [Payload Website Template porting](https://github.com/diego-schivo/janilla-website-template)
-- [Payload Ecommerce Template porting](https://github.com/diego-schivo/janilla-ecommerce-template)
-- [Janilla.com website](https://github.com/diego-schivo/janilla-com)
-
-<!-- [Next.js Commerce (partial) porting](https://github.com/diego-schivo/janilla-acmestore) -->
-<!-- [Microsoft eShopOnWeb porting](https://github.com/diego-schivo/janilla-eshopweb) -->
-<!-- [Strapi FoodAdvisor (partial) porting](https://github.com/diego-schivo/janilla-foodadvisor) -->
-<!-- [Medusa MyStore (partial) porting](https://github.com/diego-schivo/janilla-mystore) -->
-<!-- [Adyen Payment Examples (partial) porting](https://github.com/diego-schivo/janilla-payment) -->
-<!-- [htmx Examples porting](https://github.com/diego-schivo/janilla-uxpatterns) -->
-
-<!-- Video tutorials are available on [Janilla YouTube Channel](https://www.youtube.com/@janilla). -->
+- [TodoMVC implementation](https://github.com/diego-schivo/janilla/tree/main/examples/todomvc)
+- [Spring Petclinic porting](https://github.com/diego-schivo/janilla/tree/main/examples/petclinic)
+- [React Router Address Book Tutorial porting](https://github.com/diego-schivo/janilla/tree/main/examples/address-book)
+- [Next.js App Router Course porting](https://github.com/diego-schivo/janilla/tree/main/examples/acme-dashboard)
+- [RealWorld Conduit implementation](https://github.com/diego-schivo/janilla/tree/main/examples/conduit)
+- [Payload Blank Template porting](https://github.com/diego-schivo/janilla/tree/main/templates/blank)
+- [Payload Website Template porting](https://github.com/diego-schivo/janilla/tree/main/templates/website)
+- [Payload Ecommerce Template porting](https://github.com/diego-schivo/janilla/tree/main/templates/ecommerce)
+- [Janilla.com website](https://github.com/diego-schivo/janilla/tree/main/examples/com)
 
 ### Where you can get help
 

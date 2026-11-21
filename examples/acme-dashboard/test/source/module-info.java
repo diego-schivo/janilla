@@ -28,5 +28,6 @@ module com.janilla.acmedashboard.test {
 
 	opens com.janilla.acmedashboard.test;
 
+	requires transitive com.janilla.blanktemplate.test;
 	requires transitive com.janilla.acmedashboard.fullstack;
 }

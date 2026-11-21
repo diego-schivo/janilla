@@ -24,14 +24,14 @@
 package com.janilla.janillacom.backend;
 
 import com.janilla.cms.Document;
-import com.janilla.cms.Types;
 import com.janilla.janillacom.Application;
+import com.janilla.java.Type;
 import com.janilla.websitetemplate.Link;
 import com.janilla.websitetemplate.LinkAppearance;
 import com.janilla.websitetemplate.LinkType;
 import com.janilla.websitetemplate.Page;
 
-public record LinkImpl(LinkType type, Boolean newTab, @Types( {
+public record LinkImpl(LinkType type, Boolean newTab, @Type( {
 		Page.class, PostImpl.class, Application.class })
 //		DocumentReference<?, ?> document,
 	Document<?> document, String uri, String text, LinkAppearance appearance) implements Link{

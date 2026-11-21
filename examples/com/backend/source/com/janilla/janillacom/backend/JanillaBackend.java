@@ -23,16 +23,19 @@
  */
 package com.janilla.janillacom.backend;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.janilla.backend.web.Backend;
 import com.janilla.http.HttpHandler;
 import com.janilla.http.HttpRequest;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.janillacom.Application;
 import com.janilla.janillacom.JanillaDomain;
 import com.janilla.java.Java;
@@ -41,7 +44,9 @@ import com.janilla.web.WebApp;
 import com.janilla.web.WebAppHandlerFactory;
 import com.janilla.websitetemplate.backend.WebsiteBackend;
 
-public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
+public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig, JanillaDomain> {
+
+	private static final Logger LOGGER = System.getLogger(JanillaBackend.class.getName());
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(WebsiteBackend.diTypes(), Java.getPackageTypes("com.janilla.janillacom"),
@@ -49,18 +54,20 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList());
-		var c = newConfig(new Class<?>[] { JanillaBackend.class }, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0]);
+		var cfg = newConfig(new Class<?>[] { JanillaBackend.class }, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
+		serve(a[0]);
 	}
 
-	protected final Map<String, Backend<?>> backends;
+	protected final Map<String, Backend<?, ?>> backends;
 
-	public JanillaBackend(JanillaBackendConfig config, DiFactory diFactory) {
-		super(config, diFactory);
+	public JanillaBackend(JanillaBackendConfig config, DiFactory diFactory, Consumer<Object> context) {
+		super(config, diFactory, context, Data.class, SeedData.class);
 
 		backends = config.backends().keySet().stream().map(persistence.crud(Application.class)::read)
 				.filter(x -> x.backend() != null).collect(Collectors.toMap(Application::id, a -> {
@@ -68,38 +75,36 @@ public class JanillaBackend extends WebsiteBackend<JanillaBackendConfig> {
 						var c = Class.forName(a.backend());
 						@SuppressWarnings("unchecked")
 						var tt = ((Stream<Class<?>>) c.getDeclaredMethod("diTypes").invoke(null)).toList();
-						var f = new DefaultDiFactory(tt);
-						var c2 = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.backends().get(a.id()))
+						var a2 = new WebApp[1];
+						var f = Ioc.diFactory(tt, () -> a2[0]);
+						var cfg = newConfig(Stream.of(toConfigMap(c), (Map<?, ?>) config.backends().get(a.id()))
 								.filter(x -> x != null).toArray(Map<?, ?>[]::new), f);
-						return (Backend<?>) f.newInstance(c, Java.hashMap("config", c2, "diFactory", f));
+						var ctx = (Consumer<Object>) x -> a2[0] = (WebApp<?, ?>) x;
+						return (Backend<?, ?>) f.newInstance(c,
+								Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
 					} catch (ReflectiveOperationException e) {
 						throw new RuntimeException(e);
 					}
 				}));
 	}
 
-	public Backend<?> backend(HttpRequest request) {
+	public Backend<?, ?> backend(HttpRequest request) {
 		var x = backends.get(config.appResolution().id(request));
 		return x != null ? x : this;
-	}
-
-	@Override
-	protected Class<?> dataType() {
-		return Data.class;
 	}
 
 	@Override
 	protected HttpHandler newHttpHandler() {
 		var f = diFactory.newInstance(diFactory.classFor(WebAppHandlerFactory.class));
 		return x -> {
-			var ba = (Backend<?>) JanillaDomain.WEB_APP.get();
+			var ba = (Backend<?, ?>) JanillaDomain.WEB_APP.get();
 //			IO.println("JanillaBackend.newHttpHandler, ba=" + ba);
-			var h = ba == this ? f.createHandler(Objects.requireNonNullElse(x.exception(), x.request()))
+			var h = ba == this ? f.newHandler(Objects.requireNonNullElse(x.exception(), x.request()))
 					: ba.httpHandler();
 			if (h == null)
 				throw new NotFoundException(
 						x.request().getHeaderValue(":method") + " " + x.request().getHeaderValue(":path"));
-			return ScopedValue.where(INSTANCE, ba).call(() -> h.handle(x));
+			return ScopedValue.where(SCOPED, ba).call(() -> h.handle(x));
 		};
 	}
 }

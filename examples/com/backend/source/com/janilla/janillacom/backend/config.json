@@ -11,52 +11,66 @@
 		"acmedashboard": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/acmedashboard",
+			"liveDemo": true
 		},
 		"addressbook": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/addressbook",
+			"liveDemo": true
 		},
 		"blanktemplate": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/blanktemplate",
+			"liveDemo": true
 		},
 		"conduit": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/conduit",
+			"liveDemo": true
 		},
 		"ecommercetemplate": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/ecommercetemplate",
+			"liveDemo": true
 		},
 		"petclinic": {
 			"api": {
 				"url": "http://localhost:8081/petclinic/api"
 			},
-			"basePath": "/petclinic"
+			"basePath": "/petclinic",
+			"liveDemo": true
 		},
 		"todomvc": {
-			"basePath": "/todomvc"
+			"basePath": "/todomvc",
+			"liveDemo": true
 		},
 		"websitetemplate": {
 			"api": {
 				"cors": {}
-			}
+			},
+			"basePath": "/websitetemplate",
+			"liveDemo": true
 		}
 	},
 	"basePath": "",
 	"database": {
-		"file": "~/janilla/sample-data/janilla-com.db"
+		"file": "~/janilla/sample-data/com.db"
 	},
 	"httpServer": {
 		"port": 8081
 	},
 	"jwt": {
-		"cookie": "janilla-token",
+		"cookie": "com-token",
 		"key": "secretkey"
 	},
 	"liveDemo": true,
@@ -67,6 +81,6 @@
 		"username": "foo.bar@example.com"
 	},
 	"upload": {
-		"directory": "~/janilla/sample-data/janilla-com-upload"
+		"directory": "~/janilla/sample-data/com-upload"
 	}
 }

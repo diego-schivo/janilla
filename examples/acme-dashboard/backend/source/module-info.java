@@ -28,5 +28,6 @@ module com.janilla.acmedashboard.backend {
 
 	opens com.janilla.acmedashboard.backend;
 
-	requires transitive com.janilla.backend;
+	requires transitive com.janilla.blanktemplate.backend;
+	requires transitive com.janilla.acmedashboard.base;
 }

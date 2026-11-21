@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,23 +24,31 @@
  */
 package com.janilla.blanktemplate.fullstack;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.util.Comparator;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.janilla.blanktemplate.BlankDomain;
 import com.janilla.blanktemplate.backend.BlankBackend;
 import com.janilla.blanktemplate.frontend.BlankFrontend;
 import com.janilla.fullstack.web.AbstractFullstack;
-import com.janilla.ioc.DefaultDiFactory;
 import com.janilla.ioc.DiFactory;
+import com.janilla.ioc.Ioc;
 import com.janilla.java.Java;
 import com.janilla.web.WebApp;
 
-public class BlankFullstack<C extends BlankFullstackConfig> extends AbstractFullstack<C> {
+public class BlankFullstack<C extends BlankFullstackConfig, D extends BlankDomain> extends AbstractFullstack<C, D> {
+
+	private static final Logger LOGGER = System.getLogger(BlankFullstack.class.getName());
 
 	public static final Class<?>[] CONFIG_CLASSES = { BlankBackend.class, BlankFrontend.class, BlankFullstack.class };
 
 	public static Stream<Class<?>> diTypes() {
 		return Stream.of(Java.getPackageTypes("com.janilla.java"), Java.getPackageTypes("com.janilla.web"),
-				Java.getPackageTypes("com.janilla.backend", _ -> true),
+				Java.getPackageTypes("com.janilla.backend", _ -> true,
+						Comparator.comparingInt(x -> x.endsWith(".cms") ? 1 : 0)),
 				Java.getPackageTypes("com.janilla.frontend", _ -> true),
 				Java.getPackageTypes("com.janilla.fullstack", _ -> true),
 				Java.getPackageTypes("com.janilla.blanktemplate.backend"),
@@ -49,66 +57,23 @@ public class BlankFullstack<C extends BlankFullstackConfig> extends AbstractFull
 	};
 
 	public static void main(String[] args) {
-		IO.println(ProcessHandle.current().pid());
+		LOGGER.log(Level.DEBUG, "pid={0}", String.valueOf(ProcessHandle.current().pid()));
 
-		var f = new DefaultDiFactory(diTypes().toList(), "fullstack");
-		var c = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
-		var a = f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", c, "diFactory", f));
-		serve(a);
+		var a = new WebApp[1];
+		var f = Ioc.diFactory(diTypes().toList(), () -> a[0], "fullstack");
+		var cfg = newConfig(CONFIG_CLASSES, args.length != 0 ? args[0] : null, f);
+		var ctx = (Consumer<Object>) (x -> a[0] = (WebApp<?, ?>) x);
+		f.newInstance(f.classFor(WebApp.class), Java.hashMap("config", cfg, "diFactory", f, "context", ctx));
+		serve(a[0]);
 	}
 
-	public BlankFullstack(C config, DiFactory diFactory) {
-		this(config, diFactory, BlankFrontend.class, BlankBackend.class);
+	public BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context) {
+		this(config, diFactory, context, BlankBackend.class, BlankFrontend.class);
 	}
 
 	@SuppressWarnings("rawtypes")
-	protected BlankFullstack(C config, DiFactory diFactory, Class frontendClass, Class backendClass) {
-		super(config, diFactory, frontendClass, backendClass);
+	protected BlankFullstack(C config, DiFactory diFactory, Consumer<Object> context, Class backendClass,
+			Class frontendClass) {
+		super(config, diFactory, context, backendClass, frontendClass);
 	}
-
-//	protected BlankFullstack(DiFactory diFactory, Path configurationFile, String configurationKey) {
-//		super(diFactory, configurationFile, configurationKey, BlankFrontend.class, BlankBackend.class);
-//		this.diFactory = diFactory;
-//		this.configurationFile = configurationFile;
-//		this.configurationKey = configurationKey;
-//		diFactory.context(this);
-//		configuration = diFactory.newInstance(diFactory.classFor(Configuration.class),
-//				Collections.singletonMap("path", configurationFile));
-//
-//		Path cf;
-//		try {
-//			cf = configurationFile != null ? configurationFile
-//					: Path.of(getClass().getResource("configuration.properties").toURI());
-//		} catch (URISyntaxException e) {
-//			throw new RuntimeException(e);
-//		}
-//
-//		backend = ScopedValue.where(INSTANCE, this).call(() -> {
-//			var f = new DefaultDiFactory(diBackendTypes().toList(), "backend");
-//			return f.newInstance(f.classFor(BlankBackend.class),
-//					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
-//		});
-//
-//		frontend = ScopedValue.where(INSTANCE, this).call(() -> {
-//			var f = new DefaultDiFactory(diFrontendTypes().toList(), "frontend");
-//			return f.newInstance(f.classFor(BlankFrontend.class),
-//					Java.hashMap("diFactory", f, "configurationFile", cf, "configurationKey", configurationKey));
-//		});
-//
-//		handler = this::handle;
-//	}
-
-//	protected Stream<Class<?>> diBackendTypes() {
-//		return Stream.concat(BlankBackend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"));
-//	};
-//
-//	protected Stream<Class<?>> diFrontendTypes() {
-//		return Stream.concat(BlankFrontend.diTypes(), Java.getPackageTypes("com.janilla.blanktemplate.fullstack"));
-//	};
-//
-//	protected boolean handle(HttpExchange exchange) {
-	//// IO.println("BlankFullstack.handle, exchange=" + exchange);
-//		var h = exchange.request().getPath().startsWith("/api/") ? backend.handler() : frontend.handler();
-//		return h.handle(exchange);
-//	}
 }

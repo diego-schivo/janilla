@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,12 +30,14 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.ecommercetemplate.VariantOption;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.web.Handle;
 
 @Handle(path = "/api/variant-options")
 public class VariantOptionApi extends AbstractCollectionApi<Long, VariantOption> {
 
-	public VariantOptionApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(VariantOption.class, drafts, persistence, "title");
+	public VariantOptionApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(VariantOption.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 }

@@ -1,6 +1,8 @@
 /*
  * MIT License
  *
+ * Copyright (c) 2021 Thinkster
+ * Copyright (c) 2026 c4ffein
  * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -92,10 +94,13 @@ static get moduleUrl() {
 		} else {
 			const a = this.closest("app-element");
 			const [{ article }, { comments }] = await Promise.all([
-				`${a.dataset.apiUrl}/articles/${this.dataset.slug}`,
-				`${a.dataset.apiUrl}/articles/${this.dataset.slug}/comments`,
-			].map(x => fetch(x, { headers: a.customState.apiHeaders }).then(y => y.json())));
-			Object.assign(hs, { article, comments });
+				`${a.customEnv.apiUrl}/articles/${this.dataset.slug}`,
+				`${a.customEnv.apiUrl}/articles/${this.dataset.slug}/comments`,
+			].map(x => fetch(x, { headers: a.apiHeaders }).then(y => y.json())));
+			Object.assign(hs, {
+				article: article ?? {},
+				comments: comments ?? []
+			});
 			history.replaceState(hs, "");
 			dispatchEvent(new CustomEvent("popstate"));
 		}
@@ -115,7 +120,7 @@ static get moduleUrl() {
 			if (el.matches("a"))
 				location.hash = `#/editor/${this.dataset.slug}`;
 			else {
-				const { dataset: { apiUrl }, customState: { apiHeaders } } = this.closest("app-element");
+				const { customEnv: { apiUrl }, apiHeaders } = this.closest("app-element");
 				const r = await fetch(`${apiUrl}/articles/${this.dataset.slug}`, {
 					method: "DELETE",
 					headers: apiHeaders

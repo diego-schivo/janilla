@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,13 +28,14 @@ import java.util.function.Predicate;
 
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
 import com.janilla.web.Handle;
 import com.janilla.websitetemplate.Post;
 
 @Handle(path = "/api/posts")
 public class PostApi extends AbstractPostApi<Post> {
 
-	public PostApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Post.class, drafts, persistence);
+	public PostApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Post.class, drafts, persistence, copier);
 	}
 }

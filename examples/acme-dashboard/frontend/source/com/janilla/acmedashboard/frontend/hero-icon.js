@@ -46,10 +46,14 @@ export default class HeroIcon extends WebComponent {
             this.removeChild(this.lastChild);
         if (!s.name)
             return;
-        documents[s.name] ??= fetch(`/images/heroicons/${s.name}.svg`).then(x => x.text()).then(x => {
-            x = x.replace("#0F172A", "currentColor");
-            return parser.parseFromString(x, "image/svg+xml");
-        });
+
+        const a = this.shadowClosest("app-element");
+        documents[s.name] ??= fetch(`${a.customEnv.basePath}/images/heroicons/${s.name}.svg`)
+            .then(x => x.text()).then(x => {
+                x = x.replace("#0F172A", "currentColor");
+                return parser.parseFromString(x, "image/svg+xml");
+            });
+
         const d = await documents[s.name];
         this.appendChild(d.firstChild.cloneNode(true));
     }

@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2018-2025 Payload CMS, Inc. <info@payloadcms.com>
- * Copyright (c) 2024-2026 Diego Schivo <diego.schivo@janilla.com>
+ * Copyright (c) 2018-2026 Payload CMS, LLC <info@payloadcms.com>
+ * Copyright (c) 2024-2026 Diego Schivo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,8 @@ import com.janilla.backend.cms.AbstractCollectionApi;
 import com.janilla.backend.persistence.Persistence;
 import com.janilla.ecommercetemplate.Product;
 import com.janilla.http.HttpExchange;
+import com.janilla.java.Copier;
+import com.janilla.java.Direction;
 import com.janilla.persistence.ListPortion;
 import com.janilla.web.Bind;
 import com.janilla.web.Handle;
@@ -41,13 +43,14 @@ import com.janilla.web.Handle;
 @Handle(path = "/api/products")
 public class ProductApi extends AbstractCollectionApi<Long, Product> {
 
-	public ProductApi(Predicate<HttpExchange> drafts, Persistence persistence) {
-		super(Product.class, drafts, persistence, "title");
+	public ProductApi(Predicate<HttpExchange> drafts, Persistence persistence, Copier copier) {
+		super(Product.class, drafts, persistence, "title", copier, Direction.FORWARD, 0);
 	}
 
 	@Handle(method = "GET")
-	public ListPortion<Product> read(String search, Boolean reverse, Long skip, Long limit, Integer depth, String slug,
-			@Bind("q") String query, @Bind("category") Long[] categories, String sort, HttpExchange exchange) {
+	public ListPortion<Product> read(String search, Direction direction, Long skip, Long limit, Integer depth,
+			String slug, @Bind("q") String query, @Bind("category") Long[] categories, String sort,
+			HttpExchange exchange) {
 		{
 			var s = slug != null && !slug.isEmpty() ? slug : null;
 			if (s != null) {
@@ -91,6 +94,6 @@ public class ProductApi extends AbstractCollectionApi<Long, Product> {
 			}
 		}
 
-		return super.read(search, reverse, skip, limit, depth);
+		return super.read(search, direction, skip, limit, depth);
 	}
 }
